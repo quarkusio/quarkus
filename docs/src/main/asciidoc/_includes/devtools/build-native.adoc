@@ -27,10 +27,10 @@ ifdef::devtools-wrapped[+]
 .Gradle
 ----
 ifdef::build-additional-parameters[]
-./gradlew build -Dquarkus.package.type=native {build-additional-parameters}
+./gradlew build -Dquarkus.native.enabled=true {build-additional-parameters}
 endif::[]
 ifndef::build-additional-parameters[]
-./gradlew build -Dquarkus.package.type=native
+./gradlew build -Dquarkus.native.enabled=true
 endif::[]
 ----
 endif::[]

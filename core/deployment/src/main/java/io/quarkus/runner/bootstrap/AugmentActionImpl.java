@@ -184,6 +184,9 @@ public class AugmentActionImpl implements AugmentAction {
 
         // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
         // we want to write result of the final artifact created
+        if (artifactResultBuildItems.isEmpty()) {
+            throw new IllegalStateException("No artifact results were produced");
+        }
         ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
         writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
 

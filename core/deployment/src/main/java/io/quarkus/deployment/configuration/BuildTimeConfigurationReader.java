@@ -410,6 +410,7 @@ public final class BuildTimeConfigurationReader {
         }
 
         builder.withInterceptors(buildConfigTracker);
+        builder.withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance());
         var config = builder.build();
         buildConfigTracker.configure(config);
         return config;

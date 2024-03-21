@@ -4,6 +4,7 @@ import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.get
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.getNamespace;
 import static io.quarkus.container.image.openshift.deployment.OpenshiftUtils.mergeConfig;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 
 import java.io.BufferedReader;
@@ -287,10 +288,12 @@ public class OpenshiftProcessor {
             //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String outputDirName = out.getOutputDirectory().getFileName().toString();
-            String contextRoot = getContextRoot(outputDirName, packageConfig.isFastJar(), config.buildStrategy);
+            PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+            String contextRoot = getContextRoot(outputDirName, jarType == FAST_JAR || jarType == MUTABLE_JAR,
+                    config.buildStrategy);
             KubernetesClientBuilder clientBuilder = newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
                     kubernetesClientBuilder.getHttpClientFactory());
-            if (packageConfig.isFastJar()) {
+            if (jarType == FAST_JAR || jarType == MUTABLE_JAR) {
                 createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath().getParent());
             } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.

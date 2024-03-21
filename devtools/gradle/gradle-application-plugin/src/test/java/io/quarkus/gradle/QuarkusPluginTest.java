@@ -158,7 +158,7 @@ public class QuarkusPluginTest {
         BuildResult result = GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(testProjectDir.toFile())
-                .withArguments("quarkusGenerateCode")
+                .withArguments("quarkusGenerateCode", "--stacktrace")
                 .build();
 
         assertEquals(SUCCESS, result.task(":quarkus:quarkusGenerateCode").getOutcome());

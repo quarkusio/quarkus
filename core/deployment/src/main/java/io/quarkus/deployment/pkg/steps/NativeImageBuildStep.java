@@ -87,7 +87,7 @@ public class NativeImageBuildStep {
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
-        return new ArtifactResultBuildItem(image.getPath(), PackageConfig.BuiltInType.NATIVE.getValue(),
+        return new ArtifactResultBuildItem(image.getPath(), "native",
                 graalVMVersion.toMap());
     }
 
@@ -157,7 +157,7 @@ public class NativeImageBuildStep {
         IoUtils.recursiveDelete(nativeImageSourceJarBuildItem.getPath().getParent());
 
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
-                PackageConfig.BuiltInType.NATIVE_SOURCES.getValue(),
+                "native-sources",
                 Collections.emptyMap());
     }
 
@@ -308,7 +308,7 @@ public class NativeImageBuildStep {
     }
 
     private String getNativeImageName(OutputTargetBuildItem outputTargetBuildItem, PackageConfig packageConfig) {
-        return outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix();
+        return outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix();
     }
 
     private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {

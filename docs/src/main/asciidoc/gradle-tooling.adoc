@@ -275,7 +275,7 @@ To do this you must build a mutable application, using the `mutable-jar` format.
 
 [source,properties]
 ----
-quarkus.package.type=mutable-jar <1>
+quarkus.package.jar.type=mutable-jar <1>
 quarkus.live-reload.password=changeit <2>
 quarkus.live-reload.url=http://my.cluster.host.com:8080 <3>
 ----
@@ -558,9 +558,9 @@ on the classpath that the legacy jar necessitates, when loading a class or resou
 
 == Building Uber-Jars
 
-Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.type` argument as follows:
+Quarkus Gradle plugin supports the generation of Uber-Jars by specifying a `quarkus.package.jar.type` argument as follows:
 
-:build-additional-parameters: -Dquarkus.package.type=uber-jar
+:build-additional-parameters: -Dquarkus.package.jar.type=uber-jar
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
@@ -568,7 +568,7 @@ When building an Uber-Jar you can specify entries that you want to exclude from 
 
 [source,bash]
 ----
-./gradlew quarkusBuild -Dquarkus.package.type=uber-jar --ignored-entry=META-INF/file1.txt
+./gradlew quarkusBuild -Dquarkus.package.jar.type=uber-jar --ignored-entry=META-INF/file1.txt
 ----
 
 The entries are relative to the root of the generated Uber-Jar. You can specify multiple entries by adding extra `--ignored-entry` arguments.
@@ -620,17 +620,17 @@ tasks.withType<GenerateModuleMetadata>().configureEach {
 There are multiple configuration sources that influence Quarkus builds, mentioned in the order of their priority.
 The Quarkus build uses the `prod` configuration profile:
 
-1. System properties (for example `./gradlew -Dquarkus.package.type=fast-jar ...`)
-2. System environment (for example `QUARKUS_PACKAGE_TYPE=fast-jar ./gradlew ...`)
+1. System properties (for example `./gradlew -Dquarkus.package.jar.type=fast-jar ...`)
+2. System environment (for example `QUARKUS_PACKAGE_JAR_TYPE=fast-jar ./gradlew ...`)
 3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
 
    quarkus {
        quarkusBuildProperties {
-           set("package.type", "uber-jar")
+           set("package.jar.type", "uber-jar")
        }
    }
 
-4. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.type=fast-jar`)
+4. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.jar.type=fast-jar`)
 5. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
    as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
 

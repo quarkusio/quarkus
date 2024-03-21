@@ -78,7 +78,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
@@ -190,7 +190,7 @@ class RestClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
-            PackageConfig packageConfig,
+            NativeConfig nativeConfig,
             List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -216,7 +216,7 @@ class RestClientProcessor {
             restClient.produce(new RestClientBuildItem(interfaze.toString()));
         }
 
-        warnAboutNotWorkingFeaturesInNative(packageConfig, interfaces);
+        warnAboutNotWorkingFeaturesInNative(nativeConfig, interfaces);
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
@@ -318,8 +318,8 @@ class RestClientProcessor {
     // that is annotated with ClientHeaderParam
     // leads to NPEs (see https://github.com/quarkusio/quarkus/issues/10249)
     // so let's warn users about its use
-    private void warnAboutNotWorkingFeaturesInNative(PackageConfig packageConfig, Map<DotName, ClassInfo> interfaces) {
-        if (!packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE)) {
+    private void warnAboutNotWorkingFeaturesInNative(NativeConfig nativeConfig, Map<DotName, ClassInfo> interfaces) {
+        if (!nativeConfig.enabled()) {
             return;
         }
         Set<DotName> dotNames = new HashSet<>();

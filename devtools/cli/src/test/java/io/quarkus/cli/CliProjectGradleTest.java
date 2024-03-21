@@ -259,8 +259,8 @@ public class CliProjectGradleTest {
         Assertions.assertFalse(result.stdout.contains("-x test"),
                 "gradle command should not specify '-x test'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dquarkus.package.type=native"),
-                "gradle command should specify -Dquarkus.package.type=native\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.native.enabled=true"),
+                "gradle command should specify -Dquarkus.native.enabled=true\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("--offline"),
                 "gradle command should specify --offline\n" + result);

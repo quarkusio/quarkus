@@ -24,6 +24,18 @@ public interface NativeConfig {
     String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21";
 
     /**
+     * Set to enable native-image building using GraalVM.
+     */
+    @WithDefault("false")
+    boolean enabled();
+
+    /**
+     * Set to prevent the native-image process from actually building the native image.
+     */
+    @WithDefault("false")
+    boolean sourcesOnly();
+
+    /**
      * Comma-separated, additional arguments to pass to the build process.
      * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
      */

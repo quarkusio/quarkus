@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
@@ -56,7 +57,7 @@ public class AppCDSBuildStep {
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage,
             BuildProducer<AppCDSResultBuildItem> appCDS,
             BuildProducer<ArtifactResultBuildItem> artifactResult) throws Exception {
-        if (!appCDsRequested.isPresent()) {
+        if (appCDsRequested.isEmpty()) {
             return;
         }
 
@@ -77,8 +78,9 @@ public class AppCDSBuildStep {
 
         Path appCDSPath;
         log.info("Launching AppCDS creation process.");
+        boolean isFastJar = packageConfig.jar().type() == FAST_JAR;
         appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
-                packageConfig.isFastJar());
+                isFastJar);
 
         if (appCDSPath == null) {
             log.warn("Unable to create AppCDS.");
@@ -100,10 +102,10 @@ public class AppCDSBuildStep {
 
     private String determineContainerImage(PackageConfig packageConfig,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage) {
-        if (!packageConfig.appcdsUseContainer) {
+        if (!packageConfig.jar().appcds().useContainer()) {
             return null;
-        } else if (packageConfig.appcdsBuilderImage.isPresent()) {
-            return packageConfig.appcdsBuilderImage.get();
+        } else if (packageConfig.jar().appcds().builderImage().isPresent()) {
+            return packageConfig.jar().appcds().builderImage().get();
         } else if (appCDSContainerImage.isPresent()) {
             return appCDSContainerImage.get().getContainerImage();
         }
@@ -356,11 +358,7 @@ public class AppCDSBuildStep {
                 return false;
             }
 
-            if (!packageConfig.createAppcds || !packageConfig.isAnyJarType()) {
-                return false;
-            }
-
-            return true;
+            return packageConfig.jar().appcds().enabled() && packageConfig.jar().enabled();
         }
     }
 

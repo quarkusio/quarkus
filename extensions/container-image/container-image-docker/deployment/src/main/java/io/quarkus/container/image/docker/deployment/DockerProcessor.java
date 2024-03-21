@@ -4,6 +4,7 @@ package io.quarkus.container.image.docker.deployment;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.nio.file.Files;
@@ -339,6 +340,7 @@ public class DockerProcessor {
                         + "' failed. See docker output for more details");
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     private DockerfilePaths getDockerfilePaths(DockerConfig dockerConfig, boolean forNative,
             PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem) {
@@ -352,7 +354,7 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
-            } else if (packageConfig.isLegacyJar()) {
+            } else if (packageConfig.jar().type() == LEGACY_JAR) {
                 return DockerfileDetectionResult.detect(DOCKERFILE_LEGACY_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);

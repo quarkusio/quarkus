@@ -86,7 +86,7 @@ public class JBangBuilderImpl {
                     .build().bootstrap();
 
             if (nativeImage) {
-                System.setProperty("quarkus.package.type", "native");
+                System.setProperty("quarkus.native.enabled", "true");
             }
             Map<String, Object> output = new HashMap<>();
             app.runInAugmentClassLoader("io.quarkus.deployment.jbang.JBangAugmentorImpl", output);

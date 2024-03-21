@@ -36,9 +36,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
 
-    static final String NATIVE_PACKAGE_TYPE = "native";
     static final String NATIVE_PROFILE_NAME = "native";
-    static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
@@ -301,24 +299,17 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     }
 
     /**
-     * Essentially what this does is to enable the native package type even if a different package type is set
-     * in application properties. This is done to preserve what users expect to happen when
-     * they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
+     * Cause the native-enabled flag to be set if the native profile is enabled.
      *
      * @return true if the package type system property was set, otherwise - false
      */
-    protected boolean setPackageTypeSystemPropertyIfNativeProfileEnabled() {
-        if (!System.getProperties().containsKey(PACKAGE_TYPE_PROP)
-                && isNativeProfileEnabled(mavenProject())) {
-            Object packageTypeProp = mavenProject().getProperties().get(PACKAGE_TYPE_PROP);
-            String packageType = NATIVE_PACKAGE_TYPE;
-            if (packageTypeProp != null) {
-                packageType = packageTypeProp.toString();
-            }
-            System.setProperty(PACKAGE_TYPE_PROP, packageType);
+    protected boolean setNativeEnabledIfNativeProfileEnabled() {
+        if (isNativeProfileEnabled(mavenProject())) {
+            System.setProperty("quarkus.native.enabled", "true");
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 
     private boolean isNativeProfileEnabled(MavenProject mavenProject) {

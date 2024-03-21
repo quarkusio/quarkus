@@ -26,7 +26,7 @@
         <skipITs>true</skipITs>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
         {#if uberjar}
-        <quarkus.package.type>uber-jar</quarkus.package.type>
+        <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
         {/if}
     </properties>
 
@@ -202,7 +202,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
                 <skipITs>false</skipITs>
             </properties>
         </profile>

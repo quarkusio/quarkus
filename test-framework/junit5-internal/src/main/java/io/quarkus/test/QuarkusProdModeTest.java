@@ -410,7 +410,7 @@ public class QuarkusProdModeTest
                 overrideConfigKey("quarkus.application.version", applicationVersion);
             }
             if (buildNative) {
-                overrideConfigKey("quarkus.package.type", "native");
+                overrideConfigKey("quarkus.native.enabled", "true");
             }
             exportArchive(deploymentDir, testClass);
 

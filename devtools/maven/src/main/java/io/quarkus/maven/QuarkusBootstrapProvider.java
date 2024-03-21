@@ -53,8 +53,8 @@ import io.smallrye.common.expression.Expression;
 @Named
 public class QuarkusBootstrapProvider implements Closeable {
 
-    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
-    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
+    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.jar.manifest.sections";
+    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.jar.manifest.attributes";
 
     private final QuarkusWorkspaceProvider workspaceProvider;
     private final RepositorySystem repoSystem;
@@ -273,7 +273,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             // quarkus. properties > ignoredEntries in pom.xml
             if (mojo.ignoredEntries() != null && mojo.ignoredEntries().length > 0) {
                 String joinedEntries = String.join(",", mojo.ignoredEntries());
-                effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+                effectiveProperties.setProperty("quarkus.package.jar.user-configured-ignored-entries", joinedEntries);
             }
 
             final Properties projectProperties = mojo.mavenProject().getProperties();

@@ -92,7 +92,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gizmo.ClassOutput;
@@ -940,7 +940,7 @@ public class QuteProcessor {
             List<CheckedTemplateBuildItem> checkedTemplates,
             List<TemplateDataBuildItem> templateData,
             QuteConfig config,
-            PackageConfig packageConfig,
+            NativeConfig nativeConfig,
             List<TemplateGlobalBuildItem> globals) {
 
         long start = System.nanoTime();
@@ -1035,7 +1035,7 @@ public class QuteProcessor {
         // ==========================================================================
         // Register implicit value resolvers for classes collected during validation
         // ==========================================================================
-        boolean isNonNativeBuild = !packageConfig.isNativeOrNativeSources();
+        boolean isNonNativeBuild = !nativeConfig.enabled();
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
             if (entry.getValue().isEmpty() && isNonNativeBuild) {
                 // No members used - skip the generation for non-native builds

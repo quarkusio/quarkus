@@ -121,7 +121,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
         CuratedApplication curatedApplication = null;
         QuarkusClassLoader deploymentClassLoader = null;
         final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
-        final boolean clearPackageTypeSystemProperty = setPackageTypeSystemPropertyIfNativeProfileEnabled();
+        final boolean clearNativeEnabledSystemProperty = setNativeEnabledIfNativeProfileEnabled();
         try {
             curatedApplication = bootstrapApplication(launchMode);
             if (prevConfigExists || dumpCurrentWhenRecordedUnavailable) {
@@ -173,8 +173,8 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
         } catch (Exception any) {
             throw new MojoExecutionException("Failed to bootstrap Quarkus application", any);
         } finally {
-            if (clearPackageTypeSystemProperty) {
-                System.clearProperty(PACKAGE_TYPE_PROP);
+            if (clearNativeEnabledSystemProperty) {
+                System.clearProperty("quarkus.native.enabled");
             }
             Thread.currentThread().setContextClassLoader(originalCl);
             if (deploymentClassLoader != null) {

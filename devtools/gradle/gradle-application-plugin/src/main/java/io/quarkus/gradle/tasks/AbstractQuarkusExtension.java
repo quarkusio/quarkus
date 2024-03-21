@@ -36,8 +36,8 @@ import io.smallrye.common.expression.Expression;
  * package and to the {@link io.quarkus.gradle.extension.QuarkusPluginExtension} class itself.
  */
 public abstract class AbstractQuarkusExtension {
-    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
-    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
+    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.jar.manifest.sections";
+    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.jar.manifest.attributes";
 
     private static final String QUARKUS_PROFILE = "quarkus.profile";
     protected final Project project;
@@ -59,10 +59,11 @@ public abstract class AbstractQuarkusExtension {
         this.finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
         this.forcedPropertiesProperty = project.getObjects().mapProperty(String.class, String.class);
         this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
-        this.cachingRelevantProperties = project.getObjects().listProperty(String.class).value(List.of("quarkus[.].*"));
+        this.cachingRelevantProperties = project.getObjects().listProperty(String.class)
+                .value(List.of("quarkus[.].*", "platform[.]quarkus[.].*"));
         this.ignoredEntries = project.getObjects().listProperty(String.class);
         this.ignoredEntries.convention(
-                project.provider(() -> baseConfig().packageConfig().userConfiguredIgnoredEntries.orElse(emptyList())));
+                project.provider(() -> baseConfig().packageConfig().jar().userConfiguredIgnoredEntries().orElse(emptyList())));
         this.baseConfig = project.getObjects().property(BaseConfig.class).value(project.provider(this::buildBaseConfig));
         SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         this.classpath = dependencyClasspath(mainSourceSet);
@@ -106,9 +107,8 @@ public abstract class AbstractQuarkusExtension {
 
         String userIgnoredEntries = String.join(",", ignoredEntries.get());
         if (!userIgnoredEntries.isEmpty()) {
-            properties.put("quarkus.package.user-configured-ignored-entries", userIgnoredEntries);
+            properties.put("quarkus.package.jar.user-configured-ignored-entries", userIgnoredEntries);
         }
-
         properties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         properties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
@@ -150,17 +150,18 @@ public abstract class AbstractQuarkusExtension {
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
 
         for (Map.Entry<String, String> entry : forcedPropertiesProperty.get().entrySet()) {
-            if (entry.getKey().startsWith("quarkus.")) {
+            if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
                 buildSystemProperties.put(entry.getKey(), entry.getValue());
             }
         }
         for (Map.Entry<String, String> entry : quarkusBuildProperties.get().entrySet()) {
-            if (entry.getKey().startsWith("quarkus.")) {
+            if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {
                 buildSystemProperties.put(entry.getKey(), entry.getValue());
             }
         }
         for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
-            if (entry.getKey().startsWith("quarkus.") && entry.getValue() != null) {
+            if ((entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))
+                    && entry.getValue() != null) {
                 buildSystemProperties.put(entry.getKey(), entry.getValue().toString());
             }
         }

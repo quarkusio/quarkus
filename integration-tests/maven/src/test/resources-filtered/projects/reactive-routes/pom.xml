@@ -103,7 +103,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>jar</quarkus.package.type>
+                <quarkus.package.jar.type>fast-jar</quarkus.package.jar.type>
             </properties>
             <build>
                 <plugins>
@@ -137,7 +137,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
             </properties>
             <build>
                 <plugins>
@@ -171,7 +171,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
             </properties>
             <build>
                 <plugins>

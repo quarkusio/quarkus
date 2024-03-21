@@ -70,7 +70,6 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String ID = "io.quarkus";
     public static final String DEFAULT_OUTPUT_DIRECTORY = "quarkus-app";
-    public static final String QUARKUS_PACKAGE_TYPE = "quarkus.package.type"; // constant left here to not break potential users
 
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
@@ -244,7 +243,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.register(BUILD_NATIVE_TASK_NAME, DefaultTask.class, task -> {
             task.finalizedBy(quarkusBuild);
             task.doFirst(t -> t.getLogger()
-                    .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
+                    .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.native.enabled=true'"));
         });
 
         configureBuildNativeTask(project);
@@ -481,7 +480,7 @@ public class QuarkusPlugin implements Plugin<Project> {
             if (taskGraph.hasTask(project.getPath() + BUILD_NATIVE_TASK_NAME)
                     || taskGraph.hasTask(project.getPath() + TEST_NATIVE_TASK_NAME)) {
                 project.getExtensions().getExtraProperties()
-                        .set(QUARKUS_PACKAGE_TYPE, "native");
+                        .set("quarkus.native.enabled", "true");
             }
         });
     }

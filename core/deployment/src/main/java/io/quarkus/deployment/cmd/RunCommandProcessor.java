@@ -1,5 +1,6 @@
 package io.quarkus.deployment.cmd;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
 
@@ -25,6 +26,7 @@ public class RunCommandProcessor {
         return new RunCommandActionResultBuildItem(cmds);
     }
 
+    @SuppressWarnings("deprecation") // legacy jar
     @BuildStep
     public void defaultJavaCommand(PackageConfig packageConfig,
             OutputTargetBuildItem jar,
@@ -34,13 +36,14 @@ public class RunCommandProcessor {
 
         Path jarPath = null;
         if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))) {
+                || packageConfig.jar().type() == UBER_JAR)) {
             jarPath = jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)) {
+                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+        } else if (!legacyJarRequired.isEmpty()
+                || packageConfig.jar().type() == LEGACY_JAR) {
+            // todo: legacy JAR should be using runnerSuffix()
             jarPath = jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
         } else {
             jarPath = jar.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
 
@@ -49,7 +52,7 @@ public class RunCommandProcessor {
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
 
-        for (Map.Entry e : System.getProperties().entrySet()) {
+        for (Map.Entry<?, ?> e : System.getProperties().entrySet()) {
             args.add("-D" + e.getKey().toString() + "=" + e.getValue().toString());
         }
         args.add("-jar");

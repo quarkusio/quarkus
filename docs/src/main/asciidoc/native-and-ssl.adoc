@@ -237,7 +237,7 @@ However, this comes with a few drawbacks:
  * Providing all certificates at build time complicates the CI, specifically in dynamic environments such as Kubernetes where valid certificates are provided by the platform in the `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` PEM file.
  * Lastly, this does not play well with third party software that do not provide a dedicated build for each customer environment.
 
-Creating a native executable using build time certificates essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at build time (which for Quarkus means when you perform a build having `quarkus.package.type=native` set).
+Creating a native executable using build time certificates essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at build time (which for Quarkus means when you perform a build having `quarkus.native.enabled=true` set).
 This avoids shipping a `cacerts` file or requiring a system property be set in order to set up root certificates that are provided by the OS where the binary runs.
 
 In this situation, system properties such as `javax.net.ssl.trustStore` do not have an effect at

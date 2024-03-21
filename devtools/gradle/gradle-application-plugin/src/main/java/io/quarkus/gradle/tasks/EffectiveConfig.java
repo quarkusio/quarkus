@@ -22,6 +22,8 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import com.google.common.annotations.VisibleForTesting;
 
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
+import io.quarkus.deployment.configuration.ConfigCompatibility;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -63,6 +65,7 @@ public final class EffectiveConfig {
         // 255 -> application,(yaml|yml) (in classpath/source)
         // 250 -> application.properties (in classpath/source)
         // 100 -> microprofile.properties (in classpath/source)
+        // 0 -> fallback config source for error workaround (see below)
 
         configSources.add(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600));
         configSources.add(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500));
@@ -80,6 +83,10 @@ public final class EffectiveConfig {
         configSources.addAll(applicationYaml.getConfigSources(classLoader));
         configSources
                 .addAll(PropertiesConfigSourceProvider.classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
+
+        // todo: this is due to ApplicationModel#getPlatformProperties not being included in the effective config
+        configSources.add(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
+                "NativeConfig#builderImage", 0));
 
         this.config = buildConfig(builder.profile, configSources);
         this.values = generateFullConfigMap(config);
@@ -129,6 +136,9 @@ public final class EffectiveConfig {
                 .setAddDefaultSources(false)
                 .withSources(configSources)
                 .withProfile(profile)
+                .withMapping(PackageConfig.class)
+                .withMapping(NativeConfig.class)
+                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
                 .build();
     }
 

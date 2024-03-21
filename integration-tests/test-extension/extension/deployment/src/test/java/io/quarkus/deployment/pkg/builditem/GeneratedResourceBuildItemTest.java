@@ -29,7 +29,7 @@ class GeneratedResourceBuildItemTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setExpectExit(true)
-            .overrideConfigKey("quarkus.package.type", "uber-jar")
+            .overrideConfigKey("quarkus.package.jar.type", "uber-jar")
             .setForcedDependencies(List.of(
                     Dependency.of("org.apache.cxf", "cxf-rt-bindings-xml", "3.4.3"),
                     Dependency.of("org.apache.cxf", "cxf-rt-bindings-soap", "3.4.3")));

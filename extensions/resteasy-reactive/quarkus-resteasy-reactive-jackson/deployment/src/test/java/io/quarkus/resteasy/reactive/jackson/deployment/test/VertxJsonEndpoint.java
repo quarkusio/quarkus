@@ -28,6 +28,20 @@ public class VertxJsonEndpoint {
     }
 
     @POST
+    @Path("jsonObjectWrapper")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonObjectWrapper jsonObjectWrapper(JsonObjectWrapper wrapper) {
+        var payload = wrapper.payload;
+        JsonObject result = new JsonObject();
+        result.put("name", payload.getString("name"));
+        result.put("age", 50);
+        result.put("nested", new JsonObject(Collections.singletonMap("foo", "bar")));
+        result.put("bools", new JsonArray().add(true));
+        return new JsonObjectWrapper(result);
+    }
+
+    @POST
     @Path("jsonArray")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -35,5 +49,23 @@ public class VertxJsonEndpoint {
         JsonArray result = input.copy();
         result.add("last");
         return result;
+    }
+
+    @POST
+    @Path("jsonArrayWrapper")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonArrayWrapper jsonArrayWrapper(JsonArrayWrapper wrapper) {
+        var payload = wrapper.payload;
+        JsonArray result = payload.copy();
+        result.add("last");
+        return new JsonArrayWrapper(result);
+    }
+
+    public record JsonObjectWrapper(JsonObject payload) {
+    }
+
+    public record JsonArrayWrapper(JsonArray payload) {
+
     }
 }

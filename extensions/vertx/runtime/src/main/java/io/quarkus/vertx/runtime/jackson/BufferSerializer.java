@@ -23,7 +23,7 @@ import io.vertx.core.buffer.Buffer;
 /**
  * Copied from {@code io.vertx.core.json.jackson.BufferSerializer} as that class is package private
  */
-class BufferSerializer extends JsonSerializer<Buffer> {
+public class BufferSerializer extends JsonSerializer<Buffer> {
 
     @Override
     public void serialize(Buffer value, JsonGenerator jgen, SerializerProvider provider) throws IOException {

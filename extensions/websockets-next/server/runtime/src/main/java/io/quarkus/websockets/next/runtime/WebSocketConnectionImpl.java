@@ -12,11 +12,15 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 class WebSocketConnectionImpl implements WebSocketConnection {
@@ -71,7 +75,17 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
     @Override
     public <M> Uni<Void> sendText(M message) {
-        return UniHelper.toUni(webSocket.writeTextMessage(codecs.textEncode(message, null).toString()));
+        String text;
+        // Use the same conversion rules as defined for the OnTextMessage
+        if (message instanceof JsonObject || message instanceof JsonArray || message instanceof BufferImpl
+                || message instanceof VertxBufferImpl) {
+            text = message.toString();
+        } else if (message.getClass().isArray() && message.getClass().arrayType().equals(byte.class)) {
+            text = Buffer.buffer((byte[]) message).toString();
+        } else {
+            text = codecs.textEncode(message, null);
+        }
+        return sendText(text);
     }
 
     @Override

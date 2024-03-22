@@ -7,6 +7,7 @@ import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnPongMessage;
 import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.common.annotation.Blocking;
@@ -35,4 +36,6 @@ final class WebSocketDotNames {
     static final DotName JSON_OBJECT = DotName.createSimple(JsonObject.class);
     static final DotName JSON_ARRAY = DotName.createSimple(JsonArray.class);
     static final DotName VOID = DotName.createSimple(Void.class);
+    static final DotName PATH_PARAM = DotName.createSimple(PathParam.class);
+    static final DotName HANDSHAKE_REQUEST = DotName.createSimple(WebSocketConnection.HandshakeRequest.class);
 }

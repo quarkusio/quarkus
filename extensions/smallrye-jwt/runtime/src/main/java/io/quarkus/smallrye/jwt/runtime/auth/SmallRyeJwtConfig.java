@@ -1,18 +1,20 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "smallrye-jwt", phase = ConfigPhase.RUN_TIME)
-public class SmallRyeJwtConfig {
+@ConfigMapping(prefix = "quarkus.smallrye-jwt")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface SmallRyeJwtConfig {
 
     /**
      * Enable this property if fetching the remote keys can be a time-consuming operation.
      * Do not enable it if you use the local keys.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean blockingAuthentication;
+    @WithDefault("false")
+    boolean blockingAuthentication();
 
     /**
      * Always create HTTP 401 challenge, even for requests containing no authentication credentials.
@@ -25,7 +27,7 @@ public class SmallRyeJwtConfig {
      * by setting this property to 'true'.
      *
      */
-    @ConfigItem
-    public boolean silent;
+    @WithDefault("false")
+    boolean silent();
 
 }

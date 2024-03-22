@@ -17,6 +17,9 @@
 
     <properties>
         <mapstruct.version>1.4.2.Final</mapstruct.version>
+
+        <!-- Enable Develocity Predictive Test Selection -->
+        <develocity.pts.enabled>true</develocity.pts.enabled>
     </properties>
 
     <dependencies>

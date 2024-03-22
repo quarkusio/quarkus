@@ -41,7 +41,7 @@ public class PluginCommandFactory {
             case executable:
                 return plugin.getLocation().map(l -> new ShellCommand(plugin.getName(), Paths.get(l), output));
             default:
-                throw new IllegalStateException("Unknown plugin type!");
+                throw new IllegalStateException("Unknown plugin type");
         }
     }
 

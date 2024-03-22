@@ -55,7 +55,7 @@ public class PluginManagerSettings {
                 toRelativePath);
     }
 
-    public PluginManagerSettings withInteractivetMode(boolean interactiveMode) {
+    public PluginManagerSettings withInteractiveMode(boolean interactiveMode) {
         return new PluginManagerSettings(interactiveMode, pluginPrefix, fallbackJBangCatalog, remoteJBangCatalogs,
                 toRelativePath);
     }

@@ -31,7 +31,7 @@ public class JBangCommand implements PluginCommand {
         if (jbang.ensureJBangIsInstalled()) {
             return PluginCommand.super.call();
         } else {
-            output.error("Unable to find JBang! Command execution aborted!");
+            output.error("Unable to find JBang. Command execution aborted as it requires JBang.");
             return ExitCode.SOFTWARE;
         }
     }

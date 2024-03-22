@@ -52,7 +52,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         if (!jbang.isAvailable() && !jbang.isInstallable()) {
             // When jbang is not available / installable just return an empty catalog.
             // We don't even return the parsed one as plugins won't be able to run without jbang anyway.
-            return new JBangCatalog();
+            return JBangCatalog.empty();
         }
 
         JBangCatalog localCatalog = super.readCatalog(path);
@@ -76,7 +76,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         if (!jbang.isAvailable() && !jbang.isInstallable()) {
             // When jbang is not available / installable just return an empty catalog.
             // We don't even return the parsed one as plugins won't be able to run without jbang anyway.
-            return new JBangCatalog();
+            return JBangCatalog.empty();
         }
 
         Map<String, JBangCatalog> catalogs = new HashMap<>();
@@ -146,7 +146,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
 
         //If there are locally installed catalogs, then go through every single one of them
         //and collect the aliases.
-        //Unfortunaltely jbang can't return all alias in one go.
+        //Unfortunately jbang can't return all alias in one go.
         //This is because it currently omits `@catalog` suffix in some cases.
         if (!localCatalogs.isEmpty()) {
             Map<String, JBangAlias> aliases = new HashMap<>();

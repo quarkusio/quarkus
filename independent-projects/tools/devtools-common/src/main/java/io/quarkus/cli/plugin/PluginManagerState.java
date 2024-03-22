@@ -17,11 +17,10 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
-class PluginMangerState {
+class PluginManagerState {
 
-    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> currentDir,
+    PluginManagerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> currentDir,
             Supplier<QuarkusProject> quarkusProject) {
-        this.settings = settings;
         this.output = output;
         this.userHome = userHome;
         this.quarkusProject = quarkusProject;
@@ -35,7 +34,6 @@ class PluginMangerState {
         this.util = PluginManagerUtil.getUtil(settings);
     }
 
-    private final PluginManagerSettings settings;
     private final MessageWriter output;
     private final PluginManagerUtil util;
     private final Optional<Path> userHome;
@@ -73,7 +71,7 @@ class PluginMangerState {
         return allInstalledPlugins;
     }
 
-    public Map<String, Plugin> getInstalledPluigns() {
+    public Map<String, Plugin> getInstalledPlugins() {
         if (_installedPlugins == null) {
             _installedPlugins = installedPlugins();
         }
@@ -86,7 +84,7 @@ class PluginMangerState {
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
 
-    public Map<String, Plugin> getProjectPluigns() {
+    public Map<String, Plugin> getProjectPlugins() {
         if (_projectPlugins == null) {
             _projectPlugins = projectPlugins();
         }
@@ -99,7 +97,7 @@ class PluginMangerState {
                 .collect(Collectors.toMap(p -> p.getName(), p -> p))).orElse(Collections.emptyMap());
     }
 
-    public Map<String, Plugin> getUserPluigns() {
+    public Map<String, Plugin> getUserPlugins() {
         if (_userPlugins == null) {
             _userPlugins = userPlugins();
         }
@@ -228,7 +226,7 @@ class PluginMangerState {
 
     public PluginCatalog pluginCatalog(boolean userCatalog) {
         return (userCatalog ? getUserCatalog() : getProjectCatalog()).or(() -> getUserCatalog())
-                .orElseThrow(() -> new IllegalStateException("Unable to get project and user plugin catalogs!"));
+                .orElseThrow(() -> new IllegalStateException("Unable to get project and user plugin catalogs"));
     }
 
     public Optional<Path> getProjectRoot() {

@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 
 /**
  * This build item is used to specify one or more additional bean classes to be analyzed during bean discovery.
@@ -39,6 +40,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
      * @param beanClass
      * @return a new build item
      */
+    @CheckReturnValue
     public static AdditionalBeanBuildItem unremovableOf(Class<?> beanClass) {
         return new AdditionalBeanBuildItem(Collections.singletonList(beanClass.getName()), false, null);
     }
@@ -49,6 +51,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
      * @param beanClass
      * @return a new build item
      */
+    @CheckReturnValue
     public static AdditionalBeanBuildItem unremovableOf(String beanClass) {
         return new AdditionalBeanBuildItem(Collections.singletonList(beanClass), false, null);
     }

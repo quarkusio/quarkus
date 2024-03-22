@@ -15,7 +15,6 @@ import org.jboss.jandex.Type;
 
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -26,7 +25,6 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
 import io.quarkus.runtime.TlsConfig;
@@ -44,17 +42,6 @@ public class OtlpExporterProcessor {
                     otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
                     otelBuildConfig.traces().exporter().contains(CDI_VALUE) &&
                     exportBuildConfig.enabled();
-        }
-    }
-
-    @BuildStep
-    void createEndUserSpanProcessor(
-            BuildProducer<AdditionalBeanBuildItem> buildProducer,
-            OTelBuildConfig otelBuildConfig) {
-        if (otelBuildConfig.traces().eusp().enabled().orElse(Boolean.FALSE)) {
-            buildProducer.produce(
-                    AdditionalBeanBuildItem.unremovableOf(
-                            EndUserSpanProcessor.class));
         }
     }
 

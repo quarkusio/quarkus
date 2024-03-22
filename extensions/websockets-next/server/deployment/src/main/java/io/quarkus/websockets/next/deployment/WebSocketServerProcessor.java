@@ -68,6 +68,7 @@ import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
+import io.quarkus.websockets.next.runtime.WebSocketHttpServerOptionsCustomizer;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.smallrye.mutiny.Multi;
@@ -200,7 +201,9 @@ public class WebSocketServerProcessor {
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(Codecs.class, JsonTextMessageCodec.class, ConnectionManager.class).build();
+                .addBeanClasses(Codecs.class, JsonTextMessageCodec.class, ConnectionManager.class,
+                        WebSocketHttpServerOptionsCustomizer.class)
+                .build();
     }
 
     @BuildStep

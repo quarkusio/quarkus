@@ -27,7 +27,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private static final Logger LOG = Logger.getLogger(WebSocketEndpointBase.class);
 
-    protected final WebSocketConnection connection;
+    // Keep this field public - there's a problem with ConnectionArgumentProvider reading the protected field in the test mode
+    public final WebSocketConnection connection;
 
     protected final Codecs codecs;
 

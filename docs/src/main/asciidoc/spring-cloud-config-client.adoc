@@ -123,6 +123,7 @@ quarkus.spring-cloud-config.enabled=true
 # configure the URL where the Config Server listens to HTTP requests - this could have been left out since http://localhost:8888 is the default
 quarkus.spring-cloud-config.url=http://localhost:8888
 ----
+If you are using gradle then the gradle setting rootProject.name has precedence over the quarkus.application.name so be sure to set the gradle property to the application name you want spring cloud config server to see. 
 
 == Package and run the application
 

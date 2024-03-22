@@ -9,7 +9,7 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for Kubernetes should be used. (default to true)
-     *
+     * <p>
      * If this is true and kubernetes client is not configured then a kubernetes cluster
      * will be started and will be used.
      */
@@ -18,7 +18,7 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * The kubernetes api server version to use.
-     *
+     * <p>
      * If not set, Dev Services for Kubernetes will use the latest supported version of the given flavor.
      * see https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json
      */
@@ -36,6 +36,13 @@ public interface KubernetesDevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean overrideKubeconfig();
+
+    /**
+     * Indicates if the container would make connection to the host network.
+     * {@code Testcontainers.exposeHostPorts(...)} need to be still called to define the target port on the host
+     */
+    @WithDefault("false")
+    boolean accessToHost();
 
     /**
      * Indicates if the Kubernetes cluster managed by Quarkus Dev Services is shared.

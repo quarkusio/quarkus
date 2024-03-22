@@ -228,7 +228,7 @@ public class DevServicesKubernetesProcessor {
             timeout.ifPresent(container::withStartupTimeout);
 
             container.withEnv(config.containerEnv);
-
+            container.withAccessToHost(config.accessToHost);
             container.start();
 
             KubeConfig kubeConfig = KubeConfigUtils.parseKubeConfig(container.getKubeconfig());
@@ -292,6 +292,7 @@ public class DevServicesKubernetesProcessor {
         public Flavor flavor;
         public Optional<String> apiVersion;
         public boolean overrideKubeconfig;
+        public boolean accessToHost;
         public boolean shared;
         public String serviceName;
         public Map<String, String> containerEnv;
@@ -301,6 +302,7 @@ public class DevServicesKubernetesProcessor {
             this.serviceName = config.serviceName();
             this.apiVersion = config.apiVersion();
             this.overrideKubeconfig = config.overrideKubeconfig();
+            this.overrideKubeconfig = config.accessToHost();
             this.flavor = config.flavor();
             this.shared = config.shared();
             this.containerEnv = config.containerEnv();

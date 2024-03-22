@@ -162,7 +162,7 @@ import java.util.Set;
 public interface ExtensionsService {
 
     @GET
-    Set<Extension> getById(@QueryParam("id") Integer id);
+    Set<Extension> getById(@QueryParam("id") String id);
 
     @GET
     Set<Extension> getByName(@RestQuery String name); <1>
@@ -248,7 +248,7 @@ public interface ExtensionsService {
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    Set<Extension> postId(@FormParam("id") Integer id);
+    Set<Extension> postId(@FormParam("id") String id);
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)

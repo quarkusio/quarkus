@@ -41,7 +41,6 @@ public class QuarkusHttpFunctionTest {
     private static final String HOST_HEADER = "Host";
     private static final String HOST = "localhost";
     private static final String METHOD = "GET";
-
     private final Application application = mock(Application.class);
     private final HttpRequest request = mock(HttpRequest.class);
     private final HttpResponse response = mock(HttpResponse.class);
@@ -106,4 +105,5 @@ public class QuarkusHttpFunctionTest {
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         verify(response, timeout(PROCESSING_TIMEOUT)).setStatusCode(eq(status.code()), eq(status.reasonPhrase()));
     }
+
 }

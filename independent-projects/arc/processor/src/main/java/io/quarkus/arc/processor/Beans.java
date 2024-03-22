@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -1166,7 +1165,7 @@ public final class Beans {
             constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClassName), constructor.getThis());
             // NOTE: it seems that we do not need to handle final fields
             constructor.returnVoid();
-                        LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
+            LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
             return transformer.applyTo(classVisitor);
         }
 

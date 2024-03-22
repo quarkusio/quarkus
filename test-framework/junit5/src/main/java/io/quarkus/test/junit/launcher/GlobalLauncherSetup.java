@@ -31,7 +31,8 @@ public class GlobalLauncherSetup implements LauncherSessionListener {
                     @Override
                     public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
                         System.out.println("YOYO discovery started " + request);
-                        request.LauncherDiscoveryListener.super.launcherDiscoveryStarted(request);
+                        request.getDiscoveryListener().launcherDiscoveryStarted(request);
+                        //     request.LauncherDiscoveryListener.super.launcherDiscoveryStarted(request);
                     }
                 });
     }

@@ -22,6 +22,8 @@ import io.quarkus.security.test.cdi.app.SubclassWithDenyAll;
 import io.quarkus.security.test.cdi.app.SubclassWithPermitAll;
 import io.quarkus.security.test.cdi.app.SubclassWithoutAnnotations;
 import io.quarkus.security.test.cdi.app.TestException;
+import io.quarkus.security.test.cdi.app.interfaces.BeanImplementingInterface;
+import io.quarkus.security.test.cdi.app.interfaces.InterfaceWithSecuredMethod;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
@@ -46,10 +48,15 @@ public class CDIAccessDefaultTest {
     @Inject
     SubclassWithoutAnnotations unannotatedBean;
 
+    @Inject
+    BeanImplementingInterface beanImplementingInterface;
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSecuredMethods.class,
+                    .addClasses(BeanImplementingInterface.class,
+                            InterfaceWithSecuredMethod.class,
+                            BeanWithSecuredMethods.class,
                             IdentityMock.class,
                             AuthData.class,
                             SubclassWithDenyAll.class,
@@ -177,5 +184,18 @@ public class CDIAccessDefaultTest {
     public void shouldFailToAccessInheritedForbiddenOnUnannotatedClass() {
         assertFailureFor(() -> unannotatedBean.noAdditionalConstraints(), UnauthorizedException.class, ANONYMOUS);
         assertFailureFor(() -> unannotatedBean.noAdditionalConstraints(), ForbiddenException.class, USER, ADMIN);
+    }
+
+    @Test
+    public void shouldFailToAccessForbiddenOnInterface() {
+        assertFailureFor(() -> beanImplementingInterface.forbidden(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterface.forbidden(), ForbiddenException.class, USER, ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleOnInterface() {
+        assertFailureFor(() -> beanImplementingInterface.securedMethod(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterface.securedMethod(), ForbiddenException.class, USER);
+        assertSuccess(() -> beanImplementingInterface.securedMethod(), "accessibleForAdminOnly", ADMIN);
     }
 }

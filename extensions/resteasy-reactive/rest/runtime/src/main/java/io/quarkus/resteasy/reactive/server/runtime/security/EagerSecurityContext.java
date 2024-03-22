@@ -18,6 +18,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -35,6 +36,7 @@ import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.DefaultAuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -49,9 +51,11 @@ public class EagerSecurityContext {
     final AbstractPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
     final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
     final InjectableInstance<CurrentIdentityAssociation> identityAssociation;
+    final EagerSecurityInterceptorStorage interceptorStorage;
     final AuthorizationController authorizationController;
     final SecurityCheckStorage securityCheckStorage;
     final boolean doNotRunPermissionSecurityCheck;
+    final boolean isProactiveAuthDisabled;
 
     EagerSecurityContext(Event<AuthorizationFailureEvent> authorizationFailureEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
@@ -59,6 +63,9 @@ public class EagerSecurityContext {
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
             SecurityCheckStorage securityCheckStorage, HttpConfiguration httpConfig, BlockingSecurityExecutor blockingExecutor,
             HttpBuildTimeConfig buildTimeConfig, Instance<HttpSecurityPolicy> installedPolicies) {
+        var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
+        this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
+        this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
         this.securityCheckStorage = securityCheckStorage;

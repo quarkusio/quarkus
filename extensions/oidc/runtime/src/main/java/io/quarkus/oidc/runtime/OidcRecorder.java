@@ -41,7 +41,6 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -49,7 +48,6 @@ import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
-import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -105,10 +103,6 @@ public class OidcRecorder {
                         });
             }
         };
-    }
-
-    public RuntimeValue<MethodDescription> methodInfoToDescription(String className, String methodName, String[] paramTypes) {
-        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
     }
 
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
@@ -599,14 +593,19 @@ public class OidcRecorder {
         return false;
     }
 
-    public Consumer<RoutingContext> createTenantResolverInterceptor(String tenantId) {
-        return new Consumer<RoutingContext>() {
+    public Function<String, Consumer<RoutingContext>> tenantResolverInterceptorCreator() {
+        return new Function<String, Consumer<RoutingContext>>() {
             @Override
-            public void accept(RoutingContext routingContext) {
-                LOG.debugf("@Tenant annotation set a '%s' tenant id on the %s request path", tenantId,
-                        routingContext.request().path());
-                routingContext.put(OidcUtils.TENANT_ID_SET_BY_ANNOTATION, tenantId);
-                routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+            public Consumer<RoutingContext> apply(String tenantId) {
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        LOG.debugf("@Tenant annotation set a '%s' tenant id on the %s request path", tenantId,
+                                routingContext.request().path());
+                        routingContext.put(OidcUtils.TENANT_ID_SET_BY_ANNOTATION, tenantId);
+                        routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+                    }
+                };
             }
         };
     }

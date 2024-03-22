@@ -480,6 +480,87 @@ quarkus.http.auth.permission.bearer.auth-mechanism=bearer
 
 Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer`, or `form`.
 
+=== Endpoint-specific authentication mechanisms
+
+It is possible to select authentication mechanism specific for each Jakarta REST endpoint and Jakarta REST resource with annotation.
+This feature is only enabled when <<proactive-auth>> is disabled, for authentication selection must happen after a REST endpoint has been matched.
+Here is how you can select <<openid-connect-authentication>> mechanism per a REST endpoint basis:
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false
+
+# combine HTTP permissions with the endpoint-specific authentication mechanism
+quarkus.http.auth.policy.roles1.roles-allowed=admin
+quarkus.http.auth.permission.roles1.paths=/oidc/http-perms-with-code-flow
+quarkus.http.auth.permission.roles1.applies-to=JAXRS <1>
+quarkus.http.auth.permission.roles1.policy=roles1
+quarkus.http.auth.permission.roles1.methods=GET <2>
+----
+<1> Delay this policy's permission check after the endpoint-specific authentication mechanism has been selected.
+<2> Make the `roles1` permission match only the endpoint annotated with the `@CodeFlow` annotation.
+Unannotated endpoints must avoid the delay caused by the `applies-to=JAXRS` option.
+
+[source,java]
+----
+import io.quarkus.oidc.Bearer;
+import io.quarkus.oidc.CodeFlow;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("oidc")
+public class OidcResource1 {
+
+    @GET
+    @Bearer <1> <2>
+    @Path("bearer")
+    public String bearerAuthMechanism() {
+        return "bearer";
+    }
+
+    @GET
+    @RolesAllowed("admin") <3>
+    @CodeFlow <4>
+    @Path("code-flow")
+    public String codeFlowAuthMechanism() {
+        return "code-flow";
+    }
+
+    @GET
+    @CodeFlow <5>
+    @Path("http-perms-with-code-flow")
+    public String httpPermsWithCodeFlow() {
+        return "unreachable";
+    }
+}
+----
+<1> The REST endpoint `/oidc/bearer` can only ever be accessed by using the xref:security-oidc-bearer-token-authentication.adoc[Bearer token authentication].
+<2> This endpoint requires authentication, because when no standard security annotation accompanies the `@Bearer` annotation, the `@Authenticated` annotation is added by default.
+<3> The `@CodeFlow` annotation can be combined with any other standard security annotation like `@RolesAllowed`, `@PermissionsAllowed` and others.
+<4> The REST endpoint `/oidc/code-flow` can only ever be accessed by using the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism].
+<5> The HTTP permission `roles1` secures the `/oidc/http-perms-with-code-flow` request path, therefore the `admin` role is required.
+
+.Supported authentication mechanism annotations
+|===
+^|Authentication mechanism^| Annotation
+
+s|Basic authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.Basic`
+s|Form-based authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.Form`
+s|Mutual TLS authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.MTLS`
+s|WebAuthn authentication mechanism ^|`io.quarkus.security.webauthn.WebAuthn`
+s|Bearer token authentication mechanism ^|`io.quarkus.oidc.Bearer`
+s|OIDC authorization code flow mechanism ^|`io.quarkus.oidc.CodeFlow`
+|===
+
+TIP: Quarkus automatically secures endpoints annotated with the authentication mechanism annotation. When no standard security annotation is present on the REST endpoint and resource, the `io.quarkus.security.Authenticated` annotation is added for you.
+
+It is also possible to use the `io.quarkus.vertx.http.runtime.security.HttpAuthMechanism` annotation to select any authentication mechanism based on its scheme.
+Annotation-based analogy to the `quarkus.http.auth.permission.basic.auth-mechanism=basic` configuration property is the `@HttpAuthMechanism("basic")` annotation.
+
+NOTE: For consistency with various Jakarta EE specifications, it is recommended to always repeat annotations instead of relying on annotation inheritance.
+
+[[proactive-auth]]
 == Proactive authentication
 
 Proactive authentication is enabled in Quarkus by default.

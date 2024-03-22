@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MAIN_HTTP;
+import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.RANDOM_PORT_MANAGEMENT;
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 
 import java.io.File;
@@ -8,8 +10,19 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
 import java.util.regex.Pattern;
@@ -35,7 +48,12 @@ import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
-import io.quarkus.runtime.*;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.LiveReloadConfig;
+import io.quarkus.runtime.QuarkusBindException;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -64,6 +82,7 @@ import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Closeable;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
@@ -172,6 +191,7 @@ public class VertxHttpRecorder {
     private static HttpServerOptions httpManagementServerOptions;
 
     private static final List<Long> refresTaskIds = new CopyOnWriteArrayList<>();
+
     final HttpBuildTimeConfig httpBuildTimeConfig;
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<HttpConfiguration> httpConfiguration;
@@ -629,7 +649,6 @@ public class VertxHttpRecorder {
         }
 
         if (httpManagementServerOptions != null) {
-
             vertx.createHttpServer(httpManagementServerOptions)
                     .requestHandler(managementRouter)
                     .listen(ar -> {
@@ -647,9 +666,21 @@ public class VertxHttpRecorder {
                             }
 
                             actualManagementPort = ar.result().actualPort();
+                            if (actualManagementPort != httpManagementServerOptions.getPort()) {
+                                var managementPortSystemProperties = new PortSystemProperties();
+                                managementPortSystemProperties.set("management", actualManagementPort, launchMode);
+                                ((VertxInternal) vertx).addCloseHook(new Closeable() {
+                                    @Override
+                                    public void close(Promise<Void> completion) {
+                                        managementPortSystemProperties.restore();
+                                        completion.complete();
+                                    }
+                                });
+                            }
                             managementInterfaceFuture.complete(ar.result());
                         }
                     });
+
         } else {
             managementInterfaceFuture.complete(null);
         }
@@ -672,8 +703,7 @@ public class VertxHttpRecorder {
         httpMainDomainSocketOptions = createDomainSocketOptions(httpBuildTimeConfig, httpConfiguration,
                 websocketSubProtocols);
         HttpServerOptions tmpSslConfig = HttpServerOptionsUtils.createSslOptions(httpBuildTimeConfig, httpConfiguration,
-                launchMode,
-                websocketSubProtocols);
+                launchMode, websocketSubProtocols);
 
         // Customize
         if (Arc.container() != null) {
@@ -891,7 +921,7 @@ public class VertxHttpRecorder {
         if (managementConfig != null) {
             serverListeningMessage.append(
                     String.format(". Management interface listening on http%s://%s:%s.", managementConfig.isSsl() ? "s" : "",
-                            managementConfig.getHost(), managementConfig.getPort()));
+                            managementConfig.getHost(), actualManagementPort));
         }
 
         Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
@@ -906,7 +936,7 @@ public class VertxHttpRecorder {
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfiguration.determinePort(launchMode);
-        options.setPort(port == 0 ? -1 : port);
+        options.setPort(port == 0 ? RANDOM_PORT_MAIN_HTTP : port);
 
         HttpServerOptionsUtils.applyCommonOptions(options, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
@@ -921,7 +951,7 @@ public class VertxHttpRecorder {
         }
         HttpServerOptions options = new HttpServerOptions();
         int port = httpConfiguration.determinePort(launchMode);
-        options.setPort(port == 0 ? -1 : port);
+        options.setPort(port == 0 ? RANDOM_PORT_MANAGEMENT : port);
 
         HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(options, buildTimeConfig, httpConfiguration,
                 websocketSubProtocols);

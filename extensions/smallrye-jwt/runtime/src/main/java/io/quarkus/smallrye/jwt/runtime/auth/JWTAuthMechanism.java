@@ -46,11 +46,11 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
      */
     private final boolean propagateTokenCredentialWithDuplicatedCtx;
     @Inject
-    private JWTAuthContextInfo authContextInfo;
+    JWTAuthContextInfo authContextInfo;
     private final boolean silent;
 
     public JWTAuthMechanism(SmallRyeJwtConfig config) {
-        this.silent = config == null ? false : config.silent;
+        this.silent = config == null ? false : config.silent();
         // we use system property in order to keep this option internal and avoid introducing SPI
         this.propagateTokenCredentialWithDuplicatedCtx = Boolean
                 .getBoolean("io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism." +

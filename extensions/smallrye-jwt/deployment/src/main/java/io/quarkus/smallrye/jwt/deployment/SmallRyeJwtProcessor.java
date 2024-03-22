@@ -91,7 +91,7 @@ class SmallRyeJwtProcessor {
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        if (config.enabled) {
+        if (config.enabled()) {
             AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
             unremovable.addBeanClass(MpJwtValidator.class);
             unremovable.addBeanClass(JsonWebTokenCredentialProducer.class);
@@ -156,7 +156,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     JCAProviderBuildItem registerRSASigProvider() {
-        return new JCAProviderBuildItem(config.rsaSigProvider);
+        return new JCAProviderBuildItem(config.rsaSigProvider());
     }
 
     @BuildStep
@@ -213,7 +213,7 @@ class SmallRyeJwtProcessor {
         SmallRyeJwtBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 }

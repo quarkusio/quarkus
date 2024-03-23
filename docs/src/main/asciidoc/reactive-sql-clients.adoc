@@ -72,7 +72,7 @@ public class Fruit {
 
 == Prerequisites
 
-{prerequisites-docker}
+:prerequisites-docker:
 include::{includes}/prerequisites.adoc[]
 
 [TIP]

@@ -38,7 +38,17 @@ IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider r
 The application shall manage fruit entities:
 
 [source,java]
+.src/main/java/org/acme/reactive/crud/Fruit.java
 ----
+package org.acme.reactive.crud;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
+
 public class Fruit {
 
     public Long id;
@@ -46,6 +56,7 @@ public class Fruit {
     public String name;
 
     public Fruit() {
+        // default constructor.
     }
 
     public Fruit(String name) {
@@ -59,15 +70,31 @@ public class Fruit {
 }
 ----
 
+== Prerequisites
+
+:prerequisites-docker:
+include::{includes}/prerequisites.adoc[]
+
 [TIP]
 ====
-Do you need a ready-to-use PostgreSQL server to try out the examples?
+If you start the application in dev mode, Quarkus provides you with a https://quarkus.io/guides/databases-dev-services[zero-config database] out of the box.
+
+You might also start a database up front:
 
 [source,bash]
 ----
 docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 ====
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `getting-started-reactive-crud` link:{quickstarts-tree-url}/getting-started-reactive-crud[directory].
 
 == Installing
 
@@ -115,7 +142,7 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-rest-jackson` extension:
+Consequently, you must also add the `quarkus-rest-jackson` extension:
 
 :add-extension-extensions: rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
@@ -152,46 +179,83 @@ quarkus.datasource.password=quarkus_test
 quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
 ----
 
-With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx.mutiny.pgclient.PgPool` instance:
+With that you can create your `FruitResource` skeleton and inject a `io.vertx.mutiny.pgclient.PgPool` instance:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
+package org.acme.reactive.crud;
+
+import java.net.URI;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.Response.Status;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.pgclient.PgPool;
+
 @Path("fruits")
 public class FruitResource {
 
-    @Inject
-    io.vertx.mutiny.pgclient.PgPool client;
+    private final PgPool client;
+
+    public FruitResource(PgPool client) {
+        this.client = client;
+    }
 }
 ----
 
 == Database schema and seed data
 
-Before we implement the REST endpoint and data management code, we need to set up the database schema.
-It would also be convenient to have some data inserted up-front.
+Before we implement the REST endpoint and data management code, we must set up the database schema.
+It would also be convenient to have some data inserted up front.
 
 For production, we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]
-.src/main/java/org/acme/vertx/FruitResource.java
+./src/main/java/org/acme/reactive/crud/DBInit.java
 ----
-@Inject
-@ConfigProperty(name = "myapp.schema.create", defaultValue = "true") // <1>
-boolean schemaCreate;
+package org.acme.reactive.crud;
 
-void config(@Observes StartupEvent ev) {
-    if (schemaCreate) {
-        initdb();
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.mutiny.pgclient.PgPool;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+
+@ApplicationScoped
+public class DBInit {
+
+    private final PgPool client;
+    private final boolean schemaCreate;
+
+    public DBInit(PgPool client, @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") boolean schemaCreate) {
+        this.client = client;
+        this.schemaCreate = schemaCreate;
+    }
+
+    void onStart(@Observes StartupEvent ev) {
+        if (schemaCreate) {
+            initdb();
+        }
+    }
+
+    private void initdb() {
+        // TODO
     }
 }
-
-private void initdb() {
-    // TODO
-}
 ----
 
-TIP: You may override the default value of the `myapp.schema.create` property in the `application.properties` file.
+TIP: You might override the default value of the `myapp.schema.create` property in the `application.properties` file.
 
 Almost ready!
 To initialize the DB in development mode, we will use the client simple `query` method.
@@ -201,15 +265,19 @@ It returns a `Uni` and thus can be composed to execute queries sequentially:
 ----
 client.query("DROP TABLE IF EXISTS fruits").execute()
     .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')").execute())
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')").execute())
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Kiwi')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Durian')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pomelo')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Lychee')").execute())
     .await().indefinitely();
 ----
 
-NOTE: Wondering why we need to block until the latest query is completed?
-This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
+[NOTE]
+====
+Wondering why we must block until the latest query is completed?
+This code is part of a method that `@Observes` the `StartupEvent` and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.
+====
 
 That's it!
 So far we have seen how to configure a pooled client and execute simple queries.
@@ -223,44 +291,26 @@ In development mode, the database is set up with a few rows in the `fruits` tabl
 To retrieve all the data, we will use the `query` method again:
 
 [source,java]
+./src/main/java/org/acme/reactive/crud/Fruit.java
 ----
-Uni<RowSet<Row>> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute();
+    public static Multi<Fruit> findAll(PgPool client) {
+        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
+                .onItem().transformToMulti(set -> Multi.createFrom().iterable(set)) // <1>
+                .onItem().transform(Fruit::from); // <2>
+    }
+
+    private static Fruit from(Row row) {
+        return new Fruit(row.getLong("id"), row.getString("name"));
+    }
 ----
 
-When the operation completes, we will get a `RowSet` that has all the rows buffered in memory.
-A `RowSet` is an `java.lang.Iterable<Row>` and thus can be converted to a `Multi`:
-
-[source,java]
-----
-Multi<Fruit> fruits = rowSet
-  .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
-  .onItem().transform(Fruit::from);
-----
+<1> Transform the `io.vertx.mutiny.sqlclient.RowSet` to a `Multi<Row>`.
+<2> Convert each `io.vertx.mutiny.sqlclient.Row` to a `Fruit`.
 
 The `Fruit#from` method converts a `Row` instance to a `Fruit` instance.
-It is extracted as a convenience for the implementation of the other data management methods:
+It is extracted as a convenience for the implementation of the other data management methods.
 
-[source,java]
-.src/main/java/org/acme/vertx/Fruit.java
-----
-private static Fruit from(Row row) {
-    return new Fruit(row.getLong("id"), row.getString("name"));
-}
-----
-
-Putting it all together, the `Fruit.findAll` method looks like:
-
-[source,java]
-.src/main/java/org/acme/vertx/Fruit.java
-----
-public static Multi<Fruit> findAll(PgPool client) {
-    return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
-            .onItem().transformToMulti(set -> Multi.createFrom().iterable(set))
-            .onItem().transform(Fruit::from);
-}
-----
-
-And the endpoint to get all fruits from the backend:
+Then, add the endpoint to get all fruits from the backend:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
@@ -279,7 +329,7 @@ Lastly, open your browser and navigate to http://localhost:8080/fruits, you shou
 
 [source,json]
 ----
-[{"id":3,"name":"Apple"},{"id":1,"name":"Orange"},{"id":2,"name":"Pear"}]
+[{"id":2,"name":"Durian"},{"id":1,"name":"Kiwi"},{"id":4,"name":"Lychee"},{"id":3,"name":"Pomelo"}]
 ----
 
 === Prepared queries
@@ -383,16 +433,17 @@ public Uni<Response> delete(Long id) {
 }
 ----
 
-With `GET`, `POST` and `DELETE` methods implemented, we may now create a minimal web page to try the RESTful application out.
+With `GET`, `POST` and `DELETE` methods implemented, we can now create a minimal web page to try the RESTful application out.
 We will use https://jquery.com/[jQuery] to simplify interactions with the backend:
 
 [source,html]
+./src/main/resources/META-INF/resources/fruits.html
 ----
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Reactive PostgreSQL Client - Quarkus</title>
+    <title>Reactive REST - Quarkus</title>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"
             integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script type="application/javascript" src="fruits.js"></script>
@@ -413,6 +464,8 @@ We will use https://jquery.com/[jQuery] to simplify interactions with the backen
 </html>
 ----
 
+TIP: Quarkus automatically serves static resources located under the `META-INF/resources` directory.
+
 In the JavaScript code, we need a function to refresh the list of fruits when:
 
 * the page is loaded, or
@@ -420,6 +473,7 @@ In the JavaScript code, we need a function to refresh the list of fruits when:
 * a fruit is deleted.
 
 [source,javascript]
+./src/main/resources/META-INF/resources/fruits.js
 ----
 function refresh() {
     $.get('/fruits', function (fruits) {
@@ -744,7 +798,7 @@ quarkus.datasource.reactive.max-lifetime=PT60M
 
 Sometimes, the database connection pool cannot be configured only by declaration.
 
-You may need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
+For example, you might have to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
 
 In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
 

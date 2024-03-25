@@ -44,16 +44,12 @@ public class LiquibaseMongodbFactory {
             return  new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
         }
 
-        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
-            return new DirectoryResourceAccessor(Paths.get("/"));
-        }
-
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
 
         liquibaseMongodbBuildTimeConfig.searchPath.stream()
                 .map(searchPath -> {
                     try {
-                        return new DirectoryResourceAccessor(Paths.get("searchPath"));
+                        return new DirectoryResourceAccessor(Paths.get(searchPath));
                     } catch (FileNotFoundException e) {
                         return null;
                     }

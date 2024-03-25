@@ -40,8 +40,14 @@ public class LiquibaseMongodbFactory {
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
 
-        if (liquibaseMongodbBuildTimeConfig.changeLog.startsWith("classpath:") || !liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")) {
-            return  new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        if (liquibaseMongodbBuildTimeConfig.changeLog.startsWith("classpath:")) {
+            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        }
+
+        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:") &&
+                liquibaseMongodbBuildTimeConfig.searchPath.size() == 1 &&
+                liquibaseMongodbBuildTimeConfig.searchPath.get(0).equals("/")) {
+            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
         }
 
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();

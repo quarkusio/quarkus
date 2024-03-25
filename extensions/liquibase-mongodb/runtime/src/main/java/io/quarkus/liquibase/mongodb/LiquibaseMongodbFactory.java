@@ -3,6 +3,7 @@ package io.quarkus.liquibase.mongodb;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.resource.CompositeResourceAccessor;
 import liquibase.resource.DirectoryResourceAccessor;
 import liquibase.resource.ResourceAccessor;
 
@@ -36,13 +38,30 @@ public class LiquibaseMongodbFactory {
         this.mongoClientConfig = mongoClientConfig;
     }
 
-    private ResourceAccessor resolveResourceAccessor(String changeLog) throws FileNotFoundException {
+    private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
 
-        if (changeLog.startsWith("filesystem:")){
+        if (liquibaseMongodbBuildTimeConfig.changeLog.startsWith("classpath:") || !liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")) {
+            return  new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        }
+
+        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
             return new DirectoryResourceAccessor(Paths.get("/"));
         }
 
-        return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
+        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
+
+        liquibaseMongodbBuildTimeConfig.searchPath.stream()
+                .map(searchPath -> {
+                    try {
+                        return new DirectoryResourceAccessor(Paths.get("searchPath"));
+                    } catch (FileNotFoundException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .forEach(compositeResourceAccessor::addResourceAccessor);
+
+        return compositeResourceAccessor;
     }
 
     private String parseChangeLog(String changeLog){
@@ -58,7 +77,7 @@ public class LiquibaseMongodbFactory {
     }
 
     public Liquibase createLiquibase() {
-        try (ResourceAccessor resourceAccessor = resolveResourceAccessor(liquibaseMongodbBuildTimeConfig.changeLog)) {
+        try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
             String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog);
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
 

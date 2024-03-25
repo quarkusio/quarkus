@@ -38,7 +38,7 @@ public class LiquibaseMongodbFactory {
 
     private ResourceAccessor resolveResourceAccessor(String changeLog) throws FileNotFoundException {
 
-        if (changeLog.contains("filesystem:")){
+        if (changeLog.startsWith("filesystem:")){
             return new DirectoryResourceAccessor(Paths.get("/"));
         }
 
@@ -46,11 +46,11 @@ public class LiquibaseMongodbFactory {
     }
 
     private String parseChangeLog(String changeLog){
-        if (changeLog.contains("filesystem:")){
+        if (changeLog.startsWith("filesystem:")){
             return changeLog.replace("filesystem:", "");
         }
 
-        if (changeLog.contains("classpath:")){
+        if (changeLog.startsWith("classpath:")){
             return changeLog.replace("classpath:", "");
         }
 

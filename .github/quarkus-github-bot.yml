@@ -396,7 +396,7 @@ triage:
     - id: redis
       labels: [area/redis]
       title: "redis"
-      notify: [machi1990, gsmet, cescoffier]
+      notify: [machi1990, Ladicek, cescoffier]
       directories:
         - extensions/redis-client/
         - integration-tests/redis-client/

@@ -51,9 +51,4 @@ public interface TracesBuildConfig {
      */
     @WithDefault(SamplerType.Constants.PARENT_BASED_ALWAYS_ON)
     String sampler();
-
-    /**
-     * EndUser SpanProcessor configurations.
-     */
-    EndUserSpanProcessorConfig eusp();
 }

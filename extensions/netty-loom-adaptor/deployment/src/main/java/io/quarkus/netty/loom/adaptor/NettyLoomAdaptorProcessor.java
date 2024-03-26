@@ -119,7 +119,7 @@ public class NettyLoomAdaptorProcessor {
      *
      * cache = new PoolThreadCache(
      * heapArena, directArena, smallCacheSize, normalCacheSize,
-     * DEFAULT_MAX_CACHED_BUFFER_CAPACITY, DEFAULT_CACHE_TRIM_INTERVAL);
+     * DEFAULT_MAX_CACHED_BUFFER_CAPACITY, DEFAULT_CACHE_TRIM_INTERVAL, true);
      * threadCaches.put(currentCarrierThread, cache);
      * if (DEFAULT_CACHE_TRIM_INTERVAL_MILLIS > 0) {
      * EventExecutor executor = ThreadExecutorMap.currentExecutor();
@@ -469,8 +469,10 @@ public class NettyLoomAdaptorProcessor {
                     "DEFAULT_MAX_CACHED_BUFFER_CAPACITY", "I");
             mv.visitFieldInsn(GETSTATIC, "io/netty/buffer/PooledByteBufAllocator",
                     "DEFAULT_CACHE_TRIM_INTERVAL", "I");
+            // useFinalizer is left true as it was before https://github.com/netty/netty/pull/13510
+            mv.visitInsn(ICONST_1);
             mv.visitMethodInsn(INVOKESPECIAL, "io/netty/buffer/PoolThreadCache", "<init>",
-                    "(Lio/netty/buffer/PoolArena;Lio/netty/buffer/PoolArena;IIII)V", false);
+                    "(Lio/netty/buffer/PoolArena;Lio/netty/buffer/PoolArena;IIIIZ)V", false);
             mv.visitVarInsn(ASTORE, 3);
             mv.visitVarInsn(ALOAD, 7);
             mv.visitVarInsn(ALOAD, 5);

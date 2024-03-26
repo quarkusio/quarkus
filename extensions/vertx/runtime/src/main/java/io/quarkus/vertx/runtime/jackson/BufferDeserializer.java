@@ -25,7 +25,7 @@ import io.vertx.core.buffer.Buffer;
 /**
  * Copied from {@code io.vertx.core.json.jackson.BufferDeserializer} as that class is package private
  */
-class BufferDeserializer extends JsonDeserializer<Buffer> {
+public class BufferDeserializer extends JsonDeserializer<Buffer> {
 
     @Override
     public Buffer deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {

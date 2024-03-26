@@ -16,6 +16,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import io.quarkus.it.jpa.postgresql.defaultpu.Address;
+import io.quarkus.it.jpa.postgresql.defaultpu.Customer;
+import io.quarkus.it.jpa.postgresql.defaultpu.NotAnEntityNotReferenced;
+import io.quarkus.it.jpa.postgresql.defaultpu.WorkAddress;
+
 /**
  * Various tests for the JPA integration.
  * WARNING: these tests will ONLY pass in native mode, as it also verifies reflection non-functionality.
@@ -32,8 +37,9 @@ public class JPATestReflectionEndpoint {
         makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(errors);
         makeSureAnnotatedEmbeddableAreAccessibleViaReflection(errors);
         String packageName = this.getClass().getPackage().getName();
-        makeSureClassAreAccessibleViaReflection(packageName + ".Human", "Unable to enlist @MappedSuperclass", errors);
-        makeSureClassAreAccessibleViaReflection(packageName + ".Animal", "Unable to enlist entity superclass", errors);
+        makeSureClassAreAccessibleViaReflection(packageName + ".defaultpu.Human", "Unable to enlist @MappedSuperclass", errors);
+        makeSureClassAreAccessibleViaReflection(packageName + ".defaultpu.Animal", "Unable to enlist entity superclass",
+                errors);
         if (errors.isEmpty()) {
             return "OK";
         } else {

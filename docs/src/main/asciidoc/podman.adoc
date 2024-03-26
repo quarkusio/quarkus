@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 
 https://podman.io/[Podman] is a daemonless and rootless container engine for developing, managing, and running OCI Containers on Linux, Windows and OSX
 
-Podman's approach varies dependent on the operating system you are using and also varied over time dpeendent on version of Podman. Thus albeit Podman comes with a cli based installer and available in various custom package installers (like brew or Linux package mangers) our default recommendation is to use the official Podman Desktop installer. This will ensure you get the best Developer Joy experience and support for your operating system.
+Podman's install approach varies depending on the operating system you are using, and the required steps also change over time depending on the version of Podman. Although Podman comes with a cli-only installer and is available in various package installers (like brew or Linux package managers) our default recommendation is to use the official Podman Desktop installer. This will ensure you get the best Developer Joy experience and support for your operating system.
 
 See https://podman-desktop.io/downloads/ for the latest version of Podman Desktop or pick the version that suits your operating system from the list below:
 

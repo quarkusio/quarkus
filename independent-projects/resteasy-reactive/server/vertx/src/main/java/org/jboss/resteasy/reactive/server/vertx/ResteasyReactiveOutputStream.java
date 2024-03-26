@@ -13,7 +13,6 @@ import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -39,7 +38,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
-        this.appendBuffer = AppendBuffer.withMinChunks(PooledByteBufAllocator.DEFAULT,
+        this.appendBuffer = AppendBuffer.withMinChunks(
                 context.getDeployment().getResteasyReactiveConfig().getMinChunkSize(),
                 context.getDeployment().getResteasyReactiveConfig().getOutputBufferSize());
         request.response().exceptionHandler(new Handler<Throwable>() {

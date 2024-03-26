@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
+import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
@@ -52,27 +53,20 @@ public class LiquibaseMongodbFactory {
 
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
 
-        liquibaseMongodbBuildTimeConfig.searchPath.stream()
-                .map(searchPath -> {
-                    try {
-                        return new DirectoryResourceAccessor(Paths.get(searchPath));
-                    } catch (FileNotFoundException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .forEach(compositeResourceAccessor::addResourceAccessor);
+        for (String searchPath: liquibaseMongodbBuildTimeConfig.searchPath){
+            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
+        }
 
         return compositeResourceAccessor;
     }
 
     private String parseChangeLog(String changeLog){
         if (changeLog.startsWith("filesystem:")){
-            return changeLog.replace("filesystem:", "");
+            return StringUtil.changePrefix(changeLog, "filesystem:", "");
         }
 
         if (changeLog.startsWith("classpath:")){
-            return changeLog.replace("classpath:", "");
+            return StringUtil.changePrefix(changeLog, "classpath:", "");
         }
 
         return changeLog;

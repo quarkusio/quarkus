@@ -2242,8 +2242,16 @@ public class Endpoint {
 }
 ----
 
-NOTE: exception mappers defined in REST endpoint classes will only be called if the
-exception is thrown in the same class. If you want to define global exception mappers,
+[TIP]
+====
+By default, methods annotated with `@ServerExceptionMapper` do **not** run CDI interceptors that apply to the other methods of the class (like ones needed for implementing security method level security).
+
+Users however can opt into interceptors by adding the corresponding annotations to the method.
+====
+
+[NOTE]
+====
+Εxception mappers defined in REST endpoint classes will only be called if the  exception is thrown in the same class. If you want to define global exception mappers,
 simply define them outside a REST endpoint class:
 
 [source,java]
@@ -2262,6 +2270,7 @@ class ExceptionMappers {
 ----
 
 You can also declare link:{jaxrsspec}#exceptionmapper[exception mappers in the Jakarta REST way].
+====
 
 Your exception mapper may declare any of the following parameter types:
 

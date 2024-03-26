@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.extest.runtime.config.AnotherPrefixConfig;
+import io.quarkus.extest.runtime.config.DoNotRecordEnvConfigSource;
 import io.quarkus.extest.runtime.config.MyEnum;
 import io.quarkus.extest.runtime.config.NestedConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
@@ -52,10 +53,9 @@ public class ConfiguredBeanTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ConfiguredBean.class)
-                    // Don't change this to types, because of classloader class cast exception.
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource\n" +
-                                    "io.quarkus.extest.runtime.config.RecordQuarkusSystemPropertiesConfigSource")
+                    .addAsServiceProvider(ConfigSource.class,
+                            OverrideBuildTimeConfigSource.class,
+                            DoNotRecordEnvConfigSource.class)
                     .addAsResource("application.properties"));
 
     @Inject
@@ -364,11 +364,16 @@ public class ConfiguredBeanTest {
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
         assertEquals("1234", defaultValues.getValue("%test.my.prop"));
         assertEquals("1234", config.getValue("my.prop", String.class));
+
+        // runtime properties coming from env must not be recorded
         assertNull(defaultValues.getValue("should.not.be.recorded"));
         assertNull(defaultValues.getValue("SHOULD_NOT_BE_RECORDED"));
-        assertEquals("value", defaultValues.getValue("quarkus.mapping.rt.record"));
-        assertEquals("prod", defaultValues.getValue("%prod.quarkus.mapping.rt.record"));
-        assertEquals("dev", defaultValues.getValue("%dev.quarkus.mapping.rt.record"));
+        assertNull(defaultValues.getValue("quarkus.rt.do-not-record"));
+        assertEquals("value", config.getRawValue("quarkus.rt.do-not-record"));
+        assertNull(defaultValues.getValue("quarkus.mapping.rt.do-not-record"));
+        assertNull(defaultValues.getValue("%prod.quarkus.mapping.rt.do-not-record"));
+        assertNull(defaultValues.getValue("%dev.quarkus.mapping.rt.do-not-record"));
+        assertEquals("value", config.getRawValue("quarkus.mapping.rt.do-not-record"));
     }
 
     @Test

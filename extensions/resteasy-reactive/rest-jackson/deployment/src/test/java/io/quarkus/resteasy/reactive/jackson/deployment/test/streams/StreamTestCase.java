@@ -175,6 +175,14 @@ public class StreamTestCase {
     }
 
     @Test
+    public void testRestMultiEmptyJson() {
+        when().get(uri.toString() + "streams/restmulti/empty")
+                .then().statusCode(222)
+                .body(is("[]"))
+                .header("foo", "bar");
+    }
+
+    @Test
     public void testStreamJsonMultiFromMulti() {
         when().get(uri.toString() + "streams/stream-json/multi")
                 .then().statusCode(HttpStatus.SC_OK)

@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 
@@ -42,6 +43,13 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.getCodeGrant().setHeaders(Map.of("X-Custom", "XCustomHeaderValue"));
             config.getCodeGrant().setExtraParams(Map.of("extra-param", "extra-param-value"));
             config.getAuthentication().setInternalIdTokenLifespan(Duration.ofSeconds(301));
+            return Uni.createFrom().item(config);
+        } else if (path.endsWith("bearer-certificate-full-chain-root-only")) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("bearer-certificate-full-chain-root-only");
+            config.getCertificateChain().setTrustStoreFile(Path.of("truststore-rootcert.p12"));
+            config.getCertificateChain().setTrustStorePassword("storepassword");
+            config.getCertificateChain().setLeafCertificateName("www.quarkustest.com");
             return Uni.createFrom().item(config);
         }
 

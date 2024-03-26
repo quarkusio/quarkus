@@ -89,7 +89,7 @@ public interface OTelRuntimeConfig {
      * <p>
      * The default, by not defining a property value, will mean the use of the old legacy semantic attribute names.
      */
-    @WithName("otel.semconv-stability.opt-in")
+    @WithName("semconv-stability.opt-in")
     Optional<String> otelSemconvStabilityOptIn();
 
     /**

@@ -1,0 +1,196 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+
+[id="deploy-openshift-native-executable"]
+= Deploy a Quarkus native application on OpenShift
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud,native
+
+Deploy native Quarkus applications to OpenShift by using the Docker build strategy.
+
+The `quarkus-container-image-openshift` extension uploads a native binary and the Dockerfile to OpenShift.
+Then, OpenShift performs the build to create the container image.
+
+To use this strategy, you must build a native executable on your machine that matches the OpenShift architecture.
+First, it needs to be a Linux executable.
+Then, this executable must match the architecture used by your OpenShift nodes.
+In general, `linux/amd64` executables work.
+
+Your Quarkus project includes pre-generated Dockerfiles with instructions.
+To use a custom Dockerfile, add the file in the `src/main/docker` directory or anywhere inside the module, and set the path to your Dockerfile by using the `quarkus.openshift.native-dockerfile` property.
+
+For information about the Docker build strategy, see xref:deployment-to-openshift.adoc#overviewbuildstrategies[Quarkus deployment to OpenShift].
+
+
+== Prerequisites
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+* Access to an OpenShift cluster and the latest compatible version of the `oc` tool installed
+For more information, see xref:openshift-login-cluster-reference.adoc[OpenShift cluster login]
+* Optional: Access to the link:https://docs.openshift.com/container-platform/4.13/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI] (Optional as required only for manual deployment)
+* Docker or Podman installed and configured appropriately
+
+:sectnums:
+:sectnumlevels: 3
+
+== Create a Quarkus project that includes the Quarkus Openshift extension
+
+To build and deploy your applications as a container image that runs inside your OpenShift cluster, create a Quarkus project and include the `quarkus-openshift` extension.
+Run the following command:
+
+:create-app-artifact-id: openshift-quickstart
+:create-app-extensions: resteasy-reactive,openshift
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
+
+When you add the OpenShift extension, you add the following dependency to the `pom.xml` or `build.gradle` files.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+   <groupId>io.quarkus</groupId>
+   <artifactId>quarkus-openshift</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-openshift")
+----
+
+== Log in to the OpenShift cluster
+
+Before you can build and deploy your Quarkus application, you must log in to an OpenShift cluster.
+For information about how to log in to an OpenShift cluster, see xref:openshift-login-cluster-reference.adoc[OpenShift cluster login].
+
+
+== Switch to the required OpenShift project space
+After you log in to the OpenShift cluster, use the OpenShift CLI to switch to your OpenShift project.
+To show the current project space, enter the following command:
+
+[source,bash]
+----
+oc project -q
+----
+
+To go to the required OpenShift project, enter the following command:
+
+[source,bash]
+----
+oc project <project_name>
+----
+
+== Deploy your Quarkus applications compiled to native executables
+
+To deploy your Quarkus application, complete the following steps:
+
+. Set the Docker build strategy in your `application.properties` file:
++
+[source,bash]
+----
+quarkus.openshift.build-strategy=docker
+----
+
+. Configure the following properties in your `application.properties` file:
+
+.. Set the container runtime:
++
+[source,bash]
+----
+quarkus.native.container-build=true
+----
+
+.. Optional: If you are using an untrusted certificate, configure the `KubernetesClient` property:
++
+[source,bash]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+
+.. Optional: Expose the service to create an OpenShift route:
++
+[source,bash]
+----
+quarkus.openshift.route.expose=true
+----
+
+.. Optional: Set the path to your custom Dockerfile:
++
+[source,bash]
+----
+quarkus.openshift.native-dockerfile=<path_to_your_dockerfile>
+----
+The following example shows the path to the `Dockerfile.custom-native`:
++
+[source,bash]
+----
+quarkus.openshift.jvm-dockerfile=src/main/docker/Dockerfile.custom-native
+----
+
+.. Optional: Specify the container engine:
++
+* To build a native executable with Podman:
++
+[source,bash]
+----
+quarkus.native.container-runtime=podman
+----
++
+* To build a native executable with Docker:
++
+[source,bash]
+----
+quarkus.native.container-runtime=docker
+----
+
+. Finally, build a native executable, package, and deploy your application to OpenShift:
++
+[source,bash]
+----
+./mvnw clean package \
+    -Pnative \  <1>
+    -Dquarkus.kubernetes.deploy=true <2>
+----
+
+<1> Compile the application to a native executable
+<2> Enable Kubernetes deployment
+
+== Verify your deployment
+
+Use the OpenShift web console to verify that an image stream and a service resource is created and the Quarkus application is deployed.
+
+Alternatively, you can run the following OpenShift CLI commands:
+[source,bash,subs=attributes+]
+----
+oc get is <1>
+oc get pods <2>
+oc get svc <3>
+----
+<1> List the image streams created.
+<2> View a list of pods associated with your current OpenShift project.
+<3> Get the list of Kubernetes services.
+
+For more information, see link:https://docs.openshift.com/container-platform/4.13/openshift_images/image-streams-manage.html[Managing image streams].
+
+To retrieve the log output for your application’s pod, enter the following command where <pod_name> is the name of the latest pod prefixed with the name of your application:
+[source,bash,subs=attributes+]
+----
+oc logs -f <pod_name>
+----
+
+== Optional: Customize your deployment
+
+For information about available customization options, see xref:deploying-to-openshift-reference.adoc[Customization of Quarkus deployment on OpenShift].
+
+:sectnums!:
+
+== References
+
+* xref:cli-tooling.adoc[Building Quarkus Apps with Quarkus CLI]
+* xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift]

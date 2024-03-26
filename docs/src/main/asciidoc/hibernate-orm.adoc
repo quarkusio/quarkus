@@ -200,8 +200,9 @@ but must be lower than or equal to the version of any database your application 
 
 [NOTE]
 ====
-When a version is set explicitly,
-Quarkus will try to check this version against the actual database version on startup,
+As described above, the version can either be preconfigured explicitly via a `quarkus.datasource.db-version` configuration property,
+or implicitly set by the Quarkus build process to a minimum supported version of the database.
+Quarkus will try to check this preconfigured version against the actual database version on startup,
 leading to a startup failure when the actual version is lower.
 
 This is because Hibernate ORM may generate SQL that is invalid

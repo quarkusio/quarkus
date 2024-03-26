@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.IsDevelopment;
@@ -17,6 +16,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.websockets.next.deployment.GeneratedEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem;
+import io.quarkus.websockets.next.deployment.WebSocketServerProcessor;
 import io.quarkus.websockets.next.runtime.devui.WebSocketNextJsonRPCService;
 
 public class WebSocketServerDevUIProcessor {
@@ -74,11 +74,9 @@ public class WebSocketServerDevUIProcessor {
         }
     }
 
-    private static final Pattern PATH_PARAM_PATTERN = Pattern.compile(":[a-zA-Z0-9_]+");
-
     static String getOriginalPath(String path) {
         StringBuilder sb = new StringBuilder();
-        Matcher m = PATH_PARAM_PATTERN.matcher(path);
+        Matcher m = WebSocketServerProcessor.TRANSLATED_PATH_PARAM_PATTERN.matcher(path);
         while (m.find()) {
             // Replace :foo with {foo}
             String match = m.group();

@@ -12,6 +12,7 @@ public final class AuthorizationFailureEvent extends AbstractSecurityEvent {
     public static final String AUTHORIZATION_FAILURE_KEY = AuthorizationFailureEvent.class.getName()
             + ".FAILURE";
     public static final String AUTHORIZATION_CONTEXT_KEY = AuthorizationFailureEvent.class.getName() + ".CONTEXT";
+    public static final String SECURITY_IDENTITY_AUGMENTED = AuthorizationFailureEvent.class.getName() + ".IDENTITY_AUGMENTED";
 
     public AuthorizationFailureEvent(SecurityIdentity securityIdentity, Throwable authorizationFailure,
             String authorizationContext) {

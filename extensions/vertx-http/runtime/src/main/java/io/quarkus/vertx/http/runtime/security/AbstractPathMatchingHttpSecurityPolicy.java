@@ -116,7 +116,11 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                     @Override
                     public Uni<? extends CheckResult> apply(CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
-                            return Uni.createFrom().item(CheckResult.DENY);
+                            if (checkResult.getAugmentedIdentity() == null) {
+                                return Uni.createFrom().item(CheckResult.DENY);
+                            } else {
+                                return Uni.createFrom().item(new CheckResult(false, checkResult.getAugmentedIdentity()));
+                            }
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
 

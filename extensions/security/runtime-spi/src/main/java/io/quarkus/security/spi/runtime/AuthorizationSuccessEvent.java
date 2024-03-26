@@ -10,6 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
  */
 public final class AuthorizationSuccessEvent extends AbstractSecurityEvent {
     public static final String AUTHORIZATION_CONTEXT = AuthorizationSuccessEvent.class.getName() + ".CONTEXT";
+    public static final String SECURITY_IDENTITY_AUGMENTED = AuthorizationSuccessEvent.class.getName() + ".IDENTITY_AUGMENTED";
 
     public AuthorizationSuccessEvent(SecurityIdentity securityIdentity, Map<String, Object> eventProperties) {
         super(securityIdentity, eventProperties);

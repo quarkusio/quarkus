@@ -1,0 +1,11 @@
+name: gitlab-ci
+type: tooling
+language:
+  base:
+    data:
+      graalvm:
+        version: 21.3.0
+      maven:
+        version: 3.8.4
+      gradle:
+        version: 7.3.1

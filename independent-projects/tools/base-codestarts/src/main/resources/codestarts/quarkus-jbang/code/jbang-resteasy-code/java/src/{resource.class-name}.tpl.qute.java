@@ -26,7 +26,4 @@ public class {resource.class-name} {
         return "{resource.response}";
     }
 
-    public static void main(String[] args) {
-        Quarkus.run(args);
-    }
 }

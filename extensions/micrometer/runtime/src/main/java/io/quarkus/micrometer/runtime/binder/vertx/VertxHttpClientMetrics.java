@@ -183,7 +183,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             this.tags = origin.and(
                     Tag.of("address", address),
                     HttpCommonTags.method(method),
-                    HttpCommonTags.uri(path, -1));
+                    HttpCommonTags.uri(path, null, -1));
         }
 
         void requestReset() {

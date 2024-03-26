@@ -72,7 +72,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
                 Timer.Builder builder = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
                         .tags(Tags.of(
                                 HttpCommonTags.method(requestContext.getMethod()),
-                                HttpCommonTags.uri(requestPath, statusCode),
+                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode),
                                 HttpCommonTags.outcome(statusCode),
                                 HttpCommonTags.status(statusCode),
                                 clientName(requestContext)));

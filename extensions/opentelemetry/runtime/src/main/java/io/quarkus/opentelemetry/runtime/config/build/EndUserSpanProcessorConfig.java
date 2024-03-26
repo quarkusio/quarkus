@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.runtime.config.build;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -18,6 +19,7 @@ public interface EndUserSpanProcessorConfig {
      * the {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ID}
      * and {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ROLE} to the Span.
      */
+    @ConfigDocIgnore
     @WithDefault("false")
     Optional<Boolean> enabled();
 

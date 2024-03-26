@@ -19,6 +19,7 @@ include::{includes}/extension-status.adoc[]
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
+* A WebAuthn or PassKeys-capable device, or https://developer.chrome.com/docs/devtools/webauthn/[an emulator of those].
 
 == Introduction to WebAuthn
 
@@ -61,6 +62,14 @@ service: one before login or registration, before calling the hardware authentic
 login or registration.
 
 And also there are a lot more fields to store than just a public key, but we will help you with that.
+
+Just in case you get there wondering what's the relation with https://fidoalliance.org/passkeys/[PassKeys]
+and whether we support it: sure, yes, PassKeys is a way that your authenticator devices can share and sync 
+their credentials, which you can then use with our WebAuthn authentication.
+
+NOTE: The WebAuthn specification requires `https` to be used for communication with the server, though
+some browsers allow `localhost`. If you must use `https` in `DEV` mode, you can always use the
+https://docs.quarkiverse.io/quarkus-ngrok/dev/index.html[quarkus-ngrok] extension.
 
 == Architecture
 
@@ -544,6 +553,7 @@ in `src/main/resources/META-INF/resources/index.html`:
       <li><a href="/api/users/me">User API</a></li>
       <li><a href="/api/admin">Admin API</a></li>
       <li><a href="/q/webauthn/logout">Logout</a></li>
+     </ul>
     </nav>
     <div class="container">
      <div class="item">
@@ -582,7 +592,7 @@ in `src/main/resources/META-INF/resources/index.html`:
 
       const loginButton = document.getElementById('login');
 
-      loginButton.onclick = () => {
+      loginButton.addEventListener("click", (e) => {
         var userName = document.getElementById('userNameLogin').value;
         result.replaceChildren();
         webAuthn.login({ name: userName })
@@ -593,11 +603,11 @@ in `src/main/resources/META-INF/resources/index.html`:
             result.append("Login failed: "+err);
           });
         return false;
-      };
+      });
 
       const registerButton = document.getElementById('register');
 
-      registerButton.onclick = () => {
+      registerButton.addEventListener("click", (e) => {
         var userName = document.getElementById('userNameRegister').value;
         var firstName = document.getElementById('firstName').value;
         var lastName = document.getElementById('lastName').value;
@@ -610,7 +620,7 @@ in `src/main/resources/META-INF/resources/index.html`:
             result.append("Registration failed: "+err);
           });
         return false;
-      };
+      });
     </script>
   </body>
 </html>
@@ -639,7 +649,8 @@ form on the right, then pressing the `Register` button:
 
 image::webauthn-2.png[role="thumb"]
 
-Your browser will ask you to activate your WebAuthn authenticator:
+Your browser will ask you to activate your WebAuthn authenticator (you will need a WebAuthn-capable browser
+and possibly device, or you can use https://developer.chrome.com/docs/devtools/webauthn/[an emulator of those]):
 
 image::webauthn-3.png[role="thumb"]
 
@@ -669,10 +680,13 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 .Request
 ----
 {
- "name": "userName",
- "displayName": "Mr Nice Guy"
+ "name": "userName", <1>
+ "displayName": "Mr Nice Guy" <2>
 }
 ----
+
+<1> Required
+<2> Optional
 
 [source,json]
 .Response
@@ -709,6 +723,26 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
  }
 ----
 
+=== Trigger a registration
+
+`POST /q/webauthn/callback`: Trigger a registration
+
+[source,json]
+.Request
+----
+{
+ "id": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
+ "rawId": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
+ "response": {
+  "attestationObject": "<DATA>",
+  "clientDataJSON":"<DATA>"
+ },
+ "type": "public-key"
+}
+----
+
+This returns a 204 with no body.
+
 === Obtain a login challenge
 
 `POST /q/webauthn/login`: Set up and obtain a login challenge
@@ -717,9 +751,11 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 .Request
 ----
 {
- "name": "userName"
+ "name": "userName" <1>
 }
 ----
+
+<1> Required
 
 [source,json]
 .Response
@@ -745,26 +781,6 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
  ]
 }
 ----
-
-=== Trigger a registration
-
-`POST /q/webauthn/callback`: Trigger a registration
-
-[source,json]
-.Request
-----
-{
- "id": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
- "rawId": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
- "response": {
-  "attestationObject": "<DATA>",
-  "clientDataJSON":"<DATA>"
- },
- "type": "public-key"
-}
-----
-
-This returns a 204 with no body.
 
 === Trigger a login
 
@@ -905,7 +921,13 @@ to the server to your custom login or registration endpoints.
 
 If you are storing them in form input elements, you can then use the `WebAuthnLoginResponse` and
 `WebAuthnRegistrationResponse` classes, mark them as `@BeanParam` and then use the `WebAuthnSecurity.login`
-and `WebAuthnSecurity.register` methods. For example, here's how you can handle a custom login and register:
+and `WebAuthnSecurity.register` methods to replace the `/q/webauthn/callback` endpoint. This even
+allows you to create two separate endpoints for handling login and registration at different endpoints.
+
+In most cases you can keep using the `/q/webauthn/login` and `/q/webauthn/register` challenge-initiating
+endpoints, because this is not where custom logic is required.
+
+For example, here's how you can handle a custom login and register action:
 
 [source,java]
 ----
@@ -933,6 +955,7 @@ public class LoginResource {
     @Inject
     WebAuthnSecurity webAuthnSecurity;
 
+    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for login
     @Path("/login")
     @POST
     @Transactional
@@ -962,12 +985,13 @@ public class LoginResource {
         }
     }
 
+    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for registration
     @Path("/register")
     @POST
     @Transactional
     public Response register(@RestForm String userName,
-                                  @BeanParam WebAuthnRegisterResponse webAuthnResponse,
-                                  RoutingContext ctx) {
+                             @BeanParam WebAuthnRegisterResponse webAuthnResponse,
+                             RoutingContext ctx) {
         // Input validation
         if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
             return Response.status(Status.BAD_REQUEST).build();
@@ -1011,6 +1035,15 @@ data access with your `WebAuthnUserProvider`.
 
 You will have to add the `@Blocking` annotation on your `WebAuthnUserProvider` class in order to tell the
 Quarkus WebAuthn endpoints to defer those calls to the worker pool.
+
+== Virtual-Threads version
+
+If you're using a blocking data access to the database, you can safely block on the `WebAuthnSecurity` methods,
+with `.await().indefinitely()`, because nothing is async in the `register` and `login` methods, besides the
+data access with your `WebAuthnUserProvider`.
+
+You will have to add the `@RunOnVirtualThread` annotation on your `WebAuthnUserProvider` class in order to tell the
+Quarkus WebAuthn endpoints to defer those calls to virtual threads.
 
 == Testing WebAuthn
 
@@ -1139,9 +1172,9 @@ public class WebAuthnResourceTest {
         .then()
         .statusCode(200)
         .log().ifValidationFails()
-        .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-        .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
-        .cookie("quarkus-credential", Matchers.notNullValue());
+        .cookie(WebAuthnEndpointHelper.getChallengeCookie(), Matchers.is(""))
+        .cookie(WebAuthnEndpointHelper.getChallengeUsernameCookie(), Matchers.is(""))
+        .cookie(WebAuthnEndpointHelper.getMainCookie(), Matchers.notNullValue());
     }
 
     private void verifyLoggedIn(Filter cookieFilter, String userName, User user) {
@@ -1257,6 +1290,10 @@ public class TestUserProvider extends MyWebAuthnSetup {
 
 [[configuration-reference]]
 == Configuration Reference
+
+The security encryption key can be set with the 
+link:all-config#quarkus-vertx-http_quarkus.http.auth.session.encryption-key[`quarkus.http.auth.session.encryption-key`]
+configuration option, as described in the link:security-authentication-mechanisms#form-auth[security guide].
 
 include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, leveloffset=+1]
 

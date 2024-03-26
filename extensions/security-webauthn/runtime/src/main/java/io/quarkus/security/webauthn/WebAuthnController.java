@@ -24,9 +24,8 @@ public class WebAuthnController {
 
     private static final Logger log = Logger.getLogger(WebAuthnController.class);
 
-    public static final String USERNAME_COOKIE = "_quarkus_webauthn_username";
-
-    public static final String CHALLENGE_COOKIE = "_quarkus_webauthn_challenge";
+    private String challengeUsernameCookie;
+    private String challengeCookie;
 
     private WebAuthnSecurity security;
 
@@ -49,6 +48,8 @@ public class WebAuthnController {
         this.security = security;
         this.identityProviderManager = identityProviderManager;
         this.authMech = authMech;
+        this.challengeCookie = config.challengeCookieName();
+        this.challengeUsernameCookie = config.challengeUsernameCookieName();
     }
 
     private static boolean containsRequiredString(JsonObject json, String key) {
@@ -97,7 +98,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for register
+     * Endpoint for getting a register challenge
      *
      * @param ctx the current request
      */
@@ -127,9 +128,9 @@ public class WebAuthnController {
                     final JsonObject credentialsOptions = createCredentialsOptions.result();
 
                     // save challenge to the session
-                    authMech.getLoginManager().save(credentialsOptions.getString("challenge"), ctx, CHALLENGE_COOKIE, null,
+                    authMech.getLoginManager().save(credentialsOptions.getString("challenge"), ctx, challengeCookie, null,
                             ctx.request().isSSL());
-                    authMech.getLoginManager().save(webauthnRegister.getString("name"), ctx, USERNAME_COOKIE, null,
+                    authMech.getLoginManager().save(webauthnRegister.getString("name"), ctx, challengeUsernameCookie, null,
                             ctx.request().isSSL());
 
                     ok(ctx, credentialsOptions);
@@ -143,7 +144,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for login
+     * Endpoint for getting a login challenge
      *
      * @param ctx the current request
      */
@@ -174,9 +175,10 @@ public class WebAuthnController {
 
                 final JsonObject getAssertion = generateServerGetAssertion.result();
 
-                authMech.getLoginManager().save(getAssertion.getString("challenge"), ctx, CHALLENGE_COOKIE, null,
+                authMech.getLoginManager().save(getAssertion.getString("challenge"), ctx, challengeCookie, null,
                         ctx.request().isSSL());
-                authMech.getLoginManager().save(username, ctx, USERNAME_COOKIE, null, ctx.request().isSSL());
+                authMech.getLoginManager().save(username, ctx, challengeUsernameCookie, null,
+                        ctx.request().isSSL());
 
                 ok(ctx, getAssertion);
             });
@@ -189,7 +191,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for callback
+     * Endpoint for getting authenticated
      *
      * @param ctx the current request
      */
@@ -211,8 +213,8 @@ public class WebAuthnController {
                 return;
             }
 
-            RestoreResult challenge = authMech.getLoginManager().restore(ctx, CHALLENGE_COOKIE);
-            RestoreResult username = authMech.getLoginManager().restore(ctx, USERNAME_COOKIE);
+            RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
+            RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
             if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
                     || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
                 ctx.fail(400, new IllegalArgumentException("Missing challenge or username"));
@@ -238,8 +240,8 @@ public class WebAuthnController {
                         public void accept(SecurityIdentity identity) {
                             requestContext.destroy(contextState);
                             // invalidate the challenge
-                            WebAuthnSecurity.removeCookie(ctx, WebAuthnController.CHALLENGE_COOKIE);
-                            WebAuthnSecurity.removeCookie(ctx, WebAuthnController.USERNAME_COOKIE);
+                            WebAuthnSecurity.removeCookie(ctx, challengeCookie);
+                            WebAuthnSecurity.removeCookie(ctx, challengeUsernameCookie);
                             try {
                                 authMech.getLoginManager().save(identity, ctx, null, ctx.request().isSSL());
                                 ok(ctx);

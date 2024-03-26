@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,11 +21,17 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.webauthn.Authenticator;
 
-public class WebAuthnManualTest {
+/**
+ * Same test as WebAuthnManualTest but with custom cookies configured
+ */
+public class WebAuthnManualCustomCookiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
+                    .add(new StringAsset("quarkus.webauthn.cookie-name=main-cookie\n"
+                            + "quarkus.webauthn.challenge-cookie-name=challenge-cookie\n"
+                            + "quarkus.webauthn.challenge-username-cookie-name=username-cookie\n"), "application.properties")
                     .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
                             TestResource.class, ManualResource.class, TestUtil.class));
 
@@ -60,9 +67,9 @@ public class WebAuthnManualTest {
                 .post("/register")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+                .cookie("challenge-cookie", Matchers.is(""))
+                .cookie("username-cookie", Matchers.is(""))
+                .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we stored the user
         List<Authenticator> users = userProvider.findWebAuthnCredentialsByUserName("stef").await().indefinitely();
@@ -88,9 +95,9 @@ public class WebAuthnManualTest {
                 .post("/login")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+                .cookie("challenge-cookie", Matchers.is(""))
+                .cookie("username-cookie", Matchers.is(""))
+                .cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we bumped the user
         users = userProvider.findWebAuthnCredentialsByUserName("stef").await().indefinitely();

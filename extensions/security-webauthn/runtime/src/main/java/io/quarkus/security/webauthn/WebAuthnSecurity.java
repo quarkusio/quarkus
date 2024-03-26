@@ -31,6 +31,8 @@ public class WebAuthnSecurity {
 
     @Inject
     WebAuthnAuthenticationMechanism authMech;
+    private String challengeCookie;
+    private String challengeUsernameCookie;
 
     public WebAuthnSecurity(WebAuthnRunTimeConfig config, Vertx vertx, WebAuthnAuthenticatorStorage database) {
         // create the webauthn security object
@@ -75,6 +77,8 @@ public class WebAuthnSecurity {
             Origin o = Origin.parse(origin);
             domain = o.host();
         }
+        this.challengeCookie = config.challengeCookieName();
+        this.challengeUsernameCookie = config.challengeUsernameCookieName();
     }
 
     /**
@@ -86,8 +90,8 @@ public class WebAuthnSecurity {
      */
     public Uni<Authenticator> register(WebAuthnRegisterResponse response, RoutingContext ctx) {
         // validation of the response is done before
-        RestoreResult challenge = authMech.getLoginManager().restore(ctx, WebAuthnController.CHALLENGE_COOKIE);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, WebAuthnController.USERNAME_COOKIE);
+        RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
+        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
                 || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
             return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
@@ -103,8 +107,8 @@ public class WebAuthnSecurity {
                             .setUsername(username.getPrincipal())
                             .setWebauthn(response.toJsonObject()),
                     authenticate -> {
-                        removeCookie(ctx, WebAuthnController.CHALLENGE_COOKIE);
-                        removeCookie(ctx, WebAuthnController.USERNAME_COOKIE);
+                        removeCookie(ctx, challengeCookie);
+                        removeCookie(ctx, challengeUsernameCookie);
                         if (authenticate.succeeded()) {
                             // this is registration, so the caller will want to store the created Authenticator,
                             // let's recreate it
@@ -125,8 +129,8 @@ public class WebAuthnSecurity {
      */
     public Uni<Authenticator> login(WebAuthnLoginResponse response, RoutingContext ctx) {
         // validation of the response is done before
-        RestoreResult challenge = authMech.getLoginManager().restore(ctx, WebAuthnController.CHALLENGE_COOKIE);
-        RestoreResult username = authMech.getLoginManager().restore(ctx, WebAuthnController.USERNAME_COOKIE);
+        RestoreResult challenge = authMech.getLoginManager().restore(ctx, challengeCookie);
+        RestoreResult username = authMech.getLoginManager().restore(ctx, challengeUsernameCookie);
         if (challenge == null || challenge.getPrincipal() == null || challenge.getPrincipal().isEmpty()
                 || username == null || username.getPrincipal() == null || username.getPrincipal().isEmpty()) {
             return Uni.createFrom().failure(new RuntimeException("Missing challenge or username"));
@@ -142,8 +146,8 @@ public class WebAuthnSecurity {
                             .setUsername(username.getPrincipal())
                             .setWebauthn(response.toJsonObject()),
                     authenticate -> {
-                        removeCookie(ctx, WebAuthnController.CHALLENGE_COOKIE);
-                        removeCookie(ctx, WebAuthnController.USERNAME_COOKIE);
+                        removeCookie(ctx, challengeCookie);
+                        removeCookie(ctx, challengeUsernameCookie);
                         if (authenticate.succeeded()) {
                             // this is login, so the user will want to bump the counter
                             // FIXME: do we need the auth here? likely the user will know it and will just ++ on the DB-stored counter, no?

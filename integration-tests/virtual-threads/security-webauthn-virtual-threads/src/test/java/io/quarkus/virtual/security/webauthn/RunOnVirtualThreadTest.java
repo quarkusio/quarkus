@@ -1,4 +1,6 @@
-package io.quarkus.security.webauthn.test;
+package io.quarkus.virtual.security.webauthn;
+
+import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 
@@ -7,26 +9,22 @@ import jakarta.inject.Inject;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit5.virtual.ShouldNotPin;
+import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
 import io.quarkus.test.security.webauthn.WebAuthnHardware;
-import io.quarkus.test.security.webauthn.WebAuthnTestUserProvider;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
-import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.webauthn.Authenticator;
 
-public class WebAuthnManualTest {
-
-    @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
-                            TestResource.class, ManualResource.class, TestUtil.class));
+@QuarkusTest
+@VirtualThreadUnit
+@ShouldNotPin
+class RunOnVirtualThreadTest {
 
     @Inject
     WebAuthnUserProvider userProvider;
@@ -47,22 +45,12 @@ public class WebAuthnManualTest {
 
         Assertions.assertTrue(userProvider.findWebAuthnCredentialsByUserName("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
-        String challenge = WebAuthnEndpointHelper.invokeRegistration("stef", cookieFilter);
         WebAuthnHardware hardwareKey = new WebAuthnHardware();
+        String challenge = WebAuthnEndpointHelper.invokeRegistration("stef", cookieFilter);
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        RequestSpecification request = RestAssured
-                .given()
-                .filter(cookieFilter);
-        WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
-        request
-                .post("/register")
-                .then().statusCode(200)
-                .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+        WebAuthnEndpointHelper.invokeCallback(registration, cookieFilter);
 
         // make sure we stored the user
         List<Authenticator> users = userProvider.findWebAuthnCredentialsByUserName("stef").await().indefinitely();
@@ -80,17 +68,7 @@ public class WebAuthnManualTest {
         JsonObject login = hardwareKey.makeLoginJson(challenge);
 
         // now finalise
-        request = RestAssured
-                .given()
-                .filter(cookieFilter);
-        WebAuthnEndpointHelper.addWebAuthnLoginFormParameters(request, login);
-        request
-                .post("/login")
-                .then().statusCode(200)
-                .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
-                .cookie("_quarkus_webauthn_username", Matchers.is(""))
-                .cookie("quarkus-credential", Matchers.notNullValue());
+        WebAuthnEndpointHelper.invokeCallback(login, cookieFilter);
 
         // make sure we bumped the user
         users = userProvider.findWebAuthnCredentialsByUserName("stef").await().indefinitely();
@@ -121,4 +99,5 @@ public class WebAuthnManualTest {
                 .redirects().follow(false)
                 .get("/cheese").then().statusCode(403);
     }
+
 }

@@ -304,8 +304,15 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * @return true if the package type system property was set, otherwise - false
      */
     protected boolean setNativeEnabledIfNativeProfileEnabled() {
-        if (isNativeProfileEnabled(mavenProject())) {
-            System.setProperty("quarkus.native.enabled", "true");
+        if (!System.getProperties().containsKey("quarkus.native.enabled") && isNativeProfileEnabled(mavenProject())) {
+            Object nativeEnabledProp = mavenProject().getProperties().get("quarkus.native.enabled");
+            String nativeEnabled;
+            if (nativeEnabledProp != null) {
+                nativeEnabled = nativeEnabledProp.toString();
+            } else {
+                nativeEnabled = "true";
+            }
+            System.setProperty("quarkus.native.enabled", nativeEnabled);
             return true;
         } else {
             return false;

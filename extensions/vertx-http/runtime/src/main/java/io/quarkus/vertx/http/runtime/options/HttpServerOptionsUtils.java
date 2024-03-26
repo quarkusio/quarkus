@@ -225,6 +225,8 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         httpServerOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
         httpServerOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxFormFields(httpConfiguration.limits.maxFormFields);
+        httpServerOptions.setMaxFormBufferedBytes(httpConfiguration.limits.maxFormBufferedBytes.asBigInteger().intValue());
         httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
         httpServerOptions.setReusePort(httpConfiguration.soReusePort);
         httpServerOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
@@ -316,6 +318,8 @@ public class HttpServerOptionsUtils {
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
         options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        options.setMaxFormFields(httpConfiguration.limits.maxFormFields);
+        options.setMaxFormBufferedBytes(httpConfiguration.limits.maxFormBufferedBytes.asBigInteger().intValue());
         options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         options.setWebSocketSubProtocols(websocketSubProtocols);
         options.setAcceptBacklog(httpConfiguration.acceptBacklog);

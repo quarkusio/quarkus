@@ -1,9 +1,6 @@
-package io.quarkus.it.jpa.postgresql;
-
-import java.time.Duration;
+package io.quarkus.it.jpa.postgresql.defaultpu;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,11 +10,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
-import org.hibernate.annotations.JdbcType;
-import org.hibernate.dialect.PostgreSQLIntervalSecondJdbcType;
-
 @Entity
-@Table(schema = "myschema")
+@Table
 @NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
 public class Person {
 
@@ -25,7 +19,6 @@ public class Person {
     private String name;
     private SequencedAddress address;
     private Status status;
-    private Duration latestLunchBreakDuration = Duration.ZERO;
 
     public Person() {
     }
@@ -71,27 +64,8 @@ public class Person {
         this.status = status;
     }
 
-    /**
-     * Need to explicitly set the scale (and the precision so that the scale will actually be read from the annotation).
-     * Postgresql would only allow maximum scale of 6 for a `interval second`.
-     *
-     * @see org.hibernate.type.descriptor.sql.internal.Scale6IntervalSecondDdlType
-     */
-    @Column(precision = 5, scale = 5)
-    //NOTE: while https://hibernate.atlassian.net/browse/HHH-16591 is open we cannot replace the currently used @JdbcType annotation
-    // with a @JdbcTypeCode( INTERVAL_SECOND )
-    @JdbcType(PostgreSQLIntervalSecondJdbcType.class)
-    public Duration getLatestLunchBreakDuration() {
-        return latestLunchBreakDuration;
-    }
-
-    public void setLatestLunchBreakDuration(Duration duration) {
-        this.latestLunchBreakDuration = duration;
-    }
-
     public void describeFully(StringBuilder sb) {
         sb.append("Person with id=").append(id).append(", name='").append(name).append("', status='").append(status)
-                .append("', latestLunchBreakDuration='").append(latestLunchBreakDuration)
                 .append("', address { ");
         getAddress().describeFully(sb);
         sb.append(" }");

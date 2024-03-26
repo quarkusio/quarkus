@@ -175,17 +175,27 @@ public class OTelExporterRecorder {
     }
 
     static String resolveEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
-        String endpoint = runtimeConfig.traces().legacyEndpoint()
-                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                .orElse(runtimeConfig.traces().endpoint()
-                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(runtimeConfig.endpoint()
-                                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                                .orElse(DEFAULT_GRPC_BASE_URI)));
+        String endpoint = excludeDefaultEndpoint(
+                runtimeConfig.traces().legacyEndpoint(),
+                runtimeConfig)
+                .orElse(
+                        excludeDefaultEndpoint(
+                                runtimeConfig.traces().endpoint(),
+                                runtimeConfig)
+                                .orElse(
+                                        excludeDefaultEndpoint(
+                                                runtimeConfig.endpoint(),
+                                                runtimeConfig).orElse(DEFAULT_GRPC_BASE_URI)));
+
         return endpoint.trim();
     }
 
-    private static boolean excludeDefaultEndpoint(String endpoint) {
+    private static Optional<String> excludeDefaultEndpoint(Optional<String> endpoint, OtlpExporterRuntimeConfig runtimeConfig) {
+        return endpoint
+                .filter(uri -> !runtimeConfig.activateDefaultExporter() && OTelExporterRecorder.isDefaultEndpoint(uri));
+    }
+
+    private static boolean isDefaultEndpoint(String endpoint) {
         return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
     }
 

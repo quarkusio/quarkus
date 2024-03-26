@@ -6,6 +6,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * From <a href=
@@ -26,6 +27,17 @@ public interface OtlpExporterRuntimeConfig {
      */
     @WithDefault(DEFAULT_GRPC_BASE_URI)
     Optional<String> endpoint();
+
+    /**
+     * If true, the Quarkus default OpenTelemetry exporter will always be instantiated, even when other exporters are present.
+     * This will allow OTel data to be sent simultaneously to multiple destinations, including the default one. If false, the
+     * Quarkus default OpenTelemetry exporter will not be instantiated if other exporters are present.
+     * <p>
+     * Defaults to <code>false</code>.
+     */
+    @WithName("experimental.dependent.default.enable")
+    @WithDefault("false")
+    boolean activateDefaultExporter();
 
     /**
      * OTLP traces exporter configuration.

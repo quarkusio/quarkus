@@ -2,6 +2,7 @@ package io.quarkus.websockets.next.runtime;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.websockets.next.WebSocketConnection;
@@ -28,10 +29,14 @@ public class ContextSupport {
     }
 
     void start() {
+        start(null);
+    }
+
+    void start(ContextState requestContextState) {
         LOG.debugf("Start contexts: %s", connection);
         startSession();
         // Activate a new request context
-        requestContext.activate();
+        requestContext.activate(requestContextState);
     }
 
     void startSession() {
@@ -40,8 +45,17 @@ public class ContextSupport {
     }
 
     void end(boolean terminateSession) {
-        LOG.debugf("End contexts: %s", connection);
-        requestContext.terminate();
+        end(true, terminateSession);
+    }
+
+    void end(boolean terminateRequest, boolean terminateSession) {
+        LOG.debugf("End contexts: %s [terminateRequest: %s, terminateSession: %s]", connection, terminateRequest,
+                terminateSession);
+        if (terminateRequest) {
+            requestContext.terminate();
+        } else {
+            requestContext.deactivate();
+        }
         if (terminateSession) {
             // OnClose - terminate the session context
             endSession();
@@ -52,6 +66,10 @@ public class ContextSupport {
 
     void endSession() {
         sessionContext.terminate();
+    }
+
+    ContextState currentRequestContextState() {
+        return requestContext.getState();
     }
 
     static Context createNewDuplicatedContext(Context context, WebSocketConnection connection) {

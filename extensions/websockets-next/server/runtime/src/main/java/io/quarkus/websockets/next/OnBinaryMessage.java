@@ -6,18 +6,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.quarkus.websockets.next.WebSocketConnection.HandshakeRequest;
 import io.smallrye.common.annotation.Experimental;
 
 /**
  * A {@link WebSocket} endpoint method annotated with this annotation consumes binary messages.
  * <p>
- * An endpoint may declare at most one method annotated with this annotation.
- * <p>
- * A binary message is always represented as a {@link io.vertx.core.buffer.Buffer}. Therefore, the following conversion rules
+ * The method must accept exactly one message parameter. A binary message is always represented as a
+ * {@link io.vertx.core.buffer.Buffer}. Therefore, the following conversion rules
  * apply. The types listed below are handled specifically. For all other types a {@link BinaryMessageCodec} is used to encode
  * and decode input and output messages. By default, the first input codec that supports the message type is used; codecs with
  * higher priority go first. However, a specific codec can be selected with {@link #codec()} and {@link #outputCodec()}.
- *
  * <ul>
  * <li>{@code java.lang.Buffer} is used as is,</li>
  * <li>{@code byte[]} is encoded with {@link io.vertx.core.buffer.Buffer#buffer(byte[])} and decoded with
@@ -28,7 +27,16 @@ import io.smallrye.common.annotation.Experimental;
  * {@link io.vertx.core.json.JsonObject#JsonObject(io.vertx.core.buffer.Buffer)}.</li>
  * <li>{@code io.vertx.core.json.JsonArray} is encoded with {@link io.vertx.core.json.JsonArray#toBuffer()} and decoded with
  * {@link io.vertx.core.json.JsonArray#JsonArray(io.vertx.core.buffer.Buffer)}.</li>
+ * </ul>
  * <p>
+ * The method may also accept the following parameters:
+ * <ul>
+ * <li>{@link WebSocketConnection}</li>
+ * <li>{@link HandshakeRequest}</li>
+ * <li>{@link String} parameters annotated with {@link PathParam}</li>
+ * </ul>
+ * <p>
+ * An endpoint may declare at most one method annotated with this annotation.
  */
 @Retention(RUNTIME)
 @Target(METHOD)

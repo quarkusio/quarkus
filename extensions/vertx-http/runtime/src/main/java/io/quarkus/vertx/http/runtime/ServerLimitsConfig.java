@@ -42,6 +42,19 @@ public class ServerLimitsConfig {
     public MemorySize maxFormAttributeSize;
 
     /**
+     * Set the maximum number of fields of a form. Set to {@code -1} to allow unlimited number of attributes.
+     */
+    @ConfigItem(defaultValue = "256")
+    public int maxFormFields;
+
+    /**
+     * Set the maximum number of bytes a server can buffer when decoding a form.
+     * Set to {@code -1} to allow unlimited length
+     **/
+    @ConfigItem(defaultValue = "1K")
+    public MemorySize maxFormBufferedBytes;
+
+    /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */

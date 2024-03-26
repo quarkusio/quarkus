@@ -3,12 +3,14 @@ package io.quarkus.websockets.next.deployment;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
@@ -49,9 +51,15 @@ interface CallbackArgument {
 
         /**
          *
-         * @return the endpoint path
+         * @return the endpoint path or {@code null} for global error handlers
          */
         String endpointPath();
+
+        /**
+         *
+         * @return the index that can be used to inspect parameter types
+         */
+        IndexView index();
 
         /**
          *
@@ -88,17 +96,17 @@ interface CallbackArgument {
         BytecodeCreator bytecode();
 
         /**
-         * Obtains the message directly in the bytecode.
+         * Obtains the message or error directly in the bytecode.
          *
-         * @return the message object or {@code null} for {@link OnOpen} and {@link OnClose} callbacks
+         * @return the message/error object or {@code null} for {@link OnOpen} and {@link OnClose} callbacks
          */
-        ResultHandle getMessage();
+        ResultHandle getPayload();
 
         /**
          * Attempts to obtain the decoded message directly in the bytecode.
          *
          * @param parameterType
-         * @return the decoded message object or {@code null} for {@link OnOpen} and {@link OnClose} callbacks
+         * @return the decoded message object or {@code null} for {@link OnOpen}, {@link OnClose} and {@link OnError} callbacks
          */
         ResultHandle getDecodedMessage(Type parameterType);
 

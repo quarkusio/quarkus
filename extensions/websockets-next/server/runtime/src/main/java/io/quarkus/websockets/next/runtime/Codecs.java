@@ -5,18 +5,19 @@ import java.util.List;
 
 import jakarta.inject.Singleton;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.All;
+import io.quarkus.websockets.next.BinaryDecodeException;
+import io.quarkus.websockets.next.BinaryEncodeException;
 import io.quarkus.websockets.next.BinaryMessageCodec;
 import io.quarkus.websockets.next.MessageCodec;
+import io.quarkus.websockets.next.TextDecodeException;
+import io.quarkus.websockets.next.TextEncodeException;
 import io.quarkus.websockets.next.TextMessageCodec;
+import io.quarkus.websockets.next.WebSocketServerException;
 import io.vertx.core.buffer.Buffer;
 
 @Singleton
 public class Codecs {
-
-    private static final Logger LOG = Logger.getLogger(Codecs.class);
 
     @All
     List<TextMessageCodec<?>> textCodecs;
@@ -29,12 +30,12 @@ public class Codecs {
             for (TextMessageCodec<?> codec : textCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
                     if (!codec.supports(type)) {
-                        throw forcedCannotHandle(false, codec, type);
+                        throw forcedCannotDecode(value, null, codec, type);
                     }
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
-                        throw unableToDecode(false, codec, e);
+                        throw unableToDecode(value, null, codec, e);
                     }
                 }
             }
@@ -44,13 +45,12 @@ public class Codecs {
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
-                        throw unableToDecode(false, codec, e);
+                        throw unableToDecode(value, null, codec, e);
                     }
                 }
             }
         }
-
-        throw noCodec(false, type);
+        throw noCodecToDecode(value, null, type);
     }
 
     public <T> String textEncode(T message, Class<?> codecBeanClass) {
@@ -59,12 +59,12 @@ public class Codecs {
             for (TextMessageCodec<?> codec : textCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
                     if (!codec.supports(type)) {
-                        throw forcedCannotHandle(false, codec, type);
+                        throw forcedCannotEncode(false, codec, message);
                     }
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {
-                        throw unableToEncode(false, codec, e);
+                        throw unableToEncode(false, codec, message, e);
                     }
                 }
             }
@@ -74,12 +74,12 @@ public class Codecs {
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {
-                        throw unableToEncode(false, codec, e);
+                        throw unableToEncode(false, codec, message, e);
                     }
                 }
             }
         }
-        throw noCodec(false, type);
+        throw noCodecToEncode(false, message, type);
     }
 
     public Object binaryDecode(Type type, Buffer value, Class<?> codecBeanClass) {
@@ -87,12 +87,12 @@ public class Codecs {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
                     if (!codec.supports(type)) {
-                        throw forcedCannotHandle(false, codec, type);
+                        throw forcedCannotDecode(null, value, codec, type);
                     }
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
-                        throw unableToDecode(false, codec, e);
+                        throw unableToDecode(null, value, codec, e);
                     }
                 }
             }
@@ -102,12 +102,12 @@ public class Codecs {
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
-                        LOG.errorf(e, "Unable to decode binary message with %s", codec.getClass().getName());
+                        throw unableToDecode(null, value, codec, e);
                     }
                 }
             }
         }
-        throw noCodec(true, type);
+        throw noCodecToDecode(null, value, type);
     }
 
     public <T> Buffer binaryEncode(T message, Class<?> codecBeanClass) {
@@ -116,12 +116,12 @@ public class Codecs {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
                     if (!codec.supports(type)) {
-                        throw forcedCannotHandle(false, codec, type);
+                        throw forcedCannotEncode(true, codec, message);
                     }
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {
-                        throw unableToEncode(false, codec, e);
+                        throw unableToEncode(true, codec, message, e);
                     }
                 }
             }
@@ -131,35 +131,70 @@ public class Codecs {
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {
-                        throw unableToEncode(true, codec, e);
+                        throw unableToEncode(true, codec, message, e);
                     }
                 }
             }
         }
-        throw noCodec(true, type);
+        throw noCodecToEncode(true, message, type);
     }
 
-    IllegalStateException noCodec(boolean binary, Type type) {
+    WebSocketServerException noCodecToDecode(String text, Buffer bytes, Type type) {
+        String message = String.format("No %s codec handles the type %s", bytes != null ? "binary" : "text", type);
+        if (bytes != null) {
+            return new BinaryDecodeException(bytes, message);
+        } else {
+            return new TextDecodeException(text, message);
+        }
+    }
+
+    WebSocketServerException noCodecToEncode(boolean binary, Object encodedObject, Type type) {
         String message = String.format("No %s codec handles the type %s", binary ? "binary" : "text", type);
-        throw new IllegalStateException(message);
+        if (binary) {
+            return new BinaryEncodeException(encodedObject, message);
+        } else {
+            return new TextEncodeException(encodedObject, message);
+        }
     }
 
-    IllegalStateException unableToEncode(boolean binary, MessageCodec<?, ?> codec, Exception e) {
+    WebSocketServerException unableToEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject, Exception e) {
         String message = String.format("Unable to encode %s message with %s", binary ? "binary" : "text",
                 codec.getClass().getName());
-        throw new IllegalStateException(message, e);
+        if (binary) {
+            return new BinaryEncodeException(encodedObject, message, e);
+        } else {
+            return new TextEncodeException(encodedObject, message, e);
+        }
     }
 
-    IllegalStateException unableToDecode(boolean binary, MessageCodec<?, ?> codec, Exception e) {
-        String message = String.format("Unable to decode %s message with %s", binary ? "binary" : "text",
+    WebSocketServerException unableToDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Exception e) {
+        String message = String.format("Unable to decode %s message with %s", bytes != null ? "binary" : "text",
                 codec.getClass().getName());
-        throw new IllegalStateException(message, e);
+        if (bytes != null) {
+            return new BinaryDecodeException(bytes, message, e);
+        } else {
+            return new TextDecodeException(text, message, e);
+        }
     }
 
-    IllegalStateException forcedCannotHandle(boolean binary, MessageCodec<?, ?> codec, Type type) {
-        throw new IllegalStateException(
-                String.format("Forced %s codec [%s] cannot handle the type %s", binary ? "binary" : "text",
-                        codec.getClass().getName(), type));
+    WebSocketServerException forcedCannotEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject) {
+        String message = String.format("Forced %s codec [%s] cannot handle the type %s", binary ? "binary" : "text",
+                codec.getClass().getName(), encodedObject.getClass());
+        if (binary) {
+            return new BinaryEncodeException(encodedObject, message);
+        } else {
+            return new TextEncodeException(encodedObject, message);
+        }
+    }
+
+    WebSocketServerException forcedCannotDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Type type) {
+        String message = String.format("Forced %s codec [%s] cannot decode the type %s", bytes != null ? "binary" : "text",
+                codec.getClass().getName(), type);
+        if (bytes != null) {
+            return new BinaryDecodeException(bytes, message);
+        } else {
+            return new TextDecodeException(text, message);
+        }
     }
 
     @SuppressWarnings("unchecked")

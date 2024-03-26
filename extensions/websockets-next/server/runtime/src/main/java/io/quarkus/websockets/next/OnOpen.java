@@ -6,11 +6,19 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.quarkus.websockets.next.WebSocketConnection.HandshakeRequest;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when the client connects to a web socket
+ * A {@link WebSocket} endpoint method annotated with this annotation is invoked when the client connects to a web socket
  * endpoint.
+ * <p>
+ * The method may accept the following parameters:
+ * <ul>
+ * <li>{@link WebSocketConnection}</li>
+ * <li>{@link HandshakeRequest}</li>
+ * <li>{@link String} parameters annotated with {@link PathParam}</li>
+ * </ul>
  * <p>
  * An endpoint may declare at most one method annotated with this annotation.
  */

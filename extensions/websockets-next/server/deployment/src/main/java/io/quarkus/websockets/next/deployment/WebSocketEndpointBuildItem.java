@@ -3,10 +3,12 @@ package io.quarkus.websockets.next.deployment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
@@ -41,9 +43,11 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
     public final Callback onBinaryMessage;
     public final Callback onPongMessage;
     public final Callback onClose;
+    public final List<Callback> onErrors;
 
-    public WebSocketEndpointBuildItem(BeanInfo bean, String path, WebSocket.ExecutionMode executionMode, Callback onOpen,
-            Callback onTextMessage, Callback onBinaryMessage, Callback onPongMessage, Callback onClose) {
+    WebSocketEndpointBuildItem(BeanInfo bean, String path, WebSocket.ExecutionMode executionMode, Callback onOpen,
+            Callback onTextMessage, Callback onBinaryMessage, Callback onPongMessage, Callback onClose,
+            List<Callback> onErrors) {
         this.bean = bean;
         this.path = path;
         this.executionMode = executionMode;
@@ -52,10 +56,12 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
         this.onBinaryMessage = onBinaryMessage;
         this.onPongMessage = onPongMessage;
         this.onClose = onClose;
+        this.onErrors = onErrors;
     }
 
     public static class Callback {
 
+        public final String endpointPath;
         public final AnnotationInstance annotation;
         public final MethodInfo method;
         public final ExecutionModel executionModel;
@@ -64,7 +70,7 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
 
         public Callback(AnnotationInstance annotation, MethodInfo method, ExecutionModel executionModel,
                 CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
-                String endpointPath) {
+                String endpointPath, IndexView index) {
             this.method = method;
             this.annotation = annotation;
             this.executionModel = executionModel;
@@ -77,7 +83,12 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
             } else {
                 this.messageType = MessageType.NONE;
             }
-            this.arguments = collectArguments(annotation, method, callbackArguments, transformedAnnotations, endpointPath);
+            this.endpointPath = endpointPath;
+            this.arguments = collectArguments(annotation, method, callbackArguments, transformedAnnotations, index);
+        }
+
+        public boolean isGlobal() {
+            return endpointPath == null;
         }
 
         public boolean isOnOpen() {
@@ -86,6 +97,10 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
 
         public boolean isOnClose() {
             return annotation.name().equals(WebSocketDotNames.ON_CLOSE);
+        }
+
+        public boolean isOnError() {
+            return annotation.name().equals(WebSocketDotNames.ON_ERROR);
         }
 
         public Type returnType() {
@@ -153,21 +168,8 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
             BINARY
         }
 
-        public List<CallbackArgument> messageArguments() {
-            if (arguments.isEmpty()) {
-                return List.of();
-            }
-            List<CallbackArgument> ret = new ArrayList<>();
-            for (CallbackArgument arg : arguments) {
-                if (arg instanceof MessageCallbackArgument) {
-                    ret.add(arg);
-                }
-            }
-            return ret;
-        }
-
-        public ResultHandle[] generateArguments(BytecodeCreator bytecode,
-                TransformedAnnotationsBuildItem transformedAnnotations, String endpointPath) {
+        public ResultHandle[] generateArguments(ResultHandle endpointThis, BytecodeCreator bytecode,
+                TransformedAnnotationsBuildItem transformedAnnotations, IndexView index) {
             if (arguments.isEmpty()) {
                 return new ResultHandle[] {};
             }
@@ -175,16 +177,16 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
             int idx = 0;
             for (CallbackArgument argument : arguments) {
                 resultHandles[idx] = argument.get(
-                        invocationBytecodeContext(annotation, method.parameters().get(idx), transformedAnnotations,
-                                endpointPath, bytecode));
+                        invocationBytecodeContext(annotation, method.parameters().get(idx), transformedAnnotations, index,
+                                endpointThis, bytecode));
                 idx++;
             }
             return resultHandles;
         }
 
-        static List<CallbackArgument> collectArguments(AnnotationInstance annotation, MethodInfo method,
+        private List<CallbackArgument> collectArguments(AnnotationInstance annotation, MethodInfo method,
                 CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
-                String endpointPath) {
+                IndexView index) {
             List<MethodParameterInfo> parameters = method.parameters();
             if (parameters.isEmpty()) {
                 return List.of();
@@ -192,7 +194,7 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
             List<CallbackArgument> arguments = new ArrayList<>(parameters.size());
             for (MethodParameterInfo parameter : parameters) {
                 List<CallbackArgument> found = callbackArguments
-                        .findMatching(parameterContext(annotation, parameter, transformedAnnotations, endpointPath));
+                        .findMatching(parameterContext(annotation, parameter, transformedAnnotations, index));
                 if (found.isEmpty()) {
                     String msg = String.format("Unable to inject @%s callback parameter '%s' declared on %s: no injector found",
                             DotNames.simpleName(annotation.name()),
@@ -210,11 +212,21 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
                 }
                 arguments.add(found.get(0));
             }
-            return arguments;
+            return List.copyOf(arguments);
         }
 
-        static ParameterContext parameterContext(AnnotationInstance callbackAnnotation, MethodParameterInfo parameter,
-                TransformedAnnotationsBuildItem transformedAnnotations, String endpointPath) {
+        Type argumentType(Predicate<CallbackArgument> filter) {
+            int idx = 0;
+            for (int i = 0; i < arguments.size(); i++) {
+                if (filter.test(arguments.get(idx))) {
+                    return method.parameterType(i);
+                }
+            }
+            return null;
+        }
+
+        private ParameterContext parameterContext(AnnotationInstance callbackAnnotation, MethodParameterInfo parameter,
+                TransformedAnnotationsBuildItem transformedAnnotations, IndexView index) {
             return new ParameterContext() {
 
                 @Override
@@ -238,12 +250,17 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
                     return endpointPath;
                 }
 
+                @Override
+                public IndexView index() {
+                    return index;
+                }
+
             };
         }
 
         private InvocationBytecodeContext invocationBytecodeContext(AnnotationInstance callbackAnnotation,
-                MethodParameterInfo parameter, TransformedAnnotationsBuildItem transformedAnnotations, String endpointPath,
-                BytecodeCreator bytecode) {
+                MethodParameterInfo parameter, TransformedAnnotationsBuildItem transformedAnnotations, IndexView index,
+                ResultHandle endpointThis, BytecodeCreator bytecode) {
             return new InvocationBytecodeContext() {
 
                 @Override
@@ -268,20 +285,28 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
                 }
 
                 @Override
+                public IndexView index() {
+                    return index;
+                }
+
+                @Override
                 public BytecodeCreator bytecode() {
                     return bytecode;
                 }
 
                 @Override
-                public ResultHandle getMessage() {
-                    return acceptsMessage() ? bytecode.getMethodParam(0) : null;
+                public ResultHandle getPayload() {
+                    return acceptsMessage() || callbackAnnotation.name().equals(WebSocketDotNames.ON_ERROR)
+                            ? bytecode.getMethodParam(0)
+                            : null;
                 }
 
                 @Override
                 public ResultHandle getDecodedMessage(Type parameterType) {
                     return acceptsMessage()
-                            ? WebSocketServerProcessor.decodeMessage(bytecode, acceptsBinaryMessage(), parameterType,
-                                    getMessage(), Callback.this)
+                            ? WebSocketServerProcessor.decodeMessage(endpointThis, bytecode, acceptsBinaryMessage(),
+                                    parameterType,
+                                    getPayload(), Callback.this)
                             : null;
                 }
 
@@ -289,7 +314,7 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
                 public ResultHandle getConnection() {
                     return bytecode.readInstanceField(
                             FieldDescriptor.of(WebSocketEndpointBase.class, "connection", WebSocketConnection.class),
-                            bytecode.getThis());
+                            endpointThis);
                 }
             };
         }

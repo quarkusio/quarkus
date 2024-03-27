@@ -30,7 +30,7 @@ import io.grpc.testing.integration.TestServiceGrpc;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public class GrpcServiceTestBase {
+public abstract class GrpcServiceTestBase {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
     protected ManagedChannel channel;

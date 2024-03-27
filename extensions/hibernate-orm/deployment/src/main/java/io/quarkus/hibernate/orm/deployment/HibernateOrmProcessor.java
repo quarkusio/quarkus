@@ -1391,7 +1391,8 @@ public final class HibernateOrmProcessor {
         }
 
         for (String modelPackageName : jpaModel.getAllModelPackageNames()) {
-            Set<String> persistenceUnitNames = packageRules.get(modelPackageName);
+            // Package rules keys are "normalized" package names, so we want to normalize the package on lookup:
+            Set<String> persistenceUnitNames = packageRules.get(normalizePackage(modelPackageName));
             if (persistenceUnitNames == null) {
                 continue;
             }

@@ -33,7 +33,12 @@ public class ResourceImplementor {
                 .build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
+        methodsImplementor.implementListIterable(classCreator, resourceType);
         methodsImplementor.implementList(classCreator, resourceType);
+        methodsImplementor.implementListSort(classCreator, resourceType);
+        methodsImplementor.implementListPaged(classCreator, resourceType);
+        methodsImplementor.implementAddList(classCreator, resourceType);
+        methodsImplementor.implementListById(classCreator, resourceType);
         methodsImplementor.implementListPageCount(classCreator, resourceType);
         methodsImplementor.implementGet(classCreator, resourceType);
         methodsImplementor.implementAdd(classCreator, resourceType);
@@ -41,6 +46,7 @@ public class ResourceImplementor {
         methodsImplementor.implementDelete(classCreator, resourceType);
 
         classCreator.close();
+
         LOGGER.tracef("Completed generation of '%s'", className);
         return className;
     }

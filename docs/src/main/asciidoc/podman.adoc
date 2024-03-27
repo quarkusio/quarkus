@@ -33,7 +33,7 @@ Additionally, if you are using Linux, see the Podman https://podman.io/docs/inst
 
 === Docker compatibility mode
 
-When installing Podman Desktop on Mac or Windows, tt's important to enable Docker compatibility mode when prompted. This will ensure the podman-mac-helper is setup on your behalf (normally a manual action you are prompted to do after start), necessary for supporting /var/run/docker.sock (privileged location). It will also install support for Docker compose.
+When installing Podman Desktop on Mac or Windows, it's important to enable Docker compatibility mode when prompted. This will ensure the podman-mac-helper is setup on your behalf (normally a manual action you are prompted to do after start), necessary for supporting /var/run/docker.sock (privileged location). It will also install support for Docker Compose.
 
 
 == Platform differences

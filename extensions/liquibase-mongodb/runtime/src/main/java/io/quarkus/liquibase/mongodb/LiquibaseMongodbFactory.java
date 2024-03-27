@@ -52,6 +52,7 @@ public class LiquibaseMongodbFactory {
         }
 
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
+        compositeResourceAccessor.addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
         for (String searchPath: liquibaseMongodbBuildTimeConfig.searchPath){
             compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));

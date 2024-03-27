@@ -829,12 +829,26 @@ jobs:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
           wrapper-init: true
+      - uses: actions/github-script@v7
+        id: get-quickstarts-branch
+        with:
+          result-encoding: string
+          script: |
+            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
+              return 'development'
+            }
+
+            const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
+            if (branch == 'main') {
+              return 'development'
+            } else {
+              return branch
+            }
       - name: Compile Quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Prepare build reports archive
         if: always()

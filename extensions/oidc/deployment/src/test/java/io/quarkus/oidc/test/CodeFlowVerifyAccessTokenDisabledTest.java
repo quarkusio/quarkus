@@ -17,7 +17,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
-public class CodeFlowVerifyAccessTokenDisabled {
+public class CodeFlowVerifyAccessTokenDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()

@@ -49,4 +49,9 @@ public class LdapServerTestResource implements QuarkusTestResourceLifecycleManag
             ldapServer = null;
         }
     }
+
+    @Override
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(ldapServer, new TestInjector.MatchesType(InMemoryDirectoryServer.class));
+    }
 }

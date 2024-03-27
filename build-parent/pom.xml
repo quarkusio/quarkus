@@ -59,7 +59,7 @@
         <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <supported-maven-versions>[3.8.2,)</supported-maven-versions>
+        <supported-maven-versions>[${maven.min.version},)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.6</proposed-maven-version>

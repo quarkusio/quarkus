@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when the client disconnects from the
+ * A {@link WebSocket} endpoint method annotated with this annotation is invoked when the client disconnects from the
  * socket.
  * <p>
  * An endpoint may declare at most one method annotated with this annotation.

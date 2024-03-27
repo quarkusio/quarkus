@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.WebSocket.ExecutionMode;
 import io.quarkus.websockets.next.WebSocketConnection;
@@ -16,6 +17,7 @@ import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -104,7 +106,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return promise.future();
     }
 
-    private <M> Future<Void> doExecute(Context context, Promise<Void> promise, M message, ExecutionModel executionModel,
+    private <M> void doExecute(Context context, Promise<Void> promise, M message, ExecutionModel executionModel,
             Function<M, Uni<Void>> action, boolean terminateSession, Runnable onComplete,
             Consumer<? super Throwable> onFailure) {
         Handler<Void> contextSupportEnd = executionModel.isBlocking() ? new Handler<Void>() {
@@ -163,20 +165,80 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                         onFailure.accept(t);
                     });
         }
-        return null;
     }
 
-    // TODO This implementation of timeout does not help a lot
-    // Should we emit on the current context?
-    // io.smallrye.mutiny.vertx.core.ContextAwareScheduler
-    //    private Uni<Void> withTimeout(Uni<Void> action) {
-    //        if (config.timeout().isEmpty()) {
-    //            return action;
-    //        }
-    //        return action.ifNoItem().after(config.timeout().get()).fail();
-    //    }
+    public Uni<Void> doErrorExecute(Throwable throwable, ExecutionModel executionModel,
+            Function<Throwable, Uni<Void>> action) {
+        // We need to capture the current request context state so that it can be activated
+        // when the error callback is executed
+        ContextState requestContextState = contextSupport.currentRequestContextState();
+        Handler<Void> contextSupportEnd = new Handler<Void>() {
 
-    protected Object beanInstance(String identifier) {
+            @Override
+            public void handle(Void event) {
+                contextSupport.end(false, false);
+            }
+        };
+        contextSupportEnd.handle(null);
+
+        Promise<Void> promise = Promise.promise();
+        if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+            VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                @Override
+                public void run() {
+                    Context context = Vertx.currentContext();
+                    contextSupport.start(requestContextState);
+                    action.apply(throwable).subscribe().with(
+                            v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            },
+                            t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
+                }
+            });
+        } else if (executionModel == ExecutionModel.WORKER_THREAD) {
+            Vertx.currentContext().executeBlocking(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    Context context = Vertx.currentContext();
+                    contextSupport.start(requestContextState);
+                    action.apply(throwable).subscribe().with(
+                            v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            },
+                            t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
+                    return null;
+                }
+            }, false);
+        } else {
+            Vertx.currentContext().runOnContext(new Handler<Void>() {
+                @Override
+                public void handle(Void event) {
+                    Context context = Vertx.currentContext();
+                    contextSupport.start(requestContextState);
+                    action.apply(throwable).subscribe().with(
+                            v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            },
+                            t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
+                }
+            });
+        }
+        return UniHelper.toUni(promise.future());
+    }
+
+    public Object beanInstance(String identifier) {
         return container.instance(container.bean(identifier)).get();
     }
 
@@ -200,33 +262,38 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return Uni.createFrom().voidItem();
     }
 
-    protected Object decodeText(Type type, String value, Class<?> codecBeanClass) {
+    public Uni<Void> doOnError(Throwable t) {
+        // This method is overriden if there is at least one error handler defined
+        return Uni.createFrom().failure(t);
+    }
+
+    public Object decodeText(Type type, String value, Class<?> codecBeanClass) {
         return codecs.textDecode(type, value, codecBeanClass);
     }
 
-    protected String encodeText(Object value, Class<?> codecBeanClass) {
+    public String encodeText(Object value, Class<?> codecBeanClass) {
         if (value == null) {
             return null;
         }
         return codecs.textEncode(value, codecBeanClass);
     }
 
-    protected Object decodeBinary(Type type, Buffer value, Class<?> codecBeanClass) {
+    public Object decodeBinary(Type type, Buffer value, Class<?> codecBeanClass) {
         return codecs.binaryDecode(type, value, codecBeanClass);
     }
 
-    protected Buffer encodeBinary(Object value, Class<?> codecBeanClass) {
+    public Buffer encodeBinary(Object value, Class<?> codecBeanClass) {
         if (value == null) {
             return null;
         }
         return codecs.binaryEncode(value, codecBeanClass);
     }
 
-    protected Uni<Void> sendText(String message, boolean broadcast) {
+    public Uni<Void> sendText(String message, boolean broadcast) {
         return broadcast ? connection.broadcast().sendText(message) : connection.sendText(message);
     }
 
-    protected Uni<Void> multiText(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
+    public Uni<Void> multiText(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
         multi.onFailure()
                 .call(connection::close)
                 .subscribe().with(
@@ -242,11 +309,11 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return Uni.createFrom().voidItem();
     }
 
-    protected Uni<Void> sendBinary(Buffer message, boolean broadcast) {
+    public Uni<Void> sendBinary(Buffer message, boolean broadcast) {
         return broadcast ? connection.broadcast().sendBinary(message) : connection.sendBinary(message);
     }
 
-    protected Uni<Void> multiBinary(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
+    public Uni<Void> multiBinary(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
         multi.onFailure()
                 .call(connection::close)
                 .subscribe().with(

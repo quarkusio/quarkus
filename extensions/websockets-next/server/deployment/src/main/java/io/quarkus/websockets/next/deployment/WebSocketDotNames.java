@@ -4,6 +4,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnPongMessage;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -27,6 +28,7 @@ final class WebSocketDotNames {
     static final DotName ON_BINARY_MESSAGE = DotName.createSimple(OnBinaryMessage.class);
     static final DotName ON_PONG_MESSAGE = DotName.createSimple(OnPongMessage.class);
     static final DotName ON_CLOSE = DotName.createSimple(OnClose.class);
+    static final DotName ON_ERROR = DotName.createSimple(OnError.class);
     static final DotName UNI = DotName.createSimple(Uni.class);
     static final DotName MULTI = DotName.createSimple(Multi.class);
     static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class);
@@ -38,4 +40,5 @@ final class WebSocketDotNames {
     static final DotName VOID = DotName.createSimple(Void.class);
     static final DotName PATH_PARAM = DotName.createSimple(PathParam.class);
     static final DotName HANDSHAKE_REQUEST = DotName.createSimple(WebSocketConnection.HandshakeRequest.class);
+    static final DotName THROWABLE = DotName.createSimple(Throwable.class);
 }

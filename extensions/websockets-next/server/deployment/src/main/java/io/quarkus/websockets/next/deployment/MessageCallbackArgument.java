@@ -19,4 +19,8 @@ class MessageCallbackArgument implements CallbackArgument {
         return DEFAULT_PRIORITY - 1;
     }
 
+    public static boolean isMessage(CallbackArgument callbackArgument) {
+        return callbackArgument instanceof MessageCallbackArgument;
+    }
+
 }

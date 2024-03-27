@@ -140,6 +140,11 @@ class OtlpExporterProviderTest {
                     public ProxyConfig proxyOptions() {
                         return new ProxyConfig() {
                             @Override
+                            public boolean enabled() {
+                                return false;
+                            }
+
+                            @Override
                             public Optional<String> username() {
                                 return Optional.empty();
                             }

@@ -23,6 +23,12 @@ public class DevServicesConfig {
     public boolean enabled = true;
 
     /**
+     * Use lightweight dev services instead of Keycloak
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean lightweight;
+
+    /**
      * The container image name for Dev Services providers.
      *
      * Defaults to a Quarkus-based Keycloak image. For a WildFly-based distribution, use an image like

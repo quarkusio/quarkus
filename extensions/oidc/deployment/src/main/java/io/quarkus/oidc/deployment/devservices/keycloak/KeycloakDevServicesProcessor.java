@@ -148,6 +148,10 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
 
+        if (config.devservices.lightweight) {
+            return null;
+        }
+
         DevServicesConfig currentDevServicesConfiguration = config.devservices;
         // Figure out if we need to shut down and restart any existing Keycloak container
         // if not and the Keycloak container has already started we just return

@@ -209,8 +209,6 @@ quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password, u.role FROM test_user u WHERE u.username=? <1>
 quarkus.security.jdbc.principal-query.bcrypt-password-mapper.enabled=true <2>
 quarkus.security.jdbc.principal-query.bcrypt-password-mapper.password-index=1
-quarkus.security.jdbc.principal-query.bcrypt-password-mapper.salt-index=-1
-quarkus.security.jdbc.principal-query.bcrypt-password-mapper.iteration-count-index=-1
 quarkus.security.jdbc.principal-query.attribute-mappings.0.index=2 <3>
 quarkus.security.jdbc.principal-query.attribute-mappings.0.to=groups
 ----
@@ -218,7 +216,7 @@ quarkus.security.jdbc.principal-query.attribute-mappings.0.to=groups
 The `elytron-security-jdbc` extension requires at least one principal query to authenticate the user and its identity.
 
 <1> We define a parameterized SQL statement (with exactly 1 parameter) which should return the user's password plus any additional information you want to load.
-<2> We configure the password mapper with the position of the password field in the `SELECT` fields and other information like salt, hash encoding, etc. Setting the salt and iteration count indexes to `-1` is required for MCF.
+<2> The password mapper is configured with the position of the password field in the `SELECT` fields. The hash is stored in the Modular Crypt Format (MCF) because the salt and iteration count indexes are set to `-1` by default. You can override them in order to decompose each element into three separate columns. 
 <3> We use `attribute-mappings` to bind the `SELECT` projection fields (i.e. `u.role` here) to the target Principal representation attributes.
 
 [NOTE]
@@ -311,8 +309,6 @@ quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password FROM test_user u WHERE u.username=?
 quarkus.security.jdbc.principal-query.bcrypt-password-mapper.enabled=true
 quarkus.security.jdbc.principal-query.bcrypt-password-mapper.password-index=1
-quarkus.security.jdbc.principal-query.bcrypt-password-mapper.salt-index=-1
-quarkus.security.jdbc.principal-query.bcrypt-password-mapper.iteration-count-index=-1
 
 quarkus.security.jdbc.principal-query.roles.sql=SELECT r.role_name FROM test_role r, test_user_role ur WHERE ur.username=? AND ur.role_id = r.id
 quarkus.security.jdbc.principal-query.roles.datasource=permissions

@@ -17,17 +17,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.api.builder.Visitor;
 import io.fabric8.kubernetes.api.model.APIResourceList;
 import io.fabric8.kubernetes.api.model.GenericKubernetesResource;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesList;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelectorFluent;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -239,7 +244,8 @@ public class KubernetesDeployer {
     private void deployResource(DeploymentTargetEntry deploymentTarget, KubernetesClient client, HasMetadata metadata,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
         var r = findResource(client, metadata);
-        if (shouldDeleteExisting(deploymentTarget, metadata)) {
+        Optional<HasMetadata> existing = Optional.ofNullable(client.resource(metadata).get());
+        if (shouldDeleteExisting(deploymentTarget, metadata, existing)) {
             deleteResource(metadata, r);
         }
 
@@ -381,11 +387,34 @@ public class KubernetesDeployer {
                 .anyMatch(t -> t.getApiVersion().equals(resource.getApiVersion()) && t.getKind().equals(resource.getKind()));
     }
 
-    private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {
-        if (deploymentTarget.getDeployStrategy() != DeployStrategy.CreateOrUpdate) {
+    private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource,
+            Optional<HasMetadata> existing) {
+        if (!existing.isPresent()) {
             return false;
         }
 
+        // Delete existing Deployment if selectors do not match
+        if (resource instanceof Deployment) {
+            Optional<String> version = getVersionFromLabelSelector(resource);
+            Optional<String> existingVersion = getVersionFromLabelSelector(existing.get());
+            if (version.isPresent() && otherVersion.isPresent()) {
+                boolean conflicting = !version.get().equals(existingVersion.get());
+                if (conflicting) {
+                    log.infof("Found conflicting version in Deployment selector: %s vs %s. Version %s will be removed.",
+                            version.get(), existingVersion.get(), existingVersion.get());
+                    return true;
+                }
+            } else if (version.isPresent()) {
+                return true;
+            } else if (otherVersion.isPresent()) {
+                return true;
+            }
+            return false;
+        }
+
+        if (deploymentTarget.getDeployStrategy() != DeployStrategy.CreateOrUpdate) {
+            return false;
+        }
         return KNATIVE.equalsIgnoreCase(deploymentTarget.getName())
                 || resource instanceof Service
                 || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()))
@@ -397,5 +426,18 @@ public class KubernetesDeployer {
         Map<Object, Boolean> seen = new ConcurrentHashMap<>();
         return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
                 Boolean.TRUE) == null;
+    }
+
+    private static Optional<String> getVersionFromLabelSelector(HasMetadata resource) {
+        AtomicReference<String> version = new AtomicReference<>();
+        KubernetesList list = new KubernetesListBuilder().addToItems(resource).accept(new Visitor<LabelSelectorFluent<?>>() {
+            @Override
+            public void visit(LabelSelectorFluent<?> item) {
+                if (item.getMatchLabels() != null) {
+                    version.set(item.getMatchLabels().get("app.kubernetes.io/version"));
+                }
+            }
+        }).build();
+        return Optional.ofNullable(version.get());
     }
 }

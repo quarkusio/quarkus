@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
-@ConfigMapping(prefix = "quarkus.resteasy-reactive")
+@ConfigMapping(prefix = "quarkus.rest")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface ResteasyReactiveServerConfig {
 

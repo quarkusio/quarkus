@@ -51,6 +51,7 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Object> hints;
 
     private Map<String, Map<String, Object>> filters;
+    private Class<?> projectionType;
 
     public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
@@ -61,7 +62,8 @@ public class CommonPanacheQueryImpl<Entity> {
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
-    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery) {
+    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery,
+            Class<?> projectionType) {
         this.em = previousQuery.em;
         this.query = newQueryString;
         this.countQuery = countQuery;
@@ -73,6 +75,7 @@ public class CommonPanacheQueryImpl<Entity> {
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
+        this.projectionType = projectionType;
     }
 
     // Builder
@@ -83,38 +86,24 @@ public class CommonPanacheQueryImpl<Entity> {
             selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
         }
 
-        String lowerCasedTrimmedQuery = selectQuery.trim().toLowerCase();
-        if (lowerCasedTrimmedQuery.startsWith("select new ")) {
-            throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
+        String lowerCasedTrimmedQuery = PanacheJpaUtil.trimForAnalysis(selectQuery);
+        if (lowerCasedTrimmedQuery.startsWith("select new ")
+                || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
         }
 
-        // If the query starts with a select clause, we generate an HQL query
-        // using the fields in the select clause:
-        // Initial query: select e.field1, e.field2 from EntityClass e
-        // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
+        // If the query starts with a select clause, we pass it on to ORM which can handle that via a projection type
         if (lowerCasedTrimmedQuery.startsWith("select ")) {
-            int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
-            String trimmedQuery = selectQuery.trim();
-            // 7 is the length of "select "
-            String selectClause = trimmedQuery.substring(7, endSelect).trim();
-            String from = trimmedQuery.substring(endSelect);
-            StringBuilder newQuery = new StringBuilder("select ");
-            // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
-            boolean distinctQuery = selectClause.toLowerCase().startsWith("distinct ");
-            if (distinctQuery) {
-                // 9 is the length of "distinct "
-                selectClause = selectClause.substring(9).trim();
-                newQuery.append("distinct ");
-            }
-
-            newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
-            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
+            // just pass it through
+            return new CommonPanacheQueryImpl<>(this, query, countQuery, type);
         }
+
+        // FIXME: this assumes the query starts with "FROM " probably?
 
         // build select clause with a constructor expression
         String selectClause = "SELECT " + getParametersFromClass(type, null);
         return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery,
-                "select count(*) " + selectQuery);
+                "select count(*) " + selectQuery, type);
     }
 
     private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
@@ -305,7 +294,7 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends Entity> Uni<List<T>> list() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session);
+            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session);
             return (Uni) applyFilters(session, () -> jpaQuery.getResultList());
         });
     }
@@ -323,7 +312,7 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> firstResult() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session, 1);
+            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session, 1);
             return applyFilters(session, () -> jpaQuery.getResultList().map(list -> list.isEmpty() ? null : (T) list.get(0)));
         });
     }
@@ -331,15 +320,15 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session);
+            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session);
             return applyFilters(session, () -> jpaQuery.getSingleResult().map(v -> (T) v))
                     // FIXME: workaround https://github.com/hibernate/hibernate-reactive/issues/263
                     .onFailure(CompletionException.class).transform(t -> t.getCause());
         });
     }
 
-    private Mutiny.Query<?> createQuery(Mutiny.Session em) {
-        Mutiny.Query<?> jpaQuery = createBaseQuery(em);
+    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em) {
+        Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
@@ -364,8 +353,8 @@ public class CommonPanacheQueryImpl<Entity> {
         return jpaQuery;
     }
 
-    private Mutiny.Query<?> createQuery(Mutiny.Session em, int maxResults) {
-        Mutiny.Query<?> jpaQuery = createBaseQuery(em);
+    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em, int maxResults) {
+        Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
@@ -385,14 +374,14 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     @SuppressWarnings("unchecked")
-    private Mutiny.Query<?> createBaseQuery(Mutiny.Session em) {
-        Mutiny.Query<?> jpaQuery;
+    private Mutiny.SelectionQuery<?> createBaseQuery(Mutiny.Session em) {
+        Mutiny.SelectionQuery<?> jpaQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            jpaQuery = em.createNamedQuery(namedQuery);
+            jpaQuery = em.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
-                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query, projectionType);
             } catch (IllegalArgumentException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }

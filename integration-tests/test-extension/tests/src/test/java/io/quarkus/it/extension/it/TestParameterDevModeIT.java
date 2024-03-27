@@ -7,7 +7,6 @@ import java.io.IOException;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -21,7 +20,6 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  * <p>
  * mvn install -Dit.test=DevMojoIT#methodName
  */
-@Disabled // because of https://github.com/quarkiverse/quarkus-pact/issues/73
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 public class TestParameterDevModeIT extends RunAndCheckMojoTestBase {
 

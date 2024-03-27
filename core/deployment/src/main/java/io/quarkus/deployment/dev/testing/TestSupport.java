@@ -88,6 +88,7 @@ public class TestSupport implements TestController {
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
             DevModeContext context, DevModeType devModeType) {
+        System.out.println("HOLLY making test support");
         this.curatedApplication = curatedApplication;
         this.compilationProviders = compilationProviders;
         this.context = context;
@@ -155,6 +156,8 @@ public class TestSupport implements TestController {
     }
 
     public void init() {
+        System.out.println("HOLLY 159 testsupport init");
+        // TODO is any of this needed or is it already done in the launcher?
         if (moduleRunners.isEmpty()) {
             TestWatchedFiles.setWatchedFilesListener(
                     (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
@@ -180,6 +183,7 @@ public class TestSupport implements TestController {
 
                 try {
                     final Path projectDir = Path.of(module.getProjectDirectory());
+                    System.out.println("186 HOLLY making ANOTHER curated application ");
                     final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                             .setMode(QuarkusBootstrap.Mode.TEST)
                             .setAssertionsEnabled(true)
@@ -414,6 +418,17 @@ public class TestSupport implements TestController {
     }
 
     void runInternal(ClassScanResult classScanResult, boolean reRunFailures) {
+        System.out.println("HOLLY Test support run internal, rerun fails is " + reRunFailures);
+        if (classScanResult != null) {
+            System.out.println(
+                    "\"HOLLY Test support run added: " + classScanResult.getAddedClasses());
+            System.out.println(
+                    "\"HOLLY Test support run changed: " + classScanResult.getChangedClasses());
+            System.out.println(
+                    "\"HOLLY Test support run changed names: " + classScanResult.getChangedClassNames());
+        } else {
+            System.out.println("HOLLY scan result is null");
+        }
         final long runId = COUNTER.incrementAndGet();
         handleApplicationPropertiesChange();
         List<Runnable> runnables = new ArrayList<>();

@@ -401,7 +401,9 @@ public class ApplicationDependencyTreeResolver {
     }
 
     private void visitRuntimeDependencies(List<DependencyNode> list) {
+        //     System.out.println(list.size() + "HOLLY will visit " + Arrays.toString(list.toArray()));
         for (DependencyNode n : list) {
+            //      System.out.println("HOLLY visiting " + n);
             visitRuntimeDependency(n);
         }
     }
@@ -424,7 +426,9 @@ public class ApplicationDependencyTreeResolver {
         }
 
         try {
+            //     System.out.println("about to get  " + node + ".>" + artifact);
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
+            //     System.out.println("got " + extDep);
 
             if (dep == null) {
                 WorkspaceModule module = null;

@@ -1,9 +1,20 @@
 package io.quarkus.bootstrap.app;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public interface StartupAction {
+
+    static Object getTestClassLocation() {
+        return StartupActionHolder.getTestClassLocation();
+    }
+
+    static void storeTestClassLocation(Path testClassLocation) {
+        StartupActionHolder.setTestClassLocation(testClassLocation);
+    }
+
+    void store();
 
     /**
      * Overrides runtime config.
@@ -30,5 +41,9 @@ public interface StartupAction {
      * Runs the application by running the main method of the main class, and runs it to completion
      */
     int runMainClassBlocking(String... args) throws Exception;
+
+    static StartupAction getStored() {
+        return StartupActionHolder.getStored();
+    }
 
 }

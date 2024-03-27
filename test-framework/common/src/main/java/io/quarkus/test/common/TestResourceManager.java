@@ -71,6 +71,7 @@ public class TestResourceManager implements Closeable {
         // we need to keep track of duplicate entries to make sure we don't start the same resource
         // multiple times even if there are multiple same @QuarkusTestResource annotations
         Set<TestResourceClassEntry> uniqueEntries;
+        System.out.println("HOLLY will try and load test class " + testClassLocation + " (class is " + testClass);
         if (disableGlobalTestResources) {
             uniqueEntries = new HashSet<>(additionalTestResources);
         } else {
@@ -267,22 +268,30 @@ public class TestResourceManager implements Closeable {
     private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Path testClassLocation, Class<?> testClass,
             Class<?> profileClass,
             List<TestResourceClassEntry> additionalTestResources) {
+        System.out.println("HOLLY comparing classloader of TCCL and now, " + testClass.getClassLoader() + " vs "
+                + Thread.currentThread().getContextClassLoader());
         IndexView index = TestClassIndexer.readIndex(testClassLocation, testClass);
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
+        // TODO sort out names
+        Class<?> testClassFromTCCL = testClass;
+        Class<?> profileClassFromTCCL = profileClass;
         // reload the test and profile classes in the right CL
-        Class<?> testClassFromTCCL;
-        Class<?> profileClassFromTCCL;
-        try {
-            testClassFromTCCL = Class.forName(testClass.getName(), false, Thread.currentThread().getContextClassLoader());
-            if (profileClass != null) {
-                profileClassFromTCCL = Class.forName(profileClass.getName(), false,
-                        Thread.currentThread().getContextClassLoader());
-            } else {
-                profileClassFromTCCL = null;
-            }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        // TODO is this needed? it's already loaded in the right CL
+        // TODO check profile is ok
+        //        Class<?> testClassFromTCCL;
+        //        Class<?> profileClassFromTCCL;
+        //        try {
+        //            testClassFromTCCL = Class.forName(testClass.getName(), false, Thread.currentThread().getContextClassLoader());
+        //            if (profileClass != null) {
+        //                profileClassFromTCCL = Class.forName(profileClass.getName(), false,
+        //                        Thread.currentThread().getContextClassLoader());
+        //            } else {
+        //                profileClassFromTCCL = null;
+        //            }
+        //        } catch (ClassNotFoundException e) {
+        //            throw new RuntimeException(e);
+        //        }
+
         // handle meta-annotations: in this case we must rely on reflection because meta-annotations are not indexed
         // because they are not in the user's test folder but come from test extensions
         collectMetaAnnotations(testClassFromTCCL, Class::getSuperclass, uniqueEntries);

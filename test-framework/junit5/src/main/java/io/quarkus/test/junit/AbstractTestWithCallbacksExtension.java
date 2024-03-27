@@ -18,7 +18,7 @@ import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 public abstract class AbstractTestWithCallbacksExtension {
     private static List<Object> beforeClassCallbacks;
     private static List<Object> afterConstructCallbacks;
-    private static List<Object> beforeEachCallbacks;
+    protected static List<Object> beforeEachCallbacks;
     private static List<Object> beforeTestCallbacks;
     private static List<Object> afterTestCallbacks;
     private static List<Object> afterEachCallbacks;

@@ -125,6 +125,7 @@ public class ArcContainerImpl implements ArcContainer {
 
         List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
+            System.out.println("HOLLY getting components, current TCCL is " + Thread.currentThread().getContextClassLoader());
             components.add(componentsProvider.getComponents());
         }
 

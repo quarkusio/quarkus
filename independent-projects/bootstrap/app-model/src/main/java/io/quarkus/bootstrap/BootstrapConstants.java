@@ -20,6 +20,9 @@ public interface BootstrapConstants {
 
     String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
 
+    // Added because OUTPUT_SOURCES_DIR does not include additional sources and we sometimes (always?) need them
+    String ALL_OUTPUT_SOURCES_DIR = "ALL_OUTPUT_SOURCES_DIR";
+
     @Deprecated
     String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
 

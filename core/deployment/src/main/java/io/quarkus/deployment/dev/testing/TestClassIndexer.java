@@ -1,6 +1,6 @@
-package io.quarkus.test.common;
+package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassesLocation;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -68,9 +68,12 @@ public final class TestClassIndexer {
         return readIndex(getTestClassesLocation(testClass), testClass);
     }
 
+    public static Index readIndex(Path testLocation) {
+        return indexTestClasses(testLocation);
+    }
+
     public static Index readIndex(Path testClassLocation, Class<?> testClass) {
         Path path = indexPath(testClassLocation, testClass);
-        System.out.println("HOLLY OK the index path is " + path);
         if (path.toFile().exists()) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
@@ -81,14 +84,13 @@ public final class TestClassIndexer {
                 return indexTestClasses(testClass);
             }
         } else {
-            // TODO we used to pass the class, now we pass the location so we don't get snarled up in a quarkus:/ url
-            return indexTestClasses(testClassLocation);
+            return indexTestClasses(testClass);
         }
 
     }
 
     private static Path indexPath(Class<?> testClass) {
-        return indexPath(PathTestHelper.getTestClassesLocation(testClass), testClass);
+        return indexPath(getTestClassesLocation(testClass), testClass);
     }
 
     private static Path indexPath(Path testClassLocation, Class<?> testClass) {

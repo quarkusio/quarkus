@@ -57,6 +57,7 @@ public class ArcRecorder {
     }
 
     public void initExecutor(ExecutorService executor) {
+        System.out.println("FUNQ will set executor on arc, cl is " + Arc.class.getClassLoader());
         Arc.setExecutor(executor);
     }
 

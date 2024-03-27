@@ -46,8 +46,14 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
         //this is pretty yuck, but I don't really see a solution
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
+            //            System.out.println("HOLLY about to ask config");
+            //            Optional<T> thing = ConfigProvider.getConfig().getOptionalValue(key, type);
+            //            System.out.println("--------" + key + "------------going direct, config is " + thing);
+            //            return thing;
             Class<?> configProviderClass = classLoader.loadClass(ConfigProvider.class.getName());
             Method getConfig = configProviderClass.getMethod("getConfig", ClassLoader.class);
+            // TODO this infinite loops
+            // we are assuming here that the the classloader has been initialised with some kind of different provider that does not infinite loop.
             Thread.currentThread().setContextClassLoader(classLoader);
             Object config = getConfig.invoke(null, classLoader);
             return (Optional<T>) getConfig.getReturnType().getMethod("getOptionalValue", String.class, Class.class)

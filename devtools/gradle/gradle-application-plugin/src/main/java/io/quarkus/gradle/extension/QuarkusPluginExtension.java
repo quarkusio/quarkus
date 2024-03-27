@@ -86,8 +86,15 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
-            SourceSetContainer sourceSets = getSourceSets();
-            SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            StringJoiner allOutputSourcesDir = new StringJoiner(",");
+            for (File outputSourceDir : allOutputSourceDirs()) {
+                allOutputSourcesDir.add(outputSourceDir.getAbsolutePath());
+            }
+            System.out.println("HOLLY gradle made all output " + allOutputSourcesDir);
+            props.put(BootstrapConstants.ALL_OUTPUT_SOURCES_DIR, allOutputSourcesDir.toString());
+
+            final SourceSetContainer sourceSets = getSourceSets();
+            final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
             File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
 
@@ -167,9 +174,25 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public Set<File> combinedOutputSourceDirs() {
         Set<File> sourcesDirs = new LinkedHashSet<>();
+        // TODO should this include the additional source sets? The name kind of implies it should, but I confirm it doesn't - at least not test source sets
         SourceSetContainer sourceSets = getSourceSets();
         sourcesDirs.addAll(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
         sourcesDirs.addAll(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        return sourcesDirs;
+    }
+
+    public Set<File> allOutputSourceDirs() {
+        Set<File> sourcesDirs = new LinkedHashSet<>();
+        SourceSetContainer sourceSets = getSourceSets();
+
+        // TODO old-fashioned, but coding is hard without IDE help
+        for (Object thing : sourceSets.toArray()) {
+
+            sourcesDirs.addAll(((SourceSet) thing).getOutput()
+                    .getClassesDirs()
+                    .getFiles());
+        }
+        //System.out.println("HOLLY MADE SET " + Arrays.toString(sourcesDirs.toArray()));
         return sourcesDirs;
     }
 

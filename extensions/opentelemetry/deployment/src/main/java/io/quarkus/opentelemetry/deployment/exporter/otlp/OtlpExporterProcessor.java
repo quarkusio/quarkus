@@ -12,6 +12,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
@@ -35,6 +36,8 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 @BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
 public class OtlpExporterProcessor {
 
+    private static final Logger LOG = Logger.getLogger(OtlpExporterProcessor.class);
+
     static class OtlpExporterEnabled implements BooleanSupplier {
         OtlpExporterBuildConfig exportBuildConfig;
         OTelBuildConfig otelBuildConfig;
@@ -55,6 +58,8 @@ public class OtlpExporterProcessor {
             buildProducer.produce(
                     AdditionalBeanBuildItem.unremovableOf(
                             EndUserSpanProcessor.class));
+            LOG.warn("End User Span tracking has been enabled by setting quarkus.otel.traces.eusp.enabled=true. Please " +
+                    "AVOID using this feature in production with the current Quarkus version.");
         }
     }
 

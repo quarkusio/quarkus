@@ -3,10 +3,17 @@ package io.quarkus.websockets.next.deployment.devui;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
+
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -16,6 +23,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.websockets.next.deployment.GeneratedEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem;
+import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
 import io.quarkus.websockets.next.deployment.WebSocketServerProcessor;
 import io.quarkus.websockets.next.runtime.devui.WebSocketNextJsonRPCService;
 
@@ -62,6 +70,9 @@ public class WebSocketServerDevUIProcessor {
             addCallback(endpoint.onTextMessage, callbacks);
             addCallback(endpoint.onPongMessage, callbacks);
             addCallback(endpoint.onClose, callbacks);
+            for (Callback c : endpoint.onErrors) {
+                addCallback(c, callbacks);
+            }
             endpointJson.put("callbacks", callbacks);
             json.add(endpointJson);
         }
@@ -70,7 +81,53 @@ public class WebSocketServerDevUIProcessor {
 
     private void addCallback(WebSocketEndpointBuildItem.Callback callback, List<Map<String, Object>> callbacks) {
         if (callback != null) {
-            callbacks.add(Map.of("annotation", callback.annotation.toString(), "method", callback.method.toString()));
+            callbacks.add(Map.of("annotation", callback.annotation.toString(), "method", methodToString(callback.method)));
+        }
+    }
+
+    private String methodToString(MethodInfo method) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(typeToString(method.returnType())).append(' ').append(method.name()).append('(');
+        for (Iterator<MethodParameterInfo> it = method.parameters().iterator(); it.hasNext();) {
+            MethodParameterInfo p = it.next();
+            builder.append(typeToString(p.type()));
+            builder.append(' ');
+            builder.append(p.name() != null ? p.name() : "arg" + p.position());
+            if (it.hasNext()) {
+                builder.append(", ");
+            }
+        }
+        builder.append(')');
+        if (!method.exceptions().isEmpty()) {
+            builder.append(" throws ");
+            for (Iterator<Type> it = method.exceptions().iterator(); it.hasNext();) {
+                builder.append(typeToString(it.next()));
+                if (it.hasNext()) {
+                    builder.append(", ");
+                }
+            }
+        }
+        return builder.toString();
+    }
+
+    private String typeToString(Type type) {
+        if (type.kind() == Kind.PARAMETERIZED_TYPE) {
+            ParameterizedType parameterizedType = type.asParameterizedType();
+            StringBuilder builder = new StringBuilder();
+            builder.append(parameterizedType.name().withoutPackagePrefix());
+            if (!parameterizedType.arguments().isEmpty()) {
+                builder.append('<');
+                for (Iterator<Type> it = parameterizedType.arguments().iterator(); it.hasNext();) {
+                    builder.append(typeToString(it.next()));
+                    if (it.hasNext()) {
+                        builder.append(", ");
+                    }
+                }
+                builder.append('>');
+            }
+            return builder.toString();
+        } else {
+            return type.name().withoutPackagePrefix();
         }
     }
 
@@ -85,4 +142,5 @@ public class WebSocketServerDevUIProcessor {
         m.appendTail(sb);
         return sb.toString();
     }
+
 }

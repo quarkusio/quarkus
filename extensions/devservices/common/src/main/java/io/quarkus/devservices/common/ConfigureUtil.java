@@ -3,16 +3,21 @@ package io.quarkus.devservices.common;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.Base58;
+
+import com.github.dockerjava.api.command.CreateNetworkCmd;
 
 public final class ConfigureUtil {
 
@@ -35,6 +40,12 @@ public final class ConfigureUtil {
                 Class<?> networkClass = tccl.getParent()
                         .loadClass("org.testcontainers.containers.Network");
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
+                Consumer<CreateNetworkCmd> addDevservicesLabel = cmd -> cmd
+                        .withLabels(Map.of("quarkus.devservices.network", "shared"));
+                Field createNetworkCmdModifiersField = sharedNetwork.getClass().getSuperclass()
+                        .getDeclaredField("createNetworkCmdModifiers");
+                createNetworkCmdModifiersField.setAccessible(true);
+                createNetworkCmdModifiersField.set(sharedNetwork, Set.of(addDevservicesLabel));
                 container.setNetwork((Network) sharedNetwork);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to obtain SHARED network from testcontainers", e);

@@ -1,7 +1,9 @@
 package io.quarkus.devservices.common;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
 import org.jboss.logging.Logger;
@@ -56,6 +58,30 @@ public class ContainerLocator {
                                                 containerAddress.getUrl());
                                         return containerAddress;
                                     })));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * @return container id, if exists
+     */
+    public Optional<String> locateContainer(String serviceName, boolean shared, LaunchMode launchMode,
+            BiConsumer<Integer, ContainerAddress> consumer) {
+        if (shared && launchMode == LaunchMode.DEVELOPMENT) {
+            return lookup(serviceName)
+                    .map(container -> {
+                        Arrays.stream(container.getPorts())
+                                .filter(cp -> Objects.nonNull(cp.getPublicPort()) && Objects.nonNull(cp.getPrivatePort()))
+                                .forEach(cp -> {
+                                    ContainerAddress containerAddress = new ContainerAddress(
+                                            container.getId(),
+                                            DockerClientFactory.instance().dockerHostIpAddress(),
+                                            cp.getPublicPort());
+                                    consumer.accept(cp.getPrivatePort(), containerAddress);
+                                });
+                        return container.getId();
+                    });
         } else {
             return Optional.empty();
         }

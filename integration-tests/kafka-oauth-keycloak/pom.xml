@@ -44,11 +44,6 @@
             <groupId>io.strimzi</groupId>
             <artifactId>kafka-oauth-client</artifactId>
         </dependency>
-        <!-- required for native compilation as strimzi substitutions require these classes -->
-        <dependency>
-            <groupId>io.strimzi</groupId>
-            <artifactId>kafka-oauth-common</artifactId>
-        </dependency>
 
         <!-- test dependencies -->
         <dependency>

@@ -38,7 +38,7 @@ public class SqlClientInstrumenterVertxTracer implements
             return true;
         }
 
-        return tagExtractor.extract(request).containsKey("db.statement");
+        return "sql".equals(tagExtractor.extract(request).get("db.type"));
     }
 
     @Override
@@ -87,7 +87,7 @@ public class SqlClientInstrumenterVertxTracer implements
         return sqlClientInstrumenter;
     }
 
-    // From io.vertx.sqlclient.impl.tracing.QueryTracer
+    // From io.vertx.sqlclient.impl.tracing.QueryReporter
     static class QueryTrace {
         private final Map<String, String> attributes;
 

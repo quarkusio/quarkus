@@ -24,4 +24,10 @@ public interface InstrumentRuntimeConfig {
     @WithDefault("true")
     boolean vertxSqlClient();
 
+    /**
+     * Enables instrumentation for Vert.x Redis Client.
+     */
+    @WithDefault("true")
+    boolean vertxRedisClient();
+
 }

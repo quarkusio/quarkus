@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -766,6 +768,50 @@ public class BearerTokenAuthorizationTest {
         // tenant is not resolved based on path pattern or access token is not valid
         final String accessToken = getAccessToken(clientId);
         RestAssured.given().auth().oauth2(accessToken).when().get("/api/tenant-paths/" + subPath).then().statusCode(401);
+    }
+
+    @Test
+    public void testAnnotationBasedAuthMechSelection() throws IOException {
+        // endpoint is annotated with @CodeFlow
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/code-flow-auth-mech-annotation");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("code-flow-auth-mech-annotation", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("1"))
+                .when().get("/tenant/tenant-oidc-no-discovery/api/user/code-flow-auth-mech-annotation")
+                .then()
+                .statusCode(401);
+
+        // endpoint is annotated with @Bearer
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("1"))
+                .when().get("/tenant/tenant-oidc-no-discovery/api/user/bearer-auth-mech-annotation")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("bearer-auth-mech-annotation"));
+        boolean codeFlowAuthFailed = false;
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/bearer-auth-mech-annotation");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            webClient.getOptions().setRedirectEnabled(false);
+            loginForm.getInputByName("login").click();
+        } catch (FailingHttpStatusCodeException e) {
+            codeFlowAuthFailed = true;
+        }
+        if (!codeFlowAuthFailed) {
+            Assertions.fail(
+                    "Endpoint 'bearer-auth-mech-annotation' is annotated with the @Bearer annotation, code flow auth should fail");
+        }
     }
 
     private String getAccessToken(String userName, String clientId) {

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
+import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem.collectInterceptedMethods;
 import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LEGACY_PUBLISHER;
@@ -203,7 +204,7 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
-import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
+import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -1496,13 +1497,13 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig, Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors,
-            JaxRsSecurityConfig securityConfig) {
+            List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
 
-        final boolean applySecurityInterceptors = eagerSecurityInterceptors.isPresent();
+        final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
+        final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
         final boolean denyJaxRs = securityConfig.denyJaxRs();
         final boolean hasDefaultJaxRsRolesAllowed = !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty();
         var index = indexBuildItem.getComputingIndex();
@@ -1510,22 +1511,21 @@ public class ResteasyReactiveProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (applySecurityInterceptors && eagerSecurityInterceptors.get().applyInterceptorOn(method)) {
+                if (applySecurityInterceptors && interceptedMethods.contains(method)) {
                     // EagerSecurityHandler needs to be present whenever the method requires eager interceptor
                     // because JAX-RS specific HTTP Security policies are defined by runtime config properties
                     // for example: when you annotate resource method with @Tenant("hr") you select OIDC tenant,
                     // so we can't authenticate before the tenant is selected, only after then HTTP perms can be checked
                     return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
-                            EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                            EagerSecurityHandler.Customizer.newInstance());
                 } else {
                     if (denyJaxRs || hasDefaultJaxRsRolesAllowed) {
-                        return List.of(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                        return List.of(EagerSecurityHandler.Customizer.newInstance());
                     } else {
                         return Objects
                                 .requireNonNullElse(
                                         consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
-                                                (c) -> Collections.singletonList(EagerSecurityHandler.Customizer
-                                                        .newInstance(httpBuildTimeConfig.auth.proactive))),
+                                                (c) -> List.of(EagerSecurityHandler.Customizer.newInstance())),
                                         Collections.emptyList());
                     }
                 }

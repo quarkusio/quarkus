@@ -6,7 +6,9 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -20,8 +22,10 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
 import io.vertx.mutiny.redis.client.Command;
+import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.Request;
 import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.RedisOptions;
 
 class RedisCacheImplTest extends RedisCacheTestBase {
 
@@ -46,6 +50,33 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
+        var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
+        assertThat(r).isNotNull();
+    }
+
+    @Test
+    public void testExhaustConnectionPool() {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class.getName();
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+
+        Redis redis = Redis.createClient(vertx, new RedisOptions()
+                .setMaxPoolSize(1)
+                .setMaxPoolWaiting(0)
+                .setConnectionString("redis://" + server.getHost() + ":" + server.getFirstMappedPort()));
+
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        List<Uni<String>> responses = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            responses.add(cache.get(k, s -> "hello"));
+        }
+
+        final var values = Uni.combine().all().unis(responses).with(list -> list).await().indefinitely();
+        assertThat(values).isNotEmpty().allMatch(value -> value.equals("hello"));
+
         var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
         assertThat(r).isNotNull();
     }

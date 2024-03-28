@@ -25,6 +25,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.unchecked.UncheckedFunction;
 import io.smallrye.mutiny.vertx.MutinyHelper;
+import io.vertx.core.http.ConnectionPoolTooBusyException;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
@@ -100,6 +101,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         }
         this.marshaller.add(CompositeCacheKey.class);
         this.redis = redis;
+    }
+
+    private static boolean isRecomputableError(Throwable error) {
+        return error instanceof ConnectException
+                || error instanceof ConnectionPoolTooBusyException;
     }
 
     private Class<?> loadClass(String type) throws ClassNotFoundException {
@@ -211,7 +217,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
             }
         })
 
-                .onFailure(ConnectException.class).recoverWithUni(new Function<Throwable, Uni<? extends V>>() {
+                .onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(new Function<Throwable, Uni<? extends V>>() {
                     @Override
                     public Uni<? extends V> apply(Throwable e) {
                         log.warn("Unable to connect to Redis, recomputing cached value", e);
@@ -260,7 +266,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                         });
             }
         })
-                .onFailure(ConnectException.class).recoverWithUni(e -> {
+                .onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(e -> {
                     log.warn("Unable to connect to Redis, recomputing cached value", e);
                     return valueLoader.apply(key);
                 });

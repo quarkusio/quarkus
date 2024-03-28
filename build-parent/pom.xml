@@ -173,6 +173,9 @@
         <!-- Quarkus Analytics -->
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
+
+        <!-- Disable Develocity Predictive Test Selection by default -->
+        <develocity.pts.enabled>false</develocity.pts.enabled>
     </properties>
 
     <dependencyManagement>
@@ -435,6 +438,11 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
+                        <properties>
+                            <predictiveSelection>
+                                <enabled>${develocity.pts.enabled}</enabled>
+                            </predictiveSelection>
+                        </properties>
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                         <systemPropertyVariables combine.self="override">
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -455,6 +463,11 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${failsafe-plugin.version}</version>
                     <configuration>
+                        <properties>
+                            <predictiveSelection>
+                                <enabled>${develocity.pts.enabled}</enabled>
+                            </predictiveSelection>
+                        </properties>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>

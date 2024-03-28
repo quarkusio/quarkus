@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
-import static io.quarkus.fs.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -1175,7 +1174,7 @@ public class JarResultBuildStep {
                 if (i.getData() != null) {
                     Path target = runnerZipFs.getPath(i.getFileName());
                     handleParent(runnerZipFs, i.getFileName(), seen);
-                    try (final OutputStream out = wrapForJDK8232879(Files.newOutputStream(target))) {
+                    try (final OutputStream out = Files.newOutputStream(target)) {
                         out.write(i.getData());
                     }
                     seen.put(i.getFileName(), "Current Application");
@@ -1190,7 +1189,7 @@ public class JarResultBuildStep {
             if (Files.exists(target)) {
                 continue;
             }
-            try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
+            try (final OutputStream os = Files.newOutputStream(target)) {
                 os.write(i.getClassData());
             }
         }
@@ -1207,7 +1206,7 @@ public class JarResultBuildStep {
             if (i.getName().startsWith("META-INF/services/")) {
                 concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
             } else {
-                try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
+                try (final OutputStream os = Files.newOutputStream(target)) {
                     os.write(i.getData());
                 }
             }
@@ -1216,8 +1215,7 @@ public class JarResultBuildStep {
         copyFiles(appArchives.getRootArchive(), runnerZipFs, concatenatedEntries, ignoredEntriesPredicate);
 
         for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
-            try (final OutputStream os = wrapForJDK8232879(
-                    Files.newOutputStream(runnerZipFs.getPath(entry.getKey())))) {
+            try (final OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
                 // TODO: Handle merging of XMLs
                 for (byte[] i : entry.getValue()) {
                     os.write(i);
@@ -1331,7 +1329,7 @@ public class JarResultBuildStep {
                 attribs.putValue(entry.getKey(), entry.getValue());
             }
         }
-        try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath))) {
+        try (final OutputStream os = Files.newOutputStream(manifestPath)) {
             manifest.write(os);
         }
     }

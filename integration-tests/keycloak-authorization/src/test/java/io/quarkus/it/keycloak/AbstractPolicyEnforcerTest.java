@@ -18,9 +18,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -29,9 +27,7 @@ import io.vertx.ext.web.client.WebClient;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@QuarkusTest
-@QuarkusTestResource(KeycloakLifecycleManager.class)
-public class PolicyEnforcerTest {
+public abstract class AbstractPolicyEnforcerTest {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @TestHTTPResource
@@ -242,7 +238,7 @@ public class PolicyEnforcerTest {
         return keycloakClient.getAccessToken(userName);
     }
 
-    private void assureGetPath(String path, int expectedStatusCode, String token, String body) {
+    protected void assureGetPath(String path, int expectedStatusCode, String token, String body) {
         var req = client.get(url.getPort(), url.getHost(), path);
         if (token != null) {
             req.bearerTokenAuthentication(token);

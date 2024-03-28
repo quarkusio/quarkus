@@ -42,13 +42,11 @@ abstract class AbstractHttpAuthorizer {
     private final List<HttpSecurityPolicy> policies;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final HttpSecurityPolicy.AuthorizationRequestContext context;
-    private final RolesMapping rolesMapping;
 
     AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
-            Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled,
-            Map<String, List<String>> rolesMapping) {
+            Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled) {
         this.httpAuthenticator = httpAuthenticator;
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
@@ -56,7 +54,6 @@ abstract class AbstractHttpAuthorizer {
         this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
         this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
-        this.rolesMapping = RolesMapping.of(rolesMapping);
     }
 
     /**
@@ -69,28 +66,8 @@ abstract class AbstractHttpAuthorizer {
             return;
         }
         //check their permissions
-        doPermissionCheck(routingContext, augmentAndGetIdentity(routingContext), 0, null, policies);
-    }
-
-    private Uni<SecurityIdentity> augmentAndGetIdentity(RoutingContext routingContext) {
-        if (rolesMapping != null) {
-            var identity = routingContext.user() == null ? null
-                    : ((QuarkusHttpUser) routingContext.user()).getSecurityIdentity();
-            if (identity == null) {
-                // make sure augmented identity is used no matter when the authentication happens
-                return setIdentity(
-                        QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager)
-                                .onItem()
-                                .ifNotNull()
-                                .transform(rolesMapping.withRoutingContext(routingContext)),
-                        routingContext);
-            } else {
-                // augment right now as someone downstream could use user instead of deferred identity
-                return Uni.createFrom().item(rolesMapping.withRoutingContext(routingContext).apply(identity));
-            }
-        }
-
-        return QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager);
+        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
+                policies);
     }
 
     private void doPermissionCheck(RoutingContext routingContext,
@@ -100,13 +77,15 @@ abstract class AbstractHttpAuthorizer {
         if (index == permissionCheckers.size()) {
             QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
             if (augmentedIdentity != null) {
-                if (!augmentedIdentity.isAnonymous()
-                        && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
+                boolean identityChanged = isIdentityChanged(augmentedIdentity, currentUser);
+                if (identityChanged) {
                     setIdentity(augmentedIdentity, routingContext);
                 }
                 if (securityEventHelper.fireEventOnSuccess()) {
                     securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,
-                            Map.of(RoutingContext.class.getName(), routingContext)));
+                            Map.of(RoutingContext.class.getName(), routingContext,
+                                    AuthorizationSuccessEvent.SECURITY_IDENTITY_AUGMENTED,
+                                    identityChanged)));
                 }
             } else if (securityEventHelper.fireEventOnSuccess()
                     && permissionCheckPerformed(permissionCheckers, routingContext, index)) {
@@ -124,7 +103,7 @@ abstract class AbstractHttpAuthorizer {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
-                            doDeny(identity, routingContext, res);
+                            doDeny(identity, routingContext, res, checkResult.getAugmentedIdentity());
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
                                 doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
@@ -155,65 +134,86 @@ abstract class AbstractHttpAuthorizer {
                 });
     }
 
-    private void doDeny(Uni<SecurityIdentity> identity, RoutingContext routingContext, HttpSecurityPolicy policy) {
-        identity.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-            @Override
-            public void onSubscribe(UniSubscription subscription) {
+    private static boolean isIdentityChanged(SecurityIdentity augmentedIdentity, QuarkusHttpUser currentUser) {
+        return !augmentedIdentity.isAnonymous()
+                && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity);
+    }
 
-            }
+    private void doDeny(SecurityIdentity identity, RoutingContext routingContext, HttpSecurityPolicy policy,
+            boolean identityAugmented) {
+        //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
+        if (identity.isAnonymous()) {
+            httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
+                @Override
+                public void onSubscribe(UniSubscription subscription) {
 
-            @Override
-            public void onItem(SecurityIdentity identity) {
-                //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
-                if (identity.isAnonymous()) {
-                    httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
-                        @Override
-                        public void onSubscribe(UniSubscription subscription) {
-
-                        }
-
-                        @Override
-                        public void onItem(Boolean item) {
-                            if (!routingContext.response().ended()) {
-                                routingContext.response().end();
-                            }
-                            fireAuthZFailureEvent(routingContext, policy, null, identity);
-                        }
-
-                        @Override
-                        public void onFailure(Throwable failure) {
-                            fireAuthZFailureEvent(routingContext, policy, failure, identity);
-                            if (!routingContext.response().ended()) {
-                                routingContext.fail(failure);
-                            } else if (!(failure instanceof IOException)) {
-                                log.error("Failed to send challenge", failure);
-                            } else {
-                                log.debug("Failed to send challenge", failure);
-                            }
-                        }
-                    });
-                } else {
-                    ForbiddenException forbiddenException = new ForbiddenException();
-                    fireAuthZFailureEvent(routingContext, policy, forbiddenException, identity);
-                    routingContext.fail(new ForbiddenException());
                 }
-            }
 
-            @Override
-            public void onFailure(Throwable failure) {
-                fireAuthZFailureEvent(routingContext, policy, failure, null);
-                routingContext.fail(failure);
-            }
-        });
+                @Override
+                public void onItem(Boolean item) {
+                    if (!routingContext.response().ended()) {
+                        routingContext.response().end();
+                    }
+                    fireAuthZFailureEvent(routingContext, policy, null, identity, identityAugmented);
+                }
 
+                @Override
+                public void onFailure(Throwable failure) {
+                    fireAuthZFailureEvent(routingContext, policy, failure, identity, identityAugmented);
+                    if (!routingContext.response().ended()) {
+                        routingContext.fail(failure);
+                    } else if (!(failure instanceof IOException)) {
+                        log.error("Failed to send challenge", failure);
+                    } else {
+                        log.debug("Failed to send challenge", failure);
+                    }
+                }
+            });
+        } else {
+            ForbiddenException forbiddenException = new ForbiddenException();
+            fireAuthZFailureEvent(routingContext, policy, forbiddenException, identity, identityAugmented);
+            routingContext.fail(new ForbiddenException());
+        }
+    }
+
+    private void doDeny(Uni<SecurityIdentity> identity, RoutingContext routingContext, HttpSecurityPolicy policy,
+            SecurityIdentity augmentedIdentity) {
+        if (augmentedIdentity == null) {
+            identity.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                @Override
+                public void onSubscribe(UniSubscription subscription) {
+
+                }
+
+                @Override
+                public void onItem(SecurityIdentity identity) {
+                    doDeny(identity, routingContext, policy, false);
+                }
+
+                @Override
+                public void onFailure(Throwable failure) {
+                    fireAuthZFailureEvent(routingContext, policy, failure, null, false);
+                    routingContext.fail(failure);
+                }
+            });
+        } else {
+            final boolean identityIsAugmented;
+            if (routingContext.user() instanceof QuarkusHttpUser user) {
+                identityIsAugmented = isIdentityChanged(augmentedIdentity, user);
+            } else {
+                identityIsAugmented = false;
+            }
+            doDeny(augmentedIdentity, routingContext, policy, identityIsAugmented);
+        }
     }
 
     private void fireAuthZFailureEvent(RoutingContext routingContext, HttpSecurityPolicy policy, Throwable failure,
-            SecurityIdentity identity) {
+            SecurityIdentity identity, boolean identityAugmented) {
         if (securityEventHelper.fireEventOnFailure()) {
             final String context = policy != null ? policy.getClass().getName() : null;
             final AuthorizationFailureEvent event = new AuthorizationFailureEvent(identity, failure, context,
-                    Map.of(RoutingContext.class.getName(), routingContext));
+                    Map.of(RoutingContext.class.getName(), routingContext,
+                            AuthorizationFailureEvent.SECURITY_IDENTITY_AUGMENTED, identityAugmented));
             securityEventHelper.fireFailureEvent(event);
         }
     }

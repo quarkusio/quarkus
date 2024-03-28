@@ -62,6 +62,9 @@ public class HttpSecurityPolicySecurityEventTest {
             quarkus.http.auth.permission.map-roles.policy=map-roles
             quarkus.http.auth.policy.map-roles.roles-allowed=admin
             quarkus.http.auth.policy.map-roles.roles.test=admin
+            quarkus.http.auth.policy.map-roles.roles.test2=user
+            quarkus.http.auth.roles-mapping.test=test3
+            quarkus.http.auth.roles-mapping.test2=test3
             """;
 
     @RegisterExtension
@@ -87,6 +90,7 @@ public class HttpSecurityPolicySecurityEventTest {
     public static void setup() {
         TestIdentityController.resetRoles()
                 .add("test", "test", "test")
+                .add("test2", "test2", "test2")
                 .add("admin", "admin", "admin");
     }
 
@@ -163,11 +167,20 @@ public class HttpSecurityPolicySecurityEventTest {
         assertTrue(routingContext.request().path().endsWith("/roles"));
         assertEquals(1, observer.authZSuccessStorage.size());
         AuthorizationSuccessEvent authorizationSuccessEvent = observer.authZSuccessStorage.get(0);
+        var augmentedFlag = authorizationSuccessEvent.getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURITY_IDENTITY_AUGMENTED);
+        if (augmentedFlag != null) {
+            assertFalse((Boolean) augmentedFlag);
+        }
         assertEquals(identity, authorizationSuccessEvent.getSecurityIdentity());
         assertEquals(routingContext, authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         RestAssured.given().auth().preemptive().basic("test", "test").get("/roles").then().statusCode(403);
         assertEquals(1, observer.authZFailureStorage.size());
         AuthorizationFailureEvent event = observer.authZFailureStorage.get(0);
+        augmentedFlag = event.getEventProperties().get(AuthorizationFailureEvent.SECURITY_IDENTITY_AUGMENTED);
+        if (augmentedFlag != null) {
+            assertFalse((Boolean) augmentedFlag);
+        }
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), event.getAuthorizationContext());
         identity = event.getSecurityIdentity();
         assertNotNull(identity);
@@ -188,7 +201,32 @@ public class HttpSecurityPolicySecurityEventTest {
         assertNotEquals(originalIdentity, augmentedIdentity);
         assertTrue(augmentedIdentity.hasRole("admin"));
         assertFalse(originalIdentity.hasRole("admin"));
+        var augmentedFlag = observer.authZSuccessStorage.get(0).getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURITY_IDENTITY_AUGMENTED);
+        assertNotNull(augmentedFlag);
+        assertTrue((Boolean) augmentedFlag);
         assertAllEvents(2);
+        // assert 'roles-mapping' happens during authentication phase
+        assertTrue(originalIdentity.hasRole("test3"));
+        assertTrue(augmentedIdentity.hasRole("test3"));
+        clear();
+        RestAssured.given().auth().preemptive().basic("test2", "test2").get("/map-roles").then().statusCode(403);
+        assertEquals(1, observer.authZFailureStorage.size());
+        assertEquals(1, observer.authNSuccessStorage.size());
+        assertEquals(0, observer.authZSuccessStorage.size());
+        originalIdentity = observer.authNSuccessStorage.get(0).getSecurityIdentity();
+        augmentedIdentity = observer.authZFailureStorage.get(0).getSecurityIdentity();
+        assertNotEquals(originalIdentity, augmentedIdentity);
+        assertTrue(augmentedIdentity.hasRole("user"));
+        assertFalse(originalIdentity.hasRole("user"));
+        augmentedFlag = observer.authZFailureStorage.get(0).getEventProperties()
+                .get(AuthorizationFailureEvent.SECURITY_IDENTITY_AUGMENTED);
+        assertNotNull(augmentedFlag);
+        assertTrue((Boolean) augmentedFlag);
+        assertAllEvents(2);
+        // assert 'roles-mapping' happens during authentication phase
+        assertTrue(originalIdentity.hasRole("test3"));
+        assertTrue(augmentedIdentity.hasRole("test3"));
     }
 
     @Test

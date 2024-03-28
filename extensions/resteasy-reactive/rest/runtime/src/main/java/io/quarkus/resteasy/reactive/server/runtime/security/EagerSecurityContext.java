@@ -137,7 +137,7 @@ public class EagerSecurityContext {
                             newIdentity = checkWithIdentity.identity();
                         } else if (checkResult.getAugmentedIdentity() != checkWithIdentity.identity()) {
                             newIdentity = checkResult.getAugmentedIdentity();
-                            routingContext.setUser(new QuarkusHttpUser(newIdentity));
+                            QuarkusHttpUser.setIdentity(newIdentity, routingContext);
                             identityAssociation.get().setIdentity(newIdentity);
                         } else {
                             newIdentity = checkResult.getAugmentedIdentity();
@@ -148,7 +148,9 @@ public class EagerSecurityContext {
                             if (eventHelper.fireEventOnSuccess()) {
                                 eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(newIdentity,
                                         AbstractPathMatchingHttpSecurityPolicy.class.getName(),
-                                        Map.of(RoutingContext.class.getName(), routingContext)));
+                                        Map.of(RoutingContext.class.getName(), routingContext,
+                                                AuthorizationSuccessEvent.SECURITY_IDENTITY_AUGMENTED,
+                                                isIdentityAugmented(checkWithIdentity, checkResult))));
                             }
                             return newIdentity;
                         }
@@ -163,9 +165,17 @@ public class EagerSecurityContext {
                         if (eventHelper.fireEventOnFailure()) {
                             eventHelper.fireFailureEvent(new AuthorizationFailureEvent(newIdentity, exception,
                                     AbstractPathMatchingHttpSecurityPolicy.class.getName(),
-                                    Map.of(RoutingContext.class.getName(), routingContext)));
+                                    Map.of(RoutingContext.class.getName(), routingContext,
+                                            AuthorizationFailureEvent.SECURITY_IDENTITY_AUGMENTED,
+                                            isIdentityAugmented(checkWithIdentity, checkResult))));
                         }
                         throw exception;
+                    }
+
+                    private static boolean isIdentityAugmented(SecurityCheckWithIdentity checkWithIdentity,
+                            HttpSecurityPolicy.CheckResult checkResult) {
+                        return checkResult.getAugmentedIdentity() != null && !checkResult.getAugmentedIdentity().isAnonymous()
+                                && checkResult.getAugmentedIdentity() != checkWithIdentity.identity();
                     }
                 });
     }

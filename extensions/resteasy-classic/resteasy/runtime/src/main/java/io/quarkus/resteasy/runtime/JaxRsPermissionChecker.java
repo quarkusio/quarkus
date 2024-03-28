@@ -61,6 +61,7 @@ public class JaxRsPermissionChecker {
         HttpSecurityPolicy.CheckResult checkResult = jaxRsPathMatchingPolicy
                 .checkPermission(routingContext, identityAssociation.getDeferredIdentity(), authorizationRequestContext)
                 .await().indefinitely();
+        boolean identityAugmented = false;
         final SecurityIdentity newIdentity;
         if (checkResult.getAugmentedIdentity() == null) {
             if (checkResult.isPermitted()) {
@@ -71,8 +72,9 @@ public class JaxRsPermissionChecker {
             }
         } else if (checkResult.getAugmentedIdentity() != identityAssociation.getIdentity()) {
             newIdentity = checkResult.getAugmentedIdentity();
-            routingContext.setUser(new QuarkusHttpUser(newIdentity));
+            QuarkusHttpUser.setIdentity(newIdentity, routingContext);
             identityAssociation.setIdentity(newIdentity);
+            identityAugmented = true;
         } else {
             newIdentity = checkResult.getAugmentedIdentity();
         }
@@ -81,7 +83,8 @@ public class JaxRsPermissionChecker {
             if (eventHelper.fireEventOnSuccess()) {
                 eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(newIdentity,
                         AbstractPathMatchingHttpSecurityPolicy.class.getName(),
-                        Map.of(RoutingContext.class.getName(), routingContext)));
+                        Map.of(RoutingContext.class.getName(), routingContext,
+                                AuthorizationSuccessEvent.SECURITY_IDENTITY_AUGMENTED, identityAugmented)));
             }
             return;
         }
@@ -96,7 +99,8 @@ public class JaxRsPermissionChecker {
         if (eventHelper.fireEventOnFailure()) {
             eventHelper.fireFailureEvent(new AuthorizationFailureEvent(newIdentity, exception,
                     AbstractPathMatchingHttpSecurityPolicy.class.getName(),
-                    Map.of(RoutingContext.class.getName(), routingContext)));
+                    Map.of(RoutingContext.class.getName(), routingContext,
+                            AuthorizationFailureEvent.SECURITY_IDENTITY_AUGMENTED, identityAugmented)));
         }
         throw exception;
     }

@@ -3,12 +3,21 @@ plugins {
 }
 
 gradleEnterprise {
+    // plugin configuration
+    //See also: https://docs.gradle.com/enterprise/gradle-plugin/
+
+    val isAuthenticated = !System.getenv("GRADLE_ENTERPRISE_ACCESS_KEY").isNullOrEmpty()
+    if(isAuthenticated) {
+        server = "https://ge.quarkus.io"
+    }
+
     buildScan {
-        // plugin configuration
-        //See also: https://docs.gradle.com/enterprise/gradle-plugin/
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
+        if (!isAuthenticated) {
+            termsOfServiceUrl = "https://gradle.com/terms-of-service"
+            termsOfServiceAgree = "yes"
+        }
         publishOnFailure()
+        isUploadInBackground = System.getenv("CI").isNullOrEmpty()
     }
 }
 

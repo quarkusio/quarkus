@@ -12,6 +12,9 @@ import io.smallrye.common.annotation.Experimental;
 /**
  * A {@link WebSocket} endpoint method annotated with this annotation is invoked when an error occurs.
  * <p>
+ * It is used when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned
+ * {@link io.smallrye.mutiny.Uni} receives a failure.
+ * <p>
  * The method must accept exactly one "error" parameter, i.e. a parameter that is assignable from {@link java.lang.Throwable}.
  * The method may also accept the following parameters:
  * <ul>
@@ -20,11 +23,11 @@ import io.smallrye.common.annotation.Experimental;
  * <li>{@link String} parameters annotated with {@link PathParam}</li>
  * </ul>
  * <p>
- * An endpoint may declare multiple methods annotated with this annotation. However, each method must declare a unique error
+ * An endpoint may declare multiple methods annotated with this annotation. However, each method must declare a different error
  * parameter. The method that declares a most-specific supertype of the actual exception is selected.
  * <p>
  * This annotation can be also used to declare a global error handler, i.e. a method that is not declared on a {@link WebSocket}
- * endpoint. Such a method may not not accept {@link PathParam} paremeters. Error handlers declared on an endpoint take
+ * endpoint. Such a method may not accept {@link PathParam} paremeters. Error handlers declared on an endpoint take
  * precedence over the global error handlers.
  */
 @Retention(RUNTIME)

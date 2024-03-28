@@ -80,9 +80,9 @@ public class LocaleProcessor {
                     (nativeConfig.userCountry().isPresent()
                             && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry().get()))
                     ||
-                    !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale)
+                    !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale())
                     ||
-                    localesBuildTimeConfig.locales.stream().anyMatch(l -> !Locale.getDefault().equals(l));
+                    localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
     }
 
@@ -95,7 +95,7 @@ public class LocaleProcessor {
      *         effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if none of the aforementioned is set.
      */
     public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String language = localesBuildTimeConfig.defaultLocale.getLanguage();
+        String language = localesBuildTimeConfig.defaultLocale().getLanguage();
         if (nativeConfig.userLanguage().isPresent()) {
             log.warn(DEPRECATED_USER_LANGUAGE_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -114,7 +114,7 @@ public class LocaleProcessor {
      *         set.
      */
     public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
-        String country = localesBuildTimeConfig.defaultLocale.getCountry();
+        String country = localesBuildTimeConfig.defaultLocale().getCountry();
         if (nativeConfig.userCountry().isPresent()) {
             log.warn(DEPRECATED_USER_COUNTRY_WARNING);
             // The deprecated option takes precedence for users who are already using it.
@@ -133,7 +133,7 @@ public class LocaleProcessor {
      */
     public static String nativeImageIncludeLocales(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
         // We start with what user sets as needed locales
-        final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales);
+        final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales());
 
         if (additionalLocales.contains(Locale.ROOT)) {
             return "all";
@@ -141,7 +141,7 @@ public class LocaleProcessor {
 
         // We subtract what we already declare for native-image's user.language or user.country.
         // Note the deprecated options still count.
-        additionalLocales.remove(localesBuildTimeConfig.defaultLocale);
+        additionalLocales.remove(localesBuildTimeConfig.defaultLocale());
         if (nativeConfig.userCountry().isPresent() && nativeConfig.userLanguage().isPresent()) {
             additionalLocales.remove(new Locale(nativeConfig.userLanguage().get(), nativeConfig.userCountry().get()));
         } else if (nativeConfig.userLanguage().isPresent()) {

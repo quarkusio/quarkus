@@ -93,7 +93,7 @@ public class EngineProducer {
         this.templateRoots = context.getTemplateRoots();
         this.tags = context.getTags();
         this.templatePathExclude = config.templatePathExclude;
-        this.defaultLocale = locales.defaultLocale;
+        this.defaultLocale = locales.defaultLocale();
         this.defaultCharset = config.defaultCharset;
         this.container = Arc.container();
 

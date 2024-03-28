@@ -142,8 +142,13 @@ export class QwcWebSocketNextEndpoints extends LitElement {
             return html`
                 <vaadin-grid .items="${this._endpointsAndConnections}" class="endpoints-table" theme="no-border" all-rows-visible>
                     <vaadin-grid-column auto-width
-                        header="Endpoint"
+                        header="Endpoint Class"
                         ${columnBodyRenderer(this._renderClazz, [])}
+                        resizable>
+                    </vaadin-grid-column>
+                    <vaadin-grid-column auto-width
+                        header="Connections"
+                        ${columnBodyRenderer(this._renderConnectionsButton, [])}
                         resizable>
                     </vaadin-grid-column>
                     <vaadin-grid-column auto-width
@@ -154,11 +159,6 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                     <vaadin-grid-column auto-width
                         header="Callbacks"
                         ${columnBodyRenderer(this._renderCallbacks, [])}
-                        resizable>
-                    </vaadin-grid-column>
-                    <vaadin-grid-column auto-width
-                        header="Connections"
-                        ${columnBodyRenderer(this._renderConnectionsButton, [])}
                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>
@@ -299,7 +299,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
      _renderCallbacks(endpoint) {
          return endpoint.callbacks ? html`<ul>
             ${ endpoint.callbacks.map(callback =>
-                html`<li><div class="annotation"><code>${callback.annotation}</code></div><div><code>${callback.method}</code></div></li>`
+                html`<li><span class="annotation"><code>${callback.annotation}</code></span>&nbsp;<code>${callback.method}</code></li>`
             )}</ul>`: html``;
     }
     

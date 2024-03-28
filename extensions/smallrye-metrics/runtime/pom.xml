@@ -58,6 +58,7 @@
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.metrics</provides>
+                        <provides>io.quarkus.smallrye.metrics</provides>
                     </capabilities>
                 </configuration>
             </plugin>

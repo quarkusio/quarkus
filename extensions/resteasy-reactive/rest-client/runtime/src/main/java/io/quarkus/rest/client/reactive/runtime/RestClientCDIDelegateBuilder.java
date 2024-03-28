@@ -77,7 +77,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureCustomProperties(QuarkusRestClientBuilder builder) {
-        Optional<String> encoder = configRoot.multipartPostEncoderMode;
+        Optional<String> encoder = oneOf(clientConfigByClassName().multipartPostEncoderMode,
+                clientConfigByConfigKey().multipartPostEncoderMode, configRoot.multipartPostEncoderMode);
         if (encoder != null && encoder.isPresent()) {
             PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));

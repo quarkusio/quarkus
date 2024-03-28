@@ -179,6 +179,14 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder followRedirects(boolean follow);
 
     /**
+     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
+     * The modes are described in the
+     * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+     * documentation</a>
+     */
+    QuarkusRestClientBuilder multipartPostEncoderMode(String mode);
+
+    /**
      * Specifies the HTTP proxy hostname/IP address and port to use for requests from client instances.
      *
      * @param proxyHost hostname or IP address of proxy server - must be non-null

@@ -121,6 +121,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     }
 
     @Override
+    public QuarkusRestClientBuilder multipartPostEncoderMode(String mode) {
+        proxy.multipartPostEncoderMode(mode);
+        return this;
+    }
+
+    @Override
     public QuarkusRestClientBuilder queryParamStyle(QueryParamStyle style) {
         proxy.queryParamStyle(style);
         return this;

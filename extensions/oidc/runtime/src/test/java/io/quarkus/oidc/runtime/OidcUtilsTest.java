@@ -322,6 +322,16 @@ public class OidcUtilsTest {
         assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "1"));
     }
 
+    @Test
+    public void testGetSessionCookieTenantId() throws Exception {
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session", true));
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_chunk_1", true));
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a", true));
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_chunk_1", true));
+    }
+
     public static JsonObject read(InputStream input) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return new JsonObject(buffer.lines().collect(Collectors.joining("\n")));

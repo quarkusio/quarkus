@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
+import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
 import com.gargoylesoftware.htmlunit.WebResponse;
@@ -228,9 +229,17 @@ public class CodeFlowTest {
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
 
             List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
-
             assertEquals("strict", sessionCookies.get(0).getSameSite());
             assertEquals("strict", sessionCookies.get(1).getSameSite());
+
+            // Check both session cookie chunks are removed if the new authentication is enforced
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+
+            TextPage textPage = webClient.getPage("http://localhost:8081/index.html");
+            assertEquals(302, textPage.getWebResponse().getStatusCode());
+            assertNull(getSessionCookies(webClient, "tenant-https"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

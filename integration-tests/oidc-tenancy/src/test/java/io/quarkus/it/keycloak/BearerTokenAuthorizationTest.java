@@ -295,6 +295,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -304,7 +305,8 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
-
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app2"));
             webClient.getCookieManager().clearCookies();
         }
     }

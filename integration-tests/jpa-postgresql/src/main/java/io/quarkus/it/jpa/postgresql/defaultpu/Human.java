@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.postgresql;
+package io.quarkus.it.jpa.postgresql.defaultpu;
 
 import jakarta.persistence.MappedSuperclass;
 

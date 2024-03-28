@@ -8,6 +8,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.KOTLIN_UNIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.NON_BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
@@ -36,6 +37,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
+import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.TypeInfo;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -50,7 +52,7 @@ public final class QuarkusMediatorConfigurationUtil {
 
     public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
             RecorderContext recorderContext,
-            ClassLoader cl, boolean strict) {
+            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode) {
 
         Class[] parameterTypeClasses;
         Class<?> returnTypeClass;
@@ -180,6 +182,22 @@ public final class QuarkusMediatorConfigurationUtil {
                     }
                 }));
         configuration.setHasTargetedOutput(mediatorConfigurationSupport.processTargetedOutput());
+        if (!hasBlockingAnnotation(methodInfo)
+                && !hasNonBlockingAnnotation(methodInfo)
+                && hasBlockingPayloadSignature(methodInfo)) {
+            switch (executionMode) {
+                case WORKER:
+                    configuration.setBlocking(true);
+                    configuration.setBlockingExecutionOrdered(true);
+                    break;
+                case VIRTUAL_THREAD:
+                    configuration.setBlocking(true);
+                    configuration.setWorkerPoolName(QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER);
+                    break;
+                default:
+                    break;
+            }
+        }
 
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
@@ -451,5 +469,22 @@ public final class QuarkusMediatorConfigurationUtil {
             }
             return parameters.get(paramIndex);
         }
+    }
+
+    private static boolean hasNonBlockingAnnotation(MethodInfo method) {
+        return method.hasAnnotation(NON_BLOCKING);
+    }
+
+    public static boolean hasBlockingAnnotation(MethodInfo method) {
+        return method.hasAnnotation(BLOCKING)
+                || method.hasAnnotation(SMALLRYE_BLOCKING)
+                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
+                || method.hasAnnotation(TRANSACTIONAL);
+    }
+
+    private static boolean hasBlockingPayloadSignature(MethodInfo methodInfo) {
+        return !ReactiveMessagingDotNames.UNI.equals(methodInfo.returnType().name())
+                && !ReactiveMessagingDotNames.MULTI.equals(methodInfo.returnType().name())
+                && !ReactiveMessagingDotNames.COMPLETION_STAGE.equals(methodInfo.returnType().name());
     }
 }

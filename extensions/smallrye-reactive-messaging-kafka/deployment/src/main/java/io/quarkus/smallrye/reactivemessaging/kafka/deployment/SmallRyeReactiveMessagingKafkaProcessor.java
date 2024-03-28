@@ -420,6 +420,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             if ((isCompletionStage(returnType) && parametersCount >= 1)
                     || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
+                    || (isFlowPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
                     || (isMulti(returnType) && parametersCount == 1)) {
                 incomingType = parameterTypes.get(0);
@@ -433,8 +434,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             // @Incoming @Outgoing stream manipulation
-            if (incomingType != null
-                    && (isPublisher(incomingType) || isPublisherBuilder(incomingType) || isMulti(incomingType))) {
+            if (incomingType != null &&
+                    (isPublisher(incomingType)
+                            || isFlowPublisher(incomingType)
+                            || isPublisherBuilder(incomingType)
+                            || isMulti(incomingType))) {
                 incomingType = incomingType.asParameterizedType().arguments().get(0);
             }
         }
@@ -446,7 +450,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return null;
         }
 
-        if (isPublisher(injectionPointType) || isPublisherBuilder(injectionPointType) || isMulti(injectionPointType)) {
+        if (isPublisher(injectionPointType)
+                || isPublisherBuilder(injectionPointType)
+                || isFlowPublisher(injectionPointType)
+                || isMulti(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
             return null;
@@ -462,6 +469,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         // @Outgoing
         if ((isPublisher(returnType) && parametersCount == 0)
+                || (isFlowPublisher(returnType) && parametersCount == 0)
                 || (isPublisherBuilder(returnType) && parametersCount == 0)
                 || (isMulti(returnType) && parametersCount == 0)
                 || (isMultiSplitter(returnType) && parametersCount == 0)
@@ -476,11 +484,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         // @Incoming @Outgoing
         if (method.hasAnnotation(DotNames.INCOMING) || method.hasAnnotation(DotNames.INCOMINGS)) {
-            if ((isCompletionStage(returnType) && parametersCount == 1)
-                    || (isUni(returnType) && parametersCount == 1)
-                    || (isPublisher(returnType) && parametersCount == 1)
+            if (isCompletionStage(returnType) || isUni(returnType) || isMulti(returnType)) {
+                outgoingType = returnType.asParameterizedType().arguments().get(0);
+            } else if ((isPublisher(returnType) && parametersCount == 1)
+                    || (isFlowPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
-                    || (isMulti(returnType) && parametersCount == 1)
                     || (isMultiSplitter(returnType) && parametersCount == 1)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(0);
             } else if ((isProcessor(returnType) && parametersCount == 0)
@@ -494,7 +502,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             // @Incoming @Outgoing stream manipulation
             if (outgoingType != null
-                    && (isPublisher(outgoingType) || isPublisherBuilder(outgoingType) || isMulti(outgoingType))) {
+                    && (isPublisher(outgoingType)
+                            || isFlowPublisher(outgoingType)
+                            || isPublisherBuilder(outgoingType)
+                            || isMulti(outgoingType))) {
                 outgoingType = outgoingType.asParameterizedType().arguments().get(0);
             }
         }
@@ -545,6 +556,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
 
         if (isTargeted(type)) {
+            return;
+        }
+
+        if (isGenericPayload(type)) {
+            extractKeyValueType(type.asParameterizedType().arguments().get(0), keyValueTypeAcceptor);
             return;
         }
 
@@ -627,6 +643,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 && type.asParameterizedType().arguments().size() == 1;
     }
 
+    private static boolean isFlowPublisher(Type type) {
+        // raw type Flow.Publisher is wrong, must be Flow.Publisher<Something>
+        return DotNames.FLOW_PUBLISHER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
     private static boolean isPublisherBuilder(Type type) {
         // raw type PublisherBuilder is wrong, must be PublisherBuilder<Something, SomethingElse>
         return DotNames.PUBLISHER_BUILDER.equals(type.name())
@@ -683,6 +706,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private static boolean isMessage(Type type) {
         // raw type Message is wrong, must be Message<Something>
         return DotNames.MESSAGE.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isGenericPayload(Type type) {
+        // raw type Message is wrong, must be Message<Something>
+        return DotNames.GENERIC_PAYLOAD.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
     }

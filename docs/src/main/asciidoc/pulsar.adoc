@@ -416,22 +416,20 @@ You can enable batch mode using `batchReceive=true` property, or setting a `batc
 [source, java]
 ----
 @Incoming("prices")
-public CompletionStage<Void> consumeMessage(PulsarIncomingBatchMessage<Double> messages) {
-    for (PulsarMessage<Double> msg : messages) {
-        msg.getMetadata(PulsarIncomingMessageMetadata.class).ifPresent(metadata -> {
-            String key = metadata.getKey();
-            String topic = metadata.getTopicName();
-            long timestamp = metadata.getEventTime();
-            //... process messages
-        });
+public CompletionStage<Void> consumeMessage(Message<org.apache.pulsar.client.api.Messages<Double>> messages) {
+    for (org.apache.pulsar.client.api.Message<Double> msg : messages.getPayload()) {
+        String key = msg.getKey();
+        String topic = msg.getTopicName();
+        long timestamp = msg.getEventTime();
+        //... process messages
     }
     // ack will commit the latest offsets (per partition) of the batch.
     return messages.ack();
 }
 
 @Incoming("prices")
-public void consumeRecords(Messages<Double> messages) {
-    for (Message<Double> msg : messages) {
+public void consumeRecords(org.apache.pulsar.client.api.Messages<Double> messages) {
+    for (org.apache.pulsar.client.api.Message<Double> msg : messages) {
         //... process messages
     }
 }
@@ -457,7 +455,7 @@ You can configure batch mode explicitly with `mp.messaging.incoming.$channel.bat
 
 == Sending messages to Pulsar
 
-The Pulsar Connector can write Reactive Messaging Messages as Pulsar Message.
+The Pulsar Connector can write Reactive Messaging `Message`s as Pulsar Message.
 
 === Example
 
@@ -739,32 +737,32 @@ package pulsar.outbound;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.pulsar.client.api.Messages;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.pulsar.PulsarIncomingBatchMessage;
-import io.smallrye.reactive.messaging.pulsar.PulsarMessage;
 import io.smallrye.reactive.messaging.pulsar.transactions.PulsarTransactions;
 
-@ApplicationScoped
-public class PulsarExactlyOnceProcessor {
+    @ApplicationScoped
+    public class PulsarExactlyOnceProcessor {
 
-    @Inject
-    @Channel("tx-out-example")
-    PulsarTransactions<Integer> txProducer;
+        @Inject
+        @Channel("tx-out-example")
+        PulsarTransactions<Integer> txProducer;
 
-    @Incoming("in-channel")
-    public Uni<Void> emitInTransaction(PulsarIncomingBatchMessage<Integer> batch) {
-        return txProducer.withTransactionAndAck(batch, emitter -> {
-            for (PulsarMessage<Integer> record : batch) {
-                emitter.send(PulsarMessage.of(record.getPayload() + 1, record.getKey()));
-            }
-            return Uni.createFrom().voidItem();
-        });
+        @Incoming("in-channel")
+        public Uni<Void> emitInTransaction(Message<Messages<Integer>> batch) {
+            return txProducer.withTransactionAndAck(batch, emitter -> {
+                for (org.apache.pulsar.client.api.Message<Integer> record : batch.getPayload()) {
+                    emitter.send(PulsarMessage.of(record.getValue() + 1, record.getKey()));
+                }
+                return Uni.createFrom().voidItem();
+            });
+        }
+
     }
-
-}
 ----
 
 If the processing completes successfully, the message is acknowledged inside the transaction and the transaction is committed.

@@ -615,9 +615,10 @@ public class KafkaRebalancedConsumerRebalanceListener implements KafkaConsumerRe
 ----
 package inbound;
 
-import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletableFuture;
@@ -628,7 +629,7 @@ public class KafkaRebalancedConsumer {
 
     @Incoming("rebalanced-example")
     @Acknowledgment(Acknowledgment.Strategy.NONE)
-    public CompletionStage<Void> consume(IncomingKafkaRecord<Integer, String> message) {
+    public CompletionStage<Void> consume(Message<ConsumerRecord<Integer, String>> message) {
         // We don't need to ACK messages because in this example,
         // we set offset during consumer rebalance
         return CompletableFuture.completedFuture(null);
@@ -715,14 +716,14 @@ public void consume(List<Double> prices) {
 }
 ----
 
-The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>`, and `ConsumerRecords<Key, Payload>` types.
+The incoming method can also receive `Message<List<Payload>>`, `Message<ConsumerRecords<Key, Payload>>`, and `ConsumerRecords<Key, Payload>` types.
 They give access to record details such as offset or timestamp:
 
 [source, java]
 ----
 @Incoming("prices")
-public CompletionStage<Void> consumeMessage(KafkaRecordBatch<String, Double> records) {
-    for (KafkaRecord<String, Double> record : records) {
+public CompletionStage<Void> consumeMessage(Message<ConsumerRecords<String, Double>> records) {
+    for (ConsumerRecord<String, Double> record : records.getPayload()) {
         String payload = record.getPayload();
         String topic = record.getTopic();
         // process messages
@@ -1540,13 +1541,15 @@ The following example includes a batch of Kafka records inside a transaction.
 ----
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
-import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
 
 @ApplicationScoped
@@ -1557,10 +1560,10 @@ public class KafkaExactlyOnceProcessor {
     KafkaTransactions<Integer> txProducer;
 
     @Incoming("prices-in")
-    public Uni<Void> emitInTransaction(KafkaRecordBatch<String, Integer> batch) { // <1>
+    public Uni<Void> emitInTransaction(Message<ConsumerRecords<String, Integer>> batch) { // <1>
         return txProducer.withTransactionAndAck(batch, emitter -> { // <2>
-            for (KafkaRecord<String, Integer> record : batch) {
-                emitter.send(KafkaRecord.of(record.getKey(), record.getPayload() + 1)); // <3>
+            for (ConsumerRecord<String, Integer> record : batch.getPayload()) {
+                emitter.send(KafkaRecord.of(record.key(), record.value() + 1)); // <3>
             }
             return Uni.createFrom().voidItem();
         });
@@ -1571,7 +1574,7 @@ public class KafkaExactlyOnceProcessor {
 
 <1> It is recommended to use exactly-once processing along with the batch consumption mode.
 While it is possible to use it with a single Kafka message, it'll have a significant performance impact.
-<2> The consumed `KafkaRecordBatch` message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
+<2> The consumed message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
 <3> The `send` method writes records to Kafka inside the transaction, without waiting for send receipt from the broker.
 Messages pending to be written to Kafka will be buffered, and flushed before committing the transaction.
 It is therefore recommended configuring the `@OnOverflow` `bufferSize` in order to fit enough messages, for example the `max.poll.records`, maximum amount of records returned in a batch.
@@ -1908,7 +1911,7 @@ Similarly, if you declare
 [source,java]
 ----
 @Incoming("my-kafka-records")
-public void consume(KafkaRecord<Long, byte[]> record) {
+public void consume(Record<Long, byte[]> record) {
     ...
 }
 ----

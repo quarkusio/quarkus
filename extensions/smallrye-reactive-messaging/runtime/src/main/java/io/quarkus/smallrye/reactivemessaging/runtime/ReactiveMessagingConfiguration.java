@@ -19,4 +19,17 @@ public class ReactiveMessagingConfiguration {
      */
     @ConfigItem(name = "strict", defaultValue = "false")
     public boolean strict;
+
+    /**
+     * Execution mode for the Messaging signatures considered "blocking", defaults to "worker".
+     * For the previous behaviour set to "event-loop".
+     */
+    @ConfigItem(name = "blocking.signatures.execution.mode", defaultValue = "worker")
+    public ExecutionMode blockingSignaturesExecutionMode;
+
+    public enum ExecutionMode {
+        EVENT_LOOP,
+        WORKER,
+        VIRTUAL_THREAD
+    }
 }

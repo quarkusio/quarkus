@@ -189,7 +189,7 @@ public class OTelExporterRecorder {
         return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
     }
 
-    private static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {
+    static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {
         private final OtlpExporterTracesConfig tracesConfig;
         private final URI baseUri;
         private final TlsConfig tlsConfig;
@@ -203,7 +203,9 @@ public class OTelExporterRecorder {
         @Override
         public void accept(HttpClientOptions options) {
             configureTLS(options);
-            configureProxyOptions(options);
+            if (tracesConfig.proxyOptions().enabled()) {
+                configureProxyOptions(options);
+            }
         }
 
         private void configureTLS(HttpClientOptions options) {

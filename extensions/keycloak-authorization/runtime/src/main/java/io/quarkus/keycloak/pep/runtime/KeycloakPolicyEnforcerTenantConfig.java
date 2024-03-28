@@ -2,11 +2,14 @@ package io.quarkus.keycloak.pep.runtime;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.EnforcementMode;
+import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.ScopeEnforcementMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
@@ -31,7 +34,7 @@ public interface KeycloakPolicyEnforcerTenantConfig {
          * Specifies how policies are enforced.
          */
         @WithDefault("enforcing")
-        PolicyEnforcerConfig.EnforcementMode enforcementMode();
+        EnforcementMode enforcementMode();
 
         /**
          * Specifies the paths to protect.
@@ -99,7 +102,7 @@ public interface KeycloakPolicyEnforcerTenantConfig {
              * Specifies how policies are enforced
              */
             @WithDefault("enforcing")
-            PolicyEnforcerConfig.EnforcementMode enforcementMode();
+            EnforcementMode enforcementMode();
 
             /**
              * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make
@@ -126,7 +129,7 @@ public interface KeycloakPolicyEnforcerTenantConfig {
              * A string referencing the enforcement mode for the scopes associated with a method
              */
             @WithDefault("all")
-            PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode();
+            ScopeEnforcementMode scopesEnforcementMode();
         }
 
         @ConfigGroup
@@ -160,5 +163,31 @@ public interface KeycloakPolicyEnforcerTenantConfig {
             @WithParentName
             Map<String, Map<String, String>> simpleConfig();
         }
+    }
+
+    /**
+     * Creates {@link KeycloakPolicyEnforcerTenantConfig} builder populated with documented default values.
+     *
+     * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
+     */
+    static KeycloakPolicyEnforcerTenantConfigBuilder builder() {
+        var defaultTenantConfig = new SmallRyeConfigBuilder()
+                .withMapping(KeycloakPolicyEnforcerConfig.class)
+                .build()
+                .getConfigMapping(KeycloakPolicyEnforcerConfig.class)
+                .defaultTenant();
+        return new KeycloakPolicyEnforcerTenantConfigBuilder(defaultTenantConfig);
+    }
+
+    /**
+     * Creates {@link KeycloakPolicyEnforcerTenantConfig} builder populated with {@code tenantConfig} values.
+     *
+     * @param tenantConfig tenant config; must not be null
+     *
+     * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
+     */
+    static KeycloakPolicyEnforcerTenantConfigBuilder builder(KeycloakPolicyEnforcerTenantConfig tenantConfig) {
+        Objects.requireNonNull(tenantConfig);
+        return new KeycloakPolicyEnforcerTenantConfigBuilder(tenantConfig);
     }
 }

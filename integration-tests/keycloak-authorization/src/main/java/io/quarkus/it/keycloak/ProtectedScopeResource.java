@@ -38,6 +38,18 @@ public class ProtectedScopeResource {
     }
 
     @GET
+    @Path("/dynamic-way")
+    public Uni<List<Permission>> dynamicWay() {
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
+    }
+
+    @GET
+    @Path("/dynamic-way-denied")
+    public Uni<List<Permission>> dynamicWayDenied() {
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
+    }
+
+    @GET
     @Path("/programmatic-way")
     public Uni<List<Permission>> programmaticWay() {
         var requiredPermission = new BasicPermission(REQUIRED_PERMISSION) {

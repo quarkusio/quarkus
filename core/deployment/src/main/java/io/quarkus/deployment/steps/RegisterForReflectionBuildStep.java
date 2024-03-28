@@ -132,7 +132,7 @@ public class RegisterForReflectionBuildStep {
         }
 
         try {
-            Class<?>[] declaredClasses = classLoader.loadClass(className).getDeclaredClasses();
+            Class<?>[] declaredClasses = Class.forName(className, false, classLoader).getDeclaredClasses();
             for (Class<?> clazz : declaredClasses) {
                 registerClass(classLoader, clazz.getName(), methods, fields, false, serialization, unsafeAllocated,
                         reflectiveClass,

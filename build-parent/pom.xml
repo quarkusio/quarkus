@@ -174,8 +174,10 @@
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
-        <!-- Disable Develocity Predictive Test Selection by default -->
+        <!-- If PTS is enabled at the global level  -->
         <develocity.pts.enabled>false</develocity.pts.enabled>
+        <!-- If PTS is active for specific modules -->
+        <develocity.pts.active>false</develocity.pts.active>
     </properties>
 
     <dependencyManagement>
@@ -440,7 +442,7 @@
                     <configuration>
                         <properties>
                             <predictiveSelection>
-                                <enabled>${develocity.pts.enabled}</enabled>
+                                <enabled>${develocity.pts.active}</enabled>
                             </predictiveSelection>
                         </properties>
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
@@ -465,7 +467,7 @@
                     <configuration>
                         <properties>
                             <predictiveSelection>
-                                <enabled>${develocity.pts.enabled}</enabled>
+                                <enabled>${develocity.pts.active}</enabled>
                             </predictiveSelection>
                         </properties>
                         <systemPropertyVariables>

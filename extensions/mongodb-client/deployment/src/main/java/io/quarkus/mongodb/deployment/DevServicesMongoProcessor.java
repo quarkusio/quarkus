@@ -188,33 +188,35 @@ public class DevServicesMongoProcessor {
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
             mongoDBContainer.start();
-            Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database",
-                    String.class);
-            String effectiveURL = databaseName.map(mongoDBContainer::getReplicaSetUrl)
-                    .orElse(mongoDBContainer.getReplicaSetUrl());
-            if ((capturedProperties.connectionProperties != null) && !capturedProperties.connectionProperties.isEmpty()) {
-                effectiveURL = effectiveURL + "?"
-                        + URLEncodedUtils.format(
-                                capturedProperties.connectionProperties.entrySet().stream()
-                                        .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
-                                        .collect(Collectors.toList()),
-                                StandardCharsets.UTF_8);
-            }
+            final String effectiveUrl = getEffectiveUrl(configPrefix, mongoDBContainer.getHost(), mongoDBContainer.getMappedPort(MONGO_EXPOSED_PORT), capturedProperties);
             return new RunningDevService(Feature.MONGODB_CLIENT.getName(), mongoDBContainer.getContainerId(),
-                    mongoDBContainer::close, getConfigPrefix(connectionName) + "connection-string", effectiveURL);
+                    mongoDBContainer::close, getConfigPrefix(connectionName) + "connection-string", effectiveUrl);
         };
 
         return mongoContainerLocator.locateContainer(capturedProperties.serviceName(), capturedProperties.shared(), launchMode)
                 .map(containerAddress -> {
-                    String mongoUrl = MONGO_SCHEME + containerAddress.getUrl();
-
-                    Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database",
-                            String.class);
+                    final String effectiveUrl = getEffectiveUrl(configPrefix, containerAddress.getHost(), containerAddress.getPort(), capturedProperties);
 
                     return new RunningDevService(Feature.MONGODB_CLIENT.getName(), containerAddress.getId(),
-                            null, getConfigPrefix(connectionName) + "connection-string", mongoUrl);
+                            null, getConfigPrefix(connectionName) + "connection-string", effectiveUrl);
                 })
                 .orElseGet(defaultMongoServerSupplier);
+    }
+
+    private String getEffectiveUrl(String configPrefix, String host, int port, CapturedProperties capturedProperties) {
+        final String databaseName = ConfigProvider.getConfig()
+                .getOptionalValue(configPrefix + "database", String.class)
+                .orElse("test");
+        String effectiveUrl = String.format("%s%s:%d/%s", MONGO_SCHEME, host, port, databaseName);
+        if ((capturedProperties.connectionProperties != null) && !capturedProperties.connectionProperties.isEmpty()) {
+            effectiveUrl = effectiveUrl + "?"
+                    + URLEncodedUtils.format(
+                    capturedProperties.connectionProperties.entrySet().stream()
+                            .map(e -> new BasicNameValuePair(e.getKey(), e.getValue()))
+                            .collect(Collectors.toList()),
+                    StandardCharsets.UTF_8);
+        }
+        return effectiveUrl;
     }
 
     private String getConfigPrefix(String connectionName) {

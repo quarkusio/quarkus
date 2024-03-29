@@ -1,10 +1,9 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -13,6 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Vetoed;
@@ -64,6 +65,8 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
@@ -230,6 +233,7 @@ public class SmallRyeReactiveMessagingProcessor {
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<MediatorBuildItem> mediatorMethods,
+            List<ChannelBuildItem> channelBuildItems,
             List<InjectedEmitterBuildItem> emitterFields,
             List<InjectedChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
@@ -238,6 +242,11 @@ public class SmallRyeReactiveMessagingProcessor {
             ReactiveMessagingConfiguration conf) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+
+        Set<String> innerIncomingChannelNames = channelBuildItems.stream()
+                .filter(c -> !c.isManagedByAConnector() && c.getDirection() == ChannelDirection.INCOMING)
+                .map(ChannelBuildItem::getName)
+                .collect(Collectors.toSet());
 
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
         List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
@@ -253,9 +262,7 @@ public class SmallRyeReactiveMessagingProcessor {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
 
-            if (methodInfo.hasAnnotation(BLOCKING) || methodInfo.hasAnnotation(SMALLRYE_BLOCKING)
-                    || methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
-                    || methodInfo.hasAnnotation(TRANSACTIONAL)) {
+            if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
                 // Just in case both annotation are used, use @Blocking value.
                 String poolName = methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
                         ? QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER
@@ -280,7 +287,10 @@ public class SmallRyeReactiveMessagingProcessor {
 
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
-                                Thread.currentThread().getContextClassLoader(), conf.strict);
+                                Thread.currentThread().getContextClassLoader(), conf.strict,
+                                consumesFromInnerChannel(methodInfo, innerIncomingChannelNames)
+                                        ? ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP // disable execution mode setting for inner channels
+                                        : conf.blockingSignaturesExecutionMode);
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
@@ -565,6 +575,20 @@ public class SmallRyeReactiveMessagingProcessor {
                 return false;
             }
         }));
+    }
+
+    boolean consumesFromInnerChannel(MethodInfo methodInfo, Set<String> innerChannelNames) {
+        AnnotationInstance incoming = methodInfo.annotation(INCOMING);
+        if (incoming != null) {
+            return innerChannelNames.contains(incoming.value().asString());
+        }
+        AnnotationInstance incomings = methodInfo.annotation(INCOMINGS);
+        if (incomings != null) {
+            return innerChannelNames.containsAll(
+                    Arrays.stream(incomings.value().asNestedArray())
+                            .map(i -> i.value().asString()).collect(Collectors.toSet()));
+        }
+        return false;
     }
 
 }

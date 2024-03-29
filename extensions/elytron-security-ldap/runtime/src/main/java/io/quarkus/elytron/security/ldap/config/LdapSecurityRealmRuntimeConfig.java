@@ -25,6 +25,11 @@ public interface LdapSecurityRealmRuntimeConfig {
     DirContextConfig dirContext();
 
     /**
+     * The LDAP cache configuration
+     */
+    CacheConfig cache();
+
+    /**
      * The config which we use to map an identity
      */
     IdentityMappingConfig identityMapping();

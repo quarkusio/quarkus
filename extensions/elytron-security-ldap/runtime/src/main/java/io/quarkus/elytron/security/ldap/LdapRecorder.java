@@ -6,11 +6,16 @@ import java.util.List;
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.wildfly.common.function.ExceptionSupplier;
+import org.wildfly.security.auth.realm.CacheableSecurityRealm;
+import org.wildfly.security.auth.realm.CachingSecurityRealm;
 import org.wildfly.security.auth.realm.ldap.AttributeMapping;
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
 import org.wildfly.security.auth.realm.ldap.LdapSecurityRealmBuilder;
 import org.wildfly.security.auth.server.SecurityRealm;
+import org.wildfly.security.cache.LRURealmIdentityCache;
 
 import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
 import io.quarkus.elytron.security.ldap.config.DirContextConfig;
@@ -21,6 +26,8 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class LdapRecorder {
+
+    private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
 
     /**
      * Create a runtime value for a {@linkplain LdapSecurityRealm}
@@ -47,7 +54,19 @@ public class LdapRecorder {
             ldapSecurityRealmBuilder.addDirectEvidenceVerification(false);
         }
 
-        return new RuntimeValue<>(ldapSecurityRealmBuilder.build());
+        SecurityRealm ldapRealm = ldapSecurityRealmBuilder.build();
+
+        if (runtimeConfig.cache().enabled()) {
+            if (ldapRealm instanceof CacheableSecurityRealm) {
+                ldapRealm = new CachingSecurityRealm(ldapRealm,
+                        new LRURealmIdentityCache(runtimeConfig.cache().size(), runtimeConfig.cache().maxAge().toMillis()));
+            } else {
+                log.warn(
+                        "Created LDAP realm is not cacheable. Caching of the 'SecurityRealm' won't be available. Please, report this issue.");
+            }
+        }
+
+        return new RuntimeValue<>(ldapRealm);
     }
 
     private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {

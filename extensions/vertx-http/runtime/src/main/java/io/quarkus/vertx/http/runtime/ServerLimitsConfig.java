@@ -42,6 +42,19 @@ public class ServerLimitsConfig {
     public MemorySize maxFormAttributeSize;
 
     /**
+     * Set the maximum number of fields of a form. Set to {@code -1} to allow unlimited number of attributes.
+     */
+    @ConfigItem(defaultValue = "256")
+    public int maxFormFields;
+
+    /**
+     * Set the maximum number of bytes a server can buffer when decoding a form.
+     * Set to {@code -1} to allow unlimited length
+     **/
+    @ConfigItem(defaultValue = "1K")
+    public MemorySize maxFormBufferedBytes;
+
+    /**
      * The maximum number of HTTP request parameters permitted for incoming requests.
      * <p>
      * If a client sends more than this number of parameters in a request, the connection is closed.

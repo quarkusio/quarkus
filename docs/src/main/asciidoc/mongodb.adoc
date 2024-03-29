@@ -241,18 +241,9 @@ WARNING: By default, Quarkus will restrict the use of JNDI within an application
 Because the `mongo+srv` protocol often used to connect to MongoDB requires JNDI, this protection is automatically disabled when using the MongoDB client extension.
 
 [[dev-services]]
-=== Dev Services (Configuration Free Databases)
+=== Use the MongoDB Dev Services
 
-Quarkus supports a feature called Dev Services that allows you to create various datasources without any config. In the case of MongoDB this support extends to the default MongoDB connection.
-What that means practically, is that if you have not configured `quarkus.mongodb.connection-string`, Quarkus will automatically start a MongoDB container when running tests or in dev mode,
-and automatically configure the connection.
-
-MongoDB Dev Services is based on link:https://www.testcontainers.org/modules/databases/mongodb/[Testcontainers MongoDB module] that will start a single node replicaset.
-
-When running the production version of the application, the MongoDB connection need to be configured as normal, so if you want to include a production database config in your
-`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your MongoDB settings.
-
-include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+See xref:mongodb-dev-services.adoc[MongoDB Dev Service].
 
 == Multiple MongoDB Clients
 

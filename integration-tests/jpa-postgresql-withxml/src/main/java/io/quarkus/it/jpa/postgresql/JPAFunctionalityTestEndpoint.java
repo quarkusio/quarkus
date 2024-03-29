@@ -32,6 +32,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.it.jpa.postgresql.defaultpu.EntityWithXml;
+import io.quarkus.it.jpa.postgresql.defaultpu.Person;
+import io.quarkus.it.jpa.postgresql.defaultpu.SequencedAddress;
 import io.quarkus.it.jpa.postgresql.otherpu.EntityWithXmlOtherPU;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 

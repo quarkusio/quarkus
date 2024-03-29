@@ -843,7 +843,6 @@ public class WebSocketServerProcessor {
                 Type messageType = callback.returnType().asParameterizedType().arguments().get(0);
                 if (messageType.name().equals(WebSocketDotNames.VOID)) {
                     // Uni<Void>
-
                     return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers);
                 } else {
                     // return uniMessage.chain(m -> {
@@ -986,7 +985,6 @@ public class WebSocketServerProcessor {
             if (errorArguments != 1) {
                 throw new WebSocketServerException(
                         String.format("@OnError callback must accept exactly one error parameter; found %s: %s",
-                                DotNames.simpleName(callback.annotation.name()),
                                 errorArguments,
                                 callbackToString(callback.method)));
             }

@@ -64,6 +64,11 @@ else
 :code-examples: {generated-dir}/examples
 :imagesdir: ./images
 :includes: ./_includes
+//
+:quickstarts-clone-url: -b ${BRANCH} https://github.com/quarkusio/quarkus-quickstarts.git
+:quickstarts-archive-url: https://github.com/quarkusio/quarkus-quickstarts/archive/${BRANCH}.zip
+:quickstarts-blob-url: https://github.com/quarkusio/quarkus-quickstarts/blob/${BRANCH}
+:quickstarts-tree-url: https://github.com/quarkusio/quarkus-quickstarts/tree/${BRANCH}
 // end::xref-attributes[]
 EOF
     fi

@@ -99,6 +99,13 @@ public interface OtlpExporterTracesConfig {
     }
 
     interface ProxyConfig {
+
+        /**
+         * If proxy connection must be used.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
         /**
          * Set proxy username.
          */

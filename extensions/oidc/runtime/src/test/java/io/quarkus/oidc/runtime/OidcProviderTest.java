@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -19,7 +20,10 @@ import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.jwt.consumer.Validator;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.lang.UnresolvableKeyException;
 import org.junit.jupiter.api.Test;
@@ -41,7 +45,7 @@ public class OidcProviderTest {
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
         OidcTenantConfig oidcConfig = new OidcTenantConfig();
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             try {
                 provider.verifyJwtToken(newToken, false, false, null);
                 fail("InvalidJwtException expected");
@@ -57,7 +61,7 @@ public class OidcProviderTest {
                 return Json.createObjectBuilder(headers).add("alg", "RS256").build();
             }
 
-        }, null)) {
+        }, null, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(newToken, false, false, null);
             assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
         }
@@ -72,7 +76,7 @@ public class OidcProviderTest {
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
             assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
         }
@@ -87,7 +91,7 @@ public class OidcProviderTest {
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey1.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet, null)) {
             try {
                 provider.verifyJwtToken(token, false, false, null);
                 fail("InvalidJwtException expected");
@@ -119,13 +123,13 @@ public class OidcProviderTest {
 
         final String tokenWithSub = Jwt.subject("subject").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(tokenWithSub, false, true, null);
             assertEquals("subject", result.localVerificationResult.getString(Claims.sub.name()));
         }
 
         final String tokenWithoutSub = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             try {
                 provider.verifyJwtToken(tokenWithoutSub, false, true, null);
                 fail("InvalidJwtException expected");
@@ -146,13 +150,13 @@ public class OidcProviderTest {
 
         final String tokenWithNonce = Jwt.claim("nonce", "123456").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(tokenWithNonce, false, false, "123456");
             assertEquals("123456", result.localVerificationResult.getString(Claims.nonce.name()));
         }
 
         final String tokenWithoutNonce = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             try {
                 provider.verifyJwtToken(tokenWithoutNonce, false, false, "123456");
                 fail("InvalidJwtException expected");
@@ -183,7 +187,7 @@ public class OidcProviderTest {
         OidcTenantConfig oidcConfig = new OidcTenantConfig();
         oidcConfig.token.issuedAtRequired = false;
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
             assertNull(result.localVerificationResult.getString(Claims.iat.name()));
         }
@@ -191,12 +195,80 @@ public class OidcProviderTest {
         OidcTenantConfig oidcConfigRequireAge = new OidcTenantConfig();
         oidcConfigRequireAge.token.issuedAtRequired = true;
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfigRequireAge, jwkSet, null, null)) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfigRequireAge, jwkSet, null)) {
             try {
                 provider.verifyJwtToken(token, false, false, null);
                 fail("InvalidJwtException expected");
             } catch (InvalidJwtException ex) {
                 assertTrue(ex.getMessage().contains("No Issued At (iat) claim present."));
+            }
+        }
+    }
+
+    @Test
+    public void testJwtValidators() throws Exception {
+        RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+        rsaJsonWebKey.setKeyId("k1");
+        JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+
+        String token = Jwt.claim("claim1", "claimValue1").claim("claim2", "claimValue2").jws().keyId("k1")
+                .sign(rsaJsonWebKey.getPrivateKey());
+
+        // no validators
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null, null)) {
+            TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
+            assertEquals("claimValue1", result.localVerificationResult.getString("claim1"));
+            assertEquals("claimValue2", result.localVerificationResult.getString("claim2"));
+        }
+
+        // one validator
+        Validator validator1 = new Validator() {
+            @Override
+            public String validate(JwtContext jwtContext) throws MalformedClaimException {
+                if (jwtContext.getJwtClaims().hasClaim("claim1")) {
+                    return "Claim1 is not allowed!";
+                }
+                return null;
+            }
+        };
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null, List.of(validator1))) {
+            try {
+                provider.verifyJwtToken(token, false, false, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("Claim1 is not allowed!"));
+            }
+        }
+
+        // two validators
+        Validator validator2 = new Validator() {
+            @Override
+            public String validate(JwtContext jwtContext) throws MalformedClaimException {
+                if (jwtContext.getJwtClaims().hasClaim("claim2")) {
+                    return "Claim2 is not allowed!";
+                }
+                return null;
+            }
+        };
+        // check the first validator is still run
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null, List.of(validator1, validator2))) {
+            try {
+                provider.verifyJwtToken(token, false, false, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("Claim1 is not allowed!"));
+            }
+        }
+        // check the second validator is applied
+        token = Jwt.claim("claim2", "claimValue2").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null, List.of(validator1, validator2))) {
+            try {
+                provider.verifyJwtToken(token, false, false, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("Claim2 is not allowed!"));
             }
         }
     }

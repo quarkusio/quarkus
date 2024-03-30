@@ -4,12 +4,14 @@ import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -30,12 +32,14 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.CertificateChain;
+import io.quarkus.oidc.TenantFeature.TenantFeatureLiteral;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
@@ -67,6 +71,7 @@ public class OidcProvider implements Closeable {
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
 
+    private final List<Validator> customValidators;
     final OidcProviderClient client;
     final RefreshableVerificationKeyResolver asymmetricKeyResolver;
     final DynamicVerificationKeyResolver keyResolverProvider;
@@ -79,11 +84,12 @@ public class OidcProvider implements Closeable {
     final AlgorithmConstraints requiredAlgorithmConstraints;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
-        this(client, oidcConfig, jwks, TokenCustomizerFinder.find(oidcConfig), tokenDecryptionKey);
+        this(client, oidcConfig, jwks, TokenCustomizerFinder.find(oidcConfig), tokenDecryptionKey,
+                getCustomValidators(oidcConfig));
     }
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
-            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey) {
+            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey, List<Validator> customValidators) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
@@ -106,6 +112,12 @@ public class OidcProvider implements Closeable {
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
+
+        if (customValidators != null && !customValidators.isEmpty()) {
+            this.customValidators = customValidators;
+        } else {
+            this.customValidators = null;
+        }
     }
 
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
@@ -125,6 +137,7 @@ public class OidcProvider implements Closeable {
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
+        this.customValidators = getCustomValidators(oidcConfig);
     }
 
     private AlgorithmConstraints checkSignatureAlgorithm() {
@@ -208,6 +221,12 @@ public class OidcProvider implements Closeable {
 
         if (nonce != null) {
             builder.registerValidator(new CustomClaimsValidator(Map.of(OidcConstants.NONCE, nonce)));
+        }
+
+        if (customValidators != null) {
+            for (Validator customValidator : customValidators) {
+                builder.registerValidator(customValidator);
+            }
         }
 
         if (issuedAtRequired) {
@@ -597,5 +616,26 @@ public class OidcProvider implements Closeable {
             }
             return null;
         }
+    }
+
+    private static List<Validator> getCustomValidators(OidcTenantConfig oidcTenantConfig) {
+        if (oidcTenantConfig != null && oidcTenantConfig.tenantId.isPresent()) {
+            var tenantsValidators = new ArrayList<Validator>();
+            for (var instance : Arc.container().listAll(Validator.class, Default.Literal.INSTANCE)) {
+                if (instance.isAvailable()) {
+                    tenantsValidators.add(instance.get());
+                }
+            }
+            for (var instance : Arc.container().listAll(Validator.class,
+                    TenantFeatureLiteral.of(oidcTenantConfig.tenantId.get()))) {
+                if (instance.isAvailable()) {
+                    tenantsValidators.add(instance.get());
+                }
+            }
+            if (!tenantsValidators.isEmpty()) {
+                return List.copyOf(tenantsValidators);
+            }
+        }
+        return null;
     }
 }

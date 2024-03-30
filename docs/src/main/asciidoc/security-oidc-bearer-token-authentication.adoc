@@ -352,6 +352,45 @@ public class IssuerValidator implements ContainerRequestFilter {
 Consider using the `quarkus.oidc.token.audience` property to verify the token `aud` (`audience`) claim value.
 ====
 
+[[jose4j-validator]]
+=== Jose4j Validator
+
+You can register a custom https://www.javadoc.io/doc/org.bitbucket.b_c/jose4j/latest/org/jose4j/jwt/consumer/class-use/Validator.html[Jose4j Validator] to customize the JWT claim verification process, before `org.eclipse.microprofile.jwt.JsonWebToken` is initialized.
+For example:
+
+[source, java]
+----
+package org.acme.security.openid.connect;
+
+import static org.eclipse.microprofile.jwt.Claims.iss;
+
+import io.quarkus.arc.Unremovable;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.jwt.consumer.Validator;
+
+@Unremovable
+@ApplicationScoped
+public class IssuerValidator implements Validator { <1>
+
+    @Override
+    public String validate(JwtContext jwtContext) throws MalformedClaimException {
+        if (jwtContext.getJwtClaims().hasClaim(iss.name())
+                && "my-issuer".equals(jwtContext.getJwtClaims().getClaimValueAsString(iss.name()))) {
+            return "wrong issuer"; <2>
+        }
+        return null; <3>
+    }
+}
+----
+<1> Register Jose4j Validator to verify JWT tokens for all OIDC tenants.
+<2> Return the claim verification error description.
+<3> Return `null` to confirm that this Validator has successfully verified the token.
+
+TIP: Use a `@quarkus.oidc.TenantFeature` annotation to bind a custom Validator to a specific OIDC tenant only.
+
 [[single-page-applications]]
 === Single-page applications
 

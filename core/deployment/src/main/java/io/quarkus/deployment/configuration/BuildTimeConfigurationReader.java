@@ -10,6 +10,8 @@ import static io.quarkus.runtime.configuration.PropertiesUtil.filterPropertiesIn
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 import static java.util.stream.Collectors.toSet;
 
@@ -1103,8 +1105,8 @@ public final class BuildTimeConfigurationReader {
                             Map.of("quarkus.profile", "",
                                     "quarkus.config.profile.parent", "",
                                     "quarkus.test.profile", "",
-                                    SmallRyeConfig.SMALLRYE_CONFIG_PROFILE, "",
-                                    SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT, "",
+                                    SMALLRYE_CONFIG_PROFILE, "",
+                                    SMALLRYE_CONFIG_PROFILE_PARENT, "",
                                     Config.PROFILE, ""),
                             Integer.MAX_VALUE) {
                         @Override
@@ -1153,6 +1155,28 @@ public final class BuildTimeConfigurationReader {
                 }
                 builder.withSources(configSource);
             }
+            builder.withSources(new AbstractConfigSource("Profiles", Integer.MAX_VALUE) {
+                private final Set<String> profiles = Set.of(
+                        "quarkus.profile",
+                        "quarkus.config.profile.parent",
+                        "quarkus.test.profile",
+                        SMALLRYE_CONFIG_PROFILE,
+                        SMALLRYE_CONFIG_PROFILE_PARENT,
+                        Config.PROFILE);
+
+                @Override
+                public Set<String> getPropertyNames() {
+                    return Collections.emptySet();
+                }
+
+                @Override
+                public String getValue(final String propertyName) {
+                    if (profiles.contains(propertyName)) {
+                        return config.getConfigValue(propertyName).getValue();
+                    }
+                    return null;
+                };
+            });
             return builder.build();
         }
 

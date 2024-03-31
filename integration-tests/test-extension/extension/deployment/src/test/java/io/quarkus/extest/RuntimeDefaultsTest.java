@@ -52,4 +52,11 @@ public class RuntimeDefaultsTest {
         assertEquals("properties", defaultValues.get().getValue("%test.bt.profile.record"));
         assertNull(defaultValues.get().getValue("bt.profile.record"));
     }
+
+    @Test
+    void recordProfile() {
+        Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
+        assertTrue(defaultValues.isPresent());
+        assertEquals("record", config.getRawValue("quarkus.profile"));
+    }
 }

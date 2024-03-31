@@ -49,4 +49,18 @@ public class ServicePublicKeyTestCase {
                 .get("/service/tenant-public-key");
         assertEquals(401, r.getStatusCode());
     }
+
+    @Test
+    public void testTokenIssuerVerification() {
+        String jwt = Jwt.claim("scope", "read:data").preferredUserName("alice").issuer("acceptable-issuer").sign();
+        assertEquals("tenant-public-key:alice", RestAssured.given().auth()
+                .oauth2(jwt)
+                .get("/service/tenant-public-key").getBody().asString());
+        jwt = Jwt.claim("scope", "read:data").preferredUserName("alice").issuer("unacceptable-issuer").sign();
+        RestAssured.given().auth()
+                .oauth2(jwt)
+                .get("/service/tenant-public-key")
+                .then()
+                .statusCode(401);
+    }
 }

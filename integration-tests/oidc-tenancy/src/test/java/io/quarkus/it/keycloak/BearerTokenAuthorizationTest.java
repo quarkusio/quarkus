@@ -655,6 +655,39 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBothGlobalAndTenantSpecificJwtValidator() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(200);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken("admin", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testGlobalJwtValidator() {
+        // tests that tenant-specific validator is not applied as the @TenantFeature value is not matched
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(200);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken("admin", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
     public void testRequiredClaimPass() {
         //Client id should match the required azp claim
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))

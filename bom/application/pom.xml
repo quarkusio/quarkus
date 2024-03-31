@@ -6227,10 +6227,19 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.james</groupId>
-                <artifactId>apache-mime4j</artifactId>
+                <artifactId>apache-mime4j-core</artifactId>
                 <version>${mime4j.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.apache.james</groupId>
+                <artifactId>apache-mime4j-dom</artifactId>
+                <version>${mime4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.james</groupId>
+                <artifactId>apache-mime4j-storage</artifactId>
+                <version>${mime4j.version}</version>
+            </dependency>
             <!-- OpenTelemetry libs not in BOM -->
             <dependency>
                 <groupId>io.opentelemetry.semconv</groupId>

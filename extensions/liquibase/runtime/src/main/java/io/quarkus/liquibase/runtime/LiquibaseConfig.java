@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
 import static io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig.DEFAULT_CHANGE_LOG;
+import static io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig.DEFAULT_SEARCH_PATH;
 import static io.quarkus.liquibase.runtime.LiquibaseDataSourceRuntimeConfig.DEFAULT_LOCK_TABLE;
 import static io.quarkus.liquibase.runtime.LiquibaseDataSourceRuntimeConfig.DEFAULT_LOG_TABLE;
 
@@ -17,6 +18,11 @@ public class LiquibaseConfig {
      * The change log file
      */
     public String changeLog = DEFAULT_CHANGE_LOG;
+
+    /**
+     * The search path for DirectoryResourceAccessor
+     */
+    public List<String> searchPath = List.of(DEFAULT_SEARCH_PATH);
 
     /**
      * The migrate at start flag

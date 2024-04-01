@@ -40,21 +40,24 @@ public class LiquibaseMongodbFactory {
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
 
-        if (liquibaseMongodbBuildTimeConfig.changeLog.startsWith("classpath:")) {
-            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
-        }
-
-        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:") &&
-                liquibaseMongodbBuildTimeConfig.searchPath.size() == 1 &&
-                liquibaseMongodbBuildTimeConfig.searchPath.get(0).equals("/")) {
-            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
-        }
-
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
         compositeResourceAccessor
                 .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
-        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath) {
+        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")
+                && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            return compositeResourceAccessor;
+        }
+
+        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            compositeResourceAccessor.addResourceAccessor(
+                    new DirectoryResourceAccessor(
+                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog, "filesystem:", ""))
+                                    .getParent()));
+            return compositeResourceAccessor;
+        }
+
+        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath.get()) {
             compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
 
@@ -62,6 +65,11 @@ public class LiquibaseMongodbFactory {
     }
 
     private String parseChangeLog(String changeLog) {
+
+        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+        }
+
         if (changeLog.startsWith("filesystem:")) {
             return StringUtil.changePrefix(changeLog, "filesystem:", "");
         }

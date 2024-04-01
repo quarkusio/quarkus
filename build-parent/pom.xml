@@ -129,7 +129,7 @@
         <docker-maven-plugin.version>0.44.0</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
-        <maven-invoker-plugin.version>3.6.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.6.1</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
         <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>

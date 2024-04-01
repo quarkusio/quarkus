@@ -35,21 +35,22 @@ public class LiquibaseFactory {
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
 
-        if (config.changeLog.startsWith("classpath:")) {
-            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
-        }
-
-        if (!config.changeLog.startsWith("filesystem:") &&
-                config.searchPath.size() == 1 &&
-                config.searchPath.get(0).equals("/")) {
-            return new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader());
-        }
-
         CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
         compositeResourceAccessor
                 .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
-        for (String searchPath : config.searchPath) {
+        if (!config.changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
+            return compositeResourceAccessor;
+        }
+
+        if (config.searchPath.isEmpty()) {
+            compositeResourceAccessor.addResourceAccessor(
+                    new DirectoryResourceAccessor(
+                            Paths.get(StringUtil.changePrefix(config.changeLog, "filesystem:", "")).getParent()));
+            return compositeResourceAccessor;
+        }
+
+        for (String searchPath : config.searchPath.get()) {
             compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
 
@@ -57,6 +58,11 @@ public class LiquibaseFactory {
     }
 
     private String parseChangeLog(String changeLog) {
+
+        if (changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+        }
+
         if (changeLog.startsWith("filesystem:")) {
             return StringUtil.changePrefix(changeLog, "filesystem:", "");
         }

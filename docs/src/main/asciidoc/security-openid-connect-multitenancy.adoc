@@ -707,8 +707,8 @@ Here is how you can select the `hr` tenant for the `sayHello` endpoint of the `H
 [source,properties]
 ----
 quarkus.oidc.hr.tenant-paths=/api/hello <1>
-quarkus.oidc.google.tenant-paths=/api/* <2>
-quarkus.oidc.google.tenant-paths=/*/hello <3>
+quarkus.oidc.a.tenant-paths=/api/* <2>
+quarkus.oidc.b.tenant-paths=/*/hello <3>
 ----
 <1> Same path-matching rules apply as for the `quarkus.http.auth.permission.authenticated.paths=/api/hello` configuration property from the previous example.
 <2> The wildcard placed at the end of the path represents any number of path segments. However the path is less specific than the `/api/hello`, therefore the `hr` tenant will be used to secure the `sayHello` endpoint.

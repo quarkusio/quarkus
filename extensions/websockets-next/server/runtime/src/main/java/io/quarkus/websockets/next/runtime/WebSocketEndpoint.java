@@ -3,6 +3,7 @@ package io.quarkus.websockets.next.runtime;
 import java.lang.reflect.Type;
 
 import io.quarkus.websockets.next.WebSocket;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 
@@ -75,6 +76,8 @@ public interface WebSocketEndpoint {
     default ExecutionModel onCloseExecutionModel() {
         return ExecutionModel.NONE;
     }
+
+    Uni<Void> doOnError(Throwable t);
 
     enum ExecutionModel {
         WORKER_THREAD,

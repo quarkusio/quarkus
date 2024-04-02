@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.WebSocketServerException;
@@ -25,6 +26,7 @@ public class MultipleAmbiguousGlobalErrorHandlersTest {
         fail();
     }
 
+    @Unremovable
     @ApplicationScoped
     public static class GlobalErrorHandlers {
 

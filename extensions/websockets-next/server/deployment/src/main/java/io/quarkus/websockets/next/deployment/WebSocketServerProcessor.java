@@ -463,7 +463,7 @@ public class WebSocketServerProcessor {
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            TryBlock tryBlock = onErrorTryBlock(doOnOpen);
+            TryBlock tryBlock = onErrorTryBlock(doOnOpen, doOnOpen.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance, args);
             encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
@@ -488,7 +488,7 @@ public class WebSocketServerProcessor {
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            TryBlock tryBlock = onErrorTryBlock(doOnClose);
+            TryBlock tryBlock = onErrorTryBlock(doOnClose, doOnClose.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance, args);
             encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
@@ -632,7 +632,7 @@ public class WebSocketServerProcessor {
         MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOn" + messageType + "Message", Uni.class,
                 methodParameterType);
 
-        TryBlock tryBlock = onErrorTryBlock(doOnMessage);
+        TryBlock tryBlock = onErrorTryBlock(doOnMessage, doOnMessage.getThis());
         // Foo foo = beanInstance("foo");
         ResultHandle beanInstance = tryBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
@@ -673,13 +673,13 @@ public class WebSocketServerProcessor {
         return tryBlock;
     }
 
-    private TryBlock onErrorTryBlock(BytecodeCreator method) {
+    private TryBlock onErrorTryBlock(BytecodeCreator method, ResultHandle endpointThis) {
         TryBlock tryBlock = method.tryBlock();
         CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
         // return doOnError(t);
         catchBlock.returnValue(catchBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "doOnError", Uni.class, Throwable.class),
-                catchBlock.getThis(), catchBlock.getCaughtException()));
+                endpointThis, catchBlock.getCaughtException()));
         return tryBlock;
     }
 
@@ -810,23 +810,28 @@ public class WebSocketServerProcessor {
                     return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
                 }
             } else if (callback.isReturnTypeMulti()) {
-                // return multiBinary(multi, broadcast, m -> {
-                //    Buffer buffer = encodeBuffer(m);
-                //    return sendBinary(buffer,broadcast);
-                //});
+                //    try {
+                //      Buffer buffer = encodeBuffer(m);
+                //      return sendBinary(buffer,broadcast);
+                //    } catch(Throwable t) {
+                //      return doOnError(t);
+                //    }
                 FunctionCreator fun = method.createFunction(Function.class);
                 BytecodeCreator funBytecode = fun.getBytecode();
-                ResultHandle buffer = encodeBuffer(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
-                        funBytecode.getMethodParam(0), endpointThis, callback);
-                funBytecode.returnValue(funBytecode.invokeVirtualMethod(
+                // This checkcast should not be necessary but we need to use the endpoint in the function bytecode
+                // otherwise gizmo does not access the endpoint reference correcly
+                ResultHandle endpointBase = funBytecode.checkCast(endpointThis, WebSocketEndpointBase.class);
+                TryBlock tryBlock = onErrorTryBlock(fun.getBytecode(), endpointBase);
+                ResultHandle buffer = encodeBuffer(tryBlock, callback.returnType().asParameterizedType().arguments().get(0),
+                        tryBlock.getMethodParam(0), endpointThis, callback);
+                tryBlock.returnValue(tryBlock.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendBinary", Uni.class, Buffer.class, boolean.class),
                         endpointThis, buffer,
-                        funBytecode.load(callback.broadcast())));
+                        tryBlock.load(callback.broadcast())));
                 return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "multiBinary", Uni.class, Multi.class, boolean.class, Function.class), endpointThis,
+                        "multiBinary", Uni.class, Multi.class, Function.class), endpointThis,
                         value,
-                        method.load(callback.broadcast()),
                         fun.getInstance());
             } else {
                 // return sendBinary(buffer,broadcast);
@@ -865,22 +870,29 @@ public class WebSocketServerProcessor {
                 }
             } else if (callback.isReturnTypeMulti()) {
                 // return multiText(multi, broadcast, m -> {
-                //    String text = encodeText(m);
-                //    return sendText(buffer,broadcast);
+                //    try {
+                //      String text = encodeText(m);
+                //      return sendText(buffer,broadcast);
+                //    } catch(Throwable t) {
+                //      return doOnError(t);
+                //    }
                 //});
                 FunctionCreator fun = method.createFunction(Function.class);
                 BytecodeCreator funBytecode = fun.getBytecode();
-                ResultHandle text = encodeText(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
-                        funBytecode.getMethodParam(0), endpointThis, callback);
-                funBytecode.returnValue(funBytecode.invokeVirtualMethod(
+                // This checkcast should not be necessary but we need to use the endpoint in the function bytecode
+                // otherwise gizmo does not access the endpoint reference correcly
+                ResultHandle endpointBase = funBytecode.checkCast(endpointThis, WebSocketEndpointBase.class);
+                TryBlock tryBlock = onErrorTryBlock(fun.getBytecode(), endpointBase);
+                ResultHandle text = encodeText(tryBlock, callback.returnType().asParameterizedType().arguments().get(0),
+                        tryBlock.getMethodParam(0), endpointThis, callback);
+                tryBlock.returnValue(tryBlock.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendText", Uni.class, String.class, boolean.class),
                         endpointThis, text,
-                        funBytecode.load(callback.broadcast())));
+                        tryBlock.load(callback.broadcast())));
                 return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "multiText", Uni.class, Multi.class, boolean.class, Function.class), endpointThis,
+                        "multiText", Uni.class, Multi.class, Function.class), endpointThis,
                         value,
-                        method.load(callback.broadcast()),
                         fun.getInstance());
             } else {
                 // return sendText(text,broadcast);

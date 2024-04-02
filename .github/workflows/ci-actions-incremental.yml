@@ -46,6 +46,7 @@ env:
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
+  PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -373,7 +374,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
@@ -481,7 +482,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -582,7 +583,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -664,7 +665,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -755,7 +756,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
@@ -906,7 +907,7 @@ jobs:
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
           CAPTURE_BUILD_SCAN: true
         run: |
-          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
+          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -973,7 +974,7 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
@@ -1086,7 +1087,7 @@ jobs:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
           CAPTURE_BUILD_SCAN: true
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -

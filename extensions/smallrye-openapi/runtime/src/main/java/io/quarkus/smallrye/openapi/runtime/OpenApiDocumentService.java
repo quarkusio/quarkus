@@ -8,6 +8,7 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.openapi.OASFilter;
@@ -36,6 +37,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
     private final OpenApiDocumentHolder documentHolder;
     private final String previousOpenApiServersSystemPropertyValue;
 
+    @Inject
     public OpenApiDocumentService(OASFilter autoSecurityFilter,
             OpenApiRecorder.UserDefinedRuntimeFilters userDefinedRuntimeFilters, Config config) {
         String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);

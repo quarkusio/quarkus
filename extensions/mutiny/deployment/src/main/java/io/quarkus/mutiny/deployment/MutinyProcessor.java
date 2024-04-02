@@ -1,6 +1,5 @@
 package io.quarkus.mutiny.deployment;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.jboss.threads.ContextHandler;
@@ -11,7 +10,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.mutiny.runtime.MutinyInfrastructure;
 
 public class MutinyProcessor {
@@ -32,13 +30,5 @@ public class MutinyProcessor {
         recorder.configureDroppedExceptionHandler();
         recorder.configureThreadBlockingChecker();
         recorder.configureOperatorLogger();
-    }
-
-    @BuildStep
-    public List<UnsafeAccessedFieldBuildItem> jctoolsUnsafeAccessedFields() {
-        return List.of(
-                new UnsafeAccessedFieldBuildItem(
-                        "org.jctools.util.UnsafeRefArrayAccess",
-                        "REF_ELEMENT_SHIFT"));
     }
 }

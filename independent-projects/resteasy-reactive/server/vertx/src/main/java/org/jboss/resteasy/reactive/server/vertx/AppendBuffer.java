@@ -10,7 +10,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
-import io.vertx.core.buffer.impl.PartialPooledByteBufAllocator;
 import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 /**
@@ -134,8 +133,7 @@ final class AppendBuffer {
             // VertxByteBufAllocator allocates cheaper heap buffers ie which doesn't use reference counting
             tmpBuf = VertxByteBufAllocator.DEFAULT.heapBuffer(chunkCapacity);
         } else {
-            // Vertx should replace the "standerd" PooledByteBufAllocator.DEFAULT this one
-            tmpBuf = PartialPooledByteBufAllocator.INSTANCE.directBuffer(chunkCapacity);
+            tmpBuf = PooledByteBufAllocator.DEFAULT.directBuffer(chunkCapacity);
         }
         try {
             tmpBuf.writeBytes(bytes, off, toWrite);

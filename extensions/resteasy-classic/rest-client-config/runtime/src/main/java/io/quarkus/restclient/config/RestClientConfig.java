@@ -27,6 +27,7 @@ public class RestClientConfig {
         EMPTY.connectTimeout = Optional.empty();
         EMPTY.readTimeout = Optional.empty();
         EMPTY.followRedirects = Optional.empty();
+        EMPTY.multipartPostEncoderMode = Optional.empty();
         EMPTY.proxyAddress = Optional.empty();
         EMPTY.proxyUser = Optional.empty();
         EMPTY.proxyPassword = Optional.empty();
@@ -96,6 +97,19 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<Boolean> followRedirects;
+
+    /**
+     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
+     * The modes are described in the
+     * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+     * documentation</a>
+     * <p>
+     * By default, Rest Client Reactive uses RFC1738.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigItem
+    public Optional<String> multipartPostEncoderMode;
 
     /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
@@ -287,6 +301,7 @@ public class RestClientConfig {
         instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
         instance.followRedirects = getConfigValue(configKey, "follow-redirects", Boolean.class);
+        instance.multipartPostEncoderMode = getConfigValue(configKey, "multipart-post-encoder-mode", String.class);
         instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
         instance.proxyUser = getConfigValue(configKey, "proxy-user", String.class);
         instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);

@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.api;
 
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+
 public class QuarkusRestClientProperties {
 
     /**
@@ -27,7 +29,7 @@ public class QuarkusRestClientProperties {
     public static final String READ_TIMEOUT = "io.quarkus.rest.client.read-timeout";
 
     /**
-     * See {@link EncoderMode}, RFC1738 by default
+     * See {@link PausableHttpPostRequestEncoder.EncoderMode}, RFC1738 by default
      */
     public static final String MULTIPART_ENCODER_MODE = "io.quarkus.rest.client.multipart-post-encoder-mode";
 

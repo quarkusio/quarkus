@@ -17,7 +17,7 @@ repositories {
 }
 
 quarkusDev {
-    workingDir = rootProject.projectDir
+    workingDirectory = rootProject.layout.projectDirectory.asFile
 }
 
 dependencies {

@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -12,7 +13,6 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public final class LiquibaseDataSourceBuildTimeConfig {
 
     static final String DEFAULT_CHANGE_LOG = "db/changeLog.xml";
-    static final String DEFAULT_SEARCH_PATH = "/";
 
     /**
      * Creates a {@link LiquibaseDataSourceBuildTimeConfig} with default settings.
@@ -22,7 +22,7 @@ public final class LiquibaseDataSourceBuildTimeConfig {
     public static final LiquibaseDataSourceBuildTimeConfig defaultConfig() {
         LiquibaseDataSourceBuildTimeConfig defaultConfig = new LiquibaseDataSourceBuildTimeConfig();
         defaultConfig.changeLog = DEFAULT_CHANGE_LOG;
-        defaultConfig.searchPath = List.of(DEFAULT_SEARCH_PATH);
+        defaultConfig.searchPath = Optional.empty();
         return defaultConfig;
     }
 
@@ -35,6 +35,6 @@ public final class LiquibaseDataSourceBuildTimeConfig {
     /**
      * The search path for DirectoryResourceAccessor
      */
-    @ConfigItem(defaultValue = "/")
-    public List<String> searchPath;
+    @ConfigItem
+    public Optional<List<String>> searchPath;
 }

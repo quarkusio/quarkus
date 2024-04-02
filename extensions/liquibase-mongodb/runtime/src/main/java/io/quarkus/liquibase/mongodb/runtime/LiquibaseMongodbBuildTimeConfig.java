@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -21,6 +22,6 @@ public class LiquibaseMongodbBuildTimeConfig {
     /**
      * The search path for DirectoryResourceAccessor
      */
-    @ConfigItem(defaultValue = "/")
-    public List<String> searchPath;
+    @ConfigItem
+    public Optional<List<String>> searchPath;
 }

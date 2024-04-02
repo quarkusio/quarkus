@@ -14,7 +14,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.impl.InjectionPointProvider;
 import io.quarkus.runtime.ExecutionMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.SmallRyeConfig;
@@ -37,7 +36,14 @@ public class ConfigStaticInitCheckInterceptor {
 
     @AroundInvoke
     Object aroundInvoke(InvocationContext context) throws Exception {
-        recordConfigValue(null, configValues);
+        InjectionPoint injectionPoint = null;
+        for (Object parameter : context.getParameters()) {
+            if (parameter instanceof InjectionPoint) {
+                injectionPoint = (InjectionPoint) parameter;
+                break;
+            }
+        }
+        recordConfigValue(injectionPoint, configValues);
         return context.proceed();
     }
 
@@ -45,9 +51,6 @@ public class ConfigStaticInitCheckInterceptor {
         if (ExecutionMode.current() != ExecutionMode.STATIC_INIT) {
             // No-op for any other execution mode
             return;
-        }
-        if (injectionPoint == null) {
-            injectionPoint = InjectionPointProvider.get();
         }
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");

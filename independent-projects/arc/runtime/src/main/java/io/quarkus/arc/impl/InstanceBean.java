@@ -30,7 +30,7 @@ public class InstanceBean extends BuiltInBean<Instance<?>> {
     @Override
     public Instance<?> get(CreationalContext<Instance<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers
-        InjectionPoint ip = InjectionPointProvider.get();
+        InjectionPoint ip = InjectionPointProvider.getCurrent(creationalContext);
         InstanceImpl<Instance<?>> instance = InstanceImpl.forInjection((InjectableBean<?>) ip.getBean(), ip.getType(),
                 ip.getQualifiers(), (CreationalContextImpl<?>) creationalContext, Collections.EMPTY_SET, ip.getMember(),
                 0, ip.isTransient());

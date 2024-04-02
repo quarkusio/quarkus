@@ -183,7 +183,7 @@ You can change the working directory the development environment runs on:
 [source,groovy]
 ----
 quarkusDev {
-    workingDir = rootProject.projectDir
+    workingDirectory = rootProject.layout.projectDirectory.asFile
 }
 ----
 ****
@@ -194,7 +194,7 @@ quarkusDev {
 [source,kotlin]
 ----
 tasks.quarkusDev {
-    workingDir = rootProject.projectDir.toString()
+    workingDirectory = rootProject.layout.projectDirectory.asFile
 }
 ----
 ****

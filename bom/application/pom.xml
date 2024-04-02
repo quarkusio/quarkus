@@ -269,6 +269,15 @@
             
             <!-- External BOMs -->
 
+            <!-- Smallrye Common dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
             <!-- Netty dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.netty</groupId>
@@ -339,15 +348,6 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
                 <version>${grpc.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <!-- Smallrye Common dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

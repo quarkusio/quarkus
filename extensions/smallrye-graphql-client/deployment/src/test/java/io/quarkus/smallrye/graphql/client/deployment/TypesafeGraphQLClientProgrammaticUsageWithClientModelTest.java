@@ -6,12 +6,14 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
+import org.eclipse.microprofile.graphql.Input;
 import org.jboss.jandex.Index;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.smallrye.graphql.client.deployment.model.Person;
+import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLClientApi;
 import io.quarkus.test.QuarkusUnitTest;
@@ -26,7 +28,7 @@ public class TypesafeGraphQLClientProgrammaticUsageWithClientModelTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class)
+                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @TestHTTPResource
@@ -34,7 +36,8 @@ public class TypesafeGraphQLClientProgrammaticUsageWithClientModelTest {
 
     @Test
     public void performQuery() throws IOException {
-        Index index = Index.of(GraphQLClientApi.class, TestingGraphQLClientApi.class, Person.class);
+        Index index = Index.of(GraphQLClientApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class,
+                Input.class);
         TestingGraphQLClientApi client = ((VertxTypesafeGraphQLClientBuilder) TypesafeGraphQLClientBuilder.newBuilder())
                 .clientModels(ClientModelBuilder.build(index))
                 .endpoint(url.toString() + "/graphql")

@@ -111,7 +111,7 @@ Define this property in your `src/main/resources/application.properties` file:
 [source,properties]
 ----
 # Your configuration properties
-greeting.text = hello
+greeting.text=hello
 ----
 
 Now modify `GreetingResource` to start using the `GreetingProperties`:
@@ -359,7 +359,7 @@ Let's update the properties file and the `GreetingResource` class.
 [source,properties]
 ----
 # Your configuration properties
-greeting.message.text = hello
+greeting.message.text=hello
 ----
 
 [source,java]

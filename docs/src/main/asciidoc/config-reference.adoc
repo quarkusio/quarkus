@@ -256,7 +256,7 @@ converted default value. However, when the property is explicitly empty, the def
 [source,properties]
 ----
 # missing value, optional property
-greeting.name =
+greeting.name=
 ----
 
 In this case, since `greeting.name` was configured to be `Optional*` up above, the corresponding property value will
@@ -268,7 +268,7 @@ On the other hand, this example:
 [source,properties]
 ----
 # missing value, non-optional
-greeting.suffix =
+greeting.suffix=
 ----
 
 will result in a `java.util.NoSuchElementException: SRCFG02004: Required property greeting.message not found` on

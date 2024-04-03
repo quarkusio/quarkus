@@ -58,8 +58,8 @@ Edit the file with the following content:
 [source,properties]
 ----
 # Your configuration properties
-greeting.message = hello
-greeting.name = quarkus
+greeting.message=hello
+greeting.name=quarkus
 ----
 
 == Create a REST resource

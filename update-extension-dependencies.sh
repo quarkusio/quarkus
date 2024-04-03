@@ -54,6 +54,10 @@ echo ''
 # get all "artifact-id" values from the generated json file
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
+
+# make sure ordering is not locale-dependent
+export LANG="C"
+
 # note: quarkus-amazon-common was removed from this repo without a relocation
 ARTIFACT_IDS=$(cd "${PRG_PATH}" && grep '^    "artifact"' devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-*.json \
     | grep -Eo 'quarkus-[a-z0-9-]+' | grep -v quarkus-amazon-common | sort)

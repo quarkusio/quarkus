@@ -215,7 +215,7 @@ public class WebSocketSessionContext implements ManagedContext {
         });
     }
 
-    class SessionContextState implements ContextState {
+    static class SessionContextState implements ContextState {
 
         // Using 0 as default value enable removing an initialization
         // in the constructor, piggybacking on the default value.

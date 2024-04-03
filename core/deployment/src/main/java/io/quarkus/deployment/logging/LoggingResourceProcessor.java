@@ -115,6 +115,7 @@ import io.quarkus.runtime.logging.LogConfig;
 import io.quarkus.runtime.logging.LogFilterFactory;
 import io.quarkus.runtime.logging.LogMetricsHandlerRecorder;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.smallrye.common.os.Process;
 
 public final class LoggingResourceProcessor {
 
@@ -214,6 +215,7 @@ public final class LoggingResourceProcessor {
             Consumer<NativeImageSystemPropertyBuildItem> systemProp,
             Consumer<ServiceProviderBuildItem> provider) {
         runtimeInit.accept(new RuntimeReinitializedClassBuildItem(ConsoleHandler.class.getName()));
+        runtimeInit.accept(new RuntimeReinitializedClassBuildItem(Process.class.getName()));
         runtimeInit.accept(new RuntimeReinitializedClassBuildItem("io.smallrye.common.ref.References$ReaperThread"));
         systemProp
                 .accept(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));

@@ -278,6 +278,7 @@
                                 <Implementation-URL>${project.url}</Implementation-URL>
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                                <Bundle-License>Apache License 2.0</Bundle-License>
                             </manifestEntries>
                         </archive>
                     </configuration>
@@ -450,6 +451,31 @@
             <id>release</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-license</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/classes/META-INF</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${maven.multiModuleProjectDirectory}</directory>
+                                            <filtering>false</filtering>
+                                            <includes>
+                                                <include>LICENSE</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <!--
                         ## IMPORTANT ##

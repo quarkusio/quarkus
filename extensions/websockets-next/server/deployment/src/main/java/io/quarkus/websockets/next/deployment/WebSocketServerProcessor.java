@@ -26,6 +26,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -36,6 +37,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -68,6 +70,7 @@ import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
+import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
@@ -75,6 +78,7 @@ import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
+import io.smallrye.mutiny.groups.UniOnFailure;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -98,6 +102,15 @@ public class WebSocketServerProcessor {
     }
 
     @BuildStep
+    AutoAddScopeBuildItem addScopeToGlobalErrorHandlers() {
+        return AutoAddScopeBuildItem.builder()
+                .containsAnnotations(WebSocketDotNames.ON_ERROR)
+                .unremovable()
+                .reason("Add @Singleton to a global WebSocket error handler")
+                .defaultScope(BuiltinScope.SINGLETON).build();
+    }
+
+    @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TextMessageCodec.class));
     }
@@ -105,13 +118,36 @@ public class WebSocketServerProcessor {
     @BuildStep
     public void collectEndpoints(BeanArchiveIndexBuildItem beanArchiveIndex,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
-            CallbackArgumentsBuildItem argumentProviders,
+            CallbackArgumentsBuildItem callbackArguments,
             TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<WebSocketEndpointBuildItem> endpoints) {
+            BuildProducer<WebSocketEndpointBuildItem> endpoints,
+            BuildProducer<GlobalErrorHandlersBuildItem> globalErrorHandlers) {
 
         IndexView index = beanArchiveIndex.getIndex();
-        Map<String, DotName> pathToEndpoint = new HashMap<>();
 
+        // Collect global error handlers, i.e. handlers that are not declared on an endpoint
+        Map<DotName, GlobalErrorHandler> globalErrors = new HashMap<>();
+        for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
+            ClassInfo beanClass = bean.getTarget().get().asClass();
+            if (beanClass.annotation(WebSocketDotNames.WEB_SOCKET) == null) {
+                for (Callback callback : findErrorHandlers(index, beanClass, callbackArguments, transformedAnnotations, null)) {
+                    GlobalErrorHandler errorHandler = new GlobalErrorHandler(bean, callback);
+                    DotName errorTypeName = callback.argumentType(ErrorCallbackArgument::isError).name();
+                    if (globalErrors.containsKey(errorTypeName)) {
+                        throw new WebSocketServerException(String.format(
+                                "Multiple global @OnError callbacks may not accept the same error parameter: %s\n\t- %s\n\t- %s",
+                                errorTypeName,
+                                callbackToString(callback.method),
+                                callbackToString(globalErrors.get(errorTypeName).callback.method)));
+                    }
+                    globalErrors.put(errorTypeName, errorHandler);
+                }
+            }
+        }
+        globalErrorHandlers.produce(new GlobalErrorHandlersBuildItem(List.copyOf(globalErrors.values())));
+
+        // Collect WebSocket endpoints
+        Map<String, DotName> pathToEndpoint = new HashMap<>();
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             AnnotationInstance webSocketAnnotation = beanClass.annotation(WebSocketDotNames.WEB_SOCKET);
@@ -127,16 +163,16 @@ public class WebSocketServerProcessor {
                             String.format("Multiple endpoints [%s, %s] define the same path: %s", previous, beanClass, path));
                 }
                 Callback onOpen = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_OPEN,
-                        argumentProviders, transformedAnnotations, path);
+                        callbackArguments, transformedAnnotations, path);
                 Callback onTextMessage = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_TEXT_MESSAGE,
-                        argumentProviders, transformedAnnotations, path);
+                        callbackArguments, transformedAnnotations, path);
                 Callback onBinaryMessage = findCallback(beanArchiveIndex.getIndex(), beanClass,
-                        WebSocketDotNames.ON_BINARY_MESSAGE, argumentProviders, transformedAnnotations, path);
+                        WebSocketDotNames.ON_BINARY_MESSAGE, callbackArguments, transformedAnnotations, path);
                 Callback onPongMessage = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_PONG_MESSAGE,
-                        argumentProviders, transformedAnnotations, path,
+                        callbackArguments, transformedAnnotations, path,
                         this::validateOnPongMessage);
                 Callback onClose = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_CLOSE,
-                        argumentProviders, transformedAnnotations, path,
+                        callbackArguments, transformedAnnotations, path,
                         this::validateOnClose);
                 if (onOpen == null && onTextMessage == null && onBinaryMessage == null && onPongMessage == null) {
                     throw new WebSocketServerException(
@@ -151,7 +187,8 @@ public class WebSocketServerProcessor {
                         onTextMessage,
                         onBinaryMessage,
                         onPongMessage,
-                        onClose));
+                        onClose,
+                        findErrorHandlers(index, beanClass, callbackArguments, transformedAnnotations, path)));
             }
         }
     }
@@ -167,9 +204,10 @@ public class WebSocketServerProcessor {
     }
 
     @BuildStep
-    public void generateEndpoints(List<WebSocketEndpointBuildItem> endpoints,
+    public void generateEndpoints(BeanArchiveIndexBuildItem index, List<WebSocketEndpointBuildItem> endpoints,
             CallbackArgumentsBuildItem argumentProviders,
             TransformedAnnotationsBuildItem transformedAnnotations,
+            GlobalErrorHandlersBuildItem globalErrorHandlers,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedEndpointBuildItem> generatedEndpoints,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
@@ -191,7 +229,8 @@ public class WebSocketServerProcessor {
             // A new instance of this generated endpoint is created for each client connection
             // The generated endpoint ensures the correct execution model is used
             // and delegates callback invocations to the endpoint bean
-            String generatedName = generateEndpoint(endpoint, argumentProviders, transformedAnnotations, classOutput);
+            String generatedName = generateEndpoint(endpoint, argumentProviders, transformedAnnotations,
+                    index.getIndex(), classOutput, globalErrorHandlers);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
             generatedEndpoints.produce(new GeneratedEndpointBuildItem(generatedName, endpoint.path));
         }
@@ -248,6 +287,7 @@ public class WebSocketServerProcessor {
         providers.produce(new CallbackArgumentBuildItem(new ConnectionCallbackArgument()));
         providers.produce(new CallbackArgumentBuildItem(new PathParamCallbackArgument()));
         providers.produce(new CallbackArgumentBuildItem(new HandshakeRequestCallbackArgument()));
+        providers.produce(new CallbackArgumentBuildItem(new ErrorCallbackArgument()));
     }
 
     static String mergePath(String prefix, String path) {
@@ -298,13 +338,12 @@ public class WebSocketServerProcessor {
             throw new WebSocketServerException(
                     "@OnPongMessage callback must return void or Uni<Void>: " + callbackToString(callback.method));
         }
-        // TODO validate message arguments
-        //        List<Entry<MethodParameterInfo, CallbackArgument>> messageArguments = getMessageArguments(providers);
-        //        if (messageArguments.size() != 1 || !messageArguments.get(0).getKey().type().name().equals(WebSocketDotNames.BUFFER)) {
-        //            throw new WebSocketServerException(
-        //                    "@OnPongMessage callback must accept exactly one message parameter of type io.vertx.core.buffer.Buffer: "
-        //                            + callbackToString(callback.method));
-        //        }
+        Type messageType = callback.argumentType(MessageCallbackArgument::isMessage);
+        if (!messageType.name().equals(WebSocketDotNames.BUFFER)) {
+            throw new WebSocketServerException(
+                    "@OnPongMessage callback must accept exactly one message parameter of type io.vertx.core.buffer.Buffer: "
+                            + callbackToString(callback.method));
+        }
     }
 
     private void validateOnClose(Callback callback) {
@@ -326,7 +365,7 @@ public class WebSocketServerProcessor {
      *
      *     public Echo_WebSocketEndpoint(WebSocketConnection connection, Codecs codecs,
      *             WebSocketRuntimeConfig config, ContextSupport contextSupport) {
-     *         super(context, connection, codecs, config, contextActivator);
+     *         super(connection, codecs, config, contextSupport);
      *     }
      *
      *     public Uni doOnTextMessage(String message) {
@@ -336,6 +375,26 @@ public class WebSocketServerProcessor {
      *             return uni.chain(m -> sendText(m, false));
      *         } else {
      *             return Uni.createFrom().voidItem();
+     *         }
+     *     }
+     *
+     *     public Uni doOnTextMessage(Object message) {
+     *         Object bean = super.beanInstance("egBJQ7_QAFkQlYXSTKE0XlN3wow");
+     *         try {
+     *             String ret = ((EchoEndpoint) bean).echo((String) message);
+     *             return ret != null ? super.sendText(ret, false) : Uni.createFrom().voidItem();
+     *         } catch (Throwable t) {
+     *             return ((WebSocketEndpointBase) this).doOnError(t);
+     *         }
+     *     }
+     *
+     *     public Uni doOnError(Throwable t) {
+     *         if (!(t instanceof IllegalStateException)) {
+     *             return Uni.createFrom().failure(t);
+     *         } else {
+     *             1 fun = new 1(this);
+     *             ExecutionModel em = ExecutionModel.EVENT_LOOP;
+     *             return doErrorExecute(t, em, (Function)fun);
      *         }
      *     }
      *
@@ -352,7 +411,9 @@ public class WebSocketServerProcessor {
     private String generateEndpoint(WebSocketEndpointBuildItem endpoint,
             CallbackArgumentsBuildItem argumentProviders,
             TransformedAnnotationsBuildItem transformedAnnotations,
-            ClassOutput classOutput) {
+            IndexView index,
+            ClassOutput classOutput,
+            GlobalErrorHandlersBuildItem globalErrorHandlers) {
         ClassInfo implClazz = endpoint.bean.getImplClazz();
         String baseName;
         if (implClazz.enclosingClass() != null) {
@@ -384,49 +445,155 @@ public class WebSocketServerProcessor {
             Callback callback = endpoint.onOpen;
             MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
-            ResultHandle beanInstance = doOnOpen.invokeSpecialMethod(
+            ResultHandle beanInstance = doOnOpen.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            TryBlock tryBlock = uniFailureTryBlock(doOnOpen);
-            ResultHandle[] args = callback.generateArguments(tryBlock, transformedAnnotations, endpoint.path);
+            TryBlock tryBlock = onErrorTryBlock(doOnOpen);
+            ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance, args);
-            encodeAndReturnResult(tryBlock, callback, ret);
+            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
 
             MethodCreator onOpenExecutionModel = endpointCreator.getMethodCreator("onOpenExecutionModel",
                     ExecutionModel.class);
             onOpenExecutionModel.returnValue(onOpenExecutionModel.load(callback.executionModel));
         }
 
-        generateOnMessage(endpointCreator, endpoint, endpoint.onBinaryMessage, argumentProviders, transformedAnnotations);
-        generateOnMessage(endpointCreator, endpoint, endpoint.onTextMessage, argumentProviders, transformedAnnotations);
-        generateOnMessage(endpointCreator, endpoint, endpoint.onPongMessage, argumentProviders, transformedAnnotations);
+        generateOnMessage(endpointCreator, endpoint, endpoint.onBinaryMessage, argumentProviders, transformedAnnotations,
+                index, globalErrorHandlers);
+        generateOnMessage(endpointCreator, endpoint, endpoint.onTextMessage, argumentProviders, transformedAnnotations, index,
+                globalErrorHandlers);
+        generateOnMessage(endpointCreator, endpoint, endpoint.onPongMessage, argumentProviders, transformedAnnotations, index,
+                globalErrorHandlers);
 
         if (endpoint.onClose != null) {
             Callback callback = endpoint.onClose;
             MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
-            ResultHandle beanInstance = doOnClose.invokeSpecialMethod(
+            ResultHandle beanInstance = doOnClose.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            TryBlock tryBlock = uniFailureTryBlock(doOnClose);
-            ResultHandle[] args = callback.generateArguments(tryBlock, transformedAnnotations, endpoint.path);
+            TryBlock tryBlock = onErrorTryBlock(doOnClose);
+            ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
             ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance, args);
-            encodeAndReturnResult(tryBlock, callback, ret);
+            encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
 
             MethodCreator onCloseExecutionModel = endpointCreator.getMethodCreator("onCloseExecutionModel",
                     ExecutionModel.class);
             onCloseExecutionModel.returnValue(onCloseExecutionModel.load(callback.executionModel));
         }
 
+        generateOnError(endpointCreator, endpoint, argumentProviders, transformedAnnotations, globalErrorHandlers, index);
+
         endpointCreator.close();
         return generatedName.replace('/', '.');
     }
 
+    private void generateOnError(ClassCreator endpointCreator, WebSocketEndpointBuildItem endpoint,
+            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
+            GlobalErrorHandlersBuildItem globalErrorHandlers, IndexView index) {
+
+        Map<DotName, Callback> errors = new HashMap<>();
+        List<ThrowableInfo> throwableInfos = new ArrayList<>();
+        for (Callback callback : endpoint.onErrors) {
+            DotName errorTypeName = callback.argumentType(ErrorCallbackArgument::isError).name();
+            if (errors.containsKey(errorTypeName)) {
+                throw new WebSocketServerException(String.format(
+                        "Multiple @OnError callbacks may not accept the same error parameter: %s\n\t- %s\n\t- %s",
+                        errorTypeName,
+                        callbackToString(callback.method), callbackToString(errors.get(errorTypeName).method)));
+            }
+            errors.put(errorTypeName, callback);
+            throwableInfos.add(new ThrowableInfo(endpoint.bean, callback, throwableHierarchy(errorTypeName, index)));
+        }
+        for (GlobalErrorHandler globalErrorHandler : globalErrorHandlers.handlers) {
+            Callback callback = globalErrorHandler.callback;
+            DotName errorTypeName = callback.argumentType(ErrorCallbackArgument::isError).name();
+            if (!errors.containsKey(errorTypeName)) {
+                // Endpoint callbacks take precedence over global handlers
+                throwableInfos
+                        .add(new ThrowableInfo(globalErrorHandler.bean, callback, throwableHierarchy(errorTypeName, index)));
+            }
+        }
+
+        if (throwableInfos.isEmpty()) {
+            return;
+        }
+
+        MethodCreator doOnError = endpointCreator.getMethodCreator("doOnError", Uni.class, Throwable.class);
+        // Most specific errors go first
+        throwableInfos.sort(Comparator.comparingInt(ThrowableInfo::level).reversed());
+        ResultHandle endpointThis = doOnError.getThis();
+
+        for (ThrowableInfo throwableInfo : throwableInfos) {
+            BytecodeCreator throwableMatches = doOnError
+                    .ifTrue(doOnError.instanceOf(doOnError.getMethodParam(0), throwableInfo.hierarchy.get(0).toString()))
+                    .trueBranch();
+            Callback callback = throwableInfo.callback;
+
+            FunctionCreator fun = throwableMatches.createFunction(Function.class);
+            BytecodeCreator funBytecode = fun.getBytecode();
+
+            // Call the business method
+            TryBlock tryBlock = uniFailureTryBlock(funBytecode);
+            ResultHandle beanInstance = tryBlock.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
+                    endpointThis, funBytecode.load(throwableInfo.bean().getIdentifier()));
+            ResultHandle[] args = callback.generateArguments(endpointThis, tryBlock, transformedAnnotations, index);
+            ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance, args);
+            encodeAndReturnResult(endpointThis, tryBlock, callback, globalErrorHandlers, endpoint, ret);
+
+            // return doErrorExecute()
+            throwableMatches.returnValue(
+                    throwableMatches.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "doErrorExecute", Uni.class, Throwable.class,
+                                    WebSocketEndpoint.ExecutionModel.class, Function.class),
+                            throwableMatches.getThis(), throwableMatches.getMethodParam(0),
+                            throwableMatches.load(callback.executionModel), fun.getInstance()));
+        }
+
+        ResultHandle uniCreate = doOnError
+                .invokeStaticInterfaceMethod(MethodDescriptor.ofMethod(Uni.class, "createFrom", UniCreate.class));
+        doOnError.returnValue(doOnError.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(UniCreate.class, "failure", Uni.class, Throwable.class), uniCreate,
+                doOnError.getMethodParam(0)));
+    }
+
+    private List<DotName> throwableHierarchy(DotName throwableName, IndexView index) {
+        // TextDecodeException -> [TextDecodeException, WebSocketServerException, RuntimeException, Exception, Throwable]
+        List<DotName> ret = new ArrayList<>();
+        addToThrowableHierarchy(throwableName, index, ret);
+        return ret;
+    }
+
+    private void addToThrowableHierarchy(DotName throwableName, IndexView index, List<DotName> hierarchy) {
+        hierarchy.add(throwableName);
+        ClassInfo errorClass = index.getClassByName(throwableName);
+        if (errorClass == null) {
+            throw new IllegalArgumentException("The class " + throwableName + " not found in the index");
+        }
+        if (errorClass.superName().equals(DotName.OBJECT_NAME)) {
+            return;
+        }
+        addToThrowableHierarchy(errorClass.superName(), index, hierarchy);
+    }
+
+    record ThrowableInfo(BeanInfo bean, Callback callback, List<DotName> hierarchy) {
+
+        public int level() {
+            return hierarchy.size();
+        }
+
+    }
+
+    record GlobalErrorHandler(BeanInfo bean, Callback callback) {
+
+    }
+
     private void generateOnMessage(ClassCreator endpointCreator, WebSocketEndpointBuildItem endpoint, Callback callback,
-            CallbackArgumentsBuildItem paramInjectors,
-            TransformedAnnotationsBuildItem transformedAnnotations) {
+            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
+            IndexView index, GlobalErrorHandlersBuildItem globalErrorHandlers) {
         if (callback == null) {
             return;
         }
@@ -450,16 +617,17 @@ public class WebSocketServerProcessor {
         }
         MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOn" + messageType + "Message", Uni.class,
                 methodParameterType);
+
+        TryBlock tryBlock = onErrorTryBlock(doOnMessage);
         // Foo foo = beanInstance("foo");
-        ResultHandle beanInstance = doOnMessage.invokeSpecialMethod(
+        ResultHandle beanInstance = tryBlock.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                doOnMessage.getThis(), doOnMessage.load(endpoint.bean.getIdentifier()));
+                tryBlock.getThis(), tryBlock.load(endpoint.bean.getIdentifier()));
+        ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
         // Call the business method
-        TryBlock tryBlock = uniFailureTryBlock(doOnMessage);
-        ResultHandle[] args = callback.generateArguments(tryBlock, transformedAnnotations, endpoint.path);
         ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance,
                 args);
-        encodeAndReturnResult(tryBlock, callback, ret);
+        encodeAndReturnResult(tryBlock.getThis(), tryBlock, callback, globalErrorHandlers, endpoint, ret);
 
         MethodCreator onMessageExecutionModel = endpointCreator.getMethodCreator("on" + messageType + "MessageExecutionModel",
                 ExecutionModel.class);
@@ -473,8 +641,9 @@ public class WebSocketServerProcessor {
 
             MethodCreator decodeMultiItem = endpointCreator.getMethodCreator("decode" + messageType + "MultiItem",
                     Object.class, Object.class);
-            decodeMultiItem.returnValue(decodeMessage(decodeMultiItem, callback.acceptsBinaryMessage(),
-                    multiItemType, decodeMultiItem.getMethodParam(0), callback));
+            decodeMultiItem
+                    .returnValue(decodeMessage(decodeMultiItem.getThis(), decodeMultiItem, callback.acceptsBinaryMessage(),
+                            multiItemType, decodeMultiItem.getMethodParam(0), callback));
         }
     }
 
@@ -490,8 +659,20 @@ public class WebSocketServerProcessor {
         return tryBlock;
     }
 
-    static ResultHandle decodeMessage(BytecodeCreator method, boolean binaryMessage, Type valueType, ResultHandle value,
-            Callback callback) {
+    private TryBlock onErrorTryBlock(BytecodeCreator method) {
+        TryBlock tryBlock = method.tryBlock();
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        // return doOnError(t);
+        catchBlock.returnValue(catchBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "doOnError", Uni.class, Throwable.class),
+                catchBlock.getThis(), catchBlock.getCaughtException()));
+        return tryBlock;
+    }
+
+    static ResultHandle decodeMessage(
+            // WebSocketEndpointBase reference
+            ResultHandle endpointThis,
+            BytecodeCreator method, boolean binaryMessage, Type valueType, ResultHandle value, Callback callback) {
         if (WebSocketDotNames.MULTI.equals(valueType.name())) {
             // Multi is decoded at runtime in the recorder
             return value;
@@ -519,9 +700,9 @@ public class WebSocketServerProcessor {
                 // Try to use codecs
                 DotName inputCodec = callback.getInputCodec();
                 ResultHandle type = Types.getTypeHandle(method, valueType);
-                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                ResultHandle decoded = method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "decodeBinary", Object.class, java.lang.reflect.Type.class, Buffer.class, Class.class),
-                        method.getThis(), type,
+                        endpointThis, type,
                         value, inputCodec != null ? method.loadClass(inputCodec.toString()) : method.loadNull());
                 return decoded;
             }
@@ -552,15 +733,39 @@ public class WebSocketServerProcessor {
                 // Try to use codecs
                 DotName inputCodec = callback.getInputCodec();
                 ResultHandle type = Types.getTypeHandle(method, valueType);
-                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "decodeText", Object.class, java.lang.reflect.Type.class, String.class, Class.class), method.getThis(),
+                ResultHandle decoded = method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                        "decodeText", Object.class, java.lang.reflect.Type.class, String.class, Class.class), endpointThis,
                         type, value, inputCodec != null ? method.loadClass(inputCodec.toString()) : method.loadNull());
                 return decoded;
             }
         }
     }
 
-    private ResultHandle encodeMessage(BytecodeCreator method, Callback callback, ResultHandle value) {
+    private ResultHandle uniOnFailureDoOnError(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
+            ResultHandle uni, WebSocketEndpointBuildItem endpoint, GlobalErrorHandlersBuildItem globalErrorHandlers) {
+        if (callback.isOnError()
+                || (globalErrorHandlers.handlers.isEmpty() && (endpoint == null || endpoint.onErrors.isEmpty()))) {
+            // @OnError or no error handlers available
+            return uni;
+        }
+        // return uniMessage.onFailure().recoverWithUni(t -> {
+        //    return doOnError(t);
+        // });
+        FunctionCreator fun = method.createFunction(Function.class);
+        BytecodeCreator funBytecode = fun.getBytecode();
+        funBytecode.returnValue(funBytecode.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "doOnError", Uni.class, Throwable.class),
+                endpointThis, funBytecode.getMethodParam(0)));
+        ResultHandle uniOnFailure = method.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(Uni.class, "onFailure", UniOnFailure.class), uni);
+        return method.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(UniOnFailure.class, "recoverWithUni", Uni.class, Function.class),
+                uniOnFailure, fun.getInstance());
+    }
+
+    private ResultHandle encodeMessage(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
+            GlobalErrorHandlersBuildItem globalErrorHandlers, WebSocketEndpointBuildItem endpoint,
+            ResultHandle value) {
         if (callback.acceptsBinaryMessage()) {
             // ----------------------
             // === Binary message ===
@@ -569,7 +774,7 @@ public class WebSocketServerProcessor {
                 Type messageType = callback.returnType().asParameterizedType().arguments().get(0);
                 if (messageType.name().equals(WebSocketDotNames.VOID)) {
                     // Uni<Void>
-                    return value;
+                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers);
                 } else {
                     // return uniMessage.chain(m -> {
                     //    Buffer buffer = encodeBuffer(m);
@@ -579,16 +784,16 @@ public class WebSocketServerProcessor {
                     BytecodeCreator funBytecode = fun.getBytecode();
                     ResultHandle buffer = encodeBuffer(funBytecode,
                             callback.returnType().asParameterizedType().arguments().get(0),
-                            funBytecode.getMethodParam(0), method.getThis(), callback);
-                    funBytecode.returnValue(funBytecode.invokeSpecialMethod(
+                            funBytecode.getMethodParam(0), endpointThis, callback);
+                    funBytecode.returnValue(funBytecode.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                     "sendBinary", Uni.class, Buffer.class, boolean.class),
-                            method.getThis(), buffer,
+                            endpointThis, buffer,
                             funBytecode.load(callback.broadcast())));
                     ResultHandle uniChain = method.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(Uni.class, "chain", Uni.class, Function.class), value,
                             fun.getInstance());
-                    return uniChain;
+                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
                 }
             } else if (callback.isReturnTypeMulti()) {
                 // return multiBinary(multi, broadcast, m -> {
@@ -598,22 +803,22 @@ public class WebSocketServerProcessor {
                 FunctionCreator fun = method.createFunction(Function.class);
                 BytecodeCreator funBytecode = fun.getBytecode();
                 ResultHandle buffer = encodeBuffer(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
-                        funBytecode.getMethodParam(0), method.getThis(), callback);
-                funBytecode.returnValue(funBytecode.invokeSpecialMethod(
+                        funBytecode.getMethodParam(0), endpointThis, callback);
+                funBytecode.returnValue(funBytecode.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendBinary", Uni.class, Buffer.class, boolean.class),
-                        method.getThis(), buffer,
+                        endpointThis, buffer,
                         funBytecode.load(callback.broadcast())));
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "multiBinary", Uni.class, Multi.class, boolean.class, Function.class), method.getThis(),
+                return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                        "multiBinary", Uni.class, Multi.class, boolean.class, Function.class), endpointThis,
                         value,
                         method.load(callback.broadcast()),
                         fun.getInstance());
             } else {
                 // return sendBinary(buffer,broadcast);
-                ResultHandle buffer = encodeBuffer(method, callback.returnType(), value, method.getThis(), callback);
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "sendBinary", Uni.class, Buffer.class, boolean.class), method.getThis(), buffer,
+                ResultHandle buffer = encodeBuffer(method, callback.returnType(), value, endpointThis, callback);
+                return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                        "sendBinary", Uni.class, Buffer.class, boolean.class), endpointThis, buffer,
                         method.load(callback.broadcast()));
             }
         } else {
@@ -624,7 +829,8 @@ public class WebSocketServerProcessor {
                 Type messageType = callback.returnType().asParameterizedType().arguments().get(0);
                 if (messageType.name().equals(WebSocketDotNames.VOID)) {
                     // Uni<Void>
-                    return value;
+
+                    return uniOnFailureDoOnError(endpointThis, method, callback, value, endpoint, globalErrorHandlers);
                 } else {
                     // return uniMessage.chain(m -> {
                     //    String text = encodeText(m);
@@ -633,16 +839,16 @@ public class WebSocketServerProcessor {
                     FunctionCreator fun = method.createFunction(Function.class);
                     BytecodeCreator funBytecode = fun.getBytecode();
                     ResultHandle text = encodeText(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
-                            funBytecode.getMethodParam(0), method.getThis(), callback);
-                    funBytecode.returnValue(funBytecode.invokeSpecialMethod(
+                            funBytecode.getMethodParam(0), endpointThis, callback);
+                    funBytecode.returnValue(funBytecode.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                     "sendText", Uni.class, String.class, boolean.class),
-                            method.getThis(), text,
+                            endpointThis, text,
                             funBytecode.load(callback.broadcast())));
                     ResultHandle uniChain = method.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(Uni.class, "chain", Uni.class, Function.class), value,
                             fun.getInstance());
-                    return uniChain;
+                    return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
                 }
             } else if (callback.isReturnTypeMulti()) {
                 // return multiText(multi, broadcast, m -> {
@@ -652,29 +858,29 @@ public class WebSocketServerProcessor {
                 FunctionCreator fun = method.createFunction(Function.class);
                 BytecodeCreator funBytecode = fun.getBytecode();
                 ResultHandle text = encodeText(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
-                        funBytecode.getMethodParam(0), method.getThis(), callback);
-                funBytecode.returnValue(funBytecode.invokeSpecialMethod(
+                        funBytecode.getMethodParam(0), endpointThis, callback);
+                funBytecode.returnValue(funBytecode.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendText", Uni.class, String.class, boolean.class),
-                        method.getThis(), text,
+                        endpointThis, text,
                         funBytecode.load(callback.broadcast())));
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "multiText", Uni.class, Multi.class, boolean.class, Function.class), method.getThis(),
+                return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                        "multiText", Uni.class, Multi.class, boolean.class, Function.class), endpointThis,
                         value,
                         method.load(callback.broadcast()),
                         fun.getInstance());
             } else {
                 // return sendText(text,broadcast);
-                ResultHandle text = encodeText(method, callback.returnType(), value, method.getThis(), callback);
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                        "sendText", Uni.class, String.class, boolean.class), method.getThis(), text,
+                ResultHandle text = encodeText(method, callback.returnType(), value, endpointThis, callback);
+                return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                        "sendText", Uni.class, String.class, boolean.class), endpointThis, text,
                         method.load(callback.broadcast()));
             }
         }
     }
 
     private ResultHandle encodeBuffer(BytecodeCreator method, Type messageType, ResultHandle value,
-            ResultHandle defaultWebSocketEndpoint, Callback callback) {
+            ResultHandle endpointThis, Callback callback) {
         ResultHandle buffer;
         if (messageType.name().equals(WebSocketDotNames.BUFFER)) {
             buffer = value;
@@ -693,15 +899,15 @@ public class WebSocketServerProcessor {
         } else {
             // Try to use codecs
             DotName outputCodec = callback.getOutputCodec();
-            buffer = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                    "encodeBinary", Buffer.class, Object.class, Class.class), defaultWebSocketEndpoint, value,
+            buffer = method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                    "encodeBinary", Buffer.class, Object.class, Class.class), endpointThis, value,
                     outputCodec != null ? method.loadClass(outputCodec.toString()) : method.loadNull());
         }
         return buffer;
     }
 
     private ResultHandle encodeText(BytecodeCreator method, Type messageType, ResultHandle value,
-            ResultHandle defaultWebSocketEndpoint, Callback callback) {
+            ResultHandle endpointThis, Callback callback) {
         ResultHandle text;
         if (messageType.name().equals(WebSocketDotNames.BUFFER)) {
             text = method.invokeInterfaceMethod(
@@ -722,8 +928,8 @@ public class WebSocketServerProcessor {
         } else {
             // Try to use codecs
             DotName outputCodec = callback.getOutputCodec();
-            text = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
-                    "encodeText", String.class, Object.class, Class.class), defaultWebSocketEndpoint, value,
+            text = method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
+                    "encodeText", String.class, Object.class, Class.class), endpointThis, value,
                     outputCodec != null ? method.loadClass(outputCodec.toString()) : method.loadNull());
         }
         return text;
@@ -735,7 +941,9 @@ public class WebSocketServerProcessor {
         return method.invokeVirtualMethod(MethodDescriptor.ofMethod(UniCreate.class, "voidItem", Uni.class), uniCreate);
     }
 
-    private void encodeAndReturnResult(BytecodeCreator method, Callback callback, ResultHandle result) {
+    private void encodeAndReturnResult(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
+            GlobalErrorHandlersBuildItem globalErrorHandlers, WebSocketEndpointBuildItem endpoint,
+            ResultHandle result) {
         // The result must be always Uni<Void>
         if (callback.isReturnTypeVoid()) {
             // return Uni.createFrom().void()
@@ -744,20 +952,36 @@ public class WebSocketServerProcessor {
             // Skip response
             BytecodeCreator isNull = method.ifNull(result).trueBranch();
             isNull.returnValue(uniVoid(isNull));
-            method.returnValue(encodeMessage(method, callback, result));
+            method.returnValue(encodeMessage(endpointThis, method, callback, globalErrorHandlers, endpoint, result));
         }
     }
 
-    private Callback findCallback(IndexView index, ClassInfo beanClass, DotName annotationName,
-            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
+    private List<Callback> findErrorHandlers(IndexView index, ClassInfo beanClass, CallbackArgumentsBuildItem callbackArguments,
+            TransformedAnnotationsBuildItem transformedAnnotations,
             String endpointPath) {
-        return findCallback(index, beanClass, annotationName, callbackArguments, transformedAnnotations, endpointPath, null);
+        List<AnnotationInstance> annotations = findCallbackAnnotations(index, beanClass, WebSocketDotNames.ON_ERROR);
+        if (annotations.isEmpty()) {
+            return List.of();
+        }
+        List<Callback> errorHandlers = new ArrayList<>();
+        for (AnnotationInstance annotation : annotations) {
+            MethodInfo method = annotation.target().asMethod();
+            Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
+                    transformedAnnotations, endpointPath, index);
+            long errorArguments = callback.arguments.stream().filter(ca -> ca instanceof ErrorCallbackArgument).count();
+            if (errorArguments != 1) {
+                throw new WebSocketServerException(
+                        String.format("@OnError callback must accept exactly one error parameter; found %s: %s",
+                                DotNames.simpleName(callback.annotation.name()),
+                                errorArguments,
+                                callbackToString(callback.method)));
+            }
+            errorHandlers.add(callback);
+        }
+        return errorHandlers;
     }
 
-    private Callback findCallback(IndexView index, ClassInfo beanClass, DotName annotationName,
-            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
-            String endpointPath,
-            Consumer<Callback> validator) {
+    private List<AnnotationInstance> findCallbackAnnotations(IndexView index, ClassInfo beanClass, DotName annotationName) {
         ClassInfo aClass = beanClass;
         List<AnnotationInstance> annotations = new ArrayList<>();
         while (aClass != null) {
@@ -770,15 +994,28 @@ public class WebSocketServerProcessor {
                     ? index.getClassByName(superName)
                     : null;
         }
+        return annotations;
+    }
 
+    private Callback findCallback(IndexView index, ClassInfo beanClass, DotName annotationName,
+            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
+            String endpointPath) {
+        return findCallback(index, beanClass, annotationName, callbackArguments, transformedAnnotations, endpointPath, null);
+    }
+
+    private Callback findCallback(IndexView index, ClassInfo beanClass, DotName annotationName,
+            CallbackArgumentsBuildItem callbackArguments, TransformedAnnotationsBuildItem transformedAnnotations,
+            String endpointPath,
+            Consumer<Callback> validator) {
+        List<AnnotationInstance> annotations = findCallbackAnnotations(index, beanClass, annotationName);
         if (annotations.isEmpty()) {
             return null;
         } else if (annotations.size() == 1) {
             AnnotationInstance annotation = annotations.get(0);
             MethodInfo method = annotation.target().asMethod();
             Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
-                    transformedAnnotations, endpointPath);
-            int messageArguments = callback.messageArguments().size();
+                    transformedAnnotations, endpointPath, index);
+            long messageArguments = callback.arguments.stream().filter(ca -> ca instanceof MessageCallbackArgument).count();
             if (callback.acceptsMessage()) {
                 if (messageArguments > 1) {
                     throw new WebSocketServerException(

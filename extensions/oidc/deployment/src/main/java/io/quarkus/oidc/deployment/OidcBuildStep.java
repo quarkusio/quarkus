@@ -86,6 +86,9 @@ public class OidcBuildStep {
     private static final DotName JSON_WEB_TOKEN_NAME = DotName.createSimple(JsonWebToken.class);
     private static final DotName ID_TOKEN_NAME = DotName.createSimple(IdToken.class);
 
+    private static final String QUARKUS_TOKEN_PROPAGATION_PACKAGE = "io.quarkus.oidc.token.propagation";
+    private static final String SMALLRYE_JWT_PACKAGE = "io.smallrye.jwt";
+
     @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         // TODO: By default quarkus.oidc.application-type = service
@@ -319,11 +322,19 @@ public class OidcBuildStep {
             DotName withoutQualifier) {
         for (InjectionPointInfo injectionPoint : beanRegistrationPhaseBuildItem.getInjectionPoints()) {
             if (requiredType.equals(injectionPoint.getRequiredType().name())
+                    && isApplicationPackage(injectionPoint.getTargetInfo())
                     && (withoutQualifier == null || injectionPoint.getRequiredQualifier(withoutQualifier) == null)) {
+                LOG.debugf("%s injection point: %s", requiredType.toString(), injectionPoint.getTargetInfo());
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean isApplicationPackage(String injectionPointTargetInfo) {
+        return injectionPointTargetInfo != null
+                && !injectionPointTargetInfo.startsWith(QUARKUS_TOKEN_PROPAGATION_PACKAGE)
+                && !injectionPointTargetInfo.startsWith(SMALLRYE_JWT_PACKAGE);
     }
 
     private static String toTargetName(AnnotationTarget target) {

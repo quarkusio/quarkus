@@ -121,8 +121,8 @@
         <wildfly-common.version>1.7.0.Final</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.3.1.Final</wildfly-elytron.version>
-        <jboss-threads.version>3.6.0.Final</jboss-threads.version>
-        <vertx.version>4.5.5</vertx.version>
+        <jboss-threads.version>3.6.1.Final</jboss-threads.version>
+        <vertx.version>4.5.7</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -144,7 +144,7 @@
         <infinispan.version>15.0.0.Final</infinispan.version>
         <infinispan.protostream.version>5.0.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.107.Final</netty.version>
+        <netty.version>4.1.108.Final</netty.version>
         <brotli4j.version>1.16.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -268,6 +268,15 @@
 
             <!-- External BOMs -->
 
+            <!-- Smallrye Common dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
             <!-- Netty dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.netty</groupId>
@@ -338,15 +347,6 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
                 <version>${grpc.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <!-- Smallrye Common dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -6197,10 +6197,19 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.james</groupId>
-                <artifactId>apache-mime4j</artifactId>
+                <artifactId>apache-mime4j-core</artifactId>
                 <version>${mime4j.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.apache.james</groupId>
+                <artifactId>apache-mime4j-dom</artifactId>
+                <version>${mime4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.james</groupId>
+                <artifactId>apache-mime4j-storage</artifactId>
+                <version>${mime4j.version}</version>
+            </dependency>
             <!-- OpenTelemetry libs not in BOM -->
             <dependency>
                 <groupId>io.opentelemetry.semconv</groupId>

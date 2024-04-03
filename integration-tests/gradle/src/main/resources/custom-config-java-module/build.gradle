@@ -31,7 +31,7 @@ compileTestJava {
 }
 
 quarkusDev {
-    workingDir = "./build"
+    workingDirectory = layout.buildDirectory.asFile
 }
 
 quarkusBuild {

@@ -37,6 +37,7 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
 
     public final BeanInfo bean;
     public final String path;
+    public final String endpointId;
     public final WebSocket.ExecutionMode executionMode;
     public final Callback onOpen;
     public final Callback onTextMessage;
@@ -45,11 +46,13 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
     public final Callback onClose;
     public final List<Callback> onErrors;
 
-    WebSocketEndpointBuildItem(BeanInfo bean, String path, WebSocket.ExecutionMode executionMode, Callback onOpen,
+    WebSocketEndpointBuildItem(BeanInfo bean, String path, String endpointId, WebSocket.ExecutionMode executionMode,
+            Callback onOpen,
             Callback onTextMessage, Callback onBinaryMessage, Callback onPongMessage, Callback onClose,
             List<Callback> onErrors) {
         this.bean = bean;
         this.path = path;
+        this.endpointId = endpointId;
         this.executionMode = executionMode;
         this.onOpen = onOpen;
         this.onTextMessage = onTextMessage;

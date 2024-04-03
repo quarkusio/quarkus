@@ -57,7 +57,7 @@ public class WebSocketServerRecorder {
         };
     }
 
-    public Handler<RoutingContext> createEndpointHandler(String endpointClass) {
+    public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
@@ -69,9 +69,9 @@ public class WebSocketServerRecorder {
                 future.onSuccess(ws -> {
                     Context context = VertxCoreRecorder.getVertx().get().getOrCreateContext();
 
-                    WebSocketConnection connection = new WebSocketConnectionImpl(endpointClass, ws,
+                    WebSocketConnection connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
                             connectionManager, codecs, ctx);
-                    connectionManager.add(endpointClass, connection);
+                    connectionManager.add(generatedEndpointClass, connection);
                     LOG.debugf("Connnected: %s", connection);
 
                     // Initialize and capture the session context state that will be activated
@@ -83,7 +83,7 @@ public class WebSocketServerRecorder {
                             container.requestContext());
 
                     // Create an endpoint that delegates callbacks to the @WebSocket bean
-                    WebSocketEndpoint endpoint = createEndpoint(endpointClass, context, connection, codecs, config,
+                    WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, config,
                             contextSupport);
 
                     // A broadcast processor is only needed if Multi is consumed by the callback
@@ -228,7 +228,7 @@ public class WebSocketServerRecorder {
                                         } else {
                                             LOG.errorf(r.cause(), "Unable to complete @OnClose callback: %s", connection);
                                         }
-                                        connectionManager.remove(endpointClass, connection);
+                                        connectionManager.remove(generatedEndpointClass, connection);
                                     });
                                 }
                             });

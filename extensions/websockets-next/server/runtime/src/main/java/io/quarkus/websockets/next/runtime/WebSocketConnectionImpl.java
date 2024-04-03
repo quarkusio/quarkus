@@ -26,7 +26,9 @@ import io.vertx.ext.web.RoutingContext;
 
 class WebSocketConnectionImpl implements WebSocketConnection {
 
-    private final String endpoint;
+    private final String generatedEndpointClass;
+
+    private final String endpointId;
 
     private final String identifier;
 
@@ -44,9 +46,11 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
     private final Instant creationTime;
 
-    WebSocketConnectionImpl(String endpoint, ServerWebSocket webSocket, ConnectionManager connectionManager,
+    WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
+            ConnectionManager connectionManager,
             Codecs codecs, RoutingContext ctx) {
-        this.endpoint = endpoint;
+        this.generatedEndpointClass = generatedEndpointClass;
+        this.endpointId = endpointClass;
         this.identifier = UUID.randomUUID().toString();
         this.webSocket = Objects.requireNonNull(webSocket);
         this.connectionManager = Objects.requireNonNull(connectionManager);
@@ -60,6 +64,11 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     @Override
     public String id() {
         return identifier;
+    }
+
+    @Override
+    public String endpointId() {
+        return endpointId;
     }
 
     @Override
@@ -124,7 +133,7 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
     @Override
     public Set<WebSocketConnection> getOpenConnections() {
-        return connectionManager.getConnections(endpoint).stream().filter(WebSocketConnection::isOpen)
+        return connectionManager.getConnections(generatedEndpointClass).stream().filter(WebSocketConnection::isOpen)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -292,7 +301,7 @@ class WebSocketConnectionImpl implements WebSocketConnection {
         }
 
         private <M> Uni<Void> doSend(BiFunction<WebSocketConnection, M, Uni<Void>> function, M message) {
-            Set<WebSocketConnection> connections = connectionManager.getConnections(endpoint);
+            Set<WebSocketConnection> connections = connectionManager.getConnections(generatedEndpointClass);
             if (connections.isEmpty()) {
                 return Uni.createFrom().voidItem();
             }

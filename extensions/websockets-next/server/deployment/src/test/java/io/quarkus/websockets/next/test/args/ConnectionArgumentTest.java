@@ -38,11 +38,12 @@ public class ConnectionArgumentTest {
     void testArgument() {
         String message = "ok";
         String header = "fool";
-        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
-                testUri);
-        JsonObject reply = client.sendAndAwaitReply(message).toJsonObject();
-        assertEquals(header, reply.getString("header"), reply.toString());
-        assertEquals(message, reply.getString("message"), reply.toString());
+        try (WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
+                testUri)) {
+            JsonObject reply = client.sendAndAwaitReply(message).toJsonObject();
+            assertEquals(header, reply.getString("header"), reply.toString());
+            assertEquals(message, reply.getString("message"), reply.toString());
+        }
     }
 
     @WebSocket(path = "/echo")

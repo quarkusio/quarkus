@@ -2,6 +2,7 @@ package io.quarkus.grpc.common.runtime.graal;
 
 import static io.grpc.InternalServiceProviders.getCandidatesViaHardCoded;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,6 +12,8 @@ import java.util.ServiceConfigurationError;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import sun.misc.Unsafe;
 
 @SuppressWarnings("unused")
 @TargetClass(className = "io.grpc.ServiceProviders")
@@ -77,6 +80,20 @@ interface Target_io_grpc_ServiceProviders_PriorityAccessor<T> { // NOSONAR
 
     @Alias
     int getPriority(T provider);
+}
+
+@TargetClass(className = "com.google.protobuf.UnsafeUtil")
+final class Target_com_google_protobuf_UnsafeUtil {
+    @Substitute
+    static sun.misc.Unsafe getUnsafe() {
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
 
 @SuppressWarnings("unused")

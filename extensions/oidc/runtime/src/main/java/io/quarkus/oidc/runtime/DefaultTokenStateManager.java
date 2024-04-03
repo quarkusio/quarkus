@@ -8,6 +8,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
@@ -146,7 +147,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
         if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
-                return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey());
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }
@@ -158,7 +161,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
         if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
-                return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey());
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }

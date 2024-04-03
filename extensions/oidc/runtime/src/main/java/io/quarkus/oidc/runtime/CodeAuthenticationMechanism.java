@@ -947,9 +947,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " to have the ID, access and refresh tokens stored in separate cookies."
                                                             + " 2. Set 'quarkus.oidc.token-state-manager.strategy=id-refresh-tokens' if you do not need to use the access token"
                                                             + " as a source of roles or to request UserInfo or propagate it to the downstream services."
-                                                            + " 3. Decrease the session cookie's length by disabling its encryption with 'quarkus.oidc.token-state-manager.encryption-required=false'"
+                                                            + " 3. Decrease the encrypted session cookie's length by enabling a direct encryption algorithm"
+                                                            + " with 'quarkus.oidc.token-state-manager.encryption-algorithm=dir'."
+                                                            + " 4. Decrease the session cookie's length by disabling its encryption with 'quarkus.oidc.token-state-manager.encryption-required=false'"
                                                             + " but only if it is considered to be safe in your application's network."
-                                                            + " 4. Register a custom 'quarkus.oidc.TokenStateManager' CDI bean with the alternative priority set to 1.",
+                                                            + " 5. Use the 'quarkus-oidc-db-token-state-manager' extension or register a custom 'quarkus.oidc.TokenStateManager'"
+                                                            + " CDI bean with the alternative priority set to 1 and save the tokens on the server.",
                                                     configContext.oidcConfig.tenantId.get(),
                                                     OidcUtils.MAX_COOKIE_VALUE_LENGTH);
                                             for (int sessionIndex = 1,

@@ -645,6 +645,33 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> encryptionSecret = Optional.empty();
 
+        /**
+         * Supported session cookie key encryption algorithms
+         */
+        public static enum EncryptionAlgorithm {
+            /**
+             * Content encryption key will be generated and encrypted using the A256GCMKW algorithm and the configured
+             * encryption secret.
+             * The generated content encryption key will be used to encrypt the session cookie content.
+             */
+            A256GCMKW,
+            /**
+             * The configured key encryption secret will be used as the content encryption key to encrypt the session cookie
+             * content.
+             * Using the direct encryption avoids a content encryption key generation step and
+             * will make the encrypted session cookie sequence slightly shorter.
+             * <p/>
+             * Avoid using the direct encryption if the encryption secret is less than 32 characters long.
+             */
+            DIR;
+        }
+
+        /**
+         * Session cookie key encryption algorithm
+         */
+        @ConfigItem(defaultValue = "A256GCMKW")
+        public EncryptionAlgorithm encryptionAlgorithm = EncryptionAlgorithm.A256GCMKW;
+
         public boolean isEncryptionRequired() {
             return encryptionRequired;
         }
@@ -675,6 +702,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setStrategy(Strategy strategy) {
             this.strategy = strategy;
+        }
+
+        public EncryptionAlgorithm getEncryptionAlgorithm() {
+            return encryptionAlgorithm;
+        }
+
+        public void setEncryptionAlgorithm(EncryptionAlgorithm encryptionAlgorithm) {
+            this.encryptionAlgorithm = encryptionAlgorithm;
         }
     }
 

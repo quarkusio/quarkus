@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -47,6 +48,7 @@ import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -94,15 +96,15 @@ public class CodeFlowAuthorizationTest {
 
     @Test
     public void testCodeFlowEncryptedIdTokenJwk() throws IOException {
-        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-jwk");
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-jwk", KeyEncryptionAlgorithm.DIR);
     }
 
     @Test
     public void testCodeFlowEncryptedIdTokenPem() throws IOException {
-        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem");
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem", KeyEncryptionAlgorithm.A256GCMKW);
     }
 
-    private void doTestCodeFlowEncryptedIdToken(String tenant) throws IOException {
+    private void doTestCodeFlowEncryptedIdToken(String tenant, KeyEncryptionAlgorithm alg) throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-encrypted-id-token/" + tenant);
@@ -116,8 +118,12 @@ public class CodeFlowAuthorizationTest {
             assertEquals("user: alice", textPage.getContent());
             Cookie sessionCookie = getSessionCookie(webClient, tenant);
             assertNotNull(sessionCookie);
-            // default session cookie format: "idtoken|accesstoken|refreshtoken"
-            assertTrue(OidcUtils.isEncryptedToken(sessionCookie.getValue().split("\\|")[0]));
+            // All the session cookie content is encrypted
+            String[] sessionCookieParts = sessionCookie.getValue().split("\\|");
+            assertEquals(1, sessionCookieParts.length);
+            assertTrue(isEncryptedToken(sessionCookieParts[0], alg));
+            JsonObject headers = OidcUtils.decodeJwtHeaders(sessionCookieParts[0]);
+            assertEquals(alg.getAlgorithm(), headers.getString("alg"));
 
             // repeat the call with the session cookie containing the encrypted id token
             textPage = webClient.getPage("http://localhost:8081/code-flow-encrypted-id-token/" + tenant);
@@ -126,6 +132,11 @@ public class CodeFlowAuthorizationTest {
             webClient.getCookieManager().clearCookies();
         }
         clearCache();
+    }
+
+    private static boolean isEncryptedToken(String token, KeyEncryptionAlgorithm alg) {
+        int expectedNonEmptyParts = alg == KeyEncryptionAlgorithm.DIR ? 4 : 5;
+        return new StringTokenizer(token, ".").countTokens() == expectedNonEmptyParts;
     }
 
     @Test

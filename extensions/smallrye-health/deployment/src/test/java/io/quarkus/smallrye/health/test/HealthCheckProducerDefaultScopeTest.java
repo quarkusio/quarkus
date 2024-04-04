@@ -31,10 +31,12 @@ class HealthCheckProducerDefaultScopeTest {
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/ready").then()
+                    .header("cache-control", "no-store")
                     .body("status", is("UP"),
                             "checks.status", hasItems("UP", "UP"),
                             "checks.name", hasItems("alpha1", "bravo1"));
             when().get("/q/health/ready").then()
+                    .header("cache-control", "no-store")
                     .body("status", is("UP"),
                             "checks.status", hasItems("UP", "UP"),
                             "checks.name", hasItems("alpha1", "bravo2"));

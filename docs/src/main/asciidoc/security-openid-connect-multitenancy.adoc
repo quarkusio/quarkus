@@ -594,10 +594,10 @@ Although `alice` exists in both tenants, the application treats them as distinct
 == Tenant resolution order
 
 OIDC tenants are resolved in the following order:
-1. `io.quarkus.oidc.Tenant` annotation is checked first if the proactive authentication is disabled.
-2. Dynamic tenant resolution using a custom `TenantConfigResolver`.
-3. Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
-4. Default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
+* `io.quarkus.oidc.Tenant` annotation is checked first if the proactive authentication is disabled.
+* Dynamic tenant resolution using a custom `TenantConfigResolver`.
+* Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
+* Default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
 
 See the following sections for more information:
 
@@ -655,24 +655,6 @@ quarkus.http.auth.permission.authenticated.policy=authenticated
 quarkus.http.auth.permission.authenticated.applies-to=JAXRS <1>
 ----
 <1> Tell Quarkus to run the HTTP permission check after the tenant has been selected with the `@Tenant` annotation.
-
-[[configure-tenant-paths]]
-=== Configure tenant paths
-
-You can use the `quarkus.oidc.tenant-paths` configuration property for resolving the tenant identifier as an alternative to using `io.quarkus.oidc.TenantResolver`.
-Here is how you can select the `hr` tenant for the `sayHello` endpoint of the `HelloResource` resource used in the previous example:
-
-[source,properties]
-----
-quarkus.oidc.hr.tenant-paths=/api/hello <1>
-quarkus.oidc.a.tenant-paths=/api/* <2>
-quarkus.oidc.b.tenant-paths=/*/hello <3>
-----
-<1> Same path-matching rules apply as for the `quarkus.http.auth.permission.authenticated.paths=/api/hello` configuration property from the previous example.
-<2> The wildcard placed at the end of the path represents any number of path segments. However the path is less specific than the `/api/hello`, therefore the `hr` tenant will be used to secure the `sayHello` endpoint.
-<3> The wildcard in the `/*/hello` represents exactly one path segment. Nevertheless, the wildcard is less specific than the `api`, therefore the `hr` tenant will be used.
-
-TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
 
 [[tenant-config-resolver]]
 == Dynamic tenant configuration resolution
@@ -797,6 +779,24 @@ public class CustomTenantResolver implements TenantResolver {
 ----
 
 In this example, the value of the last request path segment is a tenant id, but if required, you can implement a more complex tenant identifier resolution logic.
+
+[[configure-tenant-paths]]
+=== Configure tenant paths
+
+You can use the `quarkus.oidc.tenant-paths` configuration property for resolving the tenant identifier as an alternative to using `io.quarkus.oidc.TenantResolver`.
+Here is how you can select the `hr` tenant for the `sayHello` endpoint of the `HelloResource` resource used in the previous example:
+
+[source,properties]
+----
+quarkus.oidc.hr.tenant-paths=/api/hello <1>
+quarkus.oidc.a.tenant-paths=/api/* <2>
+quarkus.oidc.b.tenant-paths=/*/hello <3>
+----
+<1> Same path-matching rules apply as for the `quarkus.http.auth.permission.authenticated.paths=/api/hello` configuration property from the previous example.
+<2> The wildcard placed at the end of the path represents any number of path segments. However the path is less specific than the `/api/hello`, therefore the `hr` tenant will be used to secure the `sayHello` endpoint.
+<3> The wildcard in the `/*/hello` represents exactly one path segment. Nevertheless, the wildcard is less specific than the `api`, therefore the `hr` tenant will be used.
+
+TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
 
 [[default-tenant-resolver]]
 === Default resolution

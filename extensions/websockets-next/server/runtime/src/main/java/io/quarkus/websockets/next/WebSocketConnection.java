@@ -31,6 +31,13 @@ public interface WebSocketConnection extends Sender, BlockingSender {
 
     /**
      *
+     * @return the endpoint id
+     * @see WebSocket#endpointId()
+     */
+    String endpointId();
+
+    /**
+     *
      * @param name
      * @return the actual value of the path parameter or null
      * @see WebSocket#path()

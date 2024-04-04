@@ -1,26 +1,39 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.websockets.next.OpenConnections;
 import io.quarkus.websockets.next.WebSocketConnection;
 
 @Singleton
-public class ConnectionManager {
+public class ConnectionManager implements OpenConnections {
 
     private static final Logger LOG = Logger.getLogger(ConnectionManager.class);
 
     private final ConcurrentMap<String, Set<WebSocketConnection>> endpointToConnections = new ConcurrentHashMap<>();
 
     private final List<ConnectionListener> listeners = new CopyOnWriteArrayList<>();
+
+    @Override
+    public Iterator<WebSocketConnection> iterator() {
+        return stream().iterator();
+    }
+
+    @Override
+    public Stream<WebSocketConnection> stream() {
+        return endpointToConnections.values().stream().flatMap(Set::stream).filter(WebSocketConnection::isOpen);
+    }
 
     void add(String endpoint, WebSocketConnection connection) {
         LOG.debugf("Add connection: %s", connection);

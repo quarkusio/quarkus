@@ -40,9 +40,22 @@ public @interface WebSocket {
     public String path();
 
     /**
+     * By default, the fully qualified name of the annotated class is used.
+     *
+     * @return the endpoint id
+     * @see WebSocketConnection#endpointId()
+     */
+    public String endpointId() default FCQN_NAME;
+
+    /**
      * The execution mode used to process incoming messages for a specific connection.
      */
     public ExecutionMode executionMode() default ExecutionMode.SERIAL;
+
+    /**
+     * Constant value for {@link #endpointId()} indicating that the fully qualified name of the annotated class should be used.
+     */
+    String FCQN_NAME = "<<fcqn name>>";
 
     /**
      * Defines the execution mode used to process incoming messages for a specific connection.

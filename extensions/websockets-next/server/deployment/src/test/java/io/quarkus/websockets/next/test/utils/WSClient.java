@@ -14,7 +14,7 @@ import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
 
-public class WSClient {
+public class WSClient implements AutoCloseable {
 
     private final WebSocketClient client;
     private AtomicReference<WebSocket> socket = new AtomicReference<>();
@@ -124,4 +124,10 @@ public class WSClient {
     public boolean isClosed() {
         return socket.get().isClosed();
     }
+
+    @Override
+    public void close() {
+        disconnect();
+    }
+
 }

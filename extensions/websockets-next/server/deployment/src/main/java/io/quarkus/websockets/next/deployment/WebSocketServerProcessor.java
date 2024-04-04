@@ -149,6 +149,7 @@ public class WebSocketServerProcessor {
         globalErrorHandlers.produce(new GlobalErrorHandlersBuildItem(List.copyOf(globalErrors.values())));
 
         // Collect WebSocket endpoints
+        Map<String, DotName> idToEndpoint = new HashMap<>();
         Map<String, DotName> pathToEndpoint = new HashMap<>();
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
@@ -159,10 +160,23 @@ public class WebSocketServerProcessor {
                     // Sub-websocket - merge the path from the enclosing classes
                     path = mergePath(getPathPrefix(index, beanClass.enclosingClass()), path);
                 }
-                DotName previous = pathToEndpoint.put(path, beanClass.name());
-                if (previous != null) {
+                DotName prevPath = pathToEndpoint.put(path, beanClass.name());
+                if (prevPath != null) {
                     throw new WebSocketServerException(
-                            String.format("Multiple endpoints [%s, %s] define the same path: %s", previous, beanClass, path));
+                            String.format("Multiple endpoints [%s, %s] define the same path: %s", prevPath, beanClass, path));
+                }
+                String endpointId;
+                AnnotationValue endpointIdValue = webSocketAnnotation.value("endpointId");
+                if (endpointIdValue == null) {
+                    endpointId = beanClass.name().toString();
+                } else {
+                    endpointId = endpointIdValue.asString();
+                }
+                DotName prevId = idToEndpoint.put(endpointId, beanClass.name());
+                if (prevId != null) {
+                    throw new WebSocketServerException(
+                            String.format("Multiple endpoints [%s, %s] define the same endpoint id: %s", prevId, beanClass,
+                                    endpointId));
                 }
                 Callback onOpen = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_OPEN,
                         callbackArguments, transformedAnnotations, path);
@@ -182,7 +196,7 @@ public class WebSocketServerProcessor {
                                     + beanClass);
                 }
                 AnnotationValue executionMode = webSocketAnnotation.value("executionMode");
-                endpoints.produce(new WebSocketEndpointBuildItem(bean, path,
+                endpoints.produce(new WebSocketEndpointBuildItem(bean, path, endpointId,
                         executionMode != null ? WebSocket.ExecutionMode.valueOf(executionMode.asEnum())
                                 : WebSocket.ExecutionMode.SERIAL,
                         onOpen,
@@ -234,8 +248,9 @@ public class WebSocketServerProcessor {
             String generatedName = generateEndpoint(endpoint, argumentProviders, transformedAnnotations,
                     index.getIndex(), classOutput, globalErrorHandlers);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
-            generatedEndpoints.produce(new GeneratedEndpointBuildItem(endpoint.bean.getImplClazz().name().toString(),
-                    generatedName, endpoint.path));
+            generatedEndpoints
+                    .produce(new GeneratedEndpointBuildItem(endpoint.endpointId, endpoint.bean.getImplClazz().name().toString(),
+                            generatedName, endpoint.path));
         }
     }
 
@@ -250,7 +265,7 @@ public class WebSocketServerProcessor {
                     .route(httpRootPath.relativePath(endpoint.path))
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
-                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName));
+                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));
             routes.produce(builder.build());
         }
     }

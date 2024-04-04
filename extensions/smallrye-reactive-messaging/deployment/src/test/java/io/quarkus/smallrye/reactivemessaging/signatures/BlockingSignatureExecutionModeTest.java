@@ -31,7 +31,7 @@ public class BlockingSignatureExecutionModeTest {
                             BlockingConsumerFromConnector.class,
                             ConsumerFromConnector.class,
                             ConsumerFromInnerChannel.class))
-            .overrideConfigKey("mp.messaging.incoming.a.connector", "dummy")
+            // .overrideConfigKey("mp.messaging.incoming.a.connector", "dummy") // discovered by the extension
             .overrideConfigKey("mp.messaging.incoming.a.values", "bonjour")
             .overrideConfigKey("mp.messaging.incoming.b.connector", "dummy")
             .overrideConfigKey("mp.messaging.incoming.b.values", "bonjour")

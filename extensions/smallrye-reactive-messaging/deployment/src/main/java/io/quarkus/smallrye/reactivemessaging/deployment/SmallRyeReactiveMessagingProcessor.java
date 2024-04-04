@@ -65,8 +65,8 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
-import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
@@ -233,7 +233,7 @@ public class SmallRyeReactiveMessagingProcessor {
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<MediatorBuildItem> mediatorMethods,
-            List<ChannelBuildItem> channelBuildItems,
+            List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
             List<InjectedEmitterBuildItem> emitterFields,
             List<InjectedChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
@@ -243,9 +243,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
-        Set<String> innerIncomingChannelNames = channelBuildItems.stream()
-                .filter(c -> !c.isManagedByAConnector() && c.getDirection() == ChannelDirection.INCOMING)
-                .map(ChannelBuildItem::getName)
+        Set<String> connectorManagedIncomingChannels = connectorManagedChannels.stream()
+                .filter(c -> c.getDirection() == ChannelDirection.INCOMING)
+                .map(ConnectorManagedChannelBuildItem::getName)
                 .collect(Collectors.toSet());
 
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
@@ -288,9 +288,9 @@ public class SmallRyeReactiveMessagingProcessor {
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
                                 Thread.currentThread().getContextClassLoader(), conf.strict,
-                                consumesFromInnerChannel(methodInfo, innerIncomingChannelNames)
-                                        ? ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP // disable execution mode setting for inner channels
-                                        : conf.blockingSignaturesExecutionMode);
+                                consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
+                                        ? conf.blockingSignaturesExecutionMode
+                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP); // disable execution mode setting for inner channels
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
@@ -577,14 +577,14 @@ public class SmallRyeReactiveMessagingProcessor {
         }));
     }
 
-    boolean consumesFromInnerChannel(MethodInfo methodInfo, Set<String> innerChannelNames) {
+    boolean consumesFromConnector(MethodInfo methodInfo, Set<String> connectorManagedChannels) {
         AnnotationInstance incoming = methodInfo.annotation(INCOMING);
         if (incoming != null) {
-            return innerChannelNames.contains(incoming.value().asString());
+            return connectorManagedChannels.contains(incoming.value().asString());
         }
         AnnotationInstance incomings = methodInfo.annotation(INCOMINGS);
         if (incomings != null) {
-            return innerChannelNames.containsAll(
+            return connectorManagedChannels.containsAll(
                     Arrays.stream(incomings.value().asNestedArray())
                             .map(i -> i.value().asString()).collect(Collectors.toSet()));
         }

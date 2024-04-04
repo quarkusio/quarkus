@@ -88,6 +88,16 @@ public class PolicyMappingConfig {
          * the matching Jakarta REST endpoint. This option must be set if the following REST endpoint annotations are used:
          * <ul>
          * <li>`io.quarkus.oidc.Tenant` annotation which selects an OIDC authentication mechanism with a tenant identifier</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication` which selects the Basic authentication
+         * mechanism</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication` which selects the Form-based
+         * authentication mechanism</li>
+         * <li>`io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication` which selects the mTLS authentication
+         * mechanism</li>
+         * <li>`io.quarkus.security.webauthn.WebAuthn` which selects the WebAuth authentication mechanism</li>
+         * <li>`io.quarkus.oidc.BearerTokenAuthentication` which selects the OpenID Connect Bearer token authentication
+         * mechanism</li>
+         * <li>`io.quarkus.oidc.AuthorizationCodeFlow` which selects the OpenID Connect Code authentication mechanism</li>
          * </ul>
          */
         JAXRS

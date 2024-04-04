@@ -420,6 +420,47 @@ public class HttpSecurityRecorder {
         }
     }
 
+    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName, String[] paramTypes) {
+        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
+    }
+
+    public Function<String, Consumer<RoutingContext>> authMechanismSelectionInterceptorCreator() {
+        return new Function<String, Consumer<RoutingContext>>() {
+            @Override
+            public Consumer<RoutingContext> apply(String authMechanismName) {
+                // when endpoint is annotated with @HttpAuthenticationMechanism("my-mechanism"), we add this mechanism
+                // to the event so that when request is being authenticated, the HTTP authenticator will know
+                // what mechanism should be used
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        HttpAuthenticator.selectAuthMechanism(routingContext, authMechanismName);
+                    }
+                };
+            }
+        };
+    }
+
+    public Consumer<RoutingContext> createEagerSecurityInterceptor(
+            Function<String, Consumer<RoutingContext>> interceptorCreator, String annotationValue) {
+        return interceptorCreator.apply(annotationValue);
+    }
+
+    public Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
+            Consumer<RoutingContext> interceptor2) {
+        return new Consumer<RoutingContext>() {
+            @Override
+            public void accept(RoutingContext routingContext) {
+                interceptor1.accept(routingContext);
+                interceptor2.accept(routingContext);
+            }
+        };
+    }
+
+    public void selectAuthMechanismViaAnnotation() {
+        HttpAuthenticator.selectAuthMechanismWithAnnotation();
+    }
+
     private static Set<String> parseRoles(String value) {
         Set<String> roles = new HashSet<>();
         for (String s : value.split(",")) {

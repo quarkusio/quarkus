@@ -12,10 +12,8 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
-import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -46,7 +44,7 @@ public class EagerSecurityInterceptorHandler implements ServerRestHandler {
 
         if (interceptor == null) {
             MethodDescription methodDescription = lazyMethodToMethodDescription(requestContext.getTarget().getLazyMethod());
-            interceptor = Arc.container().select(EagerSecurityInterceptorStorage.class).get().getInterceptor(methodDescription);
+            interceptor = EagerSecurityContext.instance.interceptorStorage.getInterceptor(methodDescription);
 
             if (interceptor == null) {
                 interceptor = NULL_SENTINEL;

@@ -1,8 +1,11 @@
 package io.quarkus.security.webauthn.deployment;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
+
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -13,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.security.webauthn.WebAuthn;
 import io.quarkus.security.webauthn.WebAuthnAuthenticationMechanism;
 import io.quarkus.security.webauthn.WebAuthnAuthenticatorStorage;
 import io.quarkus.security.webauthn.WebAuthnBuildTimeConfig;
@@ -20,6 +24,7 @@ import io.quarkus.security.webauthn.WebAuthnIdentityProvider;
 import io.quarkus.security.webauthn.WebAuthnRecorder;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
 import io.quarkus.security.webauthn.WebAuthnTrustedIdentityProvider;
+import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
@@ -64,6 +69,12 @@ class QuarkusSecurityWebAuthnProcessor {
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .supplier(recorder.setupWebAuthnAuthenticationMechanism()).done();
+    }
+
+    @BuildStep
+    List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
+        return List.of(
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(WebAuthn.class), WebAuthn.AUTH_MECHANISM_SCHEME));
     }
 
     public static class IsEnabled implements BooleanSupplier {

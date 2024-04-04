@@ -377,4 +377,19 @@ public class DefaultTenantConfigResolver {
         }
     }
 
+    public OidcTenantConfig getResolvedConfig(String sessionTenantId) {
+        if (OidcUtils.DEFAULT_TENANT_ID.equals(sessionTenantId)) {
+            return tenantConfigBean.getDefaultTenant().getOidcTenantConfig();
+        }
+
+        if (tenantConfigBean.getStaticTenantsConfig().containsKey(sessionTenantId)) {
+            return tenantConfigBean.getStaticTenantsConfig().get(sessionTenantId).getOidcTenantConfig();
+        }
+
+        if (tenantConfigBean.getDynamicTenantsConfig().containsKey(sessionTenantId)) {
+            return tenantConfigBean.getDynamicTenantsConfig().get(sessionTenantId).getOidcTenantConfig();
+        }
+        return null;
+    }
+
 }

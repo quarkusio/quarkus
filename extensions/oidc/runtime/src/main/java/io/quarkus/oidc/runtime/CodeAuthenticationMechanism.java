@@ -560,8 +560,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<ChallengeData> getChallengeInternal(RoutingContext context, TenantConfigContext configContext) {
-        LOG.debug("Starting an authentication challenge");
-        return removeSessionCookie(context, configContext.oidcConfig)
+        LOG.debugf("Starting an authentication challenge for tenant %s", configContext.oidcConfig.tenantId.get());
+
+        OidcTenantConfig sessionCookieConfig = configContext.oidcConfig;
+        String sessionTenantIdSetByCookie = context.get(OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE);
+
+        if (sessionTenantIdSetByCookie != null
+                && !sessionTenantIdSetByCookie.equals(sessionCookieConfig.tenantId.orElse(OidcUtils.DEFAULT_TENANT_ID))) {
+            // New tenant id has been chosen during the tenant resolution process
+            // Get the already resolved configuration, avoiding calling the tenant resolvers
+            OidcTenantConfig previousTenantConfig = resolver.getResolvedConfig(sessionTenantIdSetByCookie);
+            if (previousTenantConfig != null) {
+                sessionCookieConfig = previousTenantConfig;
+                LOG.debugf("Removing the session cookie for the previous tenant id: %s", sessionTenantIdSetByCookie);
+                OidcUtils.getSessionCookie(context, sessionCookieConfig);
+            }
+        }
+        return removeSessionCookie(context, sessionCookieConfig)
                 .chain(new Function<Void, Uni<? extends ChallengeData>>() {
 
                     @Override
@@ -963,6 +978,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                 String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
                                                 // q_session_session_chunk_1, etc
                                                 String nextName = sessionName + OidcUtils.SESSION_COOKIE_CHUNK + sessionIndex;
+                                                LOG.debugf("Creating the %s session cookie chunk, size: %d", nextName,
+                                                        nextValue.length());
                                                 createCookie(context, configContext.oidcConfig, nextName, nextValue,
                                                         sessionMaxAge, true);
                                                 currentPos = nextPos;

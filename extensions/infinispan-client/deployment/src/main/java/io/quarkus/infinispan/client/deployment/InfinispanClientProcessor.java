@@ -205,7 +205,6 @@ class InfinispanClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(InfinispanClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Remote.class).build());
 
-        systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment
                 .produce(new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + DEFAULT_HOTROD_CLIENT_PROPERTIES));
 

@@ -29,6 +29,23 @@ public class HttpContentCompressorSubstitutions {
         }
     }
 
+    @Substitute
+    @TargetClass(className = "io.netty.handler.codec.compression.ZstdConstants", onlyWith = IsZstdAbsent.class)
+    public static final class ZstdConstants {
+
+        // The constants make <clinit> calls to com.github.luben.zstd.Zstd so we cut links with that substitution.
+
+        static final int DEFAULT_COMPRESSION_LEVEL = 0;
+
+        static final int MIN_COMPRESSION_LEVEL = 0;
+
+        static final int MAX_COMPRESSION_LEVEL = 0;
+
+        static final int MAX_BLOCK_SIZE = 0;
+
+        static final int DEFAULT_BLOCK_SIZE = 0;
+    }
+
     public static class IsZstdAbsent implements BooleanSupplier {
 
         private boolean zstdAbsent;

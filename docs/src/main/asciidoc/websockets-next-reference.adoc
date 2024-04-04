@@ -3,7 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= WebSockets-Next extension reference guide
+[id="websockets-next-reference-guide"]
+= WebSockets Next extension reference guide
 :extension-status: preview
 include::_attributes.adoc[]
 :numbered:
@@ -12,7 +13,8 @@ include::_attributes.adoc[]
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
 
-IMPORTANT: The `websockets-next` extension is experimental. The proposal API may change in future releases.
+The `websockets-next` extension provides an experimental API to define  _WebSocket_ endpoints declaratively.
+The proposed API may change in future releases.
 
 == The WebSocket protocol
 
@@ -193,6 +195,7 @@ A WebSocket endpoint comprises the following components:
 * At most one `@OnBinaryMessage` method: Handles the binary messages the connected client sends.
 * At most one `@OnOpen` method: Invoked when a client connects to the WebSocket.
 * At most one `@OnClose` method: Executed upon the client disconnecting from the WebSocket.
+* Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure. 
 
 Only some endpoints need to include all methods.
 However, it must contain at least `@On[Text|Binary]Message` or `@OnOpen`.
@@ -222,23 +225,26 @@ Here are the rules governing execution:
 * Methods annotated with `@RunOnVirtualThread` are considered blocking and should execute on a virtual thread.
 * Blocking methods must execute on a worker thread if not annotated with `@RunOnVirtualThread`.
 * When `@RunOnVirtualThread` is employed, each invocation spawns a new virtual thread.
-* Methods returning `CompletionStage` and `Uni` are considered non-blocking
-* Methods returning `Multi` are considered non-blocking and must be subscribed to, except if they return their own `Multi`.
+* Methods returning `CompletionStage`, `Uni` and `Multi` are considered non-blocking.
 * Methods returning `void` or plain objects are considered blocking.
 
-=== Parameters
+=== Method Parameters
 
-These methods can accept parameters in two formats:
+The method must accept exactly one message parameter:
 
 * The message object (of any type).
 * A `Multi<X>` with X as the message type.
-* Any other parameters should be flagged as errors.
 
+However, it may also accept the following parameters:
+
+ * `WebSocketConnection`
+ * `HandshakeRequest`
+ * `String` parameters annotated with `@PathParam`
+ 
 The message object represents the data sent and can be accessed as either raw content (`String`, `JsonObject`, `JsonArray`, `Buffer` or `byte[]`) or deserialized high-level objects, which is the recommended approach.
 
 When receiving a `Multi`, the method is invoked once per connection, and the provided `Multi` receives the items transmitted by this connection.
 The method must subscribe to the `Multi` to receive these items (or return a Multi).
-Cancelling this subscription closes the associated connection.
 
 === Allowed Returned Types
 
@@ -324,7 +330,7 @@ When a method is intended to produce a message written to the client, it can emi
 Emitting `null` signifies no response to be sent to the client, allowing for skipping a response when needed.
 
 === JsonObject and JsonArray
-Vert.x `JSONObject` and `JSONArray` instances bypass the serialization and deserialization mechanisms.
+Vert.x `JsonObject` and `JsonArray` instances bypass the serialization and deserialization mechanisms.
 Messages are sent as text messages.
 
 === Broadcasting
@@ -340,6 +346,8 @@ String emitToAll(String message) {
 ----
 
 The same principle applies to methods returning instances of `Multi` or `Uni`.
+
+NOTE: If you need to select the connected clients that should receive the message, you can use `WebSocketConnection.broadcast().filter().sendText()`.
 
 == OnOpen and OnClose methods
 
@@ -369,8 +377,11 @@ These methods have access to the _session-scoped_ `WebSocketConnection` bean.
 
 === Parameters
 
-Methods annotated with `@OnOpen` and `@OnClose` do not accept any parameters.
-If such methods declare parameters, they will be flagged as errors and reported at build time.
+Methods annotated with `@OnOpen` and `@OnClose` may accept the following parameters:
+
+ * `WebSocketConnection`
+ * `HandshakeRequest`
+ * `String` parameters annotated with `@PathParam`
 
 === Allowed Returned Types
 
@@ -424,6 +435,25 @@ String onOpen() {
     return "We have a new member!";
 }
 ----
+
+== Error Handling
+
+The WebSocket endpoint can also be notified when an error occurs.
+A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion errors occurs, 
+or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
+
+The method must accept exactly one "error" parameter, i.e. a parameter that is assignable from `java.lang.Throwable`.
+The method may also accept the following parameters:
+
+* `WebSocketConnection`
+* `HandshakeRequest`
+* `String` parameters annotated with `@PathParam`
+
+An endpoint may declare multiple methods annotated with `@io.quarkus.websockets.next.OnError`.
+However, each method must declare a different error parameter.
+The method that declares a most-specific supertype of the actual exception is selected.
+
+NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` paremeters. Error handlers declared on an endpoint take precedence over the global error handlers.
 
 == Access to the WebSocketConnection
 

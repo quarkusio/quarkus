@@ -164,9 +164,16 @@ public class WebSocketServerRecorder {
                     } else {
                         textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                             contextSupport.start();
-                            textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
-                            LOG.debugf("Text message >> Multi: %s", connection);
-                            contextSupport.end(false);
+                            try {
+                                textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
+                                LOG.debugf("Text message >> Multi: %s", connection);
+                            } catch (Throwable throwable) {
+                                endpoint.doOnError(throwable).subscribe().with(
+                                        v -> LOG.debugf("Text message >> Multi: %s", connection),
+                                        t -> LOG.errorf(t, "Unable to send text message to Multi: %s", connection));
+                            } finally {
+                                contextSupport.end(false);
+                            }
                         }, false);
                     }
 
@@ -185,9 +192,16 @@ public class WebSocketServerRecorder {
                     } else {
                         binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                             contextSupport.start();
-                            binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
-                            LOG.debugf("Binary message >> Multi: %s", connection);
-                            contextSupport.end(false);
+                            try {
+                                binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
+                                LOG.debugf("Binary message >> Multi: %s", connection);
+                            } catch (Throwable throwable) {
+                                endpoint.doOnError(throwable).subscribe().with(
+                                        v -> LOG.debugf("Binary message >> Multi: %s", connection),
+                                        t -> LOG.errorf(t, "Unable to send binary message to Multi: %s", connection));
+                            } finally {
+                                contextSupport.end(false);
+                            }
                         }, false);
                     }
 

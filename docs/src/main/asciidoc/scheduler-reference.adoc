@@ -438,6 +438,23 @@ NOTE: By default, the scheduler is not started unless a `@Scheduled` business me
 
 NOTE: If the xref:quartz.adoc[Quartz extension] is present and the DB store type is used then it's not possible to pass a task instance to the job definition and a task class must be used instead. The Quartz API can be also used to schedule a job programmatically.
 
+In certain cases, a more fine-grained approach might be needed which is why Quarkus also exposes `java.util.concurrent.ScheduledExecutorService` and `java.util.concurrent.ExecutorService` that can be injected as CDI beans.
+However, these executors are used by other Quarkus extensions and therefore should be approached with caution. Furthermore, users are never allowed to shut these executors down manually.
+
+[source,java]
+----
+class JobScheduler {
+
+   @Inject
+   ScheduledExecutorService executor;
+
+   void everySecondWithDelay() {
+       Runnable myRunnable = createMyRunnable();
+       executor.scheduleAtFixedRate(myRunnable, 3, 1, TimeUnit.SECONDS);
+   }
+}
+----
+
 == Scheduled Methods and Testing
 
 It is often desirable to disable the scheduler when running the tests.

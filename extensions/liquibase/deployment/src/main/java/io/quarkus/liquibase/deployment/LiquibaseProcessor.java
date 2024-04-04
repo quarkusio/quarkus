@@ -121,11 +121,14 @@ class LiquibaseProcessor {
                         .toArray(String[]::new))
                 .constructors().build());
 
-        reflective.produce(ReflectiveClassBuildItem
-                .builder(liquibase.command.CommandFactory.class.getName())
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.command.CommandFactory.class.getName(),
+                liquibase.database.LiquibaseTableNamesFactory.class.getName(),
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.configuration.LiquibaseConfiguration.class.getName(),
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.GlobalConfiguration.class.getName(),
                 liquibase.executor.ExecutorService.class.getName(),

@@ -38,6 +38,12 @@ public class OidcConfig {
     public TokenCache tokenCache = new TokenCache();
 
     /**
+     * If OIDC tenants should be resolved using the bearer access token's issuer (`iss`) claim value.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean resolveTenantsWithIssuer;
+
+    /**
      * Default TokenIntrospection and UserInfo cache configuration.
      */
     @ConfigGroup

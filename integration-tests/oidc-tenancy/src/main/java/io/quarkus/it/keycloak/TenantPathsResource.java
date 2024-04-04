@@ -2,15 +2,20 @@ package io.quarkus.it.keycloak;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import io.quarkus.security.Authenticated;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 @Authenticated
 @Path("api/tenant-paths")
 public class TenantPathsResource {
+
+    @Inject
+    RoutingContext routingContext;
 
     @PermitAll
     void observe(@Observes Router router) {
@@ -63,5 +68,11 @@ public class TenantPathsResource {
     @Path("tenant-b")
     public String tenantB() {
         return "tenant-b";
+    }
+
+    @GET
+    @Path("tenant-by-issuer")
+    public String tenantByIssuer() {
+        return routingContext.get("static.tenant.id");
     }
 }

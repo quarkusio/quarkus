@@ -12,6 +12,7 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.graphql.Input;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -236,6 +237,7 @@ public class SmallRyeGraphQLClientProcessor {
         if (quarkusConfig.enableBuildTimeScanning) {
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Closeable.class.getName()));
             additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(AutoCloseable.class.getName()));
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Input.class.getName()));
         }
     }
 

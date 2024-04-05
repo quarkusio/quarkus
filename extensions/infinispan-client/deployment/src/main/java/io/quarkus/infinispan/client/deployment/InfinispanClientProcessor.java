@@ -365,8 +365,9 @@ class InfinispanClientProcessor {
         for (AnnotationInstance annotation : infinispanClientAnnotations) {
             clientNames.add(annotation.value().asString());
         }
-        // dev mode client name for default
-        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.enabled) {
+        // dev mode client name for default - 0 config
+        if (infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.enabled
+                && infinispanClientsBuildTimeConfig.defaultInfinispanClient.devService.devservices.createDefaultClient) {
             clientNames.add(DEFAULT_INFINISPAN_CLIENT_NAME);
         }
 

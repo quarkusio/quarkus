@@ -47,12 +47,14 @@ public class Deployment {
     private final ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
     private final List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers;
     private final RuntimeExceptionMapper exceptionMapper;
+    private final boolean servletPresent;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Map<String, List<String>> disabledEndpoints;
     //this is not final, as it is set after startup
     private RuntimeConfiguration runtimeConfiguration;
 
-    public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
+    public Deployment(ExceptionMapping exceptionMapping,
+            ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
             ServerRestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
@@ -62,6 +64,7 @@ public class Deployment {
             ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
+            boolean servletPresent,
             ResteasyReactiveConfig resteasyReactiveConfig,
             Map<String, List<String>> disabledEndpoints) {
         this.exceptionMapping = exceptionMapping;
@@ -79,6 +82,7 @@ public class Deployment {
         this.classMappers = classMappers;
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
         this.exceptionMapper = exceptionMapper;
+        this.servletPresent = servletPresent;
         this.resteasyReactiveConfig = resteasyReactiveConfig;
         this.disabledEndpoints = disabledEndpoints;
     }
@@ -101,6 +105,10 @@ public class Deployment {
 
     public ExceptionMapping getExceptionMapping() {
         return exceptionMapping;
+    }
+
+    public boolean isServletPresent() {
+        return servletPresent;
     }
 
     public ContextResolvers getContextResolvers() {

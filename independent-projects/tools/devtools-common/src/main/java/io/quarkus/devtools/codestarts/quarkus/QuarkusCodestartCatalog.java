@@ -70,6 +70,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public enum Tooling implements DataKey {
         TOOLING_GRADLE_WRAPPER,
         TOOLING_MAVEN_WRAPPER,
+        TOOLING_QUARKUS_CLI_WRAPPER,
         TOOLING_DOCKERFILES,
         TOOLING_GITHUB_ACTION
     }
@@ -219,6 +220,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         final List<String> codestarts = new ArrayList<>();
         codestarts.add(projectInput.getBuildTool().getKey());
         if (projectInput.getAppContent().contains(AppContent.BUILD_TOOL_WRAPPER)) {
+            codestarts.add(Tooling.TOOLING_QUARKUS_CLI_WRAPPER.key());
             switch (projectInput.getBuildTool()) {
                 case GRADLE:
                 case GRADLE_KOTLIN_DSL:

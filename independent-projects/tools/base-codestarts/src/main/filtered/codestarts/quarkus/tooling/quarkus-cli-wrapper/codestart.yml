@@ -1,0 +1,9 @@
+name: tooling-quarkus-cli-wrapper
+type: tooling
+output-strategy:
+  "quarkusw": "executable"
+language:
+  base:
+    data:
+      quarkus-cli:
+        version: ${project.version}

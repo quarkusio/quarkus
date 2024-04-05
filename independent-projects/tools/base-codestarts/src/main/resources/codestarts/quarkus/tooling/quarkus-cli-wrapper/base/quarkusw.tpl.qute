@@ -1,0 +1,264 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------------
+# Quarkus CLI Wrapper startup batch script, version {quarkus-cli.version}
+#
+# This script an adapted version of the Apache Maven Wrapper to work for the Quarkus CLI
+#
+# Required ENV vars:
+# ------------------
+#   JAVA_HOME - location of a JDK home dir
+#
+# Optional ENV vars
+# -----------------
+#   QUARKUS_OPTS - parameters passed to the Java VM when running Maven
+#     e.g. to debug Maven itself, use
+#       set QUARKUS_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
+# ----------------------------------------------------------------------------
+
+# OS specific support.  $var _must_ be set to either true or false.
+cygwin=false;
+darwin=false;
+mingw=false
+case "$(uname)" in
+  CYGWIN*) cygwin=true ;;
+  MINGW*) mingw=true;;
+  Darwin*) darwin=true
+    # Use /usr/libexec/java_home if available, otherwise fall back to /Library/Java/Home
+    # See https://developer.apple.com/library/mac/qa/qa1170/_index.html
+    if [ -z "$JAVA_HOME" ]; then
+      if [ -x "/usr/libexec/java_home" ]; then
+        JAVA_HOME="$(/usr/libexec/java_home)"; export JAVA_HOME
+      else
+        JAVA_HOME="/Library/Java/Home"; export JAVA_HOME
+      fi
+    fi
+    ;;
+esac
+
+if [ -z "$JAVA_HOME" ] ; then
+  if [ -r /etc/gentoo-release ] ; then
+    JAVA_HOME=$(java-config --jre-home)
+  fi
+fi
+
+# For Cygwin, ensure paths are in UNIX format before anything is touched
+if $cygwin ; then
+  [ -n "$JAVA_HOME" ] &&
+    JAVA_HOME=$(cygpath --unix "$JAVA_HOME")
+  [ -n "$CLASSPATH" ] &&
+    CLASSPATH=$(cygpath --path --unix "$CLASSPATH")
+fi
+
+# For Mingw, ensure paths are in UNIX format before anything is touched
+if $mingw ; then
+  [ -n "$JAVA_HOME" ] && [ -d "$JAVA_HOME" ] &&
+    JAVA_HOME="$(cd "$JAVA_HOME" || (echo "cannot cd into $JAVA_HOME."; exit 1); pwd)"
+fi
+
+if [ -z "$JAVA_HOME" ]; then
+  javaExecutable="$(which javac)"
+  if [ -n "$javaExecutable" ] && ! [ "$(expr "\"$javaExecutable\"" : '\([^ ]*\)')" = "no" ]; then
+    # readlink(1) is not available as standard on Solaris 10.
+    readLink=$(which readlink)
+    if [ ! "$(expr "$readLink" : '\([^ ]*\)')" = "no" ]; then
+      if $darwin ; then
+        javaHome="$(dirname "\"$javaExecutable\"")"
+        javaExecutable="$(cd "\"$javaHome\"" && pwd -P)/javac"
+      else
+        javaExecutable="$(readlink -f "\"$javaExecutable\"")"
+      fi
+      javaHome="$(dirname "\"$javaExecutable\"")"
+      javaHome=$(expr "$javaHome" : '\(.*\)/bin')
+      JAVA_HOME="$javaHome"
+      export JAVA_HOME
+    fi
+  fi
+fi
+
+if [ -z "$JAVACMD" ] ; then
+  if [ -n "$JAVA_HOME"  ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+      # IBM's JDK on AIX uses strange locations for the executables
+      JAVACMD="$JAVA_HOME/jre/sh/java"
+    else
+      JAVACMD="$JAVA_HOME/bin/java"
+    fi
+  else
+    JAVACMD="$(\unset -f command 2>/dev/null; \command -v java)"
+  fi
+fi
+
+if [ ! -x "$JAVACMD" ] ; then
+  echo "Error: JAVA_HOME is not defined correctly." >&2
+  echo "  We cannot execute $JAVACMD" >&2
+  exit 1
+fi
+
+if [ -z "$JAVA_HOME" ] ; then
+  echo "Warning: JAVA_HOME environment variable is not set."
+fi
+
+# traverses directory structure from process work directory to filesystem root
+# first directory with quarkus/cli subdirectory is considered project base directory
+find_quarkus_basedir() {
+  if [ -z "$1" ]
+  then
+    echo "Path not specified to find_quarkus_basedir"
+    return 1
+  fi
+
+  basedir="$1"
+  wdir="$1"
+  while [ "$wdir" != '/' ] ; do
+    if [ -d "$wdir"/.quarkus ] ; then
+      basedir=$wdir
+      break
+    fi
+    # workaround for JBEAP-8937 (on Solaris 10/Sparc)
+    if [ -d "$\{wdir}" ]; then
+      wdir=$(cd "$wdir/.." || exit 1; pwd)
+    fi
+    # end of workaround
+  done
+  printf '%s' "$(cd "$basedir" || exit 1; pwd)"
+}
+
+# concatenates all lines of a file
+concat_lines() {
+  if [ -f "$1" ]; then
+    # Remove \r in case we run on Windows within Git Bash
+    # and check out the repository with auto CRLF management
+    # enabled. Otherwise, we may read lines that are delimited with
+    # \r\n and produce $'-Xarg\r' rather than -Xarg due to word
+    # splitting rules.
+    tr -s '\r\n' ' ' < "$1"
+  fi
+}
+
+log() {
+  if [ "$QUARKUSW_VERBOSE" = true ]; then
+    printf '%s\n' "$1"
+  fi
+}
+
+BASE_DIR=$(find_quarkus_basedir "$(dirname "$0")")
+if [ -z "$BASE_DIR" ]; then
+  exit 1;
+fi
+
+QUARKUS_PROJECTBASEDIR=$\{QUARKUS_BASEDIR:-"$BASE_DIR"}; export QUARKUS_PROJECTBASEDIR
+log "$QUARKUS_PROJECTBASEDIR"
+
+##########################################################################################
+# Extension to allow automatically downloading the quarkus-cli.jar from Maven-central
+# This allows using the maven wrapper in projects that prohibit checking in binary data.
+##########################################################################################
+wrapperJarPath="$QUARKUS_PROJECTBASEDIR/.quarkus/cli/wrapper/quarkus-cli.jar"
+if [ -r "$wrapperJarPath" ]; then
+    log "Found $wrapperJarPath"
+else
+    log "Couldn't find $wrapperJarPath, downloading it ..."
+
+    if [ -n "$QUARKUSW_REPOURL" ]; then
+      wrapperUrl="$QUARKUSW_REPOURL/io/quarkus/quarkus-cli/{quarkus-cli.version}/quarkus-cli-{quarkus-cli.version}-runner.jar"
+    else
+      wrapperUrl="https://repo.maven.apache.org/maven2/io/quarkus/quarkus-cli/{quarkus-cli.version}/qarkus-cli-{quarkus-cli.version}-runner.jar"
+    fi
+    while IFS="=" read -r key value; do
+      # Remove '\r' from value to allow usage on windows as IFS does not consider '\r' as a separator ( considers space, tab, new line ('\n'), and custom '=' )
+      safeValue=$(echo "$value" | tr -d '\r')
+      case "$key" in (wrapperUrl) wrapperUrl="$safeValue"; break ;;
+      esac
+    done < "$QUARKUS_PROJECTBASEDIR/.quarkus/cli/wrapper/quarkus-cli.properties"
+    log "Downloading from: $wrapperUrl"
+
+    if $cygwin; then
+      wrapperJarPath=$(cygpath --path --windows "$wrapperJarPath")
+    fi
+
+    if [ -f "$HOME/.m2/repository/io/quarkus/quarkus-cli/{quarkus-cli.version}/quarkus-cli-{quarkus-cli.version}-runner.jar" ]; then
+      cp "$HOME/.m2/repository/io/quarkus/quarkus-cli/{quarkus-cli.version}/quarkus-cli-{quarkus-cli.version}-runner.jar" $wrapperJarPath
+    elif command -v wget > /dev/null; then
+        log "Found wget ... using wget"
+        [ "$QUARKUSW_VERBOSE" = true ] && QUIET="" || QUIET="--quiet"
+        if [ -z "$QUARKUSW_USERNAME" ] || [ -z "$QUARKUSW_PASSWORD" ]; then
+            wget $QUIET "$wrapperUrl" -O "$wrapperJarPath" || rm -f "$wrapperJarPath"
+        else
+            wget $QUIET --http-user="$QUARKUSW_USERNAME" --http-password="$QUARKUSW_PASSWORD" "$wrapperUrl" -O "$wrapperJarPath" || rm -f "$wrapperJarPath"
+        fi
+    elif command -v curl > /dev/null; then
+        log "Found curl ... using curl"
+        [ "$QUARKUSW_VERBOSE" = true ] && QUIET="" || QUIET="--silent"
+        if [ -z "$QUARKUSW_USERNAME" ] || [ -z "$QUARKUSW_PASSWORD" ]; then
+            curl $QUIET -o "$wrapperJarPath" "$wrapperUrl" -f -L || rm -f "$wrapperJarPath"
+        else
+            curl $QUIET --user "$QUARKUSW_USERNAME:$QUARKUSW_PASSWORD" -o "$wrapperJarPath" "$wrapperUrl" -f -L || rm -f "$wrapperJarPath"
+        fi
+    else
+        log "Falling back to using Java to download"
+        javaSource="$QUARKUS_PROJECTBASEDIR/.quarkus/cli/wrapper/QuarkusCliWrapperDownloader.java"
+        javaClass="$QUARKUS_PROJECTBASEDIR/.quarkus/cli/wrapper/QuarkusCliWrapperDownloader.class"
+        # For Cygwin, switch paths to Windows format before running javac
+        if $cygwin; then
+          javaSource=$(cygpath --path --windows "$javaSource")
+          javaClass=$(cygpath --path --windows "$javaClass")
+        fi
+        if [ -e "$javaSource" ]; then
+            if [ ! -e "$javaClass" ]; then
+                log " - Compiling QuarkusCliWrapperDownloader.java ..."
+                ("$JAVA_HOME/bin/javac" "$javaSource")
+            fi
+            if [ -e "$javaClass" ]; then
+                log " - Running QuarkusCliWrapperDownloader.java ..."
+                ("$JAVA_HOME/bin/java" -cp .quarkus/cli/wrapper QuarkusCliWrapperDownloader "$wrapperUrl" "$wrapperJarPath") || rm -f "$wrapperJarPath"
+            fi
+        fi
+    fi
+fi
+##########################################################################################
+# End of extension
+##########################################################################################
+
+# If specified, validate the SHA-256 sum of the Quarkus CLI wrapper jar file
+wrapperSha256Sum=""
+while IFS="=" read -r key value; do
+  case "$key" in (wrapperSha256Sum) wrapperSha256Sum=$value; break ;;
+  esac
+done < "$QUARKUS_PROJECTBASEDIR/.quarkus/cli/wrapper/quarkus-cli-wrapper.properties"
+if [ -n "$wrapperSha256Sum" ]; then
+  wrapperSha256Result=false
+  if command -v sha256sum > /dev/null; then
+    if echo "$wrapperSha256Sum  $wrapperJarPath" | sha256sum -c > /dev/null 2>&1; then
+      wrapperSha256Result=true
+    fi
+  elif command -v shasum > /dev/null; then
+    if echo "$wrapperSha256Sum  $wrapperJarPath" | shasum -a 256 -c > /dev/null 2>&1; then
+      wrapperSha256Result=true
+    fi
+  else
+    echo "Checksum validation was requested but neither 'sha256sum' or 'shasum' are available."
+    echo "Please install either command, or disable validation by removing 'wrapperSha256Sum' from your quarkus-cli.properties."
+    exit 1
+  fi
+  if [ $wrapperSha256Result = false ]; then
+    echo "Error: Failed to validate Quarkus CLI wrapper SHA-256, your Quarkus CLI wrapper might be compromised." >&2
+    echo "Investigate or delete $wrapperJarPath to attempt a clean download." >&2
+    echo "If you updated your Quarkus CLI version, you need to update the specified wrapperSha256Sum property." >&2
+    exit 1
+  fi
+fi
+
+# For Cygwin, switch paths to Windows format before running java
+if $cygwin; then
+  [ -n "$JAVA_HOME" ] &&
+    JAVA_HOME=$(cygpath --path --windows "$JAVA_HOME")
+  [ -n "$QUARKUS_PROJECTBASEDIR" ] &&
+    QUARKUS_PROJECTBASEDIR=$(cygpath --path --windows "$QUARKUS_PROJECTBASEDIR")
+fi
+
+# shellcheck disable=SC2086 # safe args
+exec "$JAVACMD" \
+  "-jar" \
+  "$wrapperJarPath" \
+  "$@"

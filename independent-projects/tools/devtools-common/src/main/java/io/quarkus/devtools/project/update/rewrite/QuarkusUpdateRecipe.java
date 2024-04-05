@@ -51,6 +51,10 @@ public class QuarkusUpdateRecipe {
         if (!recipe.containsKey("name") || !(recipe.get("name") instanceof String)) {
             throw new IllegalArgumentException("Recipe name is required");
         }
+        // some YAML documents might not be recipes. For instance, they could be categories.
+        if (!recipe.containsKey("type") || !recipe.get("type").toString().endsWith("/recipe")) {
+            return this;
+        }
         this.recipes.add(recipe);
         return this;
     }

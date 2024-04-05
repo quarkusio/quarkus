@@ -57,6 +57,7 @@ Quarkus Security provides the following built-in authentication support:
 * <<form-auth>>
 * <<mutual-tls>>
 
+[[basic-auth]]
 === Basic authentication
 
 You can secure your Quarkus application endpoints with the built-in HTTP Basic authentication mechanism.
@@ -491,7 +492,7 @@ For example, you can combine the built-in Basic and the Quarkus `quarkus-oidc` B
 You cannot combine the Quarkus `quarkus-oidc` Bearer token and `smallrye-jwt` authentication mechanisms because both mechanisms attempt to verify the token extracted from the HTTP Bearer token authentication scheme.
 ====
 
-=== Path-specific authentication mechanisms
+=== Use HTTP Security Policy to enable path-based authentication
 
 The following configuration example demonstrates how you can enforce a single selectable authentication mechanism for a given request path:
 
@@ -511,6 +512,88 @@ quarkus.http.auth.permission.bearer.auth-mechanism=bearer
 
 Ensure that the value of the `auth-mechanism` property matches the authentication scheme supported by `HttpAuthenticationMechanism`, for example, `basic`, `bearer`, or `form`.
 
+=== Use annotations to enable path-based authentication for Jakarta REST endpoints
+
+It is possible to use annotations to select an authentication mechanism specific to each Jakarta REST endpoint.
+This feature is only enabled when <<proactive-auth>> is disabled due to the fact that the annotations can only be used
+to select authentication mechanisms after a REST endpoint has been matched.
+Here is how you can select an authentication mechanism per a REST endpoint basis:
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false
+----
+
+[source,java]
+----
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("hello")
+public class HelloResource {
+
+    @GET
+    @BasicAuthentication <1> <2>
+    @Path("basic")
+    public String basicAuthMechanism() {
+        return "basic";
+    }
+
+    @GET
+    @RolesAllowed("admin") <3>
+    @AuthorizationCodeFlow <4>
+    @Path("code-flow")
+    public String codeFlowAuthMechanism() {
+        return "code-flow";
+    }
+}
+----
+<1> The REST endpoint `/hello/basic` can only ever be accessed by using the <<basic-auth>>.
+<2> This endpoint requires authentication, because when no standard security annotation accompanies the `@BasicAuthentication` annotation, the `@Authenticated` annotation is added by default.
+<3> The `@AuthorizationCodeFlow` annotation can be combined with any other standard security annotation like `@RolesAllowed`, `@PermissionsAllowed` and others.
+<4> The REST endpoint `/hello/code-flow` can only ever be accessed by using the xref:security-oidc-code-flow-authentication.adoc[OIDC authorization code flow mechanism].
+
+.Supported authentication mechanism annotations
+|===
+^|Authentication mechanism^| Annotation
+
+s|Basic authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication`
+s|Form-based authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication`
+s|Mutual TLS authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication`
+s|WebAuthn authentication mechanism ^|`io.quarkus.security.webauthn.WebAuthn`
+s|Bearer token authentication mechanism ^|`io.quarkus.oidc.BearerTokenAuthentication`
+s|OIDC authorization code flow mechanism ^|`io.quarkus.oidc.AuthorizationCodeFlow`
+s|SmallRye JWT authentication mechanism ^|`io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication`
+|===
+
+TIP: Quarkus automatically secures endpoints annotated with the authentication mechanism annotation. When no standard security annotation is present on the REST endpoint and resource, the `io.quarkus.security.Authenticated` annotation is added for you.
+
+It is also possible to use the `io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism` annotation to select any authentication mechanism based on its scheme.
+Annotation-based analogy to the `quarkus.http.auth.permission.basic.auth-mechanism=custom` configuration property is the `@HttpAuthenticationMechanism("custom")` annotation.
+
+NOTE: For consistency with various Jakarta EE specifications, it is recommended to always repeat annotations instead of relying on annotation inheritance.
+
+==== How to combine it with HTTP Security Policy
+
+The easiest way to define roles that are allowed to access individual resources is the `@RolesAllowed` annotation.
+Nevertheless, it's also possible to use the HTTP Security Policy like in the example below:
+
+[source,properties]
+----
+quarkus.http.auth.policy.roles1.roles-allowed=user
+quarkus.http.auth.permission.roles1.paths=/hello/code-flow
+quarkus.http.auth.permission.roles1.applies-to=JAXRS <1>
+quarkus.http.auth.permission.roles1.policy=roles1
+quarkus.http.auth.permission.roles1.methods=GET <2>
+----
+<1> Delay this policy's permission check after the endpoint-specific authentication mechanism has been selected.
+<2> Make the `roles1` permission match only the endpoint annotated with the `@AuthorizationCodeFlow` annotation.
+Unannotated endpoints must avoid the delay caused by the `applies-to=JAXRS` option.
+
+[[proactive-auth]]
 == Proactive authentication
 
 Proactive authentication is enabled in Quarkus by default.

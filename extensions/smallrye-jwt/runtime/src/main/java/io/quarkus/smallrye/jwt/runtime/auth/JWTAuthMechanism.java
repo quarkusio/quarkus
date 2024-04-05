@@ -38,7 +38,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             + "of the '" + TokenCredential.class.getName() + "', but the current context hasn't been flagged as such.";
     protected static final String COOKIE_HEADER = "Cookie";
     protected static final String AUTHORIZATION_HEADER = "Authorization";
-    protected static final String BEARER = "Bearer";
+    public static final String BEARER = "Bearer";
 
     /**
      * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context

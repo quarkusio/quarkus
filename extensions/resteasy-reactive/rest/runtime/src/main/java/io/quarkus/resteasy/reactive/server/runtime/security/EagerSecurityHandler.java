@@ -40,12 +40,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
         }
     };
-    private final boolean isProactiveAuthDisabled;
     private volatile SecurityCheck check;
-
-    public EagerSecurityHandler(boolean isProactiveAuthDisabled) {
-        this.isProactiveAuthDisabled = isProactiveAuthDisabled;
-    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -135,7 +130,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return new Function<SecurityIdentity, Uni<?>>() {
                 @Override
                 public Uni<?> apply(SecurityIdentity securityIdentity) {
-                    if (isProactiveAuthDisabled) {
+                    if (EagerSecurityContext.instance.isProactiveAuthDisabled) {
                         // if proactive auth is disabled, then accessing SecurityIdentity would be a blocking
                         // operation if we don't set it; this will allow to access the identity without blocking
                         // from secured endpoints
@@ -215,37 +210,19 @@ public class EagerSecurityHandler implements ServerRestHandler {
         return requestContext.getProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR) != null;
     }
 
-    public static abstract class Customizer implements HandlerChainCustomizer {
+    public static class Customizer implements HandlerChainCustomizer {
 
-        public static HandlerChainCustomizer newInstance(boolean isProactiveAuthEnabled) {
-            return isProactiveAuthEnabled ? new ProactiveAuthEnabledCustomizer() : new ProactiveAuthDisabledCustomizer();
+        public static HandlerChainCustomizer newInstance() {
+            return new Customizer();
         }
-
-        protected abstract boolean isProactiveAuthDisabled();
 
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityHandler(isProactiveAuthDisabled()));
+                return Collections.singletonList(new EagerSecurityHandler());
             }
             return Collections.emptyList();
-        }
-
-        public static class ProactiveAuthEnabledCustomizer extends Customizer {
-
-            @Override
-            protected boolean isProactiveAuthDisabled() {
-                return false;
-            }
-        }
-
-        public static class ProactiveAuthDisabledCustomizer extends Customizer {
-
-            @Override
-            protected boolean isProactiveAuthDisabled() {
-                return true;
-            }
         }
 
     }

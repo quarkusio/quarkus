@@ -15,6 +15,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcSession;
@@ -103,6 +105,22 @@ public class TenantResource {
     @Path("no-discovery")
     public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
         return userNameService(tenant, false);
+    }
+
+    @AuthorizationCodeFlow
+    @GET
+    @Path("code-flow-auth-mech-annotation")
+    @RolesAllowed("user")
+    public String codeFlowAuthMechSelectedExplicitly() {
+        return idToken.getName();
+    }
+
+    @BearerTokenAuthentication
+    @GET
+    @Path("bearer-auth-mech-annotation")
+    @RolesAllowed("user")
+    public String bearerAuthMechSelectedExplicitly() {
+        return idToken.getName();
     }
 
     @GET

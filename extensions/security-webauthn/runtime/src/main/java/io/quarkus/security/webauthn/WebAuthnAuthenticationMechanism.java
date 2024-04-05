@@ -1,5 +1,7 @@
 package io.quarkus.security.webauthn;
 
+import static io.quarkus.security.webauthn.WebAuthn.AUTH_MECHANISM_SCHEME;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -72,7 +74,7 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, AUTH_MECHANISM_SCHEME));
     }
 
     public PersistentLoginManager getLoginManager() {

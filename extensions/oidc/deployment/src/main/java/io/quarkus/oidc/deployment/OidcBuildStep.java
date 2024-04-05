@@ -2,27 +2,22 @@ package io.quarkus.oidc.deployment;
 
 import static io.quarkus.arc.processor.BuiltinScope.APPLICATION;
 import static io.quarkus.arc.processor.DotNames.DEFAULT;
+import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
+import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
-import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorCandidateBuildItem.hasProperEndpointModifiers;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -44,6 +39,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.oidc.AuthorizationCodeFlow;
+import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantFeature;
@@ -67,14 +64,14 @@ import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorCandidateBuildItem;
+import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
+import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
-import io.vertx.ext.web.RoutingContext;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
@@ -232,70 +229,17 @@ public class OidcBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void produceTenantResolverInterceptors(CombinedIndexBuildItem indexBuildItem,
-            Capabilities capabilities, OidcRecorder recorder,
-            BuildProducer<EagerSecurityInterceptorCandidateBuildItem> producer,
-            HttpBuildTimeConfig buildTimeConfig) {
+    public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
+            HttpBuildTimeConfig buildTimeConfig,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
         if (!buildTimeConfig.auth.proactive
                 && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
-            // provide method interceptor that will be run before security checks
-
-            // collect endpoint candidates
-            IndexView index = indexBuildItem.getIndex();
-            Map<MethodInfo, String> candidateToTenant = new HashMap<>();
-
-            for (AnnotationInstance annotation : index.getAnnotations(TENANT_NAME)) {
-
-                // validate tenant id
-                AnnotationTarget target = annotation.target();
-                if (annotation.value() == null || annotation.value().asString().isEmpty()) {
-                    LOG.warnf("Annotation instance @Tenant placed on %s did not provide valid tenant", toTargetName(target));
-                    continue;
-                }
-
-                // collect annotation instance methods
-                String tenant = annotation.value().asString();
-                if (target.kind() == METHOD) {
-                    MethodInfo method = target.asMethod();
-                    if (hasProperEndpointModifiers(method)) {
-                        candidateToTenant.put(method, tenant);
-                    } else {
-                        LOG.warnf("Method %s is not valid endpoint, but is annotated with the '@Tenant' annotation",
-                                toTargetName(target));
-                    }
-                } else if (target.kind() == CLASS) {
-                    // collect endpoint candidates; we only collect candidates, extensions like
-                    // RESTEasy Reactive and others are still in control of endpoint selection and interceptors
-                    // are going to be applied only on the actual endpoints
-                    for (MethodInfo method : target.asClass().methods()) {
-                        if (hasProperEndpointModifiers(method)) {
-                            candidateToTenant.put(method, tenant);
-                        }
-                    }
-                }
-            }
-
-            // create 'interceptor' for each tenant that puts tenant id into routing context
-            if (!candidateToTenant.isEmpty()) {
-
-                Map<String, Consumer<RoutingContext>> tenantToInterceptor = candidateToTenant
-                        .values()
-                        .stream()
-                        .distinct()
-                        .map(tenant -> Map.entry(tenant, recorder.createTenantResolverInterceptor(tenant)))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-                candidateToTenant.forEach((method, tenant) -> {
-
-                    // transform method info to description
-                    String[] paramTypes = method.parameterTypes().stream().map(t -> t.name().toString()).toArray(String[]::new);
-                    String className = method.declaringClass().name().toString();
-                    String methodName = method.name();
-                    var description = recorder.methodInfoToDescription(className, methodName, paramTypes);
-
-                    producer.produce(new EagerSecurityInterceptorCandidateBuildItem(method, description,
-                            tenantToInterceptor.get(tenant)));
-                });
+            var annotationInstances = combinedIndexBuildItem.getIndex().getAnnotations(TENANT_NAME);
+            if (!annotationInstances.isEmpty()) {
+                // register method interceptor that will be run before security checks
+                bindingProducer.produce(
+                        new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
             }
         }
     }
@@ -320,6 +264,13 @@ public class OidcBuildStep {
             runtimeConfigDefaultProducer.produce(
                     new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.*.authentication.verify-access-token", "true"));
         }
+    }
+
+    @BuildStep
+    List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
+        return List.of(
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class), CODE_FLOW_CODE),
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER_SCHEME));
     }
 
     private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, DotName requiredType,

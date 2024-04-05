@@ -1,6 +1,9 @@
 package io.quarkus.smallrye.jwt.deployment;
 
+import static io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism.BEARER;
+
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -36,11 +39,13 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
+import io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
+import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -207,6 +212,12 @@ class SmallRyeJwtProcessor {
                         AnnotationValue.createEnumValue("standard", CLAIMS_NAME, "UNKNOWN") }));
         configurator.creator(RawOptionalClaimCreator.class);
         beanConfigurator.produce(new BeanConfiguratorBuildItem(configurator));
+    }
+
+    @BuildStep
+    List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
+        return List.of(
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER));
     }
 
     public static class IsEnabled implements BooleanSupplier {

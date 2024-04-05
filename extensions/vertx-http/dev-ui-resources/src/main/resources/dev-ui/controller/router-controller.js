@@ -200,12 +200,47 @@ export class RouterController {
 
             RouterController.router.addRoutes(routes);
             
-            if(currentSelection === path){
+            var currentSelection = window.location.pathname;
+            const search = this.getQueryParamsWithoutFrom();
+
+            var relocationRequest = this.getQueryParameter("from");
+            if (relocationRequest) {
+                // We know and already loaded the requested location
+                if (relocationRequest === path) {
+                    Router.go({pathname: path, search});
+                }
+            } else if(currentSelection === path){
                 Router.go({pathname: path, search});
-            }else if(!RouterController.router.location.route && currentSelection.endsWith('/dev-ui/') && defaultRoute) {
+            } else if(!RouterController.router.location.route && currentSelection.endsWith('/dev-ui/') && defaultRoute) {
                 Router.go({pathname: path, search});
+                // We do not know and have not yet loaded the requested location
+            } else if (!RouterController.router.location.route && defaultRoute) {
+                // pass original query param
+                const currentQueryString = window.location.search;
+                const origSearch = currentQueryString?.length > 0 ? '&' + currentQueryString : '';
+
+                Router.go({
+                    pathname: path,
+                    search: '?from=' + currentSelection + origSearch,
+                });
             }
         }
+    }
+
+    getQueryParamsWithoutFrom() {
+        const params = new URLSearchParams(window.location.search);
+        if (params) {
+            const paramsWithoutFrom = [];
+            params.forEach((value, key) => {
+                if (key !== 'from') {
+                    paramsWithoutFrom.push(key + '=' + value)
+                }
+            });
+            if (paramsWithoutFrom.length > 0) {
+                return paramsWithoutFrom.join('&');
+            }
+        }
+        return '';
     }
 
     getQueryParameters() {

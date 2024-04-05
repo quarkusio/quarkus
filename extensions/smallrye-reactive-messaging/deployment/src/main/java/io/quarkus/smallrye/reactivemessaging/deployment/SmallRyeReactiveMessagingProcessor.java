@@ -72,6 +72,8 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBui
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactory;
 import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
@@ -216,7 +218,8 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
-            BuildProducer<HealthBuildItem> producer) {
+            BuildProducer<HealthBuildItem> producer, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
@@ -226,6 +229,24 @@ public class SmallRyeReactiveMessagingProcessor {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingStartupCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
+        if (buildTimeConfig.healthEnabled) {
+            beans.produce(new AdditionalBeanBuildItem(HealthCenterFilter.class, HealthCenterInterceptor.class));
+
+            transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                @Override
+                public boolean appliesTo(AnnotationTarget.Kind kind) {
+                    return kind == AnnotationTarget.Kind.CLASS;
+                }
+
+                @Override
+                public void transform(TransformationContext ctx) {
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    if (clazz.name().equals(ReactiveMessagingDotNames.HEALTH_CENTER)) {
+                        ctx.transform().add(HealthCenterFilter.class).done();
+                    }
+                }
+            }));
+        }
     }
 
     @BuildStep

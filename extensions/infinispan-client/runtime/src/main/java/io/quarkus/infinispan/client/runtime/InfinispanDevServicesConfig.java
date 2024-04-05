@@ -23,6 +23,15 @@ public class InfinispanDevServicesConfig {
     public boolean enabled;
 
     /**
+     * When the configuration is empty, an Infinispan default client is automatically created to connect
+     * to the running dev service. However, there are scenarios where creating this client is unnecessary,
+     * yet we still need to spin up an Infinispan Server. In such cases, this property serves to determine
+     * whether the client should be created by default or not by the extension.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createDefaultClient;
+
+    /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.

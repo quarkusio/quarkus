@@ -406,17 +406,17 @@ public class YamlMetadataGenerator {
                 case "detached-attributes":
                     return "The document header ended (blank line) before common attributes were included.";
                 case "empty-preamble":
-                    return "Document preamble is empty.";
+                    return "Document preamble is empty. See https://quarkus.io/guides/doc-reference#abstracts-preamble";
                 case "missing-preamble":
-                    return "Document does not have a preamble.";
+                    return "Document does not have a preamble. See https://quarkus.io/guides/doc-reference#abstracts-preamble";
                 case "summary-too-long":
-                    return "Document summary (either summary attribute or the preamble) is longer than 26 words.";
+                    return "Document summary (either summary attribute or the preamble) is longer than 26 words. See https://quarkus.io/guides/doc-reference#doc-header-optional";
                 case "missing-id":
-                    return "Document does not define an id.";
+                    return "Document does not define an id. See https://quarkus.io/guides/doc-reference#document-header";
                 case "missing-categories":
-                    return "Document does not specify associated categories";
+                    return "Document does not specify associated categories. See https://quarkus.io/guides/doc-reference#categories";
                 case "not-diataxis-type":
-                    return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions.";
+                    return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":
                     return "A :toc: attribute is present in the document header (remove it)";
             }

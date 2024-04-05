@@ -67,6 +67,8 @@ public class CheckCrossReferences {
                 }
             }
 
+            errorLog.append("See https://quarkus.io/guides/doc-reference#cross-references");
+
             throw new IllegalStateException(errorLog.toString());
         }
 

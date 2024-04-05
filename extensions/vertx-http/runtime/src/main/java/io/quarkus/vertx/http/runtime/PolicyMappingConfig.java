@@ -99,6 +99,38 @@ public class PolicyMappingConfig {
          * mechanism</li>
          * <li>`io.quarkus.oidc.AuthorizationCodeFlow` which selects the OpenID Connect Code authentication mechanism</li>
          * </ul>
+         * <p>
+         * You also need to set this option for custom HTTP Security Policies that needs to be run after your JAX-RS
+         * resource method has been matched with incoming HTTP request like in the example below.
+         * <p>
+         * Example of `the application.properties`:
+         * <code>
+         * quarkus.http.auth.permission.custom-policy-1.paths=/hello
+         * quarkus.http.auth.permission.custom-policy-1.policy=custom
+         * quarkus.http.auth.permission.custom-policy-1.applies-to=JAXRS
+         * # uncomment next line when you use the custom policy with Quarkus REST
+         * # quarkus.security.jaxrs.enable-jaxrs-http-security-policies=true
+         * </code>
+         * Example of the custom HTTP Security Policy invoked for matched `/hello` path.
+         * <code>
+         * &#064;ApplicationScoped
+         * public class CustomHttpSecurityPolicy implements HttpSecurityPolicy {
+         *
+         *     &#064;Inject
+         *     ResourceInfo resourceInfo;
+         *
+         *     &#064;Override
+         *     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
+         *             AuthorizationRequestContext requestContext) {
+         *         // use resourceInfo and authorize the HTTP request
+         *     }
+         *
+         *     &#064;Override
+         *     public String name() {
+         *         return "custom";
+         *     }
+         * }
+         * </code>
          */
         JAXRS
     }

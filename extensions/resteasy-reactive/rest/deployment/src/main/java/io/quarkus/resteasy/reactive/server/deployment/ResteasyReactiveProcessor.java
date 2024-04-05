@@ -1504,8 +1504,9 @@ public class ResteasyReactiveProcessor {
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
         final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
-        final boolean denyJaxRs = securityConfig.denyJaxRs();
-        final boolean hasDefaultJaxRsRolesAllowed = !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty();
+        final boolean addEagerSecurityHandlerToEveryMethod = securityConfig.denyJaxRs()
+                || !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty()
+                || securityConfig.enableJaxRsHttpSecurityPolicies();
         var index = indexBuildItem.getComputingIndex();
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
@@ -1519,7 +1520,7 @@ public class ResteasyReactiveProcessor {
                     return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
                             EagerSecurityHandler.Customizer.newInstance());
                 } else {
-                    if (denyJaxRs || hasDefaultJaxRsRolesAllowed) {
+                    if (addEagerSecurityHandlerToEveryMethod) {
                         return List.of(EagerSecurityHandler.Customizer.newInstance());
                     } else {
                         return Objects

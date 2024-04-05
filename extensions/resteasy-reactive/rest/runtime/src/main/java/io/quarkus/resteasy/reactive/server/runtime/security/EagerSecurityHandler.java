@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -56,7 +57,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 return;
             } else {
                 // only permission check
-                check = EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
+                    @Override
+                    public Uni<?> get() {
+                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                    }
+                });
             }
         } else {
             if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {

@@ -3,6 +3,8 @@ package io.quarkus.resteasy.reactive.common.runtime;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.ws.rs.container.ResourceInfo;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -27,4 +29,15 @@ public interface JaxRsSecurityConfig {
      * annotation.
      */
     Optional<List<String>> defaultRolesAllowed();
+
+    /**
+     * Allows to run custom HTTP Security Policies after your JAX-RS resource method has been matched
+     * with incoming HTTP request. Enable this option if you have custom HTTP Security Policy where you need
+     * to inject {@link ResourceInfo} and perform authorization with the knowledge of the invoked resource method.
+     * Please review documentation of the `quarkus.http.auth.permission."permissions".applies-to`
+     * configuration property before you enable this option.
+     */
+    @WithName("enable-jaxrs-http-security-policies")
+    @WithDefault("false")
+    boolean enableJaxRsHttpSecurityPolicies();
 }

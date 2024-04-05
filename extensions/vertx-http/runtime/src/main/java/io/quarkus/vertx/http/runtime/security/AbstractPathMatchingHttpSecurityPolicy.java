@@ -43,7 +43,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     public AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
             Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies,
             PolicyMappingConfig.AppliesTo appliesTo) {
-        boolean hasNoPermissions = permissions.isEmpty();
+        boolean hasNoPermissions = true;
         var namedHttpSecurityPolicies = toNamedHttpSecPolicies(rolePolicy, installedPolicies);
         List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermsMatchers = new ArrayList<>();
         final var builder = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll)

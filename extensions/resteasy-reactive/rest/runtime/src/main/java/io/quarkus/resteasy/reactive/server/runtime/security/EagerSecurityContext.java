@@ -52,6 +52,7 @@ public class EagerSecurityContext {
     final AuthorizationController authorizationController;
     final SecurityCheckStorage securityCheckStorage;
     final boolean doNotRunPermissionSecurityCheck;
+    final boolean isProactiveAuthDisabled;
 
     EagerSecurityContext(Event<AuthorizationFailureEvent> authorizationFailureEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
@@ -62,6 +63,7 @@ public class EagerSecurityContext {
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
         this.securityCheckStorage = securityCheckStorage;
+        this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,
                 AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
         var jaxRsPathMatchingPolicy = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,

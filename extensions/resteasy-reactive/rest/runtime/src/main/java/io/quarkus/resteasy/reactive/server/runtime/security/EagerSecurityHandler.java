@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -40,11 +41,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
         }
     };
-    private final boolean isProactiveAuthDisabled;
+    private final boolean onlyCheckForHttpPermissions;
     private volatile SecurityCheck check;
 
-    public EagerSecurityHandler(boolean isProactiveAuthDisabled) {
-        this.isProactiveAuthDisabled = isProactiveAuthDisabled;
+    public EagerSecurityHandler(boolean onlyCheckForHttpPermissions) {
+        this.onlyCheckForHttpPermissions = onlyCheckForHttpPermissions;
     }
 
     @Override
@@ -61,7 +62,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 return;
             } else {
                 // only permission check
-                check = EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                check = Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<? extends SecurityIdentity> get() {
+                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                    }
+                });
             }
         } else {
             if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
@@ -101,7 +107,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
     }
 
     private Function<SecurityIdentity, Uni<?>> getSecurityCheck(ResteasyReactiveRequestContext requestContext) {
-        if (this.check == NULL_SENTINEL) {
+        if (this.onlyCheckForHttpPermissions || this.check == NULL_SENTINEL) {
             return null;
         }
         SecurityCheck check = this.check;
@@ -135,7 +141,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return new Function<SecurityIdentity, Uni<?>>() {
                 @Override
                 public Uni<?> apply(SecurityIdentity securityIdentity) {
-                    if (isProactiveAuthDisabled) {
+                    if (EagerSecurityContext.instance.isProactiveAuthDisabled) {
                         // if proactive auth is disabled, then accessing SecurityIdentity would be a blocking
                         // operation if we don't set it; this will allow to access the identity without blocking
                         // from secured endpoints
@@ -217,34 +223,35 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     public static abstract class Customizer implements HandlerChainCustomizer {
 
-        public static HandlerChainCustomizer newInstance(boolean isProactiveAuthEnabled) {
-            return isProactiveAuthEnabled ? new ProactiveAuthEnabledCustomizer() : new ProactiveAuthDisabledCustomizer();
+        public static HandlerChainCustomizer newInstance(boolean onlyCheckForHttpPermissions) {
+            return onlyCheckForHttpPermissions ? new HttpPermissionsOnlyCustomizer()
+                    : new HttpPermissionsAndSecurityChecksCustomizer();
         }
-
-        protected abstract boolean isProactiveAuthDisabled();
 
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityHandler(isProactiveAuthDisabled()));
+                return Collections.singletonList(new EagerSecurityHandler(onlyCheckForHttpPermissions()));
             }
             return Collections.emptyList();
         }
 
-        public static class ProactiveAuthEnabledCustomizer extends Customizer {
+        protected abstract boolean onlyCheckForHttpPermissions();
+
+        public static final class HttpPermissionsOnlyCustomizer extends Customizer {
 
             @Override
-            protected boolean isProactiveAuthDisabled() {
-                return false;
+            protected boolean onlyCheckForHttpPermissions() {
+                return true;
             }
         }
 
-        public static class ProactiveAuthDisabledCustomizer extends Customizer {
+        public static final class HttpPermissionsAndSecurityChecksCustomizer extends Customizer {
 
             @Override
-            protected boolean isProactiveAuthDisabled() {
-                return true;
+            protected boolean onlyCheckForHttpPermissions() {
+                return false;
             }
         }
 

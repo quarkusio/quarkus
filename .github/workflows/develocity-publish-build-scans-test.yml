@@ -1,0 +1,43 @@
+name: Develocity - Publish Maven Build Scans
+
+on:
+  workflow_run:
+    workflows: [ "CI test" ]
+    types: [ completed ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish-build-scans:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Setup Build Scan link capture
+        uses: gradle/github-actions/maven-setup@v1
+      - name: Publish Maven Build Scans
+        id: publish
+        uses: gradle/github-actions/maven-publish-build-scan@v1
+        with:
+          develocity-url: 'https://ge.solutions-team.gradle.com'
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          add-pr-comment: false
+          add-job-summary: true
+      - name: Output JSON file
+        run: |
+          if [ -f "${{ steps.publish.outputs.build-metadata-file-path }}" ]; then
+            echo "```json" >> $GITHUB_STEP_SUMMARY
+            jq '.' ${{ steps.publish.outputs.build-metadata-file-path }} >> $GITHUB_STEP_SUMMARY
+            echo "\n```" >> $GITHUB_STEP_SUMMARY;
+          fi
+      - name: Inject build scans in reports
+        uses: quarkusio/action-helpers@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          action: inject-build-scans
+          workflow-run-id: ${{ github.event.workflow_run.id }}
+          build-metadata-file-path: ${{ steps.publish.outputs.build-metadata-file-path }}

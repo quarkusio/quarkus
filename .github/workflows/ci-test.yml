@@ -1,0 +1,35 @@
+name: CI test
+
+on:
+  workflow_dispatch:
+
+env:
+  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-setup@v1
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: "Initial JDK 17 Build"
+          add-pr-comment: false
+          add-job-summary: true
+      - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          ./mvnw clean install -Dquickly -T2C

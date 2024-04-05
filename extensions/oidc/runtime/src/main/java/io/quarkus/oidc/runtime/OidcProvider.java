@@ -54,7 +54,6 @@ import io.smallrye.mutiny.Uni;
 public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
-    private static final String ANY_ISSUER = "any";
     private static final String ANY_AUDIENCE = "any";
     private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
             SignatureAlgorithm.RS384.getAlgorithm(),
@@ -70,6 +69,7 @@ public class OidcProvider implements Closeable {
             AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
+    static final String ANY_ISSUER = "any";
 
     private final List<Validator> customValidators;
     final OidcProviderClient client;
@@ -586,7 +586,7 @@ public class OidcProvider implements Closeable {
     }
 
     public OidcConfigurationMetadata getMetadata() {
-        return client.getMetadata();
+        return client == null ? null : client.getMetadata();
     }
 
     private static class CustomClaimsValidator implements Validator {

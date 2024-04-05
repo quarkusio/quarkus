@@ -733,6 +733,7 @@ To configure the resolution of the tenant identifier, use one of the following o
 * <<tenant-resolver>>
 * <<configure-tenant-paths>>
 * <<default-tenant-resolver>>
+* <<issuer-based-tenant-resolver>>
 
 These tenant resolution options are tried in the order they are listed until the tenant id gets resolved.
 If the tenant id remains unresolved (`null`), the default (unnamed) tenant configuration is selected.
@@ -837,6 +838,37 @@ Therefore, authenticated users can access the secured application area without r
 
 Default resolution can also work for Bearer token authentication.
 Still, it might be less practical because a tenant identifier must always be set as the last path segment value.
+
+[[issuer-based-tenant-resolver]]
+=== Resolve tenants with a token issuer claim
+
+OIDC tenants which support Bearer token authentication can be resolved using the access token's issuer.
+The following conditions must be met for the issuer-based resolution to work:
+
+* The access token must be in the JWT format and contain an issuer (`iss`) token claim.
+* Only OIDC tenants with the application type `service` or `hybrid` are considered. These tenants must have a token issuer discovered or configured.
+
+The issuer-based resolution is enabled with the `quarkus.oidc.resolve-tenants-with-issuer` property. For example:
+
+[source,properties]
+----
+quarkus.oidc.resolve-tenants-with-issuer=true <1>
+
+quarkus.oidc.tenant-a.auth-server-url=${tenant-a-oidc-provider} <2>
+quarkus.oidc.tenant-a.client-id=${tenant-a-client-id}
+quarkus.oidc.tenant-a.credentials.secret=${tenant-a-client-secret}
+
+quarkus.oidc.tenant-b.auth-server-url=${tenant-b-oidc-provider} <3>
+quarkus.oidc.tenant-b.discover-enabled=false
+quarkus.oidc.tenant-b.token.issuer=${tenant-b-oidc-provider}/issuer
+quarkus.oidc.tenant-b.jwks-path=/jwks
+quarkus.oidc.tenant-b.token-path=/tokens
+quarkus.oidc.tenant-b.client-id=${tenant-b-client-id}
+quarkus.oidc.tenant-b.credentials.secret=${tenant-b-client-secret}
+----
+<1> Tenants `tenant-a` and `tenant-b` are resolved using a JWT access token's issuer `iss` claim value.
+<2> Tenant `tenant-a` discovers the `issuer` from the OIDC provider's well-known configuration endpoint.
+<3> Tenant `tenant-b` configures the `issuer` because its OIDC provider does not support the discovery.
 
 === Tenant resolution for OIDC web-app applications
 

@@ -64,6 +64,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -96,6 +97,7 @@ public final class OidcUtils {
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4056;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     public static final String DEFAULT_SCOPE_SEPARATOR = " ";
+    public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
     static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
     static final String COMMA = ",";
@@ -107,6 +109,7 @@ public final class OidcUtils {
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
+    private static final String EXTRACTED_BEARER_TOKEN = "quarkus.oidc.extracted-bearer-token";
     public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
 
     private OidcUtils() {
@@ -716,6 +719,42 @@ public final class OidcUtils {
         return cookieName.startsWith(SESSION_COOKIE_NAME)
                 && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), ACCESS_TOKEN_COOKIE_SUFFIX, 0, 3)
                 && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), REFRESH_TOKEN_COOKIE_SUFFIX, 0, 3);
+    }
+
+    static String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
+        if (context.get(EXTRACTED_BEARER_TOKEN) != null) {
+            return context.get(EXTRACTED_BEARER_TOKEN);
+        }
+        final HttpServerRequest request = context.request();
+        String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
+                : HttpHeaders.AUTHORIZATION.toString();
+        LOG.debugf("Looking for a token in the %s header", header);
+        final String headerValue = request.headers().get(header);
+
+        if (headerValue == null) {
+            return null;
+        }
+
+        int idx = headerValue.indexOf(' ');
+        final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
+
+        if (scheme != null) {
+            LOG.debugf("Authorization scheme: %s", scheme);
+        }
+
+        if (scheme == null && !header.equalsIgnoreCase(HttpHeaders.AUTHORIZATION.toString())) {
+            return headerValue;
+        }
+
+        if (!oidcConfig.token.authorizationScheme.equalsIgnoreCase(scheme)) {
+            return null;
+        }
+
+        return headerValue.substring(idx + 1);
+    }
+
+    static void storeExtractedBearerToken(RoutingContext context, String token) {
+        context.put(EXTRACTED_BEARER_TOKEN, token);
     }
 
     public static String getTenantIdFromCookie(String cookiePrefix, String cookieName, boolean sessionCookie) {

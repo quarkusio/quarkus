@@ -38,6 +38,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
@@ -60,6 +61,7 @@ import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.TlsConfig;
@@ -232,7 +234,8 @@ public class OidcBuildStep {
     public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer) {
+            BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
         if (!buildTimeConfig.auth.proactive
                 && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
             var annotationInstances = combinedIndexBuildItem.getIndex().getAnnotations(TENANT_NAME);
@@ -240,6 +243,8 @@ public class OidcBuildStep {
                 // register method interceptor that will be run before security checks
                 bindingProducer.produce(
                         new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
+                systemPropertyProducer.produce(new SystemPropertyBuildItem(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED,
+                        Boolean.TRUE.toString()));
             }
         }
     }

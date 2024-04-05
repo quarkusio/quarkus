@@ -781,6 +781,12 @@ public class BearerTokenAuthorizationTest {
         }
     }
 
+    @Test
+    public void testResolveTenantsByIssuer() {
+        assertStaticTenantSuccess("e", "tenant-e", "tenant-by-issuer");
+        assertStaticTenantSuccess("f", "tenant-f", "tenant-by-issuer");
+    }
+
     private void assertStaticTenantSuccess(String clientId, String tenant, String subPath) {
         // tenant is resolved based on path pattern and access token is valid
         final String accessToken = getAccessToken(clientId);

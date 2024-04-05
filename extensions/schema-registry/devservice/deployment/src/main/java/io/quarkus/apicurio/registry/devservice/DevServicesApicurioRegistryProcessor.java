@@ -79,8 +79,10 @@ public class DevServicesApicurioRegistryProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Apicurio Registry Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
             devService = startApicurioRegistry(dockerStatusBuildItem, configuration, launchMode,
-                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
+                    useSharedNetwork, devServicesConfig.timeout);
             compressor.close();
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();

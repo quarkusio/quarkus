@@ -100,10 +100,12 @@ public class DevServicesRedisProcessor {
         try {
             for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
                 String connectionName = entry.getKey();
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                        devServicesSharedNetworkBuildItem);
                 RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
+                        useSharedNetwork, devServicesConfig.timeout);
                 if (devService == null) {
                     continue;
                 }

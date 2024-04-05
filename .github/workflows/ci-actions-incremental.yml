@@ -50,7 +50,7 @@ env:
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
-  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+  DEVELOCITY_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
 
 defaults:

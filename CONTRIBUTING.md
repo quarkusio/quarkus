@@ -544,17 +544,17 @@ It is only relevant for members of the Quarkus team and you should contact eithe
 When you have the account set up, from the root of your local Quarkus workspace, run:
 
 ```
-./mvnw gradle-enterprise:provision-access-key
+./mvnw develocity:provision-access-key
 ```
 
 and log in in the browser window it will open (if not already logged in).
-Your access key will be stored in the `~/.m2/.gradle-enterprise/keys.properties` file.
+Your access key will be stored in the `~/.m2/.develocity/keys.properties` file.
 From then your build scans will be sent to the Develocity instance and you will be able to benefit from the build cache.
 
 You can alternatively also generate an API key from the Develocity UI and then use an environment variable like this:
 
 ```
-export GRADLE_ENTERPRISE_ACCESS_KEY=ge.quarkus.io=a_secret_key
+export DEVELOCITY_ACCESS_KEY=ge.quarkus.io=a_secret_key
 ```
 
 When debugging a test (and especially flaky tests), you might want to temporarily disable the build cache.
@@ -564,7 +564,7 @@ The remote cache is stored on the Develocity server and is populated by CI.
 To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
 Note that the local cache alone should bring you a significant speedup.
 
-The local cache is stored in the `~/.m2/.gradle-enterprise/build-cache/` directory.
+The local cache is stored in the `~/.m2/.develocity/build-cache/` directory.
 If you have problems with your local cache, you can delete this directory.
 
 ###### -Dquickly

@@ -699,7 +699,7 @@ Setting `quarkus.config-tracking.enabled` to `true` will enable a configuration 
 
 The `prod` part of the `quarkus-prod-config-dump` file name refers to the Quarkus build mode, indicating that the dump was taken for the production build.
 
-The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Gradle Enterprise Build Cache]) whether the application binary has to be re-built.
+The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Develocity Build Cache]) whether the application binary has to be re-built.
 
 ==== Filtering configuration options
 

@@ -50,7 +50,7 @@ env:
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
-  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+  DEVELOCITY_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
 
 defaults:
@@ -141,11 +141,12 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -365,11 +366,12 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -472,11 +474,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -574,11 +577,12 @@ jobs:
         if: "!startsWith(matrix.java.os-name, 'windows')"
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -656,11 +660,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -747,11 +752,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -825,11 +831,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - uses: actions/github-script@v7
         id: get-quickstarts-branch
         with:
@@ -910,11 +917,12 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -978,11 +986,12 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
@@ -1086,11 +1095,12 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Cache Quarkus metadata
         uses: actions/cache@v4
         with:

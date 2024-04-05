@@ -1,7 +1,6 @@
-<gradleEnterprise>
+<develocity>
     <server>
         <url>https://ge.quarkus.io</url>
-        <allowUntrusted>false</allowUntrusted>
     </server>
     <buildScan>
         <!-- adjust conditions ?
@@ -18,9 +17,6 @@
           <!-- Don't share ip addresses-->
           <ipAddresses>#{{'0.0.0.0'}}</ipAddresses>
         </obfuscation>
-        <capture>
-          <goalInputFiles>true</goalInputFiles>
-        </capture>
         <!-- https://docs.gradle.com/enterprise/maven-extension/#manual_access_key_configuration -->
         <backgroundBuildScanUpload>#{env['CI'] == null}</backgroundBuildScanUpload>
     </buildScan>
@@ -30,7 +26,7 @@
         </local>
         <remote>
             <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
-            <storeEnabled>#{env['CI'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != '' and env['RELEASE_GITHUB_TOKEN'] == null}</storeEnabled>
+            <storeEnabled>#{env['CI'] != null and env['DEVELOCITY_ACCESS_KEY'] != null and env['DEVELOCITY_ACCESS_KEY'] != '' and env['RELEASE_GITHUB_TOKEN'] == null}</storeEnabled>
         </remote>
     </buildCache>
-</gradleEnterprise>
+</develocity>

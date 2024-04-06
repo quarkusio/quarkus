@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -40,7 +41,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
         }
     };
+    private final boolean onlyCheckForHttpPermissions;
     private volatile SecurityCheck check;
+
+    public EagerSecurityHandler(boolean onlyCheckForHttpPermissions) {
+        this.onlyCheckForHttpPermissions = onlyCheckForHttpPermissions;
+    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -56,7 +62,12 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 return;
             } else {
                 // only permission check
-                check = EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
+                    @Override
+                    public Uni<?> get() {
+                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                    }
+                });
             }
         } else {
             if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
@@ -96,7 +107,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
     }
 
     private Function<SecurityIdentity, Uni<?>> getSecurityCheck(ResteasyReactiveRequestContext requestContext) {
-        if (this.check == NULL_SENTINEL) {
+        if (this.onlyCheckForHttpPermissions || this.check == NULL_SENTINEL) {
             return null;
         }
         SecurityCheck check = this.check;
@@ -210,19 +221,38 @@ public class EagerSecurityHandler implements ServerRestHandler {
         return requestContext.getProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR) != null;
     }
 
-    public static class Customizer implements HandlerChainCustomizer {
+    public static abstract class Customizer implements HandlerChainCustomizer {
 
-        public static HandlerChainCustomizer newInstance() {
-            return new Customizer();
+        public static HandlerChainCustomizer newInstance(boolean onlyCheckForHttpPermissions) {
+            return onlyCheckForHttpPermissions ? new HttpPermissionsOnlyCustomizer()
+                    : new HttpPermissionsAndSecurityChecksCustomizer();
         }
 
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityHandler());
+                return Collections.singletonList(new EagerSecurityHandler(onlyCheckForHttpPermissions()));
             }
             return Collections.emptyList();
+        }
+
+        protected abstract boolean onlyCheckForHttpPermissions();
+
+        public static final class HttpPermissionsOnlyCustomizer extends Customizer {
+
+            @Override
+            protected boolean onlyCheckForHttpPermissions() {
+                return true;
+            }
+        }
+
+        public static final class HttpPermissionsAndSecurityChecksCustomizer extends Customizer {
+
+            @Override
+            protected boolean onlyCheckForHttpPermissions() {
+                return false;
+            }
         }
 
     }

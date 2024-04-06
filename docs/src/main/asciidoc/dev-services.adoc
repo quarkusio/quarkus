@@ -181,3 +181,8 @@ link:{neo4j-guide}#dev-services[Neo4j Guide].
 
 The WireMock extension starts WireMock as a Dev Service. It is a test-focussed extension, designed to run in dev and test mode only.
 More information can be found in the https://docs.quarkiverse.io/quarkus-wiremock/dev/index.html[WireMock Guide].
+
+=== Microcks
+
+The Microcks Quarkus extension includes a Microcks Dev Service. The Dev Service manages mocks for dependencies and contract-testing your API endpoints.
+See the extension https://github.com/microcks/microcks-quarkus[README.md] for more information.

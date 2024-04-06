@@ -1504,33 +1504,31 @@ public class ResteasyReactiveProcessor {
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
         final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
-        final boolean denyJaxRs = securityConfig.denyJaxRs();
-        final boolean hasDefaultJaxRsRolesAllowed = !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty();
+        final boolean withDefaultSecurityCheck = securityConfig.denyJaxRs()
+                || !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty();
         var index = indexBuildItem.getComputingIndex();
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
                 if (applySecurityInterceptors && interceptedMethods.contains(method)) {
-                    // EagerSecurityHandler needs to be present whenever the method requires eager interceptor
-                    // because JAX-RS specific HTTP Security policies are defined by runtime config properties
-                    // for example: when you annotate resource method with @Tenant("hr") you select OIDC tenant,
-                    // so we can't authenticate before the tenant is selected, only after then HTTP perms can be checked
                     return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
-                            EagerSecurityHandler.Customizer.newInstance());
+                            EagerSecurityHandler.Customizer.newInstance(false));
                 } else {
-                    if (denyJaxRs || hasDefaultJaxRsRolesAllowed) {
-                        return List.of(EagerSecurityHandler.Customizer.newInstance());
-                    } else {
-                        return Objects
-                                .requireNonNullElse(
-                                        consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
-                                                (c) -> List.of(EagerSecurityHandler.Customizer.newInstance())),
-                                        Collections.emptyList());
-                    }
+                    return List.of(newEagerSecurityHandlerCustomizerInstance(method, actualEndpointClass, index,
+                            withDefaultSecurityCheck));
                 }
             }
         });
+    }
+
+    private HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, ClassInfo actualEndpointClass,
+            IndexView index, boolean withDefaultSecurityCheck) {
+        if (withDefaultSecurityCheck
+                || consumeStandardSecurityAnnotations(method, actualEndpointClass, index, (c) -> c) != null) {
+            return EagerSecurityHandler.Customizer.newInstance(false);
+        }
+        return EagerSecurityHandler.Customizer.newInstance(true);
     }
 
     /**

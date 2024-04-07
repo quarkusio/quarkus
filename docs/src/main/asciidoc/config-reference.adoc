@@ -341,6 +341,7 @@ With the `dev` profile enabled, the property `bar` has the value `hallo`, but th
 `bonjour`. If the `prod` profile is enabled, `bar` has the value `hello` (as there is no specific value for the `prod`
 profile), and `baz` the value `bonjour`.
 
+[[default-profiles]]
 === Default Profiles
 
 By default, Quarkus provides three profiles, that activate automatically in certain conditions:

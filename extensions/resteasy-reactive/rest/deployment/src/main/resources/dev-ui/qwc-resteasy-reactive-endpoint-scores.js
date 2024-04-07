@@ -1,5 +1,5 @@
-import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
-import { JsonRpc } from 'jsonrpc';
+import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
+import {JsonRpc} from 'jsonrpc';
 
 import '@vaadin/details';
 import '@vaadin/horizontal-layout';
@@ -103,7 +103,7 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
         }
         return html`<qwc-no-data message="You do not have any REST endpoints." 
                                     link="https://quarkus.io/guides/resteasy-reactive"
-                                    linkText="Learn how to write REST Services with RESTEasy Reactive">
+                                    linkText="Learn how to write REST Services with Quarkus REST">
                 </qwc-no-data>
             `;
     }

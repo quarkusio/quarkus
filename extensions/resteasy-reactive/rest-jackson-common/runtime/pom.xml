@@ -10,7 +10,7 @@
     </parent>
     <artifactId>quarkus-rest-jackson-common</artifactId>
     <name>Quarkus - REST - Jackson Common Bits - Runtime</name>
-    <description>Common classes for Jackson serialization support for RESTEasy Reactive</description>
+    <description>Common classes for Jackson serialization support for Quarkus REST</description>
 
     <dependencies>
         <dependency>

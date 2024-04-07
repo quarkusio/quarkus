@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-integration-test-amazon-lambda-http-resteasy-reactive</artifactId>
     <name>Quarkus - Integration Tests - Amazon Lambda HTTP RESTEasy Reactive</name>
-    <description>Test with Resteasy Reactive and Amazon Lambda HTTP</description>
+    <description>Test with Quarkus REST and Amazon Lambda HTTP</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

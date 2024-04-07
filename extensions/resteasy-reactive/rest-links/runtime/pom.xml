@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-links</artifactId>
     <name>Quarkus - REST - Links - Runtime</name>
-    <description>Web Links support for RESTEasy Reactive. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
+    <description>Web Links support for Quarkus REST. Inject web links into response HTTP headers by annotating your endpoint resources.</description>
 
     <dependencies>
         <dependency>

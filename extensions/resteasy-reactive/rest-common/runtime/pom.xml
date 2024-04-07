@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-common</artifactId>
     <name>Quarkus - REST - Common - Runtime</name>
-    <description>Common runtime parts of Quarkus RESTEasy Reactive</description>
+    <description>Common runtime parts of Quarkus REST</description>
 
     <dependencies>
         <dependency>

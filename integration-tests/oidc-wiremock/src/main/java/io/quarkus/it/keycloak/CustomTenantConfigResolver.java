@@ -36,6 +36,10 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     + "a tenant id on the '" + path + "' request path");
         }
         if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) != null) {
+            if (context.get(OidcUtils.TENANT_ID_SET_BY_ANNOTATION) != null) {
+                throw new RuntimeException(
+                        "Calling TenantConfigResolver after @Tenant has already resolved tenant id is unnecessary");
+            }
             if (context.get(OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE) == null
                     && context.get(OidcUtils.TENANT_ID_SET_BY_STATE_COOKIE) == null) {
                 throw new RuntimeException("Tenant id must have been set by either the session or state cookie");

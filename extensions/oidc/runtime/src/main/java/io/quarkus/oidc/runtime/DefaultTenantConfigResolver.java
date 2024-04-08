@@ -237,14 +237,12 @@ public class DefaultTenantConfigResolver {
     }
 
     private Uni<OidcTenantConfig> getDynamicTenantConfig(RoutingContext context) {
+        if (isTenantSetByAnnotation(context, context.get(OidcUtils.TENANT_ID_ATTRIBUTE))) {
+            return Uni.createFrom().nullItem();
+        }
         if (tenantConfigResolver.isResolvable()) {
             Uni<OidcTenantConfig> oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
             if (oidcConfig == null) {
-
-                if (isTenantSetByAnnotation(context, context.get(OidcUtils.TENANT_ID_ATTRIBUTE))) {
-                    return Uni.createFrom().nullItem();
-                }
-
                 oidcConfig = tenantConfigResolver.get().resolve(context, blockingRequestContext);
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway

@@ -23,6 +23,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
+import io.smallrye.common.constraint.Assert;
 
 /**
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading
@@ -293,6 +294,10 @@ public class QuarkusBootstrap implements Serializable {
 
     public boolean isTest() {
         return test;
+    }
+
+    public MavenArtifactResolver mavenArtifactResolver() {
+        return mavenArtifactResolver;
     }
 
     public static class Builder {

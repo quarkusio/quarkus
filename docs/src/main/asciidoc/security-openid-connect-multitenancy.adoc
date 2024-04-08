@@ -590,20 +590,28 @@ However, this time, you are going to authenticate by using a different realm.
 In both cases, the landing page shows the user's name and email if the user is successfully authenticated.
 Although `alice` exists in both tenants, the application treats them as distinct users in separate realms.
 
+== Tenant resolution
+
 [[tenant-resolution-order]]
-== Tenant resolution order
+=== Tenant resolution order
 
 OIDC tenants are resolved in the following order:
-* `io.quarkus.oidc.Tenant` annotation is checked first if the proactive authentication is disabled.
-* Dynamic tenant resolution using a custom `TenantConfigResolver`.
-* Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
-* Default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
+
+1. `io.quarkus.oidc.Tenant` annotation is checked first if the proactive authentication is disabled.
+
+2. Dynamic tenant resolution using a custom `TenantConfigResolver`.
+
+3. Static tenant resolution using one of these options: custom `TenantResolver`, configured tenant paths, and defaulting to the last request path segment as a tenant id.
+
+Finally, the default OIDC tenant is selected if a tenant id has not been resolved after the preceeding steps.
 
 See the following sections for more information:
 
 * <<annotations-tenant-resolver>>
 * <<tenant-config-resolver>>
 * <<static-tenant-resolution>>
+
+Additionally, for the OIDC `web-app` applications, the state and session cookies also provide a hint about the tenant resolved with one of the above mentioned options at the time when the authorization code flow started. See the <<tenant-resolution-for-web-app>> section for more information.
 
 [[annotations-tenant-resolver]]
 === Resolve with annotations
@@ -657,7 +665,7 @@ quarkus.http.auth.permission.authenticated.applies-to=JAXRS <1>
 <1> Tell Quarkus to run the HTTP permission check after the tenant has been selected with the `@Tenant` annotation.
 
 [[tenant-config-resolver]]
-== Dynamic tenant configuration resolution
+=== Dynamic tenant configuration resolution
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple
 entries in your configuration file, you can use the `io.quarkus.oidc.TenantConfigResolver`.
@@ -725,7 +733,7 @@ You can populate it by using any settings supported by the `quarkus-oidc` extens
 If the dynamic tenant resolver returns `null`, a <<static-tenant-resolution>> is attempted next.
 
 [[static-tenant-resolution]]
-== Static tenant configuration resolution
+=== Static tenant configuration resolution
 
 When you set multiple tenant configurations in the `application.properties` file, you only need to specify how the tenant identifier gets resolved.
 To configure the resolution of the tenant identifier, use one of the following options:
@@ -739,7 +747,7 @@ These tenant resolution options are tried in the order they are listed until the
 If the tenant id remains unresolved (`null`), the default (unnamed) tenant configuration is selected.
 
 [[tenant-resolver]]
-=== Resolve with `TenantResolver`
+==== Resolve with `TenantResolver`
 
 The following `application.properties` example shows how you can resolve the tenant identifier of two tenants named `a` and `b` by using the `TenantResolver` method:
 
@@ -782,7 +790,7 @@ public class CustomTenantResolver implements TenantResolver {
 In this example, the value of the last request path segment is a tenant id, but if required, you can implement a more complex tenant identifier resolution logic.
 
 [[configure-tenant-paths]]
-=== Configure tenant paths
+==== Configure tenant paths
 
 You can use the `quarkus.oidc.tenant-paths` configuration property for resolving the tenant identifier as an alternative to using `io.quarkus.oidc.TenantResolver`.
 Here is how you can select the `hr` tenant for the `sayHello` endpoint of the `HelloResource` resource used in the previous example:
@@ -800,7 +808,7 @@ quarkus.oidc.b.tenant-paths=/*/hello <3>
 TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
 
 [[default-tenant-resolver]]
-=== Default resolution
+==== Use last request path segment as tenant id
 
 The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path.
 
@@ -840,7 +848,7 @@ Default resolution can also work for Bearer token authentication.
 Still, it might be less practical because a tenant identifier must always be set as the last path segment value.
 
 [[issuer-based-tenant-resolver]]
-=== Resolve tenants with a token issuer claim
+==== Resolve tenants with a token issuer claim
 
 OIDC tenants which support Bearer token authentication can be resolved using the access token's issuer.
 The following conditions must be met for the issuer-based resolution to work:
@@ -870,6 +878,7 @@ quarkus.oidc.tenant-b.credentials.secret=${tenant-b-client-secret}
 <2> Tenant `tenant-a` discovers the `issuer` from the OIDC provider's well-known configuration endpoint.
 <3> Tenant `tenant-b` configures the `issuer` because its OIDC provider does not support the discovery.
 
+[[tenant-resolution-for-web-app]]
 === Tenant resolution for OIDC web-app applications
 
 Tenant resolution for the OIDC `web-app` applications must be done at least 3 times during an authorization code flow, when the OIDC tenant-specific configuration affects how each of the following steps is run.

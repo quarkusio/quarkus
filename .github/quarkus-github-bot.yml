@@ -645,6 +645,12 @@ triage:
       directories:
         - extensions/vault/
         - integration-tests/vault
+    - id: netty
+      labels: [area/netty]
+      title: "netty"
+      notify: [franz1981, cescoffier, jponge]
+      directories:
+        - extensions/netty
     - id: vertx
       labels: [area/vertx]
       title: "vert.?x"

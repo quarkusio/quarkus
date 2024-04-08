@@ -28,6 +28,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-panache-common</artifactId>
         </dependency>
+        <!-- For the metamodel generation -->
+        <dependency>
+            <groupId>jakarta.data</groupId>
+            <artifactId>jakarta.data-api</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>jakarta.json.bind</groupId>
             <artifactId>jakarta.json.bind-api</artifactId>

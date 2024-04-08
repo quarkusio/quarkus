@@ -316,4 +316,23 @@ public final class RunnerClassLoader extends ClassLoader {
         public void afterRestore(Context<? extends Resource> ctx) {
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        //see comment in hashCode
+        return this == o;
+    }
+
+    @Override
+    public int hashCode() {
+        //We can return a constant as we expect to have a single instance of these;
+        //this is useful to avoid triggering a call to the identity hashcode,
+        //which could be rather inefficient as there's good chances that some component
+        //will have inflated the monitor of this instance.
+        //A hash collision would be unfortunate but unexpected, and shouldn't be a problem
+        //as the equals implementation still does honour the identity contract .
+        //See also discussion on https://github.com/smallrye/smallrye-context-propagation/pull/443
+        return 1;
+    }
+
 }

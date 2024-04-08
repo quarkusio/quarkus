@@ -165,6 +165,7 @@ public class KafkaProcessor {
         log.produce(new LogCategoryBuildItem("org.apache.kafka.clients", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.utils", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.common.telemetry", Level.WARNING));
     }
 
     @BuildStep

@@ -94,6 +94,9 @@ message SimpleRequest {
 
   // Whether server should return a given status
   EchoStatus response_status = 7;
+
+  // Simple string
+  string msg = 8;
 }
 
 // Unary response, as configured by the request.

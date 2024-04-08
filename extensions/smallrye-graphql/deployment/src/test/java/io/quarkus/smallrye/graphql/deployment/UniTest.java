@@ -44,7 +44,7 @@ public class UniTest extends AbstractGraphQLTest {
                 "       title\n" +
                 "       published\n" +
                 "       buyLink\n" +
-                "       authors {\n" +
+                "       asyncAuthors {\n" +
                 "           name\n" +
                 "           bornName\n" +
                 "       }\n" +
@@ -81,7 +81,7 @@ public class UniTest extends AbstractGraphQLTest {
             return Uni.createFrom().item(() -> String.format(AMAZON_SEARCH_FORMAT, title));
         }
 
-        public Uni<List<List<Author>>> getAuthors(@Source List<Book> books) {
+        public Uni<List<List<Author>>> getAsyncAuthors(@Source List<Book> books) {
             List<List<Author>> authorsOfAllBooks = new ArrayList<>();
             for (Book book : books) {
                 List<Author> authors = new ArrayList<>();

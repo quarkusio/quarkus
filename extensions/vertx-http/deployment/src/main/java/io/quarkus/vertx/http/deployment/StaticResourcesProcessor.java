@@ -66,7 +66,7 @@ public class StaticResourcesProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void nativeImageResource(Optional<StaticResourcesBuildItem> staticResources,
-            BuildProducer<NativeImageResourceBuildItem> producer) {
+            BuildProducer<NativeImageResourceBuildItem> producer) throws IOException {
         if (staticResources.isPresent()) {
             Set<StaticResourcesBuildItem.Entry> entries = staticResources.get().getEntries();
             List<String> metaInfResources = new ArrayList<>(entries.size());
@@ -75,10 +75,34 @@ public class StaticResourcesProcessor {
                     // TODO: do we perhaps want to register the whole directory?
                     continue;
                 }
+
                 String metaInfResourcesPath = StaticResourcesRecorder.META_INF_RESOURCES + entry.getPath();
                 metaInfResources.add(metaInfResourcesPath);
             }
             producer.produce(new NativeImageResourceBuildItem(metaInfResources));
+
+            // register all directories under META-INF/resources for reflection in order to enable
+            // the serving of index.html in arbitrarily nested directories
+            ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
+                try {
+                    Files.walkFileTree(resource, new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+                            if (e != null) {
+                                throw e;
+                            }
+                            int index = dir.toString().indexOf(StaticResourcesRecorder.META_INF_RESOURCES);
+                            if (index > 0) {
+                                producer.produce(new NativeImageResourceBuildItem(dir.toString().substring(index)));
+                            }
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+
         }
     }
 
@@ -89,7 +113,8 @@ public class StaticResourcesProcessor {
      * @return the set of static resources
      * @throws Exception
      */
-    private Set<StaticResourcesBuildItem.Entry> getClasspathResources(ApplicationArchivesBuildItem applicationArchivesBuildItem)
+    private Set<StaticResourcesBuildItem.Entry> getClasspathResources(
+            ApplicationArchivesBuildItem applicationArchivesBuildItem)
             throws Exception {
         Set<StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
 

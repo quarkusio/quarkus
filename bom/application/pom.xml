@@ -76,7 +76,7 @@
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
         <asm.version>9.3</asm.version>
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-io.version>2.15.1</commons-io.version>
         <jboss-metadata-web.version>15.1.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-utils.version>3.3.0</plexus-utils.version>
@@ -187,7 +187,7 @@
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.6.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
-        <commons-compress.version>1.21</commons-compress.version>
+        <commons-compress.version>1.26.1</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.9.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>

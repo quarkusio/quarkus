@@ -52,7 +52,7 @@
         <jackson-bom.version>2.13.4.20221013</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <junit.version>5.9.1</junit.version>
-        <commons-compress.version>1.21</commons-compress.version>
+        <commons-compress.version>1.26.1</commons-compress.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <maven-core.version>3.8.6</maven-core.version>
         <mockito.version>4.8.1</mockito.version>
@@ -60,7 +60,7 @@
         <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <quarkus.version>2.13.999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>20</maven-model-helper.version>
-        <commons-io.version>2.11.0</commons-io.version>
+        <commons-io.version>2.15.1</commons-io.version>
         <smallrye-common.version>1.13.1</smallrye-common.version>
         <jandex-maven-plugin.version>1.2.3</jandex-maven-plugin.version>
     </properties>

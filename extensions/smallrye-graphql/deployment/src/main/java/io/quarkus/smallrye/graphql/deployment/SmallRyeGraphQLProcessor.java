@@ -332,10 +332,9 @@ public class SmallRyeGraphQLProcessor {
 
     private void registerExtraScalarsInSchema(List<ExtraScalar> extraScalars) {
         for (ExtraScalar extraScalar : extraScalars) {
-            switch (extraScalar) {
-                case UUID:
-                    Scalars.addUuid();
-            }
+            Scalars.registerCustomScalarInSchema(
+                    extraScalar.getGraphQLScalarType().getName(),
+                    extraScalar.getValueClass().getName());
         }
     }
 

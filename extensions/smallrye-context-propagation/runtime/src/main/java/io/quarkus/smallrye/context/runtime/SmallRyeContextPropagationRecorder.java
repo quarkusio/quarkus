@@ -14,7 +14,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
-import io.smallrye.context.SmallRyeContextManagerProvider;
 import io.smallrye.context.SmallRyeManagedExecutor;
 import io.smallrye.context.SmallRyeThreadContext;
 
@@ -31,7 +30,7 @@ public class SmallRyeContextPropagationRecorder {
         // build the manager at static init time
         // in the live-reload mode, the provider instance may be already set in the previous start
         if (ContextManagerProvider.INSTANCE.get() == null) {
-            ContextManagerProvider contextManagerProvider = new SmallRyeContextManagerProvider();
+            ContextManagerProvider contextManagerProvider = new QuarkusContextManagerProvider();
             ContextManagerProvider.register(contextManagerProvider);
         }
 

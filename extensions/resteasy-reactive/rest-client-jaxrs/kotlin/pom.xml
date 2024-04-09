@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-client-jaxrs-kotlin</artifactId>
     <name>Quarkus - REST - Kotlin</name>
-    <description>Provides Kotlin support for RESTEasy Reactive</description>
+    <description>Provides Kotlin support for Quarkus REST</description>
 
     <dependencies>
         <dependency>

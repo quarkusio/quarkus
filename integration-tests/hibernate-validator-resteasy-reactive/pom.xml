@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-integration-test-hibernate-validator-resteasy-reactive</artifactId>
     <name>Quarkus - Integration Tests - Hibernate Validator</name>
-    <description>Module that contains Hibernate Validator/Bean Validation related tests using RESTEasy Reactive</description>
+    <description>Module that contains Hibernate Validator/Bean Validation related tests using Quarkus REST</description>
 
     <dependencies>
         <dependency>

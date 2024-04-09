@@ -6,6 +6,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -687,6 +688,24 @@ public class LoggingSetupRecorder {
             handler.setTruncate(config.truncate);
             handler.setUseCountingFraming(config.useCountingFraming);
             handler.setLevel(config.level);
+            if (config.maxLength.isPresent()) {
+                BigInteger maxLen = config.maxLength.get().asBigInteger();
+                if (maxLen.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                    errorManager.error(
+                            "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value", null,
+                            ErrorManager.GENERIC_FAILURE);
+                    maxLen = BigInteger.valueOf(Integer.MAX_VALUE);
+                } else {
+                    BigInteger minimumAllowedMaxLength = BigInteger.valueOf(128);
+                    if (maxLen.compareTo(minimumAllowedMaxLength) < 0) {
+                        errorManager.error(
+                                "Using 128 as the value of maxLength for SyslogHandler as using a smaller value is not allowed",
+                                null, ErrorManager.GENERIC_FAILURE);
+                        maxLen = minimumAllowedMaxLength;
+                    }
+                }
+                handler.setMaxLength(maxLen.intValue());
+            }
 
             Formatter formatter = null;
             boolean formatterWarning = false;

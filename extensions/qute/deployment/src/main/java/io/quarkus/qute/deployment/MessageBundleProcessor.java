@@ -205,7 +205,7 @@ public class MessageBundleProcessor {
                     Map<String, Path> localeToMergeCandidate = new HashMap<>();
                     for (Path messageFile : messageFiles) {
                         String fileName = messageFile.getFileName().toString();
-                        if (fileName.startsWith(name)) {
+                        if (bundleNameMatchesFileName(fileName, name)) {
                             final String locale;
                             int postfixIdx = fileName.indexOf('.');
                             if (postfixIdx == name.length()) {
@@ -313,6 +313,30 @@ public class MessageBundleProcessor {
         }
 
         return bundles;
+    }
+
+    static boolean bundleNameMatchesFileName(String fileName, String name) {
+        int fileSeparatorIdx = fileName.indexOf('.');
+        // Remove file extension if exists
+        if (fileSeparatorIdx > -1) {
+            fileName = fileName.substring(0, fileSeparatorIdx);
+        }
+        // Split the filename and the bundle name by underscores
+        String[] fileNameParts = fileName.split("_");
+        String[] nameParts = name.split("_");
+
+        if (fileNameParts.length < nameParts.length) {
+            return false;
+        }
+
+        // Compare each part of the filename with the corresponding part of the bundle name
+        for (int i = 0; i < nameParts.length; i++) {
+            if (!fileNameParts[i].equals(nameParts[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Record(value = STATIC_INIT)

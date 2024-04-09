@@ -259,7 +259,7 @@ public class InfinispanDevServiceProcessor {
 
         public QuarkusInfinispanContainer(String clientName, InfinispanDevServicesConfig config,
                 LaunchMode launchMode, boolean useSharedNetwork) {
-            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getMajorMinor()));
+            super(config.imageName.orElse(IMAGE_BASENAME + ":" + Version.getVersion()));
             this.fixedExposedPort = config.port;
             this.useSharedNetwork = useSharedNetwork;
             if (launchMode == DEVELOPMENT) {

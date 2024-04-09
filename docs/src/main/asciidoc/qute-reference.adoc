@@ -2436,8 +2436,10 @@ The `io.quarkus.qute.TemplateGlobal` annotation can be used to denote static fie
 
 Global variables are:
 
-* added to the data map of any `TemplateInstance` during initialization,
+* added as _computed data_ of any `TemplateInstance` during initialization,
 * accessible with the `global:` namespace.
+
+NOTE: When using `TemplateInstance#computedData(String, Function<String, Object>)` a mapping function is associated with a specific key and this function is used each time a value for the given key is requested. In case of global variables, a static method is called or a static field is read in the mapping function.
 
 .Global Variables Definition
 [source,java]

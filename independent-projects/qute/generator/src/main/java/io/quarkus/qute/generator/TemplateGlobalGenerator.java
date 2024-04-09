@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -24,6 +25,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -74,22 +76,27 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
 
         for (Entry<String, AnnotationTarget> entry : targets.entrySet()) {
             ResultHandle name = accept.load(entry.getKey());
+            FunctionCreator fun = accept.createFunction(Function.class);
+            BytecodeCreator funBytecode = fun.getBytecode();
             ResultHandle global;
             switch (entry.getValue().kind()) {
                 case FIELD:
                     FieldInfo field = entry.getValue().asField();
                     validate(field);
-                    global = accept.readStaticField(FieldDescriptor.of(field));
+                    global = funBytecode.readStaticField(FieldDescriptor.of(field));
                     break;
                 case METHOD:
                     MethodInfo method = entry.getValue().asMethod();
                     validate(method);
-                    global = accept.invokeStaticMethod(MethodDescriptor.of(method));
+                    global = funBytecode.invokeStaticMethod(MethodDescriptor.of(method));
                     break;
                 default:
                     throw new IllegalStateException("Unsupported target: " + entry.getValue());
             }
-            accept.invokeInterfaceMethod(Descriptors.TEMPLATE_INSTANCE_DATA, accept.getMethodParam(0), name, global);
+            funBytecode.returnValue(global);
+            // Global variables are computed lazily
+            accept.invokeInterfaceMethod(Descriptors.TEMPLATE_INSTANCE_COMPUTED_DATA, accept.getMethodParam(0), name,
+                    fun.getInstance());
         }
         accept.returnValue(null);
 

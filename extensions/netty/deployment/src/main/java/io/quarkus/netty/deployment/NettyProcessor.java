@@ -105,6 +105,8 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")

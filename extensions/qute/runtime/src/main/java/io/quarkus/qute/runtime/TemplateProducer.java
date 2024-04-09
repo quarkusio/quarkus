@@ -353,7 +353,8 @@ public class TemplateProducer {
             private TemplateInstance templateInstance() {
                 TemplateInstance instance = template().instance();
                 if (dataMap != null) {
-                    dataMap.forEach(instance::data);
+                    dataMap.forEachData(instance::data);
+                    dataMap.forEachComputedData(instance::computedData);
                 } else if (data != null) {
                     instance.data(data);
                 }

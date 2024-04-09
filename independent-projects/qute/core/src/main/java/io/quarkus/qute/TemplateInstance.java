@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -32,7 +33,7 @@ public interface TemplateInstance {
 
     /**
      * Set the the root data object. Invocation of this method removes any data set previously by
-     * {@link #data(String, Object)}.
+     * {@link #data(String, Object)} and {@link #computedData(String, Function)}.
      *
      * @param data
      * @return
@@ -42,14 +43,29 @@ public interface TemplateInstance {
     }
 
     /**
-     * Put the data in a map. The map will be used as the root context object during rendering. Invocation of this
-     * method removes the root data object previously set by {@link #data(Object)}.
+     * Put the data in a map. The map will be used as the root context object during rendering. Remove the root data object
+     * previously set by {@link #data(Object)}.
      *
      * @param key
      * @param data
      * @return self
      */
     default TemplateInstance data(String key, Object data) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Associates the specified mapping function with the specified key. The function is applied each time a value for the given
+     * key is requested. Also removes the root data object previously set by {@link #data(Object)}.
+     * <p>
+     * If the key is already associated with a value using the {@link #data(String, Object)} method then the mapping function is
+     * never used.
+     *
+     * @param key
+     * @param function
+     * @return self
+     */
+    default TemplateInstance computedData(String key, Function<String, Object> function) {
         throw new UnsupportedOperationException();
     }
 

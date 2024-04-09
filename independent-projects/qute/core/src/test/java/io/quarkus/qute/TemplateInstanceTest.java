@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,5 +41,27 @@ public class TemplateInstanceTest {
         Template hello = engine.parse("Hello {foo}!");
         String generatedId = hello.getGeneratedId();
         assertEquals(generatedId, hello.instance().getTemplate().getGeneratedId());
+    }
+
+    @Test
+    public void testComputeData() {
+        Engine engine = Engine.builder().addDefaults().build();
+        TemplateInstance instance = engine.parse("Hello {foo} and {bar}!").instance();
+        AtomicBoolean barUsed = new AtomicBoolean();
+        AtomicBoolean fooUsed = new AtomicBoolean();
+        instance
+                .computedData("bar", key -> {
+                    barUsed.set(true);
+                    return key.length();
+                })
+                .data("bar", 30)
+                .computedData("foo", key -> {
+                    fooUsed.set(true);
+                    return key.toUpperCase();
+                });
+        assertFalse(fooUsed.get());
+        assertEquals("Hello FOO and 30!", instance.render());
+        assertTrue(fooUsed.get());
+        assertFalse(barUsed.get());
     }
 }

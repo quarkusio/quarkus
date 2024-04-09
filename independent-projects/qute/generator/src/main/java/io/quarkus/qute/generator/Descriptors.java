@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,6 +96,9 @@ public final class Descriptors {
             NotFound.class, EvalContext.class);
     public static final MethodDescriptor TEMPLATE_INSTANCE_DATA = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
             TemplateInstance.class, String.class, Object.class);
+    public static final MethodDescriptor TEMPLATE_INSTANCE_COMPUTED_DATA = MethodDescriptor.ofMethod(TemplateInstance.class,
+            "computedData",
+            TemplateInstance.class, String.class, Function.class);
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);

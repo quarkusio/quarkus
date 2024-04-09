@@ -10,20 +10,20 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 3
-:topics: http,web,renarde,full-stack,qute,quinoa,web-bundler,mvc,ssr,nodejs,npm,javascript,css,jsf
-:extensions: o.quarkiverse.qute.web:quarkus-qute-web,io.quarkiverse.renarde:quarkus-renarde,io.quarkiverse.web-bundler:quarkus-web-bundler,io.quarkiverse.quinoa:quarkus-quinoa
+:topics: http,web,renarde,full-stack,qute,quinoa,web-bundler,mvc,ssr,nodejs,npm,javascript,css,jsf,faces
+:extensions: io.quarkiverse.qute.web:quarkus-qute-web,io.quarkiverse.renarde:quarkus-renarde,io.quarkiverse.web-bundler:quarkus-web-bundler,io.quarkiverse.quinoa:quarkus-quinoa
 
-Quarkus provides different extensions to create web applications, this document aims to provide directions on which extension to use for different use cases.
+Quarkus provides several extensions to create web applications, this document aims to provide directions on which extension to use for different use cases.
 
 == The basics
 
-=== Serving Static Resources
+=== Serving static resources
 
 Let's assume you have a Quarkus backend, and you want to serve static files. This is the most basic case, it is supported out of the box with all our Vert.x based extensions, you must place them in the `META-INF/resources` directory of your application.
 
-You can find more information in xref:http-reference#serving-static-resources[The HTTP Reference].
+You can find more information in the xref:http-reference#serving-static-resources[HTTP reference guide].
 
-=== Serving Scripts, Styles, and web libraries
+=== Serving scripts, styles, and web libraries
 
 However, if you want to insert scripts, styles, and libraries in your web pages, you have 3 options:
 
@@ -34,7 +34,7 @@ c. Package your scripts (js, ts), styles (css, scss), and web dependencies toget
 NOTE: *We recommend using a bundler for production* as it offers better control, consistency, security, and performance. The good news is that Quarkus makes it really easy and fast with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Quarkus Web Bundler extension].
 
 [[bundling]]
-=== Bundling Scripts, Styles, and Libraries
+=== Bundling scripts, styles, and libraries
 
 There are two ways to bundle your web assets:
 
@@ -78,14 +78,14 @@ Here is a simple example of a Qute template:
 
 <1> With the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], this expression will be replaced by the bundled scripts and styles.
 <2> You can directly use the HTTP parameters in your templates.
-<3> This expression is validated. Try to change the expression to `cdi:Product.notHere` and the build should fail.
+<3> This expression is validated. Try to change the expression to `cdi:Product.notHere` and the build will fail.
 <4> If you install xref:ide-tooling.adoc[Quarkus IDEs plugins], you will have autocompletion, link to implementation and validation.
 
 === Model-View-Controller (MVC)
 
 The MVC approach is also made very easy with Quarkus thanks to https://docs.quarkiverse.io/quarkus-renarde/dev/index.html[the Renarde extension], a Rails-like framework using Qute.
 
-Associated with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], the road is open to build modern web applications for all you needs. Here is what a simple Renarde controller looks like:
+Associated with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], the road is open to build modern web applications for all your needs. Here is what a simple Renarde controller looks like:
 
 .src/main/java/rest/Todos.java
 [source,java]
@@ -167,7 +167,7 @@ Quarkus provides very solid tools for creating or integrating Single Page Applic
 
 Quarkus is an excellent choice for both full-stack web components and full-stack microservices aka Micro-frontends. By utilizing the Web Bundler or Quinoa, you can significantly reduce boilerplate code and manage multiple services efficiently without much configuration duplication.
 
-For example the https://github.com/quarkusio/search.quarkus.io[Guide search] on https://quarkus.io[quarkus.io] uses the Web Bundler to create a full-stack web-component. With Lit Element for the web-component and OpenSearch for the indexation it is a nice way to enhance the static web-site experience in a dynamic way.
+For example the https://github.com/quarkusio/search.quarkus.io[Quarkus documentation search engine] on https://quarkus.io[quarkus.io] uses the Web Bundler to create a full-stack web-component. With Lit Element for the web-component and OpenSearch for the indexation it is a nice way to enhance the static web-site experience in a dynamic way.
 
 More content about this is coming soon...
 // Blog article in prep: https://github.com/quarkusio/quarkusio.github.io/issues/1934
@@ -176,10 +176,9 @@ More content about this is coming soon...
 
 We described Quarkus most common ways to create web applications but there are other options:
 
-* Vaadin Flow is a unique framework that lets you build web apps directly from Java code without writing HTML or JavaScript
-* JavaServer Faces is a specification for building component-based web apps in Java. There are 3 extensions to help with JSF in Quarkus: MyFaces, OmniFaces, PrimeFaces.
-// 👆 Blog article in prep https://github.com/quarkusio/quarkusio.github.io/issues/1935
-* Create xref:building-my-first-extension.adoc[a new extension] for your favorite web framework
+* https://quarkus.io/extensions/com.vaadin/vaadin-quarkus-extension/[Vaadin Flow extension], for this unique framework that lets you build web apps directly from Java code without writing HTML or JavaScript.
+* JavaServer Faces (jsf) is a specification for building component-based web apps in Java. It available in Quarkus, the https://quarkus.io/extensions/org.apache.myfaces.core.extensions.quarkus/myfaces-quarkus/[MyFaces] extension is an implementation of Faces for Quarkus. https://quarkus.io/extensions/io.quarkiverse.primefaces/quarkus-primefaces/[PrimeFaces] is a Faces components suite, and https://quarkus.io/extensions/io.quarkiverse.omnifaces/quarkus-omnifaces/[OmniFaces], a utility library. More information is available in https://www.melloware.com/quarkus-faces-using-jsf-with-quarkus/[this blog post].
+* Create xref:building-my-first-extension.adoc[a new extension] for your favorite web framework.
 
 == Testing your web applications
 
@@ -246,16 +245,16 @@ Some guidelines:
 
 * You have an existing frontend configured with a npm-compatible build tool, Quinoa is the most direct option.
 * You have a dedicated frontend team familiar with tools such as NPM, Yarn and other for building Single Page Apps.
-* If you want to write Javascript unit tests (such as Jest, Jasmine, ..), it is not possible with the Web Bundler. However, you could publish a components library on NPM and consume it from the Web Bundler.
-* If you use very specific bundling options or specific tools in your build process
-* If you love package.json and configurations tweaking
+* You want to write Javascript unit tests (such as Jest, Jasmine, ..), it is not possible with the Web Bundler. However, you could publish a components library on NPM and consume it from the Web Bundler.
+* You use very specific bundling options or specific tools in your build process
+* You love package.json and configurations tweaking
 
 *Go for Web Bundler:*
 
 * For simple web applications, the Web Bundler is the easiest and fastest way to get started
-* If you prefer to stay close to the Maven/Gradle ecosystem
+* You prefer to stay close to the Maven/Gradle ecosystem
 (Node.js is not needed), it uses an extremely fast bundler for the web (esbuild)
-* If you want to reduce boilerplate and configuration
+* You want to reduce boilerplate and configuration
 
 
 === How do I scale a Quarkus Web Application?
@@ -263,9 +262,9 @@ Some guidelines:
 Serving a few static pages and scripts from an existing Quarkus backend is not a big overhead, so scaling the full app is usually the simplest option.
 You could also split it in two services: one for the backend and one for the frontend. However, in most cases, this approach wouldn’t yield substantial benefits compared to the initial method.
 
-If your application involves a substantial number of static resources, consider using a CDN. Both the Web-Bundler and Quinoa can be configured to work seamlessly with a CDN, providing improved performance and distribution of assets.
+If your application involves a substantial number of static resources, consider using a CDN. Both the Web Bundler and Quinoa can be configured to work seamlessly with a CDN, providing improved performance and distribution of assets.
 
-It would be nice to have a blog article and benchmark about this topic, please open an issue if you are interested in writing it.
+// It would be nice to have a blog article and benchmark about this topic.
 
 
 

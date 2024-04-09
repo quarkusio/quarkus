@@ -21,9 +21,9 @@ For Servlet support, Quarkus employs a customized Undertow version that operates
 When Undertow is present, RESTEasy functions as a Servlet filter.
 In its absence, RESTEasy operates directly on Vert.x without involving Servlets.
 
-== Serving Static Resources
+== Serving static resources
 
-If you are looking to use Quarkus for your Web Application, you might want to check the xref:web.adoc[Quarkus for the Web] guide.
+If you are looking to use Quarkus for a web application, look at the xref:web.adoc[Quarkus for the Web] guide.
 
 === From the application jar
 
@@ -33,30 +33,31 @@ Quarkus can be used without Servlet, following this convention allows existing c
 location to function correctly.
 
 [[from-mvnpm]]
-=== From MVNPM
+=== From mvnpm
 
-If you are using https://mvnpm.org/[mvnpm.org], like the following JQuery one:
+If you are using https://mvnpm.org/[mvnpm], as for the following JQuery dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>org.mvnpm</groupId>
-    <artifactId>jquery</artifactId>
-    <version>3.7.1</version>
+    <artifactId>bootstrap</artifactId>
+    <version>5.3.3</version>
+    <scope>runtime</scope>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("org.mvnpm:jquery:3.7.1")
+runtimeOnly("org.mvnpm:bootstrap:5.3.3")
 ----
 
-You can use it in your html like this:
+You can import it in your HTML like this:
 [source,html]
 ----
-<script src="/_static/jquery/3.7.1/dist/jquery.min.js"></script>
+<script src="_static/bootstrap/5.3.3/dist/css/bootstrap.min.css"></script>
 ----
 
 

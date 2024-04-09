@@ -61,6 +61,7 @@ import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.TlsConfig;
+import io.quarkus.smallrye.context.deployment.ContextPropagationInitializedBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorCandidateBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
@@ -210,7 +211,9 @@ public class OidcBuildStep {
             OidcConfig config,
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
-            TlsConfig tlsConfig) {
+            TlsConfig tlsConfig,
+            // this is required for setup ordering: we need CP set up
+            ContextPropagationInitializedBuildItem cpInitializedBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
                 .destroyer(TenantConfigBean.Destroyer.class)

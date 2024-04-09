@@ -38,6 +38,7 @@ public class DeploymentInfo {
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
+    private boolean servletPresent = false;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -189,6 +190,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setDevelopmentMode(boolean developmentMode) {
         this.developmentMode = developmentMode;
+        return this;
+    }
+
+    public boolean isServletPresent() {
+        return servletPresent;
+    }
+
+    public DeploymentInfo setServletPresent(boolean servletPresent) {
+        this.servletPresent = servletPresent;
         return this;
     }
 }

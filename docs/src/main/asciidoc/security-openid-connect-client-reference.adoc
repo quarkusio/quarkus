@@ -410,7 +410,7 @@ import io.quarkus.oidc.client.runtime.TokensHelper;
 public class OidcClientResource {
 
     @Inject
-    OidcClientCreator clients;
+    OidcClientCreator oidcClientCreator;
     TokensHelper tokenHelper = new TokensHelper();
 
     @Inject

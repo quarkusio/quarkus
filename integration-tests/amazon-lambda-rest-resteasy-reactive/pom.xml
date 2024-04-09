@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-integration-test-amazon-lambda-rest-resteasy-reactive</artifactId>
     <name>Quarkus - Integration Tests - Amazon Lambda AWS Gateway REST API</name>
-    <description>Module that contains Amazon Lambda related tests for RESTEasy Reactive</description>
+    <description>Module that contains Amazon Lambda related tests for Quarkus REST</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

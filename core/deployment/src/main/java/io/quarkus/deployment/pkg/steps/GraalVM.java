@@ -181,13 +181,25 @@ public final class GraalVM {
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
         public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", "17", Distribution.GRAALVM);
-        public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
         public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
 
-        public static final Version MINIMUM = VERSION_22_2_0;
+        /**
+         * The minimum version of GraalVM supported by Quarkus.
+         * Versions prior to this are expected to cause major issues.
+         */
+        public static final Version MINIMUM = VERSION_22_3_0;
+        /**
+         * The current version of GraalVM supported by Quarkus.
+         * This version is the one actively being tested and is expected to give the best experience.
+         */
         public static final Version CURRENT = VERSION_23_1_0;
+        /**
+         * The minimum version of GraalVM officially supported by Quarkus.
+         * Versions prior to this are expected to work but are not given the same level of testing or priority.
+         */
+        public static final Version MINIMUM_SUPPORTED = CURRENT;
 
         final String fullVersion;
         public final Runtime.Version javaVersion;
@@ -225,6 +237,10 @@ public final class GraalVM {
 
         boolean isObsolete() {
             return this.compareTo(MINIMUM) < 0;
+        }
+
+        boolean isSupported() {
+            return this.compareTo(MINIMUM_SUPPORTED) >= 0;
         }
 
         boolean isMandrel() {

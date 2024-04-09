@@ -107,7 +107,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode) {
+            LaunchMode launchMode,
+            boolean servletPresent) {
+
+        info.setServletPresent(servletPresent);
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));

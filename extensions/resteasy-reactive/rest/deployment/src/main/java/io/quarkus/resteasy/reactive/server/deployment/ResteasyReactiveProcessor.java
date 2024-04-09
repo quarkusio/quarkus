@@ -1280,7 +1280,7 @@ public class ResteasyReactiveProcessor {
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, vertxConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode());
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));

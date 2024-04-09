@@ -203,7 +203,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     @Override
     public RestClientBuilderImpl executorService(ExecutorService executor) {
         throw new IllegalArgumentException("Specifying executor service is not supported. " +
-                "The underlying call in RestEasy Reactive is non-blocking, " +
+                "The underlying call is non-blocking, " +
                 "there is no reason to offload the call to a separate thread pool.");
     }
 

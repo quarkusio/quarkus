@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-jsonb</artifactId>
     <name>Quarkus - REST - JSON-B - Runtime</name>
-    <description>JSON-B serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
+    <description>JSON-B serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
 
     <dependencies>
         <dependency>

@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-integration-test-resteasy-reactive-kotlin-parent</artifactId>
-    <name>Quarkus - Integration Tests - RESTEasy Reactive Kotlin - Parent</name>
+    <name>Quarkus - Integration Tests - Quarkus REST Kotlin - Parent</name>
     <packaging>pom</packaging>
 
     <modules>

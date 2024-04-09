@@ -832,8 +832,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git clone -b 3.9 https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Prepare build reports archive
         if: always()

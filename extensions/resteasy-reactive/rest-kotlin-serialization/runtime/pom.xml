@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-rest-kotlin-serialization</artifactId>
     <name>Quarkus - REST - Kotlin Serialization - Runtime</name>
-    <description>Kotlin Serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
+    <description>Kotlin Serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.</description>
 
     <dependencies>
         <dependency>

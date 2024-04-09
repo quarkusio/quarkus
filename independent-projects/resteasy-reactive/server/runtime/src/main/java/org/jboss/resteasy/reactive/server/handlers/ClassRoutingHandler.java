@@ -33,10 +33,13 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
+    final boolean servletPresent;
 
-    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset) {
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset,
+            boolean servletPresent) {
         this.mappers = mappers;
         this.parameterOffset = parameterOffset;
+        this.servletPresent = servletPresent;
     }
 
     @Override
@@ -226,7 +229,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
         ProvidersImpl providers = requestContext.getProviders();
         ExceptionMapper<NotFoundException> exceptionMapper = providers.getExceptionMapper(NotFoundException.class);
 
-        if (exceptionMapper == null) {
+        if (exceptionMapper == null || servletPresent) {
             if (requestContext.resumeExternalProcessing()) {
                 return;
             }

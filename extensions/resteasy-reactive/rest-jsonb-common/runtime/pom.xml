@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-rest-jsonb-common</artifactId>
     <name>Quarkus - REST - JSON-B Common Bits - Runtime</name>
-    <description>Common classes for JSON-B serialization support for RESTEasy Reactive</description>
+    <description>Common classes for JSON-B serialization support for Quarkus REST</description>
 
     <dependencies>
         <dependency>

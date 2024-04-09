@@ -41,4 +41,5 @@ nb-configuration.xml
 .envrc
 .jekyll-cache
 .mvn/.gradle-enterprise
+.mvn/.develocity/
 .quarkus

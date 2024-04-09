@@ -96,6 +96,7 @@ class SmallRyeContextPropagationProcessor {
     void build(SmallRyeContextPropagationRecorder recorder,
             ExecutorBuildItem executorBuildItem,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            BuildProducer<ContextPropagationInitializedBuildItem> cpInitializedBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
@@ -111,6 +112,8 @@ class SmallRyeContextPropagationProcessor {
                         .unremovable()
                         .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
                         .setRuntimeInit().done());
+
+        cpInitializedBuildItem.produce(new ContextPropagationInitializedBuildItem());
     }
 
     // transform IPs for ManagedExecutor/ThreadContext that use config annotation and don't yet have @NamedInstance

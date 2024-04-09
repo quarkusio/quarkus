@@ -57,6 +57,7 @@ updates:
       - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
       - dependency-name: io.smallrye:*
+      - dependency-name: io.smallrye.beanbag:*
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
       - dependency-name: io.smallrye.reactive:*

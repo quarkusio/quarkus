@@ -55,6 +55,12 @@ public class CodeFlowUserInfoResource {
     }
 
     @GET
+    @Path("/code-flow-user-info-github-cache-disabled")
+    public String accessGitHubCacheDisabled() {
+        return access();
+    }
+
+    @GET
     @Path("/code-flow-user-info-dynamic-github")
     public String accessDynamicGitHub() {
         return access();

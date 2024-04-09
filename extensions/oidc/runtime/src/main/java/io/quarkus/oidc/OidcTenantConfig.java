@@ -316,12 +316,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * Allow inlining UserInfo in IdToken instead of caching it in the token cache.
-     * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+     * This property is only checked when an internal IdToken is generated when OAuth2 providers do not return IdToken.
      * Inlining UserInfo in the generated IdToken allows to store it in the session cookie and avoids introducing a cached
      * state.
+     * <p>
+     * Inlining UserInfo in the generated IdToken is enabled if the session cookie is encrypted
+     * and the UserInfo cache is not enabled or caching UserInfo is disabled for the current tenant
+     * with the {@link #allowUserInfoCache} property set to `false`.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean cacheUserInfoInIdtoken = false;
+    @ConfigItem
+    public Optional<Boolean> cacheUserInfoInIdtoken = Optional.empty();
 
     @ConfigGroup
     public static class Logout {
@@ -1975,12 +1979,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         this.allowUserInfoCache = allowUserInfoCache;
     }
 
-    public boolean isCacheUserInfoInIdtoken() {
+    public Optional<Boolean> isCacheUserInfoInIdtoken() {
         return cacheUserInfoInIdtoken;
     }
 
     public void setCacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
-        this.cacheUserInfoInIdtoken = cacheUserInfoInIdtoken;
+        this.cacheUserInfoInIdtoken = Optional.of(cacheUserInfoInIdtoken);
     }
 
     public IntrospectionCredentials getIntrospectionCredentials() {

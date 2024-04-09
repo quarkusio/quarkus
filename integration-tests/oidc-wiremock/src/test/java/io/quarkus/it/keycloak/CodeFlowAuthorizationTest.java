@@ -284,6 +284,18 @@ public class CodeFlowAuthorizationTest {
             JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
 
+            long issuedAt = idTokenClaims.getLong("iat");
+            long expiresAt = idTokenClaims.getLong("exp");
+            assertEquals(299, expiresAt - issuedAt);
+
+            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            Date date = sessionCookie.getExpires();
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
+            // This test enables the token refresh, in this case the cookie age is extended by additional 5 mins
+            // to minimize the risk of the browser losing immediately after it has expired, for this cookie
+            // be returned to Quarkus, analyzed and refreshed
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+
             // refresh
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
@@ -291,6 +303,15 @@ public class CodeFlowAuthorizationTest {
 
             idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+
+            issuedAt = idTokenClaims.getLong("iat");
+            expiresAt = idTokenClaims.getLong("exp");
+            assertEquals(305, expiresAt - issuedAt);
+
+            sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            date = sessionCookie.getExpires();
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
 
             webClient.getCookieManager().clearCookies();
         }
@@ -448,6 +469,7 @@ public class CodeFlowAuthorizationTest {
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
                                         + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\","
+                                        + "\"expires_in\": 299,"
                                         + "  \"refresh_token\": \"refresh1234\""
                                         + "}")));
         wireMockServer
@@ -464,7 +486,8 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
-                                        + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\""
+                                        + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\","
+                                        + "\"expires_in\": 305"
                                         + "}")));
 
     }

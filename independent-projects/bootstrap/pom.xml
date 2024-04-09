@@ -73,7 +73,7 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.3.0</smallrye-common.version>
+        <smallrye-common.version>2.4.0</smallrye-common.version>
         <smallrye-beanbag.version>1.4.0</smallrye-beanbag.version>
         <gradle-tooling.version>8.6</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.10</quarkus-fs-util.version>

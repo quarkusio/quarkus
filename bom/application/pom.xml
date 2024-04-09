@@ -50,7 +50,7 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.3.0</smallrye-common.version>
+        <smallrye-common.version>2.4.0</smallrye-common.version>
         <smallrye-config.version>3.7.1</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>

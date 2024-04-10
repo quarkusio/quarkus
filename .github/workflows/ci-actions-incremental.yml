@@ -18,6 +18,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -33,6 +35,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   workflow_dispatch:
 
 concurrency:
@@ -89,18 +93,12 @@ jobs:
     name: "Initial JDK 17 Build"
     runs-on: ubuntu-latest
     # Skip main in forks
-    # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
+    # Skip draft PRs, rerun as soon as its removed
     if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \
-             contains(github.event.pull_request.title, 'wip ') == false && \
-             contains(github.event.pull_request.title, '[wip]') == false && \
-             (
-               github.event.action != 'edited' || \
-               contains(github.event.changes.title.from, 'wip ') || \
-               contains(github.event.changes.title.from, '[wip]') \
-             ) \
+             github.event.action != 'edited' \
            ) \
          )"
     outputs:
@@ -210,7 +208,7 @@ jobs:
           7z a -tzip build-reports.zip -r \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -400,7 +398,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -510,7 +508,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -596,7 +594,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -688,7 +686,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -780,7 +778,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -937,7 +935,7 @@ jobs:
               'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
               'integration-tests/virtual-threads/target/build-report.json' \
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -1018,7 +1016,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -1130,7 +1128,7 @@ jobs:
               '**/build/test-results/test/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()

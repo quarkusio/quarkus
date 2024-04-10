@@ -275,6 +275,14 @@ public class OidcCommonConfig {
             public Provider secretProvider = new Provider();
 
             /**
+             * String representation of a private key. If provided, indicates that JWT is signed using a private key in PEM or
+             * JWK format.
+             * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
+             */
+            @ConfigItem
+            public Optional<String> key = Optional.empty();
+
+            /**
              * If provided, indicates that JWT is signed using a private key in PEM or JWK format.
              * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
              */
@@ -397,6 +405,14 @@ public class OidcCommonConfig {
 
             public void setAudience(String audience) {
                 this.audience = Optional.of(audience);
+            }
+
+            public Optional<String> getKey() {
+                return key;
+            }
+
+            public void setKey(String key) {
+                this.key = Optional.of(key);
             }
 
             public Optional<String> getKeyFile() {

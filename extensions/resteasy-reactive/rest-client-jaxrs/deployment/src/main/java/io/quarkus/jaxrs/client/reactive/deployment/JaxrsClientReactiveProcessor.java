@@ -121,6 +121,7 @@ import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -190,6 +191,7 @@ public class JaxrsClientReactiveProcessor {
     private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
     private static final String BYTE_ARRAY_SIGNATURE = "[B";
+    private static final String FILE_UPLOAD_SIGNATURE = "L" + FileUpload.class.getName().replace('.', '/') + ";";
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
@@ -201,6 +203,8 @@ public class JaxrsClientReactiveProcessor {
             String.class, Object.class);
     private static final MethodDescriptor MULTIVALUED_MAP_ADD = MethodDescriptor.ofMethod(MultivaluedMap.class, "add",
             void.class, Object.class, Object.class);
+    private static final MethodDescriptor MULTIVALUED_MAP_ADD_ALL = MethodDescriptor.ofMethod(MultivaluedMap.class, "addAll",
+            void.class, Object.class, Object[].class);
     private static final MethodDescriptor PATH_GET_FILENAME = MethodDescriptor.ofMethod(Path.class, "getFileName",
             Path.class);
     private static final MethodDescriptor OBJECT_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
@@ -956,7 +960,7 @@ public class JaxrsClientReactiveProcessor {
                             Supplier<FieldDescriptor> beanParamDescriptorsField = classContext
                                     .getLazyBeanParameterDescriptors(beanParam.type);
 
-                            formParams = addBeanParamData(jandexMethod, methodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, paramIdx, methodCreator, handleBeanParamMethod,
                                     invocationBuilderRef, classContext, beanParam.getItems(),
                                     methodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     restClientInterface.getClassName(),
@@ -1024,8 +1028,9 @@ public class JaxrsClientReactiveProcessor {
                         } else if (param.parameterType == ParameterType.FORM) {
                             formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
                             // NOTE: don't use type here, because we're not going through the collection converters and stuff
-                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx), param.declaredType,
-                                    param.signature,
+                            Type parameterType = jandexMethod.parameterType(paramIdx);
+                            addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
+                                    parameterType, param.declaredType, param.signature, index,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
@@ -1173,6 +1178,7 @@ public class JaxrsClientReactiveProcessor {
                 || signature.equals(BUFFER_SIGNATURE)
                 || signature.equals(BYTE_ARRAY_SIGNATURE)
                 || signature.equals(MULTI_BYTE_SIGNATURE)
+                || signature.equals(FILE_UPLOAD_SIGNATURE)
                 || partType != null);
     }
 
@@ -1459,7 +1465,7 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator, handleBeanParamMethod,
                                     invocationBuilderRef, subContext, beanParam.getItems(),
                                     paramValue, methodTarget, index,
                                     interfaceClass.name().toString(),
@@ -1586,7 +1592,7 @@ public class JaxrsClientReactiveProcessor {
                             AssignableResultHandle invocationBuilderRef = handleBeanParamMethod
                                     .createVariable(Invocation.Builder.class);
                             handleBeanParamMethod.assign(invocationBuilderRef, handleBeanParamMethod.getMethodParam(0));
-                            formParams = addBeanParamData(jandexMethod, subMethodCreator, handleBeanParamMethod,
+                            formParams = addBeanParamData(jandexMethod, methodIndex, subMethodCreator, handleBeanParamMethod,
                                     invocationBuilderRef, subContext, beanParam.getItems(),
                                     subMethodCreator.getMethodParam(paramIdx), methodTarget, index,
                                     interfaceClass.name().toString(),
@@ -1771,8 +1777,8 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private void handleMultipartField(String formParamName, String partType, String partFilename,
-            String type,
-            String parameterGenericType, ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            String type, String parameterSignature,
+            ResultHandle fieldValue, AssignableResultHandle multipartForm,
             BytecodeCreator methodCreator,
             ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations,
             ResultHandle genericType, String errorLocation) {
@@ -1790,6 +1796,8 @@ public class JaxrsClientReactiveProcessor {
         } else if (type.equals(Path.class.getName())) {
             // and so is path
             addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
+        } else if (type.equals(FileUpload.class.getName())) {
+            addFileUpload(fieldValue, multipartForm, methodCreator);
         } else if (type.equals(InputStream.class.getName())) {
             // and so is path
             addInputStream(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, type);
@@ -1806,7 +1814,7 @@ public class JaxrsClientReactiveProcessor {
                     MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                     fieldValue);
             addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, errorLocation);
-        } else if (parameterGenericType.equals(MULTI_BYTE_SIGNATURE)) {
+        } else if (parameterSignature.equals(MULTI_BYTE_SIGNATURE)) {
             addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
         } else if (partType != null) {
             if (partFilename != null) {
@@ -1883,6 +1891,15 @@ public class JaxrsClientReactiveProcessor {
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
         }
+    }
+
+    private void addFileUpload(ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            BytecodeCreator methodCreator) {
+        // MultipartForm#fileUpload(FileUpload fileUpload);
+        methodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ClientMultipartForm.class, "fileUpload",
+                        ClientMultipartForm.class, FileUpload.class),
+                multipartForm, fieldValue);
     }
 
     private ResultHandle primitiveToString(BytecodeCreator methodCreator, ResultHandle fieldValue, FieldInfo field) {
@@ -2407,7 +2424,7 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private AssignableResultHandle addBeanParamData(MethodInfo jandexMethod,
-            BytecodeCreator methodCreator,
+            int paramIndex, BytecodeCreator methodCreator,
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
@@ -2429,7 +2446,8 @@ public class JaxrsClientReactiveProcessor {
             formParams = createFormDataIfAbsent(methodCreator, formParams, multipart);
         }
 
-        addSubBeanParamData(jandexMethod, methodCreator, invocationBuilderEnricher, invocationBuilder, classContext,
+        addSubBeanParamData(jandexMethod, paramIndex, methodCreator, invocationBuilderEnricher, invocationBuilder,
+                classContext,
                 beanParamItems, param, target,
                 index, restClientInterfaceClassName, client, invocationEnricherClient, formParams,
                 descriptorsField, multipart, beanParamClass);
@@ -2437,7 +2455,7 @@ public class JaxrsClientReactiveProcessor {
         return formParams;
     }
 
-    private void addSubBeanParamData(MethodInfo jandexMethod, BytecodeCreator methodCreator,
+    private void addSubBeanParamData(MethodInfo jandexMethod, int paramIndex, BytecodeCreator methodCreator,
             // Invocation.Builder executePut$$enrichInvocationBuilder${noOfBeanParam}(Invocation.Builder)
             BytecodeCreator invocationBuilderEnricher,
             AssignableResultHandle invocationBuilder,
@@ -2475,7 +2493,7 @@ public class JaxrsClientReactiveProcessor {
                     ResultHandle beanParamElementHandle = beanParamItem.extract(creator, param);
                     Supplier<FieldDescriptor> newBeanParamDescriptorField = classContext
                             .getLazyBeanParameterDescriptors(beanParamItem.className());
-                    addSubBeanParamData(jandexMethod, creator, invoEnricher, invocationBuilder, classContext,
+                    addSubBeanParamData(jandexMethod, paramIndex, creator, invoEnricher, invocationBuilder, classContext,
                             beanParamItem.items(), beanParamElementHandle, target, index, restClientInterfaceClassName, client,
                             invocationEnricherClient, formParams,
                             newBeanParamDescriptorField, multipart,
@@ -2520,7 +2538,9 @@ public class JaxrsClientReactiveProcessor {
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
                     addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
-                            formParam.getParamType(), formParam.getParamSignature(), restClientInterfaceClassName, client,
+                            jandexMethod.parameterType(paramIndex), formParam.getParamType(), formParam.getParamSignature(),
+                            index,
+                            restClientInterfaceClassName, client,
                             formParams,
                             getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
                             getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()),
@@ -2786,25 +2806,53 @@ public class JaxrsClientReactiveProcessor {
                         methodCreator.load(paramName), handle));
     }
 
-    private void addFormParam(BytecodeCreator methodCreator, String paramName, ResultHandle formParamHandle,
-            String parameterType, String parameterGenericType,
+    private void addFormParam(BytecodeCreator methodCreator,
+            String paramName,
+            ResultHandle formParamHandle,
+            Type parameterType,
+            String parameterTypeStr,
+            String parameterSignature,
+            IndexView index,
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
             String partType, String partFilename, String errorLocation) {
         if (multipart) {
-            handleMultipartField(paramName, partType, partFilename, parameterType, parameterGenericType, formParamHandle,
+            handleMultipartField(paramName, partType, partFilename, parameterTypeStr, parameterSignature, formParamHandle,
                     formParams, methodCreator,
                     client, restClientInterfaceClassName, parameterAnnotations, genericType,
                     errorLocation);
         } else {
-            BytecodeCreator notNullValue = methodCreator.ifNull(formParamHandle).falseBranch();
-            ResultHandle convertedFormParam = convertParamToString(notNullValue, client, formParamHandle, parameterType,
-                    genericType, parameterAnnotations);
-            BytecodeCreator parameterIsStringBranch = checkStringParam(notNullValue, convertedFormParam,
-                    restClientInterfaceClassName, errorLocation);
-            parameterIsStringBranch.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
-                    notNullValue.load(paramName), convertedFormParam);
+            BytecodeCreator creator = methodCreator.ifNull(formParamHandle).falseBranch();
+            if (isCollection(parameterType, index)) {
+                String componentType = null;
+                if (parameterType.kind() == PARAMETERIZED_TYPE) {
+                    Type paramType = parameterType.asParameterizedType().arguments().get(0);
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                        componentType = paramType.name().toString();
+                    }
+                }
+                if (componentType == null) {
+                    componentType = DotNames.OBJECT.toString();
+                }
+                ResultHandle paramArray = creator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
+                        formParamHandle);
+                ResultHandle convertedParamArray = creator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                        client, paramArray, creator.loadClassFromTCCL(componentType), genericType, creator.newArray(
+                                Annotation.class, 0));
+                creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
+                        creator.load(paramName), convertedParamArray);
+            } else {
+                ResultHandle convertedFormParam = convertParamToString(creator, client, formParamHandle, parameterTypeStr,
+                        genericType, parameterAnnotations);
+                BytecodeCreator parameterIsStringBranch = checkStringParam(creator, convertedFormParam,
+                        restClientInterfaceClassName, errorLocation);
+                parameterIsStringBranch.invokeInterfaceMethod(MULTIVALUED_MAP_ADD, formParams,
+                        creator.load(paramName), convertedFormParam);
+            }
         }
     }
 

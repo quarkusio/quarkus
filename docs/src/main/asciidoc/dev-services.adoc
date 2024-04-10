@@ -165,6 +165,14 @@ More information can be found in the xref:elasticsearch-dev-services.adoc[Elasti
 
 include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
+=== Observability
+
+The Observability Dev Services will be enabled when the `quarkus-observability-devservices` extension is present in your application, and
+there is at least one dev resource on the classpath. More information can be found in the
+xref:observability-devservices.adoc[Observability Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-observability-config-observability-configuration.adoc[opts=optional, leveloffset=+1]
+
 == Dev Services beyond the Quarkus Platform
 
 Many Quarkiverse extensions which are not in the Quarkus Platform also offer Dev Services.

@@ -14,10 +14,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: quarkusio/quarkusio.github.io
+          fetch-depth: 5000
+          fetch-tags: false
+
+      - name: Install git-restore-time
+        run: sudo apt-get install -y git-restore-mtime
+
+      - name: Restore mtime
+        run: git restore-mtime
+
+      # There is a weird issue with download-artifact@v4
+      # keeping the external action for now
       - name: Download PR Artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
-          run-id: ${{ github.event.workflow_run.workflow_id }}
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: success
           name: documentation
           path: documentation-temp
       - name: Store PR id as variable
@@ -33,7 +45,7 @@ jobs:
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7 # can change this to 2.7 or whatever version you prefer
+          ruby-version: 3.2.3
       - name: Build Jekyll site
         uses: limjh16/jekyll-action-ts@v2
         with:
@@ -72,6 +84,14 @@ jobs:
           custom_opts: '--config _config.yml,_only_latest_guides_config.yml'
           ### If you need to specify any Jekyll build options, enable the above input
           ### Flags accepted can be found here https://jekyllrb.com/docs/configuration/options/#build-command-options
+
+      - name: Reduce the size of the website to be compatible with surge
+        run: |
+          find assets/images/posts/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
+          find newsletter/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
+          rm -rf _site/assets/images/worldtour/2023
+          rm -rf _site/assets/images/desktopwallpapers
+
       - name: Publishing to surge for preview
         id: deploy
         run: npx surge ./_site --domain https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
@@ -81,6 +101,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             🎊 PR Preview ${{ github.sha }} has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
+
+            - Images of blog posts older than 3 months are not available.
+            - Newsletters older than 3 months are not available.
+
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png">
             <!-- Sticky Pull Request Comment -->
           body-include: '<!-- Sticky Pull Request Comment -->'

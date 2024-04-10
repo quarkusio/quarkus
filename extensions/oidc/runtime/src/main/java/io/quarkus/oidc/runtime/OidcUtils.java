@@ -774,4 +774,16 @@ public final class OidcUtils {
             }
         }
     }
+
+    public static boolean cacheUserInfoInIdToken(DefaultTenantConfigResolver resolver, OidcTenantConfig oidcConfig) {
+
+        if (resolver.getUserInfoCache() != null && oidcConfig.allowUserInfoCache) {
+            return false;
+        }
+        if (oidcConfig.cacheUserInfoInIdtoken.isPresent()) {
+            return oidcConfig.cacheUserInfoInIdtoken.get();
+        }
+        return resolver.getTokenStateManager() instanceof DefaultTokenStateManager
+                && oidcConfig.tokenStateManager.encryptionRequired;
+    }
 }

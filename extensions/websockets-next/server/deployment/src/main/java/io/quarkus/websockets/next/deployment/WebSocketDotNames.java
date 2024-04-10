@@ -1,5 +1,7 @@
 package io.quarkus.websockets.next.deployment;
 
+import java.util.List;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.websockets.next.OnBinaryMessage;
@@ -12,6 +14,7 @@ import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -33,6 +36,7 @@ final class WebSocketDotNames {
     static final DotName MULTI = DotName.createSimple(Multi.class);
     static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class);
     static final DotName BLOCKING = DotName.createSimple(Blocking.class);
+    static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class);
     static final DotName STRING = DotName.createSimple(String.class);
     static final DotName BUFFER = DotName.createSimple(Buffer.class);
     static final DotName JSON_OBJECT = DotName.createSimple(JsonObject.class);
@@ -41,4 +45,7 @@ final class WebSocketDotNames {
     static final DotName PATH_PARAM = DotName.createSimple(PathParam.class);
     static final DotName HANDSHAKE_REQUEST = DotName.createSimple(WebSocketConnection.HandshakeRequest.class);
     static final DotName THROWABLE = DotName.createSimple(Throwable.class);
+
+    static final List<DotName> CALLBACK_ANNOTATIONS = List.of(ON_OPEN, ON_CLOSE, ON_BINARY_MESSAGE, ON_TEXT_MESSAGE,
+            ON_PONG_MESSAGE, ON_ERROR);
 }

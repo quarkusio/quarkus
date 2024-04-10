@@ -38,7 +38,7 @@
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
-        <module>webjars-locator</module>
+        <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
         <module>apache-httpclient</module>
@@ -52,6 +52,7 @@
         <module>micrometer-registry-prometheus</module>
         <module>opentelemetry</module>
         <module>info</module>
+        <module>observability-devservices</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -150,6 +151,7 @@
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+        <module>infinispan-cache</module>
 
         <!-- Caching -->
         <module>caffeine</module>

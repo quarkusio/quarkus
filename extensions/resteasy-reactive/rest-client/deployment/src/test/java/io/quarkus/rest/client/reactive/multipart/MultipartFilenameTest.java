@@ -61,6 +61,49 @@ public class MultipartFilenameTest {
     }
 
     @Test
+    void shouldWorkWithFileUpload() throws IOException {
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+
+        File file = File.createTempFile("MultipartTest", ".txt");
+        file.deleteOnExit();
+
+        ClientFormUsingFileUpload form = new ClientFormUsingFileUpload();
+        form.file = new FileUpload() {
+
+            @Override
+            public String name() {
+                return "myFile";
+            }
+
+            @Override
+            public java.nio.file.Path filePath() {
+                return file.toPath();
+            }
+
+            @Override
+            public String fileName() {
+                return file.getName();
+            }
+
+            @Override
+            public long size() {
+                return 0;
+            }
+
+            @Override
+            public String contentType() {
+                return "application/octet-stream";
+            }
+
+            @Override
+            public String charSet() {
+                return "";
+            }
+        };
+        assertThat(client.postMultipartFileUpload(form)).isEqualTo(file.getName());
+    }
+
+    @Test
     void shouldUseFileNameFromAnnotation() throws IOException {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
@@ -246,6 +289,10 @@ public class MultipartFilenameTest {
 
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartFileUpload(ClientFormUsingFileUpload clientForm);
+
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipartWithPartFilename(@MultipartForm ClientFormUsingFile clientForm);
 
         @POST
@@ -322,6 +369,11 @@ public class MultipartFilenameTest {
         @FormParam("myFile")
         @PartType(APPLICATION_OCTET_STREAM)
         public File file;
+    }
+
+    public static class ClientFormUsingFileUpload {
+        @RestForm
+        public FileUpload file;
     }
 
     public static class ClientFormUsingFile {

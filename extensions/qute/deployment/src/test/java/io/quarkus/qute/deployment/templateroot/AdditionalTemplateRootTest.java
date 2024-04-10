@@ -28,6 +28,7 @@ public class AdditionalTemplateRootTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
+                    .addAsResource(new StringAsset("Hoho {name}!"), "templates/nested/hoho.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "web/public/hello.txt"))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -50,13 +51,12 @@ public class AdditionalTemplateRootTest {
                         List<NativeImageResourceBuildItem> items = context.consumeMulti(NativeImageResourceBuildItem.class);
                         for (NativeImageResourceBuildItem item : items) {
                             if (item.getResources().contains("web/public/hello.txt")
-                                    || item.getResources().contains("web\\public\\hello.txt")
                                     || item.getResources().contains("templates/hi.txt")
-                                    || item.getResources().contains("templates\\hi.txt")) {
+                                    || item.getResources().contains("templates/nested/hoho.txt")) {
                                 found++;
                             }
                         }
-                        if (found != 2) {
+                        if (found != 3) {
                             throw new IllegalStateException(items.stream().flatMap(i -> i.getResources().stream())
                                     .collect(Collectors.toList()).toString());
                         }
@@ -79,6 +79,7 @@ public class AdditionalTemplateRootTest {
     public void testTemplate() {
         assertEquals("Hi M!", engine.getTemplate("hi").data("name", "M").render());
         assertEquals("Hello M!", hello.data("name", "M").render());
+        assertEquals("Hoho M!", engine.getTemplate("nested/hoho").data("name", "M").render());
     }
 
 }

@@ -45,7 +45,7 @@ This command generates the Maven project with a REST endpoint and imports:
 If you already have your Quarkus project configured, you can add the `rest-client-jackson` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: rest-client-reactive-jackson
+:add-extension-extensions: rest-client-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -324,106 +324,6 @@ public interface ExtensionsService {
     Set<Extension> getByStream(@PathParam("stream") String stream, @QueryParam("id") String id);
 }
 ----
-
-
-=== Using ClientMultipartForm
-
-MultipartForm can be built using the Class `ClientMultipartForm` which supports building the form as needed:
-
-`ClientMultipartForm` can be programmatically created with custom inputs and/or from `MultipartFormDataInput` and/or from custom Quarkus REST Input annotated with `@RestForm` if received.
-
-[source, java]
-----
-public interface MultipartService {
-
-  @POST
-  @Path("/multipart")
-  @Consumes(MediaType.MULTIPART_FORM_DATA)
-  @Produces(MediaType.APPLICATION_JSON)
-  Map<String, String> multipart(ClientMultipartForm dataParts); // <1>
-}
-----
-
-<1> input to the method is a custom Generic `ClientMultipartForm` which matches external application api contract.
-
-
-More information about this Class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/api/ClientMultipartForm.html[`ClientMultipartForm`].
-
-
-Build `ClientMultipartForm` from `MultipartFormDataInput` programmatically
-
-[source, java]
-----
-public ClientMultipartForm buildClientMultipartForm(MultipartFormDataInput inputForm) // <1>
-    throws IOException {
-  ClientMultipartForm multiPartForm = ClientMultipartForm.create(); // <2>
-  for (Entry<String, Collection<FormValue>> attribute : inputForm.getValues().entrySet()) {
-    for (FormValue fv : attribute.getValue()) {
-      if (fv.isFileItem()) {
-        final FileItem fi = fv.getFileItem();
-        String mediaType = Objects.toString(fv.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
-            MediaType.APPLICATION_OCTET_STREAM);
-        if (fi.isInMemory()) {
-          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
-              Buffer.buffer(IOUtils.toByteArray(fi.getInputStream())), mediaType); // <3>
-        } else {
-          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
-              fi.getFile().toString(), mediaType); // <4>
-        }
-      } else {
-        multiPartForm.attribute(attribute.getKey(), fv.getValue(), fv.getFileName()); // <5>
-      }
-    }
-  }
-  return multiPartForm;
-}
-----
-
-<1> `MultipartFormDataInput` inputForm supported by Quarkus REST (Server).
-<2> Creating a `ClientMultipartForm` object to populate with various dataparts.
-<3> Adding InMemory `FileItem` to `ClientMultipartForm`
-<4> Adding physical `FileItem` to `ClientMultipartForm`
-<5> Adding any attribute directly to `ClientMultipartForm` if not `FileItem`.
-
-Build `ClientMultipartForm` from custom Attributes annotated with `@RestForm`
-
-[source, java]
-----
-public class MultiPartPayloadFormData { // <1>
-
-  @RestForm("files")
-  @PartType(MediaType.APPLICATION_OCTET_STREAM)
-  List<FileUpload> files;
-
-  @RestForm("jsonPayload")
-  @PartType(MediaType.TEXT_PLAIN)
-  String jsonPayload;
-}
-
-/*
- * Generate ClientMultipartForm from custom attributes annotated with @RestForm
- */
-public ClientMultipartForm buildClientMultipartForm(MultiPartPayloadFormData inputForm) { // <1>
-  ClientMultipartForm multiPartForm = ClientMultipartForm.create();
-  multiPartForm.attribute("jsonPayload", inputForm.getJsonPayload(), "jsonPayload"); // <2>
-  inputForm.getFiles().forEach(fu -> {
-    multiPartForm.binaryFileUpload("file", fu.name(), fu.filePath().toString(), fu.contentType()); // <3>
-  });
-  return multiPartForm;
-}
-----
-
-<1> `MultiPartPayloadFormData` custom Object created to match the API contract for calling service which needs to be converted to `ClientMultipartForm`
-<2> Adding attribute `jsonPayload` directly to `ClientMultipartForm`
-<3> Adding `FileUpload` objects to `ClientMultipartForm` as binaryFileUpload with contentType.
-
-[NOTE]
-====
-When sending multipart data that uses the same name, problems can arise if the client and server do not use the same multipart encoder mode.
-By default, the REST Client uses `RFC1738`, but depending on the situation, clients may need to be configured with `HTML5` or `RFC3986` mode.
-
-This configuration can be achieved via the `quarkus.rest-client.multipart-post-encoder-mode` property.
-====
 
 === Sending large payloads
 
@@ -1486,8 +1386,6 @@ public interface EchoClient {
 [[multipart]]
 == Multipart Form support
 
-REST Client support multipart messages.
-
 === Sending Multipart messages
 
 REST Client allows sending data as multipart forms. This way you can for example
@@ -1502,7 +1400,7 @@ To send data as a multipart form, you can just use the regular `@RestForm` (or `
     String sendMultipart(@RestForm File file, @RestForm String otherField);
 ----
 
-Parameters specified as `File`, `Path`, `byte[]` or `Buffer` are sent as files and default to the
+Parameters specified as `File`, `Path`, `byte[]`, `Buffer` or `FileUpload` are sent as files and default to the
 `application/octet-stream` MIME type. Other `@RestForm` parameter types default to the `text/plain`
 MIME type. You can override these defaults with the `@PartType` annotation.
 
@@ -1523,7 +1421,7 @@ Naturally, you can also group these parameters into a containing class:
     String sendMultipart(Parameters parameters);
 ----
 
-Any `@RestForm` parameter of the type `File`, `Path`, `byte[]` or `Buffer`, as well as any
+Any `@RestForm` parameter of the type `File`, `Path`, `byte[]`, `Buffer` or `FileUpload`, as well as any
 annotated with `@PartType` automatically imply a `@Consumes(MediaType.MULTIPART_FORM_DATA)`
 on the method if there is no `@Consumes` present.
 
@@ -1553,6 +1451,105 @@ You can also send JSON multiparts by specifying the `@PartType` annotation:
     @Path("/json")
     String sendMultipart(@RestForm @PartType(MediaType.APPLICATION_JSON) Person person);
 ----
+
+==== Programmatically creating the Multipart form
+
+In cases where the multipart content needs to be built up programmatically, the REST Client provides `ClientMultipartForm` which can be used in the REST Client like so:
+
+[source, java]
+----
+public interface MultipartService {
+
+  @POST
+  @Path("/multipart")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Produces(MediaType.APPLICATION_JSON)
+  Map<String, String> multipart(ClientMultipartForm dataParts);
+}
+----
+
+
+More information about this class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/api/ClientMultipartForm.html[`ClientMultipartForm`].
+
+===== Converting a received multipart object into a client request
+
+A good example of creating `ClientMultipartForm` is one where it is created from the server's `MultipartFormDataInput` (which represents a multipart request received by xref:rest.adoc#multipart[Quarkus REST]) - the purpose being to propagate the request downstream while allowing for arbitrary modifications:
+
+[source, java]
+----
+public ClientMultipartForm buildClientMultipartForm(MultipartFormDataInput inputForm) // <1>
+    throws IOException {
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create(); // <2>
+  for (Entry<String, Collection<FormValue>> attribute : inputForm.getValues().entrySet()) {
+    for (FormValue fv : attribute.getValue()) {
+      if (fv.isFileItem()) {
+        final FileItem fi = fv.getFileItem();
+        String mediaType = Objects.toString(fv.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+            MediaType.APPLICATION_OCTET_STREAM);
+        if (fi.isInMemory()) {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              Buffer.buffer(IOUtils.toByteArray(fi.getInputStream())), mediaType); // <3>
+        } else {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              fi.getFile().toString(), mediaType); // <4>
+        }
+      } else {
+        multiPartForm.attribute(attribute.getKey(), fv.getValue(), fv.getFileName()); // <5>
+      }
+    }
+  }
+  return multiPartForm;
+}
+----
+
+<1> `MultipartFormDataInput` is a Quarkus REST (Server) type representing a received multipart request.
+<2> A `ClientMultipartForm` is created.
+<3> `FileItem` attribute is created for the request attribute that represented an in memory file attribute
+<4> `FileItem` attribute is created for the request attribute that represented a file attribute saved on the file system
+<5> Non-file attributes added directly to `ClientMultipartForm` if not `FileItem`.
+
+
+In a similar fashion if the received server multipart request is known and looks something like:
+
+[source, java]
+----
+public class Request { // <1>
+
+  @RestForm("files")
+  @PartType(MediaType.APPLICATION_OCTET_STREAM)
+  List<FileUpload> files;
+
+  @RestForm("jsonPayload")
+  @PartType(MediaType.TEXT_PLAIN)
+  String jsonPayload;
+}
+----
+
+the `ClientMultipartForm` can be created easily as follows:
+
+[source, java]
+----
+public ClientMultipartForm buildClientMultipartForm(Request request) { // <1>
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create();
+  multiPartForm.attribute("jsonPayload", request.getJsonPayload(), "jsonPayload"); // <2>
+  request.getFiles().forEach(fu -> {
+    multiPartForm.fileUpload(fu); // <3>
+  });
+  return multiPartForm;
+}
+----
+
+<1> `Request` representing the request the server parts accepts
+<2> A `jsonPayload` attribute is added directly to `ClientMultipartForm`
+<3> A `fileUpload` is created from the request's `FileUpload`
+
+[NOTE]
+====
+When sending multipart data that uses the same name, problems can arise if the client and server do not use the same multipart encoder mode.
+By default, the REST Client uses `RFC1738`, but depending on the situation, clients may need to be configured with `HTML5` or `RFC3986` mode.
+
+This configuration can be achieved via the `quarkus.rest-client.multipart-post-encoder-mode` property.
+====
 
 === Receiving Multipart Messages
 REST Client also supports receiving multipart messages.
@@ -1771,8 +1768,8 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 
 @QuarkusTest
 public class InjectMockTest {

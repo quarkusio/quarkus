@@ -66,6 +66,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.getCodeGrant().setHeaders(Map.of("X-Custom", "XCustomHeaderValue"));
             config.getCodeGrant().setExtraParams(Map.of("extra-param", "extra-param-value"));
             config.getAuthentication().setInternalIdTokenLifespan(Duration.ofSeconds(301));
+            config.setAllowUserInfoCache(false);
             return Uni.createFrom().item(config);
         } else if (path.endsWith("bearer-certificate-full-chain-root-only")) {
             OidcTenantConfig config = new OidcTenantConfig();

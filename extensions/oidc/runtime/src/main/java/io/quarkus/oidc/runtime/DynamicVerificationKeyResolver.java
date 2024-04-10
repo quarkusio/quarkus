@@ -39,7 +39,7 @@ public class DynamicVerificationKeyResolver {
         this.cache = new MemoryCache<Key>(client.getVertx(), config.jwks.cleanUpTimerInterval,
                 config.jwks.cacheTimeToLive, config.jwks.cacheSize);
         if (config.certificateChain.trustStoreFile.isPresent()) {
-            chainResolverFallback = new CertChainPublicKeyResolver(config.certificateChain);
+            chainResolverFallback = new CertChainPublicKeyResolver(config);
         } else {
             chainResolverFallback = null;
         }

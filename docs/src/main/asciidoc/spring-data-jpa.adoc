@@ -162,6 +162,8 @@ INSERT INTO fruit(id, name, color) VALUES (5, 'Strawberry', 'Red');
 
 Hibernate ORM will execute these queries on application startup.
 
+TIP: Users can also use a file named `data.sql` in addition to `import.sql`
+
 == Define the repository
 
 It is now time to define the repository that will be used to access `Fruit`.

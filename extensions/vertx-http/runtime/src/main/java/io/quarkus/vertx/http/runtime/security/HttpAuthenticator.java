@@ -23,16 +23,20 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.arc.Arc;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -41,6 +45,24 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Singleton
 public class HttpAuthenticator {
+    /**
+     * Special handling for the basic authentication mechanism, for user convenience, we add the mechanism when:
+     * - not explicitly disabled or enabled
+     * - is default bean and not programmatically looked up because there are other authentication mechanisms
+     * - no custom auth mechanism is defined because then, we can't tell if user didn't provide custom impl.
+     * - there is a provider that supports it (if not, we inform user via the log)
+     * <p>
+     * Presence of this system property means that we need to test whether:
+     * - there are HTTP Permissions using explicitly this mechanism
+     * - or {@link io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication}
+     */
+    public static final String TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED = "io.quarkus.security.http.test-if-basic-auth-implicitly-required";
+    /**
+     * Whether {@link io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication} has been detected,
+     * which means that user needs to use basic authentication.
+     * Only set when detected and {@link HttpAuthenticator#TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED} is true.
+     */
+    public static final String BASIC_AUTH_ANNOTATION_DETECTED = "io.quarkus.security.http.basic-authentication-annotation-detected";
     private static final Logger log = Logger.getLogger(HttpAuthenticator.class);
     /**
      * Added to a {@link RoutingContext} as selected authentication mechanism.
@@ -106,6 +128,7 @@ public class HttpAuthenticator {
                         """.formatted(mechanism.getClass().getName(), mechanism.getCredentialTypes()));
             }
         }
+        addBasicAuthMechanismIfImplicitlyRequired(httpAuthenticationMechanism, mechanisms, providers);
         if (mechanisms.isEmpty()) {
             this.mechanisms = new HttpAuthenticationMechanism[] { new NoAuthenticationMechanism() };
         } else {
@@ -377,6 +400,42 @@ public class HttpAuthenticator {
                 });
     }
 
+    private static void addBasicAuthMechanismIfImplicitlyRequired(
+            Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
+            List<HttpAuthenticationMechanism> mechanisms, Instance<IdentityProvider<?>> providers) {
+        if (!Boolean.getBoolean(TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED) || isBasicAuthNotRequired()) {
+            return;
+        }
+
+        var basicAuthMechInstance = httpAuthenticationMechanism.select(BasicAuthenticationMechanism.class);
+        if (basicAuthMechInstance.isResolvable() && !mechanisms.contains(basicAuthMechInstance.get())) {
+            for (IdentityProvider<?> i : providers) {
+                if (UsernamePasswordAuthenticationRequest.class.equals(i.getRequestType())) {
+                    mechanisms.add(basicAuthMechInstance.get());
+                    return;
+                }
+            }
+            log.debug("""
+                    BasicAuthenticationMechanism has been enabled because no custom authentication mechanism has been detected
+                    and basic authentication is required either by the HTTP Security Policy or '@BasicAuthentication', but
+                    there is no IdentityProvider based on username and password. Please use one of supported extensions.
+                    For more information, go to the https://quarkus.io/guides/security-basic-authentication-howto.
+                    """);
+        }
+    }
+
+    private static boolean isBasicAuthNotRequired() {
+        if (Boolean.getBoolean(BASIC_AUTH_ANNOTATION_DETECTED)) {
+            return false;
+        }
+        for (var policy : Arc.container().instance(HttpConfiguration.class).get().auth.permissions.values()) {
+            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism.orElse(null))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     static class NoAuthenticationMechanism implements HttpAuthenticationMechanism {
 
         @Override
@@ -397,8 +456,8 @@ public class HttpAuthenticator {
         }
 
         @Override
-        public HttpCredentialTransport getCredentialTransport() {
-            return null;
+        public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+            return Uni.createFrom().nullItem();
         }
 
     }

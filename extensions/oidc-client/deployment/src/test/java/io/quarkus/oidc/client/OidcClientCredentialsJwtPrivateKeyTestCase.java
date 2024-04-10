@@ -34,4 +34,14 @@ public class OidcClientCredentialsJwtPrivateKeyTestCase {
                 .statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
     }
+
+    @Test
+    public void testPrivateKeyToken() {
+        String token = RestAssured.when().get("/client/token-key").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+    }
 }

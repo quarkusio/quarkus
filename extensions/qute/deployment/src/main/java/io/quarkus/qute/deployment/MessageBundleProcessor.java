@@ -38,6 +38,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -85,6 +86,8 @@ import io.quarkus.qute.Expressions;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.deployment.QuteProcessor.JavaMemberLookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.MatchResult;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
@@ -205,7 +208,7 @@ public class MessageBundleProcessor {
                     Map<String, Path> localeToMergeCandidate = new HashMap<>();
                     for (Path messageFile : messageFiles) {
                         String fileName = messageFile.getFileName().toString();
-                        if (fileName.startsWith(name)) {
+                        if (bundleNameMatchesFileName(fileName, name)) {
                             final String locale;
                             int postfixIdx = fileName.indexOf('.');
                             if (postfixIdx == name.length()) {
@@ -266,7 +269,7 @@ public class MessageBundleProcessor {
         // Generate implementations
         // name -> impl class
         Map<String, String> generatedImplementations = generateImplementations(bundles, generatedClasses,
-                messageTemplateMethods);
+                messageTemplateMethods, index);
 
         // Register synthetic beans
         for (MessageBundleBuildItem bundle : bundles) {
@@ -313,6 +316,30 @@ public class MessageBundleProcessor {
         }
 
         return bundles;
+    }
+
+    static boolean bundleNameMatchesFileName(String fileName, String name) {
+        int fileSeparatorIdx = fileName.indexOf('.');
+        // Remove file extension if exists
+        if (fileSeparatorIdx > -1) {
+            fileName = fileName.substring(0, fileSeparatorIdx);
+        }
+        // Split the filename and the bundle name by underscores
+        String[] fileNameParts = fileName.split("_");
+        String[] nameParts = name.split("_");
+
+        if (fileNameParts.length < nameParts.length) {
+            return false;
+        }
+
+        // Compare each part of the filename with the corresponding part of the bundle name
+        for (int i = 0; i < nameParts.length; i++) {
+            if (!fileNameParts[i].equals(nameParts[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Record(value = STATIC_INIT)
@@ -369,8 +396,11 @@ public class MessageBundleProcessor {
             if (messageBundleMethod != null) {
                 // All top-level expressions without a namespace should be mapped to a param
                 Set<String> usedParamNames = new HashSet<>();
-                Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parametersCount())
-                        .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
+                Set<String> paramNames = messageBundleMethod.hasMethod()
+                        ? IntStream.range(0, messageBundleMethod.getMethod().parametersCount())
+                                .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx))
+                                .collect(Collectors.toSet())
+                        : Set.of();
                 for (Expression expression : analysis.expressions) {
                     validateExpression(incorrectExpressions, messageBundleMethod, expression, paramNames, usedParamNames,
                             globals);
@@ -407,9 +437,8 @@ public class MessageBundleProcessor {
                     // Expression has no type info or type info that does not match a method parameter
                     // expressions that have
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            name + " is not a parameter of the message bundle method "
-                                    + messageBundleMethod.getMethod().declaringClass().name() + "#"
-                                    + messageBundleMethod.getMethod().name() + "()",
+                            name + " is not a parameter of the message bundle method: "
+                                    + messageBundleMethod.getPathForAnalysis(),
                             expression.getOrigin()));
                 } else {
                     usedParamNames.add(name);
@@ -544,6 +573,10 @@ public class MessageBundleProcessor {
                         MethodInfo method = methods.get(methodPart.getName());
 
                         if (method == null) {
+                            if (methods.containsKey(methodPart.getName())) {
+                                // Skip validation - enum constant key
+                                continue;
+                            }
                             if (!methodPart.isVirtualMethod() || methodPart.asVirtualMethod().getParameters().isEmpty()) {
                                 // The method template may contain no expressions
                                 method = defaultBundleInterface.method(methodPart.getName());
@@ -666,7 +699,8 @@ public class MessageBundleProcessor {
 
     private Map<String, String> generateImplementations(List<MessageBundleBuildItem> bundles,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods) throws IOException {
+            BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
+            IndexView index) throws IOException {
 
         Map<String, String> generatedTypes = new HashMap<>();
 
@@ -677,29 +711,33 @@ public class MessageBundleProcessor {
 
             // take message templates not specified by Message#value from corresponding localized file
             Map<String, String> defaultKeyToMap = getLocalizedFileKeyToTemplate(bundle, bundleInterface,
-                    bundle.getDefaultLocale(), bundleInterface.methods(), null);
+                    bundle.getDefaultLocale(), bundleInterface.methods(), null, index);
             MergeClassInfoWrapper bundleInterfaceWrapper = new MergeClassInfoWrapper(bundleInterface, null, null);
 
+            // Generate implementation for the default bundle interface
             String bundleImpl = generateImplementation(bundle, null, null, bundleInterfaceWrapper,
-                    defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null);
+                    defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null, index);
             generatedTypes.put(bundleInterface.name().toString(), bundleImpl);
+
+            // Generate imeplementation for each localized interface
             for (Entry<String, ClassInfo> entry : bundle.getLocalizedInterfaces().entrySet()) {
                 ClassInfo localizedInterface = entry.getValue();
 
                 // take message templates not specified by Message#value from corresponding localized file
                 Map<String, String> keyToMap = getLocalizedFileKeyToTemplate(bundle, bundleInterface, entry.getKey(),
-                        localizedInterface.methods(), localizedInterface);
+                        localizedInterface.methods(), localizedInterface, index);
                 MergeClassInfoWrapper localizedInterfaceWrapper = new MergeClassInfoWrapper(localizedInterface, bundleInterface,
                         keyToMap);
 
                 generatedTypes.put(entry.getValue().name().toString(),
                         generateImplementation(bundle, bundleInterface, bundleImpl, localizedInterfaceWrapper,
-                                defaultClassOutput, messageTemplateMethods, keyToMap, null));
+                                defaultClassOutput, messageTemplateMethods, keyToMap, null, index));
             }
 
+            // Generate implementation for each localized file
             for (Entry<String, Path> entry : bundle.getLocalizedFiles().entrySet()) {
                 Path localizedFile = entry.getValue();
-                var keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile);
+                var keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile, index);
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmoAdaptor(generatedClasses,
@@ -715,19 +753,19 @@ public class MessageBundleProcessor {
                         }));
                 generatedTypes.put(localizedFile.toString(),
                         generateImplementation(bundle, bundleInterface, bundleImpl, new SimpleClassInfoWrapper(bundleInterface),
-                                localeAwareGizmoAdaptor, messageTemplateMethods, keyToTemplate, locale));
+                                localeAwareGizmoAdaptor, messageTemplateMethods, keyToTemplate, locale, index));
             }
         }
         return generatedTypes;
     }
 
     private Map<String, String> getLocalizedFileKeyToTemplate(MessageBundleBuildItem bundle,
-            ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface)
+            ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface, IndexView index)
             throws IOException {
 
         Path localizedFile = bundle.getMergeCandidates().get(locale);
         if (localizedFile != null) {
-            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile);
+            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFile(bundleInterface, localizedFile, index);
             if (!keyToTemplate.isEmpty()) {
 
                 // keep message templates if value wasn't provided by Message#value
@@ -761,12 +799,17 @@ public class MessageBundleProcessor {
     }
 
     private Map<String, String> parseKeyToTemplateFromLocalizedFile(ClassInfo bundleInterface,
-            Path localizedFile) throws IOException {
+            Path localizedFile, IndexView index) throws IOException {
         Map<String, String> keyToTemplate = new HashMap<>();
         for (ListIterator<String> it = Files.readAllLines(localizedFile).listIterator(); it.hasNext();) {
             String line = it.next();
-            if (line.startsWith("#") || line.isBlank()) {
-                // Comments and blank lines are skipped
+            if (line.isBlank()) {
+                // Blank lines are skipped
+                continue;
+            }
+            line = line.strip();
+            if (line.startsWith("#")) {
+                // Comments are skipped
                 continue;
             }
             int eqIdx = line.indexOf('=');
@@ -775,7 +818,7 @@ public class MessageBundleProcessor {
                         "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + it.previousIndex());
             }
             String key = line.substring(0, eqIdx).strip();
-            if (!hasMessageBundleMethod(bundleInterface, key)) {
+            if (!hasMessageBundleMethod(bundleInterface, key) && !isEnumConstantMessageKey(key, index, bundleInterface)) {
                 throw new MessageBundleException(
                         "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
                                 + localizedFile + "\n\t- line " + it.previousIndex());
@@ -791,6 +834,42 @@ public class MessageBundleProcessor {
             }
         }
         return keyToTemplate;
+    }
+
+    /**
+     *
+     * @param key
+     * @param bundleInterface
+     * @return {@code true} if the given key represents an enum constant message key, such as {@code myEnum_CONSTANT1}
+     * @see #toEnumConstantKey(String, String)
+     */
+    boolean isEnumConstantMessageKey(String key, IndexView index, ClassInfo bundleInterface) {
+        if (key.isBlank()) {
+            return false;
+        }
+        int lastIdx = key.lastIndexOf("_");
+        if (lastIdx != -1 && lastIdx != key.length()) {
+            String methodName = key.substring(0, lastIdx);
+            String constant = key.substring(lastIdx + 1, key.length());
+            MethodInfo method = messageBundleMethod(bundleInterface, methodName);
+            if (method != null && method.parametersCount() == 1) {
+                Type paramType = method.parameterType(0);
+                if (paramType.kind() == org.jboss.jandex.Type.Kind.CLASS) {
+                    ClassInfo maybeEnum = index.getClassByName(paramType.name());
+                    if (maybeEnum != null && maybeEnum.isEnum()) {
+                        if (maybeEnum.fields().stream()
+                                .filter(FieldInfo::isEnumConstant)
+                                .map(FieldInfo::name)
+                                .anyMatch(constant::equals)) {
+                            return true;
+                        }
+                        throw new MessageBundleException(
+                                String.format("%s is not an enum constant of %: %s", constant, maybeEnum, key));
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private void constructLine(StringBuilder builder, Iterator<String> it) {
@@ -810,19 +889,22 @@ public class MessageBundleProcessor {
     }
 
     private boolean hasMessageBundleMethod(ClassInfo bundleInterface, String name) {
+        return messageBundleMethod(bundleInterface, name) != null;
+    }
+
+    private MethodInfo messageBundleMethod(ClassInfo bundleInterface, String name) {
         for (MethodInfo method : bundleInterface.methods()) {
             if (method.name().equals(name)) {
-                return true;
+                return method;
             }
         }
-        return false;
+        return null;
     }
 
     private String generateImplementation(MessageBundleBuildItem bundle, ClassInfo defaultBundleInterface,
-            String defaultBundleImpl,
-            ClassInfoWrapper bundleInterfaceWrapper, ClassOutput classOutput,
+            String defaultBundleImpl, ClassInfoWrapper bundleInterfaceWrapper, ClassOutput classOutput,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
-            Map<String, String> messageTemplates, String locale) {
+            Map<String, String> messageTemplates, String locale, IndexView index) {
 
         ClassInfo bundleInterface = bundleInterfaceWrapper.getClassInfo();
         LOG.debugf("Generate bundle implementation for %s", bundleInterface);
@@ -855,7 +937,7 @@ public class MessageBundleProcessor {
         ClassCreator bundleCreator = builder.build();
 
         // key -> method
-        Map<String, MethodInfo> keyMap = new LinkedHashMap<>();
+        Map<String, MessageMethod> keyMap = new LinkedHashMap<>();
         List<MethodInfo> methods = new ArrayList<>(bundleInterfaceWrapper.methods());
         // Sort methods
         methods.sort(Comparator.comparing(MethodInfo::name).thenComparing(Comparator.comparing(MethodInfo::toString)));
@@ -898,7 +980,7 @@ public class MessageBundleProcessor {
             if (keyMap.containsKey(key)) {
                 throw new MessageBundleException(String.format("Duplicate key [%s] found on %s", key, bundleInterface));
             }
-            keyMap.put(key, method);
+            keyMap.put(key, new SimpleMessageMethod(method));
 
             String messageTemplate = messageTemplates.get(method.name());
             if (messageTemplate == null) {
@@ -911,6 +993,50 @@ public class MessageBundleProcessor {
                         method.parameterTypes().toArray(new Type[] {}))).annotation(Names.MESSAGE));
             }
 
+            // We need some special handling for enum message bundle methods
+            // A message bundle method that accepts an enum and has no message template receives a generated template:
+            // {#when enumParamName}
+            //   {#is CONSTANT1}{msg:org_acme_MyEnum_CONSTANT1}
+            //   {#is CONSTANT2}{msg:org_acme_MyEnum_CONSTANT2}
+            //   ...
+            // {/when}
+            // Furthermore, a special message method is generated for each enum constant
+            if (messageTemplate == null && method.parametersCount() == 1) {
+                Type paramType = method.parameterType(0);
+                if (paramType.kind() == org.jboss.jandex.Type.Kind.CLASS) {
+                    ClassInfo maybeEnum = index.getClassByName(paramType.name());
+                    if (maybeEnum != null && maybeEnum.isEnum()) {
+                        StringBuilder generatedMessageTemplate = new StringBuilder("{#when ")
+                                .append(getParameterName(method, 0))
+                                .append("}");
+                        Set<String> enumConstants = maybeEnum.fields().stream().filter(FieldInfo::isEnumConstant)
+                                .map(FieldInfo::name).collect(Collectors.toSet());
+                        for (String enumConstant : enumConstants) {
+                            // org_acme_MyEnum_CONSTANT1
+                            String enumConstantKey = toEnumConstantKey(method.name(), enumConstant);
+                            String enumConstantTemplate = messageTemplates.get(enumConstantKey);
+                            if (enumConstantTemplate == null) {
+                                throw new TemplateException(
+                                        String.format("Enum constant message not found in bundle [%s] for key: %s",
+                                                bundleName + (locale != null ? "_" + locale : ""), enumConstantKey));
+                            }
+                            generatedMessageTemplate.append("{#is ")
+                                    .append(enumConstant)
+                                    .append("}{")
+                                    .append(bundle.getName())
+                                    .append(":")
+                                    .append(enumConstantKey)
+                                    .append("}");
+                            generateEnumConstantMessageMethod(bundleCreator, bundleName, locale, bundleInterface,
+                                    defaultBundleInterface, enumConstantKey, keyMap, enumConstantTemplate,
+                                    messageTemplateMethods);
+                        }
+                        generatedMessageTemplate.append("{/when}");
+                        messageTemplate = generatedMessageTemplate.toString();
+                    }
+                }
+            }
+
             if (messageTemplate == null) {
                 throw new MessageBundleException(
                         String.format("Message template for key [%s] is missing for default locale [%s]", key,
@@ -919,6 +1045,7 @@ public class MessageBundleProcessor {
 
             String templateId = null;
             if (messageTemplate.contains("}")) {
+                // Qute is needed - at least one expression/section found
                 if (defaultBundleInterface != null) {
                     if (locale == null) {
                         AnnotationInstance localizedAnnotation = bundleInterface.declaredAnnotation(Names.LOCALIZED);
@@ -946,6 +1073,12 @@ public class MessageBundleProcessor {
                 // Create a template instance
                 ResultHandle templateInstance = bundleMethod
                         .invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template);
+                if (locale != null) {
+                    bundleMethod.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(TemplateInstance.class, "setLocale", TemplateInstance.class,
+                                    String.class),
+                            templateInstance, bundleMethod.load(locale));
+                }
                 List<Type> paramTypes = method.parameterTypes();
                 if (!paramTypes.isEmpty()) {
                     // Set data
@@ -971,6 +1104,62 @@ public class MessageBundleProcessor {
 
         bundleCreator.close();
         return generatedName.replace('/', '.');
+    }
+
+    private String toEnumConstantKey(String methodName, String enumConstant) {
+        return methodName + "_" + enumConstant;
+    }
+
+    private void generateEnumConstantMessageMethod(ClassCreator bundleCreator, String bundleName, String locale,
+            ClassInfo bundleInterface, ClassInfo defaultBundleInterface, String enumConstantKey,
+            Map<String, MessageMethod> keyMap, String messageTemplate,
+            BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods) {
+        String templateId = null;
+        if (messageTemplate.contains("}")) {
+            if (defaultBundleInterface != null) {
+                if (locale == null) {
+                    AnnotationInstance localizedAnnotation = bundleInterface
+                            .declaredAnnotation(Names.LOCALIZED);
+                    locale = localizedAnnotation.value().asString();
+                }
+                templateId = bundleName + "_" + locale + "_" + enumConstantKey;
+            } else {
+                templateId = bundleName + "_" + enumConstantKey;
+            }
+        }
+
+        MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, enumConstantKey,
+                templateId, null, messageTemplate,
+                defaultBundleInterface == null);
+        messageTemplateMethods.produce(messageBundleMethod);
+
+        MethodCreator enumConstantMethod = bundleCreator.getMethodCreator(enumConstantKey,
+                String.class);
+
+        if (!messageBundleMethod.isValidatable()) {
+            // No expression/tag - no need to use qute
+            enumConstantMethod.returnValue(enumConstantMethod.load(messageTemplate));
+        } else {
+            // Obtain the template, e.g. msg_org_acme_MyEnum_CONSTANT1
+            ResultHandle template = enumConstantMethod.invokeStaticMethod(
+                    io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_TEMPLATE,
+                    enumConstantMethod.load(templateId));
+            // Create a template instance
+            ResultHandle templateInstance = enumConstantMethod
+                    .invokeInterfaceMethod(io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE, template);
+            if (locale != null) {
+                enumConstantMethod.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(TemplateInstance.class, "setLocale", TemplateInstance.class,
+                                String.class),
+                        templateInstance, enumConstantMethod.load(locale));
+            }
+            // Render the template
+            enumConstantMethod.returnValue(enumConstantMethod.invokeInterfaceMethod(
+                    io.quarkus.qute.deployment.Descriptors.TEMPLATE_INSTANCE_RENDER, templateInstance));
+        }
+
+        keyMap.put(enumConstantKey,
+                new EnumConstantMessageMethod(enumConstantMethod.getMethodDescriptor()));
     }
 
     /**
@@ -1006,7 +1195,7 @@ public class MessageBundleProcessor {
         return name;
     }
 
-    private void implementResolve(String defaultBundleImpl, ClassCreator bundleCreator, Map<String, MethodInfo> keyMap) {
+    private void implementResolve(String defaultBundleImpl, ClassCreator bundleCreator, Map<String, MessageMethod> keyMap) {
         MethodCreator resolve = bundleCreator.getMethodCreator("resolve", CompletionStage.class, EvalContext.class);
         String resolveMethodPrefix = bundleCreator.getClassName().contains("/")
                 ? bundleCreator.getClassName().substring(bundleCreator.getClassName().lastIndexOf('/') + 1)
@@ -1077,7 +1266,7 @@ public class MessageBundleProcessor {
         int resolveIndex = 0;
         MethodCreator resolveGroup = null;
 
-        for (Entry<String, MethodInfo> entry : keyMap.entrySet()) {
+        for (Entry<String, MessageMethod> entry : keyMap.entrySet()) {
             if (resolveGroup == null || groupIndex++ >= groupLimit) {
                 groupIndex = 0;
                 String resolveMethodName = resolveMethodPrefix + "_resolve_" + resolveIndex++;
@@ -1118,16 +1307,18 @@ public class MessageBundleProcessor {
         }
     }
 
-    private void addMessageMethod(MethodCreator resolve, String key, MethodInfo method, ResultHandle name,
+    private void addMessageMethod(MethodCreator resolve, String key, MessageMethod method, ResultHandle name,
             ResultHandle evaluatedParams,
             ResultHandle ret, String bundleClass) {
         List<Type> methodParams = method.parameterTypes();
 
         BytecodeCreator matched = resolve.ifTrue(Gizmo.equals(resolve, resolve.load(key), name))
                 .trueBranch();
-        if (method.parameterTypes().isEmpty()) {
+        if (methodParams.isEmpty()) {
             matched.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, ret,
-                    matched.invokeInterfaceMethod(method, matched.getThis()));
+                    method.isMessageBundleInterfaceMethod()
+                            ? matched.invokeInterfaceMethod(method.descriptor(), matched.getThis())
+                            : matched.invokeVirtualMethod(method.descriptor(), matched.getThis()));
             matched.returnValue(ret);
         } else {
             // The CompletionStage upon which we invoke whenComplete()
@@ -1171,7 +1362,9 @@ public class MessageBundleProcessor {
                     exception.getCaughtException());
 
             tryCatch.assign(invokeRet,
-                    tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenThis, paramsHandle));
+                    method.isMessageBundleInterfaceMethod()
+                            ? tryCatch.invokeInterfaceMethod(method.descriptor(), whenThis, paramsHandle)
+                            : tryCatch.invokeVirtualMethod(method.descriptor(), whenThis, paramsHandle));
 
             tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
             // CompletableFuture.completeExceptionally(Throwable)
@@ -1394,5 +1587,62 @@ public class MessageBundleProcessor {
             }
             return classInfo.method(name, parameters);
         }
+    }
+
+    interface MessageMethod {
+
+        List<Type> parameterTypes();
+
+        MethodDescriptor descriptor();
+
+        default boolean isMessageBundleInterfaceMethod() {
+            return true;
+        }
+
+    }
+
+    static class SimpleMessageMethod implements MessageMethod {
+
+        final MethodInfo method;
+
+        SimpleMessageMethod(MethodInfo method) {
+            this.method = method;
+        }
+
+        @Override
+        public List<Type> parameterTypes() {
+            return method.parameterTypes();
+        }
+
+        @Override
+        public MethodDescriptor descriptor() {
+            return MethodDescriptor.of(method);
+        }
+
+    }
+
+    static class EnumConstantMessageMethod implements MessageMethod {
+
+        final MethodDescriptor descriptor;
+
+        EnumConstantMessageMethod(MethodDescriptor descriptor) {
+            this.descriptor = descriptor;
+        }
+
+        @Override
+        public List<Type> parameterTypes() {
+            return List.of();
+        }
+
+        @Override
+        public MethodDescriptor descriptor() {
+            return descriptor;
+        }
+
+        @Override
+        public boolean isMessageBundleInterfaceMethod() {
+            return false;
+        }
+
     }
 }

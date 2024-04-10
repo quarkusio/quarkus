@@ -16,6 +16,8 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.GrpcTranscoding;
+import io.quarkus.grpc.GrpcTranscodingMethod;
 import io.quarkus.grpc.MutinyBean;
 import io.quarkus.grpc.MutinyClient;
 import io.quarkus.grpc.MutinyGrpc;
@@ -48,6 +50,9 @@ public class GrpcDotNames {
     public static final DotName MUTINY_CLIENT = DotName.createSimple(MutinyClient.class.getName());
     public static final DotName MUTINY_BEAN = DotName.createSimple(MutinyBean.class.getName());
     public static final DotName MUTINY_SERVICE = DotName.createSimple(MutinyService.class.getName());
+
+    public static final DotName GRPC_TRANSCODING = DotName.createSimple(GrpcTranscoding.class.getName());
+    public static final DotName GRPC_METHOD = DotName.createSimple(GrpcTranscodingMethod.class.getName());
 
     public static final DotName GLOBAL_INTERCEPTOR = DotName.createSimple(GlobalInterceptor.class.getName());
     public static final DotName REGISTER_INTERCEPTOR = DotName.createSimple(RegisterInterceptor.class.getName());

@@ -1659,7 +1659,7 @@ public class CustomLocator implements TemplateLocator {
 === Template Variants
 
 Sometimes it's useful to render a specific variant of the template based on the content negotiation.
-This can be done by setting a special attribute via `TemplateInstance.setAttribute()`:
+This can be done by setting a special attribute via `TemplateInstance.setVariant()`:
 
 [source,java]
 ----
@@ -1672,7 +1672,9 @@ class MyService {
     ItemManager manager;
 
     String renderItems() {
-       return items.data("items",manager.findItems()).setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(Locale.getDefault(),"text/html","UTF-8")).render();
+       return items.data("items", manager.findItems())
+                   .setVariant(new Variant(Locale.getDefault(), "text/html", "UTF-8"))
+                   .render();
     }
 }
 ----
@@ -2829,7 +2831,7 @@ public class MyBean {
     Template hello;
 
     String render() {
-       return hello.instance().setAttribute("locale", Locale.forLanguageTag("cs")).render(); <1>
+       return hello.instance().setLocale("cs").render(); <1>
     }
 }
 ----
@@ -2855,6 +2857,40 @@ public class MyBean {
 }
 ----
 <1> The annotation value is a locale tag string (IETF).
+
+===== Enums
+
+There is a convenient way to localize enums.
+If there is a message bundle method that accepts a single parameter of an enum type and has no message template defined:
+
+[source,java]
+----
+@Message <1>
+String methodName(MyEnum enum);
+----
+<1> The value is intentionally not provided. There's also no key for the method in a localized file.
+
+Then it receives a generated template:
+
+[source,html]
+----
+{#when enumParamName}
+  {#is CONSTANT1}{msg:methodName_CONSTANT1}
+  {#is CONSTANT2}{msg:methodName_CONSTANT2}
+{/when}
+----
+ 
+Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and values for all constant message keys:
+
+[source,poperties]
+----
+methodName_CONSTANT1=Value 1
+methodName_CONSTANT2=Value 2
+----
+
+In a template, an enum constant can be localized with a message bundle method like `{msg:methodName(enumConstant)}`.
+
+TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a convenient annotation to access enum constants in a template. 
 
 ==== Message Templates
 

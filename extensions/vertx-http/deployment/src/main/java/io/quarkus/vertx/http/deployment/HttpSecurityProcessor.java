@@ -3,6 +3,8 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.DEFAULT_BEAN;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
+import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
 
 import java.lang.reflect.Modifier;
@@ -32,15 +34,19 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
@@ -71,6 +77,7 @@ public class HttpSecurityProcessor {
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
 
     private static final DotName BASIC_AUTH_MECH_NAME = DotName.createSimple(BasicAuthenticationMechanism.class);
+    private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -128,12 +135,45 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
+    void detectBasicAuthImplicitlyRequired(HttpBuildTimeConfig buildTimeConfig,
+            BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, ApplicationIndexBuildItem applicationIndexBuildItem,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
+            List<EagerSecurityInterceptorBindingBuildItem> eagerSecurityInterceptorBindings) {
+        if (makeBasicAuthMechDefaultBean(buildTimeConfig)) {
+            var appIndex = applicationIndexBuildItem.getIndex();
+            boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem
+                    .getContext()
+                    .beans()
+                    .filter(b -> b.hasType(AUTH_MECHANISM_NAME))
+                    .filter(BeanInfo::isClassBean)
+                    .filter(b -> appIndex.getClassByName(b.getBeanClass()) != null)
+                    .isEmpty();
+            // we can't decide whether custom mechanisms support basic auth or not
+            if (noCustomAuthMechanismsDetected) {
+                systemPropertyProducer
+                        .produce(new SystemPropertyBuildItem(TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED, Boolean.TRUE.toString()));
+                if (!eagerSecurityInterceptorBindings.isEmpty()) {
+                    boolean basicAuthAnnotationUsed = eagerSecurityInterceptorBindings
+                            .stream()
+                            .map(EagerSecurityInterceptorBindingBuildItem::getAnnotationBindings)
+                            .flatMap(Arrays::stream)
+                            .anyMatch(BASIC_AUTH_ANNOTATION_NAME::equals);
+                    // @BasicAuthentication is used, hence the basic authentication is required
+                    if (basicAuthAnnotationUsed) {
+                        systemPropertyProducer
+                                .produce(new SystemPropertyBuildItem(BASIC_AUTH_ANNOTATION_DETECTED, Boolean.TRUE.toString()));
+                    }
+                }
+            }
+        }
+    }
+
+    @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     AdditionalBeanBuildItem initBasicAuth(HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerProducer,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
 
-        if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
-                && !buildTimeConfig.auth.basic.orElse(false)) {
+        if (makeBasicAuthMechDefaultBean(buildTimeConfig)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer
                     .appliedToClass()
@@ -148,7 +188,12 @@ public class HttpSecurityProcessor {
         return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(BasicAuthenticationMechanism.class).build();
     }
 
-    public static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,
+    private static boolean makeBasicAuthMechDefaultBean(HttpBuildTimeConfig buildTimeConfig) {
+        return !buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
+                && !buildTimeConfig.auth.basic.orElse(false);
+    }
+
+    private static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
         //basic auth explicitly disabled
         if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {

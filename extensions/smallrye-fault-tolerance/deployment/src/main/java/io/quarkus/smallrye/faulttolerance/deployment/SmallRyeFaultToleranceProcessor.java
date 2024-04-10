@@ -50,6 +50,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -87,7 +88,8 @@ public class SmallRyeFaultToleranceProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_FAULT_TOLERANCE));
 
@@ -95,6 +97,8 @@ public class SmallRyeFaultToleranceProcessor {
                 ContextPropagationRequestContextControllerProvider.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(RunnableWrapper.class.getName(),
                 ContextPropagationRunnableWrapper.class.getName()));
+        // make sure this is initialised at runtime, otherwise it will get a non-initialised ContextPropagationManager
+        runtimeInitializedClassBuildItems.produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -152,6 +156,15 @@ public class SmallRyeFaultToleranceProcessor {
         // Add reflective access to custom backoff strategies
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
+        }
+        // Add reflective access to retry predicates
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            for (String memberName : List.of("result", "exception")) {
+                AnnotationValue member = annotation.value(memberName);
+                if (member != null) {
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
+                }
+            }
         }
 
         for (DotName annotation : DotNames.FT_ANNOTATIONS) {
@@ -350,14 +363,17 @@ public class SmallRyeFaultToleranceProcessor {
             }
         }
 
-        // since annotation transformations are applied lazily, we can't know
-        // all transformed `@*Backoff`s and have to rely on Jandex here
         for (DotName backoffAnnotation : DotNames.BACKOFF_ANNOTATIONS) {
             for (AnnotationInstance it : index.getAnnotations(backoffAnnotation)) {
                 if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                     exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
                             + " present on '" + it.target() + "', but @Retry is missing"));
                 }
+            }
+        }
+        for (AnnotationInstance it : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
+                exceptions.add(new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
             }
         }
 

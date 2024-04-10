@@ -251,16 +251,23 @@ public class CodeFlowAuthorizationTest {
     public void testCodeFlowUserInfo() throws Exception {
         defineCodeFlowAuthorizationOauth2TokenStub();
         wireMockServer.resetRequests();
-        doTestCodeFlowUserInfo("code-flow-user-info-only", 300, false);
+        // No internal ID token
+        doTestCodeFlowUserInfo("code-flow-user-info-only", 300, false, false, 1, 1);
         clearCache();
-        doTestCodeFlowUserInfo("code-flow-user-info-github", 25200, false);
+        // Internal ID token, allow in memory cache = true, cacheUserInfoInIdtoken = false without having to be configured
+        doTestCodeFlowUserInfo("code-flow-user-info-github", 25200, false, false, 1, 1);
         clearCache();
-        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301, true);
+        // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true without having to be configured
+        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301, true, true, 0, 1);
+        clearCache();
+        // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = false
+        doTestCodeFlowUserInfo("code-flow-user-info-github-cache-disabled", 25200, false, false, 0, 4);
         clearCache();
     }
 
     @Test
     public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
+        // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = true
         defineCodeFlowUserInfoCachedInIdTokenStub();
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -277,10 +284,34 @@ public class CodeFlowAuthorizationTest {
             JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
 
+            long issuedAt = idTokenClaims.getLong("iat");
+            long expiresAt = idTokenClaims.getLong("exp");
+            assertEquals(299, expiresAt - issuedAt);
+
+            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            Date date = sessionCookie.getExpires();
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 299 + 300);
+            // This test enables the token refresh, in this case the cookie age is extended by additional 5 mins
+            // to minimize the risk of the browser losing immediately after it has expired, for this cookie
+            // be returned to Quarkus, analyzed and refreshed
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 299 + 300 + 3);
+
             // refresh
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
             assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+
+            idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+
+            issuedAt = idTokenClaims.getLong("iat");
+            expiresAt = idTokenClaims.getLong("exp");
+            assertEquals(305, expiresAt - issuedAt);
+
+            sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            date = sessionCookie.getExpires();
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= 305 + 300);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= 305 + 300 + 3);
 
             webClient.getCookieManager().clearCookies();
         }
@@ -323,8 +354,8 @@ public class CodeFlowAuthorizationTest {
         clearCache();
     }
 
-    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime,
-            boolean tenantConfigResolver) throws Exception {
+    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime, boolean cacheUserInfoInIdToken,
+            boolean tenantConfigResolver, int inMemoryCacheSize, int userInfoRequests) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             wireMockServer.verify(0, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
@@ -336,20 +367,24 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+            assertEquals(
+                    "alice:alice:alice, cache size: " + inMemoryCacheSize + ", TenantConfigResolver: " + tenantConfigResolver,
                     textPage.getContent());
             textPage = webClient.getPage("http://localhost:8081/" + tenantId);
-            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+            assertEquals(
+                    "alice:alice:alice, cache size: " + inMemoryCacheSize + ", TenantConfigResolver: " + tenantConfigResolver,
                     textPage.getContent());
             textPage = webClient.getPage("http://localhost:8081/" + tenantId);
-            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+            assertEquals(
+                    "alice:alice:alice, cache size: " + inMemoryCacheSize + ", TenantConfigResolver: " + tenantConfigResolver,
                     textPage.getContent());
 
-            wireMockServer.verify(1, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
+            wireMockServer.verify(userInfoRequests,
+                    getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
             wireMockServer.resetRequests();
 
             JsonObject idTokenClaims = decryptIdToken(webClient, tenantId);
-            assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+            assertEquals(cacheUserInfoInIdToken, idTokenClaims.containsKey(OidcUtils.USER_INFO_ATTRIBUTE));
             long issuedAt = idTokenClaims.getLong("iat");
             long expiresAt = idTokenClaims.getLong("exp");
             assertEquals(internalIdTokenLifetime, expiresAt - issuedAt);
@@ -434,6 +469,7 @@ public class CodeFlowAuthorizationTest {
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
                                         + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\","
+                                        + "\"expires_in\": 299,"
                                         + "  \"refresh_token\": \"refresh1234\""
                                         + "}")));
         wireMockServer
@@ -450,7 +486,8 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \""
-                                        + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\""
+                                        + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\","
+                                        + "\"expires_in\": 305"
                                         + "}")));
 
     }

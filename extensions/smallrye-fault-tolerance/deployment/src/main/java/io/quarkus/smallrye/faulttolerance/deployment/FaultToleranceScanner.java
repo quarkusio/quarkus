@@ -31,6 +31,7 @@ import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
 import io.smallrye.faulttolerance.api.RateLimit;
+import io.smallrye.faulttolerance.api.RetryWhen;
 import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.autoconfig.MethodDescriptor;
 
@@ -80,7 +81,7 @@ final class FaultToleranceScanner {
     void forEachMethod(ClassInfo clazz, Consumer<MethodInfo> action) {
         for (MethodInfo method : clazz.methods()) {
             if (method.name().startsWith("<")) {
-                // constructors and static inititalizers can't be intercepted
+                // constructors and static initializers can't be intercepted
                 continue;
             }
             if (method.isSynthetic()) {
@@ -134,6 +135,7 @@ final class FaultToleranceScanner {
         result.customBackoff = getAnnotation(CustomBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.exponentialBackoff = getAnnotation(ExponentialBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.fibonacciBackoff = getAnnotation(FibonacciBackoff.class, method, beanClass, annotationsPresentDirectly);
+        result.retryWhen = getAnnotation(RetryWhen.class, method, beanClass, annotationsPresentDirectly);
 
         result.annotationsPresentDirectly = annotationsPresentDirectly;
 

@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +16,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -157,6 +160,10 @@ public class DecoratorGenerator extends BeanGenerator {
         return baseName;
     }
 
+    static boolean isAbstractDecoratorImpl(BeanInfo bean, String providerTypeName) {
+        return bean.isDecorator() && ((DecoratorInfo) bean).isAbstract() && providerTypeName.endsWith(ABSTRACT_IMPL_SUFFIX);
+    }
+
     private String generateDecoratorImplementation(String baseName, String targetPackage, DecoratorInfo decorator,
             ClassInfo decoratorClass, ClassOutput classOutput) {
         // MyDecorator_Impl
@@ -171,8 +178,13 @@ public class DecoratorGenerator extends BeanGenerator {
 
         // Constructor
         MethodInfo decoratorConstructor = decoratorClass.firstMethod(Methods.INIT);
+        List<String> decoratorConstructorParams = new ArrayList<>();
+        for (org.jboss.jandex.Type parameterType : decoratorConstructor.parameterTypes()) {
+            decoratorConstructorParams.add(parameterType.name().toString());
+        }
+        decoratorConstructorParams.add(CreationalContext.class.getName());
         MethodCreator constructor = decoratorImplCreator.getMethodCreator(Methods.INIT, "V",
-                decoratorConstructor.parameterTypes().stream().map(it -> it.name().toString()).toArray());
+                decoratorConstructorParams.toArray(new Object[0]));
         ResultHandle[] constructorArgs = new ResultHandle[decoratorConstructor.parametersCount()];
         for (int i = 0; i < decoratorConstructor.parametersCount(); i++) {
             constructorArgs[i] = constructor.getMethodParam(i);
@@ -181,7 +193,8 @@ public class DecoratorGenerator extends BeanGenerator {
         constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis(), constructorArgs);
         // Set the delegate field
         constructor.writeInstanceField(delegateField.getFieldDescriptor(), constructor.getThis(),
-                constructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_GET));
+                constructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_GET,
+                        constructor.getMethodParam(decoratorConstructor.parametersCount())));
         constructor.returnValue(null);
 
         // Find non-decorated methods from all decorated types

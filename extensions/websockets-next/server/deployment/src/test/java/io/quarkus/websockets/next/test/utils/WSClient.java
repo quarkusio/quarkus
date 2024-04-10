@@ -10,6 +10,7 @@ import org.awaitility.Awaitility;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.ClientWebSocket;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -50,14 +51,14 @@ public class WSClient implements AutoCloseable {
         if (url.getQuery() != null) {
             uri.append("?").append(url.getQuery());
         }
-        WebSocket webSocket = await(
-                client.connect(options.setPort(url.getPort()).setHost(url.getHost()).setURI(uri.toString())));
+        ClientWebSocket webSocket = client.webSocket();
+        webSocket.handler(b -> messages.add(b));
+        await(webSocket.connect(options.setPort(url.getPort()).setHost(url.getHost()).setURI(uri.toString())));
         var prev = socket.getAndSet(webSocket);
         if (prev != null) {
             messages.clear();
             await(prev.close());
         }
-        webSocket.handler(b -> messages.add(b));
         return this;
     }
 

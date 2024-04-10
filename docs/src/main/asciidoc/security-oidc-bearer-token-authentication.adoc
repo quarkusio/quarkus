@@ -470,6 +470,66 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/tokens/introspect
 
 For information about bearer access token propagation to the downstream services, see the xref:security-openid-connect-client-reference.adoc#token-propagation[Token propagation] section of the Quarkus "OpenID Connect (OIDC) and OAuth2 client and filters reference" guide.
 
+=== JWT token certificate chain
+
+In some cases, JWT bearer tokens have an `x5c` header which represents an X509 certificate chain whose leaf certificate contains a public key that must be used to verify this token's signature.
+Before this public key can be accepted to verify the signature, the certificate chain must be validated first.
+The certificate chain validation involves several steps:
+
+1. Confirm that every certificate but the root one is signed by the parent certificate.
+
+2. Confirm the chain's root certificate is also imported in the truststore.
+
+3. Validate the chain's leaf certificate. If a common name of the leaf certificate is configured then a common name of the chain's leaf certificate must match it. Otherwise the chain's leaf certificate must also be avaiable in the truststore, unless one or more custom `TokenCertificateValidator` implementations are registered.
+
+4. `quarkus.oidc.TokenCertificateValidator` can be used to add a custom certificate chain validation step. It can be used by all tenants expecting tokens with the certificate chain or bound to specific OIDC tenants with the `@quarkus.oidc.TenantFeature` annotation.
+
+For example, here is how you can configure Quarkus OIDC to verify the token's certificate chain, without using `quarkus.oidc.TokenCertificateValidator`:
+
+[source,properties]
+----
+quarkus.oidc.certificate-chain.trust-store-file=truststore-rootcert.p12 <1>
+quarkus.oidc.certificate-chain.trust-store-password=storepassword
+quarkus.oidc.certificate-chain.leaf-certificate-name=www.quarkusio.com <2>
+----
+<1> The truststore must contain the certificate chain's root certificate.
+<2> The certificate chain's leaf certificate must have a common name equal to `www.quarkusio.com`. If this property is not configured then the truststore must contain the certificate chain's leaf certificate unless one or more custom `TokenCertificateValidator` implementations are registered.
+
+You can add a custom certificate chain validation step by registering a custom `quarkus.oidc.TokenCertificateValidator`, for example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenCertificateValidator;
+import io.quarkus.oidc.runtime.TrustStoreUtils;
+import io.vertx.core.json.JsonObject;
+
+@ApplicationScoped
+@Unremovable
+public class BearerGlobalTokenChainValidator implements TokenCertificateValidator {
+
+    @Override
+    public void validate(OidcTenantConfig oidcConfig, List<X509Certificate> chain, String tokenClaims) throws CertificateException {
+        String rootCertificateThumbprint = TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1));
+        JsonObject claims = new JsonObject(tokenClaims);
+        if (!rootCertificateThumbprint.equals(claims.getString("root-certificate-thumbprint"))) { <1>
+            throw new CertificateException("Invalid root certificate");
+        }
+    }
+}
+
+----
+<1> Confirm that the certificate chain's root certificate is bound to the custom JWT token's claim.
+
 === OIDC provider client authentication
 
 `quarkus.oidc.runtime.OidcProviderClient` is used when a remote request to an OIDC provider is required.

@@ -61,6 +61,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-chain-custom-validator")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerCertificateCustomValidator() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-certificate-full-chain-root-only")
     @GET
     @RolesAllowed("admin")

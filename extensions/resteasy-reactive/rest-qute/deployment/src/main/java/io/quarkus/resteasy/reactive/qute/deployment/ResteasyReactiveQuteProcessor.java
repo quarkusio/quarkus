@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
@@ -49,8 +50,10 @@ public class ResteasyReactiveQuteProcessor {
     }
 
     @BuildStep
-    NonBlockingReturnTypeBuildItem nonBlockingTemplateInstance() {
-        return new NonBlockingReturnTypeBuildItem(TEMPLATE_INSTANCE);
+    void nonBlockingTemplateInstance(RestQuteConfig config, BuildProducer<NonBlockingReturnTypeBuildItem> nonBlockingType) {
+        if (config.templateInstanceNonBlockingType()) {
+            nonBlockingType.produce(new NonBlockingReturnTypeBuildItem(TEMPLATE_INSTANCE));
+        }
     }
 
     @BuildStep

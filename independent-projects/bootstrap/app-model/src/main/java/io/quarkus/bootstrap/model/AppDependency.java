@@ -1,8 +1,11 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -125,5 +128,10 @@ public class AppDependency implements ResolvedDependency, Serializable {
     @Override
     public PathCollection getResolvedPaths() {
         return artifact.getResolvedPaths();
+    }
+
+    @Override
+    public Collection<ArtifactCoords> getDependencies() {
+        return List.of();
     }
 }

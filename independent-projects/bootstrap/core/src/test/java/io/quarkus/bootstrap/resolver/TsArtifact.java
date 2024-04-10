@@ -15,7 +15,6 @@ import org.apache.maven.model.Profile;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 
 /**
  *
@@ -180,6 +179,10 @@ public class TsArtifact {
         return this;
     }
 
+    public TsArtifact addManagedDependency(TsArtifact a) {
+        return addManagedDependency(new TsDependency(a));
+    }
+
     public TsArtifact addManagedDependency(TsDependency dep) {
         if (managedDeps.isEmpty()) {
             managedDeps = new ArrayList<>();
@@ -239,9 +242,10 @@ public class TsArtifact {
         }
 
         if (!managedDeps.isEmpty()) {
-            model.setDependencyManagement(new DependencyManagement());
+            var dm = new DependencyManagement();
+            model.setDependencyManagement(dm);
             for (TsDependency dep : managedDeps) {
-                model.getDependencyManagement().addDependency(dep.toPomDependency());
+                dm.addDependency(dep.toPomDependency());
             }
         }
 
@@ -252,7 +256,7 @@ public class TsArtifact {
     }
 
     public ArtifactCoords toArtifact() {
-        return new GACTV(groupId, artifactId, classifier, type, version);
+        return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
     }
 
     /**

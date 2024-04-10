@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.function.Consumer;
@@ -22,6 +23,8 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.DependencyLoggingConfig;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -48,8 +51,26 @@ public class DependencyTreeMojo extends AbstractMojo {
      * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependency tree should be built.
      * {@code io.quarkus.runtime.LaunchMode.NORMAL} is the default.
      */
-    @Parameter(property = "mode", required = false, defaultValue = "prod")
+    @Parameter(property = "mode", defaultValue = "prod")
     String mode;
+
+    /**
+     * INCUBATING option, enabled with @{code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
+     * <p>
+     * Whether to log dependency properties, such as on which classpath they belong, whether they are hot-reloadable in dev
+     * mode, etc.
+     */
+    @Parameter(property = "verbose")
+    boolean verbose;
+
+    /**
+     * INCUBATING option, enabled with @{code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
+     * <p>
+     * Whether to log all dependencies of each dependency node in a tree, adding {@code [+]} suffix
+     * to those whose dependencies are not expanded.
+     */
+    @Parameter(property = "graph")
+    boolean graph;
 
     /**
      * If specified, this parameter will cause the dependency tree to be written to the path specified, instead of writing to
@@ -77,8 +98,10 @@ public class DependencyTreeMojo extends AbstractMojo {
             final BufferedWriter bw;
             try {
                 Files.createDirectories(outputFile.toPath().getParent());
-                bw = writer = Files.newBufferedWriter(outputFile.toPath(),
-                        appendOutput && outputFile.exists() ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+                final OpenOption[] openOptions = appendOutput && outputFile.exists()
+                        ? new OpenOption[] { StandardOpenOption.APPEND }
+                        : new OpenOption[0];
+                bw = writer = Files.newBufferedWriter(outputFile.toPath(), openOptions);
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to initialize file output writer", e);
             }
@@ -124,7 +147,13 @@ public class DependencyTreeMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
-            modelResolver.setBuildTreeLogger(log);
+            modelResolver.setIncubatingModelResolver(
+                    IncubatingApplicationModelResolver.isIncubatingEnabled(project.getProperties()));
+            modelResolver.setDepLogConfig(DependencyLoggingConfig.builder()
+                    .setMessageConsumer(log)
+                    .setVerbose(verbose)
+                    .setGraph(graph)
+                    .build());
             modelResolver.resolveModel(appArtifact);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);

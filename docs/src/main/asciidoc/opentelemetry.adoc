@@ -167,7 +167,21 @@ If you need to enable or disable the exporter at runtime, you can use the <<samp
 
 == Run the application
 
-The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
+First we need to start a system to visualise the OpenTelemetry data.
+We have 2 options:
+
+* Start an all-in-one Grafana OTel LGTM system for traces and metrics.
+* Jaeger system just for traces.
+
+=== Grafana OTel LGTM option
+
+* Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
+
+This features a Quarkus Dev service including a Grafana for visualizing data, Loky to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+
+=== Jaeger to see traces option
+
+Configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
 
 [NOTE]
 ====
@@ -196,6 +210,8 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
 ----
 You should remove the optional ports you don't need them.
+
+=== Start the application
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
@@ -628,7 +644,7 @@ The exporter is automatically wired with CDI, that's why the `quarkus.otel.trace
 The `quarkus.otel.exporter.otlp.traces.protocol` default to `grpc` and `http/protobuf` can also be used.
 
 === On Quarkiverse
-Additional exporters will be available in the Quarkiverse https://github.com/quarkiverse/quarkus-opentelemetry-exporter/blob/main/README.md[quarkus-opentelemetry-exporter] project.
+Additional exporters will be available in the Quarkiverse https://docs.quarkiverse.io/quarkus-opentelemetry-exporter/dev/index.html[quarkus-opentelemetry-exporter] project.
 
 [[quarkus-extensions-using-opentelemetry]]
 == Quarkus core extensions instrumented with OpenTelemetry tracing

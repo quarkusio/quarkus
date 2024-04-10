@@ -4,14 +4,12 @@ import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import jakarta.enterprise.inject.Default;
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -32,14 +30,11 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.CertificateChain;
-import io.quarkus.oidc.TenantFeature.TenantFeatureLiteral;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
@@ -84,8 +79,8 @@ public class OidcProvider implements Closeable {
     final AlgorithmConstraints requiredAlgorithmConstraints;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
-        this(client, oidcConfig, jwks, TokenCustomizerFinder.find(oidcConfig), tokenDecryptionKey,
-                getCustomValidators(oidcConfig));
+        this(client, oidcConfig, jwks, TenantFeatureFinder.find(oidcConfig), tokenDecryptionKey,
+                TenantFeatureFinder.find(oidcConfig, Validator.class));
     }
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
@@ -94,10 +89,9 @@ public class OidcProvider implements Closeable {
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
         if (jwks != null) {
-            this.asymmetricKeyResolver = new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval,
-                    oidcConfig.certificateChain);
+            this.asymmetricKeyResolver = new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
         } else if (oidcConfig != null && oidcConfig.certificateChain.trustStoreFile.isPresent()) {
-            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig.certificateChain);
+            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig);
         } else {
             this.asymmetricKeyResolver = null;
         }
@@ -112,22 +106,17 @@ public class OidcProvider implements Closeable {
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
-
-        if (customValidators != null && !customValidators.isEmpty()) {
-            this.customValidators = customValidators;
-        } else {
-            this.customValidators = null;
-        }
+        this.customValidators = customValidators == null ? List.of() : customValidators;
     }
 
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
         this.client = null;
         this.oidcConfig = oidcConfig;
-        this.tokenCustomizer = TokenCustomizerFinder.find(oidcConfig);
+        this.tokenCustomizer = TenantFeatureFinder.find(oidcConfig);
         if (publicKeyEnc != null) {
             this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         } else if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
-            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig.certificateChain);
+            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig);
         } else {
             throw new IllegalStateException("Neither public key nor certificate chain verification modes are enabled");
         }
@@ -137,7 +126,7 @@ public class OidcProvider implements Closeable {
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
-        this.customValidators = getCustomValidators(oidcConfig);
+        this.customValidators = TenantFeatureFinder.find(oidcConfig, Validator.class);
     }
 
     private AlgorithmConstraints checkSignatureAlgorithm() {
@@ -223,10 +212,8 @@ public class OidcProvider implements Closeable {
             builder.registerValidator(new CustomClaimsValidator(Map.of(OidcConstants.NONCE, nonce)));
         }
 
-        if (customValidators != null) {
-            for (Validator customValidator : customValidators) {
-                builder.registerValidator(customValidator);
-            }
+        for (Validator customValidator : customValidators) {
+            builder.registerValidator(customValidator);
         }
 
         if (issuedAtRequired) {
@@ -438,11 +425,11 @@ public class OidcProvider implements Closeable {
         volatile long forcedJwksRefreshIntervalMilliSecs;
         final CertChainPublicKeyResolver chainResolverFallback;
 
-        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval, CertificateChain chain) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
-            if (chain.trustStoreFile.isPresent()) {
-                chainResolverFallback = new CertChainPublicKeyResolver(chain);
+            if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+                chainResolverFallback = new CertChainPublicKeyResolver(oidcConfig);
             } else {
                 chainResolverFallback = null;
             }
@@ -618,24 +605,4 @@ public class OidcProvider implements Closeable {
         }
     }
 
-    private static List<Validator> getCustomValidators(OidcTenantConfig oidcTenantConfig) {
-        if (oidcTenantConfig != null && oidcTenantConfig.tenantId.isPresent()) {
-            var tenantsValidators = new ArrayList<Validator>();
-            for (var instance : Arc.container().listAll(Validator.class, Default.Literal.INSTANCE)) {
-                if (instance.isAvailable()) {
-                    tenantsValidators.add(instance.get());
-                }
-            }
-            for (var instance : Arc.container().listAll(Validator.class,
-                    TenantFeatureLiteral.of(oidcTenantConfig.tenantId.get()))) {
-                if (instance.isAvailable()) {
-                    tenantsValidators.add(instance.get());
-                }
-            }
-            if (!tenantsValidators.isEmpty()) {
-                return List.copyOf(tenantsValidators);
-            }
-        }
-        return null;
-    }
 }

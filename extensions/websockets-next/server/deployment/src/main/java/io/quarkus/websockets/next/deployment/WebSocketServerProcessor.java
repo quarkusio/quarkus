@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -47,6 +49,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -115,6 +118,18 @@ public class WebSocketServerProcessor {
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TextMessageCodec.class));
+    }
+
+    @BuildStep
+    ExecutionModelAnnotationsAllowedBuildItem executionModelAnnotations(
+            TransformedAnnotationsBuildItem transformedAnnotations) {
+        return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {
+            @Override
+            public boolean test(MethodInfo method) {
+                return Annotations.containsAny(transformedAnnotations.getAnnotations(method),
+                        WebSocketDotNames.CALLBACK_ANNOTATIONS);
+            }
+        });
     }
 
     @BuildStep
@@ -398,7 +413,7 @@ public class WebSocketServerProcessor {
      *     }
      *
      *     public Uni doOnTextMessage(String message) {
-     *         Uni uni = ((Echo) super.beanInstance("MTd91f3oxHtG8gnznR7XcZBCLdE")).echo((String) message);
+     *         Uni uni = ((Echo) super.beanInstance().echo((String) message);
      *         if (uni != null) {
      *             // The lambda is implemented as a generated function: Echo_WebSocketEndpoint$$function$$1
      *             return uni.chain(m -> sendText(m, false));
@@ -408,7 +423,7 @@ public class WebSocketServerProcessor {
      *     }
      *
      *     public Uni doOnTextMessage(Object message) {
-     *         Object bean = super.beanInstance("egBJQ7_QAFkQlYXSTKE0XlN3wow");
+     *         Object bean = super.beanInstance();
      *         try {
      *             String ret = ((EchoEndpoint) bean).echo((String) message);
      *             return ret != null ? super.sendText(ret, false) : Uni.createFrom().voidItem();
@@ -429,6 +444,10 @@ public class WebSocketServerProcessor {
      *
      *     public WebSocketEndpoint.ExecutionModel onTextMessageExecutionModel() {
      *         return ExecutionModel.EVENT_LOOP;
+     *     }
+     *
+     *     public String beanIdentifier() {
+     *        return "egBJQ7_QAFkQlYXSTKE0XlN3wow";
      *     }
      * }
      * </pre>
@@ -470,13 +489,15 @@ public class WebSocketServerProcessor {
         MethodCreator executionMode = endpointCreator.getMethodCreator("executionMode", WebSocket.ExecutionMode.class);
         executionMode.returnValue(executionMode.load(endpoint.executionMode));
 
+        MethodCreator beanIdentifier = endpointCreator.getMethodCreator("beanIdentifier", String.class);
+        beanIdentifier.returnValue(beanIdentifier.load(endpoint.bean.getIdentifier()));
+
         if (endpoint.onOpen != null) {
             Callback callback = endpoint.onOpen;
             MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Object.class);
-            // Foo foo = beanInstance("foo");
+            // Foo foo = beanInstance();
             ResultHandle beanInstance = doOnOpen.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                    doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), doOnOpen.getThis());
             // Call the business method
             TryBlock tryBlock = onErrorTryBlock(doOnOpen, doOnOpen.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
@@ -500,8 +521,7 @@ public class WebSocketServerProcessor {
             MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
             ResultHandle beanInstance = doOnClose.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                    doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), doOnClose.getThis());
             // Call the business method
             TryBlock tryBlock = onErrorTryBlock(doOnClose, doOnClose.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
@@ -648,10 +668,9 @@ public class WebSocketServerProcessor {
                 methodParameterType);
 
         TryBlock tryBlock = onErrorTryBlock(doOnMessage, doOnMessage.getThis());
-        // Foo foo = beanInstance("foo");
+        // Foo foo = beanInstance();
         ResultHandle beanInstance = tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                tryBlock.getThis(), tryBlock.load(endpoint.bean.getIdentifier()));
+                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), tryBlock.getThis());
         ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
         // Call the business method
         ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance,
@@ -1006,7 +1025,8 @@ public class WebSocketServerProcessor {
         List<Callback> errorHandlers = new ArrayList<>();
         for (AnnotationInstance annotation : annotations) {
             MethodInfo method = annotation.target().asMethod();
-            Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
+            Callback callback = new Callback(annotation, method, executionModel(method, transformedAnnotations),
+                    callbackArguments,
                     transformedAnnotations, endpointPath, index);
             long errorArguments = callback.arguments.stream().filter(ca -> ca instanceof ErrorCallbackArgument).count();
             if (errorArguments != 1) {
@@ -1052,7 +1072,8 @@ public class WebSocketServerProcessor {
         } else if (annotations.size() == 1) {
             AnnotationInstance annotation = annotations.get(0);
             MethodInfo method = annotation.target().asMethod();
-            Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
+            Callback callback = new Callback(annotation, method, executionModel(method, transformedAnnotations),
+                    callbackArguments,
                     transformedAnnotations, endpointPath, index);
             long messageArguments = callback.arguments.stream().filter(ca -> ca instanceof MessageCallbackArgument).count();
             if (callback.acceptsMessage()) {
@@ -1081,13 +1102,16 @@ public class WebSocketServerProcessor {
                 String.format("There can be only one callback annotated with %s declared on %s", annotationName, beanClass));
     }
 
-    ExecutionModel executionModel(MethodInfo method) {
-        if (hasBlockingSignature(method)) {
-            return method.hasDeclaredAnnotation(WebSocketDotNames.RUN_ON_VIRTUAL_THREAD) ? ExecutionModel.VIRTUAL_THREAD
-                    : ExecutionModel.WORKER_THREAD;
+    ExecutionModel executionModel(MethodInfo method, TransformedAnnotationsBuildItem transformedAnnotations) {
+        if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
+            return ExecutionModel.VIRTUAL_THREAD;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)) {
+            return ExecutionModel.WORKER_THREAD;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.NON_BLOCKING)) {
+            return ExecutionModel.EVENT_LOOP;
+        } else {
+            return hasBlockingSignature(method) ? ExecutionModel.WORKER_THREAD : ExecutionModel.EVENT_LOOP;
         }
-        return method.hasDeclaredAnnotation(WebSocketDotNames.BLOCKING) ? ExecutionModel.WORKER_THREAD
-                : ExecutionModel.EVENT_LOOP;
     }
 
     boolean hasBlockingSignature(MethodInfo method) {

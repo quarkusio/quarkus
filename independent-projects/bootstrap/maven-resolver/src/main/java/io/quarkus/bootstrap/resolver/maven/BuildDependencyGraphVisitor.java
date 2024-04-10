@@ -15,6 +15,7 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
 
 public class BuildDependencyGraphVisitor {
@@ -112,7 +113,15 @@ public class BuildDependencyGraphVisitor {
                 buf.append('\u2514').append('\u2500').append(' ');
             }
         }
-        buf.append(node.getArtifact());
+        var a = node.getArtifact();
+        buf.append(a.getGroupId()).append(":").append(a.getArtifactId()).append(":");
+        if (!a.getClassifier().isEmpty()) {
+            buf.append(a.getClassifier()).append(":");
+        }
+        if (!ArtifactCoords.TYPE_JAR.equals(a.getExtension())) {
+            buf.append(a.getExtension()).append(":");
+        }
+        buf.append(a.getVersion());
         if (!depth.isEmpty()) {
             buf.append(" (").append(node.getDependency().getScope());
             if (node.getDependency().isOptional()) {

@@ -176,6 +176,7 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
+                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>
@@ -245,6 +246,7 @@
                 <module>flyway</module>
                 <module>liquibase</module>
                 <module>liquibase-mongodb</module>
+                <module>observability-lgtm</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
                 <module>oidc-client-reactive</module>
@@ -338,7 +340,7 @@
                 <module>simple with space</module>
                 <module>picocli</module>
                 <module>picocli-native</module>
-                <module>webjars-locator</module>
+                <module>web-dependency-locator</module>
                 <module>devmode</module>
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
@@ -389,6 +391,7 @@
                 <module>grpc-stork-simple</module>
                 <module>grpc-exceptions</module>
                 <module>grpc-test-random-port</module>
+                <module>grpc-transcoding</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>

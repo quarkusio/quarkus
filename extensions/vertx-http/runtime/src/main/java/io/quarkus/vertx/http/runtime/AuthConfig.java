@@ -14,7 +14,8 @@ public class AuthConfig {
     /**
      * If basic auth should be enabled. If both basic and form auth is enabled then basic auth will be enabled in silent mode.
      *
-     * If no authentication mechanisms are configured basic auth is the default.
+     * The basic auth is enabled by default if no authentication mechanisms are configured or Quarkus can safely
+     * determine that basic authentication is required.
      */
     @ConfigItem
     public Optional<Boolean> basic;

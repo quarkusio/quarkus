@@ -18,6 +18,10 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.api.grpc</groupId>
+            <artifactId>proto-google-common-protos</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.salesforce.servicelibs</groupId>
             <artifactId>jprotoc</artifactId>
             <exclusions>

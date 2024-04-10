@@ -3,11 +3,15 @@ package io.quarkus.grpc.protoc.plugin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.google.api.AnnotationsProto;
+import com.google.api.HttpRule;
 import com.google.common.base.Strings;
 import com.google.common.html.HtmlEscapers;
 import com.google.protobuf.DescriptorProtos;
@@ -27,6 +31,17 @@ public class MutinyGrpcGenerator extends Generator {
     private static final int SERVICE_NUMBER_OF_PATHS = 2;
     private static final int METHOD_NUMBER_OF_PATHS = 4;
     public static final String CLASS_PREFIX = "Mutiny";
+
+    private static final Set<String> EXCLUDED_PACKAGES = Set.of("grpc.health.v1", "io.grpc.reflection");
+
+    private boolean skipTranscoding = false;
+
+    public MutinyGrpcGenerator() {
+    }
+
+    public MutinyGrpcGenerator(boolean skipTranscoding) {
+        this.skipTranscoding = skipTranscoding;
+    }
 
     private String getServiceJavaDocPrefix() {
         return "    ";
@@ -144,6 +159,37 @@ public class MutinyGrpcGenerator extends Generator {
         methodContext.isManyInput = methodProto.getClientStreaming();
         methodContext.isManyOutput = methodProto.getServerStreaming();
         methodContext.methodNumber = methodNumber;
+        methodContext.httpPath = methodContext.methodName;
+        methodContext.httpMethod = "GET";
+
+        if (!skipTranscoding && methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
+            // Extract the HTTP rule from the method options (if present)
+            HttpRule httpRule = getHttpRule(methodProto);
+            if (httpRule == null) {
+                throw new IllegalArgumentException("HTTP rule is not defined for method " + methodProto.getName());
+            }
+
+            // Determine HTTP method and path based on the HTTP rule
+            if (httpRule.hasGet()) {
+                methodContext.httpMethod = "GET";
+                methodContext.httpPath = httpRule.getGet();
+            } else if (httpRule.hasPost()) {
+                methodContext.httpMethod = "POST";
+                methodContext.httpPath = httpRule.getPost();
+            } else if (httpRule.hasPut()) {
+                methodContext.httpMethod = "PUT";
+                methodContext.httpPath = httpRule.getPut();
+            } else if (httpRule.hasDelete()) {
+                methodContext.httpMethod = "DELETE";
+                methodContext.httpPath = httpRule.getDelete();
+            } else if (httpRule.hasPatch()) {
+                methodContext.httpMethod = "PATCH";
+                methodContext.httpPath = httpRule.getPatch();
+            } else if (httpRule.hasCustom()) {
+                methodContext.httpMethod = "CUSTOM";
+                methodContext.httpPath = httpRule.getCustom().getPath();
+            }
+        }
 
         DescriptorProtos.SourceCodeInfo.Location methodLocation = locations.stream()
                 .filter(location -> location.getPathCount() == METHOD_NUMBER_OF_PATHS &&
@@ -169,6 +215,13 @@ public class MutinyGrpcGenerator extends Generator {
             methodContext.grpcCallsMethodName = "asyncBidiStreamingCall";
         }
         return methodContext;
+    }
+
+    private HttpRule getHttpRule(DescriptorProtos.MethodDescriptorProto methodProto) {
+        if (methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
+            return methodProto.getOptions().getExtension(AnnotationsProto.http);
+        }
+        return null;
     }
 
     static String adaptMethodName(String name) {
@@ -273,7 +326,13 @@ public class MutinyGrpcGenerator extends Generator {
                     absoluteFileName(service, service.serviceName + "Bean.java")));
             files.add(buildFile(service, "MutinyClient.mustache",
                     absoluteFileName(service, service.serviceName + "Client.java")));
+
+            if (!skipTranscoding) {
+                files.add(buildFile(service, "MutinyMarshalling.mustache",
+                        absoluteFileName(service, service.serviceName + "Marshalling.java")));
+            }
         }
+
         return files;
     }
 
@@ -364,6 +423,9 @@ public class MutinyGrpcGenerator extends Generator {
         public String grpcCallsMethodName;
         public int methodNumber;
         public String javaDoc;
+        // HTTP annotations
+        public String httpPath;
+        public String httpMethod;
 
         // This method mimics the upper-casing method ogf gRPC to ensure compatibility
         // See https://github.com/grpc/grpc-java/blob/v1.8.0/compiler/src/java_plugin/cpp/java_generator.cpp#L58
@@ -405,10 +467,21 @@ public class MutinyGrpcGenerator extends Generator {
     }
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            ProtocPlugin.generate(new MutinyGrpcGenerator());
+        Set<String> argSet = new HashSet<>(Arrays.asList(args));
+        if (argSet.contains("help") || argSet.contains("--help") || argSet.contains("-h")) {
+            System.out.println("Usage: MutinyGrpcGenerator [enableTranscoding]");
+            System.out.println("--enableTranscoding: Enable transcoding support");
+            return;
+        }
+
+        boolean skipTranscoding = !argSet.contains("--enableTranscoding");
+        log.info("Transcoding will be " + (skipTranscoding ? "skipped" : "enabled"));
+
+        String[] finalArgs = skipTranscoding ? args : Arrays.copyOfRange(args, 1, args.length);
+        if (finalArgs.length == 0) {
+            ProtocPlugin.generate(List.of(new MutinyGrpcGenerator(skipTranscoding)), List.of(AnnotationsProto.http));
         } else {
-            ProtocPlugin.debug(new MutinyGrpcGenerator(), args[0]);
+            ProtocPlugin.debug(List.of(new MutinyGrpcGenerator()), List.of(AnnotationsProto.http), finalArgs[0]);
         }
     }
 }

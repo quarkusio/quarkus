@@ -1305,12 +1305,20 @@ public class BeanGenerator extends AbstractGenerator {
             if (Modifier.isPrivate(constructor.flags())) {
                 privateMembers.add(isApplicationClass,
                         String.format("Bean constructor %s on %s", constructor, constructor.declaringClass().name()));
-                ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(providerHandles.size()));
-                ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
+                int params = providerHandles.size();
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    params++;
+                }
+                ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(params));
+                ResultHandle argsArray = creator.newArray(Object.class, creator.load(params));
                 for (int i = 0; i < injectionPoints.size(); i++) {
                     creator.writeArrayValue(paramTypesArray, i,
                             creator.loadClass(injectionPoints.get(i).getType().name().toString()));
                     creator.writeArrayValue(argsArray, i, providerHandles.get(i));
+                }
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    creator.writeArrayValue(paramTypesArray, params - 1, creator.loadClass(CreationalContext.class));
+                    creator.writeArrayValue(argsArray, params - 1, createMethod.getMethodParam(0));
                 }
                 registration.registerMethod(constructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
@@ -1318,13 +1326,24 @@ public class BeanGenerator extends AbstractGenerator {
                         paramTypesArray, argsArray);
             } else {
                 // new SimpleBean(foo)
-                String[] paramTypes = new String[injectionPoints.size()];
+                int params = injectionPoints.size();
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    params++;
+                }
+                String[] paramTypes = new String[params];
                 for (ListIterator<InjectionPointInfo> iterator = injectionPoints.listIterator(); iterator.hasNext();) {
                     InjectionPointInfo injectionPoint = iterator.next();
                     paramTypes[iterator.previousIndex()] = DescriptorUtils.typeToString(injectionPoint.getType());
                 }
-                return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes),
-                        providerHandles.toArray(new ResultHandle[0]));
+                ResultHandle[] args = new ResultHandle[params];
+                for (int i = 0; i < providerHandles.size(); i++) {
+                    args[i] = providerHandles.get(i);
+                }
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    paramTypes[params - 1] = CreationalContext.class.getName();
+                    args[params - 1] = createMethod.getMethodParam(0);
+                }
+                return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes), args);
             }
         } else {
             MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
@@ -1332,16 +1351,31 @@ public class BeanGenerator extends AbstractGenerator {
                 privateMembers.add(isApplicationClass,
                         String.format("Bean constructor %s on %s", noArgsConstructor,
                                 noArgsConstructor.declaringClass().name()));
-                ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(0));
-                ResultHandle argsArray = creator.newArray(Object.class, creator.load(0));
+                ResultHandle paramTypesArray;
+                ResultHandle argsArray;
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    paramTypesArray = creator.newArray(Class.class, 1);
+                    argsArray = creator.newArray(Object.class, 1);
+                    creator.writeArrayValue(paramTypesArray, 0, creator.loadClass(CreationalContext.class));
+                    creator.writeArrayValue(argsArray, 0, createMethod.getMethodParam(0));
+                } else {
+                    paramTypesArray = creator.newArray(Class.class, 0);
+                    argsArray = creator.newArray(Object.class, 0);
+                }
 
                 registration.registerMethod(noArgsConstructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE,
                         creator.loadClass(noArgsConstructor.declaringClass().name().toString()), paramTypesArray,
                         argsArray);
             } else {
-                // new SimpleBean()
-                return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName));
+                if (DecoratorGenerator.isAbstractDecoratorImpl(bean, providerTypeName)) {
+                    // new SimpleDecorator_Impl(ctx)
+                    return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, CreationalContext.class),
+                            createMethod.getMethodParam(0));
+                } else {
+                    // new SimpleBean()
+                    return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName));
+                }
             }
         }
     }

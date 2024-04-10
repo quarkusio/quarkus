@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.reactive.qute.deployment;
 
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.Matchers.is;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -29,7 +28,7 @@ public class TemplateInstanceNonBlockingTest {
 
     @Test
     public void test() {
-        when().get("/test").then().statusCode(200).body(Matchers.is("Blocking allowed: false"));
+        when().get("/test").then().statusCode(200).body(Matchers.is("Blocking allowed: true"));
     }
 
     @Path("test")

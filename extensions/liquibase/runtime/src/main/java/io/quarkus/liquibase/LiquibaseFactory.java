@@ -2,10 +2,13 @@ package io.quarkus.liquibase;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Map;
 
 import javax.sql.DataSource;
 
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
@@ -78,8 +81,22 @@ public class LiquibaseFactory {
         try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
             String parsedChangeLog = parseChangeLog(config.changeLog);
 
-            Database database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()));
+            Database database;
+
+            if (config.username.isPresent() && config.password.isPresent()) {
+                AgroalDataSource agroalDataSource = dataSource.unwrap(AgroalDataSource.class);
+                String jdbcUrl = agroalDataSource.getConfiguration().connectionPoolConfiguration()
+                        .connectionFactoryConfiguration().jdbcUrl();
+                Connection connection = DriverManager.getConnection(jdbcUrl, config.username.get(), config.password.get());
+
+                database = DatabaseFactory.getInstance()
+                        .findCorrectDatabaseImplementation(
+                                new JdbcConnection(connection));
+
+            } else {
+                database = DatabaseFactory.getInstance()
+                        .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()));
+            }
 
             if (database != null) {
                 database.setDatabaseChangeLogLockTableName(config.databaseChangeLogLockTableName);

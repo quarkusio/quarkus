@@ -22,6 +22,7 @@ import io.smallrye.faulttolerance.api.CustomBackoffStrategy;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
 import io.smallrye.faulttolerance.api.RateLimit;
+import io.smallrye.faulttolerance.api.RetryWhen;
 
 public final class DotNames {
     public static final DotName OBJECT = DotName.createSimple(Object.class);
@@ -52,8 +53,9 @@ public final class DotNames {
     public static final DotName FIBONACCI_BACKOFF = DotName.createSimple(FibonacciBackoff.class);
     public static final DotName CUSTOM_BACKOFF = DotName.createSimple(CustomBackoff.class);
     public static final DotName CUSTOM_BACKOFF_STRATEGY = DotName.createSimple(CustomBackoffStrategy.class);
+    public static final DotName RETRY_WHEN = DotName.createSimple(RetryWhen.class);
 
-    // certain SmallRye annotations (@CircuitBreakerName, @[Non]Blocking, @*Backoff) alone do _not_ trigger
+    // certain SmallRye annotations (@CircuitBreakerName, @[Non]Blocking, @*Backoff, @RetryWhen) alone do _not_ trigger
     // the fault tolerance interceptor, only in combination with other fault tolerance annotations
     public static final Set<DotName> FT_ANNOTATIONS = Set.of(APPLY_FAULT_TOLERANCE, ASYNCHRONOUS,
             ASYNCHRONOUS_NON_BLOCKING, BULKHEAD, CIRCUIT_BREAKER, FALLBACK, RATE_LIMIT, RETRY, TIMEOUT);

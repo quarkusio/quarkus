@@ -64,6 +64,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String DESCRIPTOR_SET_OUTPUT_DIR = "quarkus.generate-code.grpc.descriptor-set.output-dir";
     private static final String DESCRIPTOR_SET_FILENAME = "quarkus.generate-code.grpc.descriptor-set.name";
 
+    private static final String TRANSCODING_ENABLED = "quarkus.grpc.transcoding.enabled";
+
     private static final String USE_ARG_FILE = "quarkus.generate-code.grpc.use-arg-file";
 
     private Executables executables;
@@ -141,7 +143,7 @@ public class GrpcCodeGen implements CodeGenProvider {
             }
 
             if (!protoFiles.isEmpty()) {
-                initExecutables(workDir, context.applicationModel());
+                initExecutables(context, workDir, context.applicationModel());
 
                 Collection<String> protosToImport = gatherDirectoriesWithImports(workDir.resolve("protoc-dependencies"),
                         context);
@@ -241,7 +243,6 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
 
         new GrpcPostProcessing(context, outDir).postprocess();
-
     }
 
     private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,
@@ -315,6 +316,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private Collection<String> gatherDirectoriesWithImports(Path workDir, CodeGenContext context) throws CodeGenException {
+        log.info("Scanning dependencies for proto files to import");
         Config properties = context.config();
 
         String scanForImports = properties.getOptionalValue(SCAN_FOR_IMPORTS, String.class)
@@ -328,12 +330,16 @@ public class GrpcCodeGen implements CodeGenProvider {
         List<String> dependenciesToScan = Arrays.stream(scanForImports.split(",")).map(String::trim)
                 .collect(Collectors.toList());
 
+        dependenciesToScan.add("com.google.api:api-common");
+        dependenciesToScan.add("com.google.api.grpc:proto-google-common-protos");
+
         Set<String> importDirectories = new HashSet<>();
         ApplicationModel appModel = context.applicationModel();
         for (ResolvedDependency artifact : appModel.getRuntimeDependencies()) {
             if (scanAll
                     || dependenciesToScan.contains(
                             String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId()))) {
+                log.infof("Scanning %s:%s for proto files to import", artifact.getGroupId(), artifact.getArtifactId());
                 extractProtosFromArtifact(workDir, new ArrayList<>(), importDirectories, artifact, List.of(),
                         List.of(), false);
             }
@@ -406,11 +412,12 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
     }
 
-    private void initExecutables(Path workDir, ApplicationModel model) throws CodeGenException {
+    private void initExecutables(CodeGenContext context, Path workDir, ApplicationModel model) throws CodeGenException {
         if (executables == null) {
             Path protocPath;
             String protocPathProperty = System.getProperty("quarkus.grpc.protoc-path");
             String classifier = System.getProperty("quarkus.grpc.protoc-os-classifier", osClassifier());
+
             if (protocPathProperty == null) {
                 protocPath = findArtifactPath(model, PROTOC_GROUPID, PROTOC, classifier, EXE);
             } else {
@@ -421,7 +428,7 @@ public class GrpcCodeGen implements CodeGenProvider {
             Path protocGrpcPluginExe = prepareExecutable(workDir, model,
                     "io.grpc", "protoc-gen-grpc-java", classifier, "exe");
 
-            Path quarkusGrpcPluginExe = prepareQuarkusGrpcExecutable(model, workDir);
+            Path quarkusGrpcPluginExe = prepareQuarkusGrpcExecutable(context, model, workDir);
 
             executables = new Executables(protocExe, protocGrpcPluginExe, quarkusGrpcPluginExe);
         }
@@ -488,26 +495,28 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
     }
 
-    private static Path prepareQuarkusGrpcExecutable(ApplicationModel appModel, Path buildDir) throws CodeGenException {
+    private static Path prepareQuarkusGrpcExecutable(CodeGenContext context, ApplicationModel appModel, Path buildDir)
+            throws CodeGenException {
         Path pluginPath = findArtifactPath(appModel, "io.quarkus", "quarkus-grpc-protoc-plugin", "shaded", "jar");
         if (pluginPath == null) {
             throw new CodeGenException("Failed to find Quarkus gRPC protoc plugin among dependencies");
         }
 
         if (OS.determineOS() != OS.WINDOWS) {
-            return writeScript(buildDir, pluginPath, "#!/bin/sh\n", ".sh");
+            return writeScript(context, buildDir, pluginPath, "#!/bin/sh\n", ".sh");
         } else {
-            return writeScript(buildDir, pluginPath, "@echo off\r\n", ".cmd");
+            return writeScript(context, buildDir, pluginPath, "@echo off\r\n", ".cmd");
         }
     }
 
-    private static Path writeScript(Path buildDir, Path pluginPath, String shebang, String suffix) throws CodeGenException {
+    private static Path writeScript(CodeGenContext context, Path buildDir, Path pluginPath, String shebang, String suffix)
+            throws CodeGenException {
         Path script;
         try {
             script = Files.createTempFile(buildDir, "quarkus-grpc", suffix);
             try (BufferedWriter writer = Files.newBufferedWriter(script)) {
                 writer.write(shebang);
-                writePluginExeCmd(pluginPath, writer);
+                writePluginExeCmd(context, pluginPath, writer);
             }
         } catch (IOException e) {
             throw new CodeGenException("Failed to create a wrapper script for quarkus-grpc plugin", e);
@@ -518,9 +527,13 @@ public class GrpcCodeGen implements CodeGenProvider {
         return script;
     }
 
-    private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
+    private static void writePluginExeCmd(CodeGenContext context, Path pluginPath, BufferedWriter writer) throws IOException {
+        Config properties = context.config();
+        boolean enableTranscoding = properties.getOptionalValue(TRANSCODING_ENABLED, Boolean.class).orElse(false);
+
         writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
-                pluginPath.toAbsolutePath() + "\" " + quarkusProtocPluginMain);
+                pluginPath.toAbsolutePath() + "\" " + quarkusProtocPluginMain
+                + (enableTranscoding ? " --enableTranscoding" : ""));
         writer.newLine();
     }
 

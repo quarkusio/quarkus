@@ -42,6 +42,15 @@ public class BootstrapConfig {
     boolean disableJarCache;
 
     /**
+     * A temporary option introduced to avoid a logging warning when {@code }-Dquarkus.bootstrap.incubating-model-resolver}
+     * is added to the build command line.
+     * This option enables an incubating implementation of the Quarkus Application Model resolver.
+     * This option will be removed as soon as the incubating implementation becomes the default one.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean incubatingModelResolver;
+
+    /**
      * Whether to throw an error, warn or silently ignore misaligned platform BOM imports
      */
     @ConfigItem(defaultValue = "error")

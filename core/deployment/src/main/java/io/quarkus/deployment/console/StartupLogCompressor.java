@@ -3,6 +3,7 @@ package io.quarkus.deployment.console;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -26,18 +27,28 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
     final List<String> toDump = new ArrayList<>();
     final AtomicInteger COUNTER = new AtomicInteger();
     final Predicate<Thread> additionalThreadPredicate;
+    final Predicate<String> linePredicate; // test if we always print the line / log
 
     public StartupLogCompressor(String name,
             @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem) {
-        this(name, consoleInstalledBuildItem, loggingSetupBuildItem, (s) -> false);
+        this(name, consoleInstalledBuildItem, loggingSetupBuildItem, s -> false);
     }
 
     public StartupLogCompressor(String name,
             @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem,
             Predicate<Thread> additionalThreadPredicate) {
-        this.additionalThreadPredicate = additionalThreadPredicate;
+        this(name, consoleInstalledBuildItem, loggingSetupBuildItem, additionalThreadPredicate, s -> false);
+    }
+
+    public StartupLogCompressor(String name,
+            @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem,
+            Predicate<Thread> additionalThreadPredicate,
+            Predicate<String> linePredicate) {
+        this.additionalThreadPredicate = Objects.requireNonNull(additionalThreadPredicate);
+        this.linePredicate = Objects.requireNonNull(linePredicate);
         if (QuarkusConsole.INSTANCE.isAnsiSupported()) {
             QuarkusConsole.installRedirects();
             this.name = name;
@@ -74,8 +85,8 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
 
     @Override
     public boolean test(String s, Boolean errorStream) {
-        if (thread == null) {
-            //not installed
+        if (thread == null || linePredicate.test(s)) {
+            //not installed or line predicate tested to true
             return true;
         }
         Thread current = Thread.currentThread();

@@ -8,15 +8,15 @@ public interface Dependency extends ArtifactCoords {
     String SCOPE_COMPILE = "compile";
     String SCOPE_IMPORT = "import";
 
-    public static Dependency of(String groupId, String artifactId) {
+    static Dependency of(String groupId, String artifactId) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, null);
     }
 
-    public static Dependency of(String groupId, String artifactId, String version) {
+    static Dependency of(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, version);
     }
 
-    public static Dependency pomImport(String groupId, String artifactId, String version) {
+    static Dependency pomImport(String groupId, String artifactId, String version) {
         return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_POM, version, SCOPE_IMPORT, false);
     }
 

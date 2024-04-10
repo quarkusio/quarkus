@@ -80,7 +80,6 @@
         <org-crac.version>0.1.3</org-crac.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
-        <maven-model-helper.version>36</maven-model-helper.version>
     </properties>
     <modules>
         <module>bom</module>

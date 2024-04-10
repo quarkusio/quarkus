@@ -1,9 +1,9 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -16,9 +16,10 @@ import java.util.regex.Pattern;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
-import io.fabric8.maven.Maven;
-import io.fabric8.maven.XMLFormat;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -231,30 +232,21 @@ public class ModelUtils {
     }
 
     public static Model readModel(final Path pomXml) throws IOException {
-        try {
-            return Maven.readModel(pomXml);
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        } catch (RuntimeException e) {
-            throw new IOException("Failed to read model", e.getCause());
-        }
+        return readModel(Files.newInputStream(pomXml));
     }
 
     public static Model readModel(InputStream stream) throws IOException {
         try (InputStream is = stream) {
-            return Maven.readModel(is);
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        } catch (RuntimeException e) {
-            throw new IOException("Failed to read model", e.getCause());
+            return new MavenXpp3Reader().read(stream);
+        } catch (XmlPullParserException e) {
+            throw new IOException("Failed to parse POM", e);
         }
     }
 
     public static void persistModel(Path pomFile, Model model) throws IOException {
-        try {
-            Maven.writeModel(model, pomFile, XMLFormat.builder().indent("    ").insertLineBreakBetweenMajorSections().build());
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
+        final MavenXpp3Writer xpp3Writer = new MavenXpp3Writer();
+        try (BufferedWriter pomFileWriter = Files.newBufferedWriter(pomFile)) {
+            xpp3Writer.write(pomFileWriter, model);
         }
     }
 }

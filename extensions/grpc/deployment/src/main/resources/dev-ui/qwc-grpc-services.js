@@ -1,9 +1,8 @@
-import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
-import { JsonRpc } from 'jsonrpc';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
+import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
+import {JsonRpc} from 'jsonrpc';
+import {columnBodyRenderer, gridRowDetailsRenderer} from '@vaadin/grid/lit.js';
+import {observeState} from 'lit-element-state';
+import {themeState} from 'theme-state';
 import '@quarkus-webcomponents/codeblock';
 import '@vaadin/progress-bar';
 import '@vaadin/grid';
@@ -18,7 +17,7 @@ import '@vaadin/button';
 /**
  * This component shows the Grpc Services
  */
-export class QwcGrpcServices extends observeState(QwcHotReloadElement) { 
+export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     jsonRpc = new JsonRpc(this);
     streamsMap = new Map();
 
@@ -64,7 +63,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
         _testerButtons: {state: true}
     };
 
-    constructor() { 
+    constructor() {
         super();
         this._detailsOpenedItem = [];
         this._streamsMap = new Map();
@@ -85,13 +84,13 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
     }
 
     hotReload(){
-        this.jsonRpc.getServices().then(jsonRpcResponse => { 
+        this.jsonRpc.getServices().then(jsonRpcResponse => {
             this._services = jsonRpcResponse.result;
             this._forceUpdate();
         });
     }
 
-    render() { 
+    render() {
         if(this._services){
             return html`<vaadin-grid .items="${this._services}" class="table" theme="no-border"
                                 .detailsOpenedItems="${this._detailsOpenedItem}"
@@ -132,12 +131,12 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
                         ${columnBodyRenderer(this._testRenderer, [])}>
                     </vaadin-grid-column>
             
-                </vaadin-grid>`;    
+                </vaadin-grid>`;
         }else{
             return html`<vaadin-progress-bar class="progress" indeterminate></vaadin-progress-bar>`;
         }
     }
-    
+
     _statusRenderer(service){
         if(service.status === "SERVING"){
             return html`<vaadin-icon style="color: var(--lumo-success-text-color);" icon="font-awesome-solid:check"></vaadin-icon>`;
@@ -147,36 +146,36 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             return html`<vaadin-icon icon="font-awesome-solid:circle-question"></vaadin-icon>`;
         }
     }
-    
+
     _nameRenderer(service){
         return html`<code>${service.name}</code>`;
     }
-    
+
     _serviceClassRenderer(service){
         return html`<qui-ide-link fileName='${service.serviceClass}'
                         lineNumber=0><code>${service.serviceClass}</code></qui-ide-link>`;
     }
-    
+
     _methodsRenderer(service){
         return html`<div class="methods">${service.methods.map(method =>
             html`${this._methodRenderer(method)}`
         )}</div>`;
     }
-    
+
     _methodRenderer(method){
         return html`<span><qui-badge level="contrast" pill small><span>${method.type}</span></qui-badge> ${method.bareMethodName}</span>`;
     }
-    
+
     _testRenderer(service){
         if(service.hasTestableMethod){
              return html`<vaadin-icon icon="font-awesome-solid:chevron-down"></vaadin-icon>`;
         }
     }
-    
+
     _testerRenderer(service){
-        
+
         if(service.methods.length > 1 ){
-            
+
             return html`<vaadin-tabs @selected-changed="${(e) => this._tabSelectedChanged(service, e.detail.value)}">
                             ${service.methods.map(method =>
                                 html`${this._methodTesterTabHeadingRenderer(service.name, method)}`
@@ -193,21 +192,21 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             `;
         }
     }
-    
+
     _tabSelectedChanged(service, n){
         let method = service.methods[n];
         this._testerContent = this._methodTesterRenderer(service, method);
         this._testerButtons = this._renderCommandButtons(service, method);
         this._forceUpdate();
     }
-    
+
     _methodTesterTabHeadingRenderer(serviceName,method) {
         return html`<vaadin-tab id="${this._id(serviceName,method)}">
                         <span>${method.bareMethodName}</span> 
                          <span><qui-badge level="contrast" pill small><span>${method.type}</span></qui-badge><span>
                     </vaadin-tab>`;
     }
-    
+
     _methodTesterRenderer(service, method){
             return html`<vaadin-split-layout>
                             <master-content style="width: 50%;">
@@ -230,7 +229,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
                             </detail-content>
                         </vaadin-split-layout>`;
     }
-    
+
     _renderCommandButtons(service, method){
         if(this._streamsMap.size >=0){
             if(method.type == 'UNARY'){
@@ -244,7 +243,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             }
         }
     }
-    
+
     _keypress(e, service, method){
         if(method.type == 'UNARY' || !this._isRunning(service.name, method)){
             if ((e.keyCode == 10 || e.keyCode == 13) && e.ctrlKey){ // ctlr-enter
@@ -252,26 +251,26 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             }
         }
     }
-    
+
     _isRunning(serviceName, method){
         let id = this._id(serviceName, method);
         return this._streamsMap.has(id);
     }
-    
+
     _id(serviceName, method){
-       return serviceName + "_" + method.bareMethodName + "_" + method.type; 
+       return serviceName + "_" + method.bareMethodName + "_" + method.type;
     }
-    
+
     _clear(serviceName, method){
         this._requestTextArea(serviceName, method).clear();
         this._responseTextArea(serviceName, method).clear();
     }
-    
+
     _default(serviceName, method){
         let pv = JSON.parse(method.prototype);
         this._requestTextArea(serviceName, method).populatePrettyJson(JSON.stringify(pv));
     }
-    
+
     _test(service, method){
         let textArea = this._requestTextArea(service.name, method);
         let content = textArea.getAttribute('value');
@@ -306,7 +305,7 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             this._forceUpdate();
         }
     }
-    
+
     _forceUpdate(){
         if(this._detailsOpenedItem.length > 0){
             let itemZero = this._detailsOpenedItem[0];
@@ -314,19 +313,19 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
             this._detailsOpenedItem.push(itemZero);
         }
     }
-    
+
     _requestTextArea(serviceName, method){
         return this.shadowRoot.getElementById(this._requestId(serviceName, method));
     }
-    
+
     _responseTextArea(serviceName, method){
         return this.shadowRoot.getElementById(this._responseId(serviceName, method));
     }
-    
+
     _requestId(serviceName, method){
         return serviceName + '/' + method.bareMethodName + '_request';
     }
-    
+
     _responseId(serviceName, method){
         return serviceName + '/' + method.bareMethodName + '_response';
     }

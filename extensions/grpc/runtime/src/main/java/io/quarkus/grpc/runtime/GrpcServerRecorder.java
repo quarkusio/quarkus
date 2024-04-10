@@ -133,7 +133,8 @@ public class GrpcServerRecorder {
                         launchMode);
             }
         } else {
-            buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
+            buildGrpcServer(vertx, configuration, routerSupplier, shutdown,
+                    blockingMethodsPerService, virtualMethodsPerService,
                     grpcContainer, launchMode, securityPresent);
         }
     }
@@ -145,6 +146,7 @@ public class GrpcServerRecorder {
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent) {
 
         GrpcServer server = GrpcServer.server(vertx);
+
         List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
 
         if (launchMode == LaunchMode.DEVELOPMENT) {
@@ -163,7 +165,6 @@ public class GrpcServerRecorder {
                     vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor,
                     globalInterceptors, service,
                     launchMode == LaunchMode.DEVELOPMENT);
-            LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
             definitions.add(service.definition);
@@ -398,7 +399,7 @@ public class GrpcServerRecorder {
         public final BindableService service;
         public final ServerServiceDefinition definition;
 
-        GrpcServiceDefinition(BindableService service, ServerServiceDefinition definition) {
+        public GrpcServiceDefinition(BindableService service, ServerServiceDefinition definition) {
             this.service = service;
             this.definition = definition;
         }

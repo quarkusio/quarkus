@@ -30,7 +30,10 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 
 public class WebJarLocatorDevModeApiProcessor {
 
-    private static final String WEBJARS_PREFIX = "META-INF/resources/webjars";
+    private static final String PREFIX = "META-INF/resources/";
+    private static final String WEBJARS_PATH = "webjars";
+    private static final String MVNPM_PATH = "_static";
+
     private static final Logger log = Logger.getLogger(WebJarLocatorDevModeApiProcessor.class.getName());
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -39,8 +42,18 @@ public class WebJarLocatorDevModeApiProcessor {
             CurateOutcomeBuildItem curateOutcome,
             BuildProducer<WebJarLibrariesBuildItem> webJarLibrariesProducer) {
 
+        final List<WebJarLibrary> webJarLibraries = getLibraries(httpConfig, curateOutcome, WEBJARS_PATH);
+        webJarLibrariesProducer.produce(new WebJarLibrariesBuildItem("webjars", webJarLibraries));
+
+        final List<WebJarLibrary> mvnpmLibraries = getLibraries(httpConfig, curateOutcome, MVNPM_PATH);
+        webJarLibrariesProducer.produce(new WebJarLibrariesBuildItem("mvnpm", mvnpmLibraries));
+
+    }
+
+    private List<WebJarLibrary> getLibraries(HttpBuildTimeConfig httpConfig,
+            CurateOutcomeBuildItem curateOutcome, String path) {
         final List<WebJarLibrary> webJarLibraries = new ArrayList<>();
-        final List<ClassPathElement> providers = QuarkusClassLoader.getElements(WEBJARS_PREFIX, false);
+        final List<ClassPathElement> providers = QuarkusClassLoader.getElements(PREFIX + path, false);
         if (!providers.isEmpty()) {
             // Map of webjar artifact keys to class path elements
             final Map<ArtifactKey, ClassPathElement> webJarKeys = providers.stream()
@@ -51,19 +64,21 @@ public class WebJarLocatorDevModeApiProcessor {
                 // The root path of the application
                 final String rootPath = httpConfig.rootPath;
                 // The root path of the webjars
-                final String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
+                final String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + path + "/" : rootPath + "/" + path + "/";
 
                 // For each packaged webjar dependency, create a WebJarLibrary object
                 curateOutcome.getApplicationModel().getDependencies().stream()
-                        .map(dep -> createWebJarLibrary(dep, webjarRootPath, webJarKeys))
+                        .map(dep -> createWebJarLibrary(dep, webjarRootPath, webJarKeys, path))
                         .filter(Objects::nonNull).forEach(webJarLibraries::add);
             }
         }
-        webJarLibrariesProducer.produce(new WebJarLibrariesBuildItem(webJarLibraries));
+        return webJarLibraries;
     }
 
-    private WebJarLibrary createWebJarLibrary(ResolvedDependency dep, String webjarRootPath,
-            Map<ArtifactKey, ClassPathElement> webJarKeys) {
+    private WebJarLibrary createWebJarLibrary(ResolvedDependency dep,
+            String webjarRootPath,
+            Map<ArtifactKey, ClassPathElement> webJarKeys,
+            String path) {
         // If the dependency is not a runtime class path dependency, return null
         if (!dep.isRuntimeCp()) {
             return null;
@@ -74,7 +89,7 @@ public class WebJarLocatorDevModeApiProcessor {
         }
         final WebJarLibrary webJarLibrary = new WebJarLibrary(provider.getDependencyKey().getArtifactId());
         provider.apply(tree -> {
-            final Path webjarsDir = tree.getPath(WEBJARS_PREFIX);
+            final Path webjarsDir = tree.getPath(PREFIX + path);
             final Path nameDir;
             try (Stream<Path> webjarsDirPaths = Files.list(webjarsDir)) {
                 nameDir = webjarsDirPaths.filter(Files::isDirectory).findFirst().orElseThrow(() -> new IOException(

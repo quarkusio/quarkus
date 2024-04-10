@@ -4,6 +4,8 @@ import java.util.Map;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -42,4 +44,27 @@ public class WebJarLocatorRecorder {
         };
     }
 
+    public Handler<RoutingContext> getImportMapHandler(String expectedPath, String importmap) {
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                String path = event.normalizedPath();
+                if (path.equals(expectedPath)) {
+                    HttpServerResponse response = event.response();
+                    response.headers().set(HttpHeaders.CONTENT_TYPE, "text/javascript");
+                    response.end(JAVASCRIPT_CODE.formatted(importmap));
+                } else {
+                    // should not happen if route is set up correctly
+                    event.next();
+                }
+            }
+        };
+    }
+
+    private static final String JAVASCRIPT_CODE = """
+            const im = document.createElement('script');
+            im.type = 'importmap';
+            im.textContent = JSON.stringify(%s);
+            document.currentScript.after(im);
+            """;
 }

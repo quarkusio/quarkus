@@ -22,7 +22,8 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
             .setForcedDependencies(List.of(
                     Dependency.of("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
-                    Dependency.of("org.webjars", "momentjs", MOMENTJS_VERSION)));
+                    Dependency.of("org.webjars", "momentjs", MOMENTJS_VERSION),
+                    Dependency.of("org.mvnpm", "bootstrap", BOOTSTRAP_VERSION)));
 
     @Test
     public void test() {
@@ -44,11 +45,15 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/min/moment.min.js").then()
                 .statusCode(200);
+        RestAssured.get("/_static/bootstrap/dist/js/bootstrap.min.js").then()
+                .statusCode(200);
 
         // Test using version in url of existing Web Jar
         RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
+                .statusCode(200);
+        RestAssured.get("/_static/bootstrap/" + BOOTSTRAP_VERSION + "/dist/js/bootstrap.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar
@@ -57,6 +62,8 @@ public class WebJarLocatorTest extends WebJarLocatorTestSupport {
         RestAssured.get("/webjars/bootstrap/4.3.1/js/bootstrap.min.js").then()
                 .statusCode(404);
         RestAssured.get("/webjars/momentjs/2.25.0/min/moment.min.js").then()
+                .statusCode(404);
+        RestAssured.get("/_static/foundation-sites/6.8.1/dist/js/foundation.esm.js").then()
                 .statusCode(404);
 
         // Test webjar that does not have a version in the jar path

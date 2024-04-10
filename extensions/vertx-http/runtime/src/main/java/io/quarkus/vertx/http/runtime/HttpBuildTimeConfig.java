@@ -102,4 +102,9 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem
     public OptionalInt compressionLevel;
+
+    /**
+     * The Static Resources config
+     */
+    public StaticResourcesBuildConfig staticResources;
 }

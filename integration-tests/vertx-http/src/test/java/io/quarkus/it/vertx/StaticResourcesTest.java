@@ -38,4 +38,20 @@ public class StaticResourcesTest {
     public void testIndexInNonExistingDirectory() {
         when().get("/dummy3/").then().statusCode(404);
     }
+
+    @Test
+    public void testExistingAdditionalStaticResources() {
+        when().get("/static/test.html").then().statusCode(200);
+    }
+
+    @Test
+    public void testNonExistingAdditionalStaticResourcesFile() {
+        when().get("/static/test2.html").then().statusCode(404);
+    }
+
+    @Test
+    public void testNonExistingAdditionalStaticResourcesDirectory() {
+        when().get("/static2/test2html").then().statusCode(404);
+    }
+
 }

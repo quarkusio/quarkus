@@ -12,6 +12,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,6 +31,8 @@ import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 /**
@@ -62,6 +65,41 @@ public class StaticResourcesProcessor {
         if (staticResources.isPresent()) {
             defaultRoutes.produce(new DefaultRouteBuildItem(recorder.start(staticResources.get().getPaths())));
         }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void additionalLocalDirectories(StaticResourcesRecorder recorder,
+            HttpBuildTimeConfig config,
+            BuildProducer<RouteBuildItem> routes) {
+        Map<String, String> additionalLocalDirectories = config.staticResources.additionalLocalDirectories;
+        if (additionalLocalDirectories.isEmpty()) {
+            return;
+        }
+        for (var entry : additionalLocalDirectories.entrySet()) {
+            String httpPath = sanitizeResourceHttpPath(entry.getValue());
+
+            RouteBuildItem.Builder builder = RouteBuildItem.builder()
+                    .route(httpPath)
+                    .displayOnNotFoundPage("Static resources under " + httpPath)
+                    .handlerType(HandlerType.NORMAL)
+                    .handler(recorder.additionalLocalDirectoryHandler(entry.getKey()));
+            routes.produce(builder.build());
+        }
+    }
+
+    private String sanitizeResourceHttpPath(String httpPath) {
+        // static handler expects to be passed a value ending in /*
+        if (httpPath.endsWith("/")) {
+            httpPath = httpPath + "*";
+        } else if (httpPath.indexOf('/') == -1) {
+            httpPath = httpPath + "/*";
+        }
+        // Vertx needs a prepending slash for all routes
+        if (!httpPath.startsWith("/")) {
+            httpPath = "/" + httpPath;
+        }
+        return httpPath;
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

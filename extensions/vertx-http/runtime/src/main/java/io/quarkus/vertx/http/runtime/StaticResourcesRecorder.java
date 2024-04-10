@@ -138,4 +138,15 @@ public class StaticResourcesRecorder {
         return contentType != null && compressMediaTypes.contains(contentType);
     }
 
+    public Handler<RoutingContext> additionalLocalDirectoryHandler(String root) {
+        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
+        return StaticHandler.create(root)
+                .setDefaultContentEncoding("UTF-8")
+                .setCachingEnabled(config.cachingEnabled)
+                .setIncludeHidden(config.includeHidden)
+                .setEnableRangeSupport(config.enableRangeSupport)
+                .setMaxCacheSize(config.maxCacheSize)
+                .setCacheEntryTimeout(config.cacheEntryTimeout.toMillis())
+                .setMaxAgeSeconds(config.maxAge.toSeconds());
+    }
 }

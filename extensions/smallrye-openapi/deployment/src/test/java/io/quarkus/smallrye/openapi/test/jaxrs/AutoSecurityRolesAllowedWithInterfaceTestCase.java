@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
-import static io.quarkus.smallrye.openapi.test.jaxrs.AutoSecurityRolesAllowedTestCase.schemeArray;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.emptyIterable;

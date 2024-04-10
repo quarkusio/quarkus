@@ -223,7 +223,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put("hibernate.temp.use_jdbc_metadata_defaults", "true");
+        runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

@@ -40,7 +40,11 @@ class TestEndpointRunner {
         con.close()
 
         Assertions.assertEquals(
-            "CHARACTER VARYING",
+            // The H2 dialect uses native enums by default for @Enumerated(EnumType.STRING)
+            // We're also checking enum value order here:
+            // with @Enumerated(EnumType.STRING), enum values should be in alphabetical order
+            // (which is different from the ordinal order)
+            "ENUM('DECEASED', 'LIVING')",
             schema["PERSON2"]?.get("STATUS"),
             schema.toString()
         )

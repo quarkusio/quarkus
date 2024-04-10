@@ -481,11 +481,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>maven-model-helper</artifactId>
-                <version>${maven-model-helper.version}</version>
-            </dependency>
             <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.smallrye.common</groupId>

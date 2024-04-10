@@ -35,7 +35,10 @@ The following table maps specific authentication requirements to a supported mec
 
 |Username and password |xref:security-basic-authentication.adoc[Basic], <<form-auth>>
 
-|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT]
+ifndef::quarkus-elytron-security-oauth2[]
+, xref:security-oauth2.adoc[OAuth2]
+endif::quarkus-elytron-security-oauth2[]
 
 |Single sign-on (SSO) |xref:security-oidc-code-flow-authentication.adoc[OIDC Code Flow], <<form-auth>>
 
@@ -96,7 +99,7 @@ quarkus.http.auth.form.error-page=
 # Define testing user
 quarkus.security.users.embedded.enabled=true
 quarkus.security.users.embedded.plain-text=true
-quarkus.security.users.embedded.users.alice=alice 
+quarkus.security.users.embedded.users.alice=alice
 quarkus.security.users.embedded.roles.alice=user
 ----
 
@@ -315,7 +318,9 @@ Quarkus Security also supports the following authentication mechanisms through e
 * <<webauthn-authentication>>
 * <<openid-connect-authentication>>
 * <<smallrye-jwt-authentication>>
+ifndef::quarkus-elytron-security-oauth2[]
 * <<oauth2-authentication>>
+endif::quarkus-elytron-security-oauth2[]
 
 [[webauthn-authentication]]
 === WebAuthn authentication
@@ -357,7 +362,9 @@ For more information about OIDC authentication and authorization methods that yo
 |Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Securing Quarkus with commonly used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
+ifndef::quarkus-keycloak-admin-client[]
 |Configuring Keycloak programmatically |xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
+endif::quarkus-keycloak-admin-client[]
 |====
 
 [NOTE]
@@ -404,6 +411,7 @@ It represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
 For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 
+ifndef::quarkus-elytron-security-oauth2[]
 [[oauth2-authentication]]
 === OAuth2 authentication
 
@@ -411,6 +419,7 @@ For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
 
 For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] guide.
+endif::quarkus-elytron-security-oauth2[]
 
 [[oidc-jwt-oauth2-comparison]]
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
@@ -425,13 +434,17 @@ In both cases, `quarkus-oidc` requires a connection to the specified OpenID Conn
 * If the user authentication requires Authorization Code flow, or you need to support multiple tenants, use `quarkus-oidc`.
 `quarkus-oidc` can also request user information by using both Authorization Code Flow and Bearer access tokens.
 
-* If your bearer tokens must be verified, use `quarkus-oidc`, `quarkus-smallrye-jwt`, or `quarkus-elytron-security-oauth2`.
+* If your bearer tokens must be verified, use `quarkus-oidc`,
+ifndef::quarkus-elytron-security-oauth2[`quarkus-elytron-security-oauth2`, ]
+or `quarkus-smallrye-jwt`.
 
 * If your bearer tokens are in a JSON web token (JWT) format, you can use any extensions in the preceding list.
 Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the `JsonWebKey` (JWK) set when the OpenID Connect provider rotates the keys.
 Therefore, if remote token introspection must be avoided or is unsupported by the providers, use `quarkus-oidc` or `quarkus-smallrye-jwt` to verify JWT tokens.
 
-* To introspect the JWT tokens remotely, you can use either `quarkus-oidc` or `quarkus-elytron-security-oauth2` because they support verifying the opaque or binary tokens by using remote introspection.
+* To introspect the JWT tokens remotely, you can use `quarkus-oidc`
+ifndef::quarkus-elytron-security-oauth2[or `quarkus-elytron-security-oauth2`]
+for verifying the opaque or binary tokens by using remote introspection.
 `quarkus-smallrye-jwt` does not support the remote introspection of both opaque or JWT tokens but instead relies on the locally available keys that are usually retrieved from the OpenID Connect provider.
 
 * `quarkus-oidc` and `quarkus-smallrye-jwt` support the JWT and opaque token injection into the endpoint code.
@@ -442,9 +455,10 @@ All extensions can have the tokens injected as `Principal`.
 `quarkus-oidc` uses only the JWK-formatted keys that are part of a JWK set, whereas `quarkus-smallrye-jwt` supports PEM keys.
 
 * `quarkus-smallrye-jwt` handles locally signed, inner-signed-and-encrypted, and encrypted tokens.
-In contrast, although `quarkus-oidc` and `quarkus-elytron-security-oauth2` can also verify such tokens, they treat them as opaque tokens and verify them through remote introspection.
+ifndef::quarkus-elytron-security-oauth2[In contrast, although `quarkus-oidc` and `quarkus-elytron-security-oauth2` can also verify such tokens, they treat them as opaque tokens and verify them through remote introspection.]
+ifdef::quarkus-elytron-security-oauth2[In contrast, although `quarkus-oidc` can also verify such tokens, it treats them as opaque tokens and verifies them through remote introspection.]
 
-* If you need a lightweight library for the remote introspection of opaque or JWT tokens, use `quarkus-elytron-security-oauth2`.
+ifndef::quarkus-elytron-security-oauth2[* If you need a lightweight library for the remote introspection of opaque or JWT tokens, use `quarkus-elytron-security-oauth2`.]
 
 [NOTE]
 ====
@@ -457,30 +471,53 @@ Nonetheless, the providers effectively delegate most of the token-associated sta
 ====
 
 [[table]]
-.Token authentication mechanism comparison
+.Comparison of features by token authentication mechanism or extension
 |===
-^|Feature required 3+^| Authentication mechanism
+ifndef::quarkus-elytron-security-oauth2[ ^|Feature required 3+^| Authentication mechanism]
+ifdef::quarkus-elytron-security-oauth2[ ^|Feature required 2+^| Authentication mechanism]
 
-^| ^s|`quarkus-oidc` ^s|`quarkus-smallrye-jwt` ^s| `quarkus-elytron-security-oauth2`
+^| ^s|`quarkus-oidc` ^s|`quarkus-smallrye-jwt`
+ifndef::quarkus-elytron-security-oauth2[ ^s|`quarkus-elytron-security-oauth2`]
 
-s|Bearer JWT verification ^|Local verification or introspection  ^|Local verification  ^|Introspection
+s|Bearer JWT verification ^|Local verification or introspection  ^|Local verification
+ifndef::quarkus-elytron-security-oauth2[ ^|Introspection]
 
-s|Bearer opaque token verification ^|Introspection   ^|No  ^|Introspection
-s|Refreshing `JsonWebKey` set to verify JWT tokens  ^|Yes   ^|Yes  ^|No
-s|Represent token as `Principal`  ^|Yes   ^|Yes  ^|Yes
-s|Inject JWT as MP JWT  ^|Yes   ^|Yes  ^|No
+s|Bearer opaque token verification ^|Introspection   ^|No
+ifndef::quarkus-elytron-security-oauth2[ ^|Introspection]
 
-s|Authorization code flow  ^| Yes  ^|No  ^|No
-s|Multi-tenancy ^| Yes  ^|No  ^|No
-s|User information support  ^| Yes  ^|No  ^|No
-s|PEM key format support  ^|No   ^|Yes  ^|No
+s|Refreshing `JsonWebKey` set to verify JWT tokens  ^|Yes   ^|Yes
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
 
-s|SecretKey support ^|No ^|In JSON Web Key (JWK) format ^|No
-s|Inner-signed and encrypted or encrypted tokens ^|Introspection ^|Local verification ^|Introspection
-s|Custom token verification ^|No ^|With injected JWT parser ^|No
-s|JWT as a cookie support ^|No ^|Yes ^|Yes
+s|Represent token as `Principal`  ^|Yes   ^|Yes
+ifndef::quarkus-elytron-security-oauth2[ ^|Yes]
+
+s|Inject JWT as MP JWT  ^|Yes   ^|Yes
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|Authorization code flow  ^| Yes  ^|No
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|Multi-tenancy ^| Yes  ^|No
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|User information support  ^| Yes  ^|No
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|PEM key format support  ^|No   ^|Yes
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|SecretKey support ^|No ^|In JSON Web Key (JWK) format
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|Inner-signed and encrypted or encrypted tokens ^|Introspection ^|Local verification
+ifndef::quarkus-elytron-security-oauth2[ ^|Introspection]
+
+s|Custom token verification ^|No ^|With injected JWT parser
+ifndef::quarkus-elytron-security-oauth2[ ^|No]
+
+s|JWT as a cookie support ^|No ^|Yes
+ifndef::quarkus-elytron-security-oauth2[ ^|Yes]
 |===
-
 
 == Combining authentication mechanisms
 

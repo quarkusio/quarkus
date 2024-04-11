@@ -2829,7 +2829,7 @@ public class MyBean {
     Template hello;
 
     String render() {
-       return hello.instance().setAttribute("locale", Locale.forLanguageTag("cs")).render(); <1>
+       return hello.instance().setLocale("cs").render(); <1>
     }
 }
 ----

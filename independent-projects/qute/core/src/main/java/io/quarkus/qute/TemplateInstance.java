@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,6 +31,11 @@ public interface TemplateInstance {
      * Attribute key - a selected variant.
      */
     String SELECTED_VARIANT = "selectedVariant";
+
+    /**
+     * Attribute key - locale.
+     */
+    String LOCALE = "locale";
 
     /**
      * Set the the root data object. Invocation of this method removes any data set previously by
@@ -70,7 +76,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @param key
      * @param value
      * @return self
@@ -80,7 +85,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @param key
      * @return the attribute or null
      */
@@ -142,7 +146,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @return the timeout
      * @see TemplateInstance#TIMEOUT
      */
@@ -151,7 +154,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @return the original template
      */
     default Template getTemplate() {
@@ -159,7 +161,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @param id
      * @return the fragment or {@code null}
      * @see Template#getFragment(String)
@@ -176,6 +177,28 @@ public interface TemplateInstance {
      */
     default TemplateInstance onRendered(Runnable action) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Sets the {@code locale} attribute that can be used to localize parts of the template, i.e. to specify the locale for all
+     * message bundle expressions in the template.
+     *
+     * @param locale a language tag
+     * @return self
+     */
+    default TemplateInstance setLocale(String locale) {
+        return setAttribute(LOCALE, Locale.forLanguageTag(locale));
+    }
+
+    /**
+     * Sets the {@code locale} attribute that can be used to localize parts of the template, i.e. to specify the locale for all
+     * message bundle expressions in the template.
+     *
+     * @param locale a {@link Locale} instance
+     * @return self
+     */
+    default TemplateInstance setLocale(Locale locale) {
+        return setAttribute(LOCALE, locale);
     }
 
     /**

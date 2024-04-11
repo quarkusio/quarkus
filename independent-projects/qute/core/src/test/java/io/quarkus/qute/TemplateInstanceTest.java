@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -63,5 +65,17 @@ public class TemplateInstanceTest {
         assertEquals("Hello FOO and 30!", instance.render());
         assertTrue(fooUsed.get());
         assertFalse(barUsed.get());
+    }
+
+    @Test
+    public void testLocale() throws Exception {
+        Engine engine = Engine.builder().addDefaults()
+                .addValueResolver(ValueResolver.builder()
+                        .applyToName("locale")
+                        .resolveSync(ctx -> ctx.getAttribute(TemplateInstance.LOCALE))
+                        .build())
+                .build();
+        Template hello = engine.parse("Hello {locale}!");
+        assertEquals("Hello fr!", hello.instance().setLocale(Locale.FRENCH).render());
     }
 }

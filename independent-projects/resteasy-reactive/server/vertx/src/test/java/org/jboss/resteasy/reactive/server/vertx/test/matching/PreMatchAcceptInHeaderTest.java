@@ -23,15 +23,14 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class PreMatchAcceptInHeader {
+public class PreMatchAcceptInHeaderTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(PathSegmentTest.Resource.class);
+                    return ShrinkWrap.create(JavaArchive.class);
                 }
             });
 
@@ -52,7 +51,7 @@ public class PreMatchAcceptInHeader {
                 .get("test")
                 .then()
                 .statusCode(200)
-                .body(equalTo("test"));
+                .body(equalTo("text"));
     }
 
     @Test
@@ -62,7 +61,7 @@ public class PreMatchAcceptInHeader {
                 .get("test")
                 .then()
                 .statusCode(200)
-                .body(equalTo("test"));
+                .body(containsString("<html>"));
     }
 
     @Test
@@ -71,7 +70,7 @@ public class PreMatchAcceptInHeader {
                 .when()
                 .get("test")
                 .then()
-                .statusCode(404);
+                .statusCode(406);
     }
 
     @Test
@@ -82,7 +81,7 @@ public class PreMatchAcceptInHeader {
                 .get("test")
                 .then()
                 .statusCode(200)
-                .body(equalTo("test"));
+                .body(equalTo("text"));
     }
 
     @Path("/test")

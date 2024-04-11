@@ -117,6 +117,12 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("bazinga", span.get("name"));
         assertEquals("ERROR", status.get("statusCode"));
         assertEquals("exception", event.get("name"));
+
+        checkForException(exception);
+
+    }
+
+    void checkForException(Map<String, Object> exception) {
         assertThat((String) exception.get("message"), containsString("ERR unknown command 'bazinga'"));
     }
 
@@ -185,7 +191,8 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("bazinga", span.get("name"));
         assertEquals("ERROR", status.get("statusCode"));
         assertEquals("exception", event.get("name"));
-        assertThat((String) exception.get("message"), containsString("ERR unknown command 'bazinga'"));
+
+        checkForException(exception);
     }
 
     private List<Map<String, Object>> getSpans() {

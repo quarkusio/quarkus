@@ -785,8 +785,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 .call(new Function<SecurityIdentity, Uni<?>>() {
                                     @Override
                                     public Uni<Void> apply(SecurityIdentity identity) {
-                                        if (internalIdToken && configContext.oidcConfig.allowUserInfoCache
-                                                && configContext.oidcConfig.cacheUserInfoInIdtoken) {
+                                        if (internalIdToken
+                                                && OidcUtils.cacheUserInfoInIdToken(resolver, configContext.oidcConfig)) {
                                             tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig,
                                                     identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE), null));
                                         }

@@ -1119,13 +1119,13 @@ For GitHub, since it does not have an introspection endpoint, requesting the Use
 [NOTE]
 ====
 Requiring <<user-info,UserInfo>> involves making a remote call on every request.
-Therefore, you might want to consider caching `UserInfo` data.
+
+Therefore, `UserInfo` is embedded in the internal generated `IdToken` and saved in the encrypted session cookie. It can be disabled with `quarkus.oidc.cache-user-info-in-idtoken=false`.
+
+Alternatively, you might want to consider caching `UserInfo` using a default or custom UserInfo cache provider.
 For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
-Alternatively, you might want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property.
-The advantage of this approach is that, by default, no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie.
-You might also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data.
-For more information, see <<token-state-manager,Encrypt tokens with TokenStateManager>>.
+Most well-known social OAuth2 providers enforce rate-limiting so there is a high chance you will prefer to have UserInfo cached.
 ====
 
 OAuth2 servers might not support a well-known configuration endpoint.

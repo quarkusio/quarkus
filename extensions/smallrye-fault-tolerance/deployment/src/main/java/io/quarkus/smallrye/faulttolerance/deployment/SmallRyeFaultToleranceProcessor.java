@@ -153,6 +153,15 @@ public class SmallRyeFaultToleranceProcessor {
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
         }
+        // Add reflective access to retry predicates
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            for (String memberName : List.of("result", "exception")) {
+                AnnotationValue member = annotation.value(memberName);
+                if (member != null) {
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
+                }
+            }
+        }
 
         for (DotName annotation : DotNames.FT_ANNOTATIONS) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(annotation.toString()).methods().build());
@@ -350,14 +359,17 @@ public class SmallRyeFaultToleranceProcessor {
             }
         }
 
-        // since annotation transformations are applied lazily, we can't know
-        // all transformed `@*Backoff`s and have to rely on Jandex here
         for (DotName backoffAnnotation : DotNames.BACKOFF_ANNOTATIONS) {
             for (AnnotationInstance it : index.getAnnotations(backoffAnnotation)) {
                 if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                     exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
                             + " present on '" + it.target() + "', but @Retry is missing"));
                 }
+            }
+        }
+        for (AnnotationInstance it : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
+                exceptions.add(new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
             }
         }
 

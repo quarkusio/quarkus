@@ -183,7 +183,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         Properties javaDocProperties = new Properties();
 
         try {
-            Files.walkFileTree(path, new FileVisitor<Path>() {
+            Files.walkFileTree(path, new FileVisitor<>() {
                 public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) {
                     return FileVisitResult.CONTINUE;
                 }
@@ -282,8 +282,6 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         } catch (IOException e) {
             processingEnv.getMessager()
                     .printMessage(Diagnostic.Kind.ERROR, "Failed to generate extension doc: " + e);
-            return;
-
         }
     }
 
@@ -368,8 +366,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                                     StandardLocation.SOURCE_OUTPUT,
                                     pkg.getQualifiedName()
                                             .toString(),
-                                    rbn.toString() + ".bsc",
-                                    clazz);
+                                    rbn + ".bsc", clazz);
                     writeResourceFile(binaryName, itemResource);
                 } catch (IOException e1) {
                     processingEnv.getMessager()
@@ -618,7 +615,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             if (method.getSimpleName()
                     .contentEquals("toString")
                     && method.getParameters()
-                            .size() == 0) {
+                            .isEmpty()) {
                 return;
             }
 
@@ -650,7 +647,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         String name = declaredType.asElement()
                 .toString();
         List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
-        if (typeArguments.size() == 0) {
+        if (typeArguments.isEmpty()) {
             if (!name.startsWith("java.")) {
                 return (TypeElement) declaredType.asElement();
             }

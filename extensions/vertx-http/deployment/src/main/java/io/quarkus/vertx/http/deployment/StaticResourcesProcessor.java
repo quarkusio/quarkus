@@ -2,13 +2,7 @@ package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,17 +10,18 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.paths.FilteredPathTree;
+import io.quarkus.paths.PathFilter;
+import io.quarkus.paths.PathVisitor;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
@@ -38,14 +33,14 @@ import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 public class StaticResourcesProcessor {
 
     @BuildStep
-    void collectStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void collectStaticResources(Capabilities capabilities,
             List<AdditionalStaticResourceBuildItem> additionalStaticResources,
-            BuildProducer<StaticResourcesBuildItem> staticResources) throws Exception {
+            BuildProducer<StaticResourcesBuildItem> staticResources) {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
-        Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources(applicationArchivesBuildItem);
+        Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources();
         for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
             paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
         }
@@ -66,7 +61,7 @@ public class StaticResourcesProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void nativeImageResource(Optional<StaticResourcesBuildItem> staticResources,
-            BuildProducer<NativeImageResourceBuildItem> producer) throws IOException {
+            BuildProducer<NativeImageResourceBuildItem> producer) {
         if (staticResources.isPresent()) {
             Set<StaticResourcesBuildItem.Entry> entries = staticResources.get().getEntries();
             List<String> metaInfResources = new ArrayList<>(entries.size());
@@ -83,79 +78,55 @@ public class StaticResourcesProcessor {
 
             // register all directories under META-INF/resources for reflection in order to enable
             // the serving of index.html in arbitrarily nested directories
-            ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
-                try {
-                    Files.walkFileTree(resource, new SimpleFileVisitor<>() {
-                        @Override
-                        public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
-                            if (e != null) {
-                                throw e;
-                            }
-                            int index = dir.toString().indexOf(StaticResourcesRecorder.META_INF_RESOURCES);
-                            if (index > 0) {
-                                producer.produce(new NativeImageResourceBuildItem(dir.toString().substring(index)));
-                            }
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+            final Set<String> collectedDirs = new HashSet<>();
+            visitRuntimeMetaInfResources(visit -> {
+                if (Files.isDirectory(visit.getPath())) {
+                    final String relativePath = visit.getRelativePath("/");
+                    if (collectedDirs.add(relativePath)) {
+                        producer.produce(new NativeImageResourceBuildItem(relativePath));
+                    }
                 }
             });
-
         }
     }
 
     /**
      * Find all static file resources that are available from classpath.
      *
-     * @param applicationArchivesBuildItem
      * @return the set of static resources
-     * @throws Exception
      */
-    private Set<StaticResourcesBuildItem.Entry> getClasspathResources(
-            ApplicationArchivesBuildItem applicationArchivesBuildItem)
-            throws Exception {
+    private Set<StaticResourcesBuildItem.Entry> getClasspathResources() {
         Set<StaticResourcesBuildItem.Entry> knownPaths = new HashSet<>();
-
-        ClassPathUtils.consumeAsPaths(StaticResourcesRecorder.META_INF_RESOURCES, resource -> {
-            collectKnownPaths(resource, knownPaths);
+        visitRuntimeMetaInfResources(visit -> {
+            if (!Files.isDirectory(visit.getPath())) {
+                knownPaths.add(new StaticResourcesBuildItem.Entry(
+                        visit.getRelativePath("/").substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
+                        false));
+            }
         });
-
-        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            i.accept(tree -> {
-                Path resource = tree.getPath(StaticResourcesRecorder.META_INF_RESOURCES);
-                if (resource != null && Files.exists(resource)) {
-                    collectKnownPaths(resource, knownPaths);
-                }
-            });
-        }
-
         return knownPaths;
     }
 
-    private void collectKnownPaths(Path resource, Set<StaticResourcesBuildItem.Entry> knownPaths) {
-        try {
-            Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path p, BasicFileAttributes attrs)
-                        throws IOException {
-                    String file = resource.relativize(p).toString();
-                    // Windows has a backslash
-                    file = file.replace('\\', '/');
-                    if (!file.startsWith("/")) {
-                        file = "/" + file;
-                    }
-
-                    if (QuarkusClassLoader
-                            .isResourcePresentAtRuntime(StaticResourcesRecorder.META_INF_RESOURCES + file)) {
-                        knownPaths.add(new StaticResourcesBuildItem.Entry(file, false));
-                    }
-                    return FileVisitResult.CONTINUE;
+    /**
+     * Visits all {@code META-INF/resources} directories and their content found on the runtime classpath
+     *
+     * @param visitor visitor implementation
+     */
+    private static void visitRuntimeMetaInfResources(PathVisitor visitor) {
+        final List<ClassPathElement> elements = QuarkusClassLoader.getElements(StaticResourcesRecorder.META_INF_RESOURCES,
+                false);
+        if (!elements.isEmpty()) {
+            final PathFilter filter = PathFilter.forIncludes(List.of(
+                    StaticResourcesRecorder.META_INF_RESOURCES + "/**",
+                    StaticResourcesRecorder.META_INF_RESOURCES));
+            for (var element : elements) {
+                if (element.isRuntime()) {
+                    element.apply(tree -> {
+                        new FilteredPathTree(tree, filter).walk(visitor);
+                        return null;
+                    });
                 }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            }
         }
     }
 }

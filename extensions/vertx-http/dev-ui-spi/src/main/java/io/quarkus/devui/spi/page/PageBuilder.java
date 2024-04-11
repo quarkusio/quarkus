@@ -42,7 +42,10 @@ public abstract class PageBuilder<T> {
 
     @SuppressWarnings("unchecked")
     public T staticLabel(String staticLabel) {
-        this.staticLabel = staticLabel;
+        if (this.staticLabel == null) {
+            this.staticLabel = "";
+        }
+        this.staticLabel = this.staticLabel + " " + staticLabel;
         return (T) this;
     }
 

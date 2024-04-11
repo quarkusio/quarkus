@@ -49,7 +49,7 @@ public class StaticResourcesRecorder {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
                 StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
-                        .setDefaultContentEncoding("UTF-8")
+                        .setDefaultContentEncoding(config.contentEncoding.name())
                         .setCachingEnabled(false)
                         .setIndexPage(config.indexPage)
                         .setIncludeHidden(config.includeHidden)

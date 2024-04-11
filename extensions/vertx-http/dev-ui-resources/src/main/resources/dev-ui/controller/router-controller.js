@@ -176,7 +176,6 @@ export class RouterController {
     
     addRoute(path, component, name, page, defaultRoute = false) {
         path = this.getPageUrlFor(page);
-        var currentSelection = window.location.pathname;
         const search = new URLSearchParams(window.location.search);
         if (!this.isExistingPath(path)) {
             RouterController.pageMap.set(path, page);

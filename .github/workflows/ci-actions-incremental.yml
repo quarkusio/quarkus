@@ -210,7 +210,7 @@ jobs:
           7z a -tzip build-reports.zip -r \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -400,7 +400,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -510,7 +510,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -596,7 +596,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -688,7 +688,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -780,7 +780,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -937,7 +937,7 @@ jobs:
               'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
               'integration-tests/virtual-threads/target/build-report.json' \
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -1018,7 +1018,7 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -1130,7 +1130,7 @@ jobs:
               '**/build/test-results/test/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
         uses: actions/upload-artifact@v4
         if: always()

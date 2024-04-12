@@ -28,6 +28,7 @@ public class AnnotationBasedTenantTest {
                     Map.entry("quarkus.oidc.hr.auth-server-url", "http://localhost:8180/auth/realms/quarkus2/"),
                     Map.entry("quarkus.oidc.hr.client-id", "quarkus-app"),
                     Map.entry("quarkus.oidc.hr.credentials.secret", "secret"),
+                    Map.entry("quarkus.oidc.hr.tenant-paths", "/api/tenant-echo/http-security-policy-applies-all-same"),
                     Map.entry("quarkus.oidc.hr.token.audience", "http://hr.service"),
                     Map.entry("quarkus.http.auth.policy.roles1.roles-allowed", "role1"),
                     Map.entry("quarkus.http.auth.policy.roles2.roles-allowed", "role2"),
@@ -59,7 +60,11 @@ public class AnnotationBasedTenantTest {
                     Map.entry("quarkus.http.auth.permission.identity-augmentation.paths",
                             "/api/tenant-echo/hr-identity-augmentation"),
                     Map.entry("quarkus.http.auth.permission.identity-augmentation.policy", "roles3"),
-                    Map.entry("quarkus.http.auth.permission.identity-augmentation.applies-to", "JAXRS"));
+                    Map.entry("quarkus.http.auth.permission.identity-augmentation.applies-to", "JAXRS"),
+                    Map.entry("quarkus.http.auth.permission.tenant-annotation-applies-all.paths",
+                            "/api/tenant-echo/http-security-policy-applies-all-diff,/api/tenant-echo/http-security-policy-applies-all-same"),
+                    Map.entry("quarkus.http.auth.permission.tenant-annotation-applies-all.policy", "admin-role"),
+                    Map.entry("quarkus.http.auth.policy.admin-role.roles-allowed", "admin"));
         }
     }
 
@@ -204,9 +209,7 @@ public class AnnotationBasedTenantTest {
             token = getTokenWithRole("role1");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr-classic-perm-check")
-                    .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
-                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+                    .then().statusCode(401);
 
             token = getTokenWithRole("wrong-role");
             RestAssured.given().auth().oauth2(token)
@@ -239,21 +242,18 @@ public class AnnotationBasedTenantTest {
             token = getTokenWithRole("role2");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-classic-and-jaxrs-perm-check")
-                    .then().statusCode(403);
+                    .then().statusCode(401);
 
             // roles allowed security check (created for @RolesAllowed) fails over missing role "role3"
             token = getTokenWithRole("role2", "role1");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-classic-and-jaxrs-perm-check")
-                    .then().statusCode(403);
+                    .then().statusCode(401);
 
             token = getTokenWithRole("role3", "role2", "role1");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-classic-and-jaxrs-perm-check")
-                    .then().statusCode(200)
-                    // static tenant is null as the permission check "combined-part1" happened before @Tenant
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
-                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+                    .then().statusCode(401);
         } finally {
             server.stop();
         }
@@ -282,15 +282,12 @@ public class AnnotationBasedTenantTest {
             token = getTokenWithRole("role2");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr-classic-and-jaxrs-perm-check")
-                    .then().statusCode(403);
+                    .then().statusCode(401);
 
             token = getTokenWithRole("role2", "role1");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr-classic-and-jaxrs-perm-check")
-                    .then().statusCode(200)
-                    // static tenant is null as the permission check "combined-part1" happened before @Tenant
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
-                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+                    .then().statusCode(401);
         } finally {
             server.stop();
         }
@@ -325,6 +322,31 @@ public class AnnotationBasedTenantTest {
         }
     }
 
+    @Test
+    public void testPolicyAppliedBeforeTenantAnnotationMatched() {
+        WiremockTestResource server = new WiremockTestResource();
+        server.start();
+        try {
+            // policy applied before @Tenant annotation has been matched and different tenant has been used for auth
+            // than the one that @Tenant annotation selects
+            var token = getNonHrTenantAccessToken(Set.of("admin"));
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api/tenant-echo/http-security-policy-applies-all-diff")
+                    .then().statusCode(401);
+
+            // policy applied before @Tenant annotation has been matched and different tenant has been used for auth
+            // than the one that @Tenant annotation selects
+            token = getTokenWithRole("admin");
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api/tenant-echo/http-security-policy-applies-all-same")
+                    .then().statusCode(200)
+                    .body(Matchers
+                            .equalTo("tenant-id=null, static.tenant.id=hr, name=alice, tenant-id-set-by-annotation=null"));
+        } finally {
+            server.stop();
+        }
+    }
+
     private static String getTokenWithRole(String... roles) {
         return Jwt.preferredUserName("alice")
                 .groups(Set.of(roles))
@@ -332,5 +354,15 @@ public class AnnotationBasedTenantTest {
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
+    }
+
+    private String getNonHrTenantAccessToken(Set<String> groups) {
+        return Jwt.preferredUserName("alice")
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws()
+                .keyId("1")
+                .sign();
     }
 }

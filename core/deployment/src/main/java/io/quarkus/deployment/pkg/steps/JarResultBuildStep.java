@@ -111,6 +111,8 @@ public class JarResultBuildStep {
 
     private static final Predicate<String> UBER_JAR_IGNORED_ENTRIES_PREDICATE = new IsEntryIgnoredForUberJarPredicate();
 
+    private static final Predicate<String> UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE = new IsDuplicateIgnoredForUberJarPredicate();
+
     private static final Predicate<String> UBER_JAR_CONCATENATED_ENTRIES_PREDICATE = new Predicate<>() {
         @Override
         public boolean test(String path) {
@@ -399,7 +401,7 @@ public class JarResultBuildStep {
             }
             Set<Set<Dependency>> explained = new HashSet<>();
             for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
-                if (entry.getValue().size() > 1) {
+                if (entry.getValue().size() > 1 && !UBER_JAR_IGNORED_DUPLICATE_ENTRIES_PREDICATE.test(entry.getKey())) {
                     if (explained.add(entry.getValue())) {
                         log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
                                 + " contain duplicate files, e.g. " + entry.getKey());
@@ -1488,6 +1490,14 @@ public class JarResultBuildStep {
         public boolean test(String path) {
             return UBER_JAR_IGNORED_ENTRIES.contains(path)
                     || path.endsWith("module-info.class");
+        }
+    }
+
+    private static class IsDuplicateIgnoredForUberJarPredicate implements Predicate<String> {
+
+        @Override
+        public boolean test(String path) {
+            return path.startsWith("META-INF/maven/");
         }
     }
 

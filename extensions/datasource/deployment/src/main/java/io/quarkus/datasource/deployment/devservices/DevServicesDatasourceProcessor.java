@@ -316,6 +316,8 @@ public class DevServicesDatasourceProcessor {
                             e.getValue());
                 }
             }
+            setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "reuse",
+                    String.valueOf(dataSourceBuildTimeConfig.devservices().reuse()));
 
             Map<String, String> devDebProperties = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {

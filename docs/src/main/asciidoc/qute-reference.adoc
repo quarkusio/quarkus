@@ -1659,7 +1659,7 @@ public class CustomLocator implements TemplateLocator {
 === Template Variants
 
 Sometimes it's useful to render a specific variant of the template based on the content negotiation.
-This can be done by setting a special attribute via `TemplateInstance.setAttribute()`:
+This can be done by setting a special attribute via `TemplateInstance.setVariant()`:
 
 [source,java]
 ----
@@ -1672,7 +1672,9 @@ class MyService {
     ItemManager manager;
 
     String renderItems() {
-       return items.data("items",manager.findItems()).setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(Locale.getDefault(),"text/html","UTF-8")).render();
+       return items.data("items", manager.findItems())
+                   .setVariant(new Variant(Locale.getDefault(), "text/html", "UTF-8"))
+                   .render();
     }
 }
 ----

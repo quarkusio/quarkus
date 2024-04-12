@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -77,5 +76,22 @@ public class TemplateInstanceTest {
                 .build();
         Template hello = engine.parse("Hello {locale}!");
         assertEquals("Hello fr!", hello.instance().setLocale(Locale.FRENCH).render());
+    }
+
+    @Test
+    public void testVariant() {
+        Engine engine = Engine.builder().addDefaults()
+                .addValueResolver(ValueResolver.builder()
+                        .applyToName("variant")
+                        .resolveSync(ctx -> ctx.getAttribute(TemplateInstance.SELECTED_VARIANT))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .appliesTo(ctx -> ctx.getBase() instanceof Variant && ctx.getName().equals("contentType"))
+                        .resolveSync(ctx -> ((Variant) ctx.getBase()).getContentType())
+                        .build())
+                .build();
+        Template hello = engine.parse("Hello {variant.contentType}!");
+        String render = hello.instance().setVariant(Variant.forContentType(Variant.TEXT_HTML)).render();
+        assertEquals("Hello text/html!", render);
     }
 }

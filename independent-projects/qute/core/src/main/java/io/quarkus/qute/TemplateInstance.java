@@ -202,6 +202,16 @@ public interface TemplateInstance {
     }
 
     /**
+     * Sets the variant attribute that can be used to select a specific variant of the template.
+     *
+     * @param variant the variant
+     * @return self
+     */
+    default TemplateInstance setVariant(Variant variant) {
+        return setAttribute(SELECTED_VARIANT, variant);
+    }
+
+    /**
      * This component can be used to initialize a template instance, i.e. the data and attributes.
      *
      * @see TemplateInstance#data(String, Object)

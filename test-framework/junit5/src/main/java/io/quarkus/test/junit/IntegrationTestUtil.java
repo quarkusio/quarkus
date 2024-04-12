@@ -289,7 +289,9 @@ public final class IntegrationTestUtil {
             // when the application is going to be launched as a docker container, we need to make containers started by DevServices
             // use a shared network that the application container can then use as well
             augmentAction = curatedApplication.createAugmentor(
-                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory",
+                    Map.of(io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem.SOURCE_PROPERTY,
+                            "io.quarkus.test.junit"));
         } else {
             augmentAction = curatedApplication.createAugmentor();
         }

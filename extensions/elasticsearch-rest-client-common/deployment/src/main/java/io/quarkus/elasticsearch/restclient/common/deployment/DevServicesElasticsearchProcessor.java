@@ -95,8 +95,10 @@ public class DevServicesElasticsearchProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "Dev Services for Elasticsearch starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
         try {
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
             devService = startElasticsearch(dockerStatusBuildItem, configuration, buildItemsConfig, launchMode,
-                    !devServicesSharedNetworkBuildItem.isEmpty(),
+                    useSharedNetwork,
                     devServicesConfig.timeout);
             if (devService == null) {
                 compressor.closeAndDumpCaptured();

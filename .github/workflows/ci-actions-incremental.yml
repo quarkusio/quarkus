@@ -18,6 +18,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -33,6 +35,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   workflow_dispatch:
 
 concurrency:

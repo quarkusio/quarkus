@@ -270,13 +270,15 @@ function makeCollapsibleHandler(descDiv, td, row,
         if( isCollapsed ) {
             collapsibleSpan.childNodes.item(0).nodeValue = 'Show less';
             iconDecoration.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            descDiv.classList.remove('description-collapsed');
+            descDiv.classList.add('description-expanded');
         }
         else {
             collapsibleSpan.childNodes.item(0).nodeValue = 'Show more';
             iconDecoration.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            descDiv.classList.add('description-collapsed');
+            descDiv.classList.remove('description-expanded');
         }
-        descDiv.classList.toggle('description-collapsed');
-        descDiv.classList.toggle('description-expanded');
         row.classList.toggle('row-collapsed');
     };
 }

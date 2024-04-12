@@ -2,6 +2,11 @@ package org.jboss.resteasy.reactive.multipart;
 
 import java.nio.file.Path;
 
+/**
+ * Represent a file that has been uploaded.
+ * <p>
+ * WARNING: This type is currently only supported on the server
+ */
 public interface FileUpload extends FilePart {
 
     /**

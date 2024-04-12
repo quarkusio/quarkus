@@ -211,7 +211,14 @@ public class OidcProviderClient implements Closeable {
         final String idToken = json.getString(OidcConstants.ID_TOKEN_VALUE);
         final String accessToken = json.getString(OidcConstants.ACCESS_TOKEN_VALUE);
         final String refreshToken = json.getString(OidcConstants.REFRESH_TOKEN_VALUE);
-        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken);
+        Long tokenExpiresIn = null;
+        Object tokenExpiresInObj = json.getValue(OidcConstants.EXPIRES_IN);
+        if (tokenExpiresInObj != null) {
+            tokenExpiresIn = tokenExpiresInObj instanceof Number ? ((Number) tokenExpiresInObj).longValue()
+                    : Long.parseLong(tokenExpiresInObj.toString());
+        }
+
+        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn);
     }
 
     private UserInfo getUserInfo(HttpResponse<Buffer> resp) {

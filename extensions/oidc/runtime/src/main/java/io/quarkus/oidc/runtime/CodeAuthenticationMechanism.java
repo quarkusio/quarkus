@@ -761,7 +761,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, null));
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, null,
+                                        tokens.getAccessTokenExpiresIn()));
                                 internalIdToken = true;
                             }
                         } else {
@@ -788,7 +789,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                         if (internalIdToken
                                                 && OidcUtils.cacheUserInfoInIdToken(resolver, configContext.oidcConfig)) {
                                             tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig,
-                                                    identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE), null));
+                                                    identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE), null,
+                                                    tokens.getAccessTokenExpiresIn()));
                                         }
                                         return processSuccessfulAuthentication(context, configContext,
                                                 tokens, idToken, identity);
@@ -890,7 +892,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
-    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo, String currentIdToken) {
+    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo, String currentIdToken,
+            Long accessTokenExpiresInSecs) {
         JwtClaimsBuilder builder = Jwt.claims();
         if (currentIdToken != null) {
             AbstractJsonObjectResponse currentIdTokenJson = new AbstractJsonObjectResponse(
@@ -908,6 +911,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
         if (oidcConfig.authentication.internalIdTokenLifespan.isPresent()) {
             builder.expiresIn(oidcConfig.authentication.internalIdTokenLifespan.get().getSeconds());
+        } else if (accessTokenExpiresInSecs != null) {
+            builder.expiresIn(accessTokenExpiresInSecs);
         }
         builder.audience(oidcConfig.getClientId().get());
         return builder.jws().header(INTERNAL_IDTOKEN_HEADER, true)
@@ -936,7 +941,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
                             maxAge += configContext.oidcConfig.token.lifespanGrace.getAsInt();
                         }
-                        if (configContext.oidcConfig.token.refreshExpired) {
+                        if (configContext.oidcConfig.token.refreshExpired && tokens.getRefreshToken() != null) {
                             maxAge += configContext.oidcConfig.authentication.sessionAgeExtension.getSeconds();
                         }
                         final long sessionMaxAge = maxAge;
@@ -1247,7 +1252,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     tokens.setIdToken(currentIdToken);
                                 }
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, currentIdToken));
+                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, currentIdToken,
+                                        tokens.getAccessTokenExpiresIn()));
                             }
                         }
 

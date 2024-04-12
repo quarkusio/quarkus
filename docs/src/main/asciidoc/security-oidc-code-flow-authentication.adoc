@@ -1102,8 +1102,12 @@ To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be 
 [NOTE]
 ====
 Even though you configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` is generated to standardize the way `quarkus-oidc` operates.
-You use an `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request.
-In this case, the session lifespan is set to 5 minutes, which you can extend further as described in the <<session-management,session management>> section.
+You use an internal `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request.
+In this case, the `IdToken` age is set to the value of a standard `expires_in` property in the authorization code flow response.
+You can use a `quarkus.oidc.authentication.internal-id-token-lifespan`property to customize the ID token age.
+The default ID token age is 5 minutes.
+
+, which you can extend further as described in the <<session-management,session management>> section.
 
 This simplifies how you handle an application that supports multiple OIDC providers.
 ====

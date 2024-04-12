@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
 import static java.lang.Boolean.TRUE;
 
 import java.util.ArrayList;
@@ -186,6 +187,10 @@ public class HttpAuthenticator {
                             return mech.authenticate(routingContext, identityProviderManager);
                         }
                     });
+        }
+
+        if (routingContext.get(ROLES_MAPPING_KEY) != null) {
+            result = result.onItem().ifNotNull().transform(routingContext.get(ROLES_MAPPING_KEY));
         }
 
         // fire security events if required

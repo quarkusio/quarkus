@@ -34,14 +34,17 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -62,6 +65,7 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
@@ -216,6 +220,7 @@ public class HttpSecurityProcessor {
             HttpSecurityRecorder recorder,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem,
             Capabilities capabilities,
             HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
@@ -233,10 +238,32 @@ public class HttpSecurityProcessor {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
+                            recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
                             FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void createHttpAuthenticationHandler(HttpSecurityRecorder recorder, Capabilities capabilities,
+            HttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            authenticationHandlerProducer.produce(
+                    new HttpAuthenticationHandlerBuildItem(
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive)));
+        }
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    @Consume(BeanContainerBuildItem.class)
+    void initializeAuthenticationHandler(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
+            HttpSecurityRecorder recorder, HttpConfiguration httpConfig) {
+        if (authenticationHandler.isPresent()) {
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, httpConfig);
         }
     }
 
@@ -506,6 +533,14 @@ public class HttpSecurityProcessor {
         @Override
         public boolean getAsBoolean() {
             return required;
+        }
+    }
+
+    static final class HttpAuthenticationHandlerBuildItem extends SimpleBuildItem {
+        private final RuntimeValue<AuthenticationHandler> handler;
+
+        private HttpAuthenticationHandlerBuildItem(RuntimeValue<AuthenticationHandler> handler) {
+            this.handler = handler;
         }
     }
 }

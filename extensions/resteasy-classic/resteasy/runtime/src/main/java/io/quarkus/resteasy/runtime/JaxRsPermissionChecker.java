@@ -82,7 +82,7 @@ public class JaxRsPermissionChecker {
             }
         } else if (checkResult.getAugmentedIdentity() != identityAssociation.getIdentity()) {
             newIdentity = checkResult.getAugmentedIdentity();
-            routingContext.setUser(new QuarkusHttpUser(newIdentity));
+            QuarkusHttpUser.setIdentity(newIdentity, routingContext);
             identityAssociation.setIdentity(newIdentity);
         } else {
             newIdentity = checkResult.getAugmentedIdentity();

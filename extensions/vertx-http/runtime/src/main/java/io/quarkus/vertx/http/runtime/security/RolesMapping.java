@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.setIdentity;
-
 import java.security.Permission;
 import java.security.Principal;
 import java.util.HashSet;
@@ -13,10 +11,10 @@ import java.util.function.Function;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
-import io.vertx.ext.web.RoutingContext;
 
-public class RolesMapping {
+public class RolesMapping implements Function<SecurityIdentity, SecurityIdentity> {
 
+    static final String ROLES_MAPPING_KEY = "io.quarkus.vertx.http.runtime.security.RolesMapping";
     private final Map<String, Set<Permission>> roleToPermissions;
     private final Map<String, List<String>> roleToRoles;
     protected final boolean grantPermissions;
@@ -40,24 +38,21 @@ public class RolesMapping {
         }
     }
 
-    static RolesMapping of(Map<String, List<String>> roleToRoles) {
+    public static RolesMapping of(Map<String, List<String>> roleToRoles) {
         return roleToRoles.isEmpty() ? null : new RolesMapping(null, roleToRoles);
     }
 
-    Function<SecurityIdentity, SecurityIdentity> withRoutingContext(RoutingContext context) {
-        return new Function<SecurityIdentity, SecurityIdentity>() {
-            @Override
-            public SecurityIdentity apply(SecurityIdentity identity) {
-                if (identity.isAnonymous()) {
-                    return identity;
-                }
-                var newIdentity = augmentIdentity(identity);
-                if (newIdentity == null) {
-                    return identity;
-                }
-                return setIdentity(newIdentity, context);
-            }
-        };
+    @Override
+    public SecurityIdentity apply(SecurityIdentity identity) {
+        if (identity.isAnonymous()) {
+            return identity;
+        }
+        var newIdentity = augmentIdentity(identity);
+        if (newIdentity == null) {
+            return identity;
+        }
+
+        return newIdentity;
     }
 
     protected SecurityIdentity augmentIdentity(SecurityIdentity securityIdentity) {

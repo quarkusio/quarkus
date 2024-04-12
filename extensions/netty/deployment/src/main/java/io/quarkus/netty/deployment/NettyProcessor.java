@@ -120,6 +120,7 @@ class NettyProcessor {
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants")
                     .addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
         } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
@@ -163,7 +164,9 @@ class NettyProcessor {
         }
 
         builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
-                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext");
+        ;
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")

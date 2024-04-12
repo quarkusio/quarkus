@@ -478,6 +478,7 @@ triage:
         - extensions/config-yaml/
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
+      notify: [radcortez]
     - id: core
       labels: [area/core]
       notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]

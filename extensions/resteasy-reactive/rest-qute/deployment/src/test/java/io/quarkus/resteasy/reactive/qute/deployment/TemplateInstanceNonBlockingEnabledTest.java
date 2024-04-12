@@ -18,17 +18,19 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class TemplateInstanceNonBlockingTest {
+public class TemplateInstanceNonBlockingEnabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class)
+                    .addAsResource(new StringAsset("quarkus.rest.qute.template-instance-non-blocking-type=true"),
+                            "application.properties")
                     .addAsResource(new StringAsset("Blocking allowed: {blockingAllowed}"), "templates/item.txt"));
 
     @Test
     public void test() {
-        when().get("/test").then().statusCode(200).body(Matchers.is("Blocking allowed: true"));
+        when().get("/test").then().statusCode(200).body(Matchers.is("Blocking allowed: false"));
     }
 
     @Path("test")

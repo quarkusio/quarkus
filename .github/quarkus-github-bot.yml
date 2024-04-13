@@ -474,6 +474,7 @@ triage:
       notify: [ebullient]
     - id: config
       labels: [area/config]
+      title: "config"
       directories:
         - extensions/config-yaml/
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/

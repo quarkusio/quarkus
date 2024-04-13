@@ -10,7 +10,7 @@ class JavaVersionUtilTest {
     private static final String JAVA_SPECIFICATION_VERSION = "java.specification.version";
 
     @Test
-    void testJava8() {
+    public void testJava8() {
         testWithVersion("1.8", () -> {
             assertFalse(JavaVersionUtil.isJava11OrHigher());
             assertFalse(JavaVersionUtil.isJava13OrHigher());
@@ -18,7 +18,7 @@ class JavaVersionUtilTest {
     }
 
     @Test
-    void testJava11() {
+    public void testJava11() {
         testWithVersion("11", () -> {
             assertTrue(JavaVersionUtil.isJava11OrHigher());
             assertFalse(JavaVersionUtil.isJava13OrHigher());
@@ -26,7 +26,7 @@ class JavaVersionUtilTest {
     }
 
     @Test
-    void testJava14() {
+    public void testJava14() {
         testWithVersion("14", () -> {
             assertTrue(JavaVersionUtil.isJava11OrHigher());
             assertTrue(JavaVersionUtil.isJava13OrHigher());
@@ -34,7 +34,7 @@ class JavaVersionUtilTest {
     }
 
     @Test
-    void testJava17() {
+    public void testJava17() {
         testWithVersion("17", () -> {
             assertTrue(JavaVersionUtil.isJava11OrHigher());
             assertTrue(JavaVersionUtil.isJava13OrHigher());
@@ -42,7 +42,7 @@ class JavaVersionUtilTest {
     }
 
     @Test
-    void testJava21() {
+    public void testJava21() {
         testWithVersion("21", () -> {
             assertTrue(JavaVersionUtil.isJava11OrHigher());
             assertTrue(JavaVersionUtil.isJava13OrHigher());

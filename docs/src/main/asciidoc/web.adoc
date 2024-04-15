@@ -51,7 +51,7 @@ For templating and server-side rendering with Quarkus, there are different engin
 
 Qute is designed specifically to meet the Quarkus needs, and help you deal with templates, snippets, and partials and render the data from your storage. It is inspired by the most famous template engines, it is fast, type-safe, works in native, and has a lot of nice features.
 
-To install Qute Web, follow xref:qute.adoc[the instructions].
+To install Qute Web, follow xref:qute.adoc#serving-templates[the instructions].
 
 Here is a simple example of a Qute template:
 

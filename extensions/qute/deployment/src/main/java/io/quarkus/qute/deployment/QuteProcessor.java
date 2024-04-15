@@ -8,7 +8,6 @@ import static io.quarkus.qute.runtime.EngineProducer.INJECT_NAMESPACE;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -2149,15 +2148,17 @@ public class QuteProcessor {
             }
             for (Path resolvedPath : artifact.getResolvedPaths()) {
                 if (Files.isDirectory(resolvedPath)) {
-                    scanPath(resolvedPath, resolvedPath, config, templateRoots, watchedPaths, templatePaths,
+                    scanRootPath(resolvedPath, config, templateRoots, watchedPaths, templatePaths,
                             nativeImageResources);
                 } else {
                     try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedPath)) {
+                        // Iterate over template roots, such as "templates", and collect the included templates
                         for (String templateRoot : templateRoots) {
                             Path artifactBasePath = artifactFs.getPath(templateRoot);
                             if (Files.exists(artifactBasePath)) {
-                                LOGGER.debugf("Found extension templates in: %s", resolvedPath);
-                                scan(artifactBasePath, artifactBasePath, templateRoot + "/", watchedPaths, templatePaths,
+                                LOGGER.debugf("Found template root in extension artifact: %s", resolvedPath);
+                                scanDirectory(artifactBasePath, artifactBasePath, templateRoot + "/", watchedPaths,
+                                        templatePaths,
                                         nativeImageResources,
                                         config);
                             }
@@ -2173,13 +2174,20 @@ public class QuteProcessor {
                 for (Path root : tree.getRoots()) {
                     // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect
                     // a wrong directory name on case-insensitive file systems
-                    scanPath(root, root, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
+                    scanRootPath(root, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
                 }
             });
         }
     }
 
-    private void scanPath(Path rootPath, Path path, QuteConfig config, TemplateRootsBuildItem templateRoots,
+    private void scanRootPath(Path rootPath, QuteConfig config, TemplateRootsBuildItem templateRoots,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
+            BuildProducer<TemplatePathBuildItem> templatePaths,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+        scanRootPath(rootPath, rootPath, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
+    }
+
+    private void scanRootPath(Path rootPath, Path path, QuteConfig config, TemplateRootsBuildItem templateRoots,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
@@ -2193,15 +2201,15 @@ public class QuteProcessor {
                     // "/io", "/META-INF", "/templates", "/web", etc.
                     Path relativePath = rootPath.relativize(file);
                     if (templateRoots.isRoot(relativePath)) {
-                        LOGGER.debugf("Found templates dir: %s", file);
-                        // The base path is an OS-specific path relative to the template root
-                        String basePath = relativePath.toString() + File.separatorChar;
-                        scan(file, file, basePath, watchedPaths, templatePaths,
+                        LOGGER.debugf("Found templates root dir: %s", file);
+                        // The base path is an OS-specific template root path relative to the scanned root path
+                        String basePath = relativePath.toString() + relativePath.getFileSystem().getSeparator();
+                        scanDirectory(file, file, basePath, watchedPaths, templatePaths,
                                 nativeImageResources,
                                 config);
                     } else if (templateRoots.maybeRoot(relativePath)) {
                         // Scan the path recursively because the template root may be nested, for example "/web/public"
-                        scanPath(rootPath, file, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
+                        scanRootPath(rootPath, file, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
                     }
                 }
             }
@@ -3384,33 +3392,54 @@ public class QuteProcessor {
         throw new IllegalArgumentException();
     }
 
+    /**
+     *
+     * @param templatePaths
+     * @param watchedPaths
+     * @param nativeImageResources
+     * @param osSpecificResourcePath The OS-specific resource path, i.e. templates\nested\foo.html
+     * @param templatePath The path relative to the template root; using the {@code /} path separator
+     * @param originalPath
+     * @param config
+     */
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String basePath, String filePath,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String osSpecificResourcePath,
+            String templatePath,
             Path originalPath, QuteConfig config) {
-        if (filePath.isEmpty()) {
+        if (templatePath.isEmpty()) {
             return;
         }
-        // OS-specific full path, i.e. templates\foo.html
-        String osSpecificPath = basePath + filePath;
         // OS-agnostic full path, i.e. templates/foo.html
-        String osAgnosticPath = osSpecificPath;
-        if (File.separatorChar != '/') {
-            osAgnosticPath = osAgnosticPath.replace(File.separatorChar, '/');
-        }
-        LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, osSpecificPath,
+        String osAgnosticResourcePath = toOsAgnosticPath(osSpecificResourcePath, originalPath.getFileSystem());
+        LOGGER.debugf("Produce template build items [templatePath: %s, osSpecificResourcePath: %s, originalPath: %s",
+                templatePath,
+                osSpecificResourcePath,
                 originalPath);
         boolean restartNeeded = true;
         if (config.devMode.noRestartTemplates.isPresent()) {
-            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(osAgnosticPath).matches();
+            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(osAgnosticResourcePath).matches();
         }
-        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(osAgnosticPath, restartNeeded));
-        nativeImageResources.produce(new NativeImageResourceBuildItem(osSpecificPath));
+        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(osAgnosticResourcePath, restartNeeded));
+        nativeImageResources.produce(new NativeImageResourceBuildItem(osSpecificResourcePath));
         templatePaths.produce(
-                new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath, config.defaultCharset)));
+                new TemplatePathBuildItem(templatePath, originalPath,
+                        readTemplateContent(originalPath, config.defaultCharset)));
     }
 
-    private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
+    /**
+     *
+     * @param root
+     * @param directory
+     * @param basePath OS-specific template root path relative to the scanned root path, e.g. {@code templates/}
+     * @param watchedPaths
+     * @param templatePaths
+     * @param nativeImageResources
+     * @param config
+     * @throws IOException
+     */
+    private void scanDirectory(Path root, Path directory, String basePath,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config)
@@ -3431,22 +3460,34 @@ public class QuteProcessor {
                 }
                 if (Files.isRegularFile(filePath)) {
                     LOGGER.debugf("Found template: %s", filePath);
-                    String templatePath = root.relativize(filePath).toString();
-                    if (File.separatorChar != '/') {
-                        templatePath = templatePath.replace(File.separatorChar, '/');
-                    }
+                    Path relativePath = root.relativize(filePath);
+                    String templatePath = toOsAgnosticPath(relativePath);
                     if (config.templatePathExclude.matcher(templatePath).matches()) {
                         LOGGER.debugf("Template file excluded: %s", filePath);
                         continue;
                     }
-                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
+                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
+                            basePath + relativePath.toString(),
+                            templatePath,
                             filePath, config);
                 } else if (Files.isDirectory(filePath)) {
                     LOGGER.debugf("Scan directory: %s", filePath);
-                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, config);
+                    scanDirectory(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources, config);
                 }
             }
         }
+    }
+
+    private static String toOsAgnosticPath(String path, FileSystem fs) {
+        String separator = fs.getSeparator();
+        if (!separator.equals("/")) {
+            path = path.replace(separator, "/");
+        }
+        return path;
+    }
+
+    private static String toOsAgnosticPath(Path path) {
+        return toOsAgnosticPath(path.toString(), path.getFileSystem());
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {

@@ -26,45 +26,70 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `qute-quickstart` link:{quickstarts-tree-url}/qute-quickstart[directory].
 
-== Hello World with Jakarta REST
+[[serving-templates]]
+== Serving Qute templates via http
 
-If you want to use Qute in your Jakarta REST application, you need to add an extension first:
+If you want to serve your templates via http:
 
-* either `quarkus-rest-qute` if you are using Quarkus REST (formerly RESTEasy Reactive):
-+
+1. The Qute Web extension allows you to directly serve via http templates located in `src/main/resource/templates/pub/`. In that case you don't need any Java code to "plug" the template, for example, the template `src/main/resource/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
+2. For finer control, you can combine it with Quarkus REST to control how your template will be served. All files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates and can be injected in a REST resource.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkiverse.qute.web</groupId>
+    <artifactId>quarkus-qute-web</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkiverse.qute.web:quarkus-qute-web")
+----
+
+NOTE: The Qute Web extension while using the quarkiverse group-id, it is still part of the Quarkus platform.
+
+[[hello-qute-web]]
+=== Serving Hello World with Qute
+
+Let's start with a Hello World template:
+
+.src/main/resources/templates/pub/hello.html
+[source]
+----
+<h1>Hello {http:param('name', 'Quarkus')}!</h1> <1>
+----
+<1> `{http:param('name', 'Quarkus')}` is an expression that is evaluated when the template is rendered (Quarkus is the default value).
+
+NOTE: Templates located in the `pub` directory are served via HTTP. Automatically, no controllers needed. For example, the template src/main/resource/templates/pub/foo.html will be served from the paths /foo and /foo.html by default.
+
+If your application is running, you can open your browser and hit:  http://localhost:8080/hello?name=Martin
+
+For more information about Qute Web options, see the https://docs.quarkiverse.io/quarkus-qute-web/dev/index.html[Qute Web guide].
+
+[[hello-qute-rest]]
+=== Hello Qute and REST
+
+For finer control, you can combine Qute Web with Quarkus REST or Quarkus RESTEasy to control how your template will be served
+
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-qute</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
-+
+
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-rest-qute")
+implementation("io.quarkus:quarkus-rest")
 ----
 
-* or `quarkus-resteasy-qute` if you are using RESTEasy Classic:
-+
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-qute</artifactId>
-</dependency>
-----
-+
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.quarkus:quarkus-resteasy-qute")
-----
-
-We'll start with a very simple template:
+A very simple text template:
 
 .hello.txt
 [source]
@@ -72,8 +97,6 @@ We'll start with a very simple template:
 Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
-
-NOTE: By default, all files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates. Templates are validated during startup and watched for changes in the development mode.
 
 Now let's inject the "compiled" template in the resource class.
 

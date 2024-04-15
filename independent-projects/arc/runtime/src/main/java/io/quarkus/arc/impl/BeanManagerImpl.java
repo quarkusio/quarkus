@@ -62,12 +62,12 @@ public class BeanManagerImpl implements BeanManager {
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
             // there's no actual injection point or an `Instance` object,
             // the "current" injection point must be `null`
-            InjectionPoint prev = InjectionPointProvider.set(null);
+            InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, null);
             try {
                 return ArcContainerImpl.beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx,
                         false, null, true).get();
             } finally {
-                InjectionPointProvider.set(prev);
+                InjectionPointProvider.setCurrent(ctx, prev);
             }
         }
         throw new IllegalArgumentException(
@@ -86,12 +86,12 @@ public class BeanManagerImpl implements BeanManager {
                 throw new UnsatisfiedResolutionException();
             }
             InjectableBean<?> bean = (InjectableBean<?>) resolve(beans);
-            InjectionPoint prev = InjectionPointProvider.set(ij);
+            InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, ij);
             try {
                 return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx,
                         false, null, true).get();
             } finally {
-                InjectionPointProvider.set(prev);
+                InjectionPointProvider.setCurrent(ctx, prev);
             }
         }
         throw new IllegalArgumentException(

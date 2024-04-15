@@ -78,28 +78,6 @@ public class NativeImageFeatureStep {
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
 
-        ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
-
-        MethodCreator registerAsUnsafeAccessed = file
-                .getMethodCreator("registerAsUnsafeAccessed", void.class, Feature.BeforeAnalysisAccess.class)
-                .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-        for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
-            TryBlock tc = registerAsUnsafeAccessed.tryBlock();
-            ResultHandle declaringClassHandle = tc.invokeStaticMethod(
-                    ofMethod(Class.class, "forName", Class.class, String.class),
-                    tc.load(unsafeAccessedField.getDeclaringClass()));
-            ResultHandle fieldHandle = tc.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
-                    tc.load(unsafeAccessedField.getFieldName()));
-            tc.invokeInterfaceMethod(
-                    ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
-                    registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
-            CatchBlockCreator cc = tc.addCatch(Throwable.class);
-            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-        }
-        registerAsUnsafeAccessed.returnVoid();
-        overallCatch.invokeStaticMethod(registerAsUnsafeAccessed.getMethodDescriptor(), beforeAnalysisParam);
-
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
                 overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
 
@@ -177,6 +155,35 @@ public class NativeImageFeatureStep {
             runtimeReinitializedClasses.returnVoid();
 
             overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
+        }
+
+        // Ensure registration of fields being accessed through unsafe is done last to ensure that the class
+        // initialization configuration is done first.  Registering the fields before configuring class initialization
+        // may results in classes being marked for runtime initialization even if not explicitly requested.
+        if (!unsafeAccessedFields.isEmpty()) {
+            ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
+            MethodCreator registerAsUnsafeAccessed = file
+                    .getMethodCreator("registerAsUnsafeAccessed", void.class, Feature.BeforeAnalysisAccess.class)
+                    .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+            ResultHandle thisClass = registerAsUnsafeAccessed.loadClassFromTCCL(GRAAL_FEATURE);
+            ResultHandle cl = registerAsUnsafeAccessed
+                    .invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+            for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
+                TryBlock tc = registerAsUnsafeAccessed.tryBlock();
+                ResultHandle declaringClassHandle = tc.invokeStaticMethod(
+                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                        tc.load(unsafeAccessedField.getDeclaringClass()), tc.load(false), cl);
+                ResultHandle fieldHandle = tc.invokeVirtualMethod(
+                        ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
+                        tc.load(unsafeAccessedField.getFieldName()));
+                tc.invokeInterfaceMethod(
+                        ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
+                        registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+            }
+            registerAsUnsafeAccessed.returnVoid();
+            overallCatch.invokeStaticMethod(registerAsUnsafeAccessed.getMethodDescriptor(), beforeAnalysisParam);
         }
 
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);

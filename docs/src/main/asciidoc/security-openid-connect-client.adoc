@@ -14,7 +14,7 @@ Learn how to use OpenID Connect (OIDC) and OAuth2 clients with filters to get, r
 
 This approach uses an OIDC token propagation Reactive filter to propagate the incoming bearer access tokens.
 
-For more information about `Oidc Client` and `Token Propagation` support in Quarkus, see the xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference guide.
+For more information about `Oidc Client` and `Token Propagation` support in Quarkus, see the xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference guide].
 
 To protect your applications by using Bearer Token Authorization, see the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] guide.
 

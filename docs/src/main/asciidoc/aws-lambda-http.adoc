@@ -265,7 +265,7 @@ Do not change the Lambda handler name.
 ----
      Properties:
         Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
-        Runtime: java11
+        Runtime: java17
 ----
 
 This handler is a bridge between the lambda runtime and the Quarkus HTTP framework you are using (Jakarta REST, Servlet, etc.)

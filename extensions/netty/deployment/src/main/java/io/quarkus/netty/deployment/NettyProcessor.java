@@ -105,6 +105,8 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
@@ -120,6 +122,7 @@ class NettyProcessor {
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants")
                     .addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
         } else {
             log.debug("Not registering Netty HTTP classes as they were not found");

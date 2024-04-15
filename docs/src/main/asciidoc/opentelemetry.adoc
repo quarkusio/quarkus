@@ -381,10 +381,6 @@ public class CustomConfiguration {
 }
 ----
 
-==== User data
-
-By setting `quarkus.otel.traces.eusp.enabled=true` you can add information about the user related to each span. The user's ID and roles will be added to the span attributes, if available.
-
 [[sampler]]
 === Sampler
 A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether a trace should be discarded or forwarded, effectively managing noise and reducing overhead by limiting the number of collected traces sent to the collector.

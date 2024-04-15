@@ -6,11 +6,14 @@ import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -25,6 +28,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -368,6 +372,7 @@ public class ResteasyReactiveJacksonProcessor {
             JaxRsResourceIndexBuildItem index,
             BuildProducer<ResourceMethodCustomSerializationBuildItem> producer) {
         IndexView indexView = index.getIndexView();
+        Map<String, Boolean> typeToHasSecureField = new HashMap<>();
         List<ResourceMethodCustomSerializationBuildItem> result = new ArrayList<>();
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
@@ -423,22 +428,8 @@ public class ResteasyReactiveJacksonProcessor {
             if ((effectiveReturnClassInfo == null) || effectiveReturnClassInfo.name().equals(ResteasyReactiveDotNames.OBJECT)) {
                 continue;
             }
-            ClassInfo currentClassInfo = effectiveReturnClassInfo;
-            boolean hasSecureFields = false;
-            while (true) {
-                if (currentClassInfo.annotationsMap().containsKey(SECURE_FIELD)) {
-                    hasSecureFields = true;
-                    break;
-                }
-                if (currentClassInfo.superName().equals(ResteasyReactiveDotNames.OBJECT)) {
-                    break;
-                }
-                currentClassInfo = indexView.getClassByName(currentClassInfo.superName());
-                if (currentClassInfo == null) {
-                    break;
-                }
-            }
-            if (hasSecureFields) {
+            AtomicBoolean needToDeleteCache = new AtomicBoolean(false);
+            if (hasSecureFields(indexView, effectiveReturnClassInfo, typeToHasSecureField, needToDeleteCache)) {
                 AnnotationInstance customSerializationAtClassAnnotation = methodInfo.declaringClass()
                         .declaredAnnotation(CUSTOM_SERIALIZATION);
                 AnnotationInstance customSerializationAtMethodAnnotation = methodInfo.annotation(CUSTOM_SERIALIZATION);
@@ -450,12 +441,104 @@ public class ResteasyReactiveJacksonProcessor {
                             SecurityCustomSerialization.class));
                 }
             }
+            if (needToDeleteCache.get()) {
+                typeToHasSecureField.clear();
+            }
         }
         if (!result.isEmpty()) {
             for (ResourceMethodCustomSerializationBuildItem bi : result) {
                 producer.produce(bi);
             }
         }
+    }
+
+    private static boolean hasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+        // use cached result if there is any
+        final String className = currentClassInfo.name().toString();
+        if (typeToHasSecureField.containsKey(className)) {
+            Boolean hasSecureFields = typeToHasSecureField.get(className);
+            if (hasSecureFields == null) {
+                // this is to avoid false negative for scenario like:
+                // when 'a' declares field of type 'b' which declares field of type 'a' and both 'a' and 'b'
+                // are returned from an endpoint and 'b' is detected based on 'a' and processed after 'a'
+                needToDeleteCache.set(true);
+                return false;
+            }
+            return hasSecureFields;
+        }
+
+        // prevent cyclic check of the same type
+        // for example when a field has a same type as the current class has
+        typeToHasSecureField.put(className, null);
+
+        final boolean hasSecureFields;
+        if (currentClassInfo.isInterface()) {
+            // check interface implementors as anyone of them can be returned
+            hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
+                    .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache));
+        } else {
+            // figure if any field or parent / subclass field is secured
+            hasSecureFields = hasSecureFields(currentClassInfo)
+                    || anyFieldHasSecureFields(indexView, currentClassInfo, typeToHasSecureField, needToDeleteCache)
+                    || anySubclassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField, needToDeleteCache)
+                    || anyParentClassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField, needToDeleteCache);
+        }
+        typeToHasSecureField.put(className, hasSecureFields);
+        return hasSecureFields;
+    }
+
+    private static boolean hasSecureFields(ClassInfo classInfo) {
+        return classInfo.annotationsMap().containsKey(SECURE_FIELD);
+    }
+
+    private static boolean anyParentClassHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+        if (!currentClassInfo.superName().equals(ResteasyReactiveDotNames.OBJECT)) {
+            final ClassInfo parentClassInfo = indexView.getClassByName(currentClassInfo.superName());
+            return parentClassInfo != null
+                    && hasSecureFields(indexView, parentClassInfo, typeToHasSecureField, needToDeleteCache);
+        }
+        return false;
+    }
+
+    private static boolean anySubclassHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+        return indexView.getAllKnownSubclasses(currentClassInfo.name()).stream()
+                .anyMatch(subclass -> hasSecureFields(indexView, subclass, typeToHasSecureField, needToDeleteCache));
+    }
+
+    private static boolean anyFieldHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+        return currentClassInfo
+                .fields()
+                .stream()
+                .map(FieldInfo::type)
+                .anyMatch(fieldType -> fieldTypeHasSecureFields(fieldType, indexView, typeToHasSecureField, needToDeleteCache));
+    }
+
+    private static boolean fieldTypeHasSecureFields(Type fieldType, IndexView indexView,
+            Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
+        // this is the best effort and does not cover every possibility (e.g. type variables, wildcards)
+        if (fieldType.kind() == Type.Kind.CLASS) {
+            if (fieldType.name().packagePrefix() != null && fieldType.name().packagePrefix().startsWith("java.")) {
+                return false;
+            }
+            final ClassInfo fieldClass = indexView.getClassByName(fieldType.name());
+            return fieldClass != null && hasSecureFields(indexView, fieldClass, typeToHasSecureField, needToDeleteCache);
+        }
+        if (fieldType.kind() == Type.Kind.ARRAY) {
+            return fieldTypeHasSecureFields(fieldType.asArrayType().constituent(), indexView, typeToHasSecureField,
+                    needToDeleteCache);
+        }
+        if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            return fieldType
+                    .asParameterizedType()
+                    .arguments()
+                    .stream()
+                    .anyMatch(t -> fieldTypeHasSecureFields(t, indexView, typeToHasSecureField, needToDeleteCache));
+        }
+        return false;
     }
 
     private String getTargetId(AnnotationTarget target) {

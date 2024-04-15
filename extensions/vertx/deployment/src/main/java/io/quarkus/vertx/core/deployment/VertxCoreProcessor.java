@@ -137,7 +137,7 @@ class VertxCoreProcessor {
                                     };
                                 }
 
-                                if (name.equals("getLocal")) {
+                                if (name.equals("getLocal") && descriptor.equals("(Ljava/lang/Object;)Ljava/lang/Object;")) {
                                     return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
                                         @Override
                                         public void visitCode() {
@@ -153,7 +153,7 @@ class VertxCoreProcessor {
                                     };
                                 }
 
-                                if (name.equals("putLocal")) {
+                                if (name.equals("putLocal") && descriptor.equals("(Ljava/lang/Object;Ljava/lang/Object;)V")) {
                                     return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
                                         @Override
                                         public void visitCode() {
@@ -170,7 +170,7 @@ class VertxCoreProcessor {
                                     };
                                 }
 
-                                if (name.equals("removeLocal")) {
+                                if (name.equals("removeLocal") && descriptor.equals("(Ljava/lang/Object;)Z")) {
                                     return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
                                         @Override
                                         public void visitCode() {

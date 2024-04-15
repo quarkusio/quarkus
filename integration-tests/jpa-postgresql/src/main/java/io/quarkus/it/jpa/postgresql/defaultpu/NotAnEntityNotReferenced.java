@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.postgresql;
+package io.quarkus.it.jpa.postgresql.defaultpu;
 
 /**
  * Should not be referenced by the code

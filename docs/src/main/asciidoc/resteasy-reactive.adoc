@@ -2481,7 +2481,7 @@ public class CheeseBodyHandler implements MessageBodyReader<Cheese>,
 }
 ----
 
-If you want to get the most performance our of your writer, you can extend the
+If you want to get the most performance out of your writer, you can extend the
 link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerMessageBodyWriter.html[`ServerMessageBodyWriter`]
 instead of link:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyWriter.html[`MessageBodyWriter`]
 where you will be able to use less reflection and bypass the blocking IO layer:

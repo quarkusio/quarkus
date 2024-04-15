@@ -42,7 +42,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
 
     /**
      * Version of the target platform (e.g: 2.0.0.Final)
-     * You may instead use streamId to target the latest version of a specific platform stream.
+     * You may instead use stream to target the latest version of a specific platform stream.
      */
     @Parameter(property = "platformVersion", required = false)
     private String platformVersion;

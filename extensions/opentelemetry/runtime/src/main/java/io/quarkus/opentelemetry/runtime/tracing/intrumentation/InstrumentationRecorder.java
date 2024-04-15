@@ -19,6 +19,7 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.RedisClient
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.SqlClientInstrumenterVertxTracer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.tracing.TracingOptions;
@@ -34,7 +35,7 @@ public class InstrumentationRecorder {
         this.config = config;
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public Consumer<VertxOptions> getVertxTracingOptions() {
         TracingOptions tracingOptions = new TracingOptions()
                 .setFactory(FACTORY);
@@ -42,6 +43,7 @@ public class InstrumentationRecorder {
     }
 
     /* RUNTIME INIT */
+    @RuntimeInit
     public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
             boolean redisClientAvailable, final String semconvStability) {
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);

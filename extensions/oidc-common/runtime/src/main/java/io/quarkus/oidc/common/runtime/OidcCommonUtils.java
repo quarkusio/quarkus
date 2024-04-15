@@ -280,8 +280,8 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds) {
-        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.keyFile.isPresent()
-                || creds.jwt.keyStoreFile.isPresent();
+        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.key.isPresent()
+                || creds.jwt.keyFile.isPresent() || creds.jwt.keyStoreFile.isPresent();
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -329,7 +329,10 @@ public class OidcCommonUtils {
         } else {
             Key key = null;
             try {
-                if (creds.jwt.getKeyFile().isPresent()) {
+                if (creds.jwt.getKey().isPresent()) {
+                    key = KeyUtils.tryAsPemSigningPrivateKey(creds.jwt.getKey().get(),
+                            getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
+                } else if (creds.jwt.getKeyFile().isPresent()) {
                     key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
                 } else if (creds.jwt.keyStoreFile.isPresent()) {

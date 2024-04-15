@@ -55,6 +55,7 @@
         <module>info</module>
         <module>observability-devservices</module>
         <module>jfr</module>
+        <module>load-shedding</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>

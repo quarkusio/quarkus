@@ -317,7 +317,7 @@ public class FruitDto {
 
 The translation to and from JSON is done automatically by the Quarkus REST (formerly RESTEasy Reactive) extension, which is
 included in this guide's pom.xml file. If you want to add it manually to your application, add the
-below snippet to your application's ppm.xml file:
+below snippet to your application's pom.xml file:
 
 [source,xml]
 ----

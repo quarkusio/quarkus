@@ -32,7 +32,7 @@ The solution is located in the `qute-quickstart` link:{quickstarts-tree-url}/qut
 If you want to serve your templates via http:
 
 1. The Qute Web extension allows you to directly serve via http templates located in `src/main/resource/templates/pub/`. In that case you don't need any Java code to "plug" the template, for example, the template `src/main/resource/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
-2. For finer control, you can combine it with Quarkus REST or Quarkus RESTEasy to control how your template will be served. All files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates and can be injected in a REST resource.
+2. For finer control, you can combine it with Quarkus REST to control how your template will be served. All files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates and can be injected in a REST resource.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -49,7 +49,7 @@ If you want to serve your templates via http:
 implementation("io.quarkiverse.qute.web:quarkus-qute-web")
 ----
 
-NOTE: The Qute Web extension is still using the quarkiverse group-id, it is part of the Quarkus platform (so it's is included in the bom), we are working on moving it to Quarkus Core.
+NOTE: The Qute Web extension while using the quarkiverse group-id, it is still part of the Quarkus platform.
 
 [[hello-qute-web]]
 === Serving Hello World with Qute

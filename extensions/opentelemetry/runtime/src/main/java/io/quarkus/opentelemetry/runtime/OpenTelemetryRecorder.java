@@ -20,6 +20,8 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
@@ -30,23 +32,23 @@ public class OpenTelemetryRecorder {
 
     public static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
 
-    /* STATIC INIT */
+    @StaticInit
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
         GlobalEventEmitterProvider.resetForTest();
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public void eagerlyCreateContextStorage() {
         ContextStorage.get();
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public void storeVertxOnContextStorage(Supplier<Vertx> vertx) {
         QuarkusContextStorage.vertx = vertx.get();
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public Function<SyntheticCreationalContext<OpenTelemetry>, OpenTelemetry> opentelemetryBean(
             OTelRuntimeConfig oTelRuntimeConfig) {
         return new Function<>() {

@@ -9,6 +9,7 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ResourceAttributes;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.StaticInit;
 
 @Recorder
 public class TracerRecorder {
@@ -16,7 +17,7 @@ public class TracerRecorder {
     public static final Set<String> dropNonApplicationUriTargets = new HashSet<>();
     public static final Set<String> dropStaticResourceTargets = new HashSet<>();
 
-    /* STATIC INIT */
+    @StaticInit
     public void setAttributes(
             BeanContainer beanContainer,
             String quarkusVersion,
@@ -35,7 +36,7 @@ public class TracerRecorder {
                 .getAttributes());
     }
 
-    /* STATIC INIT */
+    @StaticInit
     public void setupSampler(
             List<String> dropNonApplicationUris,
             List<String> dropStaticResources) {

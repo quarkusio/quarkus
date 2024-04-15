@@ -8,6 +8,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.TrustStoreUtils;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
@@ -36,6 +37,7 @@ public class TestUtils {
                 .groups("admin")
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
+                .claim("root-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1)))
                 .jws().chain(chain)
                 .sign(privateKey);
     }

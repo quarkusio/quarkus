@@ -29,6 +29,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.TrustStoreUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
@@ -36,6 +37,7 @@ import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.vertx.core.json.JsonObject;
@@ -188,12 +190,43 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testCertChainWithCustomValidator() throws Exception {
+        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
+        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
+        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
+        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+
+        // Send the token with the valid certificate chain and bind it to the token claim
+        String accessToken = getAccessTokenForCustomValidator(
+                List.of(subjectCert, intermediateCert, rootCert),
+                subjectPrivateKey, true);
+
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-chain-custom-validator")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+
+        // Send the token with the valid certificate chain but do bind it to the token claim
+        accessToken = getAccessTokenForCustomValidator(
+                List.of(subjectCert, intermediateCert, rootCert),
+                subjectPrivateKey, false);
+
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-chain-custom-validator")
+                .then()
+                .statusCode(401);
+
+    }
+
+    @Test
     public void testAccessAdminResourceWithFullCertChain() throws Exception {
         X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
         X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
         X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
         PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
-        // Send the token with the valid certificate chain
+
+        // Send the token with the valid certificate chain and bind it to the token claim
         String accessToken = getAccessTokenWithCertChain(
                 List.of(subjectCert, intermediateCert, rootCert),
                 subjectPrivateKey);
@@ -708,7 +741,24 @@ public class BearerTokenAuthorizationTest {
                 .groups("admin")
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws().chain(chain)
+                .claim("root-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1)))
+                .jws()
+                .chain(chain)
+                .sign(privateKey);
+    }
+
+    private String getAccessTokenForCustomValidator(List<X509Certificate> chain,
+            PrivateKey privateKey, boolean setLeafCertThumbprint) throws Exception {
+        JwtClaimsBuilder builder = Jwt.preferredUserName("alice")
+                .groups("admin")
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .claim("root-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1)));
+        if (setLeafCertThumbprint) {
+            builder.claim("leaf-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(0)));
+        }
+        return builder.jws()
+                .chain(chain)
                 .sign(privateKey);
     }
 

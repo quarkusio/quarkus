@@ -86,7 +86,7 @@ You can trigger a build and deployment in a single step or build the container i
 
 To trigger a build and deployment in a single step:
 
-:build-additional-parameters: -Dquarkus.kubernetes.deploy=true
+:build-additional-parameters: -Dquarkus.openshift.deploy=true
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 

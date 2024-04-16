@@ -1386,8 +1386,6 @@ public interface EchoClient {
 [[multipart]]
 == Multipart Form support
 
-REST Client support multipart messages.
-
 === Sending Multipart messages
 
 REST Client allows sending data as multipart forms. This way you can for example

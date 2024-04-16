@@ -1400,7 +1400,7 @@ To send data as a multipart form, you can just use the regular `@RestForm` (or `
     String sendMultipart(@RestForm File file, @RestForm String otherField);
 ----
 
-Parameters specified as `File`, `Path`, `byte[]` or `Buffer` are sent as files and default to the
+Parameters specified as `File`, `Path`, `byte[]`, `Buffer` or `FileUpload` are sent as files and default to the
 `application/octet-stream` MIME type. Other `@RestForm` parameter types default to the `text/plain`
 MIME type. You can override these defaults with the `@PartType` annotation.
 
@@ -1421,7 +1421,7 @@ Naturally, you can also group these parameters into a containing class:
     String sendMultipart(Parameters parameters);
 ----
 
-Any `@RestForm` parameter of the type `File`, `Path`, `byte[]` or `Buffer`, as well as any
+Any `@RestForm` parameter of the type `File`, `Path`, `byte[]`, `Buffer` or `FileUpload`, as well as any
 annotated with `@PartType` automatically imply a `@Consumes(MediaType.MULTIPART_FORM_DATA)`
 on the method if there is no `@Consumes` present.
 
@@ -1533,7 +1533,7 @@ public ClientMultipartForm buildClientMultipartForm(Request request) { // <1>
   ClientMultipartForm multiPartForm = ClientMultipartForm.create();
   multiPartForm.attribute("jsonPayload", request.getJsonPayload(), "jsonPayload"); // <2>
   request.getFiles().forEach(fu -> {
-    multiPartForm.binaryFileUpload("file", fu.name(), fu.filePath().toString(), fu.contentType()); // <3>
+    multiPartForm.fileUpload(fu); // <3>
   });
   return multiPartForm;
 }
@@ -1541,7 +1541,7 @@ public ClientMultipartForm buildClientMultipartForm(Request request) { // <1>
 
 <1> `Request` representing the request the server parts accepts
 <2> A `jsonPayload` attribute is added directly to `ClientMultipartForm`
-<3> A `binaryFileUpload` is created from the request's `FileUpload` (which is a Quarkus REST (Server) type used to represent a binary file upload)
+<3> A `fileUpload` is created from the request's `FileUpload`
 
 [NOTE]
 ====

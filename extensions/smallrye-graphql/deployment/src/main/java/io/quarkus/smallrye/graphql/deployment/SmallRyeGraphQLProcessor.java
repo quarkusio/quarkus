@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import static io.smallrye.graphql.schema.helper.TypeAutoNameStrategy.valueOf;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,6 +76,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.smallrye.config.Converters;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
@@ -94,6 +97,7 @@ import io.smallrye.graphql.cdi.tracing.TracingService;
 import io.smallrye.graphql.config.ConfigKey;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
+import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.DirectiveType;
 import io.smallrye.graphql.schema.model.Field;
@@ -309,7 +313,8 @@ public class SmallRyeGraphQLProcessor {
 
         activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
         graphQLConfig.extraScalars.ifPresent(this::registerExtraScalarsInSchema);
-        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(), graphQLConfig.autoNameStrategy);
+        Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(),
+                Converters.getImplicitConverter(TypeAutoNameStrategy.class).convert(graphQLConfig.autoNameStrategy));
 
         RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));

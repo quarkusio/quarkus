@@ -81,6 +81,39 @@ public class MultipartDetectionTest {
                 .isEqualTo(file.getName() + " file Hello");
         assertThat(client.postMultipartEntityImplicit(file.getName(), person))
                 .isEqualTo(file.getName() + " Stef:Epardaud");
+
+        assertThat(client.postMultipartImplicitFileUpload("Foo", new FileUpload() {
+            @Override
+            public String name() {
+                return "file";
+            }
+
+            @Override
+            public java.nio.file.Path filePath() {
+                return file.toPath();
+            }
+
+            @Override
+            public String fileName() {
+                return file.getName();
+            }
+
+            @Override
+            public long size() {
+                return -1;
+            }
+
+            @Override
+            public String contentType() {
+                return "application/octet-stream";
+            }
+
+            @Override
+            public String charSet() {
+                return "";
+            }
+        }))
+                .isEqualTo("Foo " + file.getName() + " Hello");
     }
 
     @Path("form")
@@ -141,6 +174,10 @@ public class MultipartDetectionTest {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipartExplicit(@RestForm String name, @RestForm File file);
+
+        @Path("multipart")
+        @POST
+        String postMultipartImplicitFileUpload(@RestForm String name, @RestForm FileUpload file);
 
         @Path("urlencoded")
         @POST

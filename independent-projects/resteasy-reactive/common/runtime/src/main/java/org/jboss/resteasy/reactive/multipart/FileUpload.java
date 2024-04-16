@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /**
  * Represent a file that has been uploaded.
  * <p>
- * WARNING: This type is currently only supported on the server
+ * This type is usually used on server, but it is also supported in the REST Client.
  */
 public interface FileUpload extends FilePart {
 

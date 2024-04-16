@@ -121,6 +121,7 @@ import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -190,6 +191,7 @@ public class JaxrsClientReactiveProcessor {
     private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
     private static final String BYTE_ARRAY_SIGNATURE = "[B";
+    private static final String FILE_UPLOAD_SIGNATURE = "L" + FileUpload.class.getName().replace('.', '/') + ";";
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
@@ -1176,6 +1178,7 @@ public class JaxrsClientReactiveProcessor {
                 || signature.equals(BUFFER_SIGNATURE)
                 || signature.equals(BYTE_ARRAY_SIGNATURE)
                 || signature.equals(MULTI_BYTE_SIGNATURE)
+                || signature.equals(FILE_UPLOAD_SIGNATURE)
                 || partType != null);
     }
 
@@ -1793,6 +1796,8 @@ public class JaxrsClientReactiveProcessor {
         } else if (type.equals(Path.class.getName())) {
             // and so is path
             addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
+        } else if (type.equals(FileUpload.class.getName())) {
+            addFileUpload(fieldValue, multipartForm, methodCreator);
         } else if (type.equals(InputStream.class.getName())) {
             // and so is path
             addInputStream(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, type);
@@ -1886,6 +1891,15 @@ public class JaxrsClientReactiveProcessor {
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
         }
+    }
+
+    private void addFileUpload(ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            BytecodeCreator methodCreator) {
+        // MultipartForm#fileUpload(FileUpload fileUpload);
+        methodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ClientMultipartForm.class, "fileUpload",
+                        ClientMultipartForm.class, FileUpload.class),
+                multipartForm, fieldValue);
     }
 
     private ResultHandle primitiveToString(BytecodeCreator methodCreator, ResultHandle fieldValue, FieldInfo field) {

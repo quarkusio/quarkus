@@ -11,6 +11,12 @@
             "timeout": 45,
             "test-modules": "amqp-virtual-threads, jms-virtual-threads, kafka-virtual-threads",
             "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Security",
+            "timeout": 20,
+            "test-modules": "security-webauthn-virtual-threads",
+            "os-name": "ubuntu-latest"
         }
     ]
 }

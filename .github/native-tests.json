@@ -93,7 +93,7 @@
         {
             "category": "HTTP",
             "timeout": 110,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth",
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
             "os-name": "ubuntu-latest"
         },
         {
@@ -116,8 +116,8 @@
         },
         {
             "category": "Misc4",
-            "timeout": 125,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, opentelemetry-jdbc-instrumentation, webjars-locator",
+            "timeout": 130,
+            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-redis-instrumentation, webjars-locator",
             "os-name": "ubuntu-latest"
         },
         {
@@ -128,8 +128,8 @@
         },
         {
             "category": "gRPC",
-            "timeout": 75,
-            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12",
+            "timeout": 80,
+            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12, grpc-test-random-port",
             "os-name": "ubuntu-latest"
         },
         {

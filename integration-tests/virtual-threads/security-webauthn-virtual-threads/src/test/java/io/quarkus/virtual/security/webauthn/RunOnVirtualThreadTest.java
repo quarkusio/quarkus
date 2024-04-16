@@ -80,7 +80,7 @@ class RunOnVirtualThreadTest {
         checkLoggedIn(cookieFilter);
     }
 
-    private void checkLoggedIn(CookieFilter cookieFilter) {
+    public static void checkLoggedIn(CookieFilter cookieFilter) {
         RestAssured
                 .given()
                 .filter(cookieFilter)

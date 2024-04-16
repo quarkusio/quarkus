@@ -27,7 +27,7 @@ public class OidcClientsResource {
     @GET
     @Path("tokens/{id}")
     public Uni<String> grantTokensUni(@PathParam("id") String oidcClientId) {
-        return getClient(oidcClientId).getTokens().flatMap(tokens -> createTokensString(tokens));
+        return getClient(oidcClientId).getTokens().flatMap(this::createTokensString);
     }
 
     @GET

@@ -757,6 +757,15 @@ quarkus.oidc-client.credentials.jwt.secret-provider.key=mysecret-key
 quarkus.oidc-client.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----
 
+`private_key_jwt` with the PEM key inlined in application.properties, and where the signature algorithm is `RS256`:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.jwt.key=Base64-encoded private key representation
+----
+
 `private_key_jwt` with the PEM key file, signature algorithm is `RS256`:
 
 [source,properties]

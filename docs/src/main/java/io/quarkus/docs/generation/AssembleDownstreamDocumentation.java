@@ -61,6 +61,7 @@ public class AssembleDownstreamDocumentation {
             Pattern.CASE_INSENSITIVE + Pattern.MULTILINE);
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
+    private static final Pattern FOOTNOTE_PATTERN = Pattern.compile("footnote:([a-z0-9_-]+)\\[(\\])?");
 
     private static final String PROJECT_NAME_ATTRIBUTE = "{project-name}";
     private static final String RED_HAT_BUILD_OF_QUARKUS = "Red Hat build of Quarkus";
@@ -386,7 +387,7 @@ public class AssembleDownstreamDocumentation {
 
                 if (currentBuffer.length() > 0) {
                     rewrittenGuide.append(
-                            rewriteLinks(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
+                            rewriteContent(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
                                     titlesByReference, linkRewritingErrors));
                     currentBuffer.setLength(0);
                 }
@@ -399,7 +400,7 @@ public class AssembleDownstreamDocumentation {
 
         if (currentBuffer.length() > 0) {
             rewrittenGuide.append(
-                    rewriteLinks(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
+                    rewriteContent(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
                             titlesByReference, linkRewritingErrors));
         }
 
@@ -413,7 +414,7 @@ public class AssembleDownstreamDocumentation {
         Files.writeString(targetFile, rewrittenGuideWithoutTabs.trim());
     }
 
-    private static String rewriteLinks(String fileName,
+    private static String rewriteContent(String fileName,
             String content,
             Set<String> downstreamGuides,
             Map<String, String> titlesByReference,
@@ -452,6 +453,14 @@ public class AssembleDownstreamDocumentation {
 
         content = ANCHOR_PATTERN.matcher(content).replaceAll(mr -> {
             return "[[" + mr.group(1) + "]]";
+        });
+
+        content = FOOTNOTE_PATTERN.matcher(content).replaceAll(mr -> {
+            if (mr.group(2) != null) {
+                return "footnoteref:[" + mr.group(1) + "]";
+            }
+
+            return "footnoteref:[" + mr.group(1) + ", ";
         });
 
         return content;

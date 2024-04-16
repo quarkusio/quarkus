@@ -789,8 +789,13 @@ public class MessageBundleProcessor {
         Map<String, String> keyToTemplate = new HashMap<>();
         for (ListIterator<String> it = Files.readAllLines(localizedFile).listIterator(); it.hasNext();) {
             String line = it.next();
-            if (line.startsWith("#") || line.isBlank()) {
-                // Comments and blank lines are skipped
+            if (line.isBlank()) {
+                // Blank lines are skipped
+                continue;
+            }
+            line = line.strip();
+            if (line.startsWith("#")) {
+                // Comments are skipped
                 continue;
             }
             int eqIdx = line.indexOf('=');

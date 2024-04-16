@@ -689,7 +689,7 @@ You can disable token encryption in the session cookie by setting `quarkus.oidc.
 [[custom-token-state-manager]]
 ==== Session cookie and custom TokenStateManager
 
-If you want to customize the way the tokens are associated with the session cookie, register a custom `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean.
+If you want to customize the way the tokens are associated with the session cookie, register a custom `io.quarkus.oidc.TokenStateManager` implementation as an `@ApplicationScoped` CDI bean.
 
 For example, you might want to keep the tokens in a cache cluster and have only a key stored in a session cookie.
 Note that this approach might introduce some challenges if you need to make the tokens available across multiple microservices nodes.
@@ -763,7 +763,7 @@ To use this feature, add the following extension to your project:
 :add-extension-extensions: oidc-db-token-state-manager
 include::{includes}/devtools/extension-add.adoc[]
 
-This extension will replace the default `io.quarkus.oidc.TokenStateManager' with a database-based one.
+This extension will replace the default `io.quarkus.oidc.TokenStateManager` with a database-based one.
 
 OIDC Database Token State Manager uses a Reactive SQL client under the hood to avoid blocking because the authentication is likely to happen on an IO thread.
 

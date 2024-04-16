@@ -26,6 +26,10 @@ import org.crac.Resource;
  */
 public final class RunnerClassLoader extends ClassLoader {
 
+    static {
+        registerAsParallelCapable();
+    }
+
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
      */
@@ -101,18 +105,55 @@ public final class RunnerClassLoader extends ClassLoader {
                     continue;
                 }
                 definePackage(packageName, resources);
-                try {
-                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
-                } catch (LinkageError e) {
-                    loaded = findLoadedClass(name);
-                    if (loaded != null) {
-                        return loaded;
+                return defineClass(name, data, resource);
+            }
+        }
+        return getParent().loadClass(name);
+    }
+
+    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
+        if ((pkgName != null) && getDefinedPackage(pkgName) == null) {
+            for (ClassLoadingResource classPathElement : resources) {
+                ManifestInfo mf = classPathElement.getManifestInfo();
+                if (mf != null) {
+                    try {
+                        definePackage(pkgName, mf.getSpecTitle(),
+                                mf.getSpecVersion(),
+                                mf.getSpecVendor(),
+                                mf.getImplTitle(),
+                                mf.getImplVersion(),
+                                mf.getImplVendor(), null);
+                    } catch (IllegalArgumentException e) {
+                        var loaded = getDefinedPackage(pkgName);
+                        if (loaded == null) {
+                            throw e;
+                        }
                     }
+                    return;
+                }
+            }
+            try {
+                definePackage(pkgName, null, null, null, null, null, null, null);
+            } catch (IllegalArgumentException e) {
+                var loaded = getDefinedPackage(pkgName);
+                if (loaded == null) {
                     throw e;
                 }
             }
         }
-        return getParent().loadClass(name);
+    }
+
+    private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
+        Class<?> loaded;
+        try {
+            return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
+        } catch (LinkageError e) {
+            loaded = findLoadedClass(name);
+            if (loaded != null) {
+                return loaded;
+            }
+            throw e;
+        }
     }
 
     private void accessingResource(final ClassLoadingResource resource) {
@@ -217,28 +258,6 @@ public final class RunnerClassLoader extends ClassLoader {
             }
         }
         return Collections.enumeration(urls);
-    }
-
-    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
-        if ((pkgName != null) && getPackage(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (getPackage(pkgName) == null) {
-                    for (ClassLoadingResource classPathElement : resources) {
-                        ManifestInfo mf = classPathElement.getManifestInfo();
-                        if (mf != null) {
-                            definePackage(pkgName, mf.getSpecTitle(),
-                                    mf.getSpecVersion(),
-                                    mf.getSpecVendor(),
-                                    mf.getImplTitle(),
-                                    mf.getImplVersion(),
-                                    mf.getImplVendor(), null);
-                            return;
-                        }
-                    }
-                    definePackage(pkgName, null, null, null, null, null, null, null);
-                }
-            }
-        }
     }
 
     private String getPackageNameFromClassName(String className) {

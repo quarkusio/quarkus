@@ -3125,12 +3125,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-webjars-locator</artifactId>
+                <artifactId>quarkus-web-dependency-locator</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-webjars-locator-deployment</artifactId>
+                <artifactId>quarkus-web-dependency-locator-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6668,6 +6668,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-webjars-locator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-webjars-locator-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

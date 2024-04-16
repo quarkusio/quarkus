@@ -38,7 +38,7 @@
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
-        <module>webjars-locator</module>
+        <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
         <module>apache-httpclient</module>

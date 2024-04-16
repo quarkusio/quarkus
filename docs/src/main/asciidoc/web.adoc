@@ -28,7 +28,7 @@ You can find more information in the xref:http-reference#serving-static-resource
 However, if you want to insert scripts, styles, and libraries in your web pages, you have 3 options:
 
 a. Consume libraries from public CDNs such as cdnjs, unpkg, jsDelivr and more, or copy them to your `META-INF/resources` directory.
-b. Use runtime web dependencies such as mvnpm.org or webjars, when added to your pom.xml or build.gradle they can be directly xref:http-reference#from-mvnpm[accessed from your web pages].
+b. Use runtime web dependencies such as mvnpm.org or webjars, when added to your pom.xml or build.gradle they can be directly xref:http-reference#mvnpm[accessed from your web pages].
 c. Package your scripts (js, ts), styles (css, scss), and web dependencies together using a bundler (see xref:#bundling[below]).
 
 NOTE: *We recommend using a bundler for production* as it offers better control, consistency, security, and performance. The good news is that Quarkus makes it really easy and fast with the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Quarkus Web Bundler extension].

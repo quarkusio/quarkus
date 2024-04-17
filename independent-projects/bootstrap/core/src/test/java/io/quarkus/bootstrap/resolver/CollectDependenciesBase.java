@@ -49,8 +49,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         }
         // stripping the resolved paths
         final List<Dependency> resolvedDeps = getTestResolver().resolveModel(root.toArtifact()).getDependencies()
-                .stream()
-                .map(d -> new ArtifactDependency(d)).collect(Collectors.toList());
+                .stream().map(ArtifactDependency::new).collect(Collectors.toList());
         assertEquals(new HashSet<>(expected), new HashSet<>(resolvedDeps));
     }
 

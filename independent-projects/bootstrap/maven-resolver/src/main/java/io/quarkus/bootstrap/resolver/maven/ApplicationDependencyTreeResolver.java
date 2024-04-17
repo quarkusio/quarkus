@@ -202,7 +202,6 @@ public class ApplicationDependencyTreeResolver {
             }
         }
 
-        // resolve and inject deployment dependency branches for the top (first met) runtime extension nodes
         for (ExtensionDependency extDep : topExtensionDeps) {
             injectDeploymentDependencies(extDep);
         }
@@ -868,7 +867,7 @@ public class ApplicationDependencyTreeResolver {
         ExtensionDependency getExtensionDependency() {
             if (dependency == null) {
                 final DefaultDependencyNode rtNode = new DefaultDependencyNode(
-                        new Dependency(info.runtimeArtifact, JavaScopes.RUNTIME));
+                        new Dependency(info.runtimeArtifact, JavaScopes.COMPILE));
                 rtNode.setVersion(new BootstrapArtifactVersion(info.runtimeArtifact.getVersion()));
                 rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
                         new BootstrapArtifactVersion(info.runtimeArtifact.getVersion())));

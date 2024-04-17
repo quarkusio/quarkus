@@ -2,8 +2,11 @@ package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -120,5 +123,10 @@ public class AppArtifact extends AppArtifactCoords implements ResolvedDependency
     @Override
     public int getFlags() {
         return flags;
+    }
+
+    @Override
+    public Collection<ArtifactCoords> getDependencies() {
+        return List.of();
     }
 }

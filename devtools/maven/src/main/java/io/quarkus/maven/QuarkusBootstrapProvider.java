@@ -37,16 +37,16 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
@@ -208,12 +208,12 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setIncubatingModelResolver(
-                            ApplicationDependencyModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties()))
+                            IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties()))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
                     .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);
 
-            final ArtifactCoords appArtifact = appArtifact(mojo);
+            final ResolvedDependencyBuilder appArtifact = getApplicationArtifactBuilder(mojo);
             Set<ArtifactKey> reloadableModules = Set.of();
             if (mode == LaunchMode.NORMAL) {
                 // collect reloadable artifacts for remote-dev
@@ -367,7 +367,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     artifact.getVersion());
         }
 
-        private ArtifactCoords appArtifact(QuarkusBootstrapMojo mojo)
+        private ResolvedDependencyBuilder getApplicationArtifactBuilder(QuarkusBootstrapMojo mojo)
                 throws MojoExecutionException {
             String appArtifactCoords = mojo.appArtifactCoords();
             if (appArtifactCoords == null) {
@@ -388,9 +388,13 @@ public class QuarkusBootstrapProvider implements Closeable {
                         }
                     }
                 }
-                return new ResolvedArtifactDependency(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                        projectArtifact.getVersion(), projectFile.toPath());
+                return ResolvedDependencyBuilder.newInstance()
+                        .setGroupId(projectArtifact.getGroupId())
+                        .setArtifactId(projectArtifact.getArtifactId())
+                        .setClassifier(projectArtifact.getClassifier())
+                        .setType(projectArtifact.getArtifactHandler().getExtension())
+                        .setVersion(projectArtifact.getVersion())
+                        .setResolvedPath(projectFile.toPath());
             }
 
             final String[] coordsArr = appArtifactCoords.split(":");
@@ -429,7 +433,12 @@ public class QuarkusBootstrapProvider implements Closeable {
                 }
             }
 
-            return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
+            return ResolvedDependencyBuilder.newInstance()
+                    .setGroupId(groupId)
+                    .setArtifactId(artifactId)
+                    .setClassifier(classifier)
+                    .setType(type)
+                    .setVersion(version);
         }
 
         @Override

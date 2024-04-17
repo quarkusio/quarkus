@@ -204,7 +204,8 @@ public class QuarkusBootstrapProvider implements Closeable {
 
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
-            final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
+            MavenArtifactResolver resolver = artifactResolver(mojo, mode);
+            final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(resolver)
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
                     .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);
@@ -246,7 +247,8 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setBaseName(mojo.finalName())
                     .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
                     .setTargetDirectory(mojo.buildDir().toPath())
-                    .setForcedDependencies(forcedDependencies);
+                    .setForcedDependencies(forcedDependencies)
+                    .setMavenArtifactResolver(resolver);
 
             try {
                 return builder.build().bootstrap();

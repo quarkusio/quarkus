@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
@@ -62,6 +63,7 @@ public class QuarkusAugmentor {
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
     private final boolean test;
+    private final MavenArtifactResolver mavenArtifactResolver;
 
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
@@ -83,6 +85,7 @@ public class QuarkusAugmentor {
         this.auxiliaryApplication = builder.auxiliaryApplication;
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
         this.test = builder.test;
+        this.mavenArtifactResolver = builder.mavenArtifactResolver;
     }
 
     public BuildResult run() throws Exception {
@@ -106,7 +109,7 @@ public class QuarkusAugmentor {
             //in additional stuff from the deployment leaking in, this is unlikely but has a bit of a smell.
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    effectiveModel, launchMode, devModeType)
+                    mavenArtifactResolver, effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -218,6 +221,7 @@ public class QuarkusAugmentor {
         DevModeType devModeType;
         boolean test;
         boolean auxiliaryApplication;
+        MavenArtifactResolver mavenArtifactResolver;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -355,6 +359,11 @@ public class QuarkusAugmentor {
 
         public Builder setDeploymentClassLoader(ClassLoader deploymentClassLoader) {
             this.deploymentClassLoader = deploymentClassLoader;
+            return this;
+        }
+
+        public Builder setMavenArchiveResolver(final MavenArtifactResolver mavenArtifactResolver) {
+            this.mavenArtifactResolver = mavenArtifactResolver;
             return this;
         }
     }

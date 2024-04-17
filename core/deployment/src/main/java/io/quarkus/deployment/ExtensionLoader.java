@@ -51,6 +51,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStepBuilder;
@@ -124,13 +125,15 @@ public final class ExtensionLoader {
      *
      * @param classLoader the class loader
      * @param buildSystemProps the build system properties to use
+     * @param artifactResolver the Maven artifact resolver to use
      * @param launchMode launch mode
      * @return a consumer which adds the steps to the given chain builder
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
-            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
+            MavenArtifactResolver artifactResolver, ApplicationModel appModel, LaunchMode launchMode,
+            DevModeType devModeType)
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
@@ -159,7 +162,7 @@ public final class ExtensionLoader {
         Map<Class<?>, Object> proxies = new HashMap<>();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
-                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, bsf));
+                result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, bsf, artifactResolver));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
@@ -243,11 +246,13 @@ public final class ExtensionLoader {
      * @param clazz the class to load from (must not be {@code null})
      * @param readResult the build time configuration read result (must not be {@code null})
      * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
+     * @param artifactResolver the Maven artifact resolver for injection
      * @return a consumer which adds the steps to the given chain builder
      */
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
             BuildTimeConfigurationReader.ReadResult readResult,
-            Map<Class<?>, Object> runTimeProxies, BooleanSupplierFactoryBuildItem supplierFactory) {
+            Map<Class<?>, Object> runTimeProxies, BooleanSupplierFactoryBuildItem supplierFactory,
+            MavenArtifactResolver artifactResolver) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -277,7 +282,9 @@ public final class ExtensionLoader {
             for (Parameter parameter : ctorParameters) {
                 Type parameterType = parameter.getParameterizedType();
                 final Class<?> parameterClass = parameter.getType();
-                if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
+                if (parameterClass == MavenArtifactResolver.class) {
+                    ctorParamFns.add(bc -> artifactResolver);
+                } else if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType)
                             .asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
@@ -356,7 +363,9 @@ public final class ExtensionLoader {
             // next, determine the type
             final Type fieldType = field.getGenericType();
             final Class<?> fieldClass = field.getType();
-            if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
+            if (fieldType == MavenArtifactResolver.class) {
+                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, artifactResolver));
+            } else if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                 stepInstanceSetup = stepInstanceSetup
@@ -492,7 +501,9 @@ public final class ExtensionLoader {
                     final boolean overridable = parameter.isAnnotationPresent(Overridable.class);
                     final Type parameterType = parameter.getParameterizedType();
                     final Class<?> parameterClass = parameter.getType();
-                    if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
+                    if (parameterType == MavenArtifactResolver.class) {
+                        methodParamFns.add((bc, bri) -> artifactResolver);
+                    } else if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
                         final Class<? extends SimpleBuildItem> buildItemClass = parameterClass
                                 .asSubclass(SimpleBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));

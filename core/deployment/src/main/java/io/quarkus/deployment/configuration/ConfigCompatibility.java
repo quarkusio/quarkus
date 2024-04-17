@@ -114,9 +114,13 @@ public final class ConfigCompatibility {
         @Serial
         private static final long serialVersionUID = -3438497970389074611L;
 
-        private static final FrontEnd instance = new FrontEnd();
+        private static final FrontEnd instance = new FrontEnd(true);
+        private static final FrontEnd nonLoggingInstance = new FrontEnd(false);
 
-        private FrontEnd() {
+        private final boolean logging;
+
+        private FrontEnd(final boolean logging) {
+            this.logging = logging;
         }
 
         public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
@@ -155,11 +159,13 @@ public final class ConfigCompatibility {
                         // get the replacement names
                         List<String> list = fn.apply(context, new NameIterator(next));
                         subIter = list.iterator();
-                        // todo: print these warnings when mapping the configuration so they cannot appear more than once
-                        if (list.isEmpty()) {
-                            log.warnf("Configuration property '%s' has been deprecated and will be ignored", next);
-                        } else {
-                            log.warnf("Configuration property '%s' has been deprecated and replaced by: %s", next, list);
+                        if (logging) {
+                            // todo: print these warnings when mapping the configuration so they cannot appear more than once
+                            if (list.isEmpty()) {
+                                log.warnf("Configuration property '%s' has been deprecated and will be ignored", next);
+                            } else {
+                                log.warnf("Configuration property '%s' has been deprecated and replaced by: %s", next, list);
+                            }
                         }
                     }
                     return true;
@@ -178,6 +184,10 @@ public final class ConfigCompatibility {
 
         public static FrontEnd instance() {
             return instance;
+        }
+
+        public static FrontEnd nonLoggingInstance() {
+            return nonLoggingInstance;
         }
     }
 

@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -936,11 +937,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 try {
                                     Path relative = root.relativize(path);
                                     Path target = outputDir.resolve(relative);
+
                                     seen.remove(target);
                                     if (!timestampSet.watchedPaths.containsKey(path)) {
                                         moduleResources.add(target);
-                                        if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < Files
-                                                .getLastModifiedTime(path).toMillis()) {
+
+                                        long current = Files.getLastModifiedTime(path).toMillis();
+
+                                        if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < current) {
                                             if (Files.isDirectory(path)) {
                                                 Files.createDirectories(target);
                                             } else {
@@ -948,10 +952,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                                 // A new file is added to a resource root
                                                 // We need to use the OS-agnostic path to match the HotDeploymentWatchedFileBuildItem
                                                 ret.add(toOSAgnosticPathStr(relative.toString()));
-                                                byte[] data = Files.readAllBytes(path);
-                                                try (FileOutputStream out = new FileOutputStream(target.toFile())) {
-                                                    out.write(data);
-                                                }
+                                                Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING,
+                                                        StandardCopyOption.COPY_ATTRIBUTES);
+
                                                 if (copyResourceNotification != null) {
                                                     copyResourceNotification.accept(module, relative.toString());
                                                 }
@@ -967,11 +970,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     for (Path i : seen) {
                         moduleResources.remove(i);
                         if (!Files.isDirectory(i)) {
-                            Files.delete(i);
+                            try {
+                                Files.delete(i);
+                            } catch (IOException e) {
+                                log.error("Failed to delete resources", e);
+                            }
                         }
                     }
                 } catch (IOException e) {
-                    log.error("Failed to copy resources", e);
+                    log.error("Unable to walk through the directory", e);
                 }
             }
 
@@ -988,6 +995,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     try {
                         long current = Files.getLastModifiedTime(watchedPath.filePath).toMillis();
                         long last = watchedPath.lastModified;
+
                         if (current > last) {
                             // Use either the absolute path or the OS-agnostic path to match the HotDeploymentWatchedFileBuildItem
                             ret.add(isAbsolute ? watchedPath.filePath.toString() : watchedPath.getOSAgnosticMatchPath());
@@ -1372,7 +1380,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         @Override
         public String toString() {
-            return "WatchedPath [matchPath=" + matchPath + ", filePath=" + filePath + ",  restartNeeded=" + restartNeeded + "]";
+            return "WatchedPath [matchPath=" + matchPath + ", filePath=" + filePath + ", restartNeeded=" + restartNeeded
+                    + ", lastModified=" + lastModified + "]";
         }
 
     }

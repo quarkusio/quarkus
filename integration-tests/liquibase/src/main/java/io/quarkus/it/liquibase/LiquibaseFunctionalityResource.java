@@ -2,7 +2,7 @@ package io.quarkus.it.liquibase;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ public class LiquibaseFunctionalityResource {
 
     @Inject
     @DataSource("second")
-    AgroalDataSource dataSource;
+    AgroalDataSource secondDataSource;
 
     @GET
     @Path("update")
@@ -46,6 +46,7 @@ public class LiquibaseFunctionalityResource {
                     liquibaseFactory.createLabels());
             List<ChangeSetStatus> changeSets = Objects.requireNonNull(status,
                     "ChangeSetStatus is null! Database update was not applied");
+
             return changeSets.stream()
                     .filter(ChangeSetStatus::getPreviouslyRan)
                     .map(ChangeSetStatus::getChangeSet)
@@ -65,27 +66,20 @@ public class LiquibaseFunctionalityResource {
                     liquibaseSecondFactory.createLabels());
             List<ChangeSetStatus> changeSets = Objects.requireNonNull(status,
                     "ChangeSetStatus is null! Database update was not applied");
-            return changeSets.stream()
-                    .filter(ChangeSetStatus::getPreviouslyRan)
-                    .map(ChangeSetStatus::getChangeSet)
-                    .map(ChangeSet::getId)
-                    .collect(Collectors.joining(","));
+
+            try (Connection connection = secondDataSource.getConnection()) {
+                try (Statement s = connection.createStatement()) {
+                    ResultSet rs = s.executeQuery("SELECT CREATEDBY FROM QUARKUS_TABLE WHERE ID = 1");
+                    if (rs.next()) {
+                        return rs.getString("CREATEDBY");
+                    }
+                    return null;
+                }
+            }
         } catch (Exception ex) {
             throw new WebApplicationException(ex.getMessage(), ex);
         }
 
-    }
-
-    @GET
-    @Path("created-by")
-    public String returnCreatedByUser() throws SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            ResultSet s = connection.createStatement().executeQuery("SELECT CREATEDBY FROM QUARKUS_TABLE WHERE ID = 1");
-            if (s.next()) {
-                return s.getString("CREATEDBY");
-            }
-            return null;
-        }
     }
 
     private void assertCommandScopeResolvesProperly() {

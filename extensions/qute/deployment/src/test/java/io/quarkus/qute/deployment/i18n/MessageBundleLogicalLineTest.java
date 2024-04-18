@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
-import io.quarkus.qute.TemplateEnum;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.test.QuarkusUnitTest;
@@ -20,7 +19,7 @@ public class MessageBundleLogicalLineTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class)
+                    .addClasses(Messages.class, MyEnum.class)
                     .addAsResource("messages/msg_cs.properties")
                     .addAsResource(new StringAsset(
                             "{msg:hello('Edgar')}::{msg:helloNextLine('Edgar')}::{msg:fruits}::{msg:myEnum(MyEnum:OFF)}"),
@@ -56,13 +55,6 @@ public class MessageBundleLogicalLineTest {
                 + "{/when}")
         String myEnum(MyEnum myEnum);
 
-    }
-
-    @TemplateEnum
-    public enum MyEnum {
-        ON,
-        OFF,
-        UNDEFINED
     }
 
 }

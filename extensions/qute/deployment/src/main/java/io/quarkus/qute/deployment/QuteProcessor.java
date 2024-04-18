@@ -714,10 +714,12 @@ public class QuteProcessor {
                 MessageBundleMethodBuildItem messageBundleMethod = messageBundleMethodsMap.get(templateId);
                 if (messageBundleMethod != null) {
                     MethodInfo method = messageBundleMethod.getMethod();
-                    for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
-                        Type paramType = it.next();
-                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
-                        parserHelper.addParameter(name, getCheckedTemplateParameterTypeName(paramType));
+                    if (method != null) {
+                        for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
+                            Type paramType = it.next();
+                            String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                            parserHelper.addParameter(name, getCheckedTemplateParameterTypeName(paramType));
+                        }
                     }
                 }
             }
@@ -759,9 +761,7 @@ public class QuteProcessor {
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(), template.getParameterDeclarations(),
-                    messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
-                            + "()",
+                    template.getExpressions(), template.getParameterDeclarations(), messageBundleMethod.getPathForAnalysis(),
                     template.getFragmentIds()));
         }
 

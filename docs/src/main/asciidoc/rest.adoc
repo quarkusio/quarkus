@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :topics: rest,resteasy-reactive,virtual-threads
-:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-resteasy-client,io.quarkus:quarkus-resteasy-client-jackson,io.quarkus:quarkus-resteasy-client-jsonb
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.
 :jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 :jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
@@ -3172,6 +3172,6 @@ This feature does not work when using native build.
 
 In addition to the Server side, Quarkus REST comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
 
-Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-rest-client` instead.
+Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-resteasy-client` instead.
 
 See the xref:rest-client.adoc[REST Client Guide] for more information about the REST client.

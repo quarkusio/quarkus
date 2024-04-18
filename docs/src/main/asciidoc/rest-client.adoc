@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the REST Client.
 :topics: rest,rest-client,resteasy-reactive
-:extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:extensions: io.quarkus:quarkus-resteasy-client,io.quarkus:quarkus-resteasy-client-jackson,io.quarkus:quarkus-resteasy-client-jsonb
 
 This guide explains how to use the REST Client in order to interact with REST APIs.
 REST Client is the REST Client implementation compatible with Quarkus REST (formerly RESTEasy Reactive).
@@ -33,16 +33,16 @@ The solution is located in the `rest-client-quickstart` link:{quickstarts-tree-u
 
 First, we need a new project. Create a new project with the following command:
 
-:create-app-artifact-id: rest-client-quickstart
-:create-app-extensions: rest-jackson,rest-client-jackson
+:create-app-artifact-id: quarkus-rest-client-quickstart
+:create-app-extensions: quarkus-rest-jackson,quarkus-resteasy-client-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project with a REST endpoint and imports:
 
-* the `rest-jackson` extension for the REST server support. Use `rest` instead if you do not wish to use Jackson;
-* the `rest-client-jackson` extension for the REST client support. Use `rest-client` instead if you do not wish to use Jackson
+* the `quarkus-rest-jackson` extension for the REST server support. Use `rest` instead if you do not wish to use Jackson;
+* the `quarkus-resteasy-client-jackson` extension for the REST client support. Use `rest-client` instead if you do not wish to use Jackson
 
-If you already have your Quarkus project configured, you can add the `rest-client-jackson` extension
+If you already have your Quarkus project configured, you can add the `quarkus-resteasy-client-jackson` extension
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: rest-client-reactive-jackson
@@ -55,14 +55,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-jackson</artifactId>
+    <artifactId>quarkus-resteasy-client-jackson</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-rest-client-jackson")
+implementation("io.quarkus:quarkus-resteasy-client-jackson")
 ----
 
 == Setting up the model
@@ -124,7 +124,7 @@ CDI injection as a REST Client
 
 [NOTE]
 ====
-When the `quarkus-rest-client-jackson` extension is installed, Quarkus will use the `application/json` media type
+When the `quarkus-resteasy-client-jackson` extension is installed, Quarkus will use the `application/json` media type
 by default for most return values, unless the media type is explicitly set via `@Produces` or `@Consumes` annotations.
 
 If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
@@ -221,7 +221,7 @@ Note that if an interface method contains an argument annotated with `@QueryPara
 priority over anything specified in any `@ClientQueryParam` annotation.
 ====
 
-More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client/latest/io/quarkus/rest/client/reactive/ClientQueryParam.html[`@ClientQueryParam`].
+More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-resteasy-client/latest/io/quarkus/rest/client/reactive/ClientQueryParam.html[`@ClientQueryParam`].
 
 === Form Parameters
 
@@ -296,7 +296,7 @@ public interface Client {
 }
 ----
 
-More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client/latest/io/quarkus/rest/client/reactive/ClientFormParam.html[`@ClientFormParam`].
+More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-resteasy-client/latest/io/quarkus/rest/client/reactive/ClientFormParam.html[`@ClientFormParam`].
 
 === Path Parameters
 
@@ -350,7 +350,7 @@ quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.c
 ----
 
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.ExtensionsService` will use `https://stage.code.quarkus.io/api` as the base URL.
-Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-rest-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-rest-client`.
+Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-resteasy-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-resteasy-client`.
 
 Note that `org.acme.rest.client.ExtensionsService` _must_ match the fully qualified name of the `ExtensionsService` interface we created in the previous section.
 
@@ -713,11 +713,11 @@ public class ExtensionsResourceTest {
     @Test
     public void testExtensionsIdEndpoint() {
         given()
-            .when().get("/extension/id/io.quarkus:quarkus-rest-client")
+            .when().get("/extension/id/io.quarkus:quarkus-resteasy-client")
             .then()
             .statusCode(200)
             .body("$.size()", is(1),
-                "[0].id", is("io.quarkus:quarkus-rest-client"),
+                "[0].id", is("io.quarkus:quarkus-resteasy-client"),
                 "[0].name", is("REST Client"),
                 "[0].keywords.size()", greaterThan(1),
                 "[0].keywords", hasItem("rest-client"));
@@ -804,11 +804,11 @@ To test asynchronous methods, add the test method below in `ExtensionsResourceTe
 @Test
 public void testExtensionIdAsyncEndpoint() {
     given()
-        .when().get("/extension/id-async/io.quarkus:quarkus-rest-client")
+        .when().get("/extension/id-async/io.quarkus:quarkus-resteasy-client")
         .then()
         .statusCode(200)
         .body("$.size()", is(1),
-            "[0].id", is("io.quarkus:quarkus-rest-client"),
+            "[0].id", is("io.quarkus:quarkus-resteasy-client"),
             "[0].name", is("REST Client"),
             "[0].keywords.size()", greaterThan(1),
             "[0].keywords", hasItem("rest-client"));
@@ -1663,7 +1663,7 @@ Run the application with:
 
 include::{includes}/devtools/dev.adoc[]
 
-Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client.
+Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-resteasy-client.
 
 You should see a JSON object containing some basic information about this extension.
 
@@ -1887,12 +1887,12 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
         wireMockServer = new WireMockServer();
         wireMockServer.start(); // <3>
 
-        wireMockServer.stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client"))   // <4>
+        wireMockServer.stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-resteasy-client"))   // <4>
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")
                         .withBody(
                             "[{" +
-                            "\"id\": \"io.quarkus:quarkus-rest-client\"," +
+                            "\"id\": \"io.quarkus:quarkus-resteasy-client\"," +
                             "\"name\": \"REST Client\"" +
                             "}]"
                         )));
@@ -1914,7 +1914,7 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
 <1> Statically importing the methods in the Wiremock package makes it easier to read the test.
 <2> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
 <3> Launch Wiremock.
-<4> Configure Wiremock to stub the calls to `/extensions?id=io.quarkus:quarkus-rest-client` by returning a specific canned response.
+<4> Configure Wiremock to stub the calls to `/extensions?id=io.quarkus:quarkus-resteasy-client` by returning a specific canned response.
 <5> All HTTP calls that have not been stubbed are handled by calling the real service. This is done for demonstration purposes, as it is not something that would usually happen in a real test.
 <6> As the `start` method returns configuration that applies for tests, we set the rest-client property that controls the base URL which is used by the implementation
 of `ExtensionsService` to the base URL where Wiremock is listening for incoming requests.

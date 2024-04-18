@@ -489,7 +489,7 @@ The following extensions provide support for Kotlin Coroutines by allowing the u
 |`quarkus-rest`
 |Support is provided for Jakarta REST Resource Methods
 
-|`quarkus-rest-client`
+|`quarkus-resteasy-client`
 |Support is provided for REST Client interface methods
 
 |`quarkus-messaging`

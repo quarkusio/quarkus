@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :categories: web, core
 :summary: How to use virtual threads in a REST application
 :topics: rest,resteasy-reactive,virtual-threads
-:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-resteasy-client,io.quarkus:quarkus-resteasy-client-jackson,io.quarkus:quarkus-resteasy-client-jsonb
 
 In this guide, we see how you can use virtual threads in a REST application.
 Because virtual threads are all about I/O, we will also use the REST client.
@@ -30,7 +30,7 @@ It calls a weather service for two cities (Valence, France, and Athens, Greece) 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-virtual-threads
-:create-app-extensions: rest-jackson,quarkus-rest-client-jackson
+:create-app-extensions: rest-jackson,quarkus-resteasy-client-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project importing the Quarkus REST (formerly RESTEasy Reactive), REST client, and https://github.com/FasterXML/jackson[Jackson] extensions,
@@ -45,7 +45,7 @@ and in particular, adds the following dependencies:
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-rest-client-jackson</artifactId>
+  <artifactId>quarkus-resteasy-client-jackson</artifactId>
 </dependency>
 ----
 
@@ -53,7 +53,7 @@ and in particular, adds the following dependencies:
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-rest-jackson")
-implementation("quarkus-rest-client-jackson")
+implementation("quarkus-resteasy-client-jackson")
 ----
 
 [NOTE]

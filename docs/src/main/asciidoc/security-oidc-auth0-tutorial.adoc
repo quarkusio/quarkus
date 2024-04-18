@@ -647,7 +647,7 @@ Add the following dependencies to the project to support OIDC token propagation 
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-jackson</artifactId>
+    <artifactId>quarkus-resteasy-client-jackson</artifactId>
 </dependency>
 <dependency>
    <groupId>io.quarkus</groupId>

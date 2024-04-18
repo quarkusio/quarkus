@@ -190,7 +190,7 @@ quarkus.rest-client."org.acme.rest.client.ExtensionsService".scope=jakarta.injec
 ----
 
 <1> Having this configuration means that all requests performed using `ExtensionsService` will use `https://stage.code.quarkus.io` as the base URL.
-Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-resteasy-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-rest-client`.
+Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-resteasy-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-resteasy-client`.
 <2> Having this configuration means that the default scope of `ExtensionsService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.
 The default scope can also be defined on the interface.
 
@@ -327,11 +327,11 @@ public class ExtensionsResourceTest {
     @Test
     public void testExtensionsIdEndpoint() {
         given()
-            .when().get("/extension/id/io.quarkus:quarkus-rest-client")
+            .when().get("/extension/id/io.quarkus:quarkus-resteasy-client")
             .then()
             .statusCode(200)
             .body("$.size()", is(1),
-                "[0].id", is("io.quarkus:quarkus-rest-client"),
+                "[0].id", is("io.quarkus:quarkus-resteasy-client"),
                 "[0].name", is("REST Client Classic"),
                 "[0].keywords.size()", greaterThan(1),
                 "[0].keywords", hasItem("rest-client"));
@@ -431,11 +431,11 @@ To test asynchronous methods, add the test method below in `ExtensionsResourceTe
 @Test
 public void testExtensionIdAsyncEndpoint() {
     given()
-        .when().get("/extension/id-async/io.quarkus:quarkus-rest-client")
+        .when().get("/extension/id-async/io.quarkus:quarkus-resteasy-client")
         .then()
         .statusCode(200)
         .body("$.size()", is(1),
-            "[0].id", is("io.quarkus:quarkus-rest-client"),
+            "[0].id", is("io.quarkus:quarkus-resteasy-client"),
             "[0].name", is("REST Client Classic"),
             "[0].keywords.size()", greaterThan(1),
             "[0].keywords", hasItem("rest-client"));
@@ -631,7 +631,7 @@ Run the application with:
 
 include::{includes}/devtools/dev.adoc[]
 
-Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-rest-client.
+Open your browser to http://localhost:8080/extension/id/io.quarkus:quarkus-resteasy-client.
 
 You should see a JSON object containing some basic information about the REST Client extension.
 

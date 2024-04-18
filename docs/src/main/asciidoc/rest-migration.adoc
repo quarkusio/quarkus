@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :topics: rest,rest-client,resteasy-reactive
-:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-resteasy-client,io.quarkus:quarkus-resteasy-client-jackson,io.quarkus:quarkus-resteasy-client-jsonb
 
 Migrating from RESTEasy Classic to Quarkus REST (formerly RESTEasy Reactive) is straightforward in most cases, however there are a few cases that require some attention.
 This document provides a list of issues users attempting the migration should be aware of.
@@ -167,7 +167,7 @@ For more information, see the xref:security-proactive-authentication.adoc#custom
 
 == Client
 
-The REST Client (`quarkus-rest-client` and its dependencies) replaces the legacy RESTEasy Classic-based `quarkus-resteasy-client` and leverages Quarkus' build time processing
+The REST Client (`quarkus-resteasy-client` and its dependencies) replaces the legacy RESTEasy Classic-based `quarkus-resteasy-client` and leverages Quarkus' build time processing
 and the unified I/O model provided by Vert.x.
 
 === Dependencies
@@ -178,13 +178,13 @@ The following table matches the legacy RESTEasy Classic-based REST Client depend
 |Legacy |Quarkus REST
 
 |`quarkus-resteasy-client`
-|`quarkus-rest-client`
+|`quarkus-resteasy-client`
 
 |`quarkus-resteasy-client-jackson`
-|`quarkus-rest-client-jackson`
+|`quarkus-resteasy-client-jackson`
 
 |`quarkus-resteasy-client-jsonb`
-|`quarkus-rest-client-jsonb`
+|`quarkus-resteasy-client-jsonb`
 
 |`quarkus-resteasy-client-jaxb`
 |`quarkus-rest-client-jaxb`
@@ -196,7 +196,7 @@ The following table matches the legacy RESTEasy Classic-based REST Client depend
 
 === Keycloak admin client
 
-When using `quarkus-rest-client`, users can use the `quarkus-keycloak-admin-rest-client` to administer the target Keycloak instance
+When using `quarkus-resteasy-client`, users can use the `quarkus-keycloak-admin-rest-client` to administer the target Keycloak instance
 by leveraging the rest client.
 
 When using `quarkus-resteasy-client` however, users must use `quarkus-keycloak-admin-resteasy-client` to access the same functionality
@@ -204,7 +204,7 @@ and use the legacy RESTEasy Classic-based REST Client.
 
 === OIDC
 
-When using `quarkus-rest-client`, users can use the `quarkus-rest-client-oidc-filter` extension to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers.
+When using `quarkus-resteasy-client`, users can use the `quarkus-rest-client-oidc-filter` extension to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers.
 
 When using `quarkus-resteasy-client` however, users must use `quarkus-resteasy-client-oidc-filter` to access the same functionality.
 

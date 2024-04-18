@@ -10,6 +10,7 @@ import org.jboss.logmanager.handlers.SyslogHandler.SyslogType;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
 public class SyslogConfig {
@@ -94,6 +95,15 @@ public class SyslogConfig {
      */
     @ConfigItem
     Optional<String> filter;
+
+    /**
+     * The maximum length, in bytes, of the message allowed to be sent. The length includes the header and the message.
+     * <p>
+     * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
+     * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
+     */
+    @ConfigItem
+    Optional<MemorySize> maxLength;
 
     /**
      * Syslog async logging config

@@ -155,11 +155,6 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
 
-    private static final String IO_SMALLRYE = "io.smallrye";
-    private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
-    private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
-    private static final String JANDEX = "jandex";
-
     private static final String BOOTSTRAP_ID = "DevMojo";
 
     /**
@@ -366,6 +361,17 @@ public class DevMojo extends AbstractMojo {
 
     @Component
     BuildAnalyticsProvider analyticsProvider;
+
+    /**
+     * A comma-separated list of Maven plugin keys in {@code groupId:artifactId} format
+     * (for example {@code org.codehaus.mojo:flatten-maven-plugin} and/or goal prefixes,
+     * (for example {@code flatten}) that should be skipped when {@code quarkus:dev} identifies
+     * Maven plugin goals that should be executed before the application is launched in dev mode.
+     * <p>
+     * Only the {@code flatten} Maven plugin is skipped by default.
+     */
+    @Parameter(defaultValue = "org.codehaus.mojo:flatten-maven-plugin")
+    Set<String> skipPlugins;
 
     /**
      * console attributes, used to restore the console state
@@ -587,6 +593,12 @@ public class DevMojo extends AbstractMojo {
             if (p.getExecutions().isEmpty()) {
                 continue;
             }
+            if (skipPlugins.contains(p.getKey())) {
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Skipping " + p.getId() + " execution according to skipPlugins value");
+                }
+                continue;
+            }
             for (PluginExecution e : p.getExecutions()) {
                 if (e.getPhase() != null && !PRE_DEV_MODE_PHASES.contains(e.getPhase())) {
                     // skip executions with phases post quarkus:dev, such as install, deploy, site, etc
@@ -598,6 +610,13 @@ public class DevMojo extends AbstractMojo {
                 String goalPrefix = null;
                 if (!e.getGoals().isEmpty()) {
                     goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();
+                    if (skipPlugins.contains(goalPrefix)) {
+                        if (getLog().isDebugEnabled()) {
+                            getLog().debug("Skipping " + goalPrefix + " execution according to skipPlugins value");
+                            continue;
+                        }
+                        continue;
+                    }
                     pluginPrefixes.put(goalPrefix, p);
                     pluginPrefixes.put(p.getId(), p);
                 }

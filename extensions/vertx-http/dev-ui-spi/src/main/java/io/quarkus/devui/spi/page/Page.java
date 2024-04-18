@@ -1,5 +1,8 @@
 package io.quarkus.devui.spi.page;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -61,6 +64,12 @@ public class Page {
 
     public String getId() {
         String id = this.title.toLowerCase().replaceAll(SPACE, DASH);
+        try {
+            id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex);
+        }
+
         if (!this.isInternal() && this.namespace != null) {
             // This is extension pages in Dev UI
             id = this.namespace.toLowerCase() + SLASH + id;

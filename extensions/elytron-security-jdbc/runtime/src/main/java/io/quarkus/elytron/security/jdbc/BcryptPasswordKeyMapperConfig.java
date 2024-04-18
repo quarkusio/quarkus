@@ -34,9 +34,10 @@ public interface BcryptPasswordKeyMapperConfig {
     Encoding hashEncoding();
 
     /**
-     * The index (1 based numbering) of the column containing the Bcrypt salt
+     * The index (1 based numbering) of the column containing the Bcrypt salt. The default value of `-1` implies that the salt
+     * is stored in the password column using the Modular Crypt Format (MCF) standard.
      */
-    @WithDefault("0")
+    @WithDefault("-1")
     int saltIndex();
 
     /**
@@ -46,9 +47,10 @@ public interface BcryptPasswordKeyMapperConfig {
     Encoding saltEncoding();
 
     /**
-     * The index (1 based numbering) of the column containing the Bcrypt iteration count
+     * The index (1 based numbering) of the column containing the Bcrypt iteration count. The default value of `-1` implies that
+     * the iteration count is stored in the password column using the Modular Crypt Format (MCF) standard.
      */
-    @WithDefault("0")
+    @WithDefault("-1")
     int iterationCountIndex();
 
     default PasswordKeyMapper toPasswordKeyMapper() {

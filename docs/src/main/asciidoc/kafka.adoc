@@ -1017,7 +1017,7 @@ In this case the producer will use this method as generator to create an infinit
 @Outgoing("prices-out") CompletionStage<Message<T>> generate();
 ----
 
-=== Sending messages with @Emitter
+=== Sending messages with Emitter
 
 Sometimes, you need to have an imperative way of sending messages.
 

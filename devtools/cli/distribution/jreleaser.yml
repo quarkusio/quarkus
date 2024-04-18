@@ -18,7 +18,7 @@ project:
     - java
   links:
     homepage: https://quarkus.io
-    license: https://github.com/quarkusio/quarkus/blob/main/LICENSE.txt
+    license: https://github.com/quarkusio/quarkus/blob/main/LICENSE
 
 release:
   github:

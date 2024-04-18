@@ -90,6 +90,7 @@ jobs:
           find assets/images/posts/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
           find newsletter/ -mindepth 1 -maxdepth 1 -type d -mtime +100 -exec rm -rf _site/{} \;
           rm -rf _site/assets/images/worldtour/2023
+          rm -rf _site/assets/images/desktopwallpapers
 
       - name: Publishing to surge for preview
         id: deploy

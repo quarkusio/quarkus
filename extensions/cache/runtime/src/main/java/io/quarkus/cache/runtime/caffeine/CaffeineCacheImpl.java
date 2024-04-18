@@ -127,13 +127,10 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
 
-        // record metrics, if not null apply casting
         if (existingCacheValue == null) {
-            statsCounter.recordMisses(1);
             return null;
         } else {
             LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
-            statsCounter.recordHits(1);
 
             // cast, but still throw the CacheException in case it fails
             return unwrapCacheValueOrThrowable(existingCacheValue)

@@ -51,11 +51,8 @@ public class AdditionalTemplateRootTest {
                         List<NativeImageResourceBuildItem> items = context.consumeMulti(NativeImageResourceBuildItem.class);
                         for (NativeImageResourceBuildItem item : items) {
                             if (item.getResources().contains("web/public/hello.txt")
-                                    || item.getResources().contains("web\\public\\hello.txt")
                                     || item.getResources().contains("templates/hi.txt")
-                                    || item.getResources().contains("templates\\hi.txt")
-                                    || item.getResources().contains("templates/nested/hoho.txt")
-                                    || item.getResources().contains("templates\\nested\\hoho.txt")) {
+                                    || item.getResources().contains("templates/nested/hoho.txt")) {
                                 found++;
                             }
                         }

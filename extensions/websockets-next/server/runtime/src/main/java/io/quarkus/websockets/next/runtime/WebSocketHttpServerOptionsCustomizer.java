@@ -17,12 +17,23 @@ public class WebSocketHttpServerOptionsCustomizer implements HttpServerOptionsCu
 
     @Override
     public void customizeHttpServer(HttpServerOptions options) {
-        config.supportedSubprotocols().orElse(List.of()).forEach(options::addWebSocketSubProtocol);
+        customize(options);
     }
 
     @Override
     public void customizeHttpsServer(HttpServerOptions options) {
+        customize(options);
+    }
+
+    private void customize(HttpServerOptions options) {
         config.supportedSubprotocols().orElse(List.of()).forEach(options::addWebSocketSubProtocol);
+        options.setPerMessageWebSocketCompressionSupported(config.perMessageCompressionSupported());
+        if (config.compressionLevel().isPresent()) {
+            options.setWebSocketCompressionLevel(config.compressionLevel().getAsInt());
+        }
+        if (config.maxMessageSize().isPresent()) {
+            options.setMaxWebSocketMessageSize(config.maxMessageSize().getAsInt());
+        }
     }
 
 }

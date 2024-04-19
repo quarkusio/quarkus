@@ -69,7 +69,7 @@ public class ContextSupport {
     }
 
     ContextState currentRequestContextState() {
-        return requestContext.getState();
+        return requestContext.getStateIfActive();
     }
 
     static Context createNewDuplicatedContext(Context context, WebSocketConnection connection) {

@@ -234,6 +234,21 @@ public class WebSocketServerRecorder {
                             });
                         }
                     });
+
+                    ws.exceptionHandler(new Handler<Throwable>() {
+                        @Override
+                        public void handle(Throwable t) {
+                            ContextSupport.createNewDuplicatedContext(context, connection).runOnContext(new Handler<Void>() {
+                                @Override
+                                public void handle(Void event) {
+                                    endpoint.doOnError(t).subscribe().with(
+                                            v -> LOG.debugf("Error [%s] processed: %s", t.getClass(), connection),
+                                            t -> LOG.errorf(t, "Unhandled error occured: %s", t.toString(),
+                                                    connection));
+                                }
+                            });
+                        }
+                    });
                 });
             }
         };

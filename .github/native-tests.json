@@ -133,9 +133,9 @@
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Windows - RESTEasy Jackson",
-            "timeout": 25,
-            "test-modules": "resteasy-jackson",
+            "category": "Windows support",
+            "timeout": 50,
+            "test-modules": "resteasy-jackson, qute",
             "os-name": "windows-latest"
         },
         {

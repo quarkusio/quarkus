@@ -3355,31 +3355,29 @@ public class QuteProcessor {
      * @param templatePaths
      * @param watchedPaths
      * @param nativeImageResources
-     * @param osSpecificResourcePath The OS-specific resource path, i.e. templates\nested\foo.html
+     * @param resourcePath The relative resource path, including the template root
      * @param templatePath The path relative to the template root; using the {@code /} path separator
      * @param originalPath
      * @param config
      */
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String osSpecificResourcePath,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String resourcePath,
             String templatePath,
             Path originalPath, QuteConfig config) {
         if (templatePath.isEmpty()) {
             return;
         }
-        // OS-agnostic full path, i.e. templates/foo.html
-        String osAgnosticResourcePath = toOsAgnosticPath(osSpecificResourcePath, originalPath.getFileSystem());
         LOGGER.debugf("Produce template build items [templatePath: %s, osSpecificResourcePath: %s, originalPath: %s",
                 templatePath,
-                osSpecificResourcePath,
+                resourcePath,
                 originalPath);
         boolean restartNeeded = true;
         if (config.devMode.noRestartTemplates.isPresent()) {
-            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(osAgnosticResourcePath).matches();
+            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(resourcePath).matches();
         }
-        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(osAgnosticResourcePath, restartNeeded));
-        nativeImageResources.produce(new NativeImageResourceBuildItem(osSpecificResourcePath));
+        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(resourcePath, restartNeeded));
+        nativeImageResources.produce(new NativeImageResourceBuildItem(resourcePath));
         templatePaths.produce(
                 new TemplatePathBuildItem(templatePath, originalPath,
                         readTemplateContent(originalPath, config.defaultCharset)));
@@ -3399,7 +3397,7 @@ public class QuteProcessor {
                     return;
                 }
                 produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
-                        visit.getRelativePath(visit.getPath().getFileSystem().getSeparator()),
+                        visit.getRelativePath("/"),
                         templatePath, visit.getPath(), config);
             }
         });

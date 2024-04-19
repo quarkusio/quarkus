@@ -69,6 +69,7 @@ public enum Feature {
     NARAYANA_LRA,
     NARAYANA_STM,
     NEO4J,
+    OBSERVABILITY,
     OIDC,
     OIDC_CLIENT,
     RESTEASY_CLIENT_OIDC_FILTER,

@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.crac.Resource;
 import org.jboss.logging.Logger;
 
 import grpc.health.v1.HealthOuterClass;
@@ -591,7 +592,7 @@ public class GrpcServerRecorder {
         return ServerInterceptors.intercept(service.definition, interceptors);
     }
 
-    private class GrpcServerVerticle extends AbstractVerticle {
+    private class GrpcServerVerticle extends AbstractVerticle implements Resource {
         private final GrpcServerConfiguration configuration;
         private final GrpcContainer grpcContainer;
         private final GrpcBuilderProvider provider;
@@ -705,6 +706,23 @@ public class GrpcServerRecorder {
                     }
                 }
             }
+        }
+
+        @Override
+        public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            stop(p);
+            p.future().toCompletionStage().toCompletableFuture().get();
+        }
+
+        @Override
+        public void afterRestore(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            // The verticle must be started by the event-loop thread; the thread calling
+            // afterRestore will likely do so for all suspended verticles, and had we called
+            // this directly the verticles would all share the same context (run on the same thread).
+            this.context.runOnContext(nil -> start(p));
+            p.future().toCompletionStage().toCompletableFuture().get();
         }
     }
 

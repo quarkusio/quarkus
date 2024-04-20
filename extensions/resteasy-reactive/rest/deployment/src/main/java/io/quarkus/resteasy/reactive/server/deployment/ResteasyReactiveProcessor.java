@@ -183,6 +183,7 @@ import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityInterceptorHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
+import io.quarkus.resteasy.reactive.server.spi.AllowNotRestParametersBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
@@ -413,8 +414,8 @@ public class ResteasyReactiveProcessor {
             List<ContextTypeBuildItem> contextTypeBuildItems,
             CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
-            Capabilities capabilities)
-            throws NoSuchMethodException {
+            Capabilities capabilities,
+            Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -633,6 +634,8 @@ public class ResteasyReactiveProcessor {
                             return recorder.disableIfPropertyMatches(propertyName, propertyValue, disableIfMissing);
                         }
                     });
+
+            serverEndpointIndexerBuilder.skipNotRestParameters(allowNotRestParametersBuildItem.isPresent());
 
             if (!serverDefaultProducesHandlers.isEmpty()) {
                 List<DefaultProducesHandler> handlers = new ArrayList<>(serverDefaultProducesHandlers.size());

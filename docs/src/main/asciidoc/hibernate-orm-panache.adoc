@@ -1242,8 +1242,8 @@ If you need to mock entity instance methods, such as `persist()` you can do it b
 
 [source,java]
 ----
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 import org.junit.jupiter.api.Assertions;
@@ -1322,8 +1322,8 @@ You can write your mocking test like this:
 
 [source,java]
 ----
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

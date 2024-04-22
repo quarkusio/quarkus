@@ -64,7 +64,7 @@ public class Injection {
 
     private static void validateInjections(InjectionPointInfo injectionPointInfo, BeanType beanType) {
         // Mostly validation related to Bean metadata injection restrictions
-        // see https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bean_metadata
+        // see https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_metadata
         if (beanType == BeanType.MANAGED_BEAN || beanType == BeanType.SYNTHETIC_BEAN || beanType == BeanType.PRODUCER_METHOD) {
             // If an Interceptor<T> instance is injected into a bean instance other than an interceptor instance,
             // the container automatically detects the problem and treats it as a definition error.

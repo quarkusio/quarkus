@@ -79,6 +79,13 @@ public interface WebSocketEndpoint {
 
     Uni<Void> doOnError(Throwable t);
 
+    /**
+     *
+     * @return the identifier of the bean with callbacks
+     * @see io.quarkus.arc.InjectableBean#getIdentifier()
+     */
+    String beanIdentifier();
+
     enum ExecutionModel {
         WORKER_THREAD,
         VIRTUAL_THREAD,

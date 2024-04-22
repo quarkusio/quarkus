@@ -427,6 +427,10 @@ public class ApplicationDependencyTreeResolver {
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
 
             if (dep == null) {
+                // in case it was relocated it might not survive conflict resolution in the deployment graph
+                if (!node.getRelocations().isEmpty()) {
+                    ((DefaultDependencyNode) node).setRelocations(List.of());
+                }
                 WorkspaceModule module = null;
                 if (resolver.getProjectModuleResolver() != null) {
                     module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(),

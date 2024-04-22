@@ -1,14 +1,16 @@
-package io.quarkus.arc.test.java17.records;
-
-import io.quarkus.arc.test.ArcTestContainer;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.DeploymentException;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+package io.quarkus.arc.test.records;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class NormalScopedRecordTest {
     @RegisterExtension

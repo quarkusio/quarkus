@@ -413,7 +413,7 @@ public class WebSocketServerProcessor {
      *     }
      *
      *     public Uni doOnTextMessage(String message) {
-     *         Uni uni = ((Echo) super.beanInstance("MTd91f3oxHtG8gnznR7XcZBCLdE")).echo((String) message);
+     *         Uni uni = ((Echo) super.beanInstance().echo((String) message);
      *         if (uni != null) {
      *             // The lambda is implemented as a generated function: Echo_WebSocketEndpoint$$function$$1
      *             return uni.chain(m -> sendText(m, false));
@@ -423,7 +423,7 @@ public class WebSocketServerProcessor {
      *     }
      *
      *     public Uni doOnTextMessage(Object message) {
-     *         Object bean = super.beanInstance("egBJQ7_QAFkQlYXSTKE0XlN3wow");
+     *         Object bean = super.beanInstance();
      *         try {
      *             String ret = ((EchoEndpoint) bean).echo((String) message);
      *             return ret != null ? super.sendText(ret, false) : Uni.createFrom().voidItem();
@@ -444,6 +444,10 @@ public class WebSocketServerProcessor {
      *
      *     public WebSocketEndpoint.ExecutionModel onTextMessageExecutionModel() {
      *         return ExecutionModel.EVENT_LOOP;
+     *     }
+     *
+     *     public String beanIdentifier() {
+     *        return "egBJQ7_QAFkQlYXSTKE0XlN3wow";
      *     }
      * }
      * </pre>
@@ -485,13 +489,15 @@ public class WebSocketServerProcessor {
         MethodCreator executionMode = endpointCreator.getMethodCreator("executionMode", WebSocket.ExecutionMode.class);
         executionMode.returnValue(executionMode.load(endpoint.executionMode));
 
+        MethodCreator beanIdentifier = endpointCreator.getMethodCreator("beanIdentifier", String.class);
+        beanIdentifier.returnValue(beanIdentifier.load(endpoint.bean.getIdentifier()));
+
         if (endpoint.onOpen != null) {
             Callback callback = endpoint.onOpen;
             MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Object.class);
-            // Foo foo = beanInstance("foo");
+            // Foo foo = beanInstance();
             ResultHandle beanInstance = doOnOpen.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                    doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), doOnOpen.getThis());
             // Call the business method
             TryBlock tryBlock = onErrorTryBlock(doOnOpen, doOnOpen.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
@@ -515,8 +521,7 @@ public class WebSocketServerProcessor {
             MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
             ResultHandle beanInstance = doOnClose.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                    doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), doOnClose.getThis());
             // Call the business method
             TryBlock tryBlock = onErrorTryBlock(doOnClose, doOnClose.getThis());
             ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
@@ -663,10 +668,9 @@ public class WebSocketServerProcessor {
                 methodParameterType);
 
         TryBlock tryBlock = onErrorTryBlock(doOnMessage, doOnMessage.getThis());
-        // Foo foo = beanInstance("foo");
+        // Foo foo = beanInstance();
         ResultHandle beanInstance = tryBlock.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                tryBlock.getThis(), tryBlock.load(endpoint.bean.getIdentifier()));
+                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class), tryBlock.getThis());
         ResultHandle[] args = callback.generateArguments(tryBlock.getThis(), tryBlock, transformedAnnotations, index);
         // Call the business method
         ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance,

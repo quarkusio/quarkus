@@ -5,10 +5,14 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.WebSocket.ExecutionMode;
@@ -43,6 +47,9 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private final ContextSupport contextSupport;
 
+    private final InjectableBean<?> bean;
+    private final Object beanInstance;
+
     public WebSocketEndpointBase(WebSocketConnection connection, Codecs codecs,
             WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
         this.connection = connection;
@@ -51,6 +58,16 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         this.config = config;
         this.container = Arc.container();
         this.contextSupport = contextSupport;
+        InjectableBean<?> bean = container.bean(beanIdentifier());
+        if (bean.getScope().equals(ApplicationScoped.class)
+                || bean.getScope().equals(Singleton.class)) {
+            // For certain scopes, we can optimize and obtain the contextual reference immediately
+            this.bean = null;
+            this.beanInstance = container.instance(bean).get();
+        } else {
+            this.bean = bean;
+            this.beanInstance = null;
+        }
     }
 
     @Override
@@ -236,6 +253,10 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
             });
         }
         return UniHelper.toUni(promise.future());
+    }
+
+    public Object beanInstance() {
+        return beanInstance != null ? beanInstance : container.instance(bean).get();
     }
 
     public Object beanInstance(String identifier) {

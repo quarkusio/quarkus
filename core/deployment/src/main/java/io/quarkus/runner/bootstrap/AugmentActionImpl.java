@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -29,6 +31,7 @@ import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.PropertyUtils;
@@ -48,6 +51,7 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.sbom.SbomBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
@@ -172,7 +176,7 @@ public class AugmentActionImpl implements AugmentAction {
         }
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
             BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
-                    DeploymentResultBuildItem.class);
+                    DeploymentResultBuildItem.class, SbomBuildItem.class);
 
             writeDebugSourceFile(result);
 
@@ -180,6 +184,7 @@ public class AugmentActionImpl implements AugmentAction {
             NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
             List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
             BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
+            Map<Path, List<SbomResult>> sboms = getSboms(result.consumeMulti(SbomBuildItem.class));
 
             // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
             // we want to write result of the final artifact created
@@ -192,10 +197,23 @@ public class AugmentActionImpl implements AugmentAction {
             return new AugmentResult(artifactResultBuildItems.stream()
                     .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
                     .collect(Collectors.toList()),
-                    jarBuildItem != null ? jarBuildItem.toJarResult() : null,
+                    jarBuildItem != null ? jarBuildItem.toJarResult(sboms.getOrDefault(jarBuildItem.getPath(), List.of()))
+                            : null,
                     nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null,
-                    nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Collections.emptyMap());
+                    nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Map.of());
         }
+    }
+
+    private Map<Path, List<SbomResult>> getSboms(List<SbomBuildItem> sbomBuildItems) {
+        if (sbomBuildItems.isEmpty()) {
+            return Map.of();
+        }
+        final Map<Path, List<SbomResult>> result = new HashMap<>();
+        for (var sbomBuildItem : sbomBuildItems) {
+            result.computeIfAbsent(sbomBuildItem.getResult().getApplicationRunner(), p -> new ArrayList<>())
+                    .add(sbomBuildItem.getResult());
+        }
+        return result;
     }
 
     private void writeDebugSourceFile(BuildResult result) {
@@ -287,7 +305,8 @@ public class AugmentActionImpl implements AugmentAction {
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
-                    .setEffectiveModel(curatedApplication.getApplicationModel());
+                    .setEffectiveModel(curatedApplication.getApplicationModel())
+                    .setDependencyInfoProvider(quarkusBootstrap.getDependencyInfoProvider());
             if (quarkusBootstrap.getBaseName() != null) {
                 builder.setBaseName(quarkusBootstrap.getBaseName());
             }

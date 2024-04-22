@@ -73,6 +73,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Parameter(property = "attachRunnerAsMainArtifact", required = false)
     boolean attachRunnerAsMainArtifact;
 
+    /**
+     * Whether to attach SBOMs generated for Uber JARs as project artifacts
+     */
+    @Parameter(property = "attachSboms")
+    boolean attachSboms = true;
+
     @Parameter(defaultValue = "${project.build.directory}", readonly = true)
     File buildDirectory;
 
@@ -164,6 +170,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                         } else {
                             projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),
                                     result.getJar().getClassifier());
+                        }
+                    }
+                    if (attachSboms && result.getJar().isUberJar() && !result.getJar().getSboms().isEmpty()) {
+                        for (var sbom : result.getJar().getSboms()) {
+                            projectHelper.attachArtifact(mavenProject(), sbom.getFormat(), sbom.getClassifier(),
+                                    sbom.getSbomFile().toFile());
                         }
                     }
                 }

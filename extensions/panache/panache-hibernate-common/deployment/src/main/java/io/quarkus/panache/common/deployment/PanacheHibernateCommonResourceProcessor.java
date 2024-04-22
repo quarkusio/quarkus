@@ -106,7 +106,12 @@ public final class PanacheHibernateCommonResourceProcessor {
         PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
                 modelInfo);
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
-            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityAccessorsEnhancer));
+            final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(entityClassName)
+                    .setCacheable(true)
+                    .setVisitorFunction(entityAccessorsEnhancer)
+                    .build();
+            transformers.produce(transformation);
         }
 
         // Replace field access in application code with calls to accessors
@@ -125,8 +130,17 @@ public final class PanacheHibernateCommonResourceProcessor {
                     continue;
                 }
                 produced.add(cn);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+                //The following build item is not marked as CacheAble intentionally: see also https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
+                //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
+                //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
+                //change without having solid integration tests.
+                final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                        .setClassToTransform(cn)
+                        .setCacheable(false)//TODO this would be nice to improve on: see note above.
+                        .setVisitorFunction(panacheFieldAccessEnhancer)
+                        .setRequireConstPoolEntry(entityClassNamesInternal)
+                        .build();
+                transformers.produce(transformation);
             }
         }
     }

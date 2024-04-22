@@ -51,6 +51,8 @@ import io.quarkus.deployment.steps.NativeImageFeatureStep;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.graal.DisableLoggingFeature;
+import io.quarkus.sbom.ApplicationComponent;
+import io.quarkus.sbom.ApplicationManifestConfig;
 
 public class NativeImageBuildStep {
 
@@ -86,10 +88,16 @@ public class NativeImageBuildStep {
     }
 
     @BuildStep(onlyIf = NativeBuild.class)
-    ArtifactResultBuildItem result(NativeImageBuildItem image) {
+    ArtifactResultBuildItem result(NativeImageBuildItem image,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
         return new ArtifactResultBuildItem(image.getPath(), "native",
-                graalVMVersion.toMap());
+                graalVMVersion.toMap(),
+                ApplicationManifestConfig.builder()
+                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                        .setMainComponent(ApplicationComponent.builder().setPath(image.getPath()))
+                        .setRunnerPath(image.getPath())
+                        .build());
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
@@ -106,7 +114,8 @@ public class NativeImageBuildStep {
             List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
-            NativeImageRunnerBuildItem nativeImageRunner) {
+            NativeImageRunnerBuildItem nativeImageRunner,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Path outputDir;
         try {
@@ -159,7 +168,14 @@ public class NativeImageBuildStep {
 
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
                 "native-sources",
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                ApplicationManifestConfig.builder()
+                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                        .setMainComponent(ApplicationComponent.builder()
+                                .setPath(nativeImageSourceJarBuildItem.getPath())
+                                .setResolvedDependency(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                        .setRunnerPath(nativeImageSourceJarBuildItem.getPath())
+                        .build());
     }
 
     @BuildStep

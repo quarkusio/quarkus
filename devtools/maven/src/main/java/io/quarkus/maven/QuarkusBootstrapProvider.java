@@ -34,12 +34,14 @@ import com.google.common.cache.CacheBuilder;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.DependencyInfoProvider;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.EffectiveModelResolver;
 import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
@@ -131,8 +133,7 @@ public class QuarkusBootstrapProvider implements Closeable {
     }
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
-            Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-            throws MojoExecutionException {
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
         return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer);
     }
 
@@ -182,8 +183,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         private CuratedApplication devApp;
         private CuratedApplication testApp;
 
-        private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode)
-                throws MojoExecutionException {
+        private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode) {
             try {
                 if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
                     return workspaceProvider.createArtifactResolver(
@@ -206,13 +206,12 @@ public class QuarkusBootstrapProvider implements Closeable {
                         .setRemoteRepositoryManager(remoteRepoManager)
                         .build();
             } catch (BootstrapMavenException e) {
-                throw new MojoExecutionException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
+                throw new RuntimeException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
             }
         }
 
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,
-                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-                throws MojoExecutionException {
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setIncubatingModelResolver(
@@ -261,7 +260,10 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setBaseName(mojo.finalName())
                     .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
                     .setTargetDirectory(mojo.buildDir().toPath())
-                    .setForcedDependencies(forcedDependencies);
+                    .setForcedDependencies(forcedDependencies)
+                    .setDependencyInfoProvider(() -> DependencyInfoProvider.builder()
+                            .setMavenModelResolver(EffectiveModelResolver.of(artifactResolver(mojo, mode)))
+                            .build());
 
             try {
                 if (builderCustomizer != null) {
@@ -361,8 +363,7 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
 
         protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
-                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-                throws MojoExecutionException {
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
             if (mode == LaunchMode.DEVELOPMENT) {
                 return devApp == null ? devApp = doBootstrap(mojo, mode, builderCustomizer) : devApp;
             }

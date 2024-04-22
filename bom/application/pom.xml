@@ -18,6 +18,7 @@
         <bouncycastle.version>1.78.1</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
+        <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.2.2</jandex.version>
@@ -705,6 +706,21 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-config-yaml-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cyclonedx</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cyclonedx-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cyclonedx-generator</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5014,6 +5030,12 @@
                 <groupId>org.wildfly.common</groupId>
                 <artifactId>wildfly-common</artifactId>
                 <version>${wildfly-common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-core-java</artifactId>
+                <version>${cyclonedx.version}</version>
             </dependency>
 
             <dependency>

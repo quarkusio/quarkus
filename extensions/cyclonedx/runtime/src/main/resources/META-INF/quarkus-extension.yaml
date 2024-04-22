@@ -1,0 +1,7 @@
+name: "CycloneDX"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  keywords:
+  - "cyclonedx"
+  - "cdx"
+  status: "preview"

@@ -28,6 +28,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -288,6 +289,10 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return projectId == null ? projectId = QuarkusBootstrapProvider.getProjectId(project) : projectId;
     }
 
+    protected MavenArtifactResolver getArtifactResolver(LaunchMode mode) throws MojoExecutionException {
+        return bootstrapProvider.getArtifactResolver(this, mode);
+    }
+
     protected CuratedApplication bootstrapApplication() throws MojoExecutionException {
         return bootstrapApplication(LaunchMode.NORMAL);
     }
@@ -296,9 +301,20 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return bootstrapProvider.bootstrapApplication(this, mode);
     }
 
+    protected CuratedApplication bootstrapApplication(LaunchMode mode, MavenArtifactResolver artifactResolver)
+            throws MojoExecutionException {
+        return bootstrapProvider.bootstrapApplication(this, mode, null, artifactResolver);
+    }
+
     protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer)
             throws MojoExecutionException {
-        return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer);
+        return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer, null);
+    }
+
+    protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer,
+            MavenArtifactResolver artifactResolver)
+            throws MojoExecutionException {
+        return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer, artifactResolver);
     }
 
     protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {

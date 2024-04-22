@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -47,6 +49,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -115,6 +118,18 @@ public class WebSocketServerProcessor {
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TextMessageCodec.class));
+    }
+
+    @BuildStep
+    ExecutionModelAnnotationsAllowedBuildItem executionModelAnnotations(
+            TransformedAnnotationsBuildItem transformedAnnotations) {
+        return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {
+            @Override
+            public boolean test(MethodInfo method) {
+                return Annotations.containsAny(transformedAnnotations.getAnnotations(method),
+                        WebSocketDotNames.CALLBACK_ANNOTATIONS);
+            }
+        });
     }
 
     @BuildStep
@@ -1006,7 +1021,8 @@ public class WebSocketServerProcessor {
         List<Callback> errorHandlers = new ArrayList<>();
         for (AnnotationInstance annotation : annotations) {
             MethodInfo method = annotation.target().asMethod();
-            Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
+            Callback callback = new Callback(annotation, method, executionModel(method, transformedAnnotations),
+                    callbackArguments,
                     transformedAnnotations, endpointPath, index);
             long errorArguments = callback.arguments.stream().filter(ca -> ca instanceof ErrorCallbackArgument).count();
             if (errorArguments != 1) {
@@ -1052,7 +1068,8 @@ public class WebSocketServerProcessor {
         } else if (annotations.size() == 1) {
             AnnotationInstance annotation = annotations.get(0);
             MethodInfo method = annotation.target().asMethod();
-            Callback callback = new Callback(annotation, method, executionModel(method), callbackArguments,
+            Callback callback = new Callback(annotation, method, executionModel(method, transformedAnnotations),
+                    callbackArguments,
                     transformedAnnotations, endpointPath, index);
             long messageArguments = callback.arguments.stream().filter(ca -> ca instanceof MessageCallbackArgument).count();
             if (callback.acceptsMessage()) {
@@ -1081,13 +1098,16 @@ public class WebSocketServerProcessor {
                 String.format("There can be only one callback annotated with %s declared on %s", annotationName, beanClass));
     }
 
-    ExecutionModel executionModel(MethodInfo method) {
-        if (hasBlockingSignature(method)) {
-            return method.hasDeclaredAnnotation(WebSocketDotNames.RUN_ON_VIRTUAL_THREAD) ? ExecutionModel.VIRTUAL_THREAD
-                    : ExecutionModel.WORKER_THREAD;
+    ExecutionModel executionModel(MethodInfo method, TransformedAnnotationsBuildItem transformedAnnotations) {
+        if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.RUN_ON_VIRTUAL_THREAD)) {
+            return ExecutionModel.VIRTUAL_THREAD;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.BLOCKING)) {
+            return ExecutionModel.WORKER_THREAD;
+        } else if (transformedAnnotations.hasAnnotation(method, WebSocketDotNames.NON_BLOCKING)) {
+            return ExecutionModel.EVENT_LOOP;
+        } else {
+            return hasBlockingSignature(method) ? ExecutionModel.WORKER_THREAD : ExecutionModel.EVENT_LOOP;
         }
-        return method.hasDeclaredAnnotation(WebSocketDotNames.BLOCKING) ? ExecutionModel.WORKER_THREAD
-                : ExecutionModel.EVENT_LOOP;
     }
 
     boolean hasBlockingSignature(MethodInfo method) {

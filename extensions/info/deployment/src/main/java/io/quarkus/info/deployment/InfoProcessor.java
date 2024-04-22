@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -122,7 +122,7 @@ public class InfoProcessor {
             valuesProducer.produce(new InfoBuildTimeValuesBuildItem("git", data));
             beanProducer.produce(SyntheticBeanBuildItem.configure(GitInfo.class)
                     .supplier(recorder.gitInfoSupplier(branch, latestCommitId, latestCommitTime))
-                    .scope(Singleton.class)
+                    .scope(ApplicationScoped.class)
                     .setRuntimeInit()
                     .done());
         } catch (Exception e) {
@@ -229,7 +229,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
         beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)
                 .supplier(recorder.buildInfoSupplier(group, artifact, version, time, quarkusVersion))
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }
@@ -251,7 +251,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.osInfoContributor()));
         beanProducer.produce(SyntheticBeanBuildItem.configure(OsInfo.class)
                 .supplier(recorder.osInfoSupplier())
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }
@@ -264,7 +264,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.javaInfoContributor()));
         beanProducer.produce(SyntheticBeanBuildItem.configure(JavaInfo.class)
                 .supplier(recorder.javaInfoSupplier())
-                .scope(Singleton.class)
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .done());
     }

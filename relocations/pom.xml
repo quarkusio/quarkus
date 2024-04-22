@@ -100,6 +100,8 @@
         <module>quarkus-smallrye-reactive-messaging-pulsar-deployment</module>
         <module>quarkus-smallrye-reactive-messaging-rabbitmq</module>
         <module>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</module>
+        <module>quarkus-webjars-locator</module>
+        <module>quarkus-webjars-locator-deployment</module>
     </modules>
 
 </project>

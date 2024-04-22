@@ -144,6 +144,11 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-smallrye-reactive-messaging-mqtt-deployment", smallryeReactiveMessagingRelocation);
         RELOCATIONS.put("quarkus-smallrye-reactive-messaging-rabbitmq", smallryeReactiveMessagingRelocation);
         RELOCATIONS.put("quarkus-smallrye-reactive-messaging-rabbitmq-deployment", smallryeReactiveMessagingRelocation);
+
+        Function<String, Relocation>  webjarsLocatorRelocation = a -> Relocation.ofArtifactId(a, a.replace("webjars-locator", "web-dependency-locator"),
+                "3.10");
+        RELOCATIONS.put("quarkus-webjars-locator", webjarsLocatorRelocation);
+        RELOCATIONS.put("quarkus-webjars-locator-deployment", webjarsLocatorRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

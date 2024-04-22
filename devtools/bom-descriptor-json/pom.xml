@@ -2880,7 +2880,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-webjars-locator</artifactId>
+                    <artifactId>quarkus-web-dependency-locator</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

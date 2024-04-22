@@ -1,6 +1,7 @@
 package io.quarkus.maven.dependency;
 
 import java.nio.file.Path;
+import java.util.Collection;
 
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -14,6 +15,8 @@ import io.quarkus.paths.PathTree;
 public interface ResolvedDependency extends Dependency {
 
     PathCollection getResolvedPaths();
+
+    Collection<ArtifactCoords> getDependencies();
 
     default boolean isResolved() {
         final PathCollection paths = getResolvedPaths();

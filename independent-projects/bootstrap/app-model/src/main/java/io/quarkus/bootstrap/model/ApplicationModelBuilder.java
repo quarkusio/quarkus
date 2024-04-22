@@ -35,7 +35,7 @@ public class ApplicationModelBuilder {
 
     private static final Logger log = Logger.getLogger(ApplicationModelBuilder.class);
 
-    ResolvedDependency appArtifact;
+    ResolvedDependencyBuilder appArtifact;
 
     final Map<ArtifactKey, ResolvedDependencyBuilder> dependencies = new LinkedHashMap<>();
     final Collection<ArtifactKey> parentFirstArtifacts = new ConcurrentLinkedDeque<>();
@@ -56,9 +56,13 @@ public class ApplicationModelBuilder {
                 .build());
     }
 
-    public ApplicationModelBuilder setAppArtifact(ResolvedDependency appArtifact) {
+    public ApplicationModelBuilder setAppArtifact(ResolvedDependencyBuilder appArtifact) {
         this.appArtifact = appArtifact;
         return this;
+    }
+
+    public ResolvedDependencyBuilder getApplicationArtifact() {
+        return appArtifact;
     }
 
     public ApplicationModelBuilder setPlatformImports(PlatformImports platformImports) {
@@ -77,8 +81,12 @@ public class ApplicationModelBuilder {
     }
 
     public ApplicationModelBuilder addDependencies(Collection<ResolvedDependencyBuilder> deps) {
-        deps.forEach(d -> addDependency(d));
+        deps.forEach(this::addDependency);
         return this;
+    }
+
+    public boolean hasDependency(ArtifactKey key) {
+        return dependencies.containsKey(key);
     }
 
     public ResolvedDependencyBuilder getDependency(ArtifactKey key) {

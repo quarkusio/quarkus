@@ -22,9 +22,9 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.DependencyLoggingConfig;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -148,7 +148,7 @@ public class DependencyTreeMojo extends AbstractMojo {
                 }
             }
             modelResolver.setIncubatingModelResolver(
-                    ApplicationDependencyModelResolver.isIncubatingEnabled(project.getProperties()));
+                    IncubatingApplicationModelResolver.isIncubatingEnabled(project.getProperties()));
             modelResolver.setDepLogConfig(DependencyLoggingConfig.builder()
                     .setMessageConsumer(log)
                     .setVerbose(verbose)

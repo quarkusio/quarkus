@@ -59,7 +59,7 @@ public class MutableJarApplicationModel implements Serializable {
 
     public ApplicationModel getAppModel(Path root) {
         final ApplicationModelBuilder model = new ApplicationModelBuilder();
-        model.setAppArtifact(appArtifact.getDep(root).build());
+        model.setAppArtifact(appArtifact.getDep(root));
         for (SerializedDep i : dependencies) {
             model.addDependency(i.getDep(root));
         }

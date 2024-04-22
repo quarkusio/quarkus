@@ -26,7 +26,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     private final Map<ArtifactKey, Set<String>> excludedResources;
 
     public DefaultApplicationModel(ApplicationModelBuilder builder) {
-        this.appArtifact = builder.appArtifact;
+        this.appArtifact = builder.appArtifact.build();
         this.dependencies = builder.buildDependencies();
         this.platformImports = builder.platformImports;
         this.capabilityContracts = List.copyOf(builder.extensionCapabilities);

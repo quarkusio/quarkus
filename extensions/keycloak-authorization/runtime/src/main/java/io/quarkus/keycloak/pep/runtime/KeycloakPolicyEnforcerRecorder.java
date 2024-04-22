@@ -26,9 +26,10 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 @Recorder
@@ -52,16 +53,22 @@ public class KeycloakPolicyEnforcerRecorder {
     }
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
-            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
+            HttpConfiguration httpConfiguration, Supplier<TlsConfigurationRegistry> registrySupplier) {
+        TlsConfigurationRegistry registry = registrySupplier.get();
+        boolean trustAll = false;
+        if (registry != null) {
+            trustAll = registry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+        }
+
         PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant(),
-                tlsConfig);
+                trustAll);
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants().entrySet()) {
             OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant.getKey());
             if (oidcTenantConfig == null) {
                 throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant.getKey());
             }
-            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig));
+            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), trustAll));
         }
         return new Supplier<PolicyEnforcerResolver>() {
             @Override
@@ -74,7 +81,7 @@ public class KeycloakPolicyEnforcerRecorder {
 
     private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
-            TlsConfig tlsConfig) {
+            boolean globalTrustAll) {
 
         if (oidcConfig.applicationType.orElse(ApplicationType.SERVICE) == OidcTenantConfig.ApplicationType.WEB_APP
                 && oidcConfig.roles.source.orElse(null) != Source.accesstoken) {
@@ -96,7 +103,7 @@ public class KeycloakPolicyEnforcerRecorder {
 
         boolean trustAll = oidcConfig.tls.getVerification().isPresent()
                 ? oidcConfig.tls.getVerification().get() == Verification.NONE
-                : tlsConfig.trustAll;
+                : globalTrustAll;
         if (trustAll) {
             adapterConfig.setDisableTrustManager(true);
             adapterConfig.setAllowAnyHostname(true);

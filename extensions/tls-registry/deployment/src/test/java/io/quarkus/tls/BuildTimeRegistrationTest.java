@@ -38,7 +38,7 @@ public class BuildTimeRegistrationTest {
             .addBuildChainCustomizer(buildCustomizer());;
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @Test
     void testBuildTimeRegistration() {

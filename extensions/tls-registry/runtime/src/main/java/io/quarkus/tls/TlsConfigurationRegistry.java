@@ -2,7 +2,7 @@ package io.quarkus.tls;
 
 import java.util.Optional;
 
-public interface Registry {
+public interface TlsConfigurationRegistry {
 
     /**
      * Returns the named transport layer security configuration.

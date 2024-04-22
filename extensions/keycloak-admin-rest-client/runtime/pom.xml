@@ -19,6 +19,10 @@
             <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
             <exclusions>

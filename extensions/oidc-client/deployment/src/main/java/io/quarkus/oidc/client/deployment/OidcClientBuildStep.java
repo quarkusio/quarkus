@@ -49,7 +49,7 @@ import io.quarkus.oidc.client.runtime.OidcClientsConfig;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.oidc.token.propagation.AccessToken;
-import io.quarkus.runtime.TlsConfig;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
@@ -93,13 +93,13 @@ public class OidcClientBuildStep {
     @BuildStep
     public void setup(
             OidcClientsConfig oidcConfig,
-            TlsConfig tlsConfig,
             OidcClientRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
             OidcClientNamesBuildItem oidcClientNames,
+            TlsRegistryBuildItem tlsRegistry,
             BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
 
-        OidcClients clients = recorder.setup(oidcConfig, tlsConfig, vertxBuildItem.getVertx());
+        OidcClients clients = recorder.setup(oidcConfig, vertxBuildItem.getVertx(), tlsRegistry.registry());
 
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClient.class).unremovable()
                 .types(OidcClient.class)

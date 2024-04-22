@@ -29,7 +29,7 @@ public class ReloadWithoutConfigTest {
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @Test
     void testReloading() {

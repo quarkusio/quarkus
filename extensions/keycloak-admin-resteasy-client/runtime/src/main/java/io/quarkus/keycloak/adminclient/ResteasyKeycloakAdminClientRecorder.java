@@ -11,6 +11,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.admin.client.ClientBuilderWrapper;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
@@ -62,13 +63,15 @@ public class ResteasyKeycloakAdminClientRecorder {
         };
     }
 
-    public void setClientProvider(boolean tlsTrustAll, boolean areJSONBProvidersPresent) {
+    public void setClientProvider(boolean areJSONBProvidersPresent) {
         Keycloak.setClientProvider(new ResteasyClientClassicProvider() {
             @Override
             public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext, boolean disableTrustManager) {
+                boolean trustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class)
+                        .orElse(false);
                 // point here is to use default Quarkus providers rather than org.keycloak.admin.client.JacksonProvider
                 // as it doesn't work properly in native mode
-                var builder = ClientBuilderWrapper.create(sslContext, tlsTrustAll || disableTrustManager);
+                var builder = ClientBuilderWrapper.create(sslContext, trustAll || disableTrustManager);
                 if (areJSONBProvidersPresent) {
                     // when both Jackson and JSONB providers are present, we need to ensure Jackson is used
                     builder.register(new AppJsonQuarkusJacksonSerializer(), 100);

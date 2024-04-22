@@ -44,9 +44,9 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.tls.TlsConfiguration;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -129,15 +129,18 @@ public class OidcCommonUtils {
 
     public static String urlEncode(String value) {
         try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+            return URLEncoder.encode(value, StandardCharsets.UTF_8);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
-    public static void setHttpClientOptions(OidcCommonConfig oidcConfig, TlsConfig tlsConfig, HttpClientOptions options) {
+    public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
+            TlsConfiguration defaultTlsConfiguration) {
+        var globalTrustAll = defaultTlsConfiguration != null && defaultTlsConfiguration.isTrustAll();
+
         boolean trustAll = oidcConfig.tls.verification.isPresent() ? oidcConfig.tls.verification.get() == Verification.NONE
-                : tlsConfig.trustAll;
+                : globalTrustAll;
         if (trustAll) {
             options.setTrustAll(true);
             options.setVerifyHost(false);

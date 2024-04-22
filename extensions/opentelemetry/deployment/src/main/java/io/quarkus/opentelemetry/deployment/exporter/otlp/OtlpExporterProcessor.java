@@ -16,10 +16,7 @@ import org.jboss.jandex.Type;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
@@ -27,7 +24,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
-import io.quarkus.runtime.TlsConfig;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
@@ -48,10 +45,10 @@ public class OtlpExporterProcessor {
     @SuppressWarnings("deprecation")
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(TlsRegistryBuildItem.class)
     void createBatchSpanProcessor(OTelExporterRecorder recorder,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            TlsConfig tlsConfig,
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
@@ -67,7 +64,7 @@ public class OtlpExporterProcessor {
                 .unremovable()
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
-                .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig, tlsConfig,
+                .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig,
                         vertxBuildItem.getVertx()))
                 .done());
     }

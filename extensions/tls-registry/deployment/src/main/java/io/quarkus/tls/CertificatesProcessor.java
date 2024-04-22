@@ -1,6 +1,7 @@
 package io.quarkus.tls;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -17,7 +18,7 @@ public class CertificatesProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void initializeCertificate(
+    public TlsRegistryBuildItem initializeCertificate(
             TlsConfig config, VertxBuildItem vertx, CertificateRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<TlsCertificateBuildItem> otherCertificates) {
@@ -26,14 +27,18 @@ public class CertificatesProcessor {
             recorder.register(certificate.name, certificate.supplier);
         }
 
+        Supplier<TlsConfigurationRegistry> supplier = recorder.getSupplier();
+
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(Registry.class)
-                .supplier(recorder.getSupplier())
+                .configure(TlsConfigurationRegistry.class)
+                .supplier(supplier)
                 .scope(ApplicationScoped.class)
                 .unremovable()
                 .setRuntimeInit();
 
         syntheticBeans.produce(configurator.done());
+
+        return new TlsRegistryBuildItem(supplier);
     }
 
 }

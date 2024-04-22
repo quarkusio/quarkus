@@ -55,7 +55,7 @@ public class ReloadTrustStoreTest {
             });
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @ConfigProperty(name = "loc")
     File certs;

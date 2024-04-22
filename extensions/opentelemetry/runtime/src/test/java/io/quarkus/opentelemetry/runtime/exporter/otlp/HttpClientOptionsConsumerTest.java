@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
-import io.quarkus.runtime.TlsConfig;
 import io.vertx.core.http.HttpClientOptions;
 
 class HttpClientOptionsConsumerTest {
@@ -24,8 +23,7 @@ class HttpClientOptionsConsumerTest {
     void testNoProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
                 createExporterConfig(false),
-                URI.create("http://localhost:4317"),
-                createTLSConfig());
+                URI.create("http://localhost:4317"));
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);
@@ -36,8 +34,7 @@ class HttpClientOptionsConsumerTest {
     void testWithProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
                 createExporterConfig(true),
-                URI.create("http://localhost:4317"),
-                createTLSConfig());
+                URI.create("http://localhost:4317"));
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);
@@ -46,10 +43,6 @@ class HttpClientOptionsConsumerTest {
         assertThat(httpClientOptions.getProxyOptions().getPort(), is(9999));
         assertThat(httpClientOptions.getProxyOptions().getUsername(), is("proxy-username"));
         assertThat(httpClientOptions.getProxyOptions().getPassword(), is("proxy-password"));
-    }
-
-    private TlsConfig createTLSConfig() {
-        return new TlsConfig();
     }
 
     private OtlpExporterTracesConfig createExporterConfig(final boolean isEnabled) {

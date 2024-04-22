@@ -11,8 +11,8 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.tls.Registry;
 import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
@@ -25,7 +25,7 @@ import io.vertx.core.Vertx;
 
 @Recorder
 @Singleton
-public class CertificateRecorder implements Registry {
+public class CertificateRecorder implements TlsConfigurationRegistry {
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
 
@@ -137,7 +137,7 @@ public class CertificateRecorder implements Registry {
         certificates.put(name, configuration);
     }
 
-    public Supplier<Registry> getSupplier() {
+    public Supplier<TlsConfigurationRegistry> getSupplier() {
         return () -> this;
     }
 

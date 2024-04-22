@@ -37,7 +37,7 @@ public class PemKeyStoreWithSniTest {
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @Test
     void test() throws Exception {

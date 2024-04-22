@@ -34,7 +34,7 @@ public class NamedPemTrustStoreTest {
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
-    Registry certificates;
+    TlsConfigurationRegistry certificates;
 
     @Test
     void test() throws KeyStoreException, CertificateParsingException {

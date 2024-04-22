@@ -27,7 +27,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarn
 import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.adminclient.ResteasyKeycloakAdminClientRecorder;
-import io.quarkus.runtime.TlsConfig;
 
 public class KeycloakAdminClientProcessor {
 
@@ -51,10 +50,10 @@ public class KeycloakAdminClientProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, TlsConfig tlsConfig, Capabilities capabilities) {
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, Capabilities capabilities) {
         boolean areJSONBProvidersPresent = capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
                 || capabilities.isPresent(Capability.RESTEASY_JSON_JSONB_CLIENT);
-        recorder.setClientProvider(tlsConfig.trustAll, areJSONBProvidersPresent);
+        recorder.setClientProvider(areJSONBProvidersPresent);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

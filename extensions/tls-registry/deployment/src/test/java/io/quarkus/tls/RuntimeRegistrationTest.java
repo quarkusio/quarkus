@@ -37,7 +37,7 @@ public class RuntimeRegistrationTest {
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @Test
     void testRegistration() throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException {

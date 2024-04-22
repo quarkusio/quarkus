@@ -25,7 +25,6 @@ import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveClientProvider;
 import io.quarkus.keycloak.admin.client.reactive.runtime.ResteasyReactiveKeycloakAdminClientRecorder;
-import io.quarkus.runtime.TlsConfig;
 
 public class KeycloakAdminClientReactiveProcessor {
 
@@ -54,8 +53,8 @@ public class KeycloakAdminClientReactiveProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder, TlsConfig tlsConfig) {
-        recorder.setClientProvider(tlsConfig.trustAll);
+    public void integrate(ResteasyReactiveKeycloakAdminClientRecorder recorder) {
+        recorder.setClientProvider();
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

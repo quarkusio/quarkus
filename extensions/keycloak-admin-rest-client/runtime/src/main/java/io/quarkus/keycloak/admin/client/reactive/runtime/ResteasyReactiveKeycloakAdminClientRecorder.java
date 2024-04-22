@@ -4,6 +4,7 @@ import static io.quarkus.keycloak.admin.client.common.KeycloakAdminClientConfigU
 
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 
@@ -21,8 +22,9 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
         this.keycloakAdminClientConfigRuntimeValue = keycloakAdminClientConfigRuntimeValue;
     }
 
-    public void setClientProvider(boolean tlsTrustAll) {
-        Keycloak.setClientProvider(new ResteasyReactiveClientProvider(tlsTrustAll));
+    public void setClientProvider() {
+        boolean trustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class).orElse(false);
+        Keycloak.setClientProvider(new ResteasyReactiveClientProvider(trustAll));
     }
 
     public Supplier<Keycloak> createAdminClient() {

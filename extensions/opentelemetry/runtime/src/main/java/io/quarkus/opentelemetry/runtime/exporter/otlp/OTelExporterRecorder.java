@@ -24,13 +24,15 @@ import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.KeyCertOptions;
@@ -44,8 +46,7 @@ public class OTelExporterRecorder {
 
     public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            TlsConfig tlsConfig, Supplier<Vertx> vertx) {
+            OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
         URI baseUri = getBaseUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
@@ -110,7 +111,7 @@ public class OTelExporterRecorder {
                         determineCompression(tracesConfig),
                         tracesConfig.timeout(),
                         populateTracingExportHttpHeaders(tracesConfig),
-                        new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfig),
+                        new HttpClientOptionsConsumer(tracesConfig, baseUri),
                         vertx);
 
             }
@@ -131,7 +132,7 @@ public class OTelExporterRecorder {
                                 tracesConfig.timeout(),
                                 populateTracingExportHttpHeaders(tracesConfig),
                                 exportAsJson ? "application/json" : "application/x-protobuf",
-                                new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfig),
+                                new HttpClientOptionsConsumer(tracesConfig, baseUri),
                                 vertx),
                         MeterProvider::noop,
                         exportAsJson));
@@ -192,12 +193,10 @@ public class OTelExporterRecorder {
     static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {
         private final OtlpExporterTracesConfig tracesConfig;
         private final URI baseUri;
-        private final TlsConfig tlsConfig;
 
-        public HttpClientOptionsConsumer(OtlpExporterTracesConfig tracesConfig, URI baseUri, TlsConfig tlsConfig) {
+        public HttpClientOptionsConsumer(OtlpExporterTracesConfig tracesConfig, URI baseUri) {
             this.tracesConfig = tracesConfig;
             this.baseUri = baseUri;
-            this.tlsConfig = tlsConfig;
         }
 
         @Override
@@ -217,7 +216,16 @@ public class OTelExporterRecorder {
                 options.setSsl(true);
                 options.setUseAlpn(true);
             }
-            if (tlsConfig.trustAll) {
+
+            boolean globalTrustAll = false;
+            if (Arc.container() != null) {
+                TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+                if (registry != null) {
+                    globalTrustAll = registry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+                }
+            }
+
+            if (globalTrustAll) {
                 options.setTrustAll(true);
                 options.setVerifyHost(false);
             }

@@ -38,7 +38,7 @@ public class P12KeyStoreWithSniTest {
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
-    Registry registry;
+    TlsConfigurationRegistry registry;
 
     @Test
     void test() throws KeyStoreException {

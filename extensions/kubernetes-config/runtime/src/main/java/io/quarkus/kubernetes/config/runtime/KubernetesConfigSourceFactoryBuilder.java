@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.config.runtime;
 
-import static io.smallrye.config.Converters.getImplicitConverter;
-
 import java.util.Collections;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -10,7 +8,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory;
@@ -31,13 +28,7 @@ public class KubernetesConfigSourceFactoryBuilder implements ConfigBuilder {
             if (inAppCDsGeneration) {
                 return Collections.emptyList();
             }
-
-            // TODO - TlsConfig is used in a lot of place. This is to avoid having it to migrate to ConfigMapping.
-            boolean trustAll = getImplicitConverter(Boolean.class)
-                    .convert(context.getValue("quarkus.tls.trust-all").getValue());
-            TlsConfig tlsConfig = new TlsConfig();
-            tlsConfig.trustAll = trustAll;
-            KubernetesClient client = KubernetesClientUtils.createClient(config, tlsConfig);
+            KubernetesClient client = KubernetesClientUtils.createClient(config);
             return new KubernetesConfigSourceFactory(client).getConfigSources(context);
         }
     }

@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
@@ -85,6 +86,8 @@ public class MongoClientProcessor {
 
     private static final DotName MONGO_CLIENT_CUSTOMIZER = DotName.createSimple(MongoClientCustomizer.class.getName());
 
+    private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
+
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
 
     @BuildStep
@@ -147,10 +150,14 @@ public class MongoClientProcessor {
             MongoClientBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
         Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
-        List<String> names = commandListenerClasses.stream()
-                .map(ci -> ci.name().toString())
-                .collect(Collectors.toList());
-        return new CommandListenerBuildItem(names);
+        Stream<String> names = commandListenerClasses.stream()
+                .map(ci -> ci.name().toString());
+        Stream<String> tracing = Stream.empty();
+        if (buildTimeConfig.tracingEnabled && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            tracing = Stream.of(MONGODB_TRACING_COMMANDLISTENER_CLASSNAME);
+        }
+        var items = Stream.concat(names, tracing).toList();
+        return new CommandListenerBuildItem(items);
     }
 
     @BuildStep

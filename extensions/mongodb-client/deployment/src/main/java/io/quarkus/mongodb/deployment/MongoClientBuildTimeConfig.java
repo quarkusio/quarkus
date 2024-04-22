@@ -25,6 +25,12 @@ public class MongoClientBuildTimeConfig {
     public boolean forceDefaultClients;
 
     /**
+     * Whether or not tracing spans of driver commands are sent in case the quarkus-opentelemetry extension is present.
+     */
+    @ConfigItem(name = "tracing.enabled")
+    public boolean tracingEnabled;
+
+    /**
      * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.
      */
     @ConfigItem

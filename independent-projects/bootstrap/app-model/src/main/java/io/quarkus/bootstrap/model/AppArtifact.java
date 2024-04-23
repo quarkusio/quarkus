@@ -14,8 +14,11 @@ import io.quarkus.paths.PathList;
 /**
  * Represents an application (or its dependency) artifact.
  *
+ * @deprecated in favor of {@link ResolvedDependency} and {@link io.quarkus.maven.dependency.Dependency}.
+ *
  * @author Alexey Loubyansky
  */
+@Deprecated(forRemoval = true, since = "3.11.0")
 public class AppArtifact extends AppArtifactCoords implements ResolvedDependency, Serializable {
 
     private static final long serialVersionUID = -6226544163467103712L;

@@ -19,8 +19,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -36,8 +36,8 @@ public class KubernetesWithFlywayInitWithJobDisabledTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .overrideConfigKey("quarkus.kubernetes.init-tasks.\"flyway\".enabled", "false")
             .setForcedDependencies(Arrays.asList(
-                    new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
+                    Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-flyway", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

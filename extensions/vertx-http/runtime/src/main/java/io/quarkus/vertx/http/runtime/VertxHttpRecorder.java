@@ -24,7 +24,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
@@ -59,6 +64,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
@@ -630,7 +636,7 @@ public class VertxHttpRecorder {
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
             ManagementInterfaceConfiguration managementConfig,
             LaunchMode launchMode,
-            List<String> websocketSubProtocols) throws IOException {
+            List<String> websocketSubProtocols, TlsConfigurationRegistry registry) throws IOException {
         httpManagementServerOptions = null;
         CompletableFuture<HttpServer> managementInterfaceFuture = new CompletableFuture<>();
         if (!managementBuildTimeConfig.enabled || managementRouter == null || managementConfig == null) {
@@ -643,7 +649,7 @@ public class VertxHttpRecorder {
                 websocketSubProtocols);
         httpManagementServerOptions = HttpServerOptionsUtils.createSslOptionsForManagementInterface(
                 managementBuildTimeConfig, managementConfig, launchMode,
-                websocketSubProtocols);
+                websocketSubProtocols, registry);
         if (httpManagementServerOptions != null && httpManagementServerOptions.getKeyCertOptions() == null) {
             httpManagementServerOptions = httpServerOptionsForManagement;
         }
@@ -659,7 +665,8 @@ public class VertxHttpRecorder {
                             if (httpManagementServerOptions.isSsl()
                                     && (managementConfig.ssl.certificate.reloadPeriod.isPresent())) {
                                 long l = TlsCertificateReloader.initCertReloadingAction(
-                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl);
+                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl, registry,
+                                        managementConfig.tlsConfigurationName);
                                 if (l != -1) {
                                     refresTaskIds.add(l);
                                 }
@@ -690,7 +697,8 @@ public class VertxHttpRecorder {
     private static CompletableFuture<String> initializeMainHttpServer(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
-            Supplier<Integer> eventLoops, List<String> websocketSubProtocols, InsecureRequests insecureRequestStrategy)
+            Supplier<Integer> eventLoops, List<String> websocketSubProtocols, InsecureRequests insecureRequestStrategy,
+            TlsConfigurationRegistry registry)
             throws IOException {
 
         if (!httpConfiguration.hostEnabled && !httpConfiguration.domainSocketEnabled) {
@@ -703,7 +711,7 @@ public class VertxHttpRecorder {
         httpMainDomainSocketOptions = createDomainSocketOptions(httpBuildTimeConfig, httpConfiguration,
                 websocketSubProtocols);
         HttpServerOptions tmpSslConfig = HttpServerOptionsUtils.createSslOptions(httpBuildTimeConfig, httpConfiguration,
-                launchMode, websocketSubProtocols);
+                launchMode, websocketSubProtocols, registry);
 
         // Customize
         if (Arc.container() != null) {
@@ -751,7 +759,7 @@ public class VertxHttpRecorder {
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
                         launchMode,
-                        insecureRequestStrategy, httpConfiguration, connectionCount);
+                        insecureRequestStrategy, httpConfiguration, connectionCount, registry);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -792,10 +800,15 @@ public class VertxHttpRecorder {
             InsecureRequests insecureRequestStrategy,
             boolean auxiliaryApplication) throws IOException {
 
+        TlsConfigurationRegistry registry = null;
+        if (Arc.container() != null) {
+            registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+        }
+
         var mainServerFuture = initializeMainHttpServer(vertx, httpBuildTimeConfig, httpConfiguration, launchMode, eventLoops,
-                websocketSubProtocols, insecureRequestStrategy);
+                websocketSubProtocols, insecureRequestStrategy, registry);
         var managementInterfaceFuture = initializeManagementInterface(vertx, managementBuildTimeConfig, managementRouter,
-                managementConfig, launchMode, websocketSubProtocols);
+                managementConfig, launchMode, websocketSubProtocols, registry);
         var managementInterfaceDomainSocketFuture = initializeManagementInterfaceWithDomainSocket(vertx,
                 managementBuildTimeConfig, managementRouter, managementConfig, websocketSubProtocols);
 
@@ -1052,6 +1065,7 @@ public class VertxHttpRecorder {
 
     private static class WebDeploymentVerticle extends AbstractVerticle implements Resource {
 
+        private final TlsConfigurationRegistry registry;
         private HttpServer httpServer;
         private HttpServer httpsServer;
         private HttpServer domainSocketServer;
@@ -1069,7 +1083,8 @@ public class VertxHttpRecorder {
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
-                InsecureRequests insecureRequests, HttpConfiguration quarkusConfig, AtomicInteger connectionCount) {
+                InsecureRequests insecureRequests, HttpConfiguration quarkusConfig, AtomicInteger connectionCount,
+                TlsConfigurationRegistry registry) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
@@ -1077,6 +1092,7 @@ public class VertxHttpRecorder {
             this.insecureRequests = insecureRequests;
             this.quarkusConfig = quarkusConfig;
             this.connectionCount = connectionCount;
+            this.registry = registry;
             org.crac.Core.getGlobalContext().register(this);
         }
 
@@ -1242,7 +1258,8 @@ public class VertxHttpRecorder {
 
                         if (https && (quarkusConfig.ssl.certificate.reloadPeriod.isPresent())) {
                             long l = TlsCertificateReloader.initCertReloadingAction(
-                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl);
+                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl, registry,
+                                    quarkusConfig.tlsConfigurationName);
                             if (l != -1) {
                                 reloadingTasks.add(l);
                             }

@@ -68,7 +68,7 @@ public interface TlsBucketConfig {
      * established. This helps in scenarios such as HTTP/2 where multiple protocols may be available, allowing for
      * faster protocol selection.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean alpn();
 
     /**

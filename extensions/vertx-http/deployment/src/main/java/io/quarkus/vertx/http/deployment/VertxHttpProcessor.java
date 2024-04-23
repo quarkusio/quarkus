@@ -49,6 +49,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
@@ -334,8 +335,9 @@ class VertxHttpProcessor {
             ShutdownConfig shutdownConfig,
             LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
-            ExecutorBuildItem executorBuildItem)
-            throws BuildException, IOException {
+            ExecutorBuildItem executorBuildItem,
+            TlsRegistryBuildItem tlsRegistryBuildItem) // Injected to be sure that the TLS registry has been produced before calling this method.
+            throws BuildException {
 
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {

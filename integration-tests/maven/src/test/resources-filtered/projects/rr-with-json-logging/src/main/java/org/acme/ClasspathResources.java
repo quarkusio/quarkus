@@ -168,7 +168,7 @@ public class ClasspathResources {
             Enumeration<URL> resources = this.getClass().getClassLoader().getResources("META-INF/quarkus-extension.yaml");
             List<URL> resourcesList = Collections.list(resources);
             // 'META-INF/quarkus-extension.yaml' should be present in all extensions
-            int expected = 12;
+            int expected = 13;
             if (resourcesList.size() != expected) {
                 return errorResult(testType,
                         "wrong number of directory urls, expected " + expected + " but got " + resourcesList.size());

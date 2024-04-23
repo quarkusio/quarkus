@@ -1,6 +1,7 @@
 package io.quarkus.tls;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,10 +20,14 @@ public class CertificatesProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public TlsRegistryBuildItem initializeCertificate(
-            TlsConfig config, VertxBuildItem vertx, CertificateRecorder recorder,
+            TlsConfig config, Optional<VertxBuildItem> vertx, CertificateRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<TlsCertificateBuildItem> otherCertificates) {
-        recorder.validateCertificates(config, vertx.getVertx());
+
+        if (vertx.isPresent()) {
+            recorder.validateCertificates(config, vertx.get().getVertx());
+        }
+
         for (TlsCertificateBuildItem certificate : otherCertificates) {
             recorder.register(certificate.name, certificate.supplier);
         }

@@ -68,6 +68,7 @@ import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
@@ -287,9 +288,11 @@ public class ConfigBuildStep {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
-        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, MP_CONFIG_PROPERTIES_NAME);
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+                MP_CONFIG_PROPERTIES_NAME);
     }
 
     @BuildStep
@@ -489,6 +492,7 @@ public class ConfigBuildStep {
             List<ConfigMappingBuildItem> configMappings,
             List<ConfigPropertiesBuildItem> configProperties) throws Exception {
 
+        // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
                 ConfigClassWithPrefix.class.getDeclaredConstructor(Class.class, String.class),
                 configClassWithPrefix -> Stream.of(configClassWithPrefix.getKlass(), configClassWithPrefix.getPrefix())

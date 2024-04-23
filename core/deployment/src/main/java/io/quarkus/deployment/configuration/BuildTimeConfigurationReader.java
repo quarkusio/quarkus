@@ -524,12 +524,6 @@ public final class BuildTimeConfigurationReader {
             buildTimeRunTimeValues.putAll(getDefaults(config, buildTimeRunTimePatternMap));
             runTimeDefaultValues.putAll(getDefaults(runtimeConfig, runTimePatternMap));
 
-            // Register defaults for Mappings
-            // Runtime defaults are added in ConfigGenerationBuildStep.generateBuilders to include user mappings
-            for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
-                buildTimeRunTimeValues.putAll(ConfigMappings.getDefaults(buildTimeRunTimeMapping));
-            }
-
             Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getName).collect(toSet());
             registeredRoots.add("quarkus");
             Set<String> allProperties = getAllProperties(registeredRoots);
@@ -1118,7 +1112,7 @@ public final class BuildTimeConfigurationReader {
                         }
                     });
 
-            String[] profiles = config.getProfiles().toArray(String[]::new);
+            List<String> profiles = config.getProfiles();
             for (String property : builder.build().getPropertyNames()) {
                 properties.add(ProfileConfigSourceInterceptor.activeName(property, profiles));
             }

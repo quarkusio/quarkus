@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem.Kind;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappingInterface;
@@ -46,6 +47,7 @@ public class ConfigMappingUtils {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses,
             DotName configAnnotation) {
 
@@ -61,7 +63,7 @@ public class ConfigMappingUtils {
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
             Kind configClassKind = getConfigClassType(instance);
             processConfigClass(configClassWithPrefix(configClass, prefix), configClassKind, true, combinedIndex,
-                    generatedClasses, reflectiveClasses, configClasses);
+                    generatedClasses, reflectiveClasses, reflectiveMethods, configClasses);
         }
     }
 
@@ -69,8 +71,10 @@ public class ConfigMappingUtils {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses) {
-        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, CONFIG_MAPPING_NAME);
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+                CONFIG_MAPPING_NAME);
     }
 
     public static void processExtensionConfigMapping(
@@ -78,10 +82,11 @@ public class ConfigMappingUtils {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
         processConfigClass(configClass, Kind.MAPPING, false, combinedIndex, generatedClasses, reflectiveClasses,
-                configClasses);
+                reflectiveMethods, configClasses);
     }
 
     private static void processConfigClass(
@@ -91,6 +96,7 @@ public class ConfigMappingUtils {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
         Class<?> configClass = configClassWithPrefix.getKlass();
@@ -103,14 +109,14 @@ public class ConfigMappingUtils {
             // This is the generated implementation of the mapping by SmallRye Config.
             generatedClasses.produce(new GeneratedClassBuildItem(isApplicationClass, mappingMetadata.getClassName(),
                     mappingMetadata.getClassBytes()));
-            // Register the interface and implementation methods for reflection. This is required for Bean Validation.
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors().build());
+            reflectiveMethods
+                    .produce(new ReflectiveMethodBuildItem(mappingMetadata.getClassName(), "getDefaults", new String[0]));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(mappingMetadata.getClassName(), "getNames", new String[0]));
+
+            // Register the implementation methods for reflection. This is required for Bean Validation.
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods().build());
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).methods().build());
-            // Register also the interface hierarchy
-            for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods().build());
-            }
-
             processProperties(mappingMetadata.getInterfaceType(), reflectiveClasses);
         });
 

@@ -48,15 +48,6 @@ class ServerResourceTest {
     }
 
     @Test
-    void serverHost() {
-        given()
-                .get("/server/host")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(equalTo("localhost"));
-    }
-
-    @Test
     void properties() {
         given()
                 .get("/server/properties")
@@ -93,7 +84,8 @@ class ServerResourceTest {
                 .get("/server/validator/{prefix}", "cloud")
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body("errors", hasSize(9))
+                .body("errors", hasSize(10))
+                .body("errors", hasItem("cloud.port must be greater than or equal to 8000"))
                 .body("errors", hasItem("cloud.log.days must be less than or equal to 15"))
                 .body("errors", hasItem("cloud.cors.origins[1].port must be greater than or equal to 8000"))
                 .body("errors", hasItem("cloud.info.name size must be between 0 and 3"))

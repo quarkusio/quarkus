@@ -11,7 +11,6 @@ public class StaticInitConfigBuilder implements SmallRyeConfigBuilderCustomizer 
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         new QuarkusConfigBuilderCustomizer().configBuilder(builder);
-        builder.withMappingDefaults(false);
 
         builder.forClassLoader(Thread.currentThread().getContextClassLoader())
                 .addDefaultInterceptors()

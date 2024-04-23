@@ -25,6 +25,7 @@ import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "http.server")
+@RegisterForReflection
 public interface Server extends Alias {
     @JsonProperty
     String host();
@@ -63,6 +64,7 @@ public interface Server extends Alias {
     @JsonProperty
     Info info();
 
+    @RegisterForReflection
     interface Form {
         @JsonProperty
         String loginPage();
@@ -81,6 +83,7 @@ public interface Server extends Alias {
         List<Integer> positions();
     }
 
+    @RegisterForReflection
     interface Proxy {
         @JsonProperty
         boolean enable();
@@ -90,6 +93,7 @@ public interface Server extends Alias {
         int timeout();
     }
 
+    @RegisterForReflection
     interface Log {
         @JsonProperty
         @WithDefault("false")
@@ -123,6 +127,7 @@ public interface Server extends Alias {
         }
     }
 
+    @RegisterForReflection
     interface Cors {
         @JsonProperty
         List<Origin> origins();
@@ -130,6 +135,7 @@ public interface Server extends Alias {
         @JsonProperty
         List<@Size(min = 2) String> methods();
 
+        @RegisterForReflection
         interface Origin {
             @JsonProperty
             @Size(min = 5)
@@ -141,6 +147,7 @@ public interface Server extends Alias {
         }
     }
 
+    @RegisterForReflection
     interface Info {
         @JsonProperty
         Optional<@Size(max = 3) String> name();
@@ -158,6 +165,7 @@ public interface Server extends Alias {
         @JsonProperty
         Map<String, List<@Size(min = 8, max = 15) String>> firewall();
 
+        @RegisterForReflection
         interface Admin {
             @JsonProperty
             @Size(max = 4)

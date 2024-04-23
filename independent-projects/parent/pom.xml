@@ -23,6 +23,7 @@
         <version.compiler.plugin>3.13.0</version.compiler.plugin>
         <version.deploy.plugin>3.1.1</version.deploy.plugin>
         <version.plugin.plugin>3.11.0</version.plugin.plugin>
+        <version.dependency.plugin>3.6.1</version.dependency.plugin>
         <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
         <version.exec.plugin>3.1.0</version.exec.plugin>
         <version.formatter.plugin>2.24.1</version.formatter.plugin>
@@ -224,6 +225,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${version.compiler.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${version.dependency.plugin}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

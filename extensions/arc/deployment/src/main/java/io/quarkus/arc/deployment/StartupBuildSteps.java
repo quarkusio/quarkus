@@ -149,8 +149,12 @@ public class StartupBuildSteps {
                                 && !annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
                             startupMethods.add(method);
                         } else {
-                            LOG.warnf("Ignored an invalid @Startup method declared on %s: %s", method.declaringClass().name(),
-                                    method);
+                            if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                                // Producer methods annotated with @Startup are valid and processed above
+                                LOG.warnf("Ignored an invalid @Startup method declared on %s: %s",
+                                        method.declaringClass().name(),
+                                        method);
+                            }
                         }
                     }
                 }

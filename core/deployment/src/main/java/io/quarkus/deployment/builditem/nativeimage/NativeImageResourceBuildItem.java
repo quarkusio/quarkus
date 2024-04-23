@@ -7,7 +7,11 @@ import java.util.List;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that indicates that a static resource should be included in the native image
+ * A build item that indicates that a static resource should be included in the native image.
+ * <p>
+ * A static resource is a file that is not processed by the build steps, but is included in the native image as-is.
+ * The resource path passed to the constructor is a {@code /}-separated path name (with the same semantics as the parameters
+ * passed to {@link java.lang.ClassLoader#getResources(String)}.
  * <p>
  * Related build items:
  * <ul>

@@ -74,6 +74,7 @@ The same flow can be applied with any of the <<logging-apis,supported logging AP
 [source,java]
 ----
 package com.example;
+
 import org.jboss.logging.Logger;
 
 public class MyService {
@@ -129,6 +130,8 @@ Once injected, you can use the `log` object to invoke logging methods.
 .An example of two different types of logger injection:
 [source, java]
 ----
+package com.example;
+
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -203,9 +206,8 @@ FINEST:: Increased debug output compared to `TRACE`, which might have a higher f
 
 == Configure the log level, category, and format
 
-JBoss Logging is built into Quarkus and provides link:https://quarkus.io/developer-joy/[unified configuration] for all <<logging-apis,supported logging APIs>>.
-
-Configure the runtime logging in the `application.properties` file.
+JBoss Logging, integrated into Quarkus, offers a unified configuration for all <<logging-apis,supported logging APIs>> through a single configuration file that sets up all available extensions.
+To adjust runtime logging, modify the `application.properties` file.
 
 .An example of how you can set the default log level to `INFO` logging and include Hibernate `DEBUG` logs:
 [source, properties]
@@ -347,9 +349,9 @@ The logging format string supports the following symbols:
 |%t|Thread name|Render the thread name.
 |%t{id}|Thread ID|Render the thread ID.
 |%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
-|%X{<MDC property name>}|Mapped Diagnostic Context Value|Renders the value from Mapped Diagnostic Context
-|%X|Mapped Diagnostic Context Values|Renders all the values from Mapped Diagnostic Context in format {property.key=property.value}
-|%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
+|%X{<MDC property name>}|Mapped Diagnostic Context Value|Renders the value from Mapped Diagnostic Context.
+|%X|Mapped Diagnostic Context Values|Renders all the values from Mapped Diagnostic Context in format `{property.key=property.value}`.
+|%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format `{value1.value2}`.
 |===
 
 
@@ -364,8 +366,8 @@ Changing the console log format is useful, for example, when the console output 
 
 The `quarkus-logging-json` extension may be employed to add support for the JSON logging format and its related configuration.
 
-Add this extension to your build file as the following snippet illustrates:
-
+. Add this extension to your build file as the following snippet illustrates:
++
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
@@ -374,20 +376,21 @@ Add this extension to your build file as the following snippet illustrates:
     <artifactId>quarkus-logging-json</artifactId>
 </dependency>
 ----
-
++
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-logging-json")
 ----
-
++
 By default, the presence of this extension replaces the output format configuration from the console configuration, and the format string and the color settings (if any) are ignored.
 The other console configuration items, including those controlling asynchronous logging and the log level, will continue to be applied.
-
++
 For some, it will make sense to use humanly readable (unstructured) logging in dev mode and JSON logging (structured) in production mode.
 This can be achieved using different profiles, as shown in the following configuration.
-
-.Disable JSON logging in application.properties for dev and test mode
++
+. Disable JSON logging in application.properties for dev and test mode:
++
 [source, properties]
 ----
 %dev.quarkus.log.console.json=false
@@ -443,7 +446,6 @@ To log events to a file on the application's host, use the Quarkus file log hand
 The file log handler is disabled by default, so you must first enable it.
 
 The Quarkus file log handler supports log file rotation.
-Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while also keeping the primary log file up-to-date and manageable.
 
 Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while keeping the primary log file up-to-date and manageable.
 
@@ -514,6 +516,8 @@ To register a logging filter:
 .An example of writing a filter:
 [source,java]
 ----
+package com.example;
+
 import io.quarkus.logging.LoggingFilter;
 import java.util.logging.Filter;
 import java.util.logging.LogRecord;

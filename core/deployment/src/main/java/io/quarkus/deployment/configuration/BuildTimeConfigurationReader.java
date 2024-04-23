@@ -1086,6 +1086,7 @@ public final class BuildTimeConfigurationReader {
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
+                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
                     .withProfiles(config.getProfiles())
                     .withSources(sourceProperties);
@@ -1099,6 +1100,7 @@ public final class BuildTimeConfigurationReader {
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
+                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
                     .withSources(sourceProperties)
                     .withSources(new MapBackedConfigSource(

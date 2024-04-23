@@ -45,7 +45,7 @@ This command generates the Maven project with a REST endpoint and imports:
 If you already have your Quarkus project configured, you can add the `rest-client-jackson` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: rest-client-reactive-jackson
+:add-extension-extensions: rest-client-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:

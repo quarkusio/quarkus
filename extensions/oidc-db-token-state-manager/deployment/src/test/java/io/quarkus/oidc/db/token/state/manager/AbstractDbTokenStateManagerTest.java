@@ -69,7 +69,15 @@ public abstract class AbstractDbTokenStateManagerTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            textPage = loginForm.getInputByName("login").click();
+            page = loginForm.getInputByName("login").click();
+
+            HtmlForm submitForm = page.getForms().get(0);
+
+            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+
+            textPage = submitForm.getInputByValue("Submit").click();
 
             assertEquals("alice", textPage.getContent());
 

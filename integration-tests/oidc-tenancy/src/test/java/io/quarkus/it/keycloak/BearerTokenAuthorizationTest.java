@@ -11,13 +11,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -111,27 +115,49 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testResolveTenantIdentifierWebApp2() throws IOException {
-        testTenantWebApp2("webapp2", "tenant-web-app2:alice");
-    }
-
-    @Test
-    public void testScopePermissionsFromAccessToken() throws IOException {
-        // source of permissions is access token
-        testTenantWebApp2("webapp2-scope-permissions", "email openid profile");
-    }
-
-    private void testTenantWebApp2(String webApp2SubPath, String expectedResult) throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/" + webApp2SubPath);
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
             assertEquals("Sign in to quarkus-webapp2", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
-            assertEquals(expectedResult, page.getBody().asNormalizedText());
+
+            HtmlForm submitForm = page.getForms().get(0);
+
+            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+
+            page = submitForm.getInputByValue("Submit").click();
+
+            assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testScopePermissionsFromAccessToken() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2-scope-permissions");
+            // State cookie is available but there must be no saved path parameter
+            // as the tenant-web-app configuration does not set a redirect-path property
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
+            assertEquals("Sign in to quarkus-webapp2", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("email openid profile", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -212,9 +238,12 @@ public class BearerTokenAuthorizationTest {
             assertNotNull(getStateCookie(webClient, "tenant-hybrid-webapp"));
             assertEquals("Sign in to quarkus-hybrid", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
             assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -237,9 +266,20 @@ public class BearerTokenAuthorizationTest {
             assertNotNull(getStateCookie(webClient, "tenant-hybrid-webapp-service"));
             assertEquals("Sign in to quarkus-hybrid", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
+            HtmlForm submitForm = page.getForms().get(0);
+
+            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+
+            page = submitForm.getInputByValue("Submit").click();
+
             assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -273,9 +313,12 @@ public class BearerTokenAuthorizationTest {
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-no-discovery"));
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
             assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asNormalizedText());
 
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-no-discovery/api/user/webapp-no-discovery");
@@ -292,24 +335,61 @@ public class BearerTokenAuthorizationTest {
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
+            //            HtmlForm submitForm = page.getForms().get(0);
+            //
+            //            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            //            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            //            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+            //
+            //            page = submitForm.getInputByValue("Submit").click();
+
             assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
             assertEquals("Sign in to quarkus-webapp2", page.getTitleText());
+
             loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
+            //            submitForm = page.getForms().get(0);
+            //
+            //            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            //            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            //            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+            //
+            //            page = submitForm.getInputByValue("Submit").click();
+
             assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
+
             assertNull(getSessionCookie(webClient, "tenant-web-app"));
-            assertNotNull(getSessionCookie(webClient, "tenant-web-app2"));
+            assertNotNull(getSessionCookies(webClient, "tenant-web-app2"));
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
+        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "" : "_" + tenantId) + "_chunk_";
+        CookieManager cookieManager = webClient.getCookieManager();
+        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
+        for (Cookie cookie : cookieManager.getCookies()) {
+            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
+                sessionCookies.put(cookie.getName(), cookie);
+            }
+        }
+
+        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
     }
 
     @Test
@@ -649,9 +729,20 @@ public class BearerTokenAuthorizationTest {
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-dynamic"));
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
+            HtmlForm submitForm = page.getForms().get(0);
+
+            submitForm.getInputByName("email").setValueAttribute("Alice@alice.com");
+            submitForm.getInputByName("firstName").setValueAttribute("Alice");
+            submitForm.getInputByName("lastName").setValueAttribute("Alice");
+
+            page = submitForm.getInputByValue("Submit").click();
+
             assertEquals("tenant-web-app-dynamic:alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
@@ -818,9 +909,12 @@ public class BearerTokenAuthorizationTest {
                     .getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/code-flow-auth-mech-annotation");
             assertEquals("Sign in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
+
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
+
             page = loginForm.getInputByName("login").click();
+
             assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }

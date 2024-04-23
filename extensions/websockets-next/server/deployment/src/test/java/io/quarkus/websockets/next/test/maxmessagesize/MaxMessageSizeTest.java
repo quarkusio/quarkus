@@ -25,7 +25,7 @@ public class MaxMessageSizeTest {
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.max-message-size", "10");
+            }).overrideConfigKey("quarkus.websockets-next.server.max-message-size", "10");
 
     @Inject
     Vertx vertx;

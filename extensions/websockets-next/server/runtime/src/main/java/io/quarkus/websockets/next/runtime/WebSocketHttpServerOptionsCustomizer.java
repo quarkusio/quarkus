@@ -6,14 +6,14 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
-import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
+import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.vertx.core.http.HttpServerOptions;
 
 @Dependent
 public class WebSocketHttpServerOptionsCustomizer implements HttpServerOptionsCustomizer {
 
     @Inject
-    WebSocketsRuntimeConfig config;
+    WebSocketsServerRuntimeConfig config;
 
     @Override
     public void customizeHttpServer(HttpServerOptions options) {

@@ -13,6 +13,8 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.vertx.core.runtime.VertxBufferImpl;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
@@ -25,6 +27,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 class WebSocketConnectionImpl implements WebSocketConnection {
+
+    private static final Logger LOG = Logger.getLogger(WebSocketConnectionImpl.class);
 
     private final String generatedEndpointClass;
 
@@ -104,6 +108,14 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     @Override
     public Uni<Void> sendPing(Buffer data) {
         return UniHelper.toUni(webSocket.writePing(data));
+    }
+
+    void sendAutoPing() {
+        webSocket.writePing(Buffer.buffer("ping")).onComplete(r -> {
+            if (r.failed()) {
+                LOG.warnf("Unable to send auto-ping for %s: %s", this, r.cause().toString());
+            }
+        });
     }
 
     @Override

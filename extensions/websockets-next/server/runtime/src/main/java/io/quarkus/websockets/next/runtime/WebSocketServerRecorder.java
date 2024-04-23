@@ -14,7 +14,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
-import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
+import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -34,9 +34,9 @@ public class WebSocketServerRecorder {
 
     static final String WEB_SOCKET_CONN_KEY = WebSocketConnection.class.getName();
 
-    private final WebSocketsRuntimeConfig config;
+    private final WebSocketsServerRuntimeConfig config;
 
-    public WebSocketServerRecorder(WebSocketsRuntimeConfig config) {
+    public WebSocketServerRecorder(WebSocketsServerRuntimeConfig config) {
         this.config = config;
     }
 
@@ -67,12 +67,13 @@ public class WebSocketServerRecorder {
             public void handle(RoutingContext ctx) {
                 Future<ServerWebSocket> future = ctx.request().toWebSocket();
                 future.onSuccess(ws -> {
-                    Context context = VertxCoreRecorder.getVertx().get().getOrCreateContext();
+                    Vertx vertx = VertxCoreRecorder.getVertx().get();
+                    Context context = vertx.getOrCreateContext();
 
-                    WebSocketConnection connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
+                    WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
                             connectionManager, codecs, ctx);
                     connectionManager.add(generatedEndpointClass, connection);
-                    LOG.debugf("Connnected: %s", connection);
+                    LOG.debugf("Connection created: %s", connection);
 
                     // Initialize and capture the session context state that will be activated
                     // during message processing
@@ -216,6 +217,18 @@ public class WebSocketServerRecorder {
                         });
                     });
 
+                    Long timerId;
+                    if (config.autoPingInterval().isPresent()) {
+                        timerId = vertx.setPeriodic(config.autoPingInterval().get().toMillis(), new Handler<Long>() {
+                            @Override
+                            public void handle(Long timerId) {
+                                connection.sendAutoPing();
+                            }
+                        });
+                    } else {
+                        timerId = null;
+                    }
+
                     ws.closeHandler(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
@@ -229,6 +242,9 @@ public class WebSocketServerRecorder {
                                             LOG.errorf(r.cause(), "Unable to complete @OnClose callback: %s", connection);
                                         }
                                         connectionManager.remove(generatedEndpointClass, connection);
+                                        if (timerId != null) {
+                                            vertx.cancelTimer(timerId);
+                                        }
                                     });
                                 }
                             });
@@ -249,6 +265,7 @@ public class WebSocketServerRecorder {
                             });
                         }
                     });
+
                 });
             }
         };
@@ -307,7 +324,7 @@ public class WebSocketServerRecorder {
     }
 
     private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketConnection connection,
-            Codecs codecs, WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
+            Codecs codecs, WebSocketsServerRuntimeConfig config, ContextSupport contextSupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -318,7 +335,7 @@ public class WebSocketServerRecorder {
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
                     .getDeclaredConstructor(WebSocketConnection.class, Codecs.class,
-                            WebSocketsRuntimeConfig.class, ContextSupport.class)
+                            WebSocketsServerRuntimeConfig.class, ContextSupport.class)
                     .newInstance(connection, codecs, config, contextSupport);
             return endpoint;
         } catch (Exception e) {

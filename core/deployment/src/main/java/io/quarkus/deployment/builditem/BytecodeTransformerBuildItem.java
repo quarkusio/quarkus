@@ -10,13 +10,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
-    /**
-     * If this is true it means the class should be loaded eagerly by a thread pool in dev mode
-     * on multithreaded systems.
-     * <p>
-     * Transformation is expensive, so doing it this way can speed up boot time.
-     */
-    final boolean eager;
     final String classToTransform;
     final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
@@ -75,7 +68,6 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction, Set<String> requireConstPoolEntry,
             boolean cacheable) {
         Objects.requireNonNull(visitorFunction, "visitorFunction");
-        this.eager = eager;
         this.classToTransform = classToTransform;
         this.visitorFunction = visitorFunction;
         this.requireConstPoolEntry = requireConstPoolEntry;
@@ -87,7 +79,6 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     }
 
     public BytecodeTransformerBuildItem(Builder builder) {
-        this.eager = builder.eager;
         this.classToTransform = builder.classToTransform;
         this.visitorFunction = builder.visitorFunction;
         this.requireConstPoolEntry = builder.requireConstPoolEntry;
@@ -113,8 +104,9 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         return requireConstPoolEntry;
     }
 
+    @Deprecated
     public boolean isEager() {
-        return eager;
+        return false;
     }
 
     public boolean isCacheable() {
@@ -161,7 +153,6 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         private String classToTransform;
         private BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
         private Set<String> requireConstPoolEntry = null;
-        private boolean eager = false;
         private boolean cacheable = false;
         private int classReaderOptions = 0;
         private int priority = 0;
@@ -191,8 +182,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
             return this;
         }
 
+        @Deprecated
         public Builder setEager(boolean eager) {
-            this.eager = eager;
             return this;
         }
 

@@ -46,13 +46,18 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
          */
         private final byte[] data;
         private final String fileName;
-        private final boolean eager;
 
+        @Deprecated
         public TransformedClass(String className, byte[] data, String fileName, boolean eager) {
             this.className = className;
             this.data = data;
             this.fileName = fileName;
-            this.eager = eager;
+        }
+
+        public TransformedClass(String className, byte[] data, String fileName) {
+            this.className = className;
+            this.data = data;
+            this.fileName = fileName;
         }
 
         public byte[] getData() {
@@ -67,8 +72,9 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
             return className;
         }
 
+        @Deprecated
         public boolean isEager() {
-            return eager;
+            return false;
         }
 
         @Override

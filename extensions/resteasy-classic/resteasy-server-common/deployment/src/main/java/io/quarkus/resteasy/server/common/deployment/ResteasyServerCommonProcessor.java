@@ -755,7 +755,7 @@ public class ResteasyServerCommonProcessor {
 
             final String name = classInfo.name().toString();
             transformers
-                    .produce(new BytecodeTransformerBuildItem(true, name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                         @Override
                         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
                             ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {

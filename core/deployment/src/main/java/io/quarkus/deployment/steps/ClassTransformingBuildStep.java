@@ -94,7 +94,6 @@ public class ClassTransformingBuildStep {
                 bytecodeTransformerBuildItems.size());
         Set<String> noConstScanning = new HashSet<>();
         Map<String, Set<String>> constScanning = new HashMap<>();
-        Set<String> eager = new HashSet<>();
         Set<String> nonCacheable = new HashSet<>();
         Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
@@ -105,9 +104,6 @@ public class ClassTransformingBuildStep {
             } else {
                 constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
                         .addAll(i.getRequireConstPoolEntry());
-            }
-            if (i.isEager()) {
-                eager.add(i.getClassToTransform());
             }
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
@@ -164,7 +160,7 @@ public class ClassTransformingBuildStep {
                                 classReaderOptions.getOrDefault(className, 0));
                         TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                 className, data,
-                                classFileName, eager.contains(className));
+                                classFileName);
                         return transformedClass.getData();
                     } else {
                         return originalBytes;
@@ -241,7 +237,7 @@ public class ClassTransformingBuildStep {
                                     classReaderOptions.getOrDefault(className, 0));
                             TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                     className, data,
-                                    classFileName, eager.contains(className));
+                                    classFileName);
                             if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
                                     && classData != null) {
                                 transformedClassesCache.put(className, transformedClass);

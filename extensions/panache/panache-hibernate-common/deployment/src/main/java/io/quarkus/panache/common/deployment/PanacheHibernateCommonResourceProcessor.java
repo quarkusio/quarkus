@@ -106,7 +106,7 @@ public final class PanacheHibernateCommonResourceProcessor {
         PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
                 modelInfo);
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityAccessorsEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityAccessorsEnhancer));
         }
 
         // Replace field access in application code with calls to accessors

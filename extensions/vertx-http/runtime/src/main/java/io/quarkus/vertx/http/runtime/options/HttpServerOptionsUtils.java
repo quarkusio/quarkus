@@ -231,7 +231,6 @@ public class HttpServerOptionsUtils {
             serverOptions.addCrlValue(buffer);
         }
         if (!other.isUseAlpn()) {
-            System.out.println("disabling alpn.");
             serverOptions.setUseAlpn(false);
         }
         serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());

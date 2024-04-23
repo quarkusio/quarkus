@@ -28,12 +28,15 @@ import me.escoffier.certs.junit5.Certificates;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "grpc", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 }, client = true)
 })
-public class TlsWithJksKeyStoreTest {
+public class TlsWithHttpServerUsingPemAndTlsRegistryTest {
 
     static String configuration = """
-            quarkus.grpc.server.ssl.key-store=target/certs/grpc-keystore.jks
-            quarkus.grpc.server.ssl.key-store-password=password
-            quarkus.grpc.server.alpn=true
+            quarkus.grpc.server.use-separate-server=false
+
+            quarkus.tls.key-store.pem.0.cert=target/certs/grpc.crt
+            quarkus.tls.key-store.pem.0.key=target/certs/grpc.key
+
+            quarkus.http.insecure-requests=disabled
             """;
 
     @RegisterExtension
@@ -51,7 +54,7 @@ public class TlsWithJksKeyStoreTest {
         SslContext sslcontext = GrpcSslContexts.forClient()
                 .trustManager(certs)
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
+        channel = NettyChannelBuilder.forAddress("localhost", 8444)
                 .sslContext(sslcontext)
                 .useTransportSecurity()
                 .build();

@@ -67,6 +67,8 @@ import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.stork.Stork;
 import io.vertx.core.Vertx;
@@ -74,6 +76,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClientChannel;
 
@@ -262,12 +265,56 @@ public class Channels {
             options.setHttp2ClearTextUpgrade(false); // this fixes i30379
 
             if (!plainText) {
+                TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).get();
+
                 // always set ssl + alpn for plain-text=false
                 options.setSsl(true);
                 options.setUseAlpn(true);
 
-                TlsClientConfig tls = config.tls;
-                if (tls.enabled) {
+                TlsConfiguration configuration = null;
+                if (config.tlsConfigurationName.isPresent()) {
+                    Optional<TlsConfiguration> maybeConfiguration = registry.get(config.tlsConfigurationName.get());
+                    if (!maybeConfiguration.isPresent()) {
+                        throw new IllegalStateException("Unable to find the TLS configuration "
+                                + config.tlsConfigurationName.get() + " for the gRPC client " + name + ".");
+                    }
+                    configuration = maybeConfiguration.get();
+                } else if (registry.getDefault().isPresent() && (registry.getDefault().get().getTrustStoreOptions() != null
+                        || registry.getDefault().get().isTrustAll())) {
+                    configuration = registry.getDefault().get();
+                }
+
+                if (configuration != null) {
+                    if (configuration.getTrustStoreOptions() != null) {
+                        options.setTrustOptions(configuration.getTrustStoreOptions());
+                    }
+                    if (configuration.getKeyStoreOptions() != null) {
+                        options.setKeyCertOptions(configuration.getKeyStoreOptions());
+                    }
+
+                    options.setForceSni(configuration.usesSni());
+                    if (configuration.isTrustAll()) {
+                        options.setTrustAll(true);
+                    }
+                    if (configuration.getHostnameVerificationAlgorithm().isPresent()
+                            && configuration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
+                        // Only disable hostname verification if the algorithm is explicitly set to NONE
+                        options.setVerifyHost(false);
+                    }
+
+                    SSLOptions sslOptions = configuration.getSSLOptions();
+                    options.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
+                    options.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
+                    for (String suite : sslOptions.getEnabledCipherSuites()) {
+                        options.addEnabledCipherSuite(suite);
+                    }
+                    for (Buffer buffer : sslOptions.getCrlValues()) {
+                        options.addCrlValue(buffer);
+                    }
+                    options.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
+
+                } else if (config.tls.enabled) {
+                    TlsClientConfig tls = config.tls;
                     options.setSsl(true).setTrustAll(tls.trustAll);
 
                     configurePemTrustOptions(options, tls.trustCertificatePem);
@@ -281,11 +328,9 @@ public class Channels {
                 } else {
                     if (config.ssl.trustStore.isPresent()) {
                         Optional<Path> trustStorePath = config.ssl.trustStore;
-                        if (trustStorePath.isPresent()) {
-                            PemTrustOptions to = new PemTrustOptions();
-                            to.addCertValue(bufferFor(trustStorePath.get(), "trust store"));
-                            options.setTrustOptions(to);
-                        }
+                        PemTrustOptions to = new PemTrustOptions();
+                        to.addCertValue(bufferFor(trustStorePath.get(), "trust store"));
+                        options.setTrustOptions(to);
                         Optional<Path> certificatePath = config.ssl.certificate;
                         Optional<Path> keyPath = config.ssl.key;
                         if (certificatePath.isPresent() && keyPath.isPresent()) {

@@ -318,36 +318,19 @@ some additional steps that are detailed here. Let's say we have the following us
 .Author.java
 [source,java]
 ----
-public class Author {
-   private final String name;
-   private final String surname;
-
-   public Author(String name, String surname) {
-      this.name = Objects.requireNonNull(name);
-      this.surname = Objects.requireNonNull(surname);
-   }
-   // Getter/Setter/equals/hashCode/toString omitted
+public record Author(String name, String surname) {
 }
 ----
 
 .Book.java
 [source,java]
 ----
-public class Book {
-   private final String title;
-   private final String description;
-   private final int publicationYear;
-   private final Set<Author> authors;
-   private final BigDecimal price;
-
-   public Book(String title, String description, int publicationYear, Set<Author> authors, BigDecimal price) {
-      this.title = Objects.requireNonNull(title);
-      this.description = Objects.requireNonNull(description);
-      this.publicationYear = publicationYear;
-      this.authors = Objects.requireNonNull(authors);
-      this.price = price;
-   }
-   // Getter/Setter/equals/hashCode/toString omitted
+public record Book(String title,
+                   String description,
+                   int publicationYear,
+                   Set<Author> authors,
+                   Type bookType,
+                   BigDecimal price) {
 }
 ----
 
@@ -711,7 +694,15 @@ https://infinispan.org/docs/stable/titles/rest/rest.html#rest_v2_protobuf_schema
 https://infinispan.org/docs/stable/titles/encoding/encoding.html#registering-sci-remote-caches_marshalling[Hot Rod Java Client].
 
 [[infinispan-annotations-api]]
-== Caching using annotations
+=== Caching using annotations
+
+[IMPORTANT]
+====
+Infinispan Caching annotations are deprecated *in this extension* and will be removed.
+Use or replace your annotations by using the xref:cache-infinispan-reference.adoc[Infinispan Cache extension].
+Update your import statements to use the annotations from `io.quarkus.cache` package instead of
+`io.quarkus.infinispan.client`.
+====
 
 The Infinispan Client extension offers a set of annotations that can be used in a CDI managed bean to enable caching abilities with Infinispan.
 

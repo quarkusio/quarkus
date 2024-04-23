@@ -176,6 +176,7 @@
                 <module>hibernate-validator-resteasy-reactive</module>
                 <module>common-jpa-entities</module>
                 <module>infinispan-client</module>
+                <module>infinispan-cache</module>
                 <module>devtools</module>
                 <module>devtools-registry-client</module>
                 <module>gradle</module>

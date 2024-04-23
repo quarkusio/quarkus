@@ -151,6 +151,7 @@
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+        <module>infinispan-cache</module>
 
         <!-- Caching -->
         <module>caffeine</module>

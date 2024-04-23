@@ -118,7 +118,7 @@ public final class PanacheHibernateResourceProcessor {
                 ReactiveJavaJpaTypeBundle.BUNDLE);
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityOperationsEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
         }
     }
 

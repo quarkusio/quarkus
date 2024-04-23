@@ -1217,7 +1217,11 @@ public final class HibernateOrmProcessor {
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {
         HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
         for (String i : jpaModel.getManagedClassNames()) {
-            transformers.produce(new BytecodeTransformerBuildItem(true, i, hibernateEntityEnhancer, true));
+
+            transformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(i)
+                    .setVisitorFunction(hibernateEntityEnhancer)
+                    .setCacheable(true).build());
         }
         Set<String> additionalClassNames = new HashSet<>();
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {

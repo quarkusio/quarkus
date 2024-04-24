@@ -27,7 +27,7 @@ public class SubprotocolSelectedTest {
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Endpoint.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.supported-subprotocols", "oak,larch");
+            }).overrideConfigKey("quarkus.websockets-next.server.supported-subprotocols", "oak,larch");
 
     @Inject
     Vertx vertx;

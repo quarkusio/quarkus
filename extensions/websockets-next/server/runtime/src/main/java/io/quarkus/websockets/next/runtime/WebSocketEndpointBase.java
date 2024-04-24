@@ -17,7 +17,7 @@ import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.WebSocket.ExecutionMode;
 import io.quarkus.websockets.next.WebSocketConnection;
-import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
+import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -41,7 +41,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private final ConcurrencyLimiter limiter;
 
     @SuppressWarnings("unused")
-    private final WebSocketsRuntimeConfig config;
+    private final WebSocketsServerRuntimeConfig config;
 
     private final ArcContainer container;
 
@@ -51,7 +51,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private final Object beanInstance;
 
     public WebSocketEndpointBase(WebSocketConnection connection, Codecs codecs,
-            WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
+            WebSocketsServerRuntimeConfig config, ContextSupport contextSupport) {
         this.connection = connection;
         this.codecs = codecs;
         this.limiter = executionMode() == ExecutionMode.SERIAL ? new ConcurrencyLimiter(connection) : null;

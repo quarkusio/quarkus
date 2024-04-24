@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -10,9 +11,9 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.vertx.core.http.HttpServerOptions;
 
-@ConfigMapping(prefix = "quarkus.websockets-next")
+@ConfigMapping(prefix = "quarkus.websockets-next.server")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface WebSocketsRuntimeConfig {
+public interface WebSocketsServerRuntimeConfig {
 
     /**
      * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-12">The WebSocket Protocol</a>
@@ -38,5 +39,12 @@ public interface WebSocketsRuntimeConfig {
      * {@value HttpServerOptions#DEFAULT_MAX_WEBSOCKET_MESSAGE_SIZE}.
      */
     OptionalInt maxMessageSize();
+
+    /**
+     * The interval after which, when set, the server sends a ping message to a connected client automatically.
+     * <p>
+     * Ping messages are not sent automatically by default.
+     */
+    Optional<Duration> autoPingInterval();
 
 }

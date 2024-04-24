@@ -40,7 +40,12 @@ public class ConnectionManager implements OpenConnections {
         if (endpointToConnections.computeIfAbsent(endpoint, e -> ConcurrentHashMap.newKeySet()).add(connection)) {
             if (!listeners.isEmpty()) {
                 for (ConnectionListener listener : listeners) {
-                    listener.connectionAdded(endpoint, connection);
+                    try {
+                        listener.connectionAdded(endpoint, connection);
+                    } catch (Exception e) {
+                        LOG.warnf("Unable to call listener#connectionAdded() on [%s]: %s", listener.getClass(),
+                                e.toString());
+                    }
                 }
             }
         }
@@ -53,7 +58,12 @@ public class ConnectionManager implements OpenConnections {
             if (connections.remove(connection)) {
                 if (!listeners.isEmpty()) {
                     for (ConnectionListener listener : listeners) {
-                        listener.connectionRemoved(endpoint, connection.id());
+                        try {
+                            listener.connectionRemoved(endpoint, connection.id());
+                        } catch (Exception e) {
+                            LOG.warnf("Unable to call listener#connectionRemoved() on [%s]: %s", listener.getClass(),
+                                    e.toString());
+                        }
                     }
                 }
             }

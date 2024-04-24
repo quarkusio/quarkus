@@ -66,7 +66,7 @@ import io.quarkus.websockets.next.TextMessageCodec;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
-import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
+import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback.MessageType;
 import io.quarkus.websockets.next.runtime.Codecs;
@@ -383,7 +383,7 @@ public class WebSocketServerProcessor {
                     "@OnPongMessage callback must return void or Uni<Void>: " + callbackToString(callback.method));
         }
         Type messageType = callback.argumentType(MessageCallbackArgument::isMessage);
-        if (!messageType.name().equals(WebSocketDotNames.BUFFER)) {
+        if (messageType == null || !messageType.name().equals(WebSocketDotNames.BUFFER)) {
             throw new WebSocketServerException(
                     "@OnPongMessage callback must accept exactly one message parameter of type io.vertx.core.buffer.Buffer: "
                             + callbackToString(callback.method));
@@ -478,10 +478,10 @@ public class WebSocketServerProcessor {
                 .build();
 
         MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketConnection.class,
-                Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class);
+                Codecs.class, WebSocketsServerRuntimeConfig.class, ContextSupport.class);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketConnection.class,
-                        Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class),
+                        Codecs.class, WebSocketsServerRuntimeConfig.class, ContextSupport.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
                 constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();

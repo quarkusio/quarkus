@@ -208,7 +208,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                         blockingHandler);
             }
             this.isConsumingFromIncomingEvents = true;
-            vertx.executeBlocking(blockingHandler, true).onComplete(p -> {
+            vertx.executeBlocking(blockingHandler, false).onComplete(p -> {
                 Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
                 if (next != null) {
                     executeBlockingWithRequestContext(next);

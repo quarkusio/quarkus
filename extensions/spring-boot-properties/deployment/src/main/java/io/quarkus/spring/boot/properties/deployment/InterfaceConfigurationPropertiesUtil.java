@@ -259,8 +259,8 @@ final class InterfaceConfigurationPropertiesUtil {
                                     method.declaringClass().name(), methodCreator, config);
                             methodCreator.returnValue(value);
                             if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
-                                configProperties
-                                        .produce(new ConfigPropertyBuildItem(fullConfigName, returnType, defaultValueStr));
+                                configProperties.produce(
+                                        ConfigPropertyBuildItem.runtimeInit(fullConfigName, returnType, defaultValueStr));
                             }
                         }
                     }

@@ -30,4 +30,13 @@ public class BouncyCastleFipsTestCase {
                 .body(equalTo("success"));
     }
 
+    @Test
+    public void testFipsMode() {
+        RestAssured.given()
+                .when()
+                .get("/jca/fipsmode")
+                .then()
+                .statusCode(200)
+                .body(equalTo("HMAC SHA-512 initialization does not work when FIPS enabled."));
+    }
 }

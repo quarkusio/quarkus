@@ -14,7 +14,7 @@
     <name>Quarkus - TCK - MicroProfile Reactive Messaging</name>
 
     <properties>
-        <microprofile-reactive-messaging-tck.version>3.0</microprofile-reactive-messaging-tck.version>
+        <microprofile-reactive-messaging-tck.version>3.0.1</microprofile-reactive-messaging-tck.version>
     </properties>
 
     <build>

@@ -30,7 +30,7 @@ public interface TlsBucketConfig {
 
     /**
      * Sets the ordered list of enabled cipher suites.
-     * s * If none is given, a reasonable default is selected from the built-in ciphers.
+     * If none is given, a reasonable default is selected from the built-in ciphers.
      * <p>
      * When suites are set, it takes precedence over the default suite defined by the {@code SSLEngineOptions} in use.
      */

@@ -28,6 +28,7 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassOutput;
@@ -194,6 +196,23 @@ class VertxProcessor {
                     "io.smallrye.faulttolerance.core.event.loop.EventLoop",
                     "io.smallrye.faulttolerance.vertx.VertxEventLoop"));
         }
+    }
+
+    /**
+     * Reinitialize vertx classes that are known to cause issues with Netty in native mode
+     */
+    @BuildStep
+    NativeImageConfigBuildItem reinitializeClassesForNetty() {
+        NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
+
+        builder.addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+                .addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
+            builder.addRuntimeReinitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
+        }
+
+        return builder.build();
     }
 
     private Class<?> tryLoad(String name, ClassLoader tccl) {

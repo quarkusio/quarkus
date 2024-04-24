@@ -1,6 +1,7 @@
 package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.List;
 import java.util.Map;
@@ -137,6 +138,16 @@ class NarayanaJtaProcessor {
         builder.addBeanClass(TransactionalInterceptorNotSupported.class);
         additionalBeans.produce(builder.build());
 
+        // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
+        recorder.disableTransactionStatusManager();
+        recorder.setNodeName(transactions);
+        recorder.setDefaultTimeout(transactions);
+        recorder.setConfig(transactions);
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void setProperties(NarayanaJtaRecorder recorder) {
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         //we don't want to store the system properties here
@@ -145,11 +156,6 @@ class NarayanaJtaProcessor {
             defaultProperties.remove(i);
         }
         recorder.setDefaultProperties(defaultProperties);
-        // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
-        recorder.disableTransactionStatusManager();
-        recorder.setNodeName(transactions);
-        recorder.setDefaultTimeout(transactions);
-        recorder.setConfig(transactions);
     }
 
     @BuildStep

@@ -171,10 +171,16 @@ class NettyProcessor {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")
                     .addRuntimeReinitializedClass("io.netty.buffer.Unpooled")
-                    .addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
                     .addRuntimeReinitializedClass("io.netty.handler.codec.http.HttpObjectAggregator")
-                    .addRuntimeReinitializedClass("io.netty.handler.codec.ReplayingDecoderByteBuf")
-                    .addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.ReplayingDecoderByteBuf");
+
+            if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.core.http.impl.Http1xServerResponse")) {
+                builder.addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+            }
+
+            if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.core.parsetools.impl.RecordParserImpl")) {
+                builder.addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+            }
 
             if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
                 builder.addRuntimeReinitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");

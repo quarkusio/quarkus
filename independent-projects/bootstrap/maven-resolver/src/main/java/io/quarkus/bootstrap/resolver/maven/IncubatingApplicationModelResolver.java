@@ -546,6 +546,10 @@ public class IncubatingApplicationModelResolver {
                 resolvedDep = appBuilder.getDependency(key);
             }
 
+            // in case it was relocated it might not survive conflict resolution in the deployment graph
+            if (!node.getRelocations().isEmpty()) {
+                ((DefaultDependencyNode) node).setRelocations(List.of());
+            }
             try {
                 var ext = getExtensionDependencyOrNull();
                 if (resolvedDep == null) {
@@ -1073,7 +1077,6 @@ public class IncubatingApplicationModelResolver {
             } else {
                 currentChildren.addAll(originalNode.getChildren());
             }
-
             conditionalDep.walkingFlags = COLLECT_DIRECT_DEPS;
             if (collectReloadableModules) {
                 conditionalDep.walkingFlags |= COLLECT_RELOADABLE_MODULES;

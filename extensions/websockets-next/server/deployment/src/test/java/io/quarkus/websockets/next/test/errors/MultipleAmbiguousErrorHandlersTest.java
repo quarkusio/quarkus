@@ -9,7 +9,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class MultipleAmbiguousErrorHandlersTest {
 
@@ -18,7 +18,7 @@ public class MultipleAmbiguousErrorHandlersTest {
             .withApplicationRoot(root -> {
                 root.addClasses(Endpoint.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void testMultipleAmbiguousErrorHandlers() {

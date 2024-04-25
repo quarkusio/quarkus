@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnError;
@@ -12,7 +13,10 @@ import io.quarkus.websockets.next.OnPongMessage;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketClient;
+import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketConnection;
+import io.quarkus.websockets.next.WebSocketConnector;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -25,7 +29,10 @@ import io.vertx.core.json.JsonObject;
 final class WebSocketDotNames {
 
     static final DotName WEB_SOCKET = DotName.createSimple(WebSocket.class);
+    static final DotName WEB_SOCKET_CLIENT = DotName.createSimple(WebSocketClient.class);
     static final DotName WEB_SOCKET_CONNECTION = DotName.createSimple(WebSocketConnection.class);
+    static final DotName WEB_SOCKET_CLIENT_CONNECTION = DotName.createSimple(WebSocketClientConnection.class);
+    static final DotName WEB_SOCKET_CONNECTOR = DotName.createSimple(WebSocketConnector.class);
     static final DotName ON_OPEN = DotName.createSimple(OnOpen.class);
     static final DotName ON_TEXT_MESSAGE = DotName.createSimple(OnTextMessage.class);
     static final DotName ON_BINARY_MESSAGE = DotName.createSimple(OnBinaryMessage.class);
@@ -43,7 +50,7 @@ final class WebSocketDotNames {
     static final DotName JSON_ARRAY = DotName.createSimple(JsonArray.class);
     static final DotName VOID = DotName.createSimple(Void.class);
     static final DotName PATH_PARAM = DotName.createSimple(PathParam.class);
-    static final DotName HANDSHAKE_REQUEST = DotName.createSimple(WebSocketConnection.HandshakeRequest.class);
+    static final DotName HANDSHAKE_REQUEST = DotName.createSimple(HandshakeRequest.class);
     static final DotName THROWABLE = DotName.createSimple(Throwable.class);
 
     static final List<DotName> CALLBACK_ANNOTATIONS = List.of(ON_OPEN, ON_CLOSE, ON_BINARY_MESSAGE, ON_TEXT_MESSAGE,

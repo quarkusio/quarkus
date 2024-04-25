@@ -11,9 +11,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketConnection.HandshakeRequest;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketConnectOptions;

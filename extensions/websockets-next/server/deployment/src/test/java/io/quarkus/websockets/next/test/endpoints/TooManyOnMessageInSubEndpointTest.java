@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class TooManyOnMessageInSubEndpointTest {
 
@@ -15,7 +15,7 @@ public class TooManyOnMessageInSubEndpointTest {
             .withApplicationRoot(root -> {
                 root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithTooManyOnMessage.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void verifyThatSubEndpointWithoutTooManyOnMessageFailsToDeploy() {

@@ -13,7 +13,7 @@ import io.quarkus.websockets.next.MessageCodec;
 import io.quarkus.websockets.next.TextDecodeException;
 import io.quarkus.websockets.next.TextEncodeException;
 import io.quarkus.websockets.next.TextMessageCodec;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 import io.vertx.core.buffer.Buffer;
 
 @Singleton
@@ -139,7 +139,7 @@ public class Codecs {
         throw noCodecToEncode(true, message, type);
     }
 
-    WebSocketServerException noCodecToDecode(String text, Buffer bytes, Type type) {
+    WebSocketException noCodecToDecode(String text, Buffer bytes, Type type) {
         String message = String.format("No %s codec handles the type %s", bytes != null ? "binary" : "text", type);
         if (bytes != null) {
             return new BinaryDecodeException(bytes, message);
@@ -148,7 +148,7 @@ public class Codecs {
         }
     }
 
-    WebSocketServerException noCodecToEncode(boolean binary, Object encodedObject, Type type) {
+    WebSocketException noCodecToEncode(boolean binary, Object encodedObject, Type type) {
         String message = String.format("No %s codec handles the type %s", binary ? "binary" : "text", type);
         if (binary) {
             return new BinaryEncodeException(encodedObject, message);
@@ -157,7 +157,7 @@ public class Codecs {
         }
     }
 
-    WebSocketServerException unableToEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject, Exception e) {
+    WebSocketException unableToEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject, Exception e) {
         String message = String.format("Unable to encode %s message with %s", binary ? "binary" : "text",
                 codec.getClass().getName());
         if (binary) {
@@ -167,7 +167,7 @@ public class Codecs {
         }
     }
 
-    WebSocketServerException unableToDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Exception e) {
+    WebSocketException unableToDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Exception e) {
         String message = String.format("Unable to decode %s message with %s", bytes != null ? "binary" : "text",
                 codec.getClass().getName());
         if (bytes != null) {
@@ -177,7 +177,7 @@ public class Codecs {
         }
     }
 
-    WebSocketServerException forcedCannotEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject) {
+    WebSocketException forcedCannotEncode(boolean binary, MessageCodec<?, ?> codec, Object encodedObject) {
         String message = String.format("Forced %s codec [%s] cannot handle the type %s", binary ? "binary" : "text",
                 codec.getClass().getName(), encodedObject.getClass());
         if (binary) {
@@ -187,7 +187,7 @@ public class Codecs {
         }
     }
 
-    WebSocketServerException forcedCannotDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Type type) {
+    WebSocketException forcedCannotDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Type type) {
         String message = String.format("Forced %s codec [%s] cannot decode the type %s", bytes != null ? "binary" : "text",
                 codec.getClass().getName(), type);
         if (bytes != null) {

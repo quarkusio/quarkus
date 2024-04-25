@@ -15,9 +15,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
-import io.quarkus.websockets.next.WebSocket.ExecutionMode;
-import io.quarkus.websockets.next.WebSocketConnection;
-import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -34,14 +32,11 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private static final Logger LOG = Logger.getLogger(WebSocketEndpointBase.class);
 
     // Keep this field public - there's a problem with ConnectionArgumentProvider reading the protected field in the test mode
-    public final WebSocketConnection connection;
+    public final WebSocketConnectionBase connection;
 
     protected final Codecs codecs;
 
     private final ConcurrencyLimiter limiter;
-
-    @SuppressWarnings("unused")
-    private final WebSocketsServerRuntimeConfig config;
 
     private final ArcContainer container;
 
@@ -50,12 +45,10 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     private final InjectableBean<?> bean;
     private final Object beanInstance;
 
-    public WebSocketEndpointBase(WebSocketConnection connection, Codecs codecs,
-            WebSocketsServerRuntimeConfig config, ContextSupport contextSupport) {
+    public WebSocketEndpointBase(WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport) {
         this.connection = connection;
         this.codecs = codecs;
-        this.limiter = executionMode() == ExecutionMode.SERIAL ? new ConcurrencyLimiter(connection) : null;
-        this.config = config;
+        this.limiter = inboundProcessingMode() == InboundProcessingMode.SERIAL ? new ConcurrencyLimiter(connection) : null;
         this.container = Arc.container();
         this.contextSupport = contextSupport;
         InjectableBean<?> bean = container.bean(beanIdentifier());

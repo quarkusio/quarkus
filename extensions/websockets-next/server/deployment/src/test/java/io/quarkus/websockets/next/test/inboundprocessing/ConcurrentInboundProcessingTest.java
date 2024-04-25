@@ -1,9 +1,11 @@
-package io.quarkus.websockets.next.test.executionmode;
+package io.quarkus.websockets.next.test.inboundprocessing;
 
-import static io.quarkus.websockets.next.WebSocket.ExecutionMode.SERIAL;
+import static io.quarkus.websockets.next.InboundProcessingMode.CONCURRENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -12,13 +14,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 
-public class SerialExecutionModeErrorTest {
+public class ConcurrentInboundProcessingTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -33,30 +34,32 @@ public class SerialExecutionModeErrorTest {
     URI simUri;
 
     @Test
-    void testSerialExecution() {
+    void testSimultaneousExecution() {
         WSClient client = WSClient.create(vertx).connect(simUri);
-        int messages = 100;
-        for (int i = 0; i < messages; i++) {
-            client.send(i + "");
-        }
-        client.waitForMessages(messages);
-        for (int i = 0; i < messages; i++) {
-            assertEquals(i + "", client.getMessages().get(i).toString());
+        client.send("1");
+        client.send("2");
+        client.send("3");
+        client.send("4");
+        client.waitForMessages(4);
+        for (int i = 0; i < 4; i++) {
+            assertEquals("ok", client.getMessages().get(i).toString());
         }
     }
 
-    @WebSocket(path = "/sim", executionMode = SERIAL)
+    @WebSocket(path = "/sim", inboundProcessingMode = CONCURRENT)
     public static class Sim {
+
+        private final CountDownLatch latch = new CountDownLatch(4);
 
         @OnTextMessage
         String process(String message) throws InterruptedException {
-            throw new IllegalArgumentException(message);
-        }
-
-        // error() should be always called before other messages from the queue are consumed by process()
-        @OnError
-        String error(IllegalArgumentException iae) {
-            return iae.getMessage();
+            latch.countDown();
+            // Now wait for other messages to arrive
+            if (latch.await(10, TimeUnit.SECONDS)) {
+                return "ok";
+            } else {
+                return "" + latch.getCount();
+            }
         }
 
     }

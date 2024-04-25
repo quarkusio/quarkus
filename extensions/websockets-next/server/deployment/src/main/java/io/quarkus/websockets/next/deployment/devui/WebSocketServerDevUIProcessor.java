@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.MethodInfo;
@@ -21,10 +20,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.websockets.next.deployment.Callback;
 import io.quarkus.websockets.next.deployment.GeneratedEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem;
-import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
-import io.quarkus.websockets.next.deployment.WebSocketServerProcessor;
+import io.quarkus.websockets.next.deployment.WebSocketProcessor;
 import io.quarkus.websockets.next.runtime.devui.WebSocketNextJsonRPCService;
 
 public class WebSocketServerDevUIProcessor {
@@ -38,7 +37,7 @@ public class WebSocketServerDevUIProcessor {
         pageBuildItem.addBuildTimeData("endpoints", createEndpointsJson(endpoints, generatedEndpoints));
 
         pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Endpoints")
+                .title("Server Endpoints")
                 .icon("font-awesome-solid:plug")
                 .componentLink("qwc-wsn-endpoints.js")
                 .staticLabel(String.valueOf(endpoints.size())));
@@ -54,7 +53,8 @@ public class WebSocketServerDevUIProcessor {
     private List<Map<String, Object>> createEndpointsJson(List<WebSocketEndpointBuildItem> endpoints,
             List<GeneratedEndpointBuildItem> generatedEndpoints) {
         List<Map<String, Object>> json = new ArrayList<>();
-        for (WebSocketEndpointBuildItem endpoint : endpoints.stream().sorted(Comparator.comparing(e -> e.path))
+        for (WebSocketEndpointBuildItem endpoint : endpoints.stream().filter(WebSocketEndpointBuildItem::isServer)
+                .sorted(Comparator.comparing(e -> e.path))
                 .collect(Collectors.toList())) {
             Map<String, Object> endpointJson = new HashMap<>();
             String clazz = endpoint.bean.getImplClazz().name().toString();
@@ -62,8 +62,8 @@ public class WebSocketServerDevUIProcessor {
             endpointJson.put("generatedClazz",
                     generatedEndpoints.stream().filter(ge -> ge.endpointClassName.equals(clazz)).findFirst()
                             .orElseThrow().generatedClassName);
-            endpointJson.put("path", getOriginalPath(endpoint.path));
-            endpointJson.put("executionMode", endpoint.executionMode.toString());
+            endpointJson.put("path", WebSocketProcessor.getOriginalPath(endpoint.path));
+            endpointJson.put("executionMode", endpoint.inboundProcessingMode.toString());
             List<Map<String, Object>> callbacks = new ArrayList<>();
             addCallback(endpoint.onOpen, callbacks);
             addCallback(endpoint.onBinaryMessage, callbacks);
@@ -79,7 +79,7 @@ public class WebSocketServerDevUIProcessor {
         return json;
     }
 
-    private void addCallback(WebSocketEndpointBuildItem.Callback callback, List<Map<String, Object>> callbacks) {
+    private void addCallback(Callback callback, List<Map<String, Object>> callbacks) {
         if (callback != null) {
             callbacks.add(Map.of("annotation", callback.annotation.toString(), "method", methodToString(callback.method)));
         }
@@ -129,18 +129,6 @@ public class WebSocketServerDevUIProcessor {
         } else {
             return type.name().withoutPackagePrefix();
         }
-    }
-
-    static String getOriginalPath(String path) {
-        StringBuilder sb = new StringBuilder();
-        Matcher m = WebSocketServerProcessor.TRANSLATED_PATH_PARAM_PATTERN.matcher(path);
-        while (m.find()) {
-            // Replace :foo with {foo}
-            String match = m.group();
-            m.appendReplacement(sb, "{" + match.subSequence(1, match.length()) + "}");
-        }
-        m.appendTail(sb);
-        return sb.toString();
     }
 
 }

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnError;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class MultipleAmbiguousGlobalErrorHandlersTest {
 
@@ -19,7 +19,7 @@ public class MultipleAmbiguousGlobalErrorHandlersTest {
             .withApplicationRoot(root -> {
                 root.addClasses(GlobalErrorHandlers.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void testMultipleAmbiguousErrorHandlers() {

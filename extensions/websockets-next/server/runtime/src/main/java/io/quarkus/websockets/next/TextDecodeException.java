@@ -7,7 +7,7 @@ import io.smallrye.common.annotation.Experimental;
  * @see TextMessageCodec
  */
 @Experimental("This API is experimental and may change in the future")
-public class TextDecodeException extends WebSocketServerException {
+public class TextDecodeException extends WebSocketException {
 
     private static final long serialVersionUID = 6814319993301938091L;
 

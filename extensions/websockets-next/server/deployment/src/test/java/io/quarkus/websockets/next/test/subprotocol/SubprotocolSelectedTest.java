@@ -1,6 +1,6 @@
 package io.quarkus.websockets.next.test.subprotocol;
 
-import static io.quarkus.websockets.next.WebSocketConnection.HandshakeRequest.SEC_WEBSOCKET_PROTOCOL;
+import static io.quarkus.websockets.next.HandshakeRequest.SEC_WEBSOCKET_PROTOCOL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;

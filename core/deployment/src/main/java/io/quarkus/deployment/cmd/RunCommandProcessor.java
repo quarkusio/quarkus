@@ -52,7 +52,7 @@ public class RunCommandProcessor {
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
 
-        for (Map.Entry<?, ?> e : System.getProperties().entrySet()) {
+        for (Map.Entry<?, ?> e : System.getProperties().entrySet()) { //TODO: this is almost certainly wrong as it pulls in all the system properties Maven has set
             args.add("-D" + e.getKey().toString() + "=" + e.getValue().toString());
         }
         args.add("-jar");

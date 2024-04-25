@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -126,7 +127,13 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
             throws MojoExecutionException {
-        return bootstrapper(mojo).bootstrapApplication(mojo, mode);
+        return bootstrapApplication(mojo, mode, null);
+    }
+
+    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer)
+            throws MojoExecutionException {
+        return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer);
     }
 
     public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
@@ -203,7 +210,8 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
         }
 
-        private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
+        private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
                 throws MojoExecutionException {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
@@ -253,6 +261,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setForcedDependencies(forcedDependencies);
 
             try {
+                if (builderCustomizer != null) {
+                    builderCustomizer.accept(builder);
+                }
                 return builder.build().bootstrap();
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
@@ -346,15 +357,16 @@ public class QuarkusBootstrapProvider implements Closeable {
                     key);
         }
 
-        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
+        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
                 throws MojoExecutionException {
             if (mode == LaunchMode.DEVELOPMENT) {
-                return devApp == null ? devApp = doBootstrap(mojo, mode) : devApp;
+                return devApp == null ? devApp = doBootstrap(mojo, mode, builderCustomizer) : devApp;
             }
             if (mode == LaunchMode.TEST) {
-                return testApp == null ? testApp = doBootstrap(mojo, mode) : testApp;
+                return testApp == null ? testApp = doBootstrap(mojo, mode, builderCustomizer) : testApp;
             }
-            return prodApp == null ? prodApp = doBootstrap(mojo, mode) : prodApp;
+            return prodApp == null ? prodApp = doBootstrap(mojo, mode, builderCustomizer) : prodApp;
         }
 
         protected ArtifactCoords managingProject(QuarkusBootstrapMojo mojo) {

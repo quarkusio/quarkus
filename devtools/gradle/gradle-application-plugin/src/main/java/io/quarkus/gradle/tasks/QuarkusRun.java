@@ -32,8 +32,9 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
-import io.quarkus.deployment.cmd.RunCommandHandler;
+import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
 
 public abstract class QuarkusRun extends QuarkusBuildTask {
@@ -111,13 +112,14 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .setAppArtifact(appModel.getAppArtifact())
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
+                .setMode(QuarkusBootstrap.Mode.TEST)
                 .build().bootstrap()) {
 
             AugmentAction action = curatedApplication.createAugmentor();
             AtomicReference<Boolean> exists = new AtomicReference<>();
             AtomicReference<String> tooMany = new AtomicReference<>();
             String target = System.getProperty("quarkus.run.target");
-            action.performCustomBuild(RunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
+            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
                 @Override
                 public void accept(Map<String, List> cmds) {
                     List cmd = null;
@@ -166,7 +168,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                     }
                 }
             },
-                    RunCommandActionResultBuildItem.class.getName());
+                    RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
                 getProject().getLogger().error("quarkus.run.target " + target + " is not found");
                 return;

@@ -190,6 +190,9 @@
                                              -->
                                             <plugins.index_state_management.enabled>false</plugins.index_state_management.enabled>
                                             <OPENSEARCH_JAVA_OPTS>-Xms512m -Xmx512m</OPENSEARCH_JAVA_OPTS>
+                                            <!-- OpenSearch 2.12 and later requires an admin password, or it won't start.
+                                                 Considering this is just tests, we'll just set some hardcoded password. -->
+                                            <OPENSEARCH_INITIAL_ADMIN_PASSWORD>NotActua11y$trongPa$$word</OPENSEARCH_INITIAL_ADMIN_PASSWORD>
                                             <!-- Disable disk-based shard allocation thresholds: on large, relatively full disks (>90% used),
                                                  it will lead to index creation to get stuck waiting for other nodes to join the cluster,
                                                  which will never happen since we only have one node.

@@ -260,6 +260,10 @@ public class DevServicesElasticsearchProcessor {
         // See https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-settings/
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
+        // OpenSearch 2.12 and later requires an admin password, or it won't start.
+        // Considering dev services are transient and not intended for production by nature,
+        // we'll just set some hardcoded password.
+        container.addEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "NotActua11y$trongPa$$word");
         return container;
     }
 

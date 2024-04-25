@@ -823,7 +823,7 @@ as shown below.
 
 [source,properties]
 ----
-quarkus.hibernate-search-orm.elasticsearch.version=opensearch:2.11
+quarkus.hibernate-search-orm.elasticsearch.version=opensearch:2.13
 ----
 
 All other configuration options and APIs are exactly the same as with Elasticsearch.

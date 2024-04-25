@@ -72,6 +72,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.inject.ConfigProducer;
@@ -289,10 +290,11 @@ public class ConfigBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ConfigClassBuildItem> configClasses) {
+            BuildProducer<ConfigClassBuildItem> configClasses,
+            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
         processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
-                MP_CONFIG_PROPERTIES_NAME);
+                additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
     }
 
     @BuildStep

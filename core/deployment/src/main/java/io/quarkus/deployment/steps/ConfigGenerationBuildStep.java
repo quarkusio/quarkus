@@ -74,6 +74,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
@@ -177,20 +178,22 @@ public class ConfigGenerationBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ConfigClassBuildItem> configClasses) {
+            BuildProducer<ConfigClassBuildItem> configClasses,
+            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses);
+        processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+                additionalConstrainedClasses);
 
         List<ConfigClassWithPrefix> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
         for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
             processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedClasses, reflectiveClasses,
-                    reflectiveMethods, configClasses);
+                    reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
         List<ConfigClassWithPrefix> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
         for (ConfigClassWithPrefix runTimeMapping : runTimeMappings) {
             processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods,
-                    configClasses);
+                    configClasses, additionalConstrainedClasses);
         }
     }
 

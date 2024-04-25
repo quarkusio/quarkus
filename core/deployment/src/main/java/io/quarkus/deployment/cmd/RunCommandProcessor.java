@@ -13,6 +13,7 @@ import java.util.Map;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
@@ -32,7 +33,8 @@ public class RunCommandProcessor {
             OutputTargetBuildItem jar,
             List<UberJarRequiredBuildItem> uberJarRequired,
             List<LegacyJarRequiredBuildItem> legacyJarRequired,
-            BuildProducer<RunCommandActionBuildItem> cmds) {
+            BuildProducer<RunCommandActionBuildItem> cmds,
+            BuildSystemTargetBuildItem buildSystemTarget) {
 
         Path jarPath = null;
         if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
@@ -52,7 +54,7 @@ public class RunCommandProcessor {
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
 
-        for (Map.Entry<?, ?> e : System.getProperties().entrySet()) { //TODO: this is almost certainly wrong as it pulls in all the system properties Maven has set
+        for (Map.Entry<?, ?> e : buildSystemTarget.getBuildSystemProps().entrySet()) {
             args.add("-D" + e.getKey().toString() + "=" + e.getValue().toString());
         }
         args.add("-jar");

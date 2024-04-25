@@ -44,7 +44,7 @@
         <parsson.version>1.1.5</parsson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
-        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.1.7</jandex.version>
         <bytebuddy.version>1.14.11</bytebuddy.version>
         <junit5.version>5.10.2</junit5.version>

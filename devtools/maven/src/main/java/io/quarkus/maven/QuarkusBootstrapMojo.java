@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
@@ -26,6 +27,7 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -292,6 +294,11 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected CuratedApplication bootstrapApplication(LaunchMode mode) throws MojoExecutionException {
         return bootstrapProvider.bootstrapApplication(this, mode);
+    }
+
+    protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer)
+            throws MojoExecutionException {
+        return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer);
     }
 
     protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {

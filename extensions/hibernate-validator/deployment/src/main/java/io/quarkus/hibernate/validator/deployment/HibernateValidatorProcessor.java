@@ -566,32 +566,37 @@ class HibernateValidatorProcessor {
     // from Arc
     @BuildStep
     void overrideStandardValidationFactoryResolution(BuildProducer<BytecodeTransformerBuildItem> transformer) {
-        BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem(Validation.class.getName(),
-                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                    @Override
-                    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-                            String[] exceptions) {
-                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
+        BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform(Validation.class.getName())
+                .setCacheable(true)
+                .setVisitorFunction(
+                        (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                            @Override
+                            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                                    String[] exceptions) {
+                                MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
 
-                        if (name.equals("buildDefaultValidatorFactory")) {
-                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
-                                @Override
-                                public void visitCode() {
-                                    super.visitCode();
-                                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                                            ValidationSupport.class.getName().replace(".", "/"),
-                                            "buildDefaultValidatorFactory",
-                                            String.format("()L%s;", ValidatorFactory.class.getName().replace(".", "/")), false);
-                                    visitInsn(Opcodes.ARETURN);
+                                if (name.equals("buildDefaultValidatorFactory")) {
+                                    return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                        @Override
+                                        public void visitCode() {
+                                            super.visitCode();
+                                            visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                    ValidationSupport.class.getName().replace('.', '/'),
+                                                    "buildDefaultValidatorFactory",
+                                                    String.format("()L%s;", ValidatorFactory.class.getName().replace('.', '/')),
+                                                    false);
+                                            visitInsn(Opcodes.ARETURN);
+                                        }
+                                    };
                                 }
-                            };
-                        }
 
-                        // TODO: should intercept the other methods and throw an exception to indicate they are unsupported?
+                                // TODO: should intercept the other methods and throw an exception to indicate they are unsupported?
 
-                        return visitor;
-                    }
-                });
+                                return visitor;
+                            }
+                        })
+                .build();
         transformer.produce(transformation);
     }
 

@@ -96,6 +96,22 @@ updates:
       - dependency-name: org.wiremock:wiremock
       - dependency-name: org.wiremock:wiremock-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
+    ignore:
+      # Major/minor upgrades require more work and synchronization, we do them manually.
+      # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate.*:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    rebase-strategy: disabled
+  - package-ecosystem: maven
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "22:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+    labels:
+      - area/dependencies
+    allow:
       # Picocli
       - dependency-name: info.picocli:*
       # Caffeine
@@ -211,10 +227,6 @@ updates:
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      # Major/minor upgrades require more work and synchronization, we do them manually.
-      # Only use dependabot for micros (patch versions).
-      - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

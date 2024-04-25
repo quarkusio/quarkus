@@ -146,7 +146,7 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-smallrye-reactive-messaging-rabbitmq-deployment", smallryeReactiveMessagingRelocation);
 
         Function<String, Relocation>  webjarsLocatorRelocation = a -> Relocation.ofArtifactId(a, a.replace("webjars-locator", "web-dependency-locator"),
-                "3.10");
+                "3.11");
         RELOCATIONS.put("quarkus-webjars-locator", webjarsLocatorRelocation);
         RELOCATIONS.put("quarkus-webjars-locator-deployment", webjarsLocatorRelocation);
     }

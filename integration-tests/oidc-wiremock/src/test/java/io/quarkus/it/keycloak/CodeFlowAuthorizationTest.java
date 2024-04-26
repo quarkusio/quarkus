@@ -8,7 +8,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -277,9 +276,18 @@ public class CodeFlowAuthorizationTest {
             form.getInputByName("username").type("alice");
             form.getInputByName("password").type("alice");
 
+            Cookie stateCookie = getStateCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            Date stateCookieDate = stateCookie.getExpires();
+            final long nowInSecs = System.currentTimeMillis() / 1000;
+            final long sessionCookieLifespan = stateCookieDate.toInstant().getEpochSecond() - nowInSecs;
+            // 5 mins is default
+            assertTrue(sessionCookieLifespan >= 299 && sessionCookieLifespan <= 304);
+
             TextPage textPage = form.getInputByValue("login").click();
 
             assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false", textPage.getContent());
+
+            assertNull(getStateCookie(webClient, "code-flow-user-info-github-cached-in-idtoken"));
 
             JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
@@ -526,5 +534,11 @@ public class CodeFlowAuthorizationTest {
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
+    private Cookie getStateCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookies().stream()
+                .filter(c -> c.getName().startsWith("q_auth" + (tenantId == null ? "" : "_" + tenantId))).findFirst()
+                .orElse(null);
     }
 }

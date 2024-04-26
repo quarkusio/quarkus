@@ -1149,6 +1149,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Duration sessionAgeExtension = Duration.ofMinutes(5);
 
         /**
+         * State cookie age in minutes.
+         * State cookie is created every time a new authorization code flow redirect starts
+         * and removed when this flow is completed.
+         * State cookie name is unique by default, see {@link #allowMultipleCodeFlows}.
+         * Keep its age to the reasonable minimum value such as 5 minutes or less.
+         */
+        @ConfigItem(defaultValue = "5M")
+        public Duration stateCookieAge = Duration.ofMinutes(5);
+
+        /**
          * If this property is set to `true`, a normal 302 redirect response is returned
          * if the request was initiated by a JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be
          * (re)authenticated, which might not be desirable for Single-page applications (SPA) since
@@ -1440,6 +1450,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setScopeSeparator(String scopeSeparator) {
             this.scopeSeparator = Optional.of(scopeSeparator);
+        }
+
+        public Duration getStateCookieAge() {
+            return stateCookieAge;
+        }
+
+        public void setStateCookieAge(Duration stateCookieAge) {
+            this.stateCookieAge = stateCookieAge;
         }
     }
 

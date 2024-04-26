@@ -97,7 +97,7 @@ This URL will log the user out of all the applications into which the user is cu
 However, if the requirement is for the current application to log the user out of a specific application only, you can override the global end-session URL, by setting the `quarkus.oidc.end-session-path=logout` parameter.
 
 [[oidc-provider-client-authentication]]
-==== OIDC provider client authentication
+=== OIDC provider client authentication
 
 OIDC providers typically require applications to be identified and authenticated when they interact with the OIDC endpoints.
 Quarkus OIDC, specifically the `quarkus.oidc.runtime.OidcProviderClient` class, authenticates to the OIDC provider when the authorization code must be exchanged for the ID, access, and refresh tokens, or when the ID and access tokens must be refreshed or introspected.
@@ -203,7 +203,7 @@ quarkus.oidc.credentials.jwt.key-id=mykeyAlias
 
 Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that a client secret does not get sent to the OIDC provider, therefore avoiding the risk of a secret being intercepted by a  'man-in-the-middle' attack.
 
-===== Additional JWT authentication options
+==== Additional JWT authentication options
 
 If `client_secret_jwt`, `private_key_jwt`, or an Apple `post_jwt` authentication methods are used, then you can customize the JWT signature algorithm, key identifier, audience, subject and issuer.
 For example:
@@ -234,7 +234,7 @@ quarkus.oidc.credentials.jwt.subject=custom-subject
 quarkus.oidc.credentials.jwt.issuer=custom-issuer
 ----
 
-===== Apple POST JWT
+==== Apple POST JWT
 
 The Apple OIDC provider uses a `client_secret_post` method whereby a secret is a JWT produced with a `private_key_jwt` authentication method, but with the Apple account-specific issuer and subject claims.
 
@@ -254,7 +254,7 @@ quarkus.oidc.credentials.jwt.subject=${apple.subject}
 quarkus.oidc.credentials.jwt.issuer=${apple.issuer}
 ----
 
-===== mutual TLS (mTLS)
+==== mutual TLS (mTLS)
 
 Some OIDC providers might require that a client is authenticated as part of the mutual TLS  authentication process.
 
@@ -279,7 +279,7 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 #quarkus.oidc.tls.trust-store-alias=certAlias
 ----
 
-===== POST query
+==== POST query
 
 Some providers, such as the xref:security-openid-connect-providers#strava[Strava OAuth2 provider], require client credentials be posted as HTTP POST query parameters:
 
@@ -305,7 +305,7 @@ quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
 [[oidc-request-filters]]
-==== OIDC request filters
+=== OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers and can also log requests.
 
@@ -369,7 +369,7 @@ public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 ----
 <1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
 
-==== Redirecting to and from the OIDC provider
+=== Redirecting to and from the OIDC provider
 
 When a user is redirected to the OIDC provider to authenticate, the redirect URL includes a `redirect_uri` query parameter, which indicates to the provider where the user has to be redirected to when the authentication is complete.
 In our case, this is the Quarkus application.
@@ -572,11 +572,11 @@ For information about the claim verification, including the `iss` (issuer) claim
 It applies to ID tokens and also to access tokens in a JWT format, if the `web-app` application has requested the access token verification.
 
 [[jose4j-validator]]
-=== Jose4j Validator
+==== Jose4j Validator
 
 You can register a custom [Jose4j Validator] to customize the JWT claim verification process. See xref:security-oidc-bearer-token-authentication.adoc#jose4j-validator[Jose4j] section for more information.
 
-==== Further security with Proof Key for Code Exchange (PKCE)
+=== Proof Key for Code Exchange (PKCE)
 
 link:https://datatracker.ietf.org/doc/html/rfc7636[Proof Key for Code Exchange] (PKCE) minimizes the risk of authorization code interception.
 
@@ -597,7 +597,6 @@ This secret will be auto-generated if it is not configured and if the fallback t
 The secret key is required to encrypt a randomly generated PKCE `code_verifier` while the user is redirected with the `code_challenge` query parameter to an OIDC provider to authenticate.
 The `code_verifier` is decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret, and other parameters to complete the code exchange.
 The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` that was provided during the authentication request.
-
 
 === Handling and controlling the lifetime of authentication
 
@@ -632,6 +631,17 @@ For example, if you have Quarkus services deployed on the following two domains,
 * \https://whatever.wherever.company.net/
 * \https://another.address.company.net/
 
+[[state-cookies]]
+==== State cookies
+
+State cookies are used to support authorization code flow completion.
+When an authorization code flow is started, Quarkus creates a state cookie and a matching `state` query parameter, before redirecting the user to the OIDC provider.
+When the user is redirected back to Quarkus to complete the authorization code flow, Quarkus expects that the request URI must contain the `state` query parameter and it must match the current state cookie value.
+
+The default state cookie age is 5 mins and you can change it with a `quarkus.oidc.authenticaion.state-cookie-age` Duration property.
+
+Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication. Many concurrent authentication requests on behalf of the same user may cause a lot of state cookies be created.
+If you do not want to allow your users use multiple browser tabs to authenticate then it is recommended to disable it with `quarkus.oidc.authenticaion.allow-multiple-code-flows=false`. It also ensures that the same state cookie name is created for every new user authentication.
 
 [[token-state-manager]]
 ==== Session cookie and default TokenStateManager
@@ -862,7 +872,7 @@ public class OidcDbTokenStateManagerEntity {
 For more information, refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide.
 <2> You can choose a column length depending on the length of your tokens.
 
-==== Logout and expiration
+=== Logout and expiration
 
 There are two main ways for the authentication information to expire: the tokens expired and were not renewed or an explicit logout operation was triggered.
 
@@ -870,7 +880,7 @@ Let's start with explicit logout operations.
 
 
 [[user-initiated-logout]]
-===== User-initiated logout
+==== User-initiated logout
 
 Users can request a logout by sending a request to the Quarkus endpoint logout path set with a `quarkus.oidc.logout.path` property.
 For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.path` is set to "/logout", then the logout request must be sent to `https://application.com/webapp/logout`.
@@ -946,7 +956,7 @@ quarkus.oidc.logout.extra-params.client_id=${quarkus.oidc.client-id}
 ====
 
 [[back-channel-logout]]
-===== Back-channel logout
+==== Back-channel logout
 
 The OIDC provider can force the logout of all applications by using the authentication data.
 This is known as back-channel logout.
@@ -973,7 +983,7 @@ You will also need to configure a token age property for the logout token verifi
 For example, set `quarkus.oidc.token.age=10S` to ensure that no more than 10 seconds elapse since the logout token's `iat` (issued at) time.
 
 [[front-channel-logout]]
-===== Front-channel logout
+==== Front-channel logout
 
 You can use link:https://openid.net/specs/openid-connect-frontchannel-1_0.html[Front-channel logout] to log out the current user directly from the user agent, for example, its browser.
 It is similar to <<back-channel-logout,Back-channel logout>> but the logout steps are executed by the user agent, such as the browser, and not in the background by the OIDC provider.
@@ -994,7 +1004,7 @@ quarkus.oidc.logout.frontchannel.path=/front-channel-logout
 This path will be compared to the current request's path, and the user will be logged out if these paths match.
 
 [[local-logout]]
-===== Local logout
+==== Local logout
 
 <<user-initiated-logout,User-initiated logout>> will log the user out of the OIDC provider.
 If it is used as single sign-on, it might not be what you require.
@@ -1027,7 +1037,7 @@ public class ServiceResource {
 ----
 
 [[oidc-session]]
-====== Using `OidcSession` for local logout
+==== Using `OidcSession` for local logout
 
 `io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`, which can help to perform a <<local-logout,Local logout>>, retrieve the current session's tenant identifier, and check when the session will expire.
 More useful methods will be added to it over time.

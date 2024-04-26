@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_ADD_BUILD_ITEM_TO_METADATA;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_GROUP;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_MAPPING;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
@@ -54,6 +55,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -82,11 +84,13 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final Pattern REMOVE_LEADING_SPACE = Pattern.compile("^ ", Pattern.MULTILINE);
     private static final String QUARKUS_GENERATED = "io.quarkus.Generated";
+    public static final String META_INF_NOTEWORTHY_BUILD_ITEMS_LIST = "META-INF/noteworthy-build-items.list";
 
     private final ConfigDocWriter configDocWriter = new ConfigDocWriter();
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
+    private final Set<String> noteworthyBuildItems = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final boolean generateDocs = !(Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly"));
 
     private final Map<String, Boolean> ANNOTATION_USAGE_TRACKER = new ConcurrentHashMap<>();
@@ -270,6 +274,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
         }
 
+        if (!noteworthyBuildItems.isEmpty()) {
+            try {
+                final FileObject noteworthies = filer.createResource(StandardLocation.CLASS_OUTPUT, Constants.EMPTY,
+                        META_INF_NOTEWORTHY_BUILD_ITEMS_LIST);
+                Writer writer = noteworthies.openWriter();
+                for (String o : noteworthyBuildItems) {
+                    writer.append(o);
+                    writer.append("\n");
+                }
+                writer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         try {
             if (generateDocs) {
                 final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
@@ -357,6 +376,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     .toString();
             if (processorClassNames.add(binaryName)) {
                 validateRecordBuildSteps(clazz);
+                recordNoteworthyBuildItems(clazz);
                 recordConfigJavadoc(clazz);
                 generateAccessor(clazz);
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
@@ -431,6 +451,64 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                                 "with '@Recorder'.");
             }
         }
+    }
+
+    private void recordNoteworthyBuildItems(TypeElement clazz) {
+        for (Element e : clazz.getEnclosedElements()) {
+            if (e.getKind() != ElementKind.METHOD) {
+                continue;
+            }
+            ExecutableElement ex = (ExecutableElement) e;
+            if (!isAnnotationPresent(ex, Constants.ANNOTATION_BUILD_STEP)) {
+                continue;
+            }
+
+            if (!(e instanceof ExecutableElement)) {
+                continue;
+            }
+
+            ExecutableElement exel = (ExecutableElement) e;
+
+            TypeMirror returned = exel.getReturnType();
+            if (returned.getKind() != TypeKind.VOID) {
+                Types typeUtils = processingEnv.getTypeUtils();
+
+                List<? extends AnnotationMirror> allAnnotations = typeUtils.asElement(returned)
+                        .getAnnotationMirrors();
+                Optional<? extends AnnotationMirror> oam = allAnnotations.stream()
+                        .filter(this::isAddMetadataAnnotation)
+                        .findAny();
+                if (oam.isPresent()) {
+                    AnnotationMirror am = oam.get();
+
+                    Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = am.getElementValues();
+                    Optional<? extends Map.Entry<? extends ExecutableElement, ? extends AnnotationValue>> valueEntry = elementValues
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> entry.getKey()
+                                    .getSimpleName()
+                                    .toString()
+                                    .equals("value"))
+                            .findAny();
+                    if (valueEntry.isPresent()) {
+                        String value = valueEntry.get()
+                                .getValue()
+                                .getValue()// First getValue gets  from the entry, the second gets from the annotation
+                                .toString();
+                        noteworthyBuildItems.add(value);
+                    }
+
+                }
+            }
+        }
+    }
+
+    private boolean isAddMetadataAnnotation(AnnotationMirror meth) {
+        Types typeUtils = processingEnv.getTypeUtils();
+        TypeElement element = (TypeElement) typeUtils.asElement(meth.getAnnotationType());
+        String name = element.getQualifiedName()
+                .toString();
+        return ANNOTATION_ADD_BUILD_ITEM_TO_METADATA.equals(name);
     }
 
     private Name getPackageName(TypeElement clazz) {

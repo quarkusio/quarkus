@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.quarkus.builder.item.AddToMetadata;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -17,6 +18,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * {@link RunningDevService} helps to manage the lifecycle of the running dev service.
  */
+@AddToMetadata("dev-service")
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     private final String name;

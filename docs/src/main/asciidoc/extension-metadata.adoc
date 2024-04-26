@@ -181,3 +181,8 @@ Same as `quarkus-config-roots.list`, this file may appear in a runtime extension
 == META-INF/quarkus-build-steps.list
 
 This file may appear in a deployment extension artifact. It contains a list of classes that implement Quarkus build steps (methods annotated with `io.quarkus.deployment.annotations.BuildStep`). This file is generated as part of the extension project build process and must not be edited manually.
+
+[[quarkus-build-steps]]
+== META-INF/noteworthy-build-items.list
+
+This file may appear in a deployment extension artifact. It contains a list of build items produced by this extension that represent noteworthy function which should be noted in the extension metadata.

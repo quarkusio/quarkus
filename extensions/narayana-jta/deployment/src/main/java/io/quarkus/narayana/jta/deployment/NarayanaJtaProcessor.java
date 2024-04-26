@@ -15,7 +15,11 @@ import jakarta.interceptor.Interceptor;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionScoped;
 
+import com.arjuna.ats.arjuna.common.CoordinatorEnvironmentBean;
+import com.arjuna.ats.arjuna.common.CoreEnvironmentBean;
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
+import com.arjuna.ats.arjuna.common.RecoveryEnvironmentBean;
+import com.arjuna.ats.arjuna.coordinator.AbstractRecord;
 import com.arjuna.ats.arjuna.recovery.TransactionStatusConnectionManager;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
@@ -32,10 +36,15 @@ import com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResour
 import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoverConnectableAtomicAction;
 import com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule;
 import com.arjuna.ats.internal.jta.resources.arjunacore.XAResourceRecord;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
+import com.arjuna.ats.jdbc.common.JDBCEnvironmentBean;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
+import com.arjuna.ats.jta.resources.LastResourceCommitOptimisation;
+import com.arjuna.ats.txoj.common.TxojEnvironmentBean;
+import com.arjuna.common.internal.util.propertyservice.BeanPopulator;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -108,16 +117,28 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionStatusConnectionManager.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionImple.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(BeanPopulator.class.getName()));
+
+        indexBuildItem.getIndex().getAllKnownSubclasses(AbstractRecord.class).stream()
+                .map(r -> new RuntimeInitializedClassBuildItem(r.name().toString()))
+                .forEach(runtimeInit::produce);
 
         indexBuildItem.getIndex().getAllKnownSubclasses(JDBCImple_driver.class).stream()
                 .map(impl -> ReflectiveClassBuildItem.builder(impl.name().toString()).build())
                 .forEach(reflectiveClass::produce);
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(JTAEnvironmentBean.class,
-                UserTransactionImple.class,
+                CoreEnvironmentBean.class,
+                CoordinatorEnvironmentBean.class,
+                JDBCEnvironmentBean.class,
+                ObjectStoreEnvironmentBean.class,
+                TxojEnvironmentBean.class,
+                RecoveryEnvironmentBean.class).fields().methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(UserTransactionImple.class,
                 CheckedActionFactoryImple.class,
+                LastResourceCommitOptimisation.class,
                 TransactionManagerImple.class,
                 TransactionSynchronizationRegistryImple.class,
-                ObjectStoreEnvironmentBean.class,
                 ShadowNoFileLockStore.class,
                 JDBCStore.class,
                 SocketProcessId.class,

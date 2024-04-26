@@ -1069,7 +1069,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
         String stateCookieNameSuffix = configContext.oidcConfig.authentication.allowMultipleCodeFlows ? "_" + uuid : "";
         createCookie(context, configContext.oidcConfig,
-                getStateCookieName(configContext.oidcConfig) + stateCookieNameSuffix, cookieValue, 60 * 30);
+                getStateCookieName(configContext.oidcConfig) + stateCookieNameSuffix, cookieValue,
+                configContext.oidcConfig.authentication.stateCookieAge.toSeconds());
         return uuid;
     }
 

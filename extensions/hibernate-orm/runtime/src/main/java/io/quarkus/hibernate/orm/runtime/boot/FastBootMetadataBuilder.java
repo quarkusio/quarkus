@@ -274,7 +274,7 @@ public class FastBootMetadataBuilder {
 
         // Quarkus specific
 
-        cfg.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
+        cfg.put("hibernate.boot.allow_jdbc_metadata_access", "false");
 
         //This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
         //in Hibernate ORM before the JPA spec would require to change this.

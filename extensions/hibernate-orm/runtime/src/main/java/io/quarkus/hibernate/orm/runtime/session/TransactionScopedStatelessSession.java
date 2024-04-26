@@ -13,6 +13,7 @@ import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
@@ -28,6 +29,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 import io.quarkus.arc.Arc;
@@ -395,6 +397,30 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Filter enableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.enableFilter(filterName);
+        }
+    }
+
+    @Override
+    public Filter getEnabledFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEnabledFilter(filterName);
+        }
+    }
+
+    @Override
+    public void disableFilter(String filterName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.disableFilter(filterName);
+        }
+    }
+
+    @Override
     public String getTenantIdentifier() {
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getTenantIdentifier();
@@ -570,6 +596,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
 
     @Override
     public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createMutationQuery(insertSelect);
+        }
+    }
+
+    @Override
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createMutationQuery(insertSelect);

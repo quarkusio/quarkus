@@ -8,6 +8,7 @@ import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
+import org.hibernate.Filter;
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
 import org.hibernate.SessionFactory;
@@ -23,6 +24,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 
 /**
@@ -89,6 +91,26 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Override
     public <T> T get(Class<T> entityClass, Object id, LockMode lockMode) {
         return delegate.get().get(entityClass, id, lockMode);
+    }
+
+    @Override
+    public Filter enableFilter(String filterName) {
+        return delegate.get().enableFilter(filterName);
+    }
+
+    @Override
+    public Filter getEnabledFilter(String filterName) {
+        return delegate.get().getEnabledFilter(filterName);
+    }
+
+    @Override
+    public void disableFilter(String filterName) {
+        delegate.get().disableFilter(filterName);
+    }
+
+    @Override
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
+        return delegate.get().createMutationQuery(insertSelect);
     }
 
     @Override

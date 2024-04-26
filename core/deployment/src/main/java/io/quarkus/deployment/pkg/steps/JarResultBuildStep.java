@@ -1,6 +1,8 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.LEGACY_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.UBER_JAR;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -1474,6 +1476,7 @@ public class JarResultBuildStep {
                 "META-INF/DEPENDENCIES.txt",
                 "META-INF/beans.xml",
                 "META-INF/quarkus-config-roots.list",
+                "META-INF/noteworthy-build-items.list",
                 "META-INF/quarkus-javadoc.properties",
                 "META-INF/quarkus-extension.properties",
                 "META-INF/quarkus-extension.json",

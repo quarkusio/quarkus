@@ -238,7 +238,7 @@ public class DevServicesElasticsearchProcessor {
         // Disable disk-based shard allocation thresholds:
         // in a single-node setup they just don't make sense,
         // and lead to problems on large disks with little space left.
-        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.12/modules-cluster.html#disk-based-shard-allocation
+        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.13/modules-cluster.html#disk-based-shard-allocation
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("ES_JAVA_OPTS", config.javaOpts);
         return container;
@@ -260,6 +260,10 @@ public class DevServicesElasticsearchProcessor {
         // See https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-settings/
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
+        // OpenSearch 2.12 and later requires an admin password, or it won't start.
+        // Considering dev services are transient and not intended for production by nature,
+        // we'll just set some hardcoded password.
+        container.addEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "NotActua11y$trongPa$$word");
         return container;
     }
 

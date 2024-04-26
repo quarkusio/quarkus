@@ -1,15 +1,14 @@
-package io.quarkus.arc.test.java17.records;
+package io.quarkus.arc.test.records;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.inject.spi.DeploymentException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class DependentRecordTest {
     @RegisterExtension

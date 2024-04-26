@@ -33,7 +33,7 @@ public interface ArcContainer {
     /**
      *
      * @param scopeType
-     * @return the matching context objects, never null
+     * @return immutable list of the matching context objects, never null
      */
     List<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 

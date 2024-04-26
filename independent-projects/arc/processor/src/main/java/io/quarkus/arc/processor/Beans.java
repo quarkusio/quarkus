@@ -605,9 +605,9 @@ public final class Beans {
     }
 
     private static Integer getAlternativePriority(BeanInfo bean) {
-        Integer beanPriority = bean.getAlternativePriority();
+        Integer beanPriority = bean.getPriority();
         if (beanPriority == null && bean.getDeclaringBean() != null) {
-            beanPriority = bean.getDeclaringBean().getAlternativePriority();
+            beanPriority = bean.getDeclaringBean().getPriority();
         }
         return beanPriority;
     }
@@ -616,14 +616,14 @@ public final class Beans {
         // The highest priority wins
         Integer priority1, priority2;
 
-        priority2 = bean2.getAlternativePriority();
+        priority2 = bean2.getPriority();
         if (priority2 == null) {
-            priority2 = bean2.getDeclaringBean().getAlternativePriority();
+            priority2 = bean2.getDeclaringBean().getPriority();
         }
 
-        priority1 = bean1.getAlternativePriority();
+        priority1 = bean1.getPriority();
         if (priority1 == null) {
-            priority1 = bean1.getDeclaringBean().getAlternativePriority();
+            priority1 = bean1.getDeclaringBean().getPriority();
         }
 
         if (priority2 == null || priority1 == null) {

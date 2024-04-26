@@ -50,7 +50,7 @@
         <!-- Versions -->
         <assertj.version>3.25.3</assertj.version>
         <jackson-bom.version>2.17.0</jackson-bom.version>
-        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <junit.version>5.10.2</junit.version>
         <commons-compress.version>1.26.1</commons-compress.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>

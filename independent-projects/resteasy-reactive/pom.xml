@@ -44,7 +44,7 @@
         <parsson.version>1.1.5</parsson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
-        <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.1.7</jandex.version>
         <bytebuddy.version>1.14.11</bytebuddy.version>
         <junit5.version>5.10.2</junit5.version>
@@ -52,7 +52,7 @@
         <assertj.version>3.25.3</assertj.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
-        <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
+        <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 

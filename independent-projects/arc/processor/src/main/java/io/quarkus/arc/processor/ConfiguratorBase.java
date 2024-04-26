@@ -157,4 +157,13 @@ public abstract class ConfiguratorBase<THIS extends ConfiguratorBase<THIS>> {
         return self();
     }
 
+    public THIS param(String name, InvokerInfo value) {
+        params.put(name, Objects.requireNonNull(value));
+        return self();
+    }
+
+    public THIS param(String name, InvokerInfo[] value) {
+        params.put(name, Objects.requireNonNull(value));
+        return self();
+    }
 }

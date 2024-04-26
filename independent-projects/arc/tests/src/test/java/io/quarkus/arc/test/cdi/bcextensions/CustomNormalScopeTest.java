@@ -155,8 +155,7 @@ public class CustomNormalScopeTest {
         @Override
         public CommandContextController create(Instance<Object> lookup, Parameters params) {
             BeanContainer beanContainer = lookup.select(BeanContainer.class).get();
-            // TODO use `BeanContainer.getContexts()` since CDI 4.1
-            CommandContext ctx = (CommandContext) Arc.container().getContexts(CommandScoped.class).get(0);
+            CommandContext ctx = (CommandContext) beanContainer.getContexts(CommandScoped.class).iterator().next();
             return new CommandContextController(ctx, beanContainer);
         }
     }

@@ -31,6 +31,7 @@ import io.quarkus.arc.impl.ListProvider;
 import io.quarkus.arc.impl.ResourceProvider;
 import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -50,13 +51,12 @@ public enum BuiltinBean {
             BuiltinBean::validateInjectionPoint, DotNames.INJECTION_POINT),
     BEAN(BuiltinBean::generateBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && ip.hasDefaultedQualifier(),
-            DotNames.BEAN),
-
+            BuiltinBean::validateBean, DotNames.BEAN),
     INTERCEPTED_BEAN(BuiltinBean::generateInterceptedBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
                     && ip.getRequiredQualifiers().size() == 1
                     && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED),
-            DotNames.BEAN),
+            BuiltinBean::validateInterceptedBean, DotNames.BEAN),
     BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode, DotNames.BEAN_MANAGER, DotNames.BEAN_CONTAINER),
     EVENT(BuiltinBean::generateEventBytecode, DotNames.EVENT),
     RESOURCE(BuiltinBean::generateResourceBytecode, (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
@@ -209,6 +209,9 @@ public enum BuiltinBean {
             case BEAN:
                 beanHandle = ctx.constructor.getThis();
                 break;
+            case INVOKER:
+                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
@@ -261,6 +264,9 @@ public enum BuiltinBean {
             case BEAN:
                 bean = ctx.constructor.getThis();
                 break;
+            case INVOKER:
+                bean = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
@@ -297,9 +303,6 @@ public enum BuiltinBean {
 
     private static void generateBeanBytecode(GeneratorContext ctx) {
         // this.beanProvider1 = () -> new BeanMetadataProvider<>();
-        if (ctx.targetInfo.kind() != InjectionTargetInfo.TargetKind.BEAN) {
-            throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
-        }
         ResultHandle beanProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(BeanMetadataProvider.class, String.class),
                 ctx.constructor.load(ctx.targetInfo.asBean().getIdentifier()));
@@ -313,9 +316,6 @@ public enum BuiltinBean {
     }
 
     private static void generateInterceptedBeanBytecode(GeneratorContext ctx) {
-        if (!(ctx.targetInfo instanceof InterceptorInfo)) {
-            throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
-        }
         ResultHandle interceptedBeanMetadataProvider = ctx.constructor
                 .newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class));
 
@@ -409,6 +409,9 @@ public enum BuiltinBean {
             case BEAN:
                 beanHandle = ctx.constructor.getThis();
                 break;
+            case INVOKER:
+                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
@@ -425,6 +428,12 @@ public enum BuiltinBean {
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(), listProviderSupplier);
+    }
+
+    private static ResultHandle loadInvokerTargetBean(InvokerInfo invoker, BytecodeCreator bytecode) {
+        ResultHandle arc = bytecode.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+        return bytecode.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, arc,
+                bytecode.load(invoker.targetBean.getIdentifier()));
     }
 
     private static void validateInstance(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
@@ -485,6 +494,20 @@ public enum BuiltinBean {
             }
             errors.accept(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
                     + msg));
+        }
+    }
+
+    private static void validateBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN) {
+            errors.accept(new DefinitionException("Only beans can access bean metadata"));
+        }
+    }
+
+    private static void validateInterceptedBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN || !injectionTarget.asBean().isInterceptor()) {
+            errors.accept(new DefinitionException("Only interceptors can access intercepted bean metadata"));
         }
     }
 

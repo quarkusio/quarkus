@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 :topics: cdi,arc,injection,interceptor,observer
 :extensions: io.quarkus:quarkus-arc
 
-Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
+Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html[Jakarta Contexts and Dependency Injection 4.1, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
 See also <<supported_features_and_limitations,the list of supported features and limitations>>.
@@ -28,7 +28,7 @@ NOTE: Most of the existing CDI code should work just fine but there are some sma
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
 However, Quarkus is using a *simplified bean discovery*.
-There is only single bean archive with the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
+There is only single bean archive with the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"] and no visibility boundaries.
 
 The bean archive is synthesized from:
 
@@ -38,7 +38,7 @@ The bean archive is synthesized from:
 * dependencies referenced by `quarkus.index-dependency` in `application.properties`,
 * and Quarkus integration code.
 
-Bean classes that don't have a https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+Bean classes that don't have a https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
 This behavior is defined by CDI.
 But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
 In fact, the declaring bean classes are considered annotated with `@Dependent`.
@@ -219,6 +219,11 @@ The following features from CDI Full are also supported:
 ** In addition to the `BeanContainer` methods, the following methods are supported: `getInjectableReference()`, `resolveDecorators()`
 * `@SessionScoped`
 ** Only with the Undertow extension; see xref:cdi.adoc#bean-scope-available[here] for details
+
+The _method invokers_ implementation supports asynchronous methods.
+The following methods are considered asynchronous and `@Dependent` instances are only destroyed when the asynchronous action completes:
+
+* methods that declare a return type of `CompletionStage`, `Uni`, or `Multi`
 
 NOTE: These additional features are not covered by the CDI Lite TCK.
 

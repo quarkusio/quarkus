@@ -7,6 +7,8 @@ import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.enterprise.invoke.Invoker;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
@@ -176,6 +178,16 @@ final class SyntheticComponentsUtil {
                         ResultHandle elementHandle = annotationLiterals.create(constructor, annotationClass,
                                 annotationInstance);
                         constructor.writeArrayValue(valHandle, i, elementHandle);
+                    }
+                } else if (entry.getValue() instanceof InvokerInfo) {
+                    InvokerInfo invoker = (InvokerInfo) entry.getValue();
+                    valHandle = constructor.newInstance(MethodDescriptor.ofConstructor(invoker.getClassName()));
+                } else if (entry.getValue() instanceof InvokerInfo[]) {
+                    InvokerInfo[] array = (InvokerInfo[]) entry.getValue();
+                    valHandle = constructor.newArray(Invoker.class, array.length);
+                    for (int i = 0; i < array.length; i++) {
+                        constructor.writeArrayValue(valHandle, i,
+                                constructor.newInstance(MethodDescriptor.ofConstructor(array[i].getClassName())));
                     }
                 }
 

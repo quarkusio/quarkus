@@ -527,6 +527,10 @@ public class BeanInfo implements InjectionTargetInfo {
         return alternative;
     }
 
+    /**
+     * @deprecated use {@link #getPriority()}
+     */
+    @Deprecated(forRemoval = true)
     public Integer getAlternativePriority() {
         return alternative ? priority : null;
     }
@@ -1194,7 +1198,8 @@ public class BeanInfo implements InjectionTargetInfo {
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority, identifier, null);
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
+                    identifier, null);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

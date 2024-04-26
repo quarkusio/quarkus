@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 
@@ -79,13 +79,13 @@ public class InjectionPointInfo {
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
-            Predicate<Set<AnnotationInstance>> skipPredicate, InjectionPointModifier transformer) {
+            BiPredicate<Set<AnnotationInstance>, Integer> skipPredicate, InjectionPointModifier transformer) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         for (ListIterator<Type> iterator = method.parameterTypes().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
             int position = iterator.previousIndex();
             Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(beanDeployment, method, position);
-            if (skipPredicate != null && skipPredicate.test(paramAnnotations)) {
+            if (skipPredicate != null && skipPredicate.test(paramAnnotations, position)) {
                 // Skip parameter, e.g. @Disposes
                 continue;
             }

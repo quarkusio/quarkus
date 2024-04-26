@@ -37,23 +37,23 @@ public class BeanParamTest {
         assertThat(client.beanParamWithFields(new MyBeanParamWithFields()))
                 .isEqualTo("restPathDefault/restPathOverridden/pathParam"
                         + "/restHeaderDefault/restHeaderOverridden/headerParam"
-                        + "/restFormDefault/restFormOverridden/formParam"
+                        + "/restFormDefault/test/restFormOverridden/formParam"
                         + "/restCookieDefault/restCookieOverridden/cookieParam"
                         + "/restQueryDefault/restQueryOverridden/queryParam");
         assertThat(client.regularParameters(
                 "restPathDefault", "restPathOverridden", "pathParam",
                 "restHeaderDefault", "restHeaderOverridden", "headerParam",
                 "restCookieDefault", "restCookieOverridden", "cookieParam",
-                "restFormDefault", "restFormOverridden", "formParam",
+                "restFormDefault", SomeEnum.TEST, "restFormOverridden", "formParam",
                 "restQueryDefault", "restQueryOverridden", "queryParam"))
                 .isEqualTo("restPathDefault/restPathOverridden/pathParam"
                         + "/restHeaderDefault/restHeaderOverridden/headerParam"
-                        + "/restFormDefault/restFormOverridden/formParam"
+                        + "/restFormDefault/test/restFormOverridden/formParam"
                         + "/restCookieDefault/restCookieOverridden/cookieParam"
                         + "/restQueryDefault/restQueryOverridden/queryParam");
         assertThat(client.beanParamWithProperties(new MyBeanParamWithProperties())).isEqualTo("null/null/pathParam"
                 + "/null/null/headerParam"
-                + "/null/null/formParam"
+                + "/null/null/null/formParam"
                 + "/null/null/cookieParam"
                 + "/null/null/queryParam");
     }
@@ -78,6 +78,7 @@ public class BeanParamTest {
                 @CookieParam("cookieParam") String cookieParam,
 
                 @RestForm String restFormDefault,
+                @RestForm SomeEnum someEnum,
                 @RestForm("restForm_Overridden") String restFormOverridden,
                 @FormParam("formParam") String formParam,
 
@@ -114,6 +115,8 @@ public class BeanParamTest {
 
         @RestForm
         private String restFormDefault = "restFormDefault";
+        @RestForm
+        private SomeEnum someEnum = SomeEnum.TEST;
         @RestForm("restForm_Overridden")
         private String restFormOverridden = "restFormOverridden";
         @FormParam("formParam")
@@ -210,6 +213,7 @@ public class BeanParamTest {
                 @RestHeader("restHeader_Overridden") String restHeader_Overridden,
                 @RestHeader("headerParam") String headerParam,
                 @RestForm String restFormDefault,
+                @RestForm String someEnum,
                 @RestForm String restForm_Overridden,
                 @RestForm String formParam,
                 @RestCookie String restCookieDefault,
@@ -220,7 +224,7 @@ public class BeanParamTest {
                 @RestQuery String queryParam) {
             return restPathDefault + "/" + restPath_Overridden + "/" + pathParam
                     + "/" + restHeaderDefault + "/" + restHeader_Overridden + "/" + headerParam
-                    + "/" + restFormDefault + "/" + restForm_Overridden + "/" + formParam
+                    + "/" + restFormDefault + "/" + someEnum + "/" + restForm_Overridden + "/" + formParam
                     + "/" + restCookieDefault + "/" + restCookie_Overridden + "/" + cookieParam
                     + "/" + restQueryDefault + "/" + restQuery_Overridden + "/" + queryParam;
         }
@@ -234,6 +238,7 @@ public class BeanParamTest {
                 @RestHeader("restHeader_Overridden") String restHeader_Overridden,
                 @RestHeader("headerParam") String headerParam,
                 @RestForm String restFormDefault,
+                @RestForm String someEnum,
                 @RestForm String restForm_Overridden,
                 @RestForm String formParam,
                 @RestCookie String restCookieDefault,
@@ -244,9 +249,24 @@ public class BeanParamTest {
                 @RestQuery String queryParam) {
             return restPathDefault + "/" + restPath_Overridden + "/" + pathParam
                     + "/" + restHeaderDefault + "/" + restHeader_Overridden + "/" + headerParam
-                    + "/" + restFormDefault + "/" + restForm_Overridden + "/" + formParam
+                    + "/" + restFormDefault + "/" + someEnum + "/" + restForm_Overridden + "/" + formParam
                     + "/" + restCookieDefault + "/" + restCookie_Overridden + "/" + cookieParam
                     + "/" + restQueryDefault + "/" + restQuery_Overridden + "/" + queryParam;
+        }
+    }
+
+    public enum SomeEnum {
+        TEST("test");
+
+        private final String value;
+
+        SomeEnum(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
         }
     }
 }

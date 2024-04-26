@@ -9,7 +9,6 @@ import jakarta.ws.rs.Path;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.agroal.DataSource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -28,15 +27,14 @@ public class HibernateReactiveMySQLTestEndpoint {
     MySQLPool mysqlPool;
 
     @Inject
-    @DataSource("blocking")
-    AgroalDataSource blockingDS;
+    AgroalDataSource jdbcDataSource;
 
     @GET
-    @Path("/blockingFind")
-    public GuineaPig blockingFind() throws SQLException {
+    @Path("/jdbcFind")
+    public GuineaPig jdbcFind() throws SQLException {
         final GuineaPig expectedPig = new GuineaPig(6, "Iola");
-        populateDBBlocking();
-        return selectBlocking(6);
+        populateDBJdbc();
+        return selectJdbc(6);
     }
 
     @GET
@@ -102,8 +100,8 @@ public class HibernateReactiveMySQLTestEndpoint {
                 .flatMap(junk -> mysqlPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 
-    private void populateDBBlocking() throws SQLException {
-        Connection connection = blockingDS.getConnection();
+    private void populateDBJdbc() throws SQLException {
+        Connection connection = jdbcDataSource.getConnection();
         connection.prepareStatement("DELETE FROM Pig").execute();
         connection.prepareStatement("INSERT INTO Pig (id, name) VALUES (6, 'Iola')").execute();
         connection.close();
@@ -121,8 +119,8 @@ public class HibernateReactiveMySQLTestEndpoint {
         });
     }
 
-    private GuineaPig selectBlocking(Integer id) throws SQLException {
-        Connection connection = blockingDS.getConnection();
+    private GuineaPig selectJdbc(Integer id) throws SQLException {
+        Connection connection = jdbcDataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement("SELECT id, name FROM Pig WHERE id = ?");
         statement.setInt(1, id);
         ResultSet rowSet = statement.executeQuery();

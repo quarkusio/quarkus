@@ -285,6 +285,23 @@ When using Flyway together with Hibernate ORM, you can use the Dev UI to generat
 
 You can find more information about this feature in the xref:hibernate-orm.adoc#flyway[Hibernate ORM guide].
 
+[[reactive-datasources]]
+== Flyway and Reactive datasources
+
+Flyway internally relies on a JDBC datasource,
+whereas reactive use cases will rely on xref:reactive-sql-clients.adoc[reactive SQL clients],
+either directly or through xref:hibernate-reactive.adoc[Hibernate Reactive].
+This is not a problem in Quarkus,
+because xref:datasource.adoc#jdbc-and-reactive-datasources-simultaneously[a single configured datasource can be made available both through reactive clients and JDBC].
+
+To use Flyway on a datasource you otherwise access reactively,
+simply make sure to configure that datasource
+both as xref:datasource.adoc#jdbc-datasource[JDBC]
+and xref:datasource.adoc#reactive-datasource[reactive].
+This involves in particular adding dependencies to Quarkus extensions
+for both the JDBC driver and the reactive client,
+for instance `quarkus-jdbc-postgresql` *and* `quarkus-reactive-pg-client`.
+
 == Flyway on Kubernetes
 Sometimes, it's helpful not to execute Flyway initialization on each application startup. One such example is when deploying
 

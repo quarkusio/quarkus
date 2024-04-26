@@ -1365,9 +1365,13 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
-    public FilterBuildItem addDefaultAuthFailureHandler(ResteasyReactiveRecorder recorder) {
+    public FilterBuildItem addDefaultAuthFailureHandler(ResteasyReactiveRecorder recorder,
+            ResteasyReactiveDeploymentBuildItem deployment,
+            Optional<ObservabilityIntegrationBuildItem> observabilityIntegrationBuildItem) {
         // replace default auth failure handler added by vertx-http so that our exception mappers can customize response
-        return new FilterBuildItem(recorder.defaultAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1);
+        return new FilterBuildItem(
+                recorder.defaultAuthFailureHandler(deployment.getDeployment(), observabilityIntegrationBuildItem.isPresent()),
+                FilterBuildItem.AUTHENTICATION - 1);
     }
 
     private void checkForDuplicateEndpoint(ResteasyReactiveConfig config, Map<String, List<EndpointConfig>> allMethods) {

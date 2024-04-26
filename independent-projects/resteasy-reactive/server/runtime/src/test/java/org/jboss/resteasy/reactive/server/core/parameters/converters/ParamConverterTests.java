@@ -5,16 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import jakarta.inject.Inject;
 
-@QuarkusTest
 public class ParamConverterTests {
 	
 	private static final String V1_TESTENDPOINT_GREET = "/v1/testendpoint/greet";
 	private static final int OK_200 = 200;
 	private static final int TEST_NUMBER = 22;
+	
+	@Inject
+	ParamConverterTestEndpointRest endpoint;
 	
 	@Test
 	void useCustomParamConverter_SendParameter() {
@@ -27,7 +29,7 @@ public class ParamConverterTests {
         //@formatter:on
 		
 		assertThat(response.getStatusCode()).isEqualTo(OK_200);
-		assertThat(response.getBody().asString()).isEqualTo(String.format(TestEndpointRest.RESPONSE_FORMAT, TEST_NUMBER));
+		assertThat(response.getBody().asString()).isEqualTo(String.format(ParamConverterTestEndpointRest.RESPONSE_FORMAT, TEST_NUMBER));
 	}
 	
 	@Test
@@ -39,7 +41,7 @@ public class ParamConverterTests {
         //@formatter:on
 		
 		assertThat(response.getStatusCode()).isEqualTo(OK_200);
-		assertThat(response.getBody().asString()).isEqualTo(TestEndpointRest.RESPONSE_NO_PARAM);
+		assertThat(response.getBody().asString()).isEqualTo(ParamConverterTestEndpointRest.RESPONSE_NO_PARAM);
 	}
 	
 	@Test
@@ -53,7 +55,7 @@ public class ParamConverterTests {
         //@formatter:on
 		
 		assertThat(response.getStatusCode()).isEqualTo(OK_200);
-		assertThat(response.getBody().asString()).isEqualTo(TestEndpointRest.RESPONSE_EMPTY_PARAM);
+		assertThat(response.getBody().asString()).isEqualTo(ParamConverterTestEndpointRest.RESPONSE_EMPTY_PARAM);
 	}
 
 }

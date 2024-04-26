@@ -55,6 +55,7 @@
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
+        <microprofile.version>3.1.1</microprofile.version>
 
         <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
@@ -74,6 +75,8 @@
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.11.0</mockito.version>
         <mutiny-zero.version>1.1.0</mutiny-zero.version>
+        <restassured.version>5.4.0</restassured.version>
+        <apache.commons.logging.version>1.3.1</apache.commons.logging.version>
 
         <!-- Forbidden API checks -->
         <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>

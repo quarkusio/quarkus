@@ -144,7 +144,7 @@ public abstract class RestClientBase implements Closeable {
         } else {
             // FIXME: cheating, we should generate a converter for this enum
             if (value instanceof Enum) {
-                return ((Enum) value).name();
+                return value.toString();
             }
             return value;
         }

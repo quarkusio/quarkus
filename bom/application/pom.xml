@@ -15,7 +15,7 @@
 
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
-        <bouncycastle.version>1.77</bouncycastle.version>
+        <bouncycastle.version>1.78.1</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.4</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.18</bouncycastle.tls.fips.version>
         <expressly.version>5.0.0</expressly.version>
@@ -34,7 +34,7 @@
         <opentelemetry.version>1.32.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.32.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version> <!-- keep in sync with opentelemetry-java-instrumentation in the alpha bom-->
-        <quarkus-http.version>5.2.1.Final</quarkus-http.version>
+        <quarkus-http.version>5.2.2.Final</quarkus-http.version>
         <micrometer.version>1.12.4</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -116,7 +116,6 @@
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
         <jboss-logging-annotations.version>2.2.1.Final</jboss-logging-annotations.version>
-        <slf4j.version>2.0.6</slf4j.version>
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.7.0.Final</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
@@ -5054,11 +5053,6 @@
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm-util</artifactId>
                 <version>${asm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.slf4j</groupId>

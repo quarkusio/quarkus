@@ -9,7 +9,7 @@ import io.smallrye.config.WithDefault;
  * Quarkus Security configuration.
  */
 @ConfigMapping(prefix = "quarkus.security")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface SecurityConfig {
 
     /**

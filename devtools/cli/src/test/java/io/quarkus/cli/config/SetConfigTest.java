@@ -81,7 +81,6 @@ class SetConfigTest {
         assertTrue(result.getStdout().contains("Adding foo.bar"));
 
         SmallRyeConfig config = config();
-        assertEquals("aes-gcm-nopadding", config.getConfigValue("foo.bar").getExtendedExpressionHandler());
         assertEquals("1234", config.getConfigValue("foo.bar").getValue());
 
         String encryption = config.getRawValue("smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
@@ -93,13 +92,9 @@ class SetConfigTest {
 
         config = config();
 
-        assertEquals("aes-gcm-nopadding", config.getConfigValue("foo.bar").getExtendedExpressionHandler());
         assertEquals("1234", config.getConfigValue("foo.bar").getValue());
         assertTrue(config.isPropertyPresent("foo.baz"));
-
-        // TODO - radcortez - Requires update in SmallRye Config
-        //assertEquals("aes-gcm-nopadding", config.getConfigValue("foo.baz").getExtendedExpressionHandler());
-        //assertEquals("5678", config.getConfigValue("foo.baz").getValue());
+        assertEquals("5678", config.getConfigValue("foo.baz").getValue());
     }
 
     @Test
@@ -118,14 +113,12 @@ class SetConfigTest {
         assertEquals(0, result.getExitCode());
 
         SmallRyeConfig config = config();
-        assertEquals("aes-gcm-nopadding", config.getConfigValue("foo.bar").getExtendedExpressionHandler());
         assertEquals("1234", config.getConfigValue("foo.bar").getValue());
     }
 
     private SmallRyeConfig config() throws Exception {
-        final PropertiesConfigSource propertiesConfigSource = new PropertiesConfigSource(
+        PropertiesConfigSource propertiesConfigSource = new PropertiesConfigSource(
                 tempDir.resolve("src/main/resources/application.properties").toUri().toURL());
-        System.out.println(propertiesConfigSource.getProperties());
         return new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
                 .addDiscoveredSecretKeysHandlers()

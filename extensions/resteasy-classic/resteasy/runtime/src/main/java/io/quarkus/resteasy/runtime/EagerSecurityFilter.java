@@ -61,6 +61,7 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
         var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
         this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
         Event<Object> event = Arc.container().beanManager().getEvent();
+        // TODO - quarkus.security.events.enabled was marked as runtime, but providers are initialized during static init
         this.eventHelper = new SecurityEventHelper<>(event.select(AuthorizationSuccessEvent.class),
                 event.select(AuthorizationFailureEvent.class), AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE,
                 Arc.container().beanManager(),

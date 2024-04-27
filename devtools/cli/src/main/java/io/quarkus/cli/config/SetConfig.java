@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.Converters;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "set")
@@ -45,6 +46,12 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
             ConfigValue encryptionKey = findKey(lines, "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
             if (encryptionKey.getValue() != null) {
                 args.add("--key=" + encryptionKey.getValue());
+            }
+            ConfigValue encryptionDecode = findKey(lines,
+                    "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key-decode");
+            if (encryptionDecode.getValue() == null
+                    || !Converters.getImplicitConverter(Boolean.class).convert(encryptionDecode.getValue())) {
+                args.add("--format=plain");
             }
 
             int execute = new CommandLine(encrypt).execute(args.toArray(new String[] {}));

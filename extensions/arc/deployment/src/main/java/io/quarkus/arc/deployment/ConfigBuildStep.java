@@ -68,9 +68,11 @@ import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.inject.ConfigProducer;
@@ -287,9 +289,12 @@ public class ConfigBuildStep {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BuildProducer<ConfigClassBuildItem> configClasses) {
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ConfigClassBuildItem> configClasses,
+            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, MP_CONFIG_PROPERTIES_NAME);
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+                additionalConstrainedClasses, MP_CONFIG_PROPERTIES_NAME);
     }
 
     @BuildStep
@@ -489,6 +494,7 @@ public class ConfigBuildStep {
             List<ConfigMappingBuildItem> configMappings,
             List<ConfigPropertiesBuildItem> configProperties) throws Exception {
 
+        // TODO - Register ConfigProperties during build time
         context.registerNonDefaultConstructor(
                 ConfigClassWithPrefix.class.getDeclaredConstructor(Class.class, String.class),
                 configClassWithPrefix -> Stream.of(configClassWithPrefix.getKlass(), configClassWithPrefix.getPrefix())

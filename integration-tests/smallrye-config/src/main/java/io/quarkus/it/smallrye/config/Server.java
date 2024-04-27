@@ -8,10 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
-
 import org.eclipse.microprofile.config.spi.Converter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,12 +21,12 @@ import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "http.server")
+@RegisterForReflection
 public interface Server extends Alias {
     @JsonProperty
     String host();
 
     @JsonProperty
-    @Min(8000)
     int port();
 
     @JsonProperty
@@ -63,6 +59,7 @@ public interface Server extends Alias {
     @JsonProperty
     Info info();
 
+    @RegisterForReflection
     interface Form {
         @JsonProperty
         String loginPage();
@@ -81,15 +78,16 @@ public interface Server extends Alias {
         List<Integer> positions();
     }
 
+    @RegisterForReflection
     interface Proxy {
         @JsonProperty
         boolean enable();
 
         @JsonProperty
-        @Max(10)
         int timeout();
     }
 
+    @RegisterForReflection
     interface Log {
         @JsonProperty
         @WithDefault("false")
@@ -111,7 +109,6 @@ public interface Server extends Alias {
         Period period();
 
         @JsonProperty
-        @Max(15)
         int days();
 
         @RegisterForReflection
@@ -123,44 +120,44 @@ public interface Server extends Alias {
         }
     }
 
+    @RegisterForReflection
     interface Cors {
         @JsonProperty
         List<Origin> origins();
 
         @JsonProperty
-        List<@Size(min = 2) String> methods();
+        List<String> methods();
 
+        @RegisterForReflection
         interface Origin {
             @JsonProperty
-            @Size(min = 5)
             String host();
 
             @JsonProperty
-            @Min(8000)
             int port();
         }
     }
 
+    @RegisterForReflection
     interface Info {
         @JsonProperty
-        Optional<@Size(max = 3) String> name();
+        Optional<String> name();
 
         @JsonProperty
-        @Max(3)
         OptionalInt code();
 
         @JsonProperty
-        Optional<List<@Size(max = 3) String>> alias();
+        Optional<List<String>> alias();
 
         @JsonProperty
         Map<String, List<Admin>> admins();
 
         @JsonProperty
-        Map<String, List<@Size(min = 8, max = 15) String>> firewall();
+        Map<String, List<String>> firewall();
 
+        @RegisterForReflection
         interface Admin {
             @JsonProperty
-            @Size(max = 4)
             String username();
         }
     }

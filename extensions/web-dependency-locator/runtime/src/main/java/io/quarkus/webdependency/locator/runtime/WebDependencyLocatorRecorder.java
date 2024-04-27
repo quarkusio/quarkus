@@ -35,8 +35,7 @@ public class WebDependencyLocatorRecorder {
                                 + webDependencyNameToVersionMap.get(webdep) + rest.substring(rest.indexOf('/')));
                     }
                 } else {
-                    // this is not a web dependency that we know about
-                    event.fail(404);
+                    event.next();
                 }
             } else {
                 // should not happen if route is set up correctly

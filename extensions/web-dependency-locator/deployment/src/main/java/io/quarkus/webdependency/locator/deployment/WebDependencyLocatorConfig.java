@@ -23,4 +23,15 @@ public class WebDependencyLocatorConfig {
     @ConfigItem
     public Map<String, String> importMappings;
 
+    /**
+     * The directory in the resources which serves as root for the web assets
+     */
+    @ConfigItem(defaultValue = "web")
+    public String webRoot;
+
+    /**
+     * The directory in the resources which serves as root for the app assets
+     */
+    @ConfigItem(defaultValue = "app")
+    public String appRoot;
 }

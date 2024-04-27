@@ -38,7 +38,6 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
@@ -89,7 +88,6 @@ public class ResteasyStandaloneBuildStep {
     public void boot(ShutdownContextBuildItem shutdown,
             ResteasyStandaloneRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<DefaultRouteBuildItem> defaultRoutes,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             CoreVertxBuildItem vertx,

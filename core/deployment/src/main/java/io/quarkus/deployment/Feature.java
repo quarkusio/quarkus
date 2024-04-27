@@ -158,7 +158,7 @@ public enum Feature {
     VAULT,
     VERTX,
     VERTX_GRAPHQL,
-    WEBJARS_LOCATOR;
+    WEB_DEPENDENCY_LOCATOR;
 
     public String getName() {
         return toString().toLowerCase().replace('_', '-');

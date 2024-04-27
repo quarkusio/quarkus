@@ -481,7 +481,7 @@ s|Custom token verification ^|No ^|With injected JWT parser ^|No
 s|JWT as a cookie support ^|No ^|Yes ^|Yes
 |===
 
-
+[[combining-authentication-mechanisms]]
 == Combining authentication mechanisms
 
 If different sources provide the user credentials, you can combine authentication mechanisms.

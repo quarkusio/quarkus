@@ -9,7 +9,7 @@ import java.util.Objects;
  * Authorization header
  * POST
  *
- * Not that using multiple HTTP authentication mechanisms to use the same credential
+ * Note that using multiple HTTP authentication mechanisms to use the same credential
  * transport type can lead to unexpected authentication failures as they will not be able to figure out which mechanisms should
  * process which
  * request.
@@ -54,7 +54,12 @@ public class HttpCredentialTransport {
         /**
          * Authorization code, type target is the query 'code' parameter
          */
-        AUTHORIZATION_CODE
+        AUTHORIZATION_CODE,
+        /**
+         * Reserved for HTTP credential transport used during the security testing
+         * with the 'io.quarkus.test.security.TestSecurity' annotation.
+         */
+        TEST_SECURITY
     }
 
     @Override

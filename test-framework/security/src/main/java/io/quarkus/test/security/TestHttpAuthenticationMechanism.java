@@ -23,6 +23,8 @@ public class TestHttpAuthenticationMechanism implements HttpAuthenticationMechan
     @Inject
     TestIdentityAssociation testIdentityAssociation;
 
+    volatile String authMechanism = null;
+
     @PostConstruct
     public void check() {
         if (LaunchMode.current() != LaunchMode.TEST) {
@@ -47,7 +49,17 @@ public class TestHttpAuthenticationMechanism implements HttpAuthenticationMechan
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return null;
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return authMechanism == null ? Uni.createFrom().nullItem()
+                : Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.TEST_SECURITY, authMechanism));
+    }
+
+    @Override
+    public int getPriority() {
+        return 3000;
+    }
+
+    void setAuthMechanism(String authMechanism) {
+        this.authMechanism = authMechanism;
     }
 }

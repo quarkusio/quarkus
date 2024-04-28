@@ -14,10 +14,12 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -40,19 +42,24 @@ public class JakartaRestResourceHttpPermissionTest {
             "quarkus.http.auth.permission.root.paths=/\n" +
             "quarkus.http.auth.permission.root.policy=authenticated\n" +
             "quarkus.http.auth.permission.fragment.paths=/#stuff,/#stuff/\n" +
-            "quarkus.http.auth.permission.fragment.policy=authenticated\n";
+            "quarkus.http.auth.permission.fragment.policy=authenticated\n" +
+            "quarkus.http.auth.permission.jax-rs.paths=jax-rs\n" +
+            "quarkus.http.auth.permission.jax-rs.policy=admin-role\n" +
+            "quarkus.http.auth.policy.admin-role.roles-allowed=admin";
     private static WebClient client;
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class,
-                            RootResource.class, PublicResource.class)
+                            RootResource.class, PublicResource.class, JaxRsResource.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles().add("test", "test", "test");
+        TestIdentityController.resetRoles()
+                .add("admin", "admin", "admin")
+                .add("test", "test", "test");
     }
 
     @AfterAll
@@ -106,11 +113,32 @@ public class JakartaRestResourceHttpPermissionTest {
         assurePathAuthenticated(path);
     }
 
+    @Test
+    public void testJaxRsRolesHttpSecurityPolicy() {
+        // insufficient role, expected admin
+        assurePath("/jax-rs", 401);
+        assurePath("///jax-rs///", 401);
+
+        assurePath("/jax-rs", 200, "admin", true, "admin");
+    }
+
     private static String getLastNonEmptySegmentContent(String path) {
         while (path.endsWith("/") || path.endsWith(".")) {
             path = path.substring(0, path.length() - 1);
         }
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    @Path("jax-rs")
+    public static class JaxRsResource {
+
+        @Inject
+        SecurityIdentity identity;
+
+        @GET
+        public String getPrincipalName() {
+            return identity.getPrincipal().getName();
+        }
     }
 
     @Path("/api")
@@ -212,9 +240,13 @@ public class JakartaRestResourceHttpPermissionTest {
     }
 
     private void assurePath(String path, int expectedStatusCode, String body, boolean auth) {
+        assurePath(path, expectedStatusCode, body, auth, "test");
+    }
+
+    private void assurePath(String path, int expectedStatusCode, String body, boolean auth, String username) {
         var req = getClient().get(url.getPort(), url.getHost(), path);
         if (auth) {
-            req.basicAuthentication("test", "test");
+            req.basicAuthentication(username, username);
         }
         var result = req.send();
         await().atMost(REQUEST_TIMEOUT).until(result::isComplete);

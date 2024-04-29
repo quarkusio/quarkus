@@ -63,12 +63,19 @@ The `quarkus-extension.properties` will continue to be generated in `runtime`. W
 
 If so, those informations should move to `quarkus-extension.properties`.
 
+A secondary benefit of this proposal is reducing the size (slightly) of the extension's runtime artifacts.
+
 === Transition plan
 
 We will need to allow a long transition period, in which we
 
 * The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`
 * The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will looks in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
+* We still package up a (less complete) `quarkus-extension.yaml` into the runtime module, so that back-level tools (such as the CLI, and maybe IDEs) can find it
+
+In other words, the deployment module becomes the new 'best source', but
+(a) not every extension will have the information in the new place, so tools need to look in the old place
+(b) not every tool will know about the new place, so extensions need to also package the information in the old place
 
 == Consequences
 
@@ -76,20 +83,30 @@ What currently uses the `quarkus-extension.yaml` beyond the registry? Does this 
 
 == Scenarios
 
+=== Extension owners
 The ADR will affect extensions differently, depending how coupled they are to the core repo.
 
-=== Quarkus core extensions
+==== Quarkus core extensions
 
 We will need to patch each extension's `deployment` `pom.xml` to invoke the extension plugin, and move the `src/META-INF/quarkus-extension.yaml`. We can do this any time after (or with) the plugin changes.
 
-
-=== Quarkiverse extensions
+==== Quarkiverse extensions
 
 We can do an auto-update using @gastaldi's script to update the deployment pom to invoke the extension plugin, but this can only be applied to extensions which are building against a Quarkus release which has these changes in.
 
-=== Unmanaged extensions
+==== Unmanaged extensions
 
 We will need to broadcast information about the changes. We should assume that the transition will be slow for these extensions.
+
+=== Tooling
+
+==== Registry
+
+We will need to update the upload process.
+
+==== CLI
+
+We will need to update the parts of the CLI that do not use the registry to get extension metadata.
 
 == Decision
 

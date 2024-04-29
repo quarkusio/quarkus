@@ -246,12 +246,17 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         if (requestScopeActivated) {
             return;
         }
-        requestScopeActivated = true;
         if (isRequestScopeManagementRequired()) {
-            if (currentRequestScope == null) {
-                currentRequestScope = requestContext.activateInitial();
+            if (requestContext.isRequestContextActive()) {
+                // req. context is already active, just reuse existing one
+                currentRequestScope = requestContext.currentState();
             } else {
-                currentRequestScope.activate();
+                requestScopeActivated = true;
+                if (currentRequestScope == null) {
+                    currentRequestScope = requestContext.activateInitial();
+                } else {
+                    currentRequestScope.activate();
+                }
             }
         } else {
             currentRequestScope = requestContext.currentState();

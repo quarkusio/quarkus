@@ -1,0 +1,97 @@
+= Enhanced extension metadata generation
+
+* Status: proposed
+* Date: 2024-04-26
+
+== Context and Problem Statement
+
+How do we know which extensions provide a dev service? At the moment, we don't, except by folk knowledge and https://quarkus.io/guides/dev-services[manually maintained lists.]
+
+For further context on the need, see also
+
+* https://github.com/quarkusio/quarkus/pull/40306
+* https://github.com/quarkusio/quarkusio.github.io/issues/1869
+* https://github.com/quarkusio/extensions/issues/983
+
+When building an extension, we have an opportunity to introspect and surface a range of useful metadata, such as whether it provides a dev service.
+But there's a problem. The introspection needs to happen in the deployment module, because that's where most of the interesting extension code is.
+But the place we create the `quarkus-extension.yaml` is the runtime module. The deployment module depends on the runtime module, so it's a circular dependency.
+
+Because the dependency isn't a code-compilation one, it doesn't break the build, but it does mean the generated metadata is only accurate on the second build.
+
+image::images/0002-circular-dependency.svg[the circular dependency]
+Source: https://excalidraw.com/#json=cTOOltCdWxadxC8QYc93R,AzxQWd7ALVSsk_FbyIuqAg
+
+=== Related problems
+
+We have a similar circularity problem with config javadoc; the config is discovered in the deployment module, but the generated of the final-format data is done elsewhere. A solution here *might* help with that.
+
+Although it's not a serious problem, it would also be nice to allow people to use `CapabilityBuildItems` to register capabilities.
+At the moment, if authors do that, the information https://quarkus.io/guides/capabilities#capabilitybuilditem[will not be available to the dev tools], so we need to have lots of warnings in our documentation telling them not to.
+
+== Decision Drivers
+
+* Anything we do should minimise work for extension authors
+* Anything we do should minimise breaking changes, especially since many quarkiverse extensions will be using back-level versions of the Quarkus extension plugin
+* We should think carefully about the right information layout, so that we get the right information in the right long-term place, and only need to do this disruptive re-arrangement once
+
+== Considered options
+
+- *Manual creation of metadata*. This is tedious for users and error-prone; we could not assume any manually-managed metadata was complete. It's also annoyingly non-DRY; we'd be asking extension owners to write the same information down in two places (their code, and a metadata file). It does have the advantage that it's non-breaking.
+- *Running builds twice*. Because the circular dependency is a soft one, it works perfectly well to run a build to generate the deployment module's files, and then run a second build to pull those into the runtime module's metadata generation. Doing this would be a simple, non-breaking, change to release scripts. However, it is error-prone (if scripts are incorrectly run once-only, we just miss metadata), lengthens build times, breaks the Develocity by introducing hidden cross-module dependencies, and is generally Just Wrong.
+- *Doing nothing*. This is cheap, and non-breaking. But it means we miss an opportunity to take advantage of the fact that, at build time, we know a lot about what extensions can do and would like to make that information available to Quarkus users.
+- *Move (most) metadata generation to the deployment module* We can eliminate the circular dependency by not generating information which isn't particularly related to the runtime module in the runtime module. If the deployment module 'hosts' the `quarkus-extension.yaml`, it can harvest information from the extension's build steps and build items. This is architecturally clean, unlocks a range of capabilities in the future, and is highly disruptive in the present.
+
+== Proposal
+
+Moving metadata generation to the 'right' place is the architecturally correct thing to do.
+
+image::images/0002-resolution.svg[the proposed resolution]
+Source: https://excalidraw.com/#json=JMERR95gRufcmnUpWy6A_,Qd9efiR40LR3wv82CxyLKg
+
+So how do we minimise the impact?
+What needs to happen for it to work?
+
+* The registry reads `quarkus-extension.yaml` from the deployment model, not the runtime module
+* The build of extensions' deployment module invokes a maven plugin (the existing one, or a new one)
+* (optional) Extension source code refactoring: `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly.
+
+The `quarkus-extension.properties` will continue to be generated in `runtime`. We should do an inventory to double-check that nothing in the `quarkus-extension.yaml` needs
+
+* to be accessed by tools outside the registry which expect it to be in the runtime jar (IDEs?)
+* generated information which is only available to the extension plugin when it's running in the runtime module
+
+If so, those informations should move to `quarkus-extension.properties`.
+
+=== Transition plan
+
+We will need to allow a long transition period, in which we
+
+* The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`
+* The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will looks in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
+
+== Consequences
+
+What currently uses the `quarkus-extension.yaml` beyond the registry? Does this affect IDEs? Do users ever look into jars for the file?
+
+== Scenarios
+
+The ADR will affect extensions differently, depending how coupled they are to the core repo.
+
+=== Quarkus core extensions
+
+We will need to patch each extension's `deployment` `pom.xml` to invoke the extension plugin, and move the `src/META-INF/quarkus-extension.yaml`. We can do this any time after (or with) the plugin changes.
+
+
+=== Quarkiverse extensions
+
+We can do an auto-update using @gastaldi's script to update the deployment pom to invoke the extension plugin, but this can only be applied to extensions which are building against a Quarkus release which has these changes in.
+
+=== Unmanaged extensions
+
+We will need to broadcast information about the changes. We should assume that the transition will be slow for these extensions.
+
+== Decision
+
+
+

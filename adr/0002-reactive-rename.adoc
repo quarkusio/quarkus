@@ -1,8 +1,10 @@
 = Rename Reactive extensions
 
-* Status: proposed
+* Status: accepted
 * Date: 2023-10-17 by @geoand
-* Revised: 2024-01-12 by @gsmet, @cescoffier, @geoand, @maxandersen
+* Revised:
+    * 2024-01-12 by @gsmet, @cescoffier, @geoand, @maxandersen
+    * 2024-04-29 by @cescoffier - Update status to _accepted_.
 
 == Context and Problem Statement
 

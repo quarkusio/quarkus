@@ -73,6 +73,7 @@ import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
+import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -112,6 +113,14 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
+    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex(MongoClientBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.tracingEnabled) {
+            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
+        }
+        return new AdditionalIndexedClassesBuildItem();
+    }
+
+    @BuildStep
     public void registerDnsProvider(BuildProducer<NativeImageResourceBuildItem> nativeProducer) {
         nativeProducer.produce(new NativeImageResourceBuildItem("META-INF/services/" + DnsClientProvider.class.getName()));
     }
@@ -143,8 +152,7 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem,
-            MongoClientBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
+    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
         List<String> names = commandListenerClasses.stream()

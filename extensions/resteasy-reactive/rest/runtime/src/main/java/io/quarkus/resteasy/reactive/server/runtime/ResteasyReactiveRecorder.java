@@ -53,6 +53,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.reactive.common.runtime.ArcBeanFactory;
 import io.quarkus.resteasy.reactive.common.runtime.ArcThreadSetupAction;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityIntegrationRecorder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -341,11 +342,16 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ServerSerialisers();
     }
 
-    public Handler<RoutingContext> defaultAuthFailureHandler() {
+    public Handler<RoutingContext> defaultAuthFailureHandler(
+            RuntimeValue<Deployment> deployment, boolean setTemplatePath) {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
                 if (event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                    if (setTemplatePath) {
+                        ObservabilityIntegrationRecorder.setTemplatePath(event, deployment.getValue());
+                    }
+
                     // fail event rather than end it, so it's handled by abort handlers (see #addFailureHandler method)
                     event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new FailingDefaultAuthFailureHandler());
                 }

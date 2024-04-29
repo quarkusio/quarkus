@@ -148,6 +148,7 @@
                     </lesserPriorityArtifacts>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-classloader-commons</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-constraint</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-cpu</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-expression</parentFirstArtifact>
@@ -237,6 +238,7 @@
                         <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>io.quarkus:quarkus-classloader-commons</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
                         <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->
                         <runnerParentFirstArtifact>org.jboss.logging:jboss-logging</runnerParentFirstArtifact>

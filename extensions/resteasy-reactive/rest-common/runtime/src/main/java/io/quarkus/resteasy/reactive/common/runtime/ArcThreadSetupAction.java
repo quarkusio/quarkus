@@ -41,4 +41,9 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
     public ThreadState currentState() {
         return toThreadState(managedContext.getState());
     }
+
+    @Override
+    public boolean isRequestContextActive() {
+        return managedContext.isActive();
+    }
 }

@@ -111,8 +111,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
         String required = configDocKey.isOptional() || !defaultValue.isEmpty() ? ""
                 : "required icon:exclamation-circle[title=Configuration property is required]";
         String key = configDocKey.getKey();
-        String configKeyAnchor = configDocKey.isPassThroughMap() ? getAnchor(key + Constants.DASH + configDocKey.getDocMapKey())
-                : getAnchor(key);
+        String configKeyAnchor = getAnchor(key);
         String anchor = anchorPrefix + configKeyAnchor;
 
         StringBuilder keys = new StringBuilder();

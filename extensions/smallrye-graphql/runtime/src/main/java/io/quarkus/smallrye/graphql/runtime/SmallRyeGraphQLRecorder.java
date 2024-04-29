@@ -39,11 +39,10 @@ public class SmallRyeGraphQLRecorder {
 
     private void registerExtraScalars(List<ExtraScalar> extraScalars) {
         for (ExtraScalar extraScalar : extraScalars) {
-            switch (extraScalar) {
-                case UUID:
-                    GraphQLScalarTypes.addUuid();
-                    break;
-            }
+            GraphQLScalarTypes.registerCustomScalar(
+                    extraScalar.getGraphQLScalarType().getName(),
+                    extraScalar.getValueClass().getName(),
+                    extraScalar.getGraphQLScalarType());
         }
     }
 

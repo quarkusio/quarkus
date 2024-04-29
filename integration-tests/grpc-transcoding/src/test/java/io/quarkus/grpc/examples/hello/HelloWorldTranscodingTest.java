@@ -95,7 +95,7 @@ class HelloWorldTranscodingTest {
                 .contentType(ContentType.JSON)
                 .when().post("/v1/resources/resource-type-1/resource/1234")
                 .then()
-                .statusCode(405);
+                .statusCode(404);
     }
 
     @Test
@@ -115,7 +115,7 @@ class HelloWorldTranscodingTest {
                 .contentType(ContentType.TEXT)
                 .when().post("/v1/simple")
                 .then()
-                .statusCode(415);
+                .statusCode(404);
     }
 
     private String getJsonRequest(String name) {

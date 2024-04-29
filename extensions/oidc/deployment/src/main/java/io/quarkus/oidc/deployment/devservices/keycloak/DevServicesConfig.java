@@ -96,6 +96,7 @@ public class DevServicesConfig {
      * Each map entry represents a mapping between an alias and a class or file system resource path.
      */
     @ConfigItem
+    @ConfigDocMapKey("alias-name")
     public Map<String, String> resourceAliases;
     /**
      * Additional class or file system resources that are used to initialize Keycloak.
@@ -103,6 +104,7 @@ public class DevServicesConfig {
      * location.
      */
     @ConfigItem
+    @ConfigDocMapKey("resource-name")
     public Map<String, String> resourceMappings;
 
     /**
@@ -162,6 +164,7 @@ public class DevServicesConfig {
      * This map is used for role creation when no realm file is found at the `realm-path`.
      */
     @ConfigItem
+    @ConfigDocMapKey("role-name")
     public Map<String, List<String>> roles;
 
     /**

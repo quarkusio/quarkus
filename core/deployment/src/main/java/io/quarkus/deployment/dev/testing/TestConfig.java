@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -186,6 +187,7 @@ public class TestConfig {
      * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> env;
 
     /**
@@ -292,18 +294,21 @@ public class TestConfig {
          * Set additional ports to be exposed when @QuarkusIntegration needs to launch the application in a container.
          */
         @ConfigItem
+        @ConfigDocMapKey("host-port")
         Map<String, String> additionalExposedPorts;
 
         /**
          * A set of labels to add to the launched container
          */
         @ConfigItem
+        @ConfigDocMapKey("label-name")
         Map<String, String> labels;
 
         /**
          * A set of volume mounts to add to the launched container
          */
         @ConfigItem
+        @ConfigDocMapKey("host-path")
         Map<String, String> volumeMounts;
     }
 

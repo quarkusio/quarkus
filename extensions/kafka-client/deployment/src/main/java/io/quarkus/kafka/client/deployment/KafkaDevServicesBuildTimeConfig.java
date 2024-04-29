@@ -107,6 +107,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * The topic creation will not try to re-partition existing topics with different number of partitions.
      */
     @ConfigItem
+    @ConfigDocMapKey("topic-name")
     public Map<String, Integer> topicPartitions;
 
     /**

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -28,6 +29,7 @@ public class QuteConfig {
      * {@link java.net.URLConnection#getFileNameMap()} is used to determine the content type of a template file.
      */
     @ConfigItem
+    @ConfigDocMapKey("file-suffix")
     public Map<String, String> contentTypes;
 
     /**

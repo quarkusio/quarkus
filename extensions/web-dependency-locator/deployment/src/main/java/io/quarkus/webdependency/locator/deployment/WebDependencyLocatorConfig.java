@@ -2,6 +2,7 @@ package io.quarkus.webdependency.locator.deployment;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -21,6 +22,7 @@ public class WebDependencyLocatorConfig {
      * User defined import mappings
      */
     @ConfigItem
+    @ConfigDocMapKey("module-specifier")
     public Map<String, String> importMappings;
 
     /**

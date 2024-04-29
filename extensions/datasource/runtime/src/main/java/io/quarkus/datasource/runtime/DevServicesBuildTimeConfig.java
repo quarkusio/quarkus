@@ -43,11 +43,13 @@ public interface DevServicesBuildTimeConfig {
      * Properties defined here are database-specific
      * and are interpreted specifically in each database dev service implementation.
      */
+    @ConfigDocMapKey("property-key")
     Map<String, String> containerProperties();
 
     /**
      * Generic properties that are added to the database connection URL.
      */
+    @ConfigDocMapKey("property-key")
     Map<String, String> properties();
 
     /**
@@ -99,6 +101,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
+    @ConfigDocMapKey("host-path")
     Map<String, String> volumes();
 
     /**

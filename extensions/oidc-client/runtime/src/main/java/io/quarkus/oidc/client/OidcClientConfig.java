@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -184,6 +185,7 @@ public class OidcClientConfig extends OidcCommonConfig {
      * Grant options
      */
     @ConfigItem
+    @ConfigDocMapKey("grant-name")
     public Map<String, Map<String, String>> grantOptions;
 
     /**

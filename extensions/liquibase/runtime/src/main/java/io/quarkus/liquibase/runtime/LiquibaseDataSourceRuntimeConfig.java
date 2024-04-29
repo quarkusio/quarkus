@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -74,6 +75,7 @@ public final class LiquibaseDataSourceRuntimeConfig {
      * Map of parameters that can be used inside Liquibase changeLog files.
      */
     @ConfigItem
+    @ConfigDocMapKey("parameter-name")
     public Map<String, String> changeLogParameters = new HashMap<>();
 
     /**

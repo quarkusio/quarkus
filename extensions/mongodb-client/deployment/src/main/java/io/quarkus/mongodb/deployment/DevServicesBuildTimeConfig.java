@@ -38,6 +38,7 @@ public class DevServicesBuildTimeConfig {
      * Generic properties that are added to the connection URL.
      */
     @ConfigItem
+    @ConfigDocMapKey("property-key")
     public Map<String, String> properties;
 
     /**

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -71,6 +72,7 @@ public class ClassLoadingConfig {
      * Note that for technical reasons this is not supported when running with JBang.
      */
     @ConfigItem
+    @ConfigDocMapKey("group-id:artifact-id")
     public Map<String, Set<String>> removedResources;
 
 }

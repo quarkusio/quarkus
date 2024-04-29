@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+
 /**
  * The liquibase configuration
  */
@@ -48,6 +50,7 @@ public class LiquibaseConfig {
      */
     public List<String> labels = null;
 
+    @ConfigDocMapKey("parameter-name")
     public Map<String, String> changeLogParameters = null;
 
     /**

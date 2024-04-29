@@ -12,6 +12,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -134,6 +135,7 @@ public class RestClientsConfig {
      * The HTTP headers that should be applied to all requests of the rest client.
      */
     @ConfigItem
+    @ConfigDocMapKey("header-name")
     public Map<String, String> headers;
 
     /**

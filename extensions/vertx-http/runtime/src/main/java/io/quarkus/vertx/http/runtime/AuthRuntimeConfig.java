@@ -34,8 +34,8 @@ public class AuthRuntimeConfig {
      * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
      * both `user` and `UserRole` roles.
      */
-    @ConfigDocMapKey("role1")
     @ConfigItem
+    @ConfigDocMapKey("role-name")
     public Map<String, List<String>> rolesMapping;
 
     /**

@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -246,6 +247,7 @@ public interface PackageConfig {
              * quarkus.package.jar.manifest.attributes."Entry-key1"=Value1
              * quarkus.package.jar.manifest.attributes."Entry-key2"=Value2
              */
+            @ConfigDocMapKey("attribute-name")
             Map<String, String> attributes();
 
             /**
@@ -254,6 +256,7 @@ public interface PackageConfig {
              * quarkus.package.jar.manifest.sections."Section-Name"."Entry-Key1"=Value1
              * quarkus.package.jar.manifest.sections."Section-Name"."Entry-Key2"=Value2
              */
+            @ConfigDocMapKey("section-name")
             Map<String, Map<String, String>> sections();
         }
 

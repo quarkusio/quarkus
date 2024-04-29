@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
@@ -31,5 +32,6 @@ public interface SecurityConfig {
     /**
      * Security provider configuration
      */
+    @ConfigDocMapKey("provider-name")
     Map<String, String> securityProviderConfig();
 }

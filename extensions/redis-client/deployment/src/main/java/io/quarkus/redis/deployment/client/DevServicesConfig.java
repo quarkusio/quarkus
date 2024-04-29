@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -64,5 +65,6 @@ public interface DevServicesConfig {
     /**
      * Environment variables that are passed to the container.
      */
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> containerEnv();
 }

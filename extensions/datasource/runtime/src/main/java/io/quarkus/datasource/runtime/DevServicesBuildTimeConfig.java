@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
@@ -33,6 +34,7 @@ public interface DevServicesBuildTimeConfig {
     /**
      * Environment variables that are passed to the container.
      */
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> containerEnv();
 
     /**

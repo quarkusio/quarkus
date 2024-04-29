@@ -823,8 +823,8 @@ They represent build items with validation errors that make the build fail. Thes
 ----
 @BuildStep
 void checkCompatibility(Capabilities capabilities, BuildProducer<ValidationErrorBuildItem> validationErrors) {
-    if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)
-            && capabilities.isMissing(Capability.RESTEASY_CLASSIC)) {
+    if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)
+            && capabilities.isPresent(Capability.RESTEASY)) {
         validationErrors.produce(new ValidationErrorBuildItem(
                 new ConfigurationException("Cannot use both RESTEasy Classic and Reactive extensions at the same time")));
     }

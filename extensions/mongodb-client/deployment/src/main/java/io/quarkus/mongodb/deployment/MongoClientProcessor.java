@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
@@ -74,6 +73,7 @@ import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
+import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -85,8 +85,6 @@ public class MongoClientProcessor {
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
 
     private static final DotName MONGO_CLIENT_CUSTOMIZER = DotName.createSimple(MongoClientCustomizer.class.getName());
-
-    private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
 
@@ -112,6 +110,14 @@ public class MongoClientProcessor {
         return new AdditionalIndexedClassesBuildItem(
                 MongoDnsClientProvider.class.getName(),
                 MongoDnsClient.class.getName());
+    }
+
+    @BuildStep
+    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex(MongoClientBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.tracingEnabled) {
+            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
+        }
+        return new AdditionalIndexedClassesBuildItem();
     }
 
     @BuildStep
@@ -146,18 +152,13 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem,
-            MongoClientBuildTimeConfig buildTimeConfig, Capabilities capabilities) {
+    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem) {
         Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
-        Stream<String> names = commandListenerClasses.stream()
-                .map(ci -> ci.name().toString());
-        Stream<String> tracing = Stream.empty();
-        if (buildTimeConfig.tracingEnabled && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
-            tracing = Stream.of(MONGODB_TRACING_COMMANDLISTENER_CLASSNAME);
-        }
-        var items = Stream.concat(names, tracing).toList();
-        return new CommandListenerBuildItem(items);
+        List<String> names = commandListenerClasses.stream()
+                .map(ci -> ci.name().toString())
+                .collect(Collectors.toList());
+        return new CommandListenerBuildItem(names);
     }
 
     @BuildStep

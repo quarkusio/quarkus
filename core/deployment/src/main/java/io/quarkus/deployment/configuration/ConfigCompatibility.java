@@ -55,12 +55,18 @@ public final class ConfigCompatibility {
                     ConfigCompatibility::quarkusPackageIncludedOptionalDependencies),
             entry(List.of("quarkus", "package", "include-dependency-list"),
                     ConfigCompatibility::quarkusPackageIncludeDependencyList),
+            entry(List.of("quarkus", "package", "decompiler", "version"),
+                    ConfigCompatibility::quarkusPackageDecompilerVersion),
+            entry(List.of("quarkus", "package", "decompiler", "enabled"),
+                    ConfigCompatibility::quarkusPackageDecompilerEnabled),
+            entry(List.of("quarkus", "package", "decompiler", "jar-directory"),
+                    ConfigCompatibility::quarkusPackageDecompilerJarDirectory),
             entry(List.of("quarkus", "package", "vineflower", "version"),
-                    ConfigCompatibility::quarkusPackageVineflowerVersion),
+                    ConfigCompatibility::quarkusPackageDecompilerVersion),
             entry(List.of("quarkus", "package", "vineflower", "enabled"),
-                    ConfigCompatibility::quarkusPackageVineflowerEnabled),
+                    ConfigCompatibility::quarkusPackageDecompilerEnabled),
             entry(List.of("quarkus", "package", "vineflower", "jar-directory"),
-                    ConfigCompatibility::quarkusPackageVineflowerJarDirectory),
+                    ConfigCompatibility::quarkusPackageDecompilerJarDirectory),
             entry(List.of("quarkus", "package", "manifest", "attributes", "*"),
                     ConfigCompatibility::quarkusPackageManifestAttributes),
             entry(List.of("quarkus", "package", "manifest", "sections", "*", "*"),
@@ -102,9 +108,10 @@ public final class ConfigCompatibility {
                     ConfigCompatibility::quarkusPackageJarManifestSections),
             entry(List.of("quarkus", "package", "jar", "manifest", "add-implementation-entries"),
                     ConfigCompatibility::quarkusPackageJarManifestAddImplementationEntries),
-            entry(List.of("quarkus", "package", "decompiler", "enabled"), ConfigCompatibility::quarkusPackageDecompilerEnabled),
-            entry(List.of("quarkus", "package", "decompiler", "jar-directory"),
-                    ConfigCompatibility::quarkusPackageDecompilerJarDirectory));
+            entry(List.of("quarkus", "package", "jar", "decompiler", "enabled"),
+                    ConfigCompatibility::quarkusPackageJarDecompilerEnabled),
+            entry(List.of("quarkus", "package", "jar", "decompiler", "jar-directory"),
+                    ConfigCompatibility::quarkusPackageJarDecompilerJarDirectory));
 
     /**
      * The interceptor at the front of the chain which handles hiding deprecated properties from the iterator.
@@ -271,17 +278,17 @@ public final class ConfigCompatibility {
         return List.of("quarkus.package.jar.included-optional-dependencies");
     }
 
-    private static List<String> quarkusPackageVineflowerVersion(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageDecompilerVersion(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         // always hide this ignored property
         return List.of();
     }
 
-    private static List<String> quarkusPackageVineflowerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         // simple mapping to a new name
         return List.of("quarkus.package.decompiler.enabled");
     }
 
-    private static List<String> quarkusPackageVineflowerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         // simple mapping to a new name
         return List.of("quarkus.package.decompiler.jar-directory");
     }
@@ -500,26 +507,30 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
-        ConfigValue oldVal = ctxt.restart("quarkus.package.vineflower.enabled");
+    private static ConfigValue quarkusPackageJarDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+        ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.enabled");
         if (oldVal == null) {
-            // on to the default value
-            return ctxt.proceed(ni.getName());
-        } else {
-            // map old name to new name
-            return oldVal.withName(ni.getName());
+            oldVal = ctxt.restart("quarkus.package.vineflower.enabled");
+            if (oldVal == null) {
+                // on to the default value
+                return ctxt.proceed(ni.getName());
+            }
         }
+        // map old name to new name
+        return oldVal.withName(ni.getName());
     }
 
-    private static ConfigValue quarkusPackageDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
-        ConfigValue oldVal = ctxt.restart("quarkus.package.vineflower.jar-directory");
+    private static ConfigValue quarkusPackageJarDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+        ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.jar-directory");
         if (oldVal == null) {
-            // on to the default value
-            return ctxt.proceed(ni.getName());
-        } else {
-            // map old name to new name
-            return oldVal.withName(ni.getName());
+            oldVal = ctxt.restart("quarkus.package.vineflower.jar-directory");
+            if (oldVal == null) {
+                // on to the default value
+                return ctxt.proceed(ni.getName());
+            }
         }
+        // map old name to new name
+        return oldVal.withName(ni.getName());
     }
 
     // utilities

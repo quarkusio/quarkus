@@ -16,7 +16,7 @@
         <!-- do not update these dependencies, they are only used for testing -->
         <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
-        <mvnpm.bootstrap.version>4.5.2</mvnpm.bootstrap.version>
+        <mvnpm.bootstrap.version>5.3.3</mvnpm.bootstrap.version>
     </properties>
 
     <dependencies>

@@ -62,7 +62,7 @@ For Liquibase:
 
 [source,properties]
 ----
-quarkus.kubernets.init-tasks.liquibase.enabled=false
+quarkus.kubernetes.init-tasks.liquibase.enabled=false
 ----
 
 For Liquibase Mongodb:

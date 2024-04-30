@@ -88,6 +88,11 @@ public class CachingPathTree implements OpenPathTree {
     }
 
     @Override
+    public void acceptAll(String relativePath, Consumer<PathVisit> func) {
+        delegate.acceptAll(relativePath, func);
+    }
+
+    @Override
     public boolean contains(String relativePath) {
         final LinkedHashMap<String, PathVisitSnapshot> snapshot = walkSnapshot;
         if (snapshot != null) {

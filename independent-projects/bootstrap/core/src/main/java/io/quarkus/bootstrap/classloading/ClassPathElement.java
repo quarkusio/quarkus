@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.Manifest;
@@ -141,4 +142,8 @@ public interface ClassPathElement extends Closeable {
 
         }
     };
+
+    default List<ClassPathResource> getResources(String name) {
+        return List.of(getResource(name));
+    }
 }

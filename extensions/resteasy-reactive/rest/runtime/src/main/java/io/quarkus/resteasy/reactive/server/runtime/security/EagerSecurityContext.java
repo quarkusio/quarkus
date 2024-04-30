@@ -144,7 +144,7 @@ public class EagerSecurityContext {
                             newIdentity = checkWithIdentity.identity();
                         } else if (checkResult.getAugmentedIdentity() != checkWithIdentity.identity()) {
                             newIdentity = checkResult.getAugmentedIdentity();
-                            routingContext.setUser(new QuarkusHttpUser(newIdentity));
+                            QuarkusHttpUser.setIdentity(newIdentity, routingContext);
                             identityAssociation.get().setIdentity(newIdentity);
                         } else {
                             newIdentity = checkResult.getAugmentedIdentity();

@@ -142,7 +142,7 @@ public class QuarkusHttpUser implements User {
         return identityUni;
     }
 
-    static SecurityIdentity setIdentity(SecurityIdentity identity, RoutingContext routingContext) {
+    public static SecurityIdentity setIdentity(SecurityIdentity identity, RoutingContext routingContext) {
         routingContext.setUser(new QuarkusHttpUser(identity));
         routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(identity));
         return identity;

@@ -6,14 +6,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
 
@@ -65,6 +69,11 @@ public class AnnotationBasedTenantTest {
                             "/api/tenant-echo/http-security-policy-applies-all-diff,/api/tenant-echo/http-security-policy-applies-all-same"),
                     Map.entry("quarkus.http.auth.permission.tenant-annotation-applies-all.policy", "admin-role"),
                     Map.entry("quarkus.http.auth.policy.admin-role.roles-allowed", "admin"));
+        }
+
+        @Override
+        public String getConfigProfile() {
+            return "jax-rs-http-perms-test";
         }
     }
 
@@ -300,23 +309,42 @@ public class AnnotationBasedTenantTest {
         try {
             // pass JAX-RS permission check but missing permission
             String token = getTokenWithRole("role2");
+            AuthEventObserver.clearEvents();
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(403);
+            Assertions.assertEquals(1, AuthEventObserver.getAuthorizationFailureEvents().size());
 
             token = getTokenWithRole("role3");
+            AuthEventObserver.clearEvents();
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(200)
                     .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
                             + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+            // expect one JAX-RS HTTP Permission check and one Security check for the PermissionsAllowed annotation
+            Assertions.assertEquals(2, AuthEventObserver.getAuthorizationSuccessEvents().size());
+            AuthorizationSuccessEvent successEvent = AuthEventObserver
+                    .getAuthorizationSuccessEvents()
+                    .stream()
+                    .filter(ev -> AbstractPathMatchingHttpSecurityPolicy.class.getName()
+                            .equals(ev.getEventProperties().get(AuthorizationSuccessEvent.AUTHORIZATION_CONTEXT)))
+                    .findFirst()
+                    .orElseThrow();
 
             token = getTokenWithRole("role4");
+            AuthEventObserver.clearEvents();
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(200)
                     .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
                             + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
+            // quarkus.http.auth.roles-mapping mapped role4 to role3, check that role3 is already present inside authN event
+            Assertions.assertEquals(1, AuthEventObserver.getAuthenticationSuccessEvents().size());
+            SecurityIdentity identity = AuthEventObserver.getAuthenticationSuccessEvents().get(0)
+                    .getSecurityIdentity();
+            Assertions.assertNotNull(identity);
+            Assertions.assertTrue(identity.hasRole("role3"));
         } finally {
             server.stop();
         }

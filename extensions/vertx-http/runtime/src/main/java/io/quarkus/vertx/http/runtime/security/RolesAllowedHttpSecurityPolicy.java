@@ -37,7 +37,7 @@ public class RolesAllowedHttpSecurityPolicy extends RolesMapping implements Http
                                 return new CheckResult(true, augmented);
                             }
                         }
-                        return CheckResult.DENY;
+                        return new CheckResult(false, augmented);
                     }
                 }
                 for (String i : rolesAllowed) {

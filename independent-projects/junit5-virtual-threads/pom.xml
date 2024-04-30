@@ -41,7 +41,7 @@
         <compiler.plugin.version>3.12.1</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.2.5</surefire.plugin.version>
-        <jandex.version>3.1.8</jandex.version>
+        <jandex.version>3.2.0</jandex.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
 

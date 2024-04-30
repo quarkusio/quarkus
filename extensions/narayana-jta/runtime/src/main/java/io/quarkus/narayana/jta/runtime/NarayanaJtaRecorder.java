@@ -111,15 +111,25 @@ public class NarayanaJtaRecorder {
     }
 
     /**
-     * This should be removed in 3.11.
+     * This should be removed in the future.
      */
     @Deprecated(forRemoval = true)
     public void allowUnsafeMultipleLastResources(boolean agroalPresent) {
         arjPropertyManager.getCoreEnvironmentBean().setAllowMultipleLastResources(true);
+        arjPropertyManager.getCoreEnvironmentBean().setDisableMultipleLastResourcesWarning(true);
         if (agroalPresent) {
             jtaPropertyManager.getJTAEnvironmentBean()
                     .setLastResourceOptimisationInterfaceClassName("io.agroal.narayana.LocalXAResource");
         }
+    }
+
+    /**
+     * This should be removed in the future.
+     */
+    @Deprecated(forRemoval = true)
+    public void logAllowUnsafeMultipleLastResources() {
+        log.warn(
+                "Setting quarkus.transaction-manager.allow-unsafe-multiple-last-resources to true makes adding multiple resources to the same transaction unsafe.");
     }
 
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {

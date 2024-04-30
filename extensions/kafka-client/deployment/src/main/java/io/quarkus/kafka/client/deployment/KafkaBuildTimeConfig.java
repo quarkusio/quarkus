@@ -24,6 +24,14 @@ public class KafkaBuildTimeConfig {
     public boolean snappyEnabled;
 
     /**
+     * Whether to load the Snappy native library from the shared classloader.
+     * This setting is only used in tests if the tests are using different profiles, which would lead to
+     * unsatisfied link errors when loading Snappy.
+     */
+    @ConfigItem(name = "snappy.load-from-shared-classloader", defaultValue = "false")
+    public boolean snappyLoadFromSharedClassLoader;
+
+    /**
      * Configuration for DevServices. DevServices allows Quarkus to automatically start Kafka in dev and test mode.
      */
     @ConfigItem

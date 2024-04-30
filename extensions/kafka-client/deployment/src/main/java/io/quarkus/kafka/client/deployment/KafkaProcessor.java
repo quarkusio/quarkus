@@ -72,6 +72,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
@@ -304,8 +305,12 @@ public class KafkaProcessor {
 
     @BuildStep(onlyIf = HasSnappy.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadSnappyIfEnabled(SnappyRecorder recorder, KafkaBuildTimeConfig config) {
-        recorder.loadSnappy();
+    void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
+        boolean loadFromSharedClassLoader = false;
+        if (launch.isTest()) {
+            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader;
+        }
+        recorder.loadSnappy(loadFromSharedClassLoader);
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)

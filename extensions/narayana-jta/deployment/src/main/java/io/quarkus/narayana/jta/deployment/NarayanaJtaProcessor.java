@@ -1,6 +1,7 @@
 package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,8 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -64,6 +67,7 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
+import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
 import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
@@ -150,6 +154,16 @@ class NarayanaJtaProcessor {
         recorder.setNodeName(transactions);
         recorder.setDefaultTimeout(transactions);
         recorder.setConfig(transactions);
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void allowUnsafeMultipleLastResources(NarayanaJtaRecorder recorder,
+            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
+            Capabilities capabilities) {
+        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
+            recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL));
+        }
     }
 
     @BuildStep

@@ -110,6 +110,18 @@ public class NarayanaJtaRecorder {
                 .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters);
     }
 
+    /**
+     * This should be removed in 3.11.
+     */
+    @Deprecated(forRemoval = true)
+    public void allowUnsafeMultipleLastResources(boolean agroalPresent) {
+        arjPropertyManager.getCoreEnvironmentBean().setAllowMultipleLastResources(true);
+        if (agroalPresent) {
+            jtaPropertyManager.getJTAEnvironmentBean()
+                    .setLastResourceOptimisationInterfaceClassName("io.agroal.narayana.LocalXAResource");
+        }
+    }
+
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {
         BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name).setObjectStoreDir(config.objectStore.directory);
     }

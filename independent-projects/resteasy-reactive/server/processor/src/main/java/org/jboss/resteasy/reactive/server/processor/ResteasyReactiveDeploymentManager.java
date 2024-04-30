@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 
 import jakarta.ws.rs.core.Application;
 
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -107,7 +108,7 @@ public class ResteasyReactiveDeploymentManager {
         private String applicationPath;
         private final List<MethodScanner> methodScanners = new ArrayList<>();
         private final List<FeatureScanner> featureScanners = new ArrayList<>();
-        private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
+        private final List<AnnotationTransformation> annotationsTransformers = new ArrayList<>();
 
         public ScanStep(IndexView nonCalculatingIndex) {
             index = JandexUtil.createCalculatingIndex(nonCalculatingIndex);
@@ -175,8 +176,17 @@ public class ResteasyReactiveDeploymentManager {
             return this;
         }
 
+        /**
+         * @deprecated use {@link #addAnnotationTransformation(AnnotationTransformation)}
+         */
+        @Deprecated(forRemoval = true)
         public ScanStep addAnnotationsTransformer(AnnotationsTransformer annotationsTransformer) {
             this.annotationsTransformers.add(annotationsTransformer);
+            return this;
+        }
+
+        public ScanStep addAnnotationTransformation(AnnotationTransformation annotationTransformation) {
+            this.annotationsTransformers.add(annotationTransformation);
             return this;
         }
 
@@ -210,7 +220,7 @@ public class ResteasyReactiveDeploymentManager {
                     .setIndex(index)
                     .setApplicationIndex(index)
                     .addContextTypes(contextTypes)
-                    .setAnnotationsTransformers(annotationsTransformers)
+                    .setAnnotationTransformations(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())
                     .addParameterContainerTypes(parameterContainers)
                     .setClassLevelExceptionMappers(new HashMap<>())

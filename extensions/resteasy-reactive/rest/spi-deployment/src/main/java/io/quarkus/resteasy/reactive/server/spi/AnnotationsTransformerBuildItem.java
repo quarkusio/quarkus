@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.spi;
 
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 
@@ -20,13 +21,32 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class AnnotationsTransformerBuildItem extends MultiBuildItem {
 
-    private final AnnotationsTransformer transformer;
+    private final AnnotationTransformation transformer;
 
+    /**
+     * @deprecated use {@link #AnnotationsTransformerBuildItem(AnnotationTransformation)}
+     */
+    @Deprecated(forRemoval = true)
     public AnnotationsTransformerBuildItem(AnnotationsTransformer transformer) {
         this.transformer = transformer;
     }
 
+    public AnnotationsTransformerBuildItem(AnnotationTransformation transformation) {
+        this.transformer = transformation;
+    }
+
+    /**
+     * @deprecated use {@link #getAnnotationTransformation()}
+     */
+    @Deprecated(forRemoval = true)
     public AnnotationsTransformer getAnnotationsTransformer() {
+        if (transformer instanceof AnnotationsTransformer) {
+            return (AnnotationsTransformer) transformer;
+        }
+        throw new UnsupportedOperationException("AnnotationTransformation is not an AnnotationsTransformer: " + transformer);
+    }
+
+    public AnnotationTransformation getAnnotationTransformation() {
         return transformer;
     }
 

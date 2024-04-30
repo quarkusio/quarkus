@@ -418,8 +418,8 @@ class RestClientReactiveProcessor {
         Set<AnnotationInstance> registerRestClientAnnos = determineRegisterRestClientInstances(clientsBuildConfig, index);
 
         Map<String, String> configKeys = new HashMap<>();
-        var annotationsStore = new AnnotationStore(restClientAnnotationsTransformerBuildItem.stream()
-                .map(RestClientAnnotationsTransformerBuildItem::getAnnotationsTransformer).collect(toList()));
+        var annotationsStore = new AnnotationStore(index, restClientAnnotationsTransformerBuildItem.stream()
+                .map(RestClientAnnotationsTransformerBuildItem::getAnnotationTransformation).toList());
         for (AnnotationInstance registerRestClient : registerRestClientAnnos) {
             ClassInfo jaxrsInterface = registerRestClient.target().asClass();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected

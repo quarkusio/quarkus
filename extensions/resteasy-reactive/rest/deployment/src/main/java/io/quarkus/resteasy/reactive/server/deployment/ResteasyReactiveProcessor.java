@@ -57,6 +57,7 @@ import jakarta.ws.rs.ext.WriterInterceptor;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -647,11 +648,12 @@ public class ResteasyReactiveProcessor {
             }
 
             if (!annotationTransformerBuildItems.isEmpty()) {
-                List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>(annotationTransformerBuildItems.size());
+                List<AnnotationTransformation> annotationTransformations = new ArrayList<>(
+                        annotationTransformerBuildItems.size());
                 for (AnnotationsTransformerBuildItem bi : annotationTransformerBuildItems) {
-                    annotationsTransformers.add(bi.getAnnotationsTransformer());
+                    annotationTransformations.add(bi.getAnnotationTransformation());
                 }
-                serverEndpointIndexerBuilder.setAnnotationsTransformers(annotationsTransformers);
+                serverEndpointIndexerBuilder.setAnnotationTransformations(annotationTransformations);
             }
 
             serverEndpointIndexerBuilder.setMultipartReturnTypeIndexerExtension(new QuarkusMultipartReturnTypeHandler(

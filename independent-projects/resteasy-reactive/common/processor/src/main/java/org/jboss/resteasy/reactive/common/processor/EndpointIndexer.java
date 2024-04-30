@@ -110,6 +110,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -257,7 +258,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
-        this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
+        this.annotationStore = new AnnotationStore(builder.index, builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
         this.parameterContainerTypes = builder.parameterContainerTypes;
@@ -1679,7 +1680,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
         private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
-        private Collection<AnnotationsTransformer> annotationsTransformers;
+        private Collection<AnnotationTransformation> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
         private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
         private final Set<DotName> parameterContainerTypes = new HashSet<>();
@@ -1793,8 +1794,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
+        /**
+         * @deprecated use {@link #setAnnotationTransformations(Collection)}
+         */
+        @Deprecated(forRemoval = true)
         public B setAnnotationsTransformers(Collection<AnnotationsTransformer> annotationsTransformers) {
-            this.annotationsTransformers = annotationsTransformers;
+            List<AnnotationTransformation> transformations = new ArrayList<>(annotationsTransformers.size());
+            transformations.addAll(annotationsTransformers);
+            this.annotationsTransformers = transformations;
+            return (B) this;
+        }
+
+        public B setAnnotationTransformations(Collection<AnnotationTransformation> annotationTransformations) {
+            this.annotationsTransformers = annotationTransformations;
             return (B) this;
         }
 

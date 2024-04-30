@@ -18,12 +18,13 @@ public class TemplatePathExcludeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(root -> root
                     // excluded
                     .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/.foo.txt")
                     .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/foo/bar/.hidden")
                     // not excluded
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt"));
+                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt")
+                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/bar/foo.txt"));
 
     @Inject
     Engine engine;
@@ -33,6 +34,7 @@ public class TemplatePathExcludeTest {
         assertNull(engine.getTemplate(".foo.txt"));
         assertNull(engine.getTemplate("foo/bar/.hidden"));
         assertEquals(engine.getTemplate("_foo.txt").data("myList", List.of(1)).render(), "1");
+        assertEquals(engine.getTemplate("bar/foo.txt").data("myList", List.of(1)).render(), "1");
     }
 
 }

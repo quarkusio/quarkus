@@ -683,6 +683,12 @@ public class ConfigGenerationBuildStep {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         Set<String> staticSafe = new HashSet<>();
         for (String service : services) {
+            // SmallRye Config services are always safe, but they cannot be annotated with @StaticInitSafe
+            if (service.startsWith("io.smallrye.config.")) {
+                staticSafe.add(service);
+                continue;
+            }
+
             try {
                 Class<?> serviceClass = classloader.loadClass(service);
                 if (serviceClass.isAnnotationPresent(StaticInitSafe.class)) {

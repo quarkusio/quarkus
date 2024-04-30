@@ -2,6 +2,7 @@ package io.quarkus.hibernate.validator.runtime;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -75,6 +76,9 @@ public class HibernateValidatorRecorder {
                     localeResolver = configuredLocaleResolver.get();
                     configuration.localeResolver(localeResolver);
                 }
+
+                // Filter out classes with incomplete hierarchy
+                filterIncompleteClasses(classesToBeValidated);
 
                 configuration.builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
@@ -187,6 +191,22 @@ public class HibernateValidatorRecorder {
                         validatorFactory.close();
                     }
                 });
+            }
+
+            /**
+             * Filter out classes with incomplete hierarchy
+             */
+            private void filterIncompleteClasses(Set<Class<?>> classesToBeValidated) {
+                Iterator<Class<?>> iterator = classesToBeValidated.iterator();
+                while (iterator.hasNext()) {
+                    Class<?> clazz = iterator.next();
+                    try {
+                        // This should trigger a NoClassDefFoundError if the class has an incomplete hierarchy
+                        clazz.getCanonicalName();
+                    } catch (NoClassDefFoundError e) {
+                        iterator.remove();
+                    }
+                }
             }
         };
 

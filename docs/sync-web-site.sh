@@ -32,7 +32,16 @@ fi
 
 if [ -z $TARGET_DIR ]; then
   TARGET_DIR=target/web-site
-  git clone -b develop --single-branch git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  rm -rf ${TARGET_DIR}
+  GIT_OPTIONS=""
+  if [[ "$QUARKUS_WEB_SITE_PUSH" != "true" ]]; then
+    GIT_OPTIONS="--depth=1"
+  fi
+  if [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
+    git clone -b develop --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  else
+    git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  fi
 fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then

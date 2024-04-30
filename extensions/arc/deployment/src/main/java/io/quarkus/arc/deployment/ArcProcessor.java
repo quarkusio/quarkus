@@ -212,7 +212,7 @@ public class ArcProcessor {
         applicationClassPredicateProducer.produce(new CompletedApplicationClassPredicateBuildItem(applicationClassPredicate));
         builder.setApplicationClassPredicate(applicationClassPredicate);
 
-        builder.addAnnotationTransformer(new AnnotationsTransformer() {
+        builder.addAnnotationTransformation(new AnnotationsTransformer() {
 
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -259,7 +259,7 @@ public class ArcProcessor {
                 resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
         // register all annotation transformers
         for (AnnotationsTransformerBuildItem transformer : annotationTransformers) {
-            builder.addAnnotationTransformer(transformer.getAnnotationsTransformer());
+            builder.addAnnotationTransformation(transformer.getAnnotationTransformation());
         }
         // register all injection point transformers
         for (InjectionPointTransformerBuildItem transformer : injectionPointTransformers) {

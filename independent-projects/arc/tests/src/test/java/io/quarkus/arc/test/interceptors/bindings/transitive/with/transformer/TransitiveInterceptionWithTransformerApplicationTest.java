@@ -23,7 +23,7 @@ public class TransitiveInterceptionWithTransformerApplicationTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(PlainBinding.class,
             PlainInterceptor.class, MuchCoolerBinding.class, MuchCoolerInterceptor.class, DummyBean.class)
-            .annotationsTransformers(new TransitiveInterceptionWithTransformerApplicationTest.MyTransformer()).build();
+            .annotationTransformations(new TransitiveInterceptionWithTransformerApplicationTest.MyTransformer()).build();
 
     @Test
     public void testTransformersAreApplied() {

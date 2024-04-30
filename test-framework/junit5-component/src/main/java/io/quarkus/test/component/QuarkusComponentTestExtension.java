@@ -633,12 +633,12 @@ public class QuarkusComponentTestExtension
 
             extensionContext.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
 
-            builder.addAnnotationTransformer(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
+            builder.addAnnotationTransformation(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
 
-            builder.addAnnotationTransformer(new JaxrsSingletonTransformer());
+            builder.addAnnotationTransformation(new JaxrsSingletonTransformer());
             for (AnnotationsTransformer transformer : configuration.annotationsTransformers) {
-                builder.addAnnotationTransformer(transformer);
+                builder.addAnnotationTransformation(transformer);
             }
 
             // Register:

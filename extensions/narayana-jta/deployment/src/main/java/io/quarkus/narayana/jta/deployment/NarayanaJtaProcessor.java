@@ -59,17 +59,20 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
+import io.quarkus.narayana.jta.runtime.graal.DisableLoggingFeature;
 import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
@@ -97,7 +100,8 @@ class NarayanaJtaProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
             BuildProducer<FeatureBuildItem> feature,
-            TransactionManagerConfiguration transactions, ShutdownContextBuildItem shutdownContextBuildItem) {
+            TransactionManagerConfiguration transactions, TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
+            ShutdownContextBuildItem shutdownContextBuildItem) {
         recorder.handleShutdown(shutdownContextBuildItem, transactions);
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
@@ -141,6 +145,10 @@ class NarayanaJtaProcessor {
         builder.addBeanClass(TransactionalInterceptorNotSupported.class);
         additionalBeans.produce(builder.build());
 
+        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
+            recorder.logAllowUnsafeMultipleLastResources();
+        }
+
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         //we don't want to store the system properties here
@@ -148,6 +156,7 @@ class NarayanaJtaProcessor {
         for (Object i : System.getProperties().keySet()) {
             defaultProperties.remove(i);
         }
+
         recorder.setDefaultProperties(defaultProperties);
         // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
         recorder.disableTransactionStatusManager();
@@ -160,9 +169,22 @@ class NarayanaJtaProcessor {
     @Record(STATIC_INIT)
     public void allowUnsafeMultipleLastResources(NarayanaJtaRecorder recorder,
             TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
-            Capabilities capabilities) {
+            Capabilities capabilities, BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
+            BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
         if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
             recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL));
+
+            // we will handle these warnings ourselves at runtime init
+            logCleanupFilters.produce(
+                    new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
+        }
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    public void nativeImageFeature(TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
+            BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
+        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
+            nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
         }
     }
 

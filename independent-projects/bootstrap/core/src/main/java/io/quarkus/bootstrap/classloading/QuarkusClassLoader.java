@@ -11,6 +11,7 @@ import java.security.ProtectionDomain;
 import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -246,27 +247,31 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (providers != null) {
             boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
             for (ClassPathElement element : providers) {
-                ClassPathResource res = element.getResource(name);
+                Collection<ClassPathResource> resList = element.getResources(name);
                 //if the requested name ends with a trailing / we make sure
                 //that the resource is a directory, and return a URL that ends with a /
                 //this matches the behaviour of URLClassLoader
-                if (endsWithTrailingSlash) {
-                    if (res.isDirectory()) {
-                        try {
-                            resources.add(new URL(res.getUrl().toString() + "/"));
-                        } catch (MalformedURLException e) {
-                            throw new RuntimeException(e);
+                for (var res : resList) {
+                    if (endsWithTrailingSlash) {
+                        if (res.isDirectory()) {
+                            try {
+                                resources.add(new URL(res.getUrl().toString() + "/"));
+                            } catch (MalformedURLException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
+                    } else {
+                        resources.add(res.getUrl());
                     }
-                } else {
-                    resources.add(res.getUrl());
                 }
             }
         } else if (name.isEmpty()) {
             for (ClassPathElement i : elements) {
-                ClassPathResource res = i.getResource("");
-                if (res != null) {
-                    resources.add(res.getUrl());
+                List<ClassPathResource> resList = i.getResources("");
+                for (var res : resList) {
+                    if (res != null) {
+                        resources.add(res.getUrl());
+                    }
                 }
             }
         }

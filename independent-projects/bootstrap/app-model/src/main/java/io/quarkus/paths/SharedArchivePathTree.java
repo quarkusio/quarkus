@@ -159,6 +159,11 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
+        public void acceptAll(String relativePath, Consumer<PathVisit> consumer) {
+            delegate.acceptAll(relativePath, consumer);
+        }
+
+        @Override
         public boolean contains(String relativePath) {
             return delegate.contains(relativePath);
         }

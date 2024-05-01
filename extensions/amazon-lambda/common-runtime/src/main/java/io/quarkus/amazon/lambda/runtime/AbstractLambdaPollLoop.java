@@ -125,6 +125,7 @@ public abstract class AbstractLambdaPollLoop {
                                 URL url = AmazonLambdaApi.invocationResponse(baseUrl, requestId);
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);
+                                    responseConnection.setRequestProperty("Content-Type", "application/json");
                                     if (running.get()) {
                                         processRequest(requestConnection.getInputStream(), responseConnection.getOutputStream(),
                                                 createContext(requestConnection));

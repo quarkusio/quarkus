@@ -15,7 +15,7 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
 
     @Override
     public ThreadState activateInitial() {
-        return toThreadState(managedContext.activate());
+        return toThreadState(managedContext.activate(managedContext.getStateIfActive()));
     }
 
     private ThreadState toThreadState(InjectableContext.ContextState state) {

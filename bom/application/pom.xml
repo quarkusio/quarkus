@@ -178,7 +178,7 @@
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.25.9</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.12.6</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.13.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>

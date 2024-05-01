@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  *
  * <pre>
  * {@code
- * &#64;ClientObjectMapper
+ * @ClientObjectMapper
  * static ObjectMapper objectMapper() {
  *     return new ObjectMapper();
  * }

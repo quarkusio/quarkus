@@ -7,7 +7,7 @@ import io.smallrye.common.annotation.Experimental;
  * @see BinaryMessageCodec
  */
 @Experimental("This API is experimental and may change in the future")
-public class BinaryEncodeException extends WebSocketServerException {
+public class BinaryEncodeException extends WebSocketException {
 
     private static final long serialVersionUID = -8042792962717461873L;
 

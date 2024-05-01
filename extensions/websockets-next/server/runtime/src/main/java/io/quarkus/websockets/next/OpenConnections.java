@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * Provides convenient access to all open connections from clients to {@link WebSocket} endpoints on the server.
+ * Provides convenient access to all open connections.
  * <p>
  * Quarkus provides a built-in CDI bean with the {@link jakarta.inject.Singleton} scope that implements this interface.
  */

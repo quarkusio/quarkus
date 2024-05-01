@@ -48,32 +48,13 @@ public @interface WebSocket {
     public String endpointId() default FCQN_NAME;
 
     /**
-     * The execution mode used to process incoming messages for a specific connection.
+     * The mode used to process incoming messages for a specific connection.
      */
-    public ExecutionMode executionMode() default ExecutionMode.SERIAL;
+    public InboundProcessingMode inboundProcessingMode() default InboundProcessingMode.SERIAL;
 
     /**
      * Constant value for {@link #endpointId()} indicating that the fully qualified name of the annotated class should be used.
      */
     String FCQN_NAME = "<<fcqn name>>";
-
-    /**
-     * Defines the execution mode used to process incoming messages for a specific connection.
-     *
-     * @see WebSocketConnection
-     */
-    enum ExecutionMode {
-
-        /**
-         * Messages are processed serially, ordering is guaranteed.
-         */
-        SERIAL,
-
-        /**
-         * Messages are processed concurrently, there are no ordering guarantees.
-         */
-        CONCURRENT,
-
-    }
 
 }

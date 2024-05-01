@@ -2,7 +2,7 @@ package io.quarkus.websockets.next.runtime;
 
 import java.lang.reflect.Type;
 
-import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.InboundProcessingMode;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -10,16 +10,15 @@ import io.vertx.core.buffer.Buffer;
 /**
  * Internal representation of a WebSocket endpoint.
  * <p>
- * A new instance is created for each client connection.
+ * A new instance is created for each connection.
  */
 public interface WebSocketEndpoint {
 
     /**
      *
-     * @see WebSocket#executionMode()
-     * @return the execution mode
+     * @return the inbound processing mode
      */
-    WebSocket.ExecutionMode executionMode();
+    InboundProcessingMode inboundProcessingMode();
 
     // @OnOpen
 

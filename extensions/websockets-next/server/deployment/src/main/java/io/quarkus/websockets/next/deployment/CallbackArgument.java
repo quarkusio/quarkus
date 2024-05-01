@@ -13,7 +13,8 @@ import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocketConnection;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
+import io.quarkus.websockets.next.deployment.Callback.Target;
 
 /**
  * Provides arguments for method parameters of a callback method declared on a WebSocket endpoint.
@@ -24,7 +25,7 @@ interface CallbackArgument {
      *
      * @param context
      * @return {@code true} if this provider matches the given parameter context, {@code false} otherwise
-     * @throws WebSocketServerException If an invalid parameter is detected
+     * @throws WebSocketException If an invalid parameter is detected
      */
     boolean matches(ParameterContext context);
 
@@ -48,6 +49,12 @@ interface CallbackArgument {
     static final int DEFAULT_PRIORITY = 1;
 
     interface ParameterContext {
+
+        /**
+         *
+         * @return the callback target
+         */
+        Target callbackTarget();
 
         /**
          *

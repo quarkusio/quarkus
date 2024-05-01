@@ -9,7 +9,6 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-import io.vertx.core.http.HttpServerOptions;
 
 @ConfigMapping(prefix = "quarkus.websockets-next.server")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -30,13 +29,13 @@ public interface WebSocketsServerRuntimeConfig {
 
     /**
      * The compression level must be a value between 0 and 9. The default value is
-     * {@value HttpServerOptions#DEFAULT_WEBSOCKET_COMPRESSION_LEVEL}.
+     * {@value io.vertx.core.http.HttpServerOptions#DEFAULT_WEBSOCKET_COMPRESSION_LEVEL}.
      */
     OptionalInt compressionLevel();
 
     /**
      * The maximum size of a message in bytes. The default values is
-     * {@value HttpServerOptions#DEFAULT_MAX_WEBSOCKET_MESSAGE_SIZE}.
+     * {@value io.vertx.core.http.HttpServerOptions#DEFAULT_MAX_WEBSOCKET_MESSAGE_SIZE}.
      */
     OptionalInt maxMessageSize();
 

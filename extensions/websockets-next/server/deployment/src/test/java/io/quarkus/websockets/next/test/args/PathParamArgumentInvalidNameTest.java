@@ -9,7 +9,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class PathParamArgumentInvalidNameTest {
 
@@ -17,7 +17,7 @@ public class PathParamArgumentInvalidNameTest {
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(MontyEcho.class);
-            }).setExpectedException(WebSocketServerException.class);
+            }).setExpectedException(WebSocketException.class);
 
     @Test
     void testInvalidArgument() {

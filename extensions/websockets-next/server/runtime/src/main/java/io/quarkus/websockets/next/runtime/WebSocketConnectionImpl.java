@@ -1,6 +1,5 @@
 package io.quarkus.websockets.next.runtime;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,66 +7,44 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.jboss.logging.Logger;
-
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
+import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import io.vertx.core.http.WebSocketBase;
 import io.vertx.ext.web.RoutingContext;
 
-class WebSocketConnectionImpl implements WebSocketConnection {
-
-    private static final Logger LOG = Logger.getLogger(WebSocketConnectionImpl.class);
+class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSocketConnection {
 
     private final String generatedEndpointClass;
 
     private final String endpointId;
 
-    private final String identifier;
-
     private final ServerWebSocket webSocket;
 
     private final ConnectionManager connectionManager;
 
-    private final Codecs codecs;
-
-    private final Map<String, String> pathParams;
-
-    private final HandshakeRequest handshakeRequest;
-
     private final BroadcastSender defaultBroadcast;
-
-    private final Instant creationTime;
 
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
             ConnectionManager connectionManager,
             Codecs codecs, RoutingContext ctx) {
+        super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx));
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
-        this.identifier = UUID.randomUUID().toString();
         this.webSocket = Objects.requireNonNull(webSocket);
         this.connectionManager = Objects.requireNonNull(connectionManager);
-        this.pathParams = Map.copyOf(ctx.pathParams());
         this.defaultBroadcast = new BroadcastImpl(null);
-        this.codecs = codecs;
-        this.handshakeRequest = new HandshakeRequestImpl(ctx);
-        this.creationTime = Instant.now();
     }
 
     @Override
-    public String id() {
-        return identifier;
+    WebSocketBase webSocket() {
+        return webSocket;
     }
 
     @Override
@@ -76,71 +53,8 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     }
 
     @Override
-    public String pathParam(String name) {
-        return pathParams.get(name);
-    }
-
-    @Override
-    public Uni<Void> sendText(String message) {
-        return UniHelper.toUni(webSocket.writeTextMessage(message));
-    }
-
-    @Override
-    public Uni<Void> sendBinary(Buffer message) {
-        return UniHelper.toUni(webSocket.writeBinaryMessage(message));
-    }
-
-    @Override
-    public <M> Uni<Void> sendText(M message) {
-        String text;
-        // Use the same conversion rules as defined for the OnTextMessage
-        if (message instanceof JsonObject || message instanceof JsonArray || message instanceof BufferImpl
-                || message instanceof VertxBufferImpl) {
-            text = message.toString();
-        } else if (message.getClass().isArray() && message.getClass().arrayType().equals(byte.class)) {
-            text = Buffer.buffer((byte[]) message).toString();
-        } else {
-            text = codecs.textEncode(message, null);
-        }
-        return sendText(text);
-    }
-
-    @Override
-    public Uni<Void> sendPing(Buffer data) {
-        return UniHelper.toUni(webSocket.writePing(data));
-    }
-
-    void sendAutoPing() {
-        webSocket.writePing(Buffer.buffer("ping")).onComplete(r -> {
-            if (r.failed()) {
-                LOG.warnf("Unable to send auto-ping for %s: %s", this, r.cause().toString());
-            }
-        });
-    }
-
-    @Override
-    public Uni<Void> sendPong(Buffer data) {
-        return UniHelper.toUni(webSocket.writePong(data));
-    }
-
-    @Override
     public BroadcastSender broadcast() {
         return defaultBroadcast;
-    }
-
-    @Override
-    public Uni<Void> close() {
-        return UniHelper.toUni(webSocket.close());
-    }
-
-    @Override
-    public boolean isSecure() {
-        return webSocket.isSsl();
-    }
-
-    @Override
-    public boolean isClosed() {
-        return webSocket.isClosed();
     }
 
     @Override
@@ -150,18 +64,8 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     }
 
     @Override
-    public HandshakeRequest handshakeRequest() {
-        return handshakeRequest;
-    }
-
-    @Override
     public String subprotocol() {
         return webSocket.subProtocol();
-    }
-
-    @Override
-    public Instant creationTime() {
-        return creationTime;
     }
 
     @Override
@@ -186,11 +90,14 @@ class WebSocketConnectionImpl implements WebSocketConnection {
         return Objects.equals(identifier, other.identifier);
     }
 
-    private class HandshakeRequestImpl implements HandshakeRequest {
+    private static class HandshakeRequestImpl implements HandshakeRequest {
+
+        private final ServerWebSocket webSocket;
 
         private final Map<String, List<String>> headers;
 
-        HandshakeRequestImpl(RoutingContext ctx) {
+        HandshakeRequestImpl(ServerWebSocket webSocket, RoutingContext ctx) {
+            this.webSocket = webSocket;
             this.headers = initHeaders(ctx);
         }
 

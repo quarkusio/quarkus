@@ -6,11 +6,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import io.quarkus.websockets.next.WebSocketConnection.HandshakeRequest;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * A {@link WebSocket} endpoint method annotated with this annotation consumes text messages.
+ * {@link WebSocket} and {@link WebSocketClient} endpoint methods annotated with this annotation consume text messages.
  * <p>
  * The method must accept exactly one message parameter. A text message is always represented as a {@link String}. Therefore,
  * the following conversion rules apply. The types listed
@@ -30,7 +29,7 @@ import io.smallrye.common.annotation.Experimental;
  * <p>
  * The method may also accept the following parameters:
  * <ul>
- * <li>{@link WebSocketConnection}</li>
+ * <li>{@link WebSocketConnection}/{@link WebSocketClientConnection}; depending on the endpoint type</li>
  * <li>{@link HandshakeRequest}</li>
  * <li>{@link String} parameters annotated with {@link PathParam}</li>
  * </ul>
@@ -43,6 +42,7 @@ import io.smallrye.common.annotation.Experimental;
 public @interface OnTextMessage {
 
     /**
+     * Broadcasting is only supported for server endpoints annotated with {@link WebSocket}.
      *
      * @return {@code true} if all the connected clients should receive the objects returned by the annotated method
      * @see WebSocketConnection#broadcast()

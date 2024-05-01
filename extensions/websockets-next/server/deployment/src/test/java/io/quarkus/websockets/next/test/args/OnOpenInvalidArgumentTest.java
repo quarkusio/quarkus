@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class OnOpenInvalidArgumentTest {
 
@@ -19,7 +19,7 @@ public class OnOpenInvalidArgumentTest {
             .withApplicationRoot(root -> {
                 root.addClasses(Endpoint.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void testInvalidArgument() {

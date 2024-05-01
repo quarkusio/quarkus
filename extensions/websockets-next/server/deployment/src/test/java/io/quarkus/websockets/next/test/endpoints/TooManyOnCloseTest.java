@@ -7,7 +7,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class TooManyOnCloseTest {
 
@@ -16,7 +16,7 @@ public class TooManyOnCloseTest {
             .withApplicationRoot(root -> {
                 root.addClasses(TooManyOnClose.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void verifyThatEndpointWithMultipleOnCloseMethodsFailsToDeploy() {

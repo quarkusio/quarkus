@@ -7,7 +7,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerException;
+import io.quarkus.websockets.next.WebSocketException;
 
 public class TooManyOnOpenInSubEndpointTest {
 
@@ -16,7 +16,7 @@ public class TooManyOnOpenInSubEndpointTest {
             .withApplicationRoot(root -> {
                 root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithTooManyOnOpen.class);
             })
-            .setExpectedException(WebSocketServerException.class);
+            .setExpectedException(WebSocketException.class);
 
     @Test
     void verifyThatSubEndpointWithoutTooManyOnOpenFailsToDeploy() {

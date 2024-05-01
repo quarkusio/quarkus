@@ -551,7 +551,7 @@ public class UndertowBuildStep {
                 if (constraint.getAuthConstraint() == null) {
                     // no auth constraint means we permit the empty roles
                     securityConstraint.setEmptyRoleSemantic(PERMIT);
-                } else if (roleNames.size() == 1 && roleNames.contains("*")) {
+                } else if (roleNames.size() == 1 && (roleNames.contains("*") || roleNames.contains("**"))) {
                     securityConstraint.setEmptyRoleSemantic(AUTHENTICATE);
                 } else {
                     securityConstraint.addRolesAllowed(roleNames);

@@ -113,6 +113,19 @@ public interface PathTree {
     void walk(PathVisitor visitor);
 
     /**
+     * Walks a subtree of this tree that begins with a passed in {@code relativePath},
+     * if the tree contains {@code relativePath}. If the tree does not contain {@code relativePath}
+     * then the method returns without an error.
+     * <p>
+     * This method does not create a new {@link PathTree} with the root at {@code relativePath}.
+     * It simply applies an inclusion filter to this {@link PathTree} instance, keeping the same root.
+     *
+     * @param relativePath relative path from which the walk should begin
+     * @param visitor path visitor
+     */
+    void walkIfContains(String relativePath, PathVisitor visitor);
+
+    /**
      * Applies a function to a given path relative to the root of the tree.
      * If the path isn't found in the tree, the {@link PathVisit} argument
      * passed to the function will be {@code null}.
@@ -167,4 +180,14 @@ public interface PathTree {
      * @return an instance of {@link OpenPathTree} for this path tree
      */
     OpenPathTree open();
+
+    /**
+     * Creates a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance.
+     *
+     * @param filter path filter to apply
+     * @return a new {@link PathTree} instance applying a path filter to this {@link PathTree} instance
+     */
+    default PathTree filter(PathFilter filter) {
+        return new FilteredPathTree(this, filter);
+    }
 }

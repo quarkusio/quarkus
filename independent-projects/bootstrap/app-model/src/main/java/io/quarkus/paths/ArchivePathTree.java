@@ -95,7 +95,25 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     public void walk(PathVisitor visitor) {
         try (FileSystem fs = openFs()) {
             final Path dir = fs.getPath("/");
-            PathTreeVisit.walk(archive, dir, pathFilter, getMultiReleaseMapping(), visitor);
+            PathTreeVisit.walk(archive, dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + archive, e);
+        }
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        ensureResourcePath(relativePath);
+        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+            return;
+        }
+        try (FileSystem fs = openFs()) {
+            for (Path root : fs.getRootDirectories()) {
+                final Path walkDir = root.resolve(relativePath);
+                if (Files.exists(walkDir)) {
+                    PathTreeVisit.walk(archive, root, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
+                }
+            }
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read " + archive, e);
         }
@@ -282,6 +300,17 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             try {
                 ensureOpen();
                 super.walk(visitor);
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public void walkIfContains(String relativePath, PathVisitor visitor) {
+            lock.readLock().lock();
+            try {
+                ensureOpen();
+                super.walkIfContains(relativePath, visitor);
             } finally {
                 lock.readLock().unlock();
             }

@@ -97,9 +97,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
-import io.quarkus.paths.FilteredPathTree;
-import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathTree;
+import io.quarkus.paths.PathTreeUtils;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
@@ -2164,14 +2163,22 @@ public class QuteProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             QuteConfig config) {
         for (String templateRoot : templateRoots) {
-            pathTree.accept(templateRoot, visit -> {
-                if (visit != null) {
-                    // if template root is found in this tree then walk over its subtree
-                    scanTemplateRootSubtree(
-                            new FilteredPathTree(pathTree, PathFilter.forIncludes(List.of(templateRoot + "/**"))),
-                            visit.getRelativePath(), watchedPaths, templatePaths, nativeImageResources, config);
-                }
-            });
+            if (PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot)) {
+                pathTree.walkIfContains(templateRoot, visit -> {
+                    if (Files.isRegularFile(visit.getPath())) {
+                        LOGGER.debugf("Found template: %s", visit.getPath());
+                        // remove templateRoot + /
+                        final String relativePath = visit.getRelativePath();
+                        String templatePath = relativePath.substring(templateRoot.length() + 1);
+                        if (config.templatePathExclude.matcher(templatePath).matches()) {
+                            LOGGER.debugf("Template file excluded: %s", visit.getPath());
+                            return;
+                        }
+                        produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
+                                relativePath, templatePath, visit.getPath(), config);
+                    }
+                });
+            }
         }
     }
 
@@ -3380,27 +3387,6 @@ public class QuteProcessor {
         templatePaths.produce(
                 new TemplatePathBuildItem(templatePath, originalPath,
                         readTemplateContent(originalPath, config.defaultCharset)));
-    }
-
-    private void scanTemplateRootSubtree(PathTree pathTree, String templateRoot,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
-            BuildProducer<TemplatePathBuildItem> templatePaths,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            QuteConfig config) {
-        pathTree.walk(visit -> {
-            if (Files.isRegularFile(visit.getPath())) {
-                LOGGER.debugf("Found template: %s", visit.getPath());
-                // remove templateRoot + /
-                final String relativePath = visit.getRelativePath();
-                String templatePath = relativePath.substring(templateRoot.length() + 1);
-                if (config.templatePathExclude.matcher(templatePath).matches()) {
-                    LOGGER.debugf("Template file excluded: %s", visit.getPath());
-                    return;
-                }
-                produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
-                        relativePath, templatePath, visit.getPath(), config);
-            }
-        });
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {

@@ -67,6 +67,11 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public <T> T apply(String relativePath, Function<PathVisit, T> func) {
         if (relativePath.isEmpty()) {
             return PathTreeVisit.process(file, file, file, pathFilter, func);

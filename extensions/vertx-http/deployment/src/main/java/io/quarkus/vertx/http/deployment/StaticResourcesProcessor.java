@@ -20,8 +20,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.paths.FilteredPathTree;
-import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.AdditionalStaticResourceBuildItem;
@@ -86,7 +84,7 @@ public class StaticResourcesProcessor {
             final Set<String> collectedDirs = new HashSet<>();
             visitRuntimeMetaInfResources(visit -> {
                 if (Files.isDirectory(visit.getPath())) {
-                    final String relativePath = visit.getRelativePath("/");
+                    final String relativePath = visit.getRelativePath();
                     if (collectedDirs.add(relativePath)) {
                         producer.produce(new NativeImageResourceBuildItem(relativePath));
                     }
@@ -105,7 +103,7 @@ public class StaticResourcesProcessor {
         visitRuntimeMetaInfResources(visit -> {
             if (!Files.isDirectory(visit.getPath())) {
                 knownPaths.add(new StaticResourcesBuildItem.Entry(
-                        visit.getRelativePath("/").substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
+                        visit.getRelativePath().substring(StaticResourcesRecorder.META_INF_RESOURCES.length()),
                         false));
             }
         });
@@ -121,13 +119,10 @@ public class StaticResourcesProcessor {
         final List<ClassPathElement> elements = QuarkusClassLoader.getElements(StaticResourcesRecorder.META_INF_RESOURCES,
                 false);
         if (!elements.isEmpty()) {
-            final PathFilter filter = PathFilter.forIncludes(List.of(
-                    StaticResourcesRecorder.META_INF_RESOURCES + "/**",
-                    StaticResourcesRecorder.META_INF_RESOURCES));
             for (var element : elements) {
                 if (element.isRuntime()) {
                     element.apply(tree -> {
-                        new FilteredPathTree(tree, filter).walk(visitor);
+                        tree.walkIfContains(StaticResourcesRecorder.META_INF_RESOURCES, visitor);
                         return null;
                     });
                 }

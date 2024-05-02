@@ -10,11 +10,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-websockets-next-aggregator</artifactId>
-    <name>Quarkus - WebSockets Next Aggregator</name>
+    <artifactId>quarkus-websockets-next-parent</artifactId>
+    <name>Quarkus - WebSockets Next</name>
     <packaging>pom</packaging>
     <modules>
-        <module>server</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
 
 </project>

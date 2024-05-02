@@ -20,8 +20,8 @@ public final class TransactionManagerBuildTimeConfig {
      * recommended since the probability of inconsistent outcomes is significantly higher and
      * much harder to recover from than LRCO. For this reason, use LRCO as a last resort.
      * <p>
-     * We plan to remove this property in the future so you should plan fixing your application
-     * accordingly.
+     * We do not recommend using this configuration property, and we plan to remove it in the future,
+     * so you should plan fixing your application accordingly.
      * If you think your use case of this feature is valid and this option should be kept around,
      * open an issue in our tracker explaining why.
      *

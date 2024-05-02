@@ -1,6 +1,5 @@
 import {LitElement, html, css} from 'lit';
 import {webDependencyLibraries} from 'build-time-data';
-import '@vaadin/tabsheet';
 import '@vaadin/tabs';
 import '@vaadin/grid';
 import '@vaadin/icon';
@@ -13,35 +12,46 @@ import {columnBodyRenderer} from '@vaadin/grid/lit.js';
 export class QwcWebDependencyLocatorLibraries extends LitElement {
 
     static styles = css`
+        :host {
+            display: flex;
+            height: 100%;
+            padding: 10px;
+            gap: 20px;
+        }
         .full-height {
             height: 100%;
+        }
+        .tabcontent {
+            height: 100%;
+            width: 100%;
         }
     `;
 
     static properties = {
         _webDependencyLibraries: {},
+        _selectedWebDependency: {state: true}
     };
 
     constructor() {
         super();
         this._webDependencyLibraries = webDependencyLibraries;
+        this._selectedWebDependency = this._webDependencyLibraries[0];
     }
 
     render() {
         return html`
-            <vaadin-tabsheet class="full-height">
-                <vaadin-tabs slot="tabs">
+                <vaadin-tabs @selected-changed="${this._tabSelectedChanged}" orientation="vertical">
                     ${this._webDependencyLibraries.map(webDependency => html`
                         <vaadin-tab id="${webDependency.webDependencyName}">
                             ${webDependency.webDependencyName + " (" + webDependency.version + ")"}
                         </vaadin-tab>`)}
                 </vaadin-tabs>
-
-                ${this._webDependencyLibraries.map(webDependency => this._renderLibraryAssets(webDependency))}
-
-
-            </vaadin-tabsheet>
+                ${this._renderLibraryAssets(this._selectedWebDependency)}
         `;
+    }
+
+    _tabSelectedChanged(e){
+        this._selectedWebDependency = this._webDependencyLibraries[e.detail.value];
     }
 
     _renderLibraryAssets(library) {
@@ -54,7 +64,7 @@ export class QwcWebDependencyLocatorLibraries extends LitElement {
         };
 
         return html`
-            <div tab="${library.webDependencyName}" class="full-height">
+            <div tab="${library.webDependencyName}" class="tabcontent">
                 <vaadin-grid .itemHasChildrenPath="${'children'}" .dataProvider="${dataProvider}"
                              theme="compact no-border" class="full-height">
                     <vaadin-grid-tree-column path="name"></vaadin-grid-tree-column>

@@ -14,6 +14,8 @@ import java.lang.annotation.Target;
  *
  * @see WebSocketConnection#pathParam(String)
  * @see WebSocket
+ * @see WebSocketClientConnection#pathParam(String)
+ * @see WebSocketClient
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)

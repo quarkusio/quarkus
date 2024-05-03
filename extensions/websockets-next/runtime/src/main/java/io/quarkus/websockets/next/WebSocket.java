@@ -12,7 +12,7 @@ import jakarta.inject.Singleton;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * Denotes a WebSocket endpoint.
+ * Denotes a WebSocket server endpoint.
  * <p>
  * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPongMessage} or
  * {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.

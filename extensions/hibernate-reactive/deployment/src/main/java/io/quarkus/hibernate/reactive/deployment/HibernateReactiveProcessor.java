@@ -427,21 +427,24 @@ public final class HibernateReactiveProcessor {
         return desc;
     }
 
-    private static void setDialectAndStorageEngine(Optional<String> dbKindOptional, Optional<String> explicitDialect,
+    private static void setDialectAndStorageEngine(Optional<String> dbKind, Optional<String> explicitDialect,
             Optional<String> explicitDbMinVersion, List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems,
             Optional<String> storageEngine, BuildProducer<SystemPropertyBuildItem> systemProperties,
             ParsedPersistenceXmlDescriptor desc) {
         final String persistenceUnitName = DEFAULT_PERSISTENCE_UNIT_NAME;
         Optional<String> dialect = explicitDialect;
+        Optional<String> dbProductName = Optional.empty();
         Optional<String> dbProductVersion = explicitDbMinVersion;
-        if (dbKindOptional.isPresent() || explicitDialect.isPresent()) {
+        if (dbKind.isPresent() || explicitDialect.isPresent()) {
             for (DatabaseKindDialectBuildItem item : dbKindDialectBuildItems) {
-                if (dbKindOptional.isPresent() && DatabaseKind.is(dbKindOptional.get(), item.getDbKind())
+                if (dbKind.isPresent() && DatabaseKind.is(dbKind.get(), item.getDbKind())
                         // Set the default version based on the dialect when we don't have a datasource
                         // (i.e. for database multi-tenancy)
-                        || explicitDialect.isPresent() && explicitDialect.get().equals(item.getDialect())) {
-                    if (explicitDialect.isEmpty()) {
-                        dialect = Optional.of(item.getDialect());
+                        || explicitDialect.isPresent() && item.getMatchingDialects().contains(explicitDialect.get())) {
+                    dbProductName = item.getDatabaseProductName();
+                    if (dbProductName.isEmpty() && explicitDialect.isEmpty()) {
+                        // Use dialects only as a last resort, prefer product name or explicitly user-provided dialect
+                        dialect = item.getDialectOptional();
                     }
                     if (explicitDbMinVersion.isEmpty()) {
                         dbProductVersion = item.getDefaultDatabaseProductVersion();
@@ -449,10 +452,10 @@ public final class HibernateReactiveProcessor {
                     break;
                 }
             }
-            if (dialect.isEmpty()) {
+            if (dialect.isEmpty() && dbProductName.isEmpty()) {
                 throw new ConfigurationException(
                         "The Hibernate Reactive extension could not guess the dialect from the database kind '"
-                                + dbKindOptional.get()
+                                + dbKind.get()
                                 + "'. Add an explicit '"
                                 + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect")
                                 + "' property.");
@@ -461,6 +464,8 @@ public final class HibernateReactiveProcessor {
 
         if (dialect.isPresent()) {
             desc.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
+        } else if (dbProductName.isPresent()) {
+            desc.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_DB_NAME, dbProductName.get());
         } else {
             // We only get here with the database multi-tenancy strategy; see the initial check, up top.
             throw new ConfigurationException(String.format(Locale.ROOT,
@@ -472,15 +477,11 @@ public final class HibernateReactiveProcessor {
                     persistenceUnitName));
         }
 
-        if (dbProductVersion.isPresent()) {
-            desc.getProperties().setProperty(JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
-        }
-
         // The storage engine has to be set as a system property.
         if (storageEngine.isPresent()) {
             systemProperties.produce(new SystemPropertyBuildItem(STORAGE_ENGINE, storageEngine.get()));
             // Only actually set the storage engines if MySQL or MariaDB
-            if (isMySQLOrMariaDB(dialect.get())) {
+            if (isMySQLOrMariaDB(dbKind, dialect)) {
                 systemProperties.produce(new SystemPropertyBuildItem(STORAGE_ENGINE, storageEngine.get()));
             } else {
                 LOG.warnf("The storage engine set through configuration property '%1$s' is being ignored"
@@ -489,11 +490,20 @@ public final class HibernateReactiveProcessor {
             }
         }
 
+        if (dbProductVersion.isPresent()) {
+            desc.getProperties().setProperty(JAKARTA_HBM2DDL_DB_VERSION, dbProductVersion.get());
+        }
     }
 
-    private static boolean isMySQLOrMariaDB(String dialect) {
-        String lowercaseDialect = dialect.toLowerCase(Locale.ROOT);
-        return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
+    private static boolean isMySQLOrMariaDB(Optional<String> dbKind, Optional<String> dialect) {
+        if (dbKind.isPresent() && (DatabaseKind.isMySQL(dbKind.get()) || DatabaseKind.isMariaDB(dbKind.get()))) {
+            return true;
+        }
+        if (dialect.isPresent()) {
+            String lowercaseDialect = dialect.get().toLowerCase(Locale.ROOT);
+            return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
+        }
+        return false;
     }
 
     private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {

@@ -10,4 +10,6 @@ public @interface SecurityAttribute {
     String key();
 
     String value();
+
+    AttributeType type() default AttributeType.DEFAULT;
 }

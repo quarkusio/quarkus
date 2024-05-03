@@ -60,7 +60,7 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
 
                 if (testSecurity.attributes() != null) {
                     user.addAttributes(Arrays.stream(testSecurity.attributes())
-                            .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
+                            .collect(Collectors.toMap(s -> s.key(), s -> s.type().convert(s.value()))));
                 }
 
                 SecurityIdentity userIdentity = augment(user.build(), allAnnotations);

@@ -32,6 +32,12 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>        
     </dependencies>
 
     <build>

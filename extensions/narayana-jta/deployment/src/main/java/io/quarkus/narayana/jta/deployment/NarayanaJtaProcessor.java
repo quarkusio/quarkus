@@ -70,6 +70,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
+import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig.UnsafeMultipleLastResourcesMode;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
 import io.quarkus.narayana.jta.runtime.graal.DisableLoggingFeature;
@@ -145,9 +146,11 @@ class NarayanaJtaProcessor {
         builder.addBeanClass(TransactionalInterceptorNotSupported.class);
         additionalBeans.produce(builder.build());
 
-        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
-            recorder.logAllowUnsafeMultipleLastResources();
-        }
+        transactionManagerBuildTimeConfig.unsafeMultipleLastResources.ifPresent(mode -> {
+            if (!mode.equals(UnsafeMultipleLastResourcesMode.FAIL)) {
+                recorder.logUnsafeMultipleLastResourcesOnStartup(mode);
+            }
+        });
 
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
@@ -171,20 +174,34 @@ class NarayanaJtaProcessor {
             TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             Capabilities capabilities, BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
-            recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL));
-
-            // we will handle these warnings ourselves at runtime init
-            logCleanupFilters.produce(
-                    new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
+        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources
+                .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
+            case ALLOW -> {
+                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);
+                // we will handle the warnings ourselves at runtime init when the option is set explicitly
+                logCleanupFilters.produce(
+                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
+            }
+            case WARN -> {
+                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), false);
+                // we will handle the warnings ourselves at runtime init when the option is set explicitly
+                // but we still want Narayana to produce one warning per offending transaction
+                logCleanupFilters.produce(
+                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012142"));
+            }
+            case FAIL -> { // No need to do anything, this is the default behavior of Narayana
+            }
         }
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     public void nativeImageFeature(TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        if (transactionManagerBuildTimeConfig.allowUnsafeMultipleLastResources) {
-            nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
+        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources
+                .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
+            case ALLOW, WARN -> {
+                nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
+            }
         }
     }
 

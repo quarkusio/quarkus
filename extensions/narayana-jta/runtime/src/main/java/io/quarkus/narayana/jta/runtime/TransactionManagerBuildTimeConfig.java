@@ -1,5 +1,7 @@
 package io.quarkus.narayana.jta.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -7,9 +9,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public final class TransactionManagerBuildTimeConfig {
     /**
-     * Allow using multiple XA unaware resources in the same transactional demarcation.
-     * This is UNSAFE and may only be used for compatibility.
+     * Define the behavior when using multiple XA unaware resources in the same transactional demarcation.
      * <p>
+     * Defaults to {@code fail}.
+     * {@code warn} and {@code allow} are UNSAFE and should only be used for compatibility.
      * Either use XA for all resources if you want consistency, or split the code into separate
      * methods with separate transactions.
      * <p>
@@ -28,7 +31,31 @@ public final class TransactionManagerBuildTimeConfig {
      * @deprecated This property is planned for removal in a future version.
      */
     @Deprecated(forRemoval = true)
-    @ConfigItem(defaultValue = "false")
-    public boolean allowUnsafeMultipleLastResources;
+    @ConfigItem(defaultValueDocumentation = "fail")
+    public Optional<UnsafeMultipleLastResourcesMode> unsafeMultipleLastResources;
+
+    public enum UnsafeMultipleLastResourcesMode {
+        /**
+         * Allow using multiple XA unaware resources in the same transactional demarcation.
+         * <p>
+         * This will log a warning once on application startup,
+         * but not on each use of multiple XA unaware resources in the same transactional demarcation.
+         */
+        ALLOW,
+        /**
+         * Allow using multiple XA unaware resources in the same transactional demarcation,
+         * but log a warning on each occurrence.
+         */
+        WARN,
+        /**
+         * Allow using multiple XA unaware resources in the same transactional demarcation,
+         * but log a warning on each occurrence.
+         */
+        FAIL;
+
+        // The default is WARN in Quarkus 3.8, FAIL in Quarkus 3.9+
+        // Make sure to update defaultValueDocumentation on unsafeMultipleLastResources when changing this.
+        public static final UnsafeMultipleLastResourcesMode DEFAULT = FAIL;
+    }
 
 }

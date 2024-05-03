@@ -162,24 +162,27 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void registerHibernateOrmMetadataForCoreDialects(
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DB2,
-                "org.hibernate.dialect.DB2Dialect"));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.DERBY,
-                "org.hibernate.dialect.DerbyDialect"));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.H2,
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DB2, "DB2",
+                Set.of("org.hibernate.dialect.DB2Dialect")));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DERBY, "Apache Derby",
+                Set.of("org.hibernate.dialect.DerbyDialect")));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.H2, "H2",
+                Set.of("org.hibernate.dialect.H2Dialect"),
                 // Using our own default version is extra important for H2
                 // See https://github.com/quarkusio/quarkus/issues/1886
-                "org.hibernate.dialect.H2Dialect", DialectVersions.Defaults.H2));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MARIADB,
-                "org.hibernate.dialect.MariaDBDialect", DialectVersions.Defaults.MARIADB));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
-                "org.hibernate.dialect.SQLServerDialect", DialectVersions.Defaults.MSSQL));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
-                "org.hibernate.dialect.MySQLDialect"));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
-                "org.hibernate.dialect.OracleDialect"));
-        producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
-                "org.hibernate.dialect.PostgreSQLDialect"));
+                DialectVersions.Defaults.H2));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MARIADB, "MariaDB",
+                Set.of("org.hibernate.dialect.MariaDBDialect"),
+                DialectVersions.Defaults.MARIADB));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MSSQL, "Microsoft SQL Server",
+                Set.of("org.hibernate.dialect.SQLServerDialect"),
+                DialectVersions.Defaults.MSSQL));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.MYSQL, "MySQL",
+                Set.of("org.hibernate.dialect.MySQLDialect")));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.ORACLE, "Oracle",
+                Set.of("org.hibernate.dialect.OracleDialect")));
+        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.POSTGRESQL, "PostgreSQL",
+                Set.of("org.hibernate.dialect.PostgreSQLDialect")));
     }
 
     @BuildStep
@@ -1107,15 +1110,18 @@ public final class HibernateOrmProcessor {
         }
 
         Optional<String> dialect = explicitDialect;
+        Optional<String> dbProductName = Optional.empty();
         Optional<String> dbProductVersion = explicitDbMinVersion;
         if (dbKind.isPresent() || explicitDialect.isPresent()) {
             for (DatabaseKindDialectBuildItem item : dbKindMetadataBuildItems) {
                 if (dbKind.isPresent() && DatabaseKind.is(dbKind.get(), item.getDbKind())
                         // Set the default version based on the dialect when we don't have a datasource
                         // (i.e. for database multi-tenancy)
-                        || explicitDialect.isPresent() && explicitDialect.get().equals(item.getDialect())) {
-                    if (explicitDialect.isEmpty()) {
-                        dialect = Optional.of(item.getDialect());
+                        || explicitDialect.isPresent() && item.getMatchingDialects().contains(explicitDialect.get())) {
+                    dbProductName = item.getDatabaseProductName();
+                    if (dbProductName.isEmpty() && explicitDialect.isEmpty()) {
+                        // Use dialects only as a last resort, prefer product name or explicitly user-provided dialect
+                        dialect = item.getDialectOptional();
                     }
                     if (explicitDbMinVersion.isEmpty()) {
                         dbProductVersion = item.getDefaultDatabaseProductVersion();
@@ -1123,7 +1129,7 @@ public final class HibernateOrmProcessor {
                     break;
                 }
             }
-            if (dialect.isEmpty()) {
+            if (dialect.isEmpty() && dbProductName.isEmpty()) {
                 throw new ConfigurationException(
                         "The Hibernate ORM extension could not guess the dialect from the database kind '" + dbKind.get()
                                 + "'. Add an explicit '"
@@ -1134,6 +1140,8 @@ public final class HibernateOrmProcessor {
 
         if (dialect.isPresent()) {
             puPropertiesCollector.accept(AvailableSettings.DIALECT, dialect.get());
+        } else if (dbProductName.isPresent()) {
+            puPropertiesCollector.accept(AvailableSettings.JAKARTA_HBM2DDL_DB_NAME, dbProductName.get());
         } else {
             // We only get here with the database multi-tenancy strategy; see the initial check, up top.
             assert multiTenancyStrategy == MultiTenancyStrategy.DATABASE;
@@ -1148,7 +1156,7 @@ public final class HibernateOrmProcessor {
 
         if (persistenceUnitConfig.dialect().storageEngine().isPresent()) {
             // Only actually set the storage engines if MySQL or MariaDB
-            if (isMySQLOrMariaDB(dialect.get())) {
+            if (isMySQLOrMariaDB(dbKind, dialect)) {
                 // The storage engine has to be set as a system property.
                 // We record it so that we can later run checks (because we can only set a single value)
                 storageEngineCollector.add(persistenceUnitConfig.dialect().storageEngine().get());
@@ -1609,9 +1617,15 @@ public final class HibernateOrmProcessor {
         return interfaces.toArray(new Class[interfaces.size()]);
     }
 
-    private static boolean isMySQLOrMariaDB(String dialect) {
-        String lowercaseDialect = dialect.toLowerCase(Locale.ROOT);
-        return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
+    private static boolean isMySQLOrMariaDB(Optional<String> dbKind, Optional<String> dialect) {
+        if (dbKind.isPresent() && (DatabaseKind.isMySQL(dbKind.get()) || DatabaseKind.isMariaDB(dbKind.get()))) {
+            return true;
+        }
+        if (dialect.isPresent()) {
+            String lowercaseDialect = dialect.get().toLowerCase(Locale.ROOT);
+            return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
+        }
+        return false;
     }
 
     private static final class ProxyCache {

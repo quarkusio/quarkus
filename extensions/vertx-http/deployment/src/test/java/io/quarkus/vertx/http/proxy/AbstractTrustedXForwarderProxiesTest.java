@@ -35,7 +35,8 @@ public abstract class AbstractTrustedXForwarderProxiesTest {
         return RestAssured.given()
                 .header("Forwarded", "proto=http;for=backend2:5555;host=somehost2")
                 .header("X-Forwarded-Ssl", "on")
-                .header("X-Forwarded-For", "backend:4444")
+                .header("X-Forwarded-Port", "4444")
+                .header("X-Forwarded-For", "backend, proxy")
                 .header("X-Forwarded-Server", "somehost")
                 .get("/path")
                 .then();

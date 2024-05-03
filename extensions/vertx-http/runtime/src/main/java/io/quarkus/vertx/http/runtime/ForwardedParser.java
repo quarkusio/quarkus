@@ -177,7 +177,10 @@ class ForwardedParser {
 
                 String forHeader = delegate.getHeader(X_FORWARDED_FOR);
                 if (forHeader != null) {
-                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress != null ? remoteAddress.port() : port);
+                    // use the port if it has been provided by another one of the X_FORWARDED headers, and use the first ip which should be the client
+                    remoteAddress = new SocketAddressImpl(
+                            port != -1 ? port : (remoteAddress != null ? remoteAddress.port() : -1),
+                            getFirstElement(forHeader));
                 }
             }
         }

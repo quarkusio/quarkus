@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -114,9 +115,9 @@ public class NarayanaJtaRecorder {
      * This should be removed in the future.
      */
     @Deprecated(forRemoval = true)
-    public void allowUnsafeMultipleLastResources(boolean agroalPresent) {
+    public void allowUnsafeMultipleLastResources(boolean agroalPresent, boolean disableMultipleLastResourcesWarning) {
         arjPropertyManager.getCoreEnvironmentBean().setAllowMultipleLastResources(true);
-        arjPropertyManager.getCoreEnvironmentBean().setDisableMultipleLastResourcesWarning(true);
+        arjPropertyManager.getCoreEnvironmentBean().setDisableMultipleLastResourcesWarning(disableMultipleLastResourcesWarning);
         if (agroalPresent) {
             jtaPropertyManager.getJTAEnvironmentBean()
                     .setLastResourceOptimisationInterfaceClassName("io.agroal.narayana.LocalXAResource");
@@ -127,9 +128,11 @@ public class NarayanaJtaRecorder {
      * This should be removed in the future.
      */
     @Deprecated(forRemoval = true)
-    public void logAllowUnsafeMultipleLastResources() {
-        log.warn(
-                "Setting quarkus.transaction-manager.allow-unsafe-multiple-last-resources to true makes adding multiple resources to the same transaction unsafe.");
+    public void logUnsafeMultipleLastResourcesOnStartup(
+            TransactionManagerBuildTimeConfig.UnsafeMultipleLastResourcesMode mode) {
+        log.warnf(
+                "Setting quarkus.transaction-manager.unsafe-multiple-last-resources to '%s' makes adding multiple resources to the same transaction unsafe.",
+                mode.name().toLowerCase(Locale.ROOT));
     }
 
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {

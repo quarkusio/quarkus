@@ -572,12 +572,16 @@ or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more comple
 ====
 As a last resort, and for compatibility with Quarkus 3.8 and earlier,
 you may allow unsafe transaction handling across multiple non-XA datasources
-by setting `quarkus.transaction-manager.allow-unsafe-multiple-last-resources` to `true`.
+by setting `quarkus.transaction-manager.unsafe-multiple-last-resources` to `allow`.
 
-With this property set to `true`, a transaction rollback
+With this property set to `allow`, a transaction rollback
 could possibly be applied to only some of the non-XA datasources,
 with other non-XA datasources having already committed their changes,
 leaving your overall system in an inconsistent state.
+
+Setting this property to `warn` leads to the same unsafe behavior,
+but with a warning being logged on each offending transaction,
+instead of a single one on startup.
 
 We do not recommend using this configuration property,
 and we plan to remove it in the future,

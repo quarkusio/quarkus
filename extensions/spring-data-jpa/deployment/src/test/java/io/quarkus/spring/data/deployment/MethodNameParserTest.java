@@ -1,5 +1,6 @@
 package io.quarkus.spring.data.deployment;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -115,7 +116,7 @@ public class MethodNameParserTest {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try (InputStream stream = MethodNameParserTest.class.getClassLoader()
-                    .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                    .getResourceAsStream(fromClassNameToResourceName(clazz.getName()))) {
                 indexer.index(stream);
             }
         }

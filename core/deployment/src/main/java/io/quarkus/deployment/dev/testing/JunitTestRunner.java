@@ -1,5 +1,7 @@
 package io.quarkus.deployment.dev.testing;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -654,13 +656,14 @@ public class JunitTestRunner {
             Map<String, byte[]> transformedClasses = new HashMap<>();
             for (String i : classesToTransform) {
                 try {
+                    String resourceName = fromClassNameToResourceName(i);
                     byte[] classData = IoUtil
-                            .readBytes(deploymentClassLoader.getResourceAsStream(i.replace('.', '/') + ".class"));
+                            .readBytes(deploymentClassLoader.getResourceAsStream(resourceName));
                     ClassReader cr = new ClassReader(classData);
                     ClassWriter writer = new QuarkusClassWriter(cr,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
-                    transformedClasses.put(i.replace('.', '/') + ".class", writer.toByteArray());
+                    transformedClasses.put(resourceName, writer.toByteArray());
                 } catch (Exception e) {
                     log.error("Failed to instrument " + i + " for usage tracking", e);
                 }

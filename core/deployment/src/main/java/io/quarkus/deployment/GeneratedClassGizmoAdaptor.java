@@ -1,5 +1,7 @@
 package io.quarkus.deployment;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.List;
@@ -77,7 +79,7 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
                 .getContextClassLoader();
         //if the class file is present in this (and not the parent) CL then it is an application class
         List<ClassPathElement> res = cl
-                .getElementsWithResource(className.replace('.', '/') + ".class", true);
+                .getElementsWithResource(fromClassNameToResourceName(className), true);
         return !res.isEmpty();
     }
 

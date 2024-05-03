@@ -41,6 +41,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.commons.classloading.ClassloadHelper;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -146,9 +147,10 @@ public class DefaultSerdeConfigTest {
     private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
+            final String resourceName = ClassloadHelper.fromClassNameToResourceName(clazz.getName());
             try {
                 try (InputStream stream = DefaultSerdeConfigTest.class.getClassLoader()
-                        .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                        .getResourceAsStream(resourceName)) {
                     indexer.index(stream);
                 }
             } catch (IOException e) {

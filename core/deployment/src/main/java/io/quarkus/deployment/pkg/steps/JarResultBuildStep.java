@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
 import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 
 import java.io.BufferedInputStream;
@@ -649,7 +650,7 @@ public class JarResultBuildStep {
         fastJarJarsBuilder.setGenerated(generatedZip);
         try (FileSystem out = createNewZip(generatedZip, packageConfig)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = i.getName().replace('.', '/') + ".class";
+                String fileName = fromClassNameToResourceName(i.getName());
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -1181,7 +1182,7 @@ public class JarResultBuildStep {
             }
         }
         for (GeneratedClassBuildItem i : generatedClasses) {
-            String fileName = i.getName().replace('.', '/') + ".class";
+            String fileName = fromClassNameToResourceName(i.getName());
             seen.put(fileName, "Current Application");
             Path target = runnerZipFs.getPath(fileName);
             handleParent(runnerZipFs, fileName, seen);

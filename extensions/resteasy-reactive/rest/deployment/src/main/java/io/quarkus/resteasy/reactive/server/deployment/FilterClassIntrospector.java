@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -24,7 +26,8 @@ public class FilterClassIntrospector {
 
     public boolean usesGetResourceMethod(MethodInfo methodInfo) {
         String className = methodInfo.declaringClass().name().toString();
-        try (InputStream is = classLoader.getResourceAsStream(className.replace('.', '/') + ".class")) {
+        final String resourceName = fromClassNameToResourceName(className);
+        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
             ClassReader configClassReader = new ClassReader(is);
             FilterClassVisitor classVisitor = new FilterClassVisitor(methodInfo.descriptor());
             configClassReader.accept(classVisitor, 0);

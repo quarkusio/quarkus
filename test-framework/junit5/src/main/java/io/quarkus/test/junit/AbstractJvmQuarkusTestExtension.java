@@ -1,5 +1,6 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
@@ -77,7 +78,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // If gradle project running directly with IDE
         if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
             final WorkspaceModule module = gradleAppModel.getApplicationModule();
-            final String testClassFileName = requiredTestClass.getName().replace('.', '/') + ".class";
+            final String testClassFileName = fromClassNameToResourceName(requiredTestClass.getName());
             Path testClassesDir = null;
             for (String classifier : module.getSourceClassifiers()) {
                 final ArtifactSources sources = module.getSources(classifier);

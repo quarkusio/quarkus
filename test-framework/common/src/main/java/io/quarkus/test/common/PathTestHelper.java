@@ -1,5 +1,7 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -133,7 +135,7 @@ public final class PathTestHelper {
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
-        URL resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
+        URL resource = testClass.getClassLoader().getResource(fromClassNameToResourceName(testClass.getName()));
 
         if (resource.getProtocol().equals("jar")) {
             try {
@@ -254,7 +256,7 @@ public final class PathTestHelper {
     }
 
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
-        URL resource = classLoader.getResource(className.replace('.', '/') + ".class");
+        URL resource = classLoader.getResource(fromClassNameToResourceName(className));
         if (resource == null) {
             return false;
         }

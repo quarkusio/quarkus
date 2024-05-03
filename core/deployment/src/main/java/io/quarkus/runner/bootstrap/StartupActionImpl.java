@@ -1,5 +1,7 @@
 package io.quarkus.runner.bootstrap;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -362,7 +364,7 @@ public class StartupActionImpl implements StartupAction {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(i.getName().replace('.', '/') + ".class", i.getClassData());
+                data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
                 if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
                         File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);

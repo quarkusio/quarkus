@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,7 +99,7 @@ public final class RunnerClassLoader extends ClassLoader {
             resources = resourceDirectoryMap.get(dirName);
         }
         if (resources != null) {
-            String classResource = name.replace('.', '/') + ".class";
+            String classResource = fromClassNameToResourceName(name);
             for (ClassLoadingResource resource : resources) {
                 accessingResource(resource);
                 byte[] data = resource.getResourceData(classResource);

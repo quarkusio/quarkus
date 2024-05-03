@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.classloading;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -64,7 +66,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * @param className the name of the class.
      */
     public static boolean isClassPresentAtRuntime(String className) {
-        return isResourcePresentAtRuntime(className.replace('.', '/') + ".class");
+        String resourceName = fromClassNameToResourceName(className);
+        return isResourcePresentAtRuntime(resourceName);
     }
 
     /**
@@ -178,7 +181,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         try {
             ClassLoaderState state = getState();
             synchronized (getClassLoadingLock(name)) {
-                String resourceName = sanitizeName(name).replace('.', '/') + ".class";
+                String resourceName = fromClassNameToResourceName(name);
                 return parentFirst(resourceName, state);
             }
 
@@ -491,7 +494,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 if (c != null) {
                     return c;
                 }
-                String resourceName = sanitizeName(name).replace('.', '/') + ".class";
+                String resourceName = fromClassNameToResourceName(name);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
                 }
@@ -591,6 +594,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         List<String> ret = new ArrayList<>();
         for (String name : getState().loadableResources.keySet()) {
             if (name.endsWith(".class")) {
+                //TODO: clients of this method actually need the non-transformed variant and are transforming it back !?
                 ret.add(name.substring(0, name.length() - 6).replace('/', '.'));
             }
         }

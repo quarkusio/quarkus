@@ -38,7 +38,7 @@ class ExtensionInvoker {
             extensionClasses.put(extensionClass.getName(), extensionClass);
             extensionClassInstances.put(extensionClass, extension);
             try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(
-                    extensionClass.getName().replace('.', '/') + ".class")) {
+                    extensionClass.getName().replace('.', '/').concat(".class"))) {
                 extensionsIndexer.index(stream);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

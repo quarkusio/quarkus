@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
@@ -24,7 +26,8 @@ final class MessageBodyWriterTransformerUtils {
     }
 
     public static boolean shouldAddAllWriteableMarker(String messageBodyWriterClassName, ClassLoader classLoader) {
-        try (InputStream is = classLoader.getResourceAsStream(messageBodyWriterClassName.replace('.', '/') + ".class")) {
+        final String resourceName = fromClassNameToResourceName(messageBodyWriterClassName);
+        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
             if (is != null) {
                 AtomicBoolean result = new AtomicBoolean(false);
                 ClassReader configClassReader = new ClassReader(is);

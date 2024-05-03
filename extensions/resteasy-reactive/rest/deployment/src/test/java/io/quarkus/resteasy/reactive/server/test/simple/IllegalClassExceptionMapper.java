@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -78,7 +80,7 @@ public class IllegalClassExceptionMapper implements ExceptionMapper<Incompatible
 
     private void dumpClass(String classname, String method) {
         InputStream bytes = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(classname.replace('.', '/') + ".class");
+                .getResourceAsStream(fromClassNameToResourceName(classname));
         try {
             ClassReader cr = new ClassReader(bytes);
             PrintWriter writer = new PrintWriter(System.err);

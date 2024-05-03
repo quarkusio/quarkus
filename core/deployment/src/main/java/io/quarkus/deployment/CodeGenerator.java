@@ -1,5 +1,7 @@
 package io.quarkus.deployment;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -381,7 +383,7 @@ public class CodeGenerator {
                                 .map(String::trim)
                                 // skip comments and empty lines
                                 .filter(line -> !line.startsWith("#") && !line.isEmpty())
-                                .filter(className -> classLoader.getResource(className.replace('.', '/') + ".class") == null)
+                                .filter(className -> classLoader.getResource(fromClassNameToResourceName(className)) == null)
                                 .forEach(unavailableList::add);
                     } catch (IOException e) {
                         throw new UncheckedIOException("Failed to read " + serviceFile, e);

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.index;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -313,7 +315,7 @@ public class IndexWrapper implements IndexView {
             return false;
         }
         try (InputStream stream = classLoader
-                .getResourceAsStream(className.replace('.', '/') + ".class")) {
+                .getResourceAsStream(fromClassNameToResourceName(className))) {
             if (stream != null) {
                 indexer.index(stream);
                 result = true;

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -145,7 +147,7 @@ public class ClassTransformingBuildStep {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(transformCl);
-                    String classFileName = className.replace('.', '/') + ".class";
+                    String classFileName = fromClassNameToResourceName(className);
                     List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
@@ -195,7 +197,7 @@ public class ClassTransformingBuildStep {
                     }
                 }
             }
-            String classFileName = className.replace('.', '/') + ".class";
+            String classFileName = fromClassNameToResourceName(className);
             List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
             if (!archives.isEmpty()) {
                 ClassPathElement classPathElement = archives.get(0);
@@ -372,7 +374,7 @@ public class ClassTransformingBuildStep {
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }
-            File classFile = new File(debugPath, className.replace('.', '/') + ".class");
+            File classFile = new File(debugPath, fromClassNameToResourceName(className));
             classFile.getParentFile().mkdirs();
             try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                 classWriter.write(data);

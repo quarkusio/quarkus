@@ -113,7 +113,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
         final String sanitized = sanitize(name);
         final Set<String> resources = this.resources;
         if (resources != null && !resources.contains(sanitized)) {
-            return null;
+            return List.of();
         }
         List<ClassPathResource> ret = new ArrayList<>();
         apply(tree -> {
@@ -123,7 +123,7 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
 
                 }
             });
-            return null;
+            return List.of();
         });
         return ret;
     }

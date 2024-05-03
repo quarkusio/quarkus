@@ -18,12 +18,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Scm;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -82,7 +85,7 @@ import io.quarkus.maven.dependency.GACTV;
  * Generates Quarkus extension descriptor for the runtime artifact.
  * <p>
  * <p/>
- * Also generates META-INF/quarkus-extension.json which includes properties of
+ * Also generates META-INF/quarkus-extension.yaml which includes properties of
  * the extension such as name, labels, maven coordinates, etc that are used by
  * the tools.
  *
@@ -459,6 +462,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         setBuiltWithQuarkusCoreVersion(extObject);
         addJavaVersion(extObject);
+        addNoteworthyItems(extObject);
         addCapabilities(extObject);
         addSource(extObject);
         addExtensionDependencies(extObject);
@@ -739,6 +743,29 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
+    private void addNoteworthyItems(ObjectNode extObject) {
+        try {
+            Set<String> noteworthies = getNoteworthyList();
+            if (noteworthies != null) {
+                for (String noteworthy : noteworthies) {
+                    ObjectNode metadataNode = getMetadataNode(extObject);
+                    // Ignore if already set
+                    String key = "provides-" + noteworthy;
+                    if (!metadataNode.has(key) && noteworthy != null) {
+                        metadataNode.put(key, "true");
+                    }
+                }
+
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (MojoExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (MojoFailureException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void addCapabilities(ObjectNode extObject) throws MojoExecutionException {
         ObjectNode capsNode = null;
         if (!capabilities.getProvides().isEmpty()) {
@@ -1012,6 +1039,35 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                     + BootstrapConstants.DESCRIPTOR_PATH);
         }
         return DependencyUtils.toArtifact(deploymentStr);
+    }
+
+    private Set<String> getNoteworthyList() throws IOException, MojoExecutionException, MojoFailureException {
+
+        ArtifactCoords deploymentCoords = getDeploymentCoords();
+
+        // Ask Maven to resolve the artifact's location, so we can look inside it.
+        // That could be downloading it from a remote repository, searching the local repository or a cache.
+
+        String artifactId = deploymentCoords.getArtifactId();
+        org.eclipse.aether.artifact.Artifact aetherArtifact = new DefaultArtifact(
+                deploymentCoords.getGroupId(),
+                artifactId,
+                deploymentCoords.getClassifier(),
+                deploymentCoords.getType(),
+                deploymentCoords.getVersion());
+
+        final LocalProject localProject = workspaceProvider.getProject(deploymentCoords.getGroupId(),
+                deploymentCoords.getArtifactId());
+        if (localProject != null) {
+            Path file = localProject.getClassesDir().resolve(BootstrapConstants.NOTEWORTHY_BUILD_ITEMS_PATH);
+            if (Files.exists(file)) {
+                try (Stream<String> lines = Files.lines(file)) {
+                    return lines.collect(Collectors.toSet());
+                }
+            }
+        }
+
+        return null;
     }
 
     private Properties getExtensionDescriptor(org.eclipse.aether.artifact.Artifact a, boolean packaged) {

@@ -50,6 +50,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -157,7 +158,7 @@ public final class ExtensionLoader {
 
         // the proxy objects used for run time config in the recorders
         Map<Class<?>, Object> proxies = new HashMap<>();
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, BootstrapConstants.BUILD_STEPS_PATH)) {
             try {
                 result = result.andThen(ExtensionLoader.loadStepsFromClass(clazz, readResult, proxies, bsf));
             } catch (Throwable e) {

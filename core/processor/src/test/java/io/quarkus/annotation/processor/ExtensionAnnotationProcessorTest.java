@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -54,15 +55,47 @@ class ExtensionAnnotationProcessorTest {
         assertEquals("org.acme.examples.ClassWithBuildStep", contents);
     }
 
-    private String removeLineBreaks(String s) {
-        return s.replace(System.getProperty("line.separator"), "")
-                .replace("\n", "");
+    @Test
+    @Classpath("org.acme.examples.ClassWithBuildStep")
+    void shouldNotGenerateANoteworthyBuildItemsFileIfThereAreNoAnnotationsForIt(Results results) throws IOException {
+        assertNoErrrors(results);
+        List<JavaFileObject> sources = results.sources;
+        JavaFileObject buildItemsFile = sources.stream()
+                .filter(source -> source.getName()
+                        .endsWith("build-items.list"))
+                .findAny()
+                .orElse(null);
+        assertNull(buildItemsFile);
+
+    }
+
+    @Test
+    @Classpath("org.acme.examples.ClassWithNoteworthyBuildItem")
+    void shouldGenerateANoteworthyBuildItemsFile(Results results) throws IOException {
+        assertNoErrrors(results);
+        List<JavaFileObject> sources = results.sources;
+        JavaFileObject buildItemsFile = sources.stream()
+                .filter(source -> source.getName()
+                        .endsWith("build-items.list"))
+                .findAny()
+                .orElse(null);
+        assertNotNull(buildItemsFile);
+
+        String contents = removeLineBreaks(new String(buildItemsFile
+                .openInputStream()
+                .readAllBytes(), StandardCharsets.UTF_8));
+        assertEquals("some-cool-ability", contents);
     }
 
     @Test
     @Classpath("org.acme.examples.ClassWithoutBuildStep")
     void shouldProcessEmptyClassWithoutErrors(Results results) {
         assertNoErrrors(results);
+    }
+
+    private String removeLineBreaks(String s) {
+        return s.replace(System.getProperty("line.separator"), "")
+                .replace("\n", "");
     }
 
     private static void assertNoErrrors(Results results) {

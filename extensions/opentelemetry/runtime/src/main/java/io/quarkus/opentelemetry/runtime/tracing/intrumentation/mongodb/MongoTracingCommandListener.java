@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.tracing;
+package io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

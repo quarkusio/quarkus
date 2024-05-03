@@ -73,7 +73,6 @@ import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
 import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
-import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -110,14 +109,6 @@ public class MongoClientProcessor {
         return new AdditionalIndexedClassesBuildItem(
                 MongoDnsClientProvider.class.getName(),
                 MongoDnsClient.class.getName());
-    }
-
-    @BuildStep
-    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex(MongoClientBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.tracingEnabled) {
-            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
-        }
-        return new AdditionalIndexedClassesBuildItem();
     }
 
     @BuildStep

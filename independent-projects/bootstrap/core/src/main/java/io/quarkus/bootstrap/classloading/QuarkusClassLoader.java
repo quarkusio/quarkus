@@ -594,6 +594,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         List<String> ret = new ArrayList<>();
         for (String name : getState().loadableResources.keySet()) {
             if (name.endsWith(".class")) {
+                //TODO: clients of this method actually need the non-transformed variant and are transforming it back !?
                 ret.add(name.substring(0, name.length() - 6).replace('/', '.'));
             }
         }

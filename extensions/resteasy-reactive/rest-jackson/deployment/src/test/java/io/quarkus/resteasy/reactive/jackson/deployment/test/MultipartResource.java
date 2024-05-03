@@ -17,11 +17,13 @@ import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
+import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
 import io.smallrye.common.annotation.Blocking;
 
 @Path("/multipart")
 public class MultipartResource {
 
+    @DisableSecureSerialization // Person has @SecureField but we want to inspect all data
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -45,6 +47,7 @@ public class MultipartResource {
         return result;
     }
 
+    @DisableSecureSerialization // Person has @SecureField but we want to inspect all data
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.MULTIPART_FORM_DATA)

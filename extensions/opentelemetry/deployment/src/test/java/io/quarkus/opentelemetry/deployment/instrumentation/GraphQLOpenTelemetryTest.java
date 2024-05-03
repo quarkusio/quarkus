@@ -59,7 +59,9 @@ public class GraphQLOpenTelemetryTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
                             TestSpanExporter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
+                    .addAsResource(new StringAsset(
+                            "smallrye.graphql.allowGet=true\nquarkus.mongodb.devservices.enabled=false"),
+                            "application.properties")
                     .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
                     .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),

@@ -26,7 +26,8 @@ public class OpenTelemetryMpContextPropagationTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class));
+                    .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false");
 
     @Test
     void testOpenTelemetryContextPropagationWithCustomExecutorAndThreadContextProvider() {

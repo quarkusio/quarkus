@@ -17,6 +17,7 @@ public class OpenTelemetryServiceNameAppNameTest extends OpenTelemetryServiceNam
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class)
                     .addAsResource(new StringAsset("" +
+                            "quarkus.mongodb.devservices.enabled=false\n" +
                             "quarkus.otel.bsp.schedule.delay=50\n" +
                             "quarkus.application.name=" + SERVICE_NAME + "\n"), "application.properties"));
 }

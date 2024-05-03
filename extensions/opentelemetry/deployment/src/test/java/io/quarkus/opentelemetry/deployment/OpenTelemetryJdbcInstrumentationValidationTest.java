@@ -16,7 +16,8 @@ public class OpenTelemetryJdbcInstrumentationValidationTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
-                            "quarkus.datasource.db-kind=h2\n" +
+                            "quarkus.mongodb.devservices.enabled=false\n" +
+                                    "quarkus.datasource.db-kind=h2\n" +
                                     "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver\n"),
                             "application.properties"))
             .assertException(t -> {

@@ -26,7 +26,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryIdGeneratorTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

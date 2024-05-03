@@ -23,6 +23,7 @@ public class OpenTelemetryContinuousTestingTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
+                            "quarkus.mongodb.devservices.enabled=false",
                             "quarkus.otel.traces.exporter=test-span-exporter")),
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

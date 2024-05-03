@@ -26,7 +26,8 @@ public class OpenTelemetryDestroyerTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(
-                            "quarkus.otel.traces.exporter=test-span-exporter\n" +
+                            "quarkus.mongodb.devservices.enabled=false\n" +
+                                    "quarkus.otel.traces.exporter=test-span-exporter\n" +
                                     "quarkus.otel.experimental.shutdown-wait-time=PT60S\n"),
                             "application.properties"));
 

@@ -61,6 +61,7 @@ public class VertxOpenTelemetryTest {
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")

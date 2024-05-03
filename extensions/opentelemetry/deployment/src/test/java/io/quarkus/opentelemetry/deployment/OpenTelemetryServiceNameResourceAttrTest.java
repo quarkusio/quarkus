@@ -15,6 +15,7 @@ public class OpenTelemetryServiceNameResourceAttrTest extends OpenTelemetryServi
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class))
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50")// speed up test
             .overrideRuntimeConfigKey("quarkus.otel.resource.attributes", "service.name=" + SERVICE_NAME);
 }

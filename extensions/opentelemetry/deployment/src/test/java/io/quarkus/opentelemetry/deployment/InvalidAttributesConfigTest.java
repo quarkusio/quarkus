@@ -15,6 +15,7 @@ public class InvalidAttributesConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.otel.resource.attributes", "pod.id=${SOMETHING}")
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .assertException(new Consumer<Throwable>() {
                 @Override
                 public void accept(final Throwable throwable) {

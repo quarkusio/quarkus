@@ -16,6 +16,7 @@ public class TracerDisabledLegacyTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.opentelemetry.tracer.enabled", "false")
+            .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .assertException(t -> Assertions.assertEquals(DeploymentException.class, t.getClass()));
 
     @Inject

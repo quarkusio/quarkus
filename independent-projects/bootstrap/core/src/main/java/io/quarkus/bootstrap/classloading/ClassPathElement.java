@@ -144,6 +144,10 @@ public interface ClassPathElement extends Closeable {
     };
 
     default List<ClassPathResource> getResources(String name) {
-        return List.of(getResource(name));
+        ClassPathResource resource = getResource(name);
+        if (resource != null) {
+            return List.of(resource);
+        }
+        return Collections.emptyList();
     }
 }

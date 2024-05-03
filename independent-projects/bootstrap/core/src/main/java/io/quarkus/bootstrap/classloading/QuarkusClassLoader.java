@@ -268,9 +268,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         } else if (name.isEmpty()) {
             for (ClassPathElement i : elements) {
                 List<ClassPathResource> resList = i.getResources("");
-                for (var res : resList) {
-                    if (res != null) {
-                        resources.add(res.getUrl());
+                if (resList != null) {
+                    for (var res : resList) {
+                        if (res != null) {
+                            resources.add(res.getUrl());
+                        }
                     }
                 }
             }

@@ -5,6 +5,8 @@ import java.util.Map;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEvent> {
@@ -89,5 +91,62 @@ public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEven
         } else {
             return false;
         }
+    }
+
+    /**
+     * Creates {@link SecurityEventHelper} initialized on first request.
+     * This method should only be used when there is a risk the helper will be initialized during the static init phase.
+     * During the runtime init phase, prefer the constructor.
+     */
+    public static <S extends SecurityEvent, F extends SecurityEvent> SecurityEventHelper<S, F> lazilyOf(Event<S> successEvent,
+            Event<F> failureEvent, S successInstance, F failureInstance, BeanManager beanManager) {
+        return new SecurityEventHelper<>(successEvent, failureEvent, successInstance, failureInstance, beanManager, true) {
+
+            private volatile Boolean eventsDisabled = null;
+
+            private boolean areEventsDisabled() {
+                if (eventsDisabled == null) {
+                    synchronized (this) {
+                        if (eventsDisabled == null) {
+                            this.eventsDisabled = !ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
+                                    Boolean.class);
+                        }
+                    }
+                }
+                return eventsDisabled;
+            }
+
+            @Override
+            public void fireSuccessEvent(S successInstance) {
+                if (areEventsDisabled()) {
+                    return;
+                }
+                super.fireSuccessEvent(successInstance);
+            }
+
+            @Override
+            public void fireFailureEvent(F failureInstance) {
+                if (areEventsDisabled()) {
+                    return;
+                }
+                super.fireFailureEvent(failureInstance);
+            }
+
+            @Override
+            public boolean fireEventOnSuccess() {
+                if (areEventsDisabled()) {
+                    return false;
+                }
+                return super.fireEventOnSuccess();
+            }
+
+            @Override
+            public boolean fireEventOnFailure() {
+                if (areEventsDisabled()) {
+                    return false;
+                }
+                return super.fireEventOnFailure();
+            }
+        };
     }
 }

@@ -12,6 +12,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -47,7 +48,7 @@ public class RolesAllowedExpressionTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(RolesAllowedBean.class, IdentityMock.class,
-                            AuthData.class, SecurityTestUtils.class)
+                            AuthData.class, SecurityTestUtils.class, SecuredUtils.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @Inject
@@ -95,6 +96,12 @@ public class RolesAllowedExpressionTest {
         // property expression with escaped collection separator should not be treated as list
         assertSuccess(() -> bean.ldap(), "ldap",
                 new AuthData(Set.of("cn=Administrator,ou=Software,dc=Tester,dc=User"), false, "ldap"));
+    }
+
+    @Test
+    public void testStaticSecuredMethod() {
+        assertSuccess(SecuredUtils::staticSecuredMethod, "admin", ADMIN);
+        assertFailureFor(SecuredUtils::staticSecuredMethod, ForbiddenException.class, USER);
     }
 
     @Singleton
@@ -149,6 +156,19 @@ public class RolesAllowedExpressionTest {
         @RolesAllowed("${ldap-roles}")
         public final String ldap() {
             return "ldap";
+        }
+
+    }
+
+    public static class SecuredUtils {
+
+        private SecuredUtils() {
+            // UTIL CLASS
+        }
+
+        @RolesAllowed("${sudo}")
+        public static String staticSecuredMethod() {
+            return ConfigProvider.getConfig().getValue("sudo", String.class);
         }
 
     }

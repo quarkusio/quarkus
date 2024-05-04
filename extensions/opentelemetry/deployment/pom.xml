@@ -32,6 +32,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mongodb-client-deployment</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

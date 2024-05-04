@@ -13,6 +13,7 @@ import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.inject.spi.EventContext;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -41,6 +42,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -49,6 +51,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb.MongoTracingCommandListener;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
@@ -196,6 +199,17 @@ public class TracerProcessor {
                     but the Quarkus Security is missing. This feature will only work if you add the Quarkus Security extension.
                     """);
         }
+    }
+
+    @BuildStep(onlyIf = MongoTracingEnabled.class)
+    AdditionalIndexedClassesBuildItem includeMongoTracingListenerToIndex() {
+        Boolean mongoTracingEnabled = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.mongodb.tracing.enabled", Boolean.class)
+                .orElse(false);
+        if (mongoTracingEnabled) {
+            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
+        }
+        return new AdditionalIndexedClassesBuildItem();
     }
 
     private static ObserverConfiguratorBuildItem createEventObserver(

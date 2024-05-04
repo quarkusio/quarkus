@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -55,7 +54,6 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -64,7 +62,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.mongodb.deployment.MongoClientBuildTimeConfig;
 import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
@@ -75,7 +72,6 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb.MongoTracingCommandListener;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -310,14 +306,6 @@ public class OpenTelemetryProcessor {
                                                 dataSourceName, OPEN_TELEMETRY_DRIVER))));
             }
         }
-    }
-
-    @BuildStep
-    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex(MongoClientBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.tracingEnabled) {
-            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
-        }
-        return new AdditionalIndexedClassesBuildItem();
     }
 
     private static boolean dataSourceUsesOTelJdbcDriver(String dataSourceName) {

@@ -68,6 +68,7 @@ public class OidcRecorder {
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
     private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
+    private static volatile boolean userInfoInjectionPointDetected = false;
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
         return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
@@ -78,7 +79,9 @@ public class OidcRecorder {
         };
     }
 
-    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig,
+            boolean userInfoInjectionPointDetected) {
+        OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
         final Vertx vertxValue = vertx.get();
 
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
@@ -540,6 +543,9 @@ public class OidcRecorder {
                                 return Uni.createFrom().failure(new ConfigurationException(
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
                             }
+                        }
+                        if (userInfoInjectionPointDetected && metadata.getUserInfoUri() != null) {
+                            enableUserInfo(oidcConfig);
                         }
                         if (oidcConfig.authentication.userInfoRequired.orElse(false) && metadata.getUserInfoUri() == null) {
                             client.close();

@@ -93,6 +93,24 @@ identity to be present.
 
 See xref:security-oidc-bearer-token-authentication.adoc#integration-testing-security-annotation[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#integration-testing-security-annotation[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
 
+Additionally, you can specify attributes for the identity, perhaps custom items that were added with identity augmentation:
+
+[source,java]
+----
+@Inject
+SecurityIdentity identity;
+
+@Test
+@TestSecurity(user = "testUser", "roles = {"admin, "user"}, attributes = {
+            @SecurityAttribute(key = "answer", value = "42", type = AttributeType.LONG) }
+void someTestMethod() {
+    Long answer = identity.<Long>getAttribute("answer");
+...
+}
+----
+
+This will run the test with an identity with an attribute of type `Long` named `answer`.
+
 [WARNING]
 ====
 The feature is only available for `@QuarkusTest` and will **not** work on a `@QuarkusIntegrationTest`.

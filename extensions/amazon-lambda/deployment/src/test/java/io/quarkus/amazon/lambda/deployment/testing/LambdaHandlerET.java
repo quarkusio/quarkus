@@ -15,8 +15,7 @@ class LambdaHandlerET {
         // you test your lambdas by invoking on http://localhost:8081
         // this works in dev mode too
 
-        Person in = new Person();
-        in.setName("Stu");
+        Person in = new Person("Stu");
         given()
                 .contentType("application/json")
                 .accept("application/json")

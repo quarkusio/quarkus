@@ -32,7 +32,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus.security</groupId>
-            <artifactId>quarkus-security</artifactId>
+            <artifactId>quarkus-security-api</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>javax.enterprise</groupId>

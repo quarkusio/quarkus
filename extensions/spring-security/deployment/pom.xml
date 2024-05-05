@@ -35,16 +35,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.security</groupId>
-            <artifactId>quarkus-security</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.enterprise</groupId>
-                    <artifactId>cdi-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-test-utils</artifactId>
             <scope>test</scope>

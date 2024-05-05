@@ -19,7 +19,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus.security</groupId>
-            <artifactId>quarkus-security</artifactId>
+            <artifactId>quarkus-security-api</artifactId>
         </dependency>
     </dependencies>
 

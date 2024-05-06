@@ -29,7 +29,9 @@ import jakarta.enterprise.inject.build.compatible.spi.SyntheticObserver;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.util.Nonbinding;
 
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MutableAnnotationOverlay;
 
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.CreationalContextImpl;
@@ -73,15 +75,15 @@ import io.quarkus.gizmo.ResultHandle;
  */
 public class ExtensionsEntryPoint {
     private final ExtensionInvoker invoker;
-    private final AllAnnotationOverlays annotationOverlays;
     private final SharedErrors errors;
 
     private final Map<DotName, ClassConfig> qualifiers;
     private final Map<DotName, ClassConfig> interceptorBindings;
     private final Map<DotName, ClassConfig> stereotypes;
     private final List<MetaAnnotationsImpl.ContextData> contexts;
+    private final List<AnnotationTransformation> preAnnotationTransformations;
 
-    private volatile AllAnnotationTransformations preAnnotationTransformations;
+    private volatile MutableAnnotationOverlay annotationOverlay;
 
     private final List<SyntheticBeanBuilderImpl<?>> syntheticBeans;
     private final List<SyntheticObserverBuilderImpl<?>> syntheticObservers;
@@ -94,21 +96,21 @@ public class ExtensionsEntryPoint {
     public ExtensionsEntryPoint(List<BuildCompatibleExtension> extensions) {
         invoker = new ExtensionInvoker(extensions);
         if (invoker.isEmpty()) {
-            annotationOverlays = null;
             errors = null;
             qualifiers = null;
             interceptorBindings = null;
             stereotypes = null;
             contexts = null;
+            preAnnotationTransformations = null;
             syntheticBeans = null;
             syntheticObservers = null;
         } else {
-            annotationOverlays = new AllAnnotationOverlays();
             errors = new SharedErrors();
             qualifiers = new ConcurrentHashMap<>();
             interceptorBindings = new ConcurrentHashMap<>();
             stereotypes = new ConcurrentHashMap<>();
             contexts = Collections.synchronizedList(new ArrayList<>());
+            preAnnotationTransformations = Collections.synchronizedList(new ArrayList<>());
             syntheticBeans = Collections.synchronizedList(new ArrayList<>());
             syntheticObservers = Collections.synchronizedList(new ArrayList<>());
         }
@@ -123,10 +125,14 @@ public class ExtensionsEntryPoint {
         if (invoker.isEmpty()) {
             return;
         }
-        try {
-            BuildServicesImpl.init(applicationIndex, annotationOverlays);
 
-            this.preAnnotationTransformations = new AllAnnotationTransformations(applicationIndex, annotationOverlays);
+        MutableAnnotationOverlay overlay = MutableAnnotationOverlay.builder(applicationIndex)
+                .compatibleMode()
+                .runtimeAnnotationsOnly()
+                .inheritedAnnotations()
+                .build();
+        try {
+            BuildServicesImpl.init(applicationIndex, overlay);
 
             // the method name is `buildComputingBeanArchiveIndex`, but it just builds a computing index
             // on top of whatever index is passed to it
@@ -134,10 +140,10 @@ public class ExtensionsEntryPoint {
                     Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>(), applicationIndex);
 
             new ExtensionPhaseDiscovery(invoker, computingApplicationIndex, errors, additionalClasses,
-                    preAnnotationTransformations, qualifiers, interceptorBindings, stereotypes, contexts).run();
+                    overlay, qualifiers, interceptorBindings, stereotypes, contexts).run();
         } finally {
             // noone should attempt annotation transformations on custom meta-annotations after `@Discovery` is finished
-            preAnnotationTransformations.freeze();
+            preAnnotationTransformations.addAll(overlay.freeze());
 
             BuildServicesImpl.reset();
         }
@@ -152,10 +158,17 @@ public class ExtensionsEntryPoint {
         if (invoker.isEmpty()) {
             return;
         }
-        builder.addAnnotationTransformer(preAnnotationTransformations.classes);
-        builder.addAnnotationTransformer(preAnnotationTransformations.methods);
-        builder.addAnnotationTransformer(preAnnotationTransformations.parameters);
-        builder.addAnnotationTransformer(preAnnotationTransformations.fields);
+
+        builder.addAnnotationTransformation(new AnnotationTransformation() {
+            @Override
+            public void apply(TransformationContext context) {
+                for (AnnotationTransformation preAnnotationTransformation : preAnnotationTransformations) {
+                    if (preAnnotationTransformation.supports(context.declaration().kind())) {
+                        preAnnotationTransformation.apply(context);
+                    }
+                }
+            }
+        });
 
         if (!qualifiers.isEmpty()) {
             builder.addQualifierRegistrar(new QualifierRegistrar() {
@@ -196,7 +209,7 @@ public class ExtensionsEntryPoint {
 
                                 return InterceptorBinding.of(annotationName, nonbindingMembers);
                             })
-                            .collect(Collectors.toUnmodifiableList());
+                            .toList();
                 }
             });
         }
@@ -247,20 +260,31 @@ public class ExtensionsEntryPoint {
         if (invoker.isEmpty()) {
             return;
         }
-        AllAnnotationTransformations annotationTransformations = new AllAnnotationTransformations(beanArchiveIndex,
-                annotationOverlays);
-        builder.addAnnotationTransformer(annotationTransformations.classes);
-        builder.addAnnotationTransformer(annotationTransformations.methods);
-        builder.addAnnotationTransformer(annotationTransformations.parameters);
-        builder.addAnnotationTransformer(annotationTransformations.fields);
 
-        BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
+        annotationOverlay = MutableAnnotationOverlay.builder(beanArchiveIndex)
+                .compatibleMode()
+                .runtimeAnnotationsOnly()
+                .inheritedAnnotations()
+                .build();
+
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseEnhancement(invoker, beanArchiveIndex, errors, annotationTransformations).run();
+            new ExtensionPhaseEnhancement(invoker, beanArchiveIndex, errors, annotationOverlay).run();
         } finally {
             // noone should attempt annotation transformations on application classes after `@Enhancement` is finished
-            annotationTransformations.freeze();
+            List<AnnotationTransformation> annotationTransformations = annotationOverlay.freeze();
+
+            builder.addAnnotationTransformation(new AnnotationTransformation() {
+                @Override
+                public void apply(TransformationContext context) {
+                    for (AnnotationTransformation annotationTransformation : annotationTransformations) {
+                        if (annotationTransformation.supports(context.declaration().kind())) {
+                            annotationTransformation.apply(context);
+                        }
+                    }
+                }
+            });
 
             BuildServicesImpl.reset();
         }
@@ -280,10 +304,10 @@ public class ExtensionsEntryPoint {
             return;
         }
 
-        BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
+            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlay,
                     allBeans, allInterceptors, allObservers, invokerFactory).run();
         } finally {
             BuildServicesImpl.reset();
@@ -300,10 +324,10 @@ public class ExtensionsEntryPoint {
             return;
         }
 
-        BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseSynthesis(invoker, beanArchiveIndex, errors, annotationOverlays,
+            new ExtensionPhaseSynthesis(invoker, beanArchiveIndex, errors, annotationOverlay,
                     syntheticBeans, syntheticObservers).run();
         } finally {
             BuildServicesImpl.reset();
@@ -579,15 +603,15 @@ public class ExtensionsEntryPoint {
 
         Collection<io.quarkus.arc.processor.BeanInfo> syntheticBeans = allBeans.stream()
                 .filter(BeanInfo::isSynthetic)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
         Collection<io.quarkus.arc.processor.ObserverInfo> syntheticObservers = allObservers.stream()
                 .filter(ObserverInfo::isSynthetic)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
 
-        BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
+            new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlay,
                     syntheticBeans, Collections.emptyList(), syntheticObservers, invokerFactory).run();
         } finally {
             BuildServicesImpl.reset();
@@ -606,10 +630,10 @@ public class ExtensionsEntryPoint {
             return;
         }
 
-        BuildServicesImpl.init(beanArchiveIndex, annotationOverlays);
+        BuildServicesImpl.init(beanArchiveIndex, annotationOverlay);
 
         try {
-            new ExtensionPhaseValidation(invoker, beanArchiveIndex, errors, annotationOverlays,
+            new ExtensionPhaseValidation(invoker, beanArchiveIndex, errors, annotationOverlay,
                     allBeans, allObservers).run();
         } finally {
             BuildServicesImpl.reset();
@@ -631,7 +655,5 @@ public class ExtensionsEntryPoint {
         }
 
         invoker.invalidate();
-
-        annotationOverlays.invalidate();
     }
 }

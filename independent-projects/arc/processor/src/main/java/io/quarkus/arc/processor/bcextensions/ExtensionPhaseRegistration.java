@@ -5,31 +5,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.build.compatible.spi.BeanInfo;
 import jakarta.enterprise.inject.build.compatible.spi.ObserverInfo;
 import jakarta.enterprise.inject.spi.DefinitionException;
 
-import org.jboss.jandex.IndexView;
-
 import io.quarkus.arc.processor.InterceptorInfo;
 
 class ExtensionPhaseRegistration extends ExtensionPhaseBase {
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
     private final Collection<io.quarkus.arc.processor.BeanInfo> allBeans;
     private final Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors;
     private final Collection<io.quarkus.arc.processor.ObserverInfo> allObservers;
     private final io.quarkus.arc.processor.InvokerFactory invokerFactory;
     private final io.quarkus.arc.processor.AssignabilityCheck assignability;
 
-    ExtensionPhaseRegistration(ExtensionInvoker invoker, IndexView beanArchiveIndex, SharedErrors errors,
-            AllAnnotationOverlays annotationOverlays, Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
+    ExtensionPhaseRegistration(ExtensionInvoker invoker, org.jboss.jandex.IndexView beanArchiveIndex, SharedErrors errors,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay, Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
             Collection<InterceptorInfo> allInterceptors, Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
             io.quarkus.arc.processor.InvokerFactory invokerFactory) {
         super(ExtensionPhase.REGISTRATION, invoker, beanArchiveIndex, errors);
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.allBeans = allBeans;
         this.allInterceptors = allInterceptors;
         this.allObservers = allObservers;
@@ -106,8 +103,8 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
                     }
                     return false;
                 })
-                .map(it -> BeanInfoImpl.create(index, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (BeanInfo) BeanInfoImpl.create(index, annotationOverlay, it))
+                .toList();
     }
 
     private List<ObserverInfo> matchingObservers(org.jboss.jandex.MethodInfo jandexMethod) {
@@ -122,18 +119,17 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
                     }
                     return false;
                 })
-                .map(it -> new ObserverInfoImpl(index, annotationOverlays, it))
-                .collect(Collectors.toUnmodifiableList());
+                .map(it -> (ObserverInfo) new ObserverInfoImpl(index, annotationOverlay, it))
+                .toList();
     }
 
     @Override
     Object argumentForExtensionMethod(ExtensionMethodParameter type, ExtensionMethod method) {
-        if (type == ExtensionMethodParameter.INVOKER_FACTORY) {
-            return new InvokerFactoryImpl(invokerFactory);
-        } else if (type == ExtensionMethodParameter.TYPES) {
-            return new TypesImpl(index, annotationOverlays);
-        }
+        return switch (type) {
+            case INVOKER_FACTORY -> new InvokerFactoryImpl(invokerFactory);
+            case TYPES -> new TypesImpl(index, annotationOverlay);
+            default -> super.argumentForExtensionMethod(type, method);
+        };
 
-        return super.argumentForExtensionMethod(type, method);
     }
 }

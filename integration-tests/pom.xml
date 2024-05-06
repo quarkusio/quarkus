@@ -100,7 +100,9 @@
                             <junit.quarkus.orderer.secondary-orderer>
                                 org.junit.jupiter.api.ClassOrderer$OrderAnnotation
                             </junit.quarkus.orderer.secondary-orderer>
+                            <exp.quarkus.virtual-blocking-pool>true</exp.quarkus.virtual-blocking-pool>
                         </systemPropertyVariables>
+                        <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/jdk.internal.vm=ALL-UNNAMED</argLine>
                     </configuration>
                 </plugin>
             </plugins>

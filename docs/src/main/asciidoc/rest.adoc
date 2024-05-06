@@ -2350,7 +2350,7 @@ class Filters {
     @ServerRequestFilter
     public Optional<RestResponse<Void>> getFilter(ContainerRequestContext ctx) {
         // only allow GET methods for now
-        if(ctx.getMethod().equals(HttpMethod.GET)) {
+        if(!ctx.getMethod().equals(HttpMethod.GET)) {
             return Optional.of(RestResponse.status(Response.Status.METHOD_NOT_ALLOWED));
         }
         return Optional.empty();

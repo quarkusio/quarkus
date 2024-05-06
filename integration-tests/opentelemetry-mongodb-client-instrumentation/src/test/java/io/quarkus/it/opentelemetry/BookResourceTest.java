@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -48,19 +49,39 @@ class BookResourceTest {
     }
 
     @Test
+    void blockingClientError() {
+        given()
+                .get("/books/invalid")
+                .then()
+                .assertThat()
+                .statusCode(500);
+        assertTraceAvailable("my-collection", "$invalidop");
+    }
+
+    @Test
     void reactiveClient() {
         testInsertBooks("/reactive-books");
         assertTraceAvailable("my-reactive-collection");
     }
 
-    private void assertTraceAvailable(String dbCollectionName) {
+    @Test
+    void reactiveClientError() {
+        given()
+                .get("/reactive-books/invalid")
+                .then()
+                .assertThat()
+                .statusCode(500);
+        assertTraceAvailable("my-reactive-collection", "$invalidop");
+    }
+
+    private void assertTraceAvailable(String... commandPart) {
         await().atMost(Duration.ofSeconds(30L)).untilAsserted(() -> {
             boolean traceAvailable = false;
             for (Map<String, Object> spanData : getSpans()) {
                 if (spanData.get("attributes") instanceof Map attr) {
                     var cmd = (String) attr.get("mongodb.command");
                     if (cmd != null) {
-                        assertThat(cmd).contains(dbCollectionName, "books");
+                        assertThat(cmd).contains(commandPart).contains("books");
                         traceAvailable = true;
                     }
                 }

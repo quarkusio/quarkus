@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.Document;
 
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -36,6 +38,14 @@ public class ReactiveBookResource {
     @GET
     public CompletionStage<List<Book>> getBooks() {
         return getCollection().find().collect().asList().subscribeAsCompletionStage();
+    }
+
+    @GET
+    @Path("/invalid")
+    public CompletionStage<List<Book>> getBooksError() {
+        BsonDocument query = new BsonDocument();
+        query.put("$invalidop", new BsonDouble(0d));
+        return getCollection().find(query).collect().asList().subscribeAsCompletionStage();
     }
 
     @POST

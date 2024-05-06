@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 public class TypesafeGraphQLRecursionTest {
-    private static String EXPECTED_THROWN_MESSAGE = "SRGQLDC035008: Field recursion found";
+    private final static String EXPECTED_THROWN_MESSAGE = "field recursion found";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()

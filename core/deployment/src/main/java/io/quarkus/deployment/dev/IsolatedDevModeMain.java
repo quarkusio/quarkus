@@ -36,6 +36,7 @@ import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.commons.classloading.ClassloadHelper;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
@@ -408,9 +409,10 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                         public boolean test(String s) {
                                             QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
                                                     .getContextClassLoader();
+                                            String resourceName = ClassloadHelper.fromClassNameToResourceName(s);
                                             //if the class file is present in this (and not the parent) CL then it is an application class
                                             List<ClassPathElement> res = cl
-                                                    .getElementsWithResource(s.replace('.', '/') + ".class", true);
+                                                    .getElementsWithResource(resourceName, true);
                                             return !res.isEmpty();
                                         }
                                     }));

@@ -218,6 +218,7 @@ public class OidcBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     public SyntheticBeanBuildItem setup(
+            BeanRegistrationPhaseBuildItem beanRegistration,
             OidcConfig config,
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
@@ -225,7 +226,8 @@ public class OidcBuildStep {
             // this is required for setup ordering: we need CP set up
             ContextPropagationInitializedBuildItem cpInitializedBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
-                .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
+                .supplier(
+                        recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig, detectUserInfoRequired(beanRegistration)))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -252,15 +254,8 @@ public class OidcBuildStep {
         }
     }
 
-    @BuildStep
-    void detectUserInfoRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
-        if (isInjected(beanRegistrationPhaseBuildItem, USER_INFO_NAME, null)) {
-            runtimeConfigDefaultProducer.produce(
-                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.user-info-required", "true"));
-            runtimeConfigDefaultProducer.produce(
-                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.*.authentication.user-info-required", "true"));
-        }
+    private static boolean detectUserInfoRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem) {
+        return isInjected(beanRegistrationPhaseBuildItem, USER_INFO_NAME, null);
     }
 
     @BuildStep

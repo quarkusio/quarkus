@@ -1,5 +1,7 @@
 package io.quarkus.test.component;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -1196,7 +1198,7 @@ public class QuarkusComponentTestExtension
             testOutputDirectory = new File(outputDirectory);
         } else {
             // org.acme.Foo -> org/acme/Foo.class
-            String testClassResourceName = testClass.getName().replace('.', '/') + ".class";
+            String testClassResourceName = fromClassNameToResourceName(testClass.getName());
             // org/acme/Foo.class -> /some/path/to/project/target/test-classes/org/acme/Foo.class
             String testPath = testClass.getClassLoader().getResource(testClassResourceName).getFile();
             // /some/path/to/project/target/test-classes/org/acme/Foo.class -> /some/path/to/project/target/test-classes

@@ -38,6 +38,7 @@
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <jandex.version>3.1.7</jandex.version>
+        <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
         <assertj.version>3.25.3</assertj.version>
@@ -89,6 +90,8 @@
         <module>core</module>
         <module>runner</module>
         <module>gradle-resolver</module>
+        <module>classloader-commons</module>
+        <module>benchmarks</module>
     </modules>
     <build>
         <pluginManagement>

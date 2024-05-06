@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -113,7 +115,7 @@ public class BannerProcessor {
                 // We determine whether the banner is the default by checking to see if the jar that contains it also
                 // contains this class. This way although somewhat complicated guarantees that any rename of artifacts
                 // won't affect the check
-                Path resolved = p.resolve("/" + thisClassName.replace('.', '/') + ".class");
+                Path resolved = p.resolve("/" + fromClassNameToResourceName(thisClassName));
                 return Files.exists(resolved);
             });
         } catch (UncheckedIOException ex) {

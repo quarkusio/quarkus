@@ -454,6 +454,10 @@ public class InterceptedStaticMethodsProcessor {
                 MethodCreator newMethod = transformer.addMethod(originalDescriptor)
                         .setModifiers(interceptedMethod.flags())
                         .setSignature(interceptedMethod.genericSignatureIfRequired());
+                // Copy over all annotations
+                for (AnnotationInstance annotationInstance : interceptedMethod.annotations()) {
+                    newMethod.addAnnotation(annotationInstance);
+                }
                 for (Type exceptionType : interceptedMethod.exceptions()) {
                     newMethod.addException(exceptionType.name().toString());
                 }

@@ -45,6 +45,10 @@ public class HttpConfiguration {
      * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it
      * is not suitable for dev/test mode as other people on the network can connect to your
      * development machine.
+     * <p>
+     * As an exception, when running in Windows Subsystem for Linux (WSL), the HTTP host
+     * defaults to 0.0.0.0 even in dev/test mode since using localhost makes the application
+     * inaccessible.
      */
     @ConfigItem
     public String host;

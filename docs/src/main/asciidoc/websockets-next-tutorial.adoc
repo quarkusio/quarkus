@@ -10,11 +10,13 @@ include::_attributes.adoc[]
 :summary: This guide explains how your Quarkus application can utilize web sockets to create interactive web applications. This guide uses the WebSockets Next extension
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
+:extension-status: experimental
 
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 In this guide, we will develop a very simple chat application using web sockets to receive and send messages to the other connected users.
 
-IMPORTANT: The `websockets-next` extension is experimental. The proposal API may change in future releases.
+include::{includes}/extension-status.adoc[]
+
 
 == Prerequisites
 

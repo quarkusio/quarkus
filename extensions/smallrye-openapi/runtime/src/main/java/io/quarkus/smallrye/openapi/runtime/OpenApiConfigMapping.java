@@ -5,17 +5,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.spi.Converter;
+import org.eclipse.microprofile.openapi.OASConfig;
 
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.openapi.api.OpenApiConfig.OperationIdStrategy;
+import io.smallrye.openapi.api.SmallRyeOASConfig;
 
 /**
  * Maps config from MicroProfile and SmallRye to Quarkus
  */
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
+    private static final long serialVersionUID = 1L;
     private static final Map<String, String> RELOCATIONS = relocations();
     private static final Converter<OperationIdStrategy> OPERATION_ID_STRATEGY_CONVERTER = Converters
             .getImplicitConverter(OperationIdStrategy.class);
@@ -27,31 +30,30 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     @Override
     public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
         ConfigValue configValue = super.getValue(context, name);
+
         // Special case for enum. The converter run after the interceptors, so we have to do this here.
-        if (name.equals(io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY)) {
-            if (configValue != null) {
-                String correctValue = OPERATION_ID_STRATEGY_CONVERTER.convert(configValue.getValue()).toString();
-                configValue = configValue.withValue(correctValue);
-            }
+        if (configValue != null && name.equals(SmallRyeOASConfig.OPERATION_ID_STRAGEGY)) {
+            String correctValue = OPERATION_ID_STRATEGY_CONVERTER.convert(configValue.getValue()).toString();
+            configValue = configValue.withValue(correctValue);
         }
+
         return configValue;
     }
 
     private static Map<String, String> relocations() {
         Map<String, String> relocations = new HashMap<>();
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.VERSION, QUARKUS_OPEN_API_VERSION);
-        mapKey(relocations, org.eclipse.microprofile.openapi.OASConfig.SERVERS, QUARKUS_SERVERS);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TITLE, QUARKUS_INFO_TITLE);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_VERSION, QUARKUS_INFO_VERSION);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_DESCRIPTION, QUARKUS_INFO_DESCRIPTION);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_TERMS, QUARKUS_INFO_TERMS);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_EMAIL, QUARKUS_INFO_CONTACT_EMAIL);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_NAME, QUARKUS_INFO_CONTACT_NAME);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_CONTACT_URL, QUARKUS_INFO_CONTACT_URL);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_NAME, QUARKUS_INFO_LICENSE_NAME);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.INFO_LICENSE_URL, QUARKUS_INFO_LICENSE_URL);
-        mapKey(relocations, io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY,
-                QUARKUS_OPERATION_ID_STRATEGY);
+        mapKey(relocations, SmallRyeOASConfig.VERSION, QUARKUS_OPEN_API_VERSION);
+        mapKey(relocations, OASConfig.SERVERS, QUARKUS_SERVERS);
+        mapKey(relocations, SmallRyeOASConfig.INFO_TITLE, QUARKUS_INFO_TITLE);
+        mapKey(relocations, SmallRyeOASConfig.INFO_VERSION, QUARKUS_INFO_VERSION);
+        mapKey(relocations, SmallRyeOASConfig.INFO_DESCRIPTION, QUARKUS_INFO_DESCRIPTION);
+        mapKey(relocations, SmallRyeOASConfig.INFO_TERMS, QUARKUS_INFO_TERMS);
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_EMAIL, QUARKUS_INFO_CONTACT_EMAIL);
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_NAME, QUARKUS_INFO_CONTACT_NAME);
+        mapKey(relocations, SmallRyeOASConfig.INFO_CONTACT_URL, QUARKUS_INFO_CONTACT_URL);
+        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_NAME, QUARKUS_INFO_LICENSE_NAME);
+        mapKey(relocations, SmallRyeOASConfig.INFO_LICENSE_URL, QUARKUS_INFO_LICENSE_URL);
+        mapKey(relocations, SmallRyeOASConfig.OPERATION_ID_STRAGEGY, QUARKUS_OPERATION_ID_STRATEGY);
         return Collections.unmodifiableMap(relocations);
     }
 

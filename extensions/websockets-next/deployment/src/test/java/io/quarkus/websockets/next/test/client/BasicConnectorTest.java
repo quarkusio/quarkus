@@ -44,12 +44,6 @@ public class BasicConnectorTest {
     @TestHTTPResource("/end")
     URI uri;
 
-    static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(2);
-
-    static final List<String> MESSAGES = new CopyOnWriteArrayList<>();
-
-    static final CountDownLatch CLOSED_LATCH = new CountDownLatch(1);
-
     @Test
     void testClient() throws InterruptedException {
 
@@ -68,6 +62,9 @@ public class BasicConnectorTest {
         assertThrows(NullPointerException.class, () -> connector.onPong(null));
         assertThrows(NullPointerException.class, () -> connector.onError(null));
 
+        CountDownLatch messageLatch = new CountDownLatch(2);
+        List<String> messages = new CopyOnWriteArrayList<>();
+        CountDownLatch closedLatch = new CountDownLatch(1);
         WebSocketClientConnection connection1 = connector
                 .baseUri(uri)
                 .path("/{name}")
@@ -75,24 +72,24 @@ public class BasicConnectorTest {
                 .onTextMessage((c, m) -> {
                     assertTrue(Context.isOnWorkerThread());
                     String name = c.pathParam("name");
-                    MESSAGE_LATCH.countDown();
-                    MESSAGES.add(name + ":" + m);
+                    messages.add(name + ":" + m);
+                    messageLatch.countDown();
                 })
-                .onClose((c, s) -> CLOSED_LATCH.countDown())
+                .onClose((c, s) -> closedLatch.countDown())
                 .connectAndAwait();
         assertEquals("Lu", connection1.pathParam("name"));
         connection1.sendTextAndAwait("Hi!");
 
-        assertTrue(MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
         // Note that ordering is not guaranteed
-        assertThat(MESSAGES.get(0)).isIn("Lu:Hello Lu!", "Lu:Hi!");
-        assertThat(MESSAGES.get(1)).isIn("Lu:Hello Lu!", "Lu:Hi!");
+        assertThat(messages.get(0)).isIn("Lu:Hello Lu!", "Lu:Hi!");
+        assertThat(messages.get(1)).isIn("Lu:Hello Lu!", "Lu:Hi!");
 
         connection1.closeAndAwait();
-        assertTrue(CLOSED_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(closedLatch.await(5, TimeUnit.SECONDS));
         assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
 
-        CountDownLatch CONN2_LATCH = new CountDownLatch(1);
+        CountDownLatch conn2Latch = new CountDownLatch(1);
         WebSocketClientConnection connection2 = BasicWebSocketConnector
                 .create()
                 .baseUri(uri)
@@ -105,11 +102,11 @@ public class BasicConnectorTest {
                     assertNull(c.pathParam("name"));
                     assertTrue(c.handshakeRequest().path().endsWith("Cool"));
                     assertEquals("foo", c.handshakeRequest().header("X-Test"));
-                    CONN2_LATCH.countDown();
+                    conn2Latch.countDown();
                 })
                 .connectAndAwait();
         assertNotNull(connection2);
-        assertTrue(CONN2_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
     }
 
     @WebSocket(path = "/end/{name}")

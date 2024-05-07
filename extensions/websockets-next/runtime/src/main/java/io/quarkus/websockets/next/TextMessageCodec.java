@@ -9,7 +9,7 @@ import io.smallrye.common.annotation.Experimental;
  *
  * Some types of messages bypass the encoding/decoding process:
  * <ul>
- * <li>{@code java.lang.Buffer},</li>
+ * <li>{@code io.vertx.core.buffer.Buffer},</li>
  * <li>{@code byte[]},</li>
  * <li>{@code java.lang.String},</li>
  * <li>{@code io.vertx.core.json.JsonObject}.</li>

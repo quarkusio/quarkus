@@ -203,14 +203,16 @@ public class ConfigGenerationBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
         Map<String, String> defaultValues = new HashMap<>();
+        Map<String, String> mappingsDefaults = new HashMap<>();
         // Default values from extensions @ConfigMapping
         for (ConfigClassWithPrefix runTimeMapping : configItem.getReadResult().getRunTimeMappings()) {
-            defaultValues.putAll(ConfigMappings.getDefaults(runTimeMapping));
+            mappingsDefaults.putAll(ConfigMappings.getDefaults(runTimeMapping));
         }
         // Default values from user @ConfigMapping
         for (ConfigMappingBuildItem configMapping : configMappings) {
-            defaultValues.putAll(ConfigMappings.getDefaults(configMapping.toConfigClassWithPrefix()));
+            mappingsDefaults.putAll(ConfigMappings.getDefaults(configMapping.toConfigClassWithPrefix()));
         }
+        defaultValues.putAll(mappingsDefaults);
         // Default values from @ConfigRoot
         defaultValues.putAll(configItem.getReadResult().getRunTimeDefaultValues());
         // Default values from build item RunTimeConfigurationDefaultBuildItem override
@@ -223,7 +225,11 @@ public class ConfigGenerationBuildStep {
             // Runtime values may contain active profiled names that override sames names in defaults
             // We need to keep the original name definition in case a different profile is used to run the app
             String activeName = ProfileConfigSourceInterceptor.activeName(entry.getKey(), profiles);
-            defaultValues.remove(activeName);
+            // But keep the default
+            if (!configItem.getReadResult().getRunTimeDefaultValues().containsKey(activeName)
+                    && !mappingsDefaults.containsKey(activeName)) {
+                defaultValues.remove(activeName);
+            }
             defaultValues.put(entry.getKey(), entry.getValue());
         }
         defaultValues.putAll(configItem.getReadResult().getRunTimeValues());

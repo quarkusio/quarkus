@@ -2,7 +2,6 @@ package io.quarkus.vertx.http.devui;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
 
-import java.net.Inet4Address;
 import java.net.UnknownHostException;
 
 import org.junit.jupiter.api.Test;
@@ -20,13 +19,9 @@ public class DevUIRemoteCorsTest {
 
     @Test
     public void test() throws UnknownHostException {
-        String origin = Inet4Address.getLocalHost().toString();
-        if (origin.contains("/")) {
-            origin = "http://" + origin.split("/")[1] + ":8080";
-        }
         String methods = "GET,POST";
         RestAssured.given()
-                .header("Origin", origin)
+                .header("Origin", "http://evilsite.com")
                 .header("Access-Control-Request-Method", methods)
                 .when()
                 .options("q/dev-ui/configuration-form-editor").then()

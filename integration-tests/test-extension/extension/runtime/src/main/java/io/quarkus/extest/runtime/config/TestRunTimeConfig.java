@@ -113,6 +113,12 @@ public class TestRunTimeConfig {
     @ConfigItem
     public Optional<String> doNotRecord;
 
+    /**
+     * Record Default
+     */
+    @ConfigItem(defaultValue = "from-default")
+    public String recordDefault;
+
     @Override
     public String toString() {
         return "TestRunTimeConfig{" +

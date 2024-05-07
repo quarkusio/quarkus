@@ -2,29 +2,23 @@ package io.quarkus.smallrye.openapi.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.openapi.OASConfig;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
-import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiConfigImpl;
-import io.smallrye.openapi.api.OpenApiDocument;
-import io.smallrye.openapi.runtime.OpenApiProcessor;
-import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.Format;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.api.SmallRyeOpenAPI;
 
 /**
  * Loads the document and make it available
@@ -32,24 +26,39 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 @ApplicationScoped
 public class OpenApiDocumentService implements OpenApiDocumentHolder {
 
-    private static final String OPENAPI_SERVERS = "mp.openapi.servers";
-    private static final IndexView EMPTY_INDEX = new Indexer().complete();
+    private static final String OPENAPI_SERVERS = OASConfig.SERVERS;
     private final OpenApiDocumentHolder documentHolder;
     private final String previousOpenApiServersSystemPropertyValue;
 
     @Inject
     public OpenApiDocumentService(OASFilter autoSecurityFilter,
             OpenApiRecorder.UserDefinedRuntimeFilters userDefinedRuntimeFilters, Config config) {
+
         String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);
         this.previousOpenApiServersSystemPropertyValue = System.getProperty(OPENAPI_SERVERS);
         if (servers != null && !servers.isEmpty()) {
             System.setProperty(OPENAPI_SERVERS, servers);
         }
 
-        if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
-            this.documentHolder = new DynamicDocument(config, autoSecurityFilter, userDefinedRuntimeFilters.filters());
-        } else {
-            this.documentHolder = new StaticDocument(config, autoSecurityFilter, userDefinedRuntimeFilters.filters());
+        ClassLoader loader = Optional.ofNullable(OpenApiConstants.classLoader)
+                .orElseGet(Thread.currentThread()::getContextClassLoader);
+
+        try (InputStream source = loader.getResourceAsStream(OpenApiConstants.BASE_NAME + "JSON")) {
+            if (source != null) {
+                var userFilters = userDefinedRuntimeFilters.filters();
+                boolean dynamic = config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class)
+                        .orElse(Boolean.FALSE);
+
+                if (dynamic) {
+                    this.documentHolder = new DynamicDocument(source, config, autoSecurityFilter, userFilters);
+                } else {
+                    this.documentHolder = new StaticDocument(source, config, autoSecurityFilter, userFilters);
+                }
+            } else {
+                this.documentHolder = new EmptyDocument();
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -72,6 +81,18 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
         return this.documentHolder.getYamlDocument();
     }
 
+    static class EmptyDocument implements OpenApiDocumentHolder {
+        static final byte[] EMPTY = new byte[0];
+
+        public byte[] getJsonDocument() {
+            return EMPTY;
+        }
+
+        public byte[] getYamlDocument() {
+            return EMPTY;
+        }
+    }
+
     /**
      * Generate the document once on creation.
      */
@@ -80,39 +101,22 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
         private byte[] jsonDocument;
         private byte[] yamlDocument;
 
-        StaticDocument(Config config, OASFilter autoFilter, List<String> userFilters) {
-            ClassLoader cl = OpenApiConstants.classLoader == null ? Thread.currentThread().getContextClassLoader()
-                    : OpenApiConstants.classLoader;
-            try (InputStream is = cl.getResourceAsStream(OpenApiConstants.BASE_NAME + Format.JSON)) {
-                if (is != null) {
-                    try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, Format.JSON)) {
+        StaticDocument(InputStream source, Config config, OASFilter autoFilter, List<String> userFilters) {
+            SmallRyeOpenAPI.Builder builder = SmallRyeOpenAPI.builder()
+                    .withConfig(config)
+                    .enableModelReader(false)
+                    .enableStandardStaticFiles(false)
+                    .enableAnnotationScan(false)
+                    .enableStandardFilter(false)
+                    .withCustomStaticFile(() -> source);
 
-                        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+            Optional.ofNullable(autoFilter).ifPresent(builder::addFilter);
+            builder.addFilter(new DisabledRestEndpointsFilter());
+            userFilters.forEach(builder::addFilterName);
 
-                        OpenApiDocument document = OpenApiDocument.INSTANCE;
-                        document.reset();
-                        document.config(openApiConfig);
-                        document.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(openApiConfig, staticFile));
-                        if (autoFilter != null) {
-                            document.filter(autoFilter);
-                        }
-                        document.filter(new DisabledRestEndpointsFilter());
-                        for (String userFilter : userFilters) {
-                            document.filter(OpenApiProcessor.getFilter(userFilter, cl, EMPTY_INDEX));
-                        }
-                        document.initialize();
-
-                        this.jsonDocument = OpenApiSerializer.serialize(document.get(), Format.JSON)
-                                .getBytes(StandardCharsets.UTF_8);
-                        this.yamlDocument = OpenApiSerializer.serialize(document.get(), Format.YAML)
-                                .getBytes(StandardCharsets.UTF_8);
-                        document.reset();
-                        document = null;
-                    }
-                }
-            } catch (IOException ex) {
-                throw new RuntimeException("Could not find [" + OpenApiConstants.BASE_NAME + Format.JSON + "]");
-            }
+            SmallRyeOpenAPI openAPI = builder.build();
+            jsonDocument = openAPI.toJSON().getBytes(StandardCharsets.UTF_8);
+            yamlDocument = openAPI.toYAML().getBytes(StandardCharsets.UTF_8);
         }
 
         public byte[] getJsonDocument() {
@@ -129,78 +133,35 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
      */
     static class DynamicDocument implements OpenApiDocumentHolder {
 
+        private SmallRyeOpenAPI.Builder builder;
         private OpenAPI generatedOnBuild;
-        private OpenApiConfig openApiConfig;
-        private List<OASFilter> userFilters = new ArrayList<>();
-        private OASFilter autoFilter;
-        private DisabledRestEndpointsFilter disabledEndpointsFilter;
 
-        DynamicDocument(Config config, OASFilter autoFilter, List<String> annotatedUserFilters) {
-            ClassLoader cl = OpenApiConstants.classLoader == null ? Thread.currentThread().getContextClassLoader()
-                    : OpenApiConstants.classLoader;
-            try (InputStream is = cl.getResourceAsStream(OpenApiConstants.BASE_NAME + Format.JSON)) {
-                if (is != null) {
-                    try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, Format.JSON)) {
-                        this.openApiConfig = new OpenApiConfigImpl(config);
-                        OASFilter microProfileDefinedFilter = OpenApiProcessor.getFilter(openApiConfig, cl, EMPTY_INDEX);
-                        if (microProfileDefinedFilter != null) {
-                            userFilters.add(microProfileDefinedFilter);
-                        }
-                        for (String annotatedUserFilter : annotatedUserFilters) {
-                            OASFilter annotatedUserDefinedFilter = OpenApiProcessor.getFilter(annotatedUserFilter, cl,
-                                    EMPTY_INDEX);
-                            userFilters.add(annotatedUserDefinedFilter);
-                        }
-                        this.autoFilter = autoFilter;
-                        this.generatedOnBuild = OpenApiProcessor.modelFromStaticFile(this.openApiConfig, staticFile);
-                        this.disabledEndpointsFilter = new DisabledRestEndpointsFilter();
-                    }
-                }
-            } catch (IOException ex) {
-                throw new RuntimeException("Could not find [" + OpenApiConstants.BASE_NAME + Format.JSON + "]");
-            }
+        DynamicDocument(InputStream source, Config config, OASFilter autoFilter, List<String> annotatedUserFilters) {
+            builder = SmallRyeOpenAPI.builder()
+                    .withConfig(config)
+                    .enableModelReader(false)
+                    .enableStandardStaticFiles(false)
+                    .enableAnnotationScan(false)
+                    .enableStandardFilter(false)
+                    .withCustomStaticFile(() -> source);
+
+            generatedOnBuild = builder.build().model();
+
+            builder.withCustomStaticFile(() -> null);
+            builder.withInitialModel(generatedOnBuild);
+
+            Optional.ofNullable(autoFilter).ifPresent(builder::addFilter);
+            builder.addFilter(new DisabledRestEndpointsFilter());
+            config.getOptionalValue(OASConfig.FILTER, String.class).ifPresent(builder::addFilterName);
+            annotatedUserFilters.forEach(builder::addFilterName);
         }
 
         public byte[] getJsonDocument() {
-            try {
-                OpenApiDocument document = getOpenApiDocument();
-                byte[] jsonDocument = OpenApiSerializer.serialize(document.get(), Format.JSON)
-                        .getBytes(StandardCharsets.UTF_8);
-                document.reset();
-                document = null;
-                return jsonDocument;
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+            return builder.build().toJSON().getBytes(StandardCharsets.UTF_8);
         }
 
         public byte[] getYamlDocument() {
-            try {
-                OpenApiDocument document = getOpenApiDocument();
-                byte[] yamlDocument = OpenApiSerializer.serialize(document.get(), Format.YAML)
-                        .getBytes(StandardCharsets.UTF_8);
-                document.reset();
-                document = null;
-                return yamlDocument;
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-
-        private OpenApiDocument getOpenApiDocument() {
-            OpenApiDocument document = OpenApiDocument.INSTANCE;
-            document.reset();
-            document.config(this.openApiConfig);
-            document.modelFromStaticFile(this.generatedOnBuild);
-            if (this.autoFilter != null) {
-                document.filter(this.autoFilter);
-            }
-            document.filter(this.disabledEndpointsFilter);
-            for (OASFilter userFilter : userFilters) {
-                document.filter(userFilter);
-            }
-            document.initialize();
-            return document;
+            return builder.build().toYAML().getBytes(StandardCharsets.UTF_8);
         }
     }
 }

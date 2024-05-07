@@ -12,9 +12,8 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.util.ServiceUtil;
-import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 
-public class RESTEasyExtension implements AnnotationScannerExtension {
+public class RESTEasyExtension {
 
     private static final DotName DOTNAME_PROVIDER = DotName.createSimple("jakarta.ws.rs.ext.Provider");
     private static final DotName DOTNAME_ASYNC_RESPONSE_PROVIDER = DotName
@@ -90,7 +89,6 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
         }
     }
 
-    @Override
     public Type resolveAsyncType(Type type) {
         if (type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && asyncTypes.contains(type.name())) {

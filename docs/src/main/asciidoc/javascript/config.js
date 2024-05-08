@@ -13,7 +13,7 @@ if(tables){
             var input = caption.firstElementChild.lastElementChild;
             input.addEventListener("keyup", initiateSearch);
             input.addEventListener("input", initiateSearch);
-            input.attributes.removeNamedItem('disabled');
+            if (input.attributes.disabled) input.attributes.removeNamedItem('disabled');
             inputs[input.id] = {"table": table};
         }
 

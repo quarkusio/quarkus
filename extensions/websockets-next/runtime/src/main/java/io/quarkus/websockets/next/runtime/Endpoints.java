@@ -70,8 +70,8 @@ class Endpoints {
                                             LOG.debugf("@OnTextMessage callback consuming Multi completed: %s",
                                                     connection);
                                         } else {
-                                            LOG.errorf(r.cause(),
-                                                    "Unable to complete @OnTextMessage callback consuming Multi: %s",
+                                            logFailure(r.cause(),
+                                                    "Unable to complete @OnTextMessage callback consuming Multi",
                                                     connection);
                                         }
                                     });
@@ -88,8 +88,8 @@ class Endpoints {
                                             LOG.debugf("@OnBinaryMessage callback consuming Multi completed: %s",
                                                     connection);
                                         } else {
-                                            LOG.errorf(r.cause(),
-                                                    "Unable to complete @OnBinaryMessage callback consuming Multi: %s",
+                                            logFailure(r.cause(),
+                                                    "Unable to complete @OnBinaryMessage callback consuming Multi",
                                                     connection);
                                         }
                                     });
@@ -97,7 +97,7 @@ class Endpoints {
                             });
                         }
                     } else {
-                        LOG.errorf(r.cause(), "Unable to complete @OnOpen callback: %s", connection);
+                        logFailure(r.cause(), "Unable to complete @OnOpen callback", connection);
                     }
                 });
             }
@@ -110,7 +110,7 @@ class Endpoints {
                     if (r.succeeded()) {
                         LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
                     } else {
-                        LOG.errorf(r.cause(), "Unable to consume text message in @OnTextMessage callback: %s",
+                        logFailure(r.cause(), "Unable to consume text message in @OnTextMessage callback",
                                 connection);
                     }
                 });
@@ -136,9 +136,9 @@ class Endpoints {
             binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                 endpoint.onBinaryMessage(m).onComplete(r -> {
                     if (r.succeeded()) {
-                        LOG.debugf("@OnBinaryMessage callback consumed text message: %s", connection);
+                        LOG.debugf("@OnBinaryMessage callback consumed binary message: %s", connection);
                     } else {
-                        LOG.errorf(r.cause(), "Unable to consume text message in @OnBinaryMessage callback: %s",
+                        logFailure(r.cause(), "Unable to consume binary message in @OnBinaryMessage callback",
                                 connection);
                     }
                 });
@@ -164,8 +164,7 @@ class Endpoints {
                 if (r.succeeded()) {
                     LOG.debugf("@OnPongMessage callback consumed text message: %s", connection);
                 } else {
-                    LOG.errorf(r.cause(), "Unable to consume text message in @OnPongMessage callback: %s",
-                            connection);
+                    logFailure(r.cause(), "Unable to consume text message in @OnPongMessage callback", connection);
                 }
             });
         });
@@ -192,7 +191,7 @@ class Endpoints {
                             if (r.succeeded()) {
                                 LOG.debugf("@OnClose callback completed: %s", connection);
                             } else {
-                                LOG.errorf(r.cause(), "Unable to complete @OnClose callback: %s", connection);
+                                logFailure(r.cause(), "Unable to complete @OnClose callback", connection);
                             }
                             onClose.run();
                             if (timerId != null) {
@@ -212,12 +211,38 @@ class Endpoints {
                     public void handle(Void event) {
                         endpoint.doOnError(t).subscribe().with(
                                 v -> LOG.debugf("Error [%s] processed: %s", t.getClass(), connection),
-                                t -> LOG.errorf(t, "Unhandled error occured: %s", t.toString(),
+                                t -> LOG.errorf(t, "Unhandled error occurred: %s", t.toString(),
                                         connection));
                     }
                 });
             }
         });
+    }
+
+    private static void logFailure(Throwable throwable, String message, WebSocketConnectionBase connection) {
+        if (isWebSocketIsClosedFailure(throwable, connection)) {
+            LOG.debugf(throwable,
+                    message + ": %s",
+                    connection);
+        } else {
+            LOG.errorf(throwable,
+                    message + ": %s",
+                    connection);
+        }
+    }
+
+    private static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
+        if (!connection.isClosed()) {
+            return false;
+        }
+        if (throwable == null) {
+            return false;
+        }
+        String message = throwable.getMessage();
+        if (message == null) {
+            return false;
+        }
+        return message.contains("WebSocket is closed");
     }
 
     private static void textMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,

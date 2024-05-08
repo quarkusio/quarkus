@@ -1,6 +1,9 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType.ALL;
+import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType.AUTHENTICATION_SUCCESS;
+import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType.AUTHORIZATION_FAILURE;
+import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType.AUTHORIZATION_SUCCESS;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -49,6 +52,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
+import io.quarkus.opentelemetry.runtime.tracing.security.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
@@ -198,6 +202,28 @@ public class TracerProcessor {
         }
     }
 
+    @BuildStep(onlyIf = EndUserAttributesEnabled.class)
+    void addEndUserAttributesSpanProcessor(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(EndUserSpanProcessor.class));
+        }
+    }
+
+    @BuildStep(onlyIf = EndUserAttributesEnabled.class)
+    void registerEndUserAttributesEventObserver(Capabilities capabilities,
+            ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
+            BuildProducer<ObserverConfiguratorBuildItem> observerProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            observerProducer
+                    .produce(createEventObserver(observerRegistrationPhase, AUTHENTICATION_SUCCESS, "addEndUserAttributes"));
+            observerProducer
+                    .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_SUCCESS, "updateEndUserAttributes"));
+            observerProducer
+                    .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_FAILURE, "updateEndUserAttributes"));
+        }
+    }
+
     private static ObserverConfiguratorBuildItem createEventObserver(
             ObserverRegistrationPhaseBuildItem observerRegistrationPhase, SecurityEventType eventType, String utilMethodName) {
         return new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
@@ -225,6 +251,20 @@ public class TracerProcessor {
 
         SecurityEventsEnabled(OTelBuildConfig config) {
             this.enabled = config.securityEvents().enabled();
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return enabled;
+        }
+    }
+
+    static final class EndUserAttributesEnabled implements BooleanSupplier {
+
+        private final boolean enabled;
+
+        EndUserAttributesEnabled(OTelBuildConfig config) {
+            this.enabled = config.traces().addEndUserAttributes();
         }
 
         @Override

@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.LongAdder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.vertx.core.eventbus.Message;
@@ -21,10 +22,32 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
 
     private Map<String, Handler> handlers = new ConcurrentHashMap<>();
 
+    private final Meter.MeterProvider<Counter> published;
+    private final Meter.MeterProvider<Counter> sent;
+    private final Meter.MeterProvider<DistributionSummary> written;
+    private final Meter.MeterProvider<DistributionSummary> read;
+    private final Meter.MeterProvider<Counter> replyFailures;
+
     VertxEventBusMetrics(MeterRegistry registry, Tags tags) {
         this.registry = registry;
         this.tags = tags;
         this.ignored = new Handler(null);
+
+        published = Counter.builder("eventBus.published")
+                .description("Number of messages published to the event bus")
+                .withRegistry(registry);
+        sent = Counter.builder("eventBus.sent")
+                .description("Number of messages sent to the event bus")
+                .withRegistry(registry);
+        written = DistributionSummary.builder("eventBus.bytes.written")
+                .description("Track the number of bytes written to the distributed event bus")
+                .withRegistry(registry);
+        read = DistributionSummary.builder("eventBus.bytes.read")
+                .description("The number of bytes read from the distributed event bus")
+                .withRegistry(registry);
+        replyFailures = Counter.builder("eventBus.replyFailures")
+                .description("Count the number of reply failure")
+                .withRegistry(registry);
     }
 
     private static boolean isInternal(String address) {
@@ -73,17 +96,9 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     public void messageSent(String address, boolean publish, boolean local, boolean remote) {
         if (!isInternal(address)) {
             if (publish) {
-                Counter.builder("eventBus.published")
-                        .description("Number of messages published to the event bus")
-                        .tags(tags.and("address", address))
-                        .register(registry)
-                        .increment();
+                published.withTags(this.tags.and("address", address)).increment();
             } else {
-                Counter.builder("eventBus.sent")
-                        .description("Number of messages sent to the event bus")
-                        .tags(tags.and("address", address))
-                        .register(registry)
-                        .increment();
+                sent.withTags(this.tags.and("address", address)).increment();
             }
         }
     }
@@ -91,32 +106,22 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     @Override
     public void messageWritten(String address, int numberOfBytes) {
         if (!isInternal(address)) {
-            DistributionSummary.builder("eventBus.bytes.written")
-                    .description("Track the number of bytes written to the distributed event bus")
-                    .tags(this.tags.and("address", address))
-                    .register(registry)
-                    .record(numberOfBytes);
+            written.withTags(this.tags.and("address", address)).record(numberOfBytes);
         }
     }
 
     @Override
     public void messageRead(String address, int numberOfBytes) {
         if (!isInternal(address)) {
-            DistributionSummary.builder("eventBus.bytes.read")
-                    .description("The number of bytes read from the distributed event bus")
-                    .tags(this.tags.and("address", address))
-                    .register(registry)
-                    .record(numberOfBytes);
+            read.withTags(this.tags.and("address", address)).record(numberOfBytes);
         }
     }
 
     @Override
     public void replyFailure(String address, ReplyFailure failure) {
         if (!isInternal(address)) {
-            Counter.builder("eventBus.replyFailures")
-                    .description("Count the number of reply failure")
-                    .tags(this.tags.and("address", address).and("failure", failure.name()))
-                    .register(registry)
+            replyFailures
+                    .withTags(this.tags.and("address", address, "failure", failure.name()))
                     .increment();
         }
     }

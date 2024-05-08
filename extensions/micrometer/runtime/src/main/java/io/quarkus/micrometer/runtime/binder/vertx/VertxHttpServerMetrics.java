@@ -39,7 +39,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         implements HttpServerMetrics<HttpRequestMetric, LongTaskTimer.Sample, LongTaskTimer.Sample> {
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
 
-    final HttpBinderConfiguration config;
+    HttpBinderConfiguration config;
 
     final LongAdder activeRequests;
 

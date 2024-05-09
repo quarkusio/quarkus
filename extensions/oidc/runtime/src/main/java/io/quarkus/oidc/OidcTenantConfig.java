@@ -982,16 +982,18 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
+         * <p>
          * ID token is always verified on every user request as the primary token which is used
          * to represent the principal and extract the roles.
-         * Access token is not verified by default since it is meant to be propagated to the downstream services.
-         * The verification of the access token should be enabled if it is injected as a JWT token.
-         *
-         * Access tokens obtained as part of the code flow are always verified if `quarkus.oidc.roles.source`
-         * property is set to `accesstoken` which means the authorization decision is based on the roles extracted from the
-         * access token.
-         *
-         * Bearer access tokens are always verified.
+         * <p>
+         * Authorization code flow access token is meant to be propagated to downstream services
+         * and is not verified by default unless `quarkus.oidc.roles.source` property is set to `accesstoken`
+         * which means the authorization decision is based on the roles extracted from the access token.
+         * <p>
+         * Authorization code flow access token verification is also enabled if this token is injected as JsonWebToken.
+         * Set this property to `false` if it is not required.
+         * <p>
+         * Bearer access token is always verified.
          */
         @ConfigItem(defaultValueDocumentation = "true when access token is injected as the JsonWebToken bean, false otherwise")
         public boolean verifyAccessToken;
@@ -1129,10 +1131,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * If this property is set to `true`, an OIDC UserInfo endpoint is called.
-         * This property is enabled if `quarkus.oidc.roles.source` is `userinfo`.
-         * or `quarkus.oidc.token.verify-access-token-with-user-info` is `true`
+         * <p>
+         * This property is enabled automatically if `quarkus.oidc.roles.source` is set to `userinfo`
+         * or `quarkus.oidc.token.verify-access-token-with-user-info` is set to `true`
          * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
-         * you do not need to enable this property manually in these cases.
+         * the current OIDC tenant must support a UserInfo endpoint in these cases.
+         * <p>
+         * It is also enabled automatically if `io.quarkus.oidc.UserInfo` injection point is detected but only
+         * if the current OIDC tenant supports a UserInfo endpoint.
          */
         @ConfigItem(defaultValueDocumentation = "true when UserInfo bean is injected, false otherwise")
         public Optional<Boolean> userInfoRequired = Optional.empty();

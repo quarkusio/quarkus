@@ -86,12 +86,12 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "15";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "16";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
     public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://quarkiverse.github.io/quarkiverse-docs/%s/dev/";
 
     private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.2.5";
-    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.12.1";
+    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.13.0";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();
     private final Path baseDir;

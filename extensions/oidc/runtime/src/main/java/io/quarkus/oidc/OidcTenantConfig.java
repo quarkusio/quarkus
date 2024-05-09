@@ -981,6 +981,21 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> errorPath = Optional.empty();
 
         /**
+         * Relative path to the public endpoint which an authenticated user is redirected to when the session has expired.
+         * <p>
+         * When the OIDC session has expired and the session can not be refreshed, a user is redirected
+         * to the OIDC provider to re-authenticate. The user experience may not be ideal in this case
+         * as it may not be obvious to the authenticated user why an authentication challenge is returned.
+         * <p>
+         * Set this property if you would like the user whose session has expired be redirected to a public application specific
+         * page
+         * instead, which can inform that the session has expired and advise the user to re-authenticated by following
+         * a link to the secured initial entry page.
+         */
+        @ConfigItem
+        public Optional<String> sessionExpiredPath = Optional.empty();
+
+        /**
          * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
          * <p>
          * ID token is always verified on every user request as the primary token which is used
@@ -1464,6 +1479,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setStateCookieAge(Duration stateCookieAge) {
             this.stateCookieAge = stateCookieAge;
+        }
+
+        public Optional<String> getSessionExpiredPath() {
+            return sessionExpiredPath;
+        }
+
+        public void setSessionExpiredPath(String sessionExpiredPath) {
+            this.sessionExpiredPath = Optional.of(sessionExpiredPath);
         }
     }
 

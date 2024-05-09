@@ -751,6 +751,8 @@ public class CodeFlowTest {
 
                             if (statusCode == 302) {
                                 assertNull(getSessionCookie(webClient, "tenant-refresh"));
+                                assertEquals("http://localhost:8081/session-expired-page",
+                                        webResponse.getResponseHeaderValue("location"));
                                 return true;
                             }
 

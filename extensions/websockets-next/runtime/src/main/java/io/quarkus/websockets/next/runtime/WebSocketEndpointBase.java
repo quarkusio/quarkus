@@ -13,7 +13,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
@@ -42,15 +41,20 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private final ContextSupport contextSupport;
 
+    private final SecuritySupport securitySupport;
+
     private final InjectableBean<?> bean;
+
     private final Object beanInstance;
 
-    public WebSocketEndpointBase(WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport) {
+    public WebSocketEndpointBase(WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport,
+            SecuritySupport securitySupport) {
         this.connection = connection;
         this.codecs = codecs;
         this.limiter = inboundProcessingMode() == InboundProcessingMode.SERIAL ? new ConcurrencyLimiter(connection) : null;
         this.container = Arc.container();
         this.contextSupport = contextSupport;
+        this.securitySupport = securitySupport;
         InjectableBean<?> bean = container.bean(beanIdentifier());
         if (bean.getScope().equals(ApplicationScoped.class)
                 || bean.getScope().equals(Singleton.class)) {
@@ -105,18 +109,18 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
             limiter.run(context, new Runnable() {
                 @Override
                 public void run() {
-                    doExecute(context, promise, message, executionModel, action, terminateSession, complete::complete,
+                    doExecute(context, message, executionModel, action, terminateSession, complete::complete,
                             complete::failure);
                 }
             });
         } else {
             // No need to limit the concurrency
-            doExecute(context, promise, message, executionModel, action, terminateSession, promise::complete, promise::fail);
+            doExecute(context, message, executionModel, action, terminateSession, promise::complete, promise::fail);
         }
         return promise.future();
     }
 
-    private <M> void doExecute(Context context, Promise<Void> promise, M message, ExecutionModel executionModel,
+    private <M> void doExecute(Context context, M message, ExecutionModel executionModel,
             Function<M, Uni<Void>> action, boolean terminateSession, Runnable onComplete,
             Consumer<? super Throwable> onFailure) {
         Handler<Void> contextSupportEnd = executionModel.isBlocking() ? new Handler<Void>() {
@@ -133,6 +137,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                 public void run() {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
+                    securitySupport.start();
                     action.apply(message).subscribe().with(
                             v -> {
                                 context.runOnContext(contextSupportEnd);
@@ -150,6 +155,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                 public Void call() {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
+                    securitySupport.start();
                     action.apply(message).subscribe().with(
                             v -> {
                                 context.runOnContext(contextSupportEnd);
@@ -165,6 +171,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         } else {
             // Event loop
             contextSupport.start();
+            securitySupport.start();
             action.apply(message).subscribe().with(
                     v -> {
                         contextSupport.end(terminateSession);
@@ -179,72 +186,76 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     public Uni<Void> doErrorExecute(Throwable throwable, ExecutionModel executionModel,
             Function<Throwable, Uni<Void>> action) {
-        // We need to capture the current request context state so that it can be activated
-        // when the error callback is executed
-        ContextState requestContextState = contextSupport.currentRequestContextState();
-        Handler<Void> contextSupportEnd = new Handler<Void>() {
-
+        Promise<Void> promise = Promise.promise();
+        // Always exeute error handler on a new duplicated context
+        ContextSupport.createNewDuplicatedContext(Vertx.currentContext(), connection).runOnContext(new Handler<Void>() {
             @Override
             public void handle(Void event) {
-                contextSupport.end(false, false);
-            }
-        };
-        contextSupportEnd.handle(null);
+                Handler<Void> contextSupportEnd = new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        contextSupport.end(false);
+                    }
+                };
 
-        Promise<Void> promise = Promise.promise();
-        if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
-            VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
-                @Override
-                public void run() {
-                    Context context = Vertx.currentContext();
-                    contextSupport.start(requestContextState);
-                    action.apply(throwable).subscribe().with(
-                            v -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.complete();
-                            },
-                            t -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.fail(t);
-                            });
+                if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+                    VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            Context context = Vertx.currentContext();
+                            contextSupport.start();
+                            securitySupport.start();
+                            action.apply(throwable).subscribe().with(
+                                    v -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.complete();
+                                    },
+                                    t -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.fail(t);
+                                    });
+                        }
+                    });
+                } else if (executionModel == ExecutionModel.WORKER_THREAD) {
+                    Vertx.currentContext().executeBlocking(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            Context context = Vertx.currentContext();
+                            contextSupport.start();
+                            securitySupport.start();
+                            action.apply(throwable).subscribe().with(
+                                    v -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.complete();
+                                    },
+                                    t -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.fail(t);
+                                    });
+                            return null;
+                        }
+                    }, false);
+                } else {
+                    Vertx.currentContext().runOnContext(new Handler<Void>() {
+                        @Override
+                        public void handle(Void event) {
+                            Context context = Vertx.currentContext();
+                            contextSupport.start();
+                            securitySupport.start();
+                            action.apply(throwable).subscribe().with(
+                                    v -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.complete();
+                                    },
+                                    t -> {
+                                        context.runOnContext(contextSupportEnd);
+                                        promise.fail(t);
+                                    });
+                        }
+                    });
                 }
-            });
-        } else if (executionModel == ExecutionModel.WORKER_THREAD) {
-            Vertx.currentContext().executeBlocking(new Callable<Void>() {
-                @Override
-                public Void call() {
-                    Context context = Vertx.currentContext();
-                    contextSupport.start(requestContextState);
-                    action.apply(throwable).subscribe().with(
-                            v -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.complete();
-                            },
-                            t -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.fail(t);
-                            });
-                    return null;
-                }
-            }, false);
-        } else {
-            Vertx.currentContext().runOnContext(new Handler<Void>() {
-                @Override
-                public void handle(Void event) {
-                    Context context = Vertx.currentContext();
-                    contextSupport.start(requestContextState);
-                    action.apply(throwable).subscribe().with(
-                            v -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.complete();
-                            },
-                            t -> {
-                                context.runOnContext(contextSupportEnd);
-                                promise.fail(t);
-                            });
-                }
-            });
-        }
+            }
+        });
         return UniHelper.toUni(promise.future());
     }
 

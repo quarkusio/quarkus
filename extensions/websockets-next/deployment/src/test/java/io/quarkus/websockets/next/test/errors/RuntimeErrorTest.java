@@ -80,8 +80,8 @@ public class RuntimeErrorTest {
         Uni<Void> runtimeProblem(RuntimeException e, WebSocketConnection connection) {
             assertTrue(Context.isOnEventLoopThread());
             assertEquals(connection.id(), this.connection.id());
-            // The request context from @OnBinaryMessage is reused
-            assertEquals("ok", requestBean.getState());
+            // A new request context is used
+            assertEquals("nok", requestBean.getState());
             return connection.sendText(e.getMessage());
         }
 

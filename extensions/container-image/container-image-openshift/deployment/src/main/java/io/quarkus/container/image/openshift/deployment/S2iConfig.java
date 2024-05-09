@@ -12,8 +12,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class S2iConfig {
 
-    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.18";
-    public static final String DEFAULT_BASE_JVM_JDK21_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21:1.18";
+    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.19";
+    public static final String DEFAULT_BASE_JVM_JDK21_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21:1.19";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:2.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
@@ -41,9 +41,9 @@ public class S2iConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21:1.18}
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21:1.19}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17:1.18} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17:1.19} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;

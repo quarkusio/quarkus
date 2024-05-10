@@ -93,8 +93,8 @@ public class ClientEndpointTest {
             if (!name.equals(connection.pathParam("name"))) {
                 throw new IllegalArgumentException();
             }
-            MESSAGE_LATCH.countDown();
             MESSAGES.add(name + ":" + message);
+            MESSAGE_LATCH.countDown();
         }
 
         @OnClose

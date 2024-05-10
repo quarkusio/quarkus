@@ -20,8 +20,8 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.JarClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -109,7 +109,7 @@ public class ClassLoadingResourceUrlTestCase {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new JarClassPathElement(path, true))
+                    .addElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
             Assertions.assertNotNull(res);

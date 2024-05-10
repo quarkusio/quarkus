@@ -39,6 +39,7 @@ import io.smallrye.common.annotation.Experimental;
  * <li>{@link WebSocketConnection}/{@link WebSocketClientConnection}; depending on the endpoint type</li>
  * <li>{@link HandshakeRequest}</li>
  * <li>{@link String} parameters annotated with {@link PathParam}</li>
+ * <li>{@link CloseReason}</li>
  * </ul>
  * Note that it's not possible to send a message to the current connection as the socket is already closed when the method
  * invoked. However, it is possible to send messages to other open connections.

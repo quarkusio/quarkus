@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.core.runtime.VertxBufferImpl;
+import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
 import io.smallrye.mutiny.Uni;
@@ -88,7 +89,11 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> close() {
-        return UniHelper.toUni(webSocket().close());
+        return close(CloseReason.NORMAL);
+    }
+
+    public Uni<Void> close(CloseReason reason) {
+        return UniHelper.toUni(webSocket().close((short) reason.getCode(), reason.getMessage()));
     }
 
     public boolean isSecure() {
@@ -109,5 +114,13 @@ public abstract class WebSocketConnectionBase {
 
     public BroadcastSender broadcast() {
         throw new UnsupportedOperationException();
+    }
+
+    public CloseReason closeReason() {
+        WebSocketBase ws = webSocket();
+        if (ws.isClosed()) {
+            return new CloseReason(ws.closeStatusCode(), ws.closeReason());
+        }
+        throw new IllegalStateException("Connection is not closed");
     }
 }

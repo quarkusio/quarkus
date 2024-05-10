@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
+import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
@@ -48,7 +49,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
     private BiConsumer<WebSocketClientConnection, Buffer> pongMessageHandler;
 
-    private BiConsumer<WebSocketClientConnection, Short> closeHandler;
+    private BiConsumer<WebSocketClientConnection, CloseReason> closeHandler;
 
     private BiConsumer<WebSocketClientConnection, Throwable> errorHandler;
 
@@ -94,7 +95,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     }
 
     @Override
-    public BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, Short> consumer) {
+    public BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, CloseReason> consumer) {
         this.closeHandler = Objects.requireNonNull(consumer);
         return self();
     }
@@ -213,7 +214,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         @Override
                         public void handle(Void event) {
                             if (closeHandler != null) {
-                                doExecute(connection, ws.closeStatusCode(), closeHandler);
+                                doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
                             }
                             connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
                             client.close();

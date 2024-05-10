@@ -150,10 +150,10 @@ public class JarClassPathElement implements ClassPathElement {
                                     public byte[] apply(JarFile jarFile) {
                                         try {
                                             try {
-                                                return readStreamContents(jarFile.getInputStream(res));
+                                                return jarFile.getInputStream(res).readAllBytes();
                                             } catch (InterruptedIOException e) {
                                                 //if we are interrupted reading data we finish the op, then just re-interrupt the thread state
-                                                byte[] bytes = readStreamContents(jarFile.getInputStream(res));
+                                                byte[] bytes = jarFile.getInputStream(res).readAllBytes();
                                                 Thread.currentThread().interrupt();
                                                 return bytes;
                                             }

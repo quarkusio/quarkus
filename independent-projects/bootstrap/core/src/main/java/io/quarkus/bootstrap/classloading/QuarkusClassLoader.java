@@ -634,7 +634,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             //DriverManager only lets you remove drivers with the same CL as the caller
             //so we need do define the cleaner in this class loader
             try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
-                byte[] data = JarClassPathElement.readStreamContents(is);
+                byte[] data = is.readAllBytes();
                 Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length)
                         .getConstructor(ClassLoader.class).newInstance(this);
                 r.run();

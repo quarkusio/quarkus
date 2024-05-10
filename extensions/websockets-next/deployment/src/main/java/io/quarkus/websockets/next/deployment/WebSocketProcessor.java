@@ -190,6 +190,7 @@ public class WebSocketProcessor {
         providers.produce(new CallbackArgumentBuildItem(new PathParamCallbackArgument()));
         providers.produce(new CallbackArgumentBuildItem(new HandshakeRequestCallbackArgument()));
         providers.produce(new CallbackArgumentBuildItem(new ErrorCallbackArgument()));
+        providers.produce(new CallbackArgumentBuildItem(new CloseReasonCallbackArgument()));
     }
 
     @BuildStep

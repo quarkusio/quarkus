@@ -2,12 +2,11 @@ package io.quarkus.websockets.next.test.args;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketException;
@@ -30,7 +29,7 @@ public class OnOpenInvalidArgumentTest {
     public static class Endpoint {
 
         @OnOpen
-        void open(List<String> unsupported) {
+        void open(CloseReason unsupported) {
         }
 
     }

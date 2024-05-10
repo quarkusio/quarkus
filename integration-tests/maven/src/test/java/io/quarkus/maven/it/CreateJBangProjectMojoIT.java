@@ -27,7 +27,7 @@ public class CreateJBangProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
     @Test
     public void testProjectGeneration() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation");
+        testDir = initEmptyProject("projects/jbang-project-generation");
         assertThat(testDir).isDirectory();
         invoker = initInvoker(testDir);
 

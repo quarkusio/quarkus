@@ -1105,6 +1105,16 @@ You can further optimize this process by having a simple JavaScript function pin
 
 [NOTE]
 ====
+When the session can not be refreshed, the currently authenticated user is redirected to the OIDC provider to re-authenticate. However, the user experience may not be ideal in such cases, if the user, after an earlier successful authentication, is suddently seeing an OIDC authentication challenge screen when trying to access an application page.
+
+Instead, you can request that the user is redirected to a public, application specific session expired page first. This page informs the user that the session has now expired and advise to re-authenticate by following a link to a secured application welcome page. The user clicks on the link and Quarkus OIDC enforces a redirect to the OIDC provider to re-authenticate. Use `quarkus.oidc.authentication.session-expired-page` relative path property, if you'd like to do it.
+
+For example, setting `quarkus.oidc.authentication.session-expired-page=/session-expired-page` will ensure that the user whose session has expired is redirected to  `http://localhost:8080/session-expired-page`, assuming the application is available at `http://localhost:8080`.
+====
+
+
+[NOTE]
+====
 You cannot extend the user session indefinitely.
 The returning user with the expired ID token will have to re-authenticate at the OIDC provider endpoint once the refresh token has expired.
 ====

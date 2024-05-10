@@ -356,14 +356,25 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                         .call(() -> buildLogoutRedirectUriUni(context, configContext,
                                                                 currentIdToken));
                                             }
-                                            if (session.getRefreshToken() == null) {
+                                            if (!configContext.oidcConfig.token.refreshExpired) {
+                                                // Token has expired and the refresh is not allowed, check if the session expired page is available
+                                                if (configContext.oidcConfig.authentication.getSessionExpiredPath()
+                                                        .isPresent()) {
+                                                    return redirectToSessionExpiredPage(context, configContext);
+                                                }
                                                 LOG.debug(
-                                                        "Token has expired, token refresh is not possible because the refresh token is null");
+                                                        "Token has expired, token refresh is not allowed, redirecting to re-authenticate");
                                                 return Uni.createFrom()
                                                         .failure(new AuthenticationFailedException(t.getCause()));
                                             }
-                                            if (!configContext.oidcConfig.token.refreshExpired) {
-                                                LOG.debug("Token has expired, token refresh is not allowed");
+                                            if (session.getRefreshToken() == null) {
+                                                // Token has expired but no refresh token is available, check if the session expired page is available
+                                                if (configContext.oidcConfig.authentication.getSessionExpiredPath()
+                                                        .isPresent()) {
+                                                    return redirectToSessionExpiredPage(context, configContext);
+                                                }
+                                                LOG.debug(
+                                                        "Token has expired, token refresh is not possible because the refresh token is null");
                                                 return Uni.createFrom()
                                                         .failure(new AuthenticationFailedException(t.getCause()));
                                             }
@@ -405,10 +416,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             }
                                         }
                                     }
+
                                 });
                     }
 
                 });
+    }
+
+    private Uni<SecurityIdentity> redirectToSessionExpiredPage(RoutingContext context, TenantConfigContext configContext) {
+        URI absoluteUri = URI.create(context.request().absoluteURI());
+        StringBuilder sessionExpired = new StringBuilder(buildUri(context,
+                isForceHttps(configContext.oidcConfig),
+                absoluteUri.getAuthority(),
+                configContext.oidcConfig.authentication.getSessionExpiredPath().get()));
+        String sessionExpiredUri = sessionExpired.toString();
+        LOG.debugf("Session Expired URI: %s", sessionExpiredUri);
+        return removeSessionCookie(context, configContext.oidcConfig)
+                .chain(() -> Uni.createFrom().failure(new AuthenticationRedirectException(sessionExpiredUri)));
     }
 
     private static String decryptIdTokenIfEncryptedByProvider(TenantConfigContext resolvedContext, String token) {
@@ -1195,12 +1219,20 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
                             LOG.debugf("ID token refresh has failed: %s", errorMessage(t));
-                            if (autoRefresh && fallback != null) {
-                                LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
-                                return Uni.createFrom().item(fallback);
-                            } else {
-                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                            if (autoRefresh) {
+                                // Token refresh was initiated while ID token was still valid
+                                if (fallback != null) {
+                                    LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
+                                    return Uni.createFrom().item(fallback);
+                                } else {
+                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                }
+                            } else if (configContext.oidcConfig.authentication.getSessionExpiredPath().isPresent()) {
+                                // Token has expired but the refresh does not work, check if the session expired page is available
+                                return redirectToSessionExpiredPage(context, configContext);
                             }
+                            // Redirect to the OIDC provider to reauthenticate
+                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         } else {
                             context.put(OidcConstants.ACCESS_TOKEN_VALUE, tokens.getAccessToken());
                             context.put(AuthorizationCodeTokens.class.getName(), tokens);

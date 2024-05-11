@@ -54,6 +54,19 @@ public class TenantEchoResource {
         return getTenantInternal();
     }
 
+    @Path("/http-security-policy-applies-all-diff")
+    @GET
+    public String httpSecurityPolicyAppliesAllDiff() {
+        throw new IllegalStateException("An exception should have been thrown because authentication happened" +
+                " before Tenant was selected with the @Tenant annotation");
+    }
+
+    @Path("/http-security-policy-applies-all-same")
+    @GET
+    public String httpSecurityPolicyAppliesAllSame() {
+        return getTenantInternal();
+    }
+
     private String getTenantInternal() {
         return OidcUtils.TENANT_ID_ATTRIBUTE + "=" + routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE)
                 + ", static.tenant.id=" + routingContext.get("static.tenant.id")

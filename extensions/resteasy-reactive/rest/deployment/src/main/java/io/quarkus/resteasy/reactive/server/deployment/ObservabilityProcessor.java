@@ -12,6 +12,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -42,17 +43,20 @@ public class ObservabilityProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
-    FilterBuildItem preAuthFailureFilter(Capabilities capabilities,
+    void preAuthFailureFilter(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             ObservabilityIntegrationRecorder recorder,
-            ResteasyReactiveDeploymentBuildItem deployment) {
+            ResteasyReactiveDeploymentBuildItem deployment,
+            BuildProducer<FilterBuildItem> filterProducer,
+            BuildProducer<ObservabilityIntegrationBuildItem> observabilityIntegrationProducer) {
         boolean integrationNeeded = integrationNeeded(capabilities, metricsCapability);
         if (!integrationNeeded) {
-            return null;
+            return;
         }
 
-        return FilterBuildItem.ofPreAuthenticationFailureHandler(
-                recorder.preAuthFailureHandler(deployment.getDeployment()));
+        filterProducer.produce(FilterBuildItem.ofPreAuthenticationFailureHandler(
+                recorder.preAuthFailureHandler(deployment.getDeployment())));
+        observabilityIntegrationProducer.produce(new ObservabilityIntegrationBuildItem());
     }
 
     private boolean integrationNeeded(Capabilities capabilities,

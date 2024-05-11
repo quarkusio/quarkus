@@ -47,82 +47,85 @@ public class ObservabilityIntegrationRecorder {
                         || event.failure() instanceof ForbiddenException
                         || event.failure() instanceof UnauthorizedException;
             }
-
-            private void setTemplatePath(RoutingContext rc, Deployment deployment) {
-                // do what RestInitialHandler does
-                var initMappers = new RequestMapper<>(deployment.getClassMappers());
-                var requestMatch = initMappers.map(getPathWithoutPrefix(rc, deployment));
-                var remaining = requestMatch.remaining.isEmpty() ? "/" : requestMatch.remaining;
-
-                var serverRestHandlers = requestMatch.value.handlers;
-                if (serverRestHandlers == null || serverRestHandlers.length < 1) {
-                    // nothing we can do
-                    return;
-                }
-                var firstHandler = serverRestHandlers[0];
-                if (!(firstHandler instanceof ClassRoutingHandler)) {
-                    // nothing we can do
-                    return;
-                }
-
-                var classRoutingHandler = (ClassRoutingHandler) firstHandler;
-                var mappers = classRoutingHandler.getMappers();
-
-                var requestMethod = rc.request().method().name();
-
-                // do what ClassRoutingHandler does
-                var mapper = mappers.get(requestMethod);
-                if (mapper == null) {
-                    if (requestMethod.equals(HttpMethod.HEAD) || requestMethod.equals(HttpMethod.OPTIONS)) {
-                        mapper = mappers.get(HttpMethod.GET);
-                    }
-                    if (mapper == null) {
-                        mapper = mappers.get(null);
-                    }
-                    if (mapper == null) {
-                        // can't match the path
-                        return;
-                    }
-                }
-                var target = mapper.map(remaining);
-                if (target == null) {
-                    if (requestMethod.equals(HttpMethod.HEAD)) {
-                        mapper = mappers.get(HttpMethod.GET);
-                        if (mapper != null) {
-                            target = mapper.map(remaining);
-                        }
-                    }
-
-                    if (target == null) {
-                        // can't match the path
-                        return;
-                    }
-                }
-
-                var templatePath = requestMatch.template.template + target.template.template;
-                if (templatePath.endsWith("/")) {
-                    templatePath = templatePath.substring(0, templatePath.length() - 1);
-                }
-
-                setUrlPathTemplate(rc, templatePath);
-            }
-
-            public String getPath(RoutingContext rc) {
-                return rc.normalizedPath();
-            }
-
-            public String getPathWithoutPrefix(RoutingContext rc, Deployment deployment) {
-                String path = getPath(rc);
-                if (path != null) {
-                    String prefix = deployment.getPrefix();
-                    if (!prefix.isEmpty()) {
-                        if (path.startsWith(prefix)) {
-                            return path.substring(prefix.length());
-                        }
-                    }
-                }
-                return path;
-            }
         };
+    }
+
+    public static void setTemplatePath(RoutingContext rc, Deployment deployment) {
+        // do what RestInitialHandler does
+        var initMappers = new RequestMapper<>(deployment.getClassMappers());
+        var requestMatch = initMappers.map(getPathWithoutPrefix(rc, deployment));
+        if (requestMatch == null) {
+            return;
+        }
+        var remaining = requestMatch.remaining.isEmpty() ? "/" : requestMatch.remaining;
+
+        var serverRestHandlers = requestMatch.value.handlers;
+        if (serverRestHandlers == null || serverRestHandlers.length < 1) {
+            // nothing we can do
+            return;
+        }
+        var firstHandler = serverRestHandlers[0];
+        if (!(firstHandler instanceof ClassRoutingHandler)) {
+            // nothing we can do
+            return;
+        }
+
+        var classRoutingHandler = (ClassRoutingHandler) firstHandler;
+        var mappers = classRoutingHandler.getMappers();
+
+        var requestMethod = rc.request().method().name();
+
+        // do what ClassRoutingHandler does
+        var mapper = mappers.get(requestMethod);
+        if (mapper == null) {
+            if (requestMethod.equals(HttpMethod.HEAD) || requestMethod.equals(HttpMethod.OPTIONS)) {
+                mapper = mappers.get(HttpMethod.GET);
+            }
+            if (mapper == null) {
+                mapper = mappers.get(null);
+            }
+            if (mapper == null) {
+                // can't match the path
+                return;
+            }
+        }
+        var target = mapper.map(remaining);
+        if (target == null) {
+            if (requestMethod.equals(HttpMethod.HEAD)) {
+                mapper = mappers.get(HttpMethod.GET);
+                if (mapper != null) {
+                    target = mapper.map(remaining);
+                }
+            }
+
+            if (target == null) {
+                // can't match the path
+                return;
+            }
+        }
+
+        var templatePath = requestMatch.template.template + target.template.template;
+        if (templatePath.endsWith("/")) {
+            templatePath = templatePath.substring(0, templatePath.length() - 1);
+        }
+
+        setUrlPathTemplate(rc, templatePath);
+    }
+
+    private static String getPath(RoutingContext rc) {
+        return rc.normalizedPath();
+    }
+
+    private static String getPathWithoutPrefix(RoutingContext rc, Deployment deployment) {
+        String path = getPath(rc);
+        if (path != null) {
+            String prefix = deployment.getPrefix();
+            if (!prefix.isEmpty()) {
+                if (path.startsWith(prefix)) {
+                    return path.substring(prefix.length());
+                }
+            }
+        }
+        return path;
     }
 }

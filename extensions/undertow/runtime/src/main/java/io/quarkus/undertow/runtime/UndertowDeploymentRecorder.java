@@ -747,6 +747,16 @@ public class UndertowDeploymentRecorder {
         }
     }
 
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location, int errorCode) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, errorCode));
+
+    }
+
+    public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location,
+            Class<? extends Throwable> exceptionType) {
+        deployment.getValue().addErrorPage(new ErrorPage(location, exceptionType));
+    }
+
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */

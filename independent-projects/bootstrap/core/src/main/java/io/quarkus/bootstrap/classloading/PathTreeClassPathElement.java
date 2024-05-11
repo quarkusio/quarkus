@@ -12,8 +12,10 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -104,6 +106,26 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
             return null;
         }
         return apply(tree -> tree.apply(sanitized, visit -> visit == null ? null : new Resource(visit)));
+    }
+
+    @Override
+    public List<ClassPathResource> getResources(String name) {
+        final String sanitized = sanitize(name);
+        final Set<String> resources = this.resources;
+        if (resources != null && !resources.contains(sanitized)) {
+            return List.of();
+        }
+        List<ClassPathResource> ret = new ArrayList<>();
+        apply(tree -> {
+            tree.acceptAll(sanitized, visit -> {
+                if (visit != null) {
+                    ret.add(new Resource(visit));
+
+                }
+            });
+            return List.of();
+        });
+        return ret;
     }
 
     @Override

@@ -14,7 +14,6 @@ import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -2170,7 +2169,7 @@ public class QuteProcessor {
                     // if template root is found in this tree then walk over its subtree
                     scanTemplateRootSubtree(
                             new FilteredPathTree(pathTree, PathFilter.forIncludes(List.of(templateRoot + "/**"))),
-                            visit.getPath(), watchedPaths, templatePaths, nativeImageResources, config);
+                            visit.getRelativePath(), watchedPaths, templatePaths, nativeImageResources, config);
                 }
             });
         }
@@ -3383,7 +3382,7 @@ public class QuteProcessor {
                         readTemplateContent(originalPath, config.defaultCharset)));
     }
 
-    private void scanTemplateRootSubtree(PathTree pathTree, Path templateRoot,
+    private void scanTemplateRootSubtree(PathTree pathTree, String templateRoot,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -3391,28 +3390,17 @@ public class QuteProcessor {
         pathTree.walk(visit -> {
             if (Files.isRegularFile(visit.getPath())) {
                 LOGGER.debugf("Found template: %s", visit.getPath());
-                String templatePath = toOsAgnosticPath(templateRoot.relativize(visit.getPath()));
+                // remove templateRoot + /
+                final String relativePath = visit.getRelativePath();
+                String templatePath = relativePath.substring(templateRoot.length() + 1);
                 if (config.templatePathExclude.matcher(templatePath).matches()) {
                     LOGGER.debugf("Template file excluded: %s", visit.getPath());
                     return;
                 }
                 produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources,
-                        visit.getRelativePath("/"),
-                        templatePath, visit.getPath(), config);
+                        relativePath, templatePath, visit.getPath(), config);
             }
         });
-    }
-
-    private static String toOsAgnosticPath(String path, FileSystem fs) {
-        String separator = fs.getSeparator();
-        if (!separator.equals("/")) {
-            path = path.replace(separator, "/");
-        }
-        return path;
-    }
-
-    private static String toOsAgnosticPath(Path path) {
-        return toOsAgnosticPath(path.toString(), path.getFileSystem());
     }
 
     private static boolean isExcluded(TypeCheck check, Iterable<Predicate<TypeCheck>> excludes) {

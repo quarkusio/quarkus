@@ -401,7 +401,7 @@ quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
 [[env-vars]]
-==== Environment variables
+=== Environment variables
 
 Kubernetes provides multiple ways of defining environment variables:
 
@@ -410,7 +410,7 @@ Kubernetes provides multiple ways of defining environment variables:
 - interpolate a single value identified by a given field in a Secret or ConfigMap
 - interpolate a value from a field within the same resource
 
-===== Environment variables from key/value pairs
+==== Environment variables from key/value pairs
 
 To add a key/value pair as an environment variable in the generated resources:
 
@@ -423,7 +423,7 @@ The command above will add `MY_ENV_VAR=foobar` as an environment variable.
 Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
 
 [[secret-mapping]]
-===== Environment variables from Secret
+==== Environment variables from Secret
 
 To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`
 to be used as source by a comma (`,`):
@@ -467,7 +467,7 @@ This would generate the following in the `env` section of your container:
         optional: false
 ----
 
-===== Environment variables from ConfigMap
+==== Environment variables from ConfigMap
 
 To add all key/value pairs from `ConfigMap` as environment variables just apply the following configuration, separating each
 `ConfigMap` to be used as source by a comma (`,`):
@@ -512,7 +512,7 @@ This would generate the following in the `env` section of your container:
         optional: false
 ----
 
-===== Environment variables from fields
+==== Environment variables from fields
 
 It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
 
@@ -532,7 +532,7 @@ quarkus.openshift.env.fields.foo=metadata.name
 ----
 ====
 
-===== Validation
+==== Validation
 
 A conflict between two definitions, e.g. mistakenly assigning both a value and specifying that a variable is derived from a field, will result in an error being thrown at build time so that you get the opportunity to fix the issue before you deploy your application to your cluster where it might be more difficult to diagnose the source of the issue.
 
@@ -561,7 +561,7 @@ and a warning will be issued to alert you of the problem.For example, if you def
 `quarkus.kubernetes.env-vars.my-env-var.value=foobar` and `quarkus.kubernetes.env.vars.my-env-var=newValue`, the extension will
 only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
 
-==== Mounting volumes
+=== Mounting volumes
 
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
 Any volume can be mounted with a simple configuration:
@@ -574,14 +574,14 @@ quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
 This will add a mount to the pod for volume `my-volume` to path `/where/to/mount`.
 The volumes themselves can be configured as shown in the sections below.
 
-===== Secret volumes
+==== Secret volumes
 
 [source,properties]
 ----
 quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
 ----
 
-===== ConfigMap volumes
+==== ConfigMap volumes
 
 [source,properties]
 ----
@@ -616,7 +616,7 @@ The application config volumes will be created using path: `/mnt/app-secret` and
 
 Note: Users may use both properties at the same time.
 
-=== Changing the number of replicas:
+=== Changing the number of replicas
 
 To change the number of replicas from 1 to 3:
 

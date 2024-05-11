@@ -518,7 +518,7 @@ import jakarta.inject.Singleton;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
 
 @Singleton <1>
-public static class MyCustomizer implements HttpServerOptionsCustomizer {
+public class MyCustomizer implements HttpServerOptionsCustomizer {
 
     @Override
     public void customizeHttpServer(HttpServerOptions options) { <2>

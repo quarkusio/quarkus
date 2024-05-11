@@ -41,7 +41,7 @@
         <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
-        <parsson.version>1.1.5</parsson.version>
+        <parsson.version>1.1.6</parsson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
@@ -51,7 +51,7 @@
         <maven.version>3.9.6</maven.version>
         <assertj.version>3.25.3</assertj.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
-        <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>

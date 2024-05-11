@@ -697,7 +697,7 @@ import '@quarkus-webcomponents/codeblock';
 </div>;
 ----
 
-https://github.com/quarkusio/quarkus/blob/e03a97845738436c69443a591ec4ce88ed04ac91/extensions/kubernetes/vanilla/deployment/src/main/resources/dev-ui/qwc-kubernetes-manifest.js#L99[Example code]
+https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/kubernetes/vanilla/deployment/src/main/resources/dev-ui/qwc-kubernetes-manifest.js#L102[Example code]
 
 Or fetching the contents from a URL:
 
@@ -711,7 +711,35 @@ Or fetching the contents from a URL:
 </div>
 ----
 
-https://github.com/quarkusio/quarkus/blob/95c54fa46a6b6f31d69477234486d9359a2a3a4a/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-external-page.js#L116[Example code]
+https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-external-page.js#L118[Example code]
+
+To make sure that the code block adopt the correct code-mirror theme (based on the current one in Dev UI), you can do the following:
+
+[source,javascript]
+----
+import { observeState } from 'lit-element-state'; 
+import { themeState } from 'theme-state';
+----
+
+Then change the `extends` to observe state:
+
+[source,javascript]
+----
+extends observeState(LitElement) {
+----
+
+Now you can get the current theme, so add the `theme` property to your code block, example:
+
+[source,html]
+----
+<div class="codeBlock">
+    <qui-code-block
+        mode='${this._mode}'
+        src='${this._externalUrl}'
+        theme='${themeState.theme.name}'>
+    </qui-code-block>
+</div>
+----
 
 ====== IDE link
 

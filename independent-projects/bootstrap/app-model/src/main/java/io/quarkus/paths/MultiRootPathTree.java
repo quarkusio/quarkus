@@ -87,6 +87,26 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
+    public void acceptAll(String relativePath, Consumer<PathVisit> func) {
+        final AtomicBoolean consumed = new AtomicBoolean();
+        final Consumer<PathVisit> wrapper = new Consumer<>() {
+            @Override
+            public void accept(PathVisit t) {
+                if (t != null) {
+                    func.accept(t);
+                    consumed.set(true);
+                }
+            }
+        };
+        for (PathTree tree : trees) {
+            tree.accept(relativePath, wrapper);
+        }
+        if (!consumed.get()) {
+            func.accept(null);
+        }
+    }
+
+    @Override
     public boolean contains(String relativePath) {
         for (PathTree tree : trees) {
             if (tree.contains(relativePath)) {

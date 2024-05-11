@@ -622,7 +622,13 @@ public final class BuildTimeConfigurationReader {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
                     if (configValue.getValue() != null) {
-                        runTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        String configName = configValue.getNameProfiled();
+                        // record the profile parent in the original form; if recorded in the active profile it may mess the profile ordering
+                        if (configName.equals("quarkus.config.profile.parent")) {
+                            runTimeValues.put(propertyName, configValue.getValue());
+                        } else {
+                            runTimeValues.put(configName, configValue.getValue());
+                        }
                     }
 
                     // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
@@ -1045,6 +1051,7 @@ public final class BuildTimeConfigurationReader {
          * want to record properties set by the compiling JVM (or other properties that are only related to the build).
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
+            // Collects all properties from allowed sources
             Set<String> sourcesProperties = new HashSet<>();
             for (ConfigSource configSource : config.getConfigSources()) {
                 if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource
@@ -1120,7 +1127,16 @@ public final class BuildTimeConfigurationReader {
 
             String[] profiles = config.getProfiles().toArray(String[]::new);
             for (String property : builder.build().getPropertyNames()) {
-                properties.add(ProfileConfigSourceInterceptor.activeName(property, profiles));
+                String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
+                // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
+                if (activeProperty.equals("quarkus.config.profile.parent")) {
+                    if (!activeProperty.equals(property)) {
+                        properties.remove(activeProperty);
+                        properties.add(property);
+                        continue;
+                    }
+                }
+                properties.add(activeProperty);
             }
 
             return properties;

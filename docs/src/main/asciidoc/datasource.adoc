@@ -177,6 +177,7 @@ Until now, the configuration has been the same regardless of whether you are usi
 When you have defined the database kind and the credentials, the rest depends on what type of driver you are using.
 It is possible to use JDBC and a reactive driver simultaneously.
 
+[[jdbc-datasource]]
 ==== JDBC datasource
 
 JDBC is the most common database connection pattern, typically needed when used in combination with non-reactive Hibernate ORM.
@@ -294,6 +295,7 @@ AgroalDataSource defaultDataSource;
 In the above example, the type is `AgroalDataSource`, a `javax.sql.DataSource` subtype.
 Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
+[[reactive-datasource]]
 ==== Reactive datasource
 
 Quarkus offers several reactive clients for use with a reactive datasource.
@@ -325,10 +327,22 @@ Be aware that setting the pool size too low might cause some requests to time ou
 
 For more information about pool size adjustment properties, see the <<reactive-configuration>> section.
 
+[[jdbc-and-reactive-datasources-simultaneously]]
 ==== JDBC and reactive datasources simultaneously
 
 When a JDBC extension - along with Agroal - and a reactive datasource extension handling the given database kind are included, they will both be created by default.
 
+If you want to use them both,
+make sure to set both <<jdbc-datasource,JDBC>> and <<reactive-datasource,reactive>> configuration,
+for example:
+
+[source,properties]
+----
+%prod.quarkus.datasource.reactive.url=postgresql:///your_database
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
+----
+
+If you do not want to have both a JDBC datasource and a reactive datasource created, use the following configuration.
 * To disable the JDBC datasource explicitly:
 +
 [source, properties]

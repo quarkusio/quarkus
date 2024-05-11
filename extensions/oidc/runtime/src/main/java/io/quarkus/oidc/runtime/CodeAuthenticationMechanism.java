@@ -338,7 +338,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                LOG.errorf("ID token verification failure: %s", errorMessage(t));
+                                                logAuthenticationError(context, t);
                                                 return removeSessionCookie(context, configContext.oidcConfig)
                                                         .replaceWith(Uni.createFrom()
                                                                 .failure(t
@@ -837,13 +837,24 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             return tInner;
                                         }
 
-                                        LOG.errorf("ID token verification has failed: %s", errorMessage(tInner));
+                                        logAuthenticationError(context, tInner);
                                         return new AuthenticationCompletionException(tInner);
                                     }
                                 });
                     }
 
                 });
+    }
+
+    private static void logAuthenticationError(RoutingContext context, Throwable t) {
+        final String errorMessage = errorMessage(t);
+        final boolean accessTokenFailure = context.get(OidcConstants.ACCESS_TOKEN_VALUE) != null
+                && context.get(OidcUtils.CODE_ACCESS_TOKEN_RESULT) == null;
+        if (accessTokenFailure) {
+            LOG.errorf("Access token verification has failed: %s. ID token has not been verified yet", errorMessage);
+        } else {
+            LOG.errorf("ID token verification has failed: %s", errorMessage);
+        }
     }
 
     private static boolean prepareNonceForVerification(RoutingContext context, OidcTenantConfig oidcConfig,

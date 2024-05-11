@@ -37,6 +37,16 @@ public class UserInfoRequiredDetectionTest {
                                             quarkus.oidc.named.auth-server-url=${quarkus.oidc.auth-server-url}
                                             quarkus.oidc.named.tenant-paths=/user-info/named-tenant
                                             quarkus.oidc.named.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
+                                            quarkus.oidc.named-2.auth-server-url=${quarkus.oidc.auth-server-url}
+                                            quarkus.oidc.named-2.tenant-paths=/user-info/named-tenant-2
+                                            quarkus.oidc.named-2.discovery-enabled=false
+                                            quarkus.oidc.named-2.jwks-path=protocol/openid-connect/certs
+                                            quarkus.oidc.named-3.auth-server-url=${quarkus.oidc.auth-server-url}
+                                            quarkus.oidc.named-3.tenant-paths=/user-info/named-tenant-3
+                                            quarkus.oidc.named-3.discovery-enabled=false
+                                            quarkus.oidc.named-3.jwks-path=protocol/openid-connect/certs
+                                            quarkus.oidc.named-3.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
+                                            quarkus.oidc.named-3.authentication.user-info-required=false
                                             quarkus.http.auth.proactive=false
                                             """),
                             "application.properties"));
@@ -51,6 +61,18 @@ public class UserInfoRequiredDetectionTest {
     public void testNamedTenant() {
         RestAssured.given().auth().oauth2(getAccessToken()).get("/user-info/named-tenant").then().statusCode(200)
                 .body(Matchers.is("alice"));
+    }
+
+    @Test
+    public void testUserInfoNotRequiredWhenMissingUserInfoEndpoint() {
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/user-info/named-tenant-2").then().statusCode(200)
+                .body(Matchers.is("false"));
+    }
+
+    @Test
+    public void testUserInfoNotRequiredIfDisabledWhenUserInfoEndpointIsPresent() {
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/user-info/named-tenant-3").then().statusCode(200)
+                .body(Matchers.is("false"));
     }
 
     private static String getAccessToken() {
@@ -93,6 +115,20 @@ public class UserInfoRequiredDetectionTest {
                 throw new IllegalStateException("Named tenant user info should be required");
             }
             return userInfo.getPreferredUserName();
+        }
+
+        @PermissionsAllowed("openid")
+        @Path("named-tenant-2")
+        @GET
+        public boolean getNamed2TenantUserInfoRequired() {
+            return config.namedTenants.get("named-2").authentication.userInfoRequired.orElse(false);
+        }
+
+        @PermissionsAllowed("openid")
+        @Path("named-tenant-3")
+        @GET
+        public boolean getNamed3TenantUserInfoRequired() {
+            return config.namedTenants.get("named-3").authentication.userInfoRequired.orElse(false);
         }
     }
 

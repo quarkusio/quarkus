@@ -68,6 +68,8 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -216,7 +218,13 @@ public class GrpcServerRecorder {
 
     // TODO -- handle Avro, plain text ... when supported / needed
     private static boolean isGrpc(RoutingContext rc) {
-        String header = rc.request().getHeader("content-type");
+        HttpServerRequest request = rc.request();
+        HttpVersion version = request.version();
+        if (HttpVersion.HTTP_1_0.equals(version) || HttpVersion.HTTP_1_1.equals(version)) {
+            LOGGER.debugf("Expecting %s, received %s - not a gRPC request", HttpVersion.HTTP_2, version);
+            return false;
+        }
+        String header = request.getHeader("content-type");
         return header != null && GRPC_CONTENT_TYPE.matcher(header.toLowerCase(Locale.ROOT)).matches();
     }
 

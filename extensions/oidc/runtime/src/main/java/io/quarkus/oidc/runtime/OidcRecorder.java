@@ -44,6 +44,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
@@ -67,6 +68,7 @@ public class OidcRecorder {
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
     private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
+    private static volatile boolean userInfoInjectionPointDetected = false;
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
         return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
@@ -77,7 +79,9 @@ public class OidcRecorder {
         };
     }
 
-    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig,
+            boolean userInfoInjectionPointDetected) {
+        OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
         final Vertx vertxValue = vertx.get();
 
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
@@ -540,6 +544,9 @@ public class OidcRecorder {
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
                             }
                         }
+                        if (userInfoInjectionPointDetected && metadata.getUserInfoUri() != null) {
+                            enableUserInfo(oidcConfig);
+                        }
                         if (oidcConfig.authentication.userInfoRequired.orElse(false) && metadata.getUserInfoUri() == null) {
                             client.close();
                             return Uni.createFrom().failure(new ConfigurationException(
@@ -600,6 +607,30 @@ public class OidcRecorder {
                 return new Consumer<RoutingContext>() {
                     @Override
                     public void accept(RoutingContext routingContext) {
+                        OidcTenantConfig tenantConfig = routingContext.get(OidcTenantConfig.class.getName());
+                        if (tenantConfig != null) {
+                            // authentication has happened before @Tenant annotation was matched with the HTTP request
+                            String tenantUsedForAuth = tenantConfig.tenantId.orElse(null);
+                            if (tenantId.equals(tenantUsedForAuth)) {
+                                // @Tenant selects the same tenant as already selected
+                                return;
+                            } else {
+                                // @Tenant selects the different tenant than already selected
+                                throw new AuthenticationFailedException(
+                                        """
+                                                The '%1$s' selected with the @Tenant annotation must be used to authenticate
+                                                the request but it was already authenticated with the '%2$s' tenant. It
+                                                can happen if the '%1$s' is selected with an annotation but '%2$s' is
+                                                resolved during authentication required by the HTTP Security Policy which
+                                                is enforced before the JAX-RS chain is run. In such cases, please set the
+                                                'quarkus.http.auth.permission."permissions".applies-to=JAXRS' to all HTTP
+                                                Security Policies which secure the same REST endpoints as the ones
+                                                where the '%1$s' tenant is resolved by the '@Tenant' annotation.
+                                                """
+                                                .formatted(tenantId, tenantUsedForAuth));
+                            }
+                        }
+
                         LOG.debugf("@Tenant annotation set a '%s' tenant id on the %s request path", tenantId,
                                 routingContext.request().path());
                         routingContext.put(OidcUtils.TENANT_ID_SET_BY_ANNOTATION, tenantId);

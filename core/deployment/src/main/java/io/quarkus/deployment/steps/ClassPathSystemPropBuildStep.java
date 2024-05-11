@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -46,8 +45,8 @@ public class ClassPathSystemPropBuildStep {
 
             }
         }
-        String classPathValue = Stream.concat(parentFirst.stream(), regular.stream()).map(p -> p.toAbsolutePath().toString())
-                .collect(Collectors.joining(":"));
-        recorder.set(classPathValue);
+        List<String> allJarPaths = Stream.concat(parentFirst.stream(), regular.stream()).map(p -> p.toAbsolutePath().toString())
+                .toList();
+        recorder.set(allJarPaths);
     }
 }

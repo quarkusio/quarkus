@@ -55,6 +55,15 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public void acceptAll(String relativePath, Consumer<PathVisit> consumer) {
+        if (!PathFilter.isVisible(filter, relativePath)) {
+            consumer.accept(null);
+        } else {
+            original.acceptAll(relativePath, consumer);
+        }
+    }
+
+    @Override
     public boolean contains(String relativePath) {
         return PathFilter.isVisible(filter, relativePath) && original.contains(relativePath);
     }

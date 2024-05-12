@@ -1106,6 +1106,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.keystore.verify.key.alias||This property has to be set to identify a public verification key which will be extracted from `KeyStore` from a matching certificate if `mp.jwt.verify.publickey.location` points to a `KeyStore` file.
 |smallrye.jwt.keystore.decrypt.key.alias||This property has to be set to identify a private decryption key if `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
 |smallrye.jwt.keystore.decrypt.key.password||This property may be set if a private decryption key's password in `KeyStore` is different to `smallrye.jwt.keystore.password` when `mp.jwt.decrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.resolve-remote-keys-at-startup|false|Set this property to true to resolve the remote keys at the application startup.
 |===
 
 == References

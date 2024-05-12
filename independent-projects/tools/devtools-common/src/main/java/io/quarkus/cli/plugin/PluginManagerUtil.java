@@ -10,6 +10,7 @@ import io.quarkus.maven.dependency.GACTV;
 
 public class PluginManagerUtil {
 
+    static final String ALIAS_SEPARATOR = ": ";
     private static final Pattern CLI_SUFFIX = Pattern.compile("(\\-cli)(@\\w+)?$");
 
     private final PluginManagerSettings settings;
@@ -32,13 +33,29 @@ public class PluginManagerUtil {
      * @param the location
      * @return the {@link Plugin} that corresponds to the location.
      */
-    public Plugin from(String location) {
+    public Plugin fromLocation(String location) {
         Optional<URL> url = PluginUtil.checkUrl(location);
         Optional<Path> path = PluginUtil.checkPath(location);
         Optional<GACTV> gactv = PluginUtil.checkGACTV(location);
         String name = getName(gactv, url, path);
         PluginType type = PluginUtil.getType(gactv, url, path);
         return new Plugin(name, type, Optional.of(location), Optional.empty());
+    }
+
+    /**
+     * Create a {@link Plugin} from the specified alias.
+     *
+     * @param alias (e.g. name: location)
+     * @return the {@link Plugin} that corresponds to the alias.
+     */
+    public Plugin fromAlias(String alias) {
+        String name = null;
+        String location = alias;
+        if (alias.contains(ALIAS_SEPARATOR)) {
+            name = alias.substring(0, alias.indexOf(ALIAS_SEPARATOR)).trim();
+            location = alias.substring(alias.indexOf(ALIAS_SEPARATOR) + 1).trim();
+        }
+        return fromLocation(location).withName(name);
     }
 
     /**

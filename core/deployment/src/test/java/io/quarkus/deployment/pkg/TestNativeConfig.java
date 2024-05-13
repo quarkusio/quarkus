@@ -151,6 +151,11 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public Optional<String> march() {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean remoteContainerBuild() {
         return false;
     }

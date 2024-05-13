@@ -2255,7 +2255,7 @@ To work around that issue, add the following line to the `application.properties
 
 [source, properties]
 ----
-quarkus.native.additional-build-args=-march=compatibility
+quarkus.native.march=compatibility
 ----
 
 Then, rebuild your native executable.

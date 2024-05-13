@@ -302,7 +302,7 @@ public class DevServicesKubernetesProcessor {
             this.serviceName = config.serviceName();
             this.apiVersion = config.apiVersion();
             this.overrideKubeconfig = config.overrideKubeconfig();
-            this.overrideKubeconfig = config.accessToHost();
+            this.accessToHost = config.accessToHost();
             this.flavor = config.flavor();
             this.shared = config.shared();
             this.containerEnv = config.containerEnv();

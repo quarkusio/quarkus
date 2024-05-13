@@ -906,6 +906,9 @@ public class NativeImageBuildStep {
                 if (nativeConfig.enableVmInspection()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
                 }
+                if (nativeConfig.march().isPresent()) {
+                    nativeImageArgs.add("-march=" + nativeConfig.march().get());
+                }
 
                 List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
                 monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);

@@ -27,11 +27,11 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
     @Override
     public Map<String, String> start() {
 
-        RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
+        RealmRepresentation realm = createRealm(KEYCLOAK_REALM, "secret");
         client.createRealm(realm);
         realms.add(realm);
 
-        RealmRepresentation logoutRealm = createRealm("logout-realm");
+        RealmRepresentation logoutRealm = createRealm("logout-realm", "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU");
         // revoke refresh tokens so that they can only be used once
         logoutRealm.setRevokeRefreshToken(true);
         logoutRealm.setRefreshTokenMaxReuse(0);
@@ -42,7 +42,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         return Collections.emptyMap();
     }
 
-    private static RealmRepresentation createRealm(String name) {
+    private static RealmRepresentation createRealm(String name, String defaultClientSecret) {
         RealmRepresentation realm = new RealmRepresentation();
 
         realm.setRealm(name);
@@ -62,7 +62,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("confidential", null, false));
 
-        realm.getClients().add(createClient("quarkus-app"));
+        realm.getClients().add(createClient("quarkus-app", defaultClientSecret));
         realm.getClients().add(createClientJwt("quarkus-app-jwt"));
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("admin", "user", "admin"));
@@ -83,14 +83,14 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         return client;
     }
 
-    private static ClientRepresentation createClient(String clientId) {
+    private static ClientRepresentation createClient(String clientId, String secret) {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
         client.setEnabled(true);
         client.setRedirectUris(Arrays.asList("*"));
         client.setClientAuthenticatorType("client-secret");
-        client.setSecret("secret");
+        client.setSecret(secret);
 
         return client;
     }

@@ -1,5 +1,7 @@
 package io.quarkus.runner.bootstrap;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,8 +61,7 @@ public class StartupActionImpl implements StartupAction {
         this.devServicesProperties = extractDevServicesProperties(buildResult);
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
 
-        Set<String> eagerClasses = new HashSet<>();
-        Map<String, byte[]> transformedClasses = extractTransformers(buildResult, eagerClasses);
+        Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
@@ -347,16 +347,13 @@ public class StartupActionImpl implements StartupAction {
         return new HashMap<>(result.getConfig());
     }
 
-    private static Map<String, byte[]> extractTransformers(BuildResult buildResult, Set<String> eagerClasses) {
+    private static Map<String, byte[]> extractTransformedClasses(BuildResult buildResult) {
         Map<String, byte[]> ret = new HashMap<>();
         TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
         for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass clazz : i) {
                 if (clazz.getData() != null) {
                     ret.put(clazz.getFileName(), clazz.getData());
-                    if (clazz.isEager()) {
-                        eagerClasses.add(clazz.getClassName());
-                    }
                 }
             }
         }
@@ -367,7 +364,7 @@ public class StartupActionImpl implements StartupAction {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(i.getName().replace('.', '/') + ".class", i.getClassData());
+                data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
                 if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
                         File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);

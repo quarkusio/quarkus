@@ -10,6 +10,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 public final class ConfigClassBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
+    /**
+     * All the config interfaces registered for this config mapping (including the nested ones)
+     */
+    private final Set<Class<?>> configComponentInterfaces;
     private final Set<Type> types;
     private final Set<String> generatedClasses;
     private final String prefix;
@@ -19,12 +23,14 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
 
     public ConfigClassBuildItem(
             final Class<?> configClass,
+            final Set<Class<?>> configComponentInterfaces,
             final Set<Type> types,
             final Set<String> generatedClasses,
             final String prefix,
             final Kind kind) {
 
         this.configClass = configClass;
+        this.configComponentInterfaces = configComponentInterfaces;
         this.types = types;
         this.generatedClasses = generatedClasses;
         this.prefix = prefix;
@@ -34,6 +40,10 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
 
     public Class<?> getConfigClass() {
         return configClass;
+    }
+
+    public Set<Class<?>> getConfigComponentInterfaces() {
+        return configComponentInterfaces;
     }
 
     public Set<Type> getTypes() {

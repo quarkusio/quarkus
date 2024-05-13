@@ -1,15 +1,13 @@
 package io.quarkus.vertx.http.runtime.options;
 
+import static io.quarkus.vertx.http.runtime.options.TlsUtils.computeKeyStoreOptions;
+import static io.quarkus.vertx.http.runtime.options.TlsUtils.computeTrustOptions;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
@@ -24,18 +22,29 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.JdkSSLEngineOptions;
-import io.vertx.core.net.KeyStoreOptions;
-import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.TrafficShapingOptions;
+import io.vertx.core.net.*;
 
 @SuppressWarnings("OptionalIsPresent")
 public class HttpServerOptionsUtils {
+
+    /**
+     * When the http port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MAIN_HTTP = -1;
+
+    /**
+     * When the https port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MAIN_TLS = -2;
+
+    /**
+     * When the management port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MANAGEMENT = -3;
 
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
@@ -49,15 +58,6 @@ public class HttpServerOptionsUtils {
 
         ServerSslConfig sslConfig = httpConfiguration.ssl;
 
-        final List<Path> keys = new ArrayList<>();
-        final List<Path> certificates = new ArrayList<>();
-        if (sslConfig.certificate.keyFiles.isPresent()) {
-            keys.addAll(sslConfig.certificate.keyFiles.get());
-        }
-        if (sslConfig.certificate.files.isPresent()) {
-            certificates.addAll(sslConfig.certificate.files.get());
-        }
-
         // credentials provider
         Map<String, String> credentials = Map.of();
         if (sslConfig.certificate.credentialsProvider.isPresent()) {
@@ -66,14 +66,33 @@ public class HttpServerOptionsUtils {
             String name = sslConfig.certificate.credentialsProvider.get();
             credentials = credentialsProvider.getCredentials(name);
         }
-        final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
+
         final Optional<String> keyStorePassword = getCredential(sslConfig.certificate.keyStorePassword, credentials,
                 sslConfig.certificate.keyStorePasswordKey);
-        final Optional<String> keyStoreKeyPassword = getCredential(sslConfig.certificate.keyStoreKeyPassword, credentials,
-                sslConfig.certificate.keyStoreKeyPasswordKey);
-        final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
+
+        Optional<String> keyStoreAliasPassword = Optional.empty();
+        if (sslConfig.certificate.keyStoreAliasPassword.isPresent() || sslConfig.certificate.keyStoreKeyPassword.isPresent()
+                || sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
+                || sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
+            if (sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
+                    && sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
+                throw new ConfigurationException(
+                        "You cannot specify both `keyStoreKeyPasswordKey` and `keyStoreAliasPasswordKey` - Use `keyStoreAliasPasswordKey` instead");
+            }
+            if (sslConfig.certificate.keyStoreAliasPassword.isPresent()
+                    && sslConfig.certificate.keyStoreKeyPassword.isPresent()) {
+                throw new ConfigurationException(
+                        "You cannot specify both `keyStoreKeyPassword` and `keyStoreAliasPassword` - Use `keyStoreAliasPassword` instead");
+            }
+            keyStoreAliasPassword = getCredential(
+                    or(sslConfig.certificate.keyStoreAliasPassword, sslConfig.certificate.keyStoreKeyPassword),
+                    credentials,
+                    or(sslConfig.certificate.keyStoreAliasPasswordKey, sslConfig.certificate.keyStoreKeyPasswordKey));
+        }
+
         final Optional<String> trustStorePassword = getCredential(sslConfig.certificate.trustStorePassword, credentials,
                 sslConfig.certificate.trustStorePasswordKey);
+
         final HttpServerOptions serverOptions = new HttpServerOptions();
 
         //ssl
@@ -85,32 +104,14 @@ public class HttpServerOptionsUtils {
         }
         setIdleTimeout(httpConfiguration, serverOptions);
 
-        if (!certificates.isEmpty() && !keys.isEmpty()) {
-            createPemKeyCertOptions(certificates, keys, serverOptions);
-        } else if (keyStoreFile.isPresent()) {
-
-            KeyStoreOptions options = createKeyStoreOptions(
-                    keyStoreFile.get(),
-                    keyStorePassword.orElse("password"),
-                    sslConfig.certificate.keyStoreFileType,
-                    sslConfig.certificate.keyStoreProvider,
-                    sslConfig.certificate.keyStoreKeyAlias,
-                    keyStoreKeyPassword);
-            serverOptions.setKeyCertOptions(options);
+        var kso = computeKeyStoreOptions(sslConfig.certificate, keyStorePassword, keyStoreAliasPassword);
+        if (kso != null) {
+            serverOptions.setKeyCertOptions(kso);
         }
 
-        if (trustStoreFile.isPresent()) {
-            if (!trustStorePassword.isPresent()) {
-                throw new IllegalArgumentException("No trust store password provided");
-            }
-            KeyStoreOptions options = createKeyStoreOptions(
-                    trustStoreFile.get(),
-                    trustStorePassword.get(),
-                    sslConfig.certificate.trustStoreFileType,
-                    sslConfig.certificate.trustStoreProvider,
-                    sslConfig.certificate.trustStoreCertAlias,
-                    Optional.empty());
-            serverOptions.setTrustOptions(options);
+        var to = computeTrustOptions(sslConfig.certificate, trustStorePassword);
+        if (to != null) {
+            serverOptions.setTrustOptions(to);
         }
 
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
@@ -122,7 +123,7 @@ public class HttpServerOptionsUtils {
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
+        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
         applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
@@ -143,15 +144,6 @@ public class HttpServerOptionsUtils {
 
         ServerSslConfig sslConfig = httpConfiguration.ssl;
 
-        final List<Path> keys = new ArrayList<>();
-        final List<Path> certificates = new ArrayList<>();
-        if (sslConfig.certificate.keyFiles.isPresent()) {
-            keys.addAll(sslConfig.certificate.keyFiles.get());
-        }
-        if (sslConfig.certificate.files.isPresent()) {
-            certificates.addAll(sslConfig.certificate.files.get());
-        }
-
         // credentials provider
         Map<String, String> credentials = Map.of();
         if (sslConfig.certificate.credentialsProvider.isPresent()) {
@@ -160,14 +152,33 @@ public class HttpServerOptionsUtils {
             String name = sslConfig.certificate.credentialsProvider.get();
             credentials = credentialsProvider.getCredentials(name);
         }
-        final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
+
         final Optional<String> keyStorePassword = getCredential(sslConfig.certificate.keyStorePassword, credentials,
                 sslConfig.certificate.keyStorePasswordKey);
-        final Optional<String> keyStoreKeyPassword = getCredential(sslConfig.certificate.keyStoreKeyPassword, credentials,
-                sslConfig.certificate.keyStoreKeyPasswordKey);
-        final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
+
+        Optional<String> keyStoreAliasPassword = Optional.empty();
+        if (sslConfig.certificate.keyStoreAliasPassword.isPresent() || sslConfig.certificate.keyStoreKeyPassword.isPresent()
+                || sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
+                || sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
+            if (sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
+                    && sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
+                throw new ConfigurationException(
+                        "You cannot specify both `keyStoreKeyPasswordKey` and `keyStoreAliasPasswordKey` - Use `keyStoreAliasPasswordKey` instead");
+            }
+            if (sslConfig.certificate.keyStoreAliasPassword.isPresent()
+                    && sslConfig.certificate.keyStoreKeyPassword.isPresent()) {
+                throw new ConfigurationException(
+                        "You cannot specify both `keyStoreKeyPassword` and `keyStoreAliasPassword` - Use `keyStoreAliasPassword` instead");
+            }
+            keyStoreAliasPassword = getCredential(
+                    or(sslConfig.certificate.keyStoreAliasPassword, sslConfig.certificate.keyStoreKeyPassword),
+                    credentials,
+                    or(sslConfig.certificate.keyStoreAliasPasswordKey, sslConfig.certificate.keyStoreKeyPasswordKey));
+        }
+
         final Optional<String> trustStorePassword = getCredential(sslConfig.certificate.trustStorePassword, credentials,
                 sslConfig.certificate.trustStorePasswordKey);
+
         final HttpServerOptions serverOptions = new HttpServerOptions();
 
         //ssl
@@ -179,31 +190,14 @@ public class HttpServerOptionsUtils {
         serverOptions.setIdleTimeout(idleTimeout);
         serverOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
 
-        if (!certificates.isEmpty() && !keys.isEmpty()) {
-            createPemKeyCertOptions(certificates, keys, serverOptions);
-        } else if (keyStoreFile.isPresent()) {
-            KeyStoreOptions options = createKeyStoreOptions(
-                    keyStoreFile.get(),
-                    keyStorePassword.orElse("password"),
-                    sslConfig.certificate.keyStoreFileType,
-                    sslConfig.certificate.keyStoreProvider,
-                    sslConfig.certificate.keyStoreKeyAlias,
-                    keyStoreKeyPassword);
-            serverOptions.setKeyCertOptions(options);
+        var kso = computeKeyStoreOptions(sslConfig.certificate, keyStorePassword, keyStoreAliasPassword);
+        if (kso != null) {
+            serverOptions.setKeyCertOptions(kso);
         }
 
-        if (trustStoreFile.isPresent()) {
-            if (!trustStorePassword.isPresent()) {
-                throw new IllegalArgumentException("No trust store password provided");
-            }
-            KeyStoreOptions options = createKeyStoreOptions(
-                    trustStoreFile.get(),
-                    trustStorePassword.get(),
-                    sslConfig.certificate.trustStoreFileType,
-                    sslConfig.certificate.trustStoreProvider,
-                    sslConfig.certificate.trustStoreCertAlias,
-                    Optional.empty());
-            serverOptions.setTrustOptions(options);
+        var to = computeTrustOptions(sslConfig.certificate, trustStorePassword);
+        if (to != null) {
+            serverOptions.setTrustOptions(to);
         }
 
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
@@ -215,8 +209,8 @@ public class HttpServerOptionsUtils {
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determinePort(launchMode);
-        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
+
+        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MANAGEMENT : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
         applyCommonOptionsForManagementInterface(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
@@ -246,6 +240,8 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         httpServerOptions.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
         httpServerOptions.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        httpServerOptions.setMaxFormFields(httpConfiguration.limits.maxFormFields);
+        httpServerOptions.setMaxFormBufferedBytes(httpConfiguration.limits.maxFormBufferedBytes.asBigInteger().intValue());
         httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
         httpServerOptions.setReusePort(httpConfiguration.soReusePort);
         httpServerOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
@@ -337,6 +333,8 @@ public class HttpServerOptionsUtils {
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setMaxChunkSize(httpConfiguration.limits.maxChunkSize.asBigInteger().intValueExact());
         options.setMaxFormAttributeSize(httpConfiguration.limits.maxFormAttributeSize.asBigInteger().intValueExact());
+        options.setMaxFormFields(httpConfiguration.limits.maxFormFields);
+        options.setMaxFormBufferedBytes(httpConfiguration.limits.maxFormBufferedBytes.asBigInteger().intValue());
         options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         options.setWebSocketSubProtocols(websocketSubProtocols);
         options.setAcceptBacklog(httpConfiguration.acceptBacklog);
@@ -348,26 +346,6 @@ public class HttpServerOptionsUtils {
         options.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
 
         options.setUseProxyProtocol(httpConfiguration.proxy.useProxyProtocol);
-    }
-
-    private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,
-            Optional<String> provider, Optional<String> alias, Optional<String> aliasPassword) throws IOException {
-        final String type;
-        if (fileType.isPresent()) {
-            type = fileType.get().toLowerCase();
-        } else {
-            type = findKeystoreFileType(path);
-        }
-
-        byte[] data = getFileContent(path);
-        KeyStoreOptions options = new KeyStoreOptions()
-                .setPassword(password)
-                .setValue(Buffer.buffer(data))
-                .setType(type.toUpperCase())
-                .setProvider(provider.orElse(null))
-                .setAlias(alias.orElse(null))
-                .setAliasPassword(aliasPassword.orElse(null));
-        return options;
     }
 
     static byte[] getFileContent(Path path) throws IOException {
@@ -384,43 +362,6 @@ public class HttpServerOptionsUtils {
             }
         }
         return data;
-    }
-
-    private static void createPemKeyCertOptions(List<Path> certFile, List<Path> keyFile,
-            HttpServerOptions serverOptions) throws IOException {
-
-        if (certFile.size() != keyFile.size()) {
-            throw new ConfigurationException("Invalid certificate configuration - `files` and `keyFiles` must have the "
-                    + "same number of elements");
-        }
-
-        List<Buffer> certificates = new ArrayList<>();
-        List<Buffer> keys = new ArrayList<>();
-
-        for (Path p : certFile) {
-            final byte[] cert = getFileContent(p);
-            certificates.add(Buffer.buffer(cert));
-        }
-
-        for (Path p : keyFile) {
-            final byte[] key = getFileContent(p);
-            keys.add(Buffer.buffer(key));
-        }
-
-        PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions()
-                .setCertValues(certificates)
-                .setKeyValues(keys);
-        serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
-    }
-
-    private static String findKeystoreFileType(Path storePath) {
-        final String pathName = storePath.toString();
-        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
-            return "pkcs12";
-        } else {
-            // assume jks
-            return "jks";
-        }
     }
 
     private static byte[] doRead(InputStream is) throws IOException {
@@ -452,5 +393,10 @@ public class HttpServerOptionsUtils {
             return HttpConfiguration.InsecureRequests.DISABLED;
         }
         return HttpConfiguration.InsecureRequests.ENABLED;
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    static <T> Optional<T> or(Optional<T> a, Optional<T> b) {
+        return a.isPresent() ? a : b;
     }
 }

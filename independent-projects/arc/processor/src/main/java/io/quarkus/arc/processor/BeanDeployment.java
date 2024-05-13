@@ -88,6 +88,8 @@ public class BeanDeployment {
 
     private final List<ObserverInfo> observers;
 
+    private final Set<InvokerInfo> invokers;
+
     final BeanResolverImpl beanResolver;
     final DelegateInjectionPointResolverImpl delegateInjectionPointResolver;
     private final AssignabilityCheck assignabilityCheck;
@@ -112,7 +114,7 @@ public class BeanDeployment {
 
     private final Set<BeanInfo> beansWithRuntimeDeferredUnproxyableError;
 
-    private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
+    private final Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts;
 
     private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
 
@@ -131,6 +133,8 @@ public class BeanDeployment {
     private final List<Predicate<ClassInfo>> excludeTypes;
 
     private final ExtensionsEntryPoint buildCompatibleExtensions;
+
+    private final InvokerFactory invokerFactory;
 
     BeanDeployment(String name, BuildContextImpl buildContext, BeanProcessor.Builder builder) {
         this.name = name;
@@ -223,6 +227,7 @@ public class BeanDeployment {
         this.beans = new CopyOnWriteArrayList<>();
         this.skippedClasses = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
+        this.invokers = ConcurrentHashMap.newKeySet();
 
         this.assignabilityCheck = new AssignabilityCheck(getBeanArchiveIndex(), applicationIndex);
         this.beanResolver = new BeanResolverImpl(this);
@@ -234,6 +239,7 @@ public class BeanDeployment {
         this.jtaCapabilities = builder.jtaCapabilities;
         this.strictCompatibility = builder.strictCompatibility;
         this.alternativePriorities = builder.alternativePriorities;
+        this.invokerFactory = new InvokerFactory(this, injectionPointTransformer);
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -255,7 +261,7 @@ public class BeanDeployment {
                             ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);
                             beanDefiningAnnotations.put(scope.getDotName(),
                                     new BeanDefiningAnnotation(scope.getDotName(), null));
-                            customContexts.put(scope, c.creator);
+                            customContexts.computeIfAbsent(scope, ignored -> new ArrayList<>()).add(c.creator);
                         });
             }
         };
@@ -290,9 +296,11 @@ public class BeanDeployment {
         buildContext.putInternal(Key.DECORATORS, Collections.unmodifiableList(decorators));
         this.injectionPoints.addAll(injectionPoints);
         buildContext.putInternal(Key.INJECTION_POINTS, Collections.unmodifiableList(this.injectionPoints));
+        buildContext.putInternal(Key.INVOKER_FACTORY, invokerFactory);
 
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, interceptors, observers);
+            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, interceptors, observers,
+                    invokerFactory);
         }
 
         return registerSyntheticBeans(beanRegistrars, buildContext);
@@ -316,6 +324,9 @@ public class BeanDeployment {
         for (DecoratorInfo decorator : decorators) {
             decorator.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
+        for (InvokerInfo invoker : invokers) {
+            invoker.init(errors);
+        }
 
         processErrors(errors);
         List<Predicate<BeanInfo>> allUnusedExclusions = new ArrayList<>(additionalUnusedBeanExclusions);
@@ -326,9 +337,12 @@ public class BeanDeployment {
         if (removeUnusedBeans) {
             long removalStart = System.nanoTime();
             Set<BeanInfo> declaresObserver = observers.stream().map(ObserverInfo::getDeclaringBean).collect(Collectors.toSet());
+            Set<BeanInfo> invokerLookups = invokers.stream().flatMap(it -> it.getLookedUpBeans().stream())
+                    .collect(Collectors.toSet());
             Set<DecoratorInfo> removedDecorators = new HashSet<>();
             Set<InterceptorInfo> removedInterceptors = new HashSet<>();
-            removeUnusedComponents(declaresObserver, allUnusedExclusions, removedDecorators, removedInterceptors);
+            removeUnusedComponents(declaresObserver, invokerLookups, allUnusedExclusions, removedDecorators,
+                    removedInterceptors);
 
             LOGGER.debugf("Removed %s beans, %s interceptors and %s decorators in %s ms", removedBeans.size(),
                     removedInterceptors.size(), removedDecorators.size(),
@@ -374,13 +388,13 @@ public class BeanDeployment {
         this.beansByType = map;
     }
 
-    private void removeUnusedComponents(Set<BeanInfo> declaresObserver,
+    private void removeUnusedComponents(Set<BeanInfo> declaresObserver, Set<BeanInfo> invokerLookups,
             List<Predicate<BeanInfo>> allUnusedExclusions, Set<DecoratorInfo> removedDecorators,
             Set<InterceptorInfo> removedInterceptors) {
         int removed;
         do {
             removed = 0;
-            removed += removeUnusedBeans(declaresObserver, allUnusedExclusions).size();
+            removed += removeUnusedBeans(declaresObserver, invokerLookups, allUnusedExclusions).size();
             removed += removeUnusedInterceptors(removedInterceptors, allUnusedExclusions).size();
             removed += removeUnusedDecorators(removedDecorators, allUnusedExclusions).size();
         } while (removed > 0);
@@ -464,10 +478,10 @@ public class BeanDeployment {
         return removableDecorators;
     }
 
-    private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, List<Predicate<BeanInfo>> allUnusedExclusions) {
+    private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, Set<BeanInfo> invokerLookups,
+            List<Predicate<BeanInfo>> allUnusedExclusions) {
         Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(beanResolver, this.beans, this.injectionPoints,
-                declaresObserver,
-                allUnusedExclusions);
+                declaresObserver, invokerLookups, allUnusedExclusions);
         if (!removableBeans.isEmpty()) {
             this.beans.removeAll(removableBeans);
             this.removedBeans.addAll(removableBeans);
@@ -565,6 +579,10 @@ public class BeanDeployment {
 
     Map<DotName, StereotypeInfo> getStereotypesMap() {
         return Collections.unmodifiableMap(stereotypes);
+    }
+
+    public Collection<InvokerInfo> getInvokers() {
+        return Collections.unmodifiableSet(invokers);
     }
 
     /**
@@ -711,7 +729,7 @@ public class BeanDeployment {
         return annotationStore.hasAnnotation(target, name);
     }
 
-    Map<ScopeInfo, Function<MethodCreator, ResultHandle>> getCustomContexts() {
+    Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> getCustomContexts() {
         return customContexts;
     }
 
@@ -856,7 +874,7 @@ public class BeanDeployment {
     }
 
     private Map<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
-            Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
+            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts,
             Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
@@ -916,7 +934,7 @@ public class BeanDeployment {
     }
 
     private ScopeInfo getScope(DotName scopeAnnotationName,
-            Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts) {
+            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts) {
         BuiltinScope builtin = BuiltinScope.from(scopeAnnotationName);
         if (builtin != null) {
             return builtin.getInfo();
@@ -1460,7 +1478,7 @@ public class BeanDeployment {
         }
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.registerSyntheticObservers(context, applicationClassPredicate);
-            buildCompatibleExtensions.runRegistrationAgain(beanArchiveComputingIndex, beans, observers);
+            buildCompatibleExtensions.runRegistrationAgain(beanArchiveComputingIndex, beans, observers, invokerFactory);
         }
         return context;
     }
@@ -1494,6 +1512,10 @@ public class BeanDeployment {
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,
                 jtaCapabilities, configurator.notifyConsumer, configurator.params, configurator.forceApplicationClass));
+    }
+
+    void addInvoker(InvokerInfo invoker) {
+        invokers.add(invoker);
     }
 
     static void processErrors(List<Throwable> errors) {

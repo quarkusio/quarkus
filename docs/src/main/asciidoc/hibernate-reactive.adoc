@@ -19,8 +19,8 @@ and a reactive style of interaction with the database.
 Hibernate Reactive is not a replacement for xref:hibernate-orm.adoc[Hibernate ORM] or the future of Hibernate ORM.
 It is a different stack tailored for reactive use cases where you need high-concurrency.
 
-Also, using RESTEasy Reactive, our default REST layer, does not require the use of Hibernate Reactive.
-It is perfectly valid to use RESTEasy Reactive with Hibernate ORM,
+Also, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use Quarkus REST with Hibernate ORM,
 and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
 ====
 
@@ -223,6 +223,22 @@ Mutiny.SessionFactory sessionFactory;
 This will inject the `Mutiny.SessionFactory` of the default persistence unit.
 
 NOTE: Prior to Quarkus 3.0 it was also possible to inject a `@RequestScoped` bean for `Mutiny.Session`. However, the lifecycle of a reactive session does not fit the lifecycle of the CDI request context. Therefore, this bean is removed in Quarkus 3.0.
+
+[[flyway]]
+== Automatically transitioning to Flyway to Manage Schemas
+
+Hibernate Reactive can be used in the same application as Flyway.
+See xref:flyway.adoc#reactive-datasources[this section of the Flyway extension documentation]
+for details regarding configuration of Flyway in a reactive application.
+
+[TIP]
+====
+If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode,
+Quarkus provides a simple way to initialize your Flyway configuration
+using the schema generated automatically by Hibernate Reactive.
+
+See xref:hibernate-orm.adoc#flyway[the Hibernate ORM guide] for more details.
+====
 
 [[testing]]
 === Testing

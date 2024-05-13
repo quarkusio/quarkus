@@ -6,6 +6,7 @@ import static com.google.cloud.tools.jib.api.buildplan.FilePermissions.DEFAULT_F
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -101,6 +102,8 @@ public class JibProcessor {
     private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
             RUNTIME_SUFFIX);
 
+    // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi8/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
+    // A list of env vars that affect this script can be found at https://jboss-container-images.github.io/openjdk/ubi8/ubi8-openjdk-17.html
     private static final String RUN_JAVA_PATH = "/opt/jboss/container/java/run/run-java.sh";
 
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
@@ -149,6 +152,7 @@ public class JibProcessor {
         return JAVA_17_BASE_IMAGE;
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
             PackageConfig packageConfig,
@@ -173,20 +177,20 @@ public class JibProcessor {
         }
 
         JibContainerBuilder jibContainerBuilder;
-        String packageType = packageConfig.type;
-        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())
+        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+        if (jarType == LEGACY_JAR || jarType == UBER_JAR
                 || !uberJarRequired.isEmpty()) {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
-        } else if (packageConfig.isFastJar()) {
+        } else if (jarType == FAST_JAR || jarType == MUTABLE_JAR) {
             jibContainerBuilder = createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig, sourceJar, curateOutcome,
                     containerImageLabels,
-                    appCDSResult, packageType.equals(PackageConfig.BuiltInType.MUTABLE_JAR.getValue()));
+                    appCDSResult, jarType == MUTABLE_JAR);
         } else {
             throw new IllegalArgumentException(
-                    "Package type '" + packageType + "' is not supported by the container-image-jib extension");
+                    "JAR type '" + jarType + "' is not supported by the container-image-jib extension");
         }
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
@@ -455,6 +459,7 @@ public class JibProcessor {
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
+            envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
             envVars.put("JAVA_OPTS_APPEND", String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult)));
         } else {
             List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult);
@@ -526,13 +531,14 @@ public class JibProcessor {
 
         try {
             Instant now = Instant.now();
+            boolean enforceModificationTime = !jibConfig.useCurrentTimestampFileModification;
             Instant modificationTime = jibConfig.useCurrentTimestampFileModification ? now : Instant.EPOCH;
 
             JibContainerBuilder jibContainerBuilder = toJibContainerBuilder(baseJvmImage, jibConfig);
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
                 addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
-                        workDirInContainer, "fast-jar-lib", isMutableJar, modificationTime);
+                        workDirInContainer, "fast-jar-lib", isMutableJar, enforceModificationTime, modificationTime);
             } else {
                 // we need to manually create each layer
                 // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
@@ -546,14 +552,9 @@ public class JibProcessor {
                             AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
                                     .resolve(JarResultBuildStep.BOOT_LIB)
                                     .resolve(lib.getFileName());
-                            if (appCDSResult.isPresent()) {
-                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
-                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
-                                        Files.getLastModifiedTime(lib).toInstant());
-                            } else {
-                                bootLibsLayerBuilder.addEntry(lib, libPathInContainer);
-                            }
-
+                            // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
+                                    Files.getLastModifiedTime(lib).toInstant());
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -566,15 +567,15 @@ public class JibProcessor {
                             .resolve(JarResultBuildStep.DEPLOYMENT_LIB);
                     addLayer(jibContainerBuilder, Collections.singletonList(deploymentPath),
                             workDirInContainer.resolve(JarResultBuildStep.LIB),
-                            "fast-jar-deployment-libs", true, modificationTime);
+                            "fast-jar-deployment-libs", true, enforceModificationTime, modificationTime);
                 }
 
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
-                        isMutableJar, modificationTime);
+                        isMutableJar, enforceModificationTime, modificationTime);
                 addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, modificationTime);
+                        isMutableJar, enforceModificationTime, modificationTime);
             }
 
             if (appCDSResult.isPresent()) {
@@ -598,9 +599,9 @@ public class JibProcessor {
             }
 
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
-                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, modificationTime);
+                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, enforceModificationTime, modificationTime);
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
-                    workDirInContainer, "fast-jar-quarkus", isMutableJar, modificationTime);
+                    workDirInContainer, "fast-jar-quarkus", isMutableJar, enforceModificationTime, modificationTime);
             if (ContainerImageJibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
@@ -664,7 +665,7 @@ public class JibProcessor {
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
             AbsoluteUnixPath pathInContainer, String name, boolean isMutableJar,
-            Instant now)
+            boolean enforceModificationTime, Instant forcedModificationTime)
             throws IOException {
         FileEntriesLayer.Builder layerConfigurationBuilder = FileEntriesLayer.builder().setName(name);
 
@@ -672,7 +673,17 @@ public class JibProcessor {
             layerConfigurationBuilder.addEntryRecursive(
                     file, pathInContainer.resolve(file.getFileName()),
                     isMutableJar ? REMOTE_DEV_FOLDER_PERMISSIONS_PROVIDER : DEFAULT_FILE_PERMISSIONS_PROVIDER,
-                    (sourcePath, destinationPath) -> now,
+                    (sourcePath, destinationPath) -> {
+                        if (enforceModificationTime) {
+                            return forcedModificationTime;
+                        }
+
+                        try {
+                            return Files.getLastModifiedTime(sourcePath).toInstant();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to get last modified time for " + sourcePath, e);
+                        }
+                    },
                     isMutableJar ? REMOTE_DEV_OWNERSHIP_PROVIDER : DEFAULT_OWNERSHIP_PROVIDER);
         }
 

@@ -6,9 +6,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.dsl.Manifest;
-import io.quarkus.runtime.configuration.ConfigInstantiator;
 
 /**
  * Required parts of the configuration used to <em>configure</em> a Quarkus build task, does not contain settings
@@ -21,28 +21,33 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 final class BaseConfig {
     private final Manifest manifest;
     private final PackageConfig packageConfig;
-    private final Map<String, String> configMap;
+    private final NativeConfig nativeConfig;
+    private final Map<String, String> values;
 
     // Note: EffectiveConfig has all the code to load the configurations from all the sources.
     BaseConfig(EffectiveConfig config) {
         manifest = new Manifest();
-        packageConfig = new PackageConfig();
-
-        ConfigInstantiator.handleObject(packageConfig, config.config());
+        packageConfig = config.getConfig().getConfigMapping(PackageConfig.class);
+        nativeConfig = config.getConfig().getConfigMapping(NativeConfig.class);
 
         // populate the Gradle Manifest object
-        manifest.attributes(packageConfig.manifest.attributes);
-        packageConfig.manifest.manifestSections.forEach((section, attribs) -> manifest.attributes(attribs, section));
+        PackageConfig.JarConfig.ManifestConfig manifestConfig = packageConfig.jar().manifest();
+        manifest.attributes(manifestConfig.attributes());
+        manifestConfig.sections().forEach((section, attribs) -> manifest.attributes(attribs, section));
 
-        configMap = config.configMap();
+        values = config.getValues();
     }
 
     PackageConfig packageConfig() {
         return packageConfig;
     }
 
-    PackageConfig.BuiltInType packageType() {
-        return PackageConfig.BuiltInType.fromString(packageConfig.type);
+    NativeConfig nativeConfig() {
+        return nativeConfig;
+    }
+
+    PackageConfig.JarConfig.JarType jarType() {
+        return packageConfig().jar().type();
     }
 
     Manifest manifest() {
@@ -53,7 +58,7 @@ final class BaseConfig {
         List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
                 .collect(Collectors.toList());
         Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
-        return configMap.entrySet().stream()
+        return values.entrySet().stream()
                 .filter(keyPredicate)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

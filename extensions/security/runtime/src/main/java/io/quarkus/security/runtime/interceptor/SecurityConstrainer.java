@@ -14,7 +14,6 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
@@ -36,11 +35,12 @@ public class SecurityConstrainer {
     @Inject
     SecurityIdentityAssociation identityAssociation;
 
-    SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager, SecurityConfig securityConfig,
+    SecurityConstrainer(SecurityCheckStorage storage, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent) {
         this.storage = storage;
-        this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
-                AUTHORIZATION_FAILURE, beanManager, securityConfig.events().enabled());
+        // static interceptors are initialized during the static init, therefore we need to initialize the helper lazily
+        this.securityEventHelper = SecurityEventHelper.lazilyOf(authZSuccessEvent, authZFailureEvent,
+                AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager);
     }
 
     public void check(Method method, Object[] parameters) {

@@ -74,33 +74,13 @@
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
-                        <org.jboss.cdi.tck.cdiLiteMode>true</org.jboss.cdi.tck.cdiLiteMode>
+                        <org.jboss.cdi.tck.cdiCoreMode>true</org.jboss.cdi.tck.cdiCoreMode>
                         <org.jboss.cdi.tck.libraryDirectory>${project.build.directory}/porting-pkg</org.jboss.cdi.tck.libraryDirectory>
                     </systemPropertyVariables>
                     <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys combine.children="append">
-                                        <ignore>org.jboss.cdi.tck.libraryDirectory</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
 </project>

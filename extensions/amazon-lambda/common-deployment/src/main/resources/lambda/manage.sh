@@ -51,7 +51,7 @@ function cmd_update() {
 
 FUNCTION_NAME=${lambdaName}
 HANDLER=${handler}
-RUNTIME=java11
+RUNTIME=java17
 ZIP_FILE=${targetUri}
 
 function usage() {

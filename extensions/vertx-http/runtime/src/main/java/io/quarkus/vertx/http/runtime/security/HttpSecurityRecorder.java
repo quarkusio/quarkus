@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
+import static io.quarkus.vertx.http.runtime.security.RolesMapping.ROLES_MAPPING_KEY;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -21,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
@@ -52,8 +52,18 @@ public class HttpSecurityRecorder {
 
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
 
-    public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
-        return new HttpAuthenticationHandler(proactiveAuthentication);
+    public RuntimeValue<AuthenticationHandler> authenticationMechanismHandler(boolean proactiveAuthentication) {
+        return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication));
+    }
+
+    public Handler<RoutingContext> getHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue) {
+        return handlerRuntimeValue.getValue();
+    }
+
+    public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
+            HttpConfiguration httpConfig) {
+        handlerRuntimeValue.getValue().init(PathMatchingHttpSecurityPolicy.class,
+                RolesMapping.of(httpConfig.auth.rolesMapping));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -195,38 +205,13 @@ public class HttpSecurityRecorder {
         }
     }
 
-    static class HttpAuthenticationHandler extends AbstractAuthenticationHandler {
-
-        volatile PathMatchingHttpSecurityPolicy pathMatchingPolicy;
-
-        public HttpAuthenticationHandler(boolean proactiveAuthentication) {
-            super(proactiveAuthentication);
-        }
-
-        @Override
-        protected void setPathMatchingPolicy(RoutingContext event) {
-            if (pathMatchingPolicy == null) {
-                Instance<PathMatchingHttpSecurityPolicy> pathMatchingPolicyInstance = CDI.current()
-                        .select(PathMatchingHttpSecurityPolicy.class);
-                pathMatchingPolicy = pathMatchingPolicyInstance.isResolvable() ? pathMatchingPolicyInstance.get() : null;
-            }
-            if (pathMatchingPolicy != null) {
-                event.put(AbstractPathMatchingHttpSecurityPolicy.class.getName(), pathMatchingPolicy);
-            }
-        }
-
-        @Override
-        protected boolean httpPermissionsEmpty() {
-            return CDI.current().select(HttpConfiguration.class).get().auth.permissions.isEmpty();
-        }
-    }
-
-    public static abstract class AbstractAuthenticationHandler implements Handler<RoutingContext> {
+    public static final class AuthenticationHandler implements Handler<RoutingContext> {
         volatile HttpAuthenticator authenticator;
-        volatile Boolean patchMatchingPolicyEnabled = null;
-        final boolean proactiveAuthentication;
+        private final boolean proactiveAuthentication;
+        private AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy;
+        private RolesMapping rolesMapping;
 
-        public AbstractAuthenticationHandler(boolean proactiveAuthentication) {
+        public AuthenticationHandler(boolean proactiveAuthentication) {
             this.proactiveAuthentication = proactiveAuthentication;
         }
 
@@ -237,11 +222,11 @@ public class HttpSecurityRecorder {
             }
             //we put the authenticator into the routing context so it can be used by other systems
             event.put(HttpAuthenticator.class.getName(), authenticator);
-            if (patchMatchingPolicyEnabled == null) {
-                setPatchMatchingPolicyEnabled();
+            if (pathMatchingPolicy != null) {
+                event.put(AbstractPathMatchingHttpSecurityPolicy.class.getName(), pathMatchingPolicy);
             }
-            if (patchMatchingPolicyEnabled) {
-                setPathMatchingPolicy(event);
+            if (rolesMapping != null) {
+                event.put(ROLES_MAPPING_KEY, rolesMapping);
             }
 
             //register the default auth failure handler
@@ -370,15 +355,20 @@ public class HttpSecurityRecorder {
             }
         }
 
-        private synchronized void setPatchMatchingPolicyEnabled() {
-            if (patchMatchingPolicyEnabled == null) {
-                patchMatchingPolicyEnabled = !httpPermissionsEmpty();
+        public void init(Class<? extends AbstractPathMatchingHttpSecurityPolicy> pathMatchingPolicyClass,
+                RolesMapping rolesMapping) {
+            if (pathMatchingPolicy == null) {
+                var pathMatchingPolicyInstance = CDI.current().select(pathMatchingPolicyClass);
+                if (pathMatchingPolicyInstance.isResolvable() && !pathMatchingPolicyInstance.get().hasNoPermissions()) {
+                    pathMatchingPolicy = pathMatchingPolicyInstance.get();
+                } else {
+                    pathMatchingPolicy = null;
+                }
+            }
+            if (this.rolesMapping == null) {
+                this.rolesMapping = rolesMapping;
             }
         }
-
-        protected abstract void setPathMatchingPolicy(RoutingContext event);
-
-        protected abstract boolean httpPermissionsEmpty();
     }
 
     public void setMtlsCertificateRoleProperties(HttpConfiguration config) {
@@ -418,6 +408,47 @@ public class HttpSecurityRecorder {
                 log.warnf("Unable to read roles mappings from %s:%s", rolesPath, e.getMessage());
             }
         }
+    }
+
+    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName, String[] paramTypes) {
+        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
+    }
+
+    public Function<String, Consumer<RoutingContext>> authMechanismSelectionInterceptorCreator() {
+        return new Function<String, Consumer<RoutingContext>>() {
+            @Override
+            public Consumer<RoutingContext> apply(String authMechanismName) {
+                // when endpoint is annotated with @HttpAuthenticationMechanism("my-mechanism"), we add this mechanism
+                // to the event so that when request is being authenticated, the HTTP authenticator will know
+                // what mechanism should be used
+                return new Consumer<RoutingContext>() {
+                    @Override
+                    public void accept(RoutingContext routingContext) {
+                        HttpAuthenticator.selectAuthMechanism(routingContext, authMechanismName);
+                    }
+                };
+            }
+        };
+    }
+
+    public Consumer<RoutingContext> createEagerSecurityInterceptor(
+            Function<String, Consumer<RoutingContext>> interceptorCreator, String annotationValue) {
+        return interceptorCreator.apply(annotationValue);
+    }
+
+    public Consumer<RoutingContext> compoundSecurityInterceptor(Consumer<RoutingContext> interceptor1,
+            Consumer<RoutingContext> interceptor2) {
+        return new Consumer<RoutingContext>() {
+            @Override
+            public void accept(RoutingContext routingContext) {
+                interceptor1.accept(routingContext);
+                interceptor2.accept(routingContext);
+            }
+        };
+    }
+
+    public void selectAuthMechanismViaAnnotation() {
+        HttpAuthenticator.selectAuthMechanismWithAnnotation();
     }
 
     private static Set<String> parseRoles(String value) {

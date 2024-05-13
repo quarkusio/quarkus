@@ -58,6 +58,20 @@ quarkus.management.ssl.certificate.key-store-file=server-keystore.jks
 quarkus.management.ssl.certificate.key-store-password=secret
 ----
 
+Key store, trust store and certificate files can be reloaded periodically.
+Configure the `quarkus.management.ssl.certificate.reload-period` property to specify the interval at which the certificates should be reloaded:
+
+[source, properties]
+----
+quarkus.http.management.certificate.files=/mount/certs/tls.crt
+quarkus.http.management.certificate.key-files=/mount/certs/tls.key
+quarkus.http.management.certificate.reload-period=1h
+----
+
+The files are reloaded from the same location as they were initially loaded from.
+If there is no content change, the reloading is a no-op.
+It the reloading fails, the server will continue to use the previous certificates.
+
 IMPORTANT: Unlike the main HTTP server, the management interface does not handle _http_ and _https_ at the same time.
 If _https_ is configured, plain HTTP requests will be rejected.
 
@@ -246,3 +260,24 @@ quarkus.management.auth.permission.metrics.policy=authenticated
 ----
 
 More details about Basic authentication in Quarkus can be found in the xref:security-basic-authentication-howto.adoc[Basic authentication guide].
+
+== Injecting management URL in tests
+
+When testing your application, you can inject the management URL using the `@TestHTTPResource` annotation:
+
+[source,java]
+----
+@TestHTTPResource(value="/management", management=true)
+URL management;
+----
+
+The `management` attribute is set to `true` to indicate that the injected URL is for the management interface.
+The `context-root` is automatically added.
+Thus, in the previous example, the injected URL is `http://localhost:9001/q/management`.
+
+`@TestHTTPResource` is particularly useful when setting the management `test-port` to 0, which indicates that the system will assign a random port to the management interface:
+
+[source, properties]
+----]
+quarkus.management.test-port=0
+----

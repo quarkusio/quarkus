@@ -27,6 +27,7 @@ public class RestClientConfig {
         EMPTY.connectTimeout = Optional.empty();
         EMPTY.readTimeout = Optional.empty();
         EMPTY.followRedirects = Optional.empty();
+        EMPTY.multipartPostEncoderMode = Optional.empty();
         EMPTY.proxyAddress = Optional.empty();
         EMPTY.proxyUser = Optional.empty();
         EMPTY.proxyPassword = Optional.empty();
@@ -98,6 +99,19 @@ public class RestClientConfig {
     public Optional<Boolean> followRedirects;
 
     /**
+     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
+     * The modes are described in the
+     * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+     * documentation</a>
+     * <p>
+     * By default, Rest Client Reactive uses RFC1738.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigItem
+    public Optional<String> multipartPostEncoderMode;
+
+    /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
      * (or IP address) and port for requests of this client to use.
      *
@@ -108,24 +122,24 @@ public class RestClientConfig {
 
     /**
      * Proxy username.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> proxyUser;
 
     /**
      * Proxy password.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> proxyPassword;
 
     /**
      * Hosts to access without proxy
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> nonProxyHosts;
@@ -207,16 +221,16 @@ public class RestClientConfig {
 
     /**
      * The maximum number of redirection a request can follow.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<Integer> maxRedirects;
 
     /**
      * The HTTP headers that should be applied to all requests of the rest client.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Map<String, String> headers;
@@ -225,24 +239,24 @@ public class RestClientConfig {
      * Set to true to share the HTTP client between REST clients.
      * There can be multiple shared clients distinguished by <em>name</em>, when no specific name is set,
      * the name <code>__vertx.DEFAULT</code> is used.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<Boolean> shared;
 
     /**
      * Set the HTTP client name, used when the client is shared, otherwise ignored.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> name;
 
     /**
      * Configure the HTTP user-agent header to use.
-     *
-     * This property is applicable to reactive REST clients only.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> userAgent;
@@ -256,7 +270,7 @@ public class RestClientConfig {
     /**
      * The max HTTP chunk size (8096 bytes by default).
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     @ConfigDocDefault("8K")
@@ -287,6 +301,7 @@ public class RestClientConfig {
         instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
         instance.followRedirects = getConfigValue(configKey, "follow-redirects", Boolean.class);
+        instance.multipartPostEncoderMode = getConfigValue(configKey, "multipart-post-encoder-mode", String.class);
         instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
         instance.proxyUser = getConfigValue(configKey, "proxy-user", String.class);
         instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);

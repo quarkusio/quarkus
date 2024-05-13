@@ -5,8 +5,14 @@ import static io.quarkus.opentelemetry.runtime.config.build.PropagatorType.Const
 
 import java.util.List;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
+import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
+import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
@@ -67,4 +73,67 @@ public interface OTelBuildConfig {
      * Enable/disable instrumentation for specific technologies.
      */
     InstrumentBuildTimeConfig instrument();
+
+    /**
+     * Allows to export Quarkus security events as the OpenTelemetry Span events.
+     */
+    SecurityEvents securityEvents();
+
+    /**
+     * Quarkus security events exported as the OpenTelemetry Span events.
+     */
+    @ConfigGroup
+    interface SecurityEvents {
+        /**
+         * Whether exporting of the security events is enabled.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Selects security event types.
+         */
+        @WithDefault("ALL")
+        List<SecurityEventType> eventTypes();
+
+        /**
+         * Security event type.
+         */
+        enum SecurityEventType {
+            /**
+             * All the security events.
+             */
+            ALL(SecurityEvent.class),
+            /**
+             * Authentication success event.
+             */
+            AUTHENTICATION_SUCCESS(AuthenticationSuccessEvent.class),
+            /**
+             * Authentication failure event.
+             */
+            AUTHENTICATION_FAILURE(AuthenticationFailureEvent.class),
+            /**
+             * Authorization success event.
+             */
+            AUTHORIZATION_SUCCESS(AuthorizationSuccessEvent.class),
+            /**
+             * Authorization failure event.
+             */
+            AUTHORIZATION_FAILURE(AuthorizationFailureEvent.class),
+            /**
+             * Any other security event. For example the OpenId Connect security event belongs here.
+             */
+            OTHER(SecurityEvent.class);
+
+            private final Class<? extends SecurityEvent> observedType;
+
+            SecurityEventType(Class<? extends SecurityEvent> observedType) {
+                this.observedType = observedType;
+            }
+
+            public Class<? extends SecurityEvent> getObservedType() {
+                return observedType;
+            }
+        }
+    }
 }

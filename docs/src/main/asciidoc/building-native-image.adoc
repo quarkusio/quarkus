@@ -170,15 +170,21 @@ The native executable for our application will contain the application code, req
 
 image:native-executable-process.png[Creating a native executable]
 
-If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
+If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following Maven profile section:
 
 [source,xml]
 ----
 <profiles>
     <profile>
         <id>native</id>
+        <activation>
+            <property>
+                <name>native</name>
+            </property>
+        </activation>
         <properties>
-            <quarkus.package.type>native</quarkus.package.type>
+            <skipITs>false</skipITs>
+            <quarkus.native.enabled>true</quarkus.native.enabled>
         </properties>
     </profile>
 </profiles>
@@ -195,7 +201,7 @@ You can find more information about how to configure the native image building p
 ====
 
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ minutes. You could
-just pass -Dquarkus.package.type=native as a property on the command line, however it is better to use a profile as
+just pass -Dquarkus.native.enabled=true as a property on the command line, however it is better to use a profile as
 this allows native image tests to also be run.
 
 Create a native executable using:
@@ -266,7 +272,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2023-05-05 10:55:52,068 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT native (powered by Quarkus 3.0.2.Final) started in 0.009s. Listening on: http://0.0.0.0:8081
 2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Profile prod activated.
-2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.99 s - in org.acme.getting.started.GreetingResourceIT
 ...
 ----
@@ -621,7 +627,7 @@ COPY --chown=quarkus:quarkus gradle.properties /code/
 USER quarkus
 WORKDIR /code
 COPY src /code/src
-RUN ./gradlew build -Dquarkus.package.type=native
+RUN ./gradlew build -Dquarkus.native.enabled=true
 
 ## Stage 2 : create the docker final image
 FROM quay.io/quarkus/quarkus-micro-image:2.0
@@ -737,12 +743,12 @@ More details on xref:./upx.adoc[UPX Compression documentation].
 
 In certain circumstances, you may want to build the native image in a separate step.
 For example, in a CI/CD pipeline, you may want to have one step to generate the source that will be used for the native image generation and another step to use these sources to actually build the native executable.
-For this use case, you can set the `quarkus.package.type=native-sources`.
+For this use case, you can set the additional flag `quarkus.native.sources-only=true`.
 This will execute the java compilation as if you had started native compilation (`-Dnative`), but stops before triggering the actual call to GraalVM's `native-image`.
 
 [source,bash]
 ----
-$ ./mvnw clean package -Dquarkus.package.type=native-sources
+$ ./mvnw clean package -Dnative -Dquarkus.native.sources-only=true
 ----
 
 After compilation has finished, you find the build artifact in `target/native-sources`:
@@ -777,7 +783,7 @@ Running the build process in a container is also possible:
 
 [source,bash]
 ----
-$ ./mvnw clean package -Dquarkus.package.type=native-sources -Dquarkus.native.container-build=true
+$ ./mvnw clean package -Dquarkus.native.enabled=true -Dquarkus.native.sources-only=true -Dquarkus.native.container-build=true
 ----
 
 `-Dquarkus.native.container-build=true` will produce an additional text file named `native-builder.image` holding the docker image name to be used to build the native image.

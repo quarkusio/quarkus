@@ -384,8 +384,12 @@ Your extension project should be setup as a multi-module project with two submod
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
+
 Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
+and the deployment artifacts of any other Quarkus extensions your own extension depends on. This is essential, otherwise any transitively
+pulled in extensions will not provide their full functionality.
+
+NOTE: The Maven and Gradle plugins will validate this for you and alert you to any deployment artifacts you might have forgotten to add.
 
 [WARNING]
 ====
@@ -573,10 +577,6 @@ dependencies {
 }
 ----
 
-[WARNING]
-====
-This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does.
-====
 
 [[build-step-processors]]
 === Build Step Processors
@@ -823,8 +823,8 @@ They represent build items with validation errors that make the build fail. Thes
 ----
 @BuildStep
 void checkCompatibility(Capabilities capabilities, BuildProducer<ValidationErrorBuildItem> validationErrors) {
-    if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)
-            && capabilities.isMissing(Capability.RESTEASY_CLASSIC)) {
+    if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)
+            && capabilities.isPresent(Capability.RESTEASY)) {
         validationErrors.produce(new ValidationErrorBuildItem(
                 new ConfigurationException("Cannot use both RESTEasy Classic and Reactive extensions at the same time")));
     }
@@ -2340,7 +2340,7 @@ If multiple extensions register a feature of the same name the build fails.
 
 The feature name should also map to a label in the extension's `devtools/common/src/main/filtered/extensions.json` entry so that
 the feature name displayed by the startup line matches a label that one can use to select the extension when creating a project
-using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `resteasy-reactive-jackson` feature is referenced:
+using the Quarkus maven plugin as shown in this example taken from the xref:rest-json.adoc[Writing JSON REST Services] guide where the `rest-jackson` feature is referenced:
 
 [source,bash,subs=attributes+]
 ----
@@ -2349,7 +2349,7 @@ mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-reactive,resteasy-reactive-jackson"
+    -Dextensions="rest,rest-jackson"
 cd rest-json
 ----
 
@@ -2389,7 +2389,7 @@ Capabilities should follow the naming conventions of Java packages; e.g. `io.qua
 Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
-The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
 
 .Register a Bean Defining Annotation
 [source,java]

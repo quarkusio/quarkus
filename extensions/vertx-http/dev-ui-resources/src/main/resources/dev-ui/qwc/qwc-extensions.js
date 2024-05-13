@@ -74,7 +74,7 @@ export class QwcExtensions extends observeState(LitElement) {
                 if(page.embed){ // we need to register with the router
                     import(page.componentRef);
                     this.routerController.addRouteForExtension(page);
-                }else if(page.includeInSubMenu){ // we need to add the link to the submenu
+                }else if(page.includeInMenu){ // we need to add the link to the submenu
                     this.routerController.addExternalLink(page);
                 }
             });

@@ -88,7 +88,6 @@ import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.appcds.AppCDSUtil;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.util.StepTiming;
 
 public class MainClassBuildStep {
@@ -175,7 +174,7 @@ public class MainClassBuildStep {
         //set the launch mode
         ResultHandle lm = mv
                 .readStaticField(FieldDescriptor.of(LaunchMode.class, launchMode.getLaunchMode().name(), LaunchMode.class));
-        mv.invokeStaticMethod(ofMethod(ProfileManager.class, "setLaunchMode", void.class, LaunchMode.class),
+        mv.invokeStaticMethod(ofMethod(LaunchMode.class, "set", void.class, LaunchMode.class),
                 lm);
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
@@ -376,12 +375,12 @@ public class MainClassBuildStep {
         }
 
         MethodInfo mainClassMethod = null;
-        if (packageConfig.mainClass.isPresent()) {
-            String mainAnnotationClass = quarkusMainAnnotations.get(packageConfig.mainClass.get());
+        if (packageConfig.mainClass().isPresent()) {
+            String mainAnnotationClass = quarkusMainAnnotations.get(packageConfig.mainClass().get());
             if (mainAnnotationClass != null) {
                 mainClassName = mainAnnotationClass;
             } else {
-                mainClassName = packageConfig.mainClass.get();
+                mainClassName = packageConfig.mainClass().get();
             }
         } else if (quarkusMainAnnotations.containsKey("")) {
             mainClassName = quarkusMainAnnotations.get("");

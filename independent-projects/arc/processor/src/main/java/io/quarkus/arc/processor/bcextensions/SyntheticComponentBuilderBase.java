@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.enterprise.inject.build.compatible.spi.InvokerInfo;
 import jakarta.enterprise.lang.model.AnnotationInfo;
 import jakarta.enterprise.lang.model.declarations.ClassInfo;
 
@@ -125,4 +126,20 @@ abstract class SyntheticComponentBuilderBase<THIS extends SyntheticComponentBuil
         params.put(key, jandexValues);
         return self();
     }
+
+    public THIS withParam(String key, InvokerInfo value) {
+        io.quarkus.arc.processor.InvokerInfo arcValue = ((InvokerInfoImpl) value).arcInvokerInfo;
+        params.put(key, arcValue);
+        return self();
+    }
+
+    public THIS withParam(String key, InvokerInfo[] value) {
+        io.quarkus.arc.processor.InvokerInfo[] arcValues = new io.quarkus.arc.processor.InvokerInfo[value.length];
+        for (int i = 0; i < value.length; i++) {
+            arcValues[i] = ((InvokerInfoImpl) value[i]).arcInvokerInfo;
+        }
+        params.put(key, arcValues);
+        return self();
+    }
+
 }

@@ -26,7 +26,7 @@ include::{includes}/prerequisites.adoc[]
 First, we need a new project that contains the OpenShift extension. This can be done using the following command:
 
 :create-app-artifact-id: openshift-quickstart
-:create-app-extensions: resteasy-reactive,openshift
+:create-app-extensions: rest,openshift
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -86,7 +86,7 @@ You can trigger a build and deployment in a single step or build the container i
 
 To trigger a build and deployment in a single step:
 
-:build-additional-parameters: -Dquarkus.kubernetes.deploy=true
+:build-additional-parameters: -Dquarkus.openshift.deploy=true
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 

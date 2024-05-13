@@ -135,6 +135,20 @@ public interface PathTree {
     void accept(String relativePath, Consumer<PathVisit> consumer);
 
     /**
+     * Consumes a given path relative to the root of the tree.
+     * If the path isn't found in the tree, the {@link PathVisit} argument
+     * passed to the consumer will be {@code null}.
+     *
+     * If multiple items match then the consumer will be called multiple times.
+     *
+     * @param relativePath relative path to consume
+     * @param consumer path consumer
+     */
+    default void acceptAll(String relativePath, Consumer<PathVisit> consumer) {
+        accept(relativePath, consumer);
+    }
+
+    /**
      * Checks whether the tree contains a relative path.
      *
      * @param relativePath path relative to the root of the tree

@@ -1,11 +1,10 @@
 package io.quarkus.runtime;
 
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -20,9 +19,8 @@ public class StartupContext implements Closeable {
     private Object lastValue;
     // this is done to distinguish between the value having never been set and having been set as null
     private boolean lastValueSet = false;
-    // the initial capacity was determined experimentally for a standard set of extensions
-    private final List<Runnable> shutdownTasks = new ArrayList<>(9);
-    private final List<Runnable> lastShutdownTasks = new ArrayList<>(7);
+    private final Deque<Runnable> shutdownTasks = new ConcurrentLinkedDeque<>();
+    private final Deque<Runnable> lastShutdownTasks = new ConcurrentLinkedDeque<>();
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
@@ -30,12 +28,20 @@ public class StartupContext implements Closeable {
         ShutdownContext shutdownContext = new ShutdownContext() {
             @Override
             public void addShutdownTask(Runnable runnable) {
-                shutdownTasks.add(runnable);
+                if (runnable != null) {
+                    shutdownTasks.addFirst(runnable);
+                } else {
+                    throw new IllegalArgumentException("Extension passed an invalid shutdown handler");
+                }
             }
 
             @Override
             public void addLastShutdownTask(Runnable runnable) {
-                lastShutdownTasks.add(runnable);
+                if (runnable != null) {
+                    lastShutdownTasks.addFirst(runnable);
+                } else {
+                    throw new IllegalArgumentException("Extension passed an invalid last shutdown handler");
+                }
             }
         };
         values.put(ShutdownContext.class.getName(), shutdownContext);
@@ -70,20 +76,17 @@ public class StartupContext implements Closeable {
 
     @Override
     public void close() {
-        runAllInReverseOrder(shutdownTasks);
-        shutdownTasks.clear();
-        runAllInReverseOrder(lastShutdownTasks);
-        lastShutdownTasks.clear();
+        runAllAndClear(shutdownTasks);
+        runAllAndClear(lastShutdownTasks);
     }
 
-    private void runAllInReverseOrder(List<Runnable> tasks) {
-        List<Runnable> toClose = new ArrayList<>(tasks);
-        Collections.reverse(toClose);
-        for (Runnable r : toClose) {
+    private void runAllAndClear(Deque<Runnable> tasks) {
+        while (!tasks.isEmpty()) {
             try {
-                r.run();
-            } catch (Throwable e) {
-                LOG.error("Running a shutdown task failed", e);
+                var runnable = tasks.remove();
+                runnable.run();
+            } catch (Throwable ex) {
+                LOG.error("Running a shutdown task failed", ex);
             }
         }
     }

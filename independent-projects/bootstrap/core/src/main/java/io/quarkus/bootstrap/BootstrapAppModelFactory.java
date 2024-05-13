@@ -24,6 +24,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -152,22 +153,32 @@ public class BootstrapAppModelFactory {
                 } else {
                     mvn = mavenArtifactResolver;
                 }
-
-                return bootstrapAppModelResolver = new BootstrapAppModelResolver(mvn)
-                        .setTest(test)
-                        .setDevMode(devMode);
+                return bootstrapAppModelResolver = initAppModelResolver(mvn);
             }
 
             MavenArtifactResolver mvn = mavenArtifactResolver;
             if (mvn == null) {
                 mvn = new MavenArtifactResolver(createBootstrapMavenContext());
             }
-            return bootstrapAppModelResolver = new BootstrapAppModelResolver(mvn)
-                    .setTest(test)
-                    .setDevMode(devMode);
+            return bootstrapAppModelResolver = initAppModelResolver(mvn);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create application model resolver for " + projectRoot, e);
         }
+    }
+
+    private BootstrapAppModelResolver initAppModelResolver(MavenArtifactResolver artifactResolver) {
+        var appModelResolver = new BootstrapAppModelResolver(artifactResolver)
+                .setTest(test)
+                .setDevMode(devMode);
+        var project = artifactResolver.getMavenContext().getCurrentProject();
+        if (project != null) {
+            appModelResolver.setIncubatingModelResolver(
+                    IncubatingApplicationModelResolver.isIncubatingEnabled(
+                            project.getModelBuildingResult() == null
+                                    ? project.getRawModel().getProperties()
+                                    : project.getModelBuildingResult().getEffectiveModel().getProperties()));
+        }
+        return appModelResolver;
     }
 
     private BootstrapMavenContext createBootstrapMavenContext() throws AppModelResolverException {

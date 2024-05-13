@@ -11,17 +11,21 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/")
 @Authenticated
 public class CodeFlowUserInfoResource {
 
+    // UserInfo stubs are available for code flow JWT and binary access tokens and bearer JWT tokens
     @Inject
     UserInfo userInfo;
 
+    // Custom test augmentor changes Principal to use UserInfo which has a preferred `alice` name
     @Inject
     SecurityIdentity identity;
 
+    // current access token
     @Inject
     JsonWebToken accessToken;
 
@@ -31,9 +35,11 @@ public class CodeFlowUserInfoResource {
     @GET
     @Path("/code-flow-user-info-only")
     public String access() {
+        RoutingContext routingContext = identity.getAttribute(RoutingContext.class.getName());
         return identity.getPrincipal().getName() + ":" + userInfo.getPreferredUserName() + ":" + accessToken.getName()
                 + ", cache size: "
-                + tokenCache.getCacheSize();
+                + tokenCache.getCacheSize()
+                + ", TenantConfigResolver: " + Boolean.valueOf(routingContext.get("tenant-config-resolver"));
     }
 
     @GET
@@ -45,6 +51,12 @@ public class CodeFlowUserInfoResource {
     @GET
     @Path("/code-flow-user-info-github-cached-in-idtoken")
     public String accessGitHubCachedInIdToken() {
+        return access();
+    }
+
+    @GET
+    @Path("/code-flow-user-info-github-cache-disabled")
+    public String accessGitHubCacheDisabled() {
         return access();
     }
 

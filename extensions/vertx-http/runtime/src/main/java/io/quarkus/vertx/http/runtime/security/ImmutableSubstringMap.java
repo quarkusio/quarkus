@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher.PathMatch;
 
@@ -130,6 +132,103 @@ public class ImmutableSubstringMap<V> {
 
         boolean hasSubPathMatcher() {
             return hasSubPathMatcher;
+        }
+    }
+
+    static <V> SubstringMapBuilder<V> builder() {
+        return new SubstringMapBuilder<>();
+    }
+
+    static final class SubstringMapBuilder<V> {
+        private Object[] table = new Object[16];
+        private int size;
+
+        private SubstringMapBuilder() {
+        }
+
+        void put(String key, V value, ImmutablePathMatcher<SubstringMatch<V>> subPathMatcher) {
+            if (key == null) {
+                throw new NullPointerException();
+            }
+
+            Object[] newTable;
+            if (table.length / (double) size < 4 && table.length != Integer.MAX_VALUE) {
+                newTable = new Object[table.length << 1];
+                for (int i = 0; i < table.length; i += 2) {
+                    if (table[i] != null) {
+                        doPut(newTable, (String) table[i], table[i + 1]);
+                    }
+                }
+            } else {
+                newTable = new Object[table.length];
+                System.arraycopy(table, 0, newTable, 0, table.length);
+            }
+            doPut(newTable, key, new SubstringMatch<>(key, value, subPathMatcher));
+            this.table = newTable;
+            size++;
+        }
+
+        private void doPut(Object[] newTable, String key, Object value) {
+            int hash = hash(key, key.length());
+            int pos = tablePos(newTable, hash);
+            while (newTable[pos] != null && !newTable[pos].equals(key)) {
+                pos += 2;
+                if (pos >= newTable.length) {
+                    pos = 0;
+                }
+            }
+            newTable[pos] = key;
+            newTable[pos + 1] = value;
+        }
+
+        public Iterable<String> keys() {
+            return new Iterable<String>() {
+                @Override
+                public Iterator<String> iterator() {
+                    final Object[] tMap = table;
+                    int i = 0;
+                    while (i < table.length && tMap[i] == null) {
+                        i += 2;
+                    }
+                    final int startPos = i;
+
+                    return new Iterator<String>() {
+
+                        private Object[] map = tMap;
+
+                        private int pos = startPos;
+
+                        @Override
+                        public boolean hasNext() {
+                            return pos < table.length;
+                        }
+
+                        @Override
+                        public String next() {
+                            if (!hasNext()) {
+                                throw new NoSuchElementException();
+                            }
+                            String ret = (String) map[pos];
+
+                            pos += 2;
+                            while (pos < table.length && tMap[pos] == null) {
+                                pos += 2;
+                            }
+                            return ret;
+                        }
+
+                        @Override
+                        public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
+                }
+            };
+
+        }
+
+        ImmutableSubstringMap<V> build() {
+            return new ImmutableSubstringMap<>(table);
         }
     }
 }

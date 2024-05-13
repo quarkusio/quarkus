@@ -15,9 +15,11 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.Instrumente
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxMetricsFactory;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.OpenTelemetryVertxTracingFactory;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.RedisClientInstrumenterVertxTracer;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx.SqlClientInstrumenterVertxTracer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.tracing.TracingOptions;
@@ -33,7 +35,7 @@ public class InstrumentationRecorder {
         this.config = config;
     }
 
-    /* RUNTIME INIT */
+    @RuntimeInit
     public Consumer<VertxOptions> getVertxTracingOptions() {
         TracingOptions tracingOptions = new TracingOptions()
                 .setFactory(FACTORY);
@@ -41,10 +43,11 @@ public class InstrumentationRecorder {
     }
 
     /* RUNTIME INIT */
+    @RuntimeInit
     public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
-            final String semconvStability) {
+            boolean redisClientAvailable, final String semconvStability) {
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
-        List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(3);
+        List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
         if (config.getValue().instrument().vertxHttp()) {
             tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, getSemconvStabilityOptin(semconvStability)));
         }
@@ -53,6 +56,9 @@ public class InstrumentationRecorder {
         }
         if (sqlClientAvailable && config.getValue().instrument().vertxSqlClient()) {
             tracers.add(new SqlClientInstrumenterVertxTracer(openTelemetry));
+        }
+        if (redisClientAvailable && config.getValue().instrument().vertxRedisClient()) {
+            tracers.add(new RedisClientInstrumenterVertxTracer(openTelemetry));
         }
         OpenTelemetryVertxTracer openTelemetryVertxTracer = new OpenTelemetryVertxTracer(tracers);
         FACTORY.getVertxTracerDelegator().setDelegate(openTelemetryVertxTracer);

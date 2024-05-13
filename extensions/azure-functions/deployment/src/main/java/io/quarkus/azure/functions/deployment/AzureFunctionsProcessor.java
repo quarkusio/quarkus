@@ -66,8 +66,8 @@ public class AzureFunctionsProcessor {
 
     @BuildStep
     public LegacyJarRequiredBuildItem forceLegacy(PackageConfig config) {
+        // TODO: Instead of this, consume a LegacyJarBuildItem
         // Azure Functions need a legacy jar and no runner
-        config.addRunnerSuffix = false;
         return new LegacyJarRequiredBuildItem();
     }
 
@@ -98,7 +98,7 @@ public class AzureFunctionsProcessor {
         for (AzureFunctionBuildItem item : functions)
             methods.add(item.getMethod());
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
-        final String scriptFilePath = String.format("../%s.jar", target.getBaseName() + packageConfig.getRunnerSuffix());
+        final String scriptFilePath = String.format("../%s.jar", target.getBaseName() + packageConfig.computedRunnerSuffix());
         configMap.values().forEach(config -> config.setScriptFile(scriptFilePath));
         configMap.values().forEach(FunctionConfiguration::validate);
 

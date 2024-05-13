@@ -102,6 +102,20 @@ public final class LiquibaseDataSourceRuntimeConfig {
     public Optional<String> defaultSchemaName = Optional.empty();
 
     /**
+     * The username that Liquibase uses to connect to the database.
+     * If no specific username is configured, falls back to the datasource username and password.
+     */
+    @ConfigItem
+    public Optional<String> username = Optional.empty();
+
+    /**
+     * The password that Liquibase uses to connect to the database.
+     * If no specific password is configured, falls back to the datasource username and password.
+     */
+    @ConfigItem
+    public Optional<String> password = Optional.empty();
+
+    /**
      * The name of the catalog with the liquibase tables.
      */
     @ConfigItem

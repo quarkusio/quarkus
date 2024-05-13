@@ -29,6 +29,11 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
     volatile SecurityIdentity testIdentity;
 
     /**
+     * Whether authentication is successful only if right mechanism was used to authenticate.
+     */
+    volatile boolean isPathBasedIdentity = false;
+
+    /**
      * A request scoped delegate that allows the system to function as normal when
      * the user has not been explicitly overridden
      */
@@ -60,7 +65,7 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
             return delegate.getDeferredIdentity();
         }
         return delegate.getDeferredIdentity().onItem()
-                .transform(underlying -> underlying.isAnonymous() ? testIdentity : underlying);
+                .transform(underlying -> underlying.isAnonymous() && !isPathBasedIdentity ? testIdentity : underlying);
     }
 
     @Override
@@ -71,11 +76,15 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
         //the identity ends up in the routing context
         SecurityIdentity underlying = delegate.getIdentity();
         if (underlying.isAnonymous()) {
-            if (testIdentity != null) {
+            if (testIdentity != null && !isPathBasedIdentity) {
                 return testIdentity;
             }
         }
         return delegate.getIdentity();
+    }
+
+    void setPathBasedIdentity(boolean pathBasedIdentity) {
+        isPathBasedIdentity = pathBasedIdentity;
     }
 }
 

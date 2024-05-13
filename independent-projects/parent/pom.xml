@@ -22,6 +22,7 @@
         <version.clean.plugin>3.2.0</version.clean.plugin>
         <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.deploy.plugin>3.1.1</version.deploy.plugin>
+        <version.plugin.plugin>3.11.0</version.plugin.plugin>
         <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
         <version.exec.plugin>3.1.0</version.exec.plugin>
         <version.formatter.plugin>2.23.0</version.formatter.plugin>
@@ -57,6 +58,9 @@
         <!-- Cross plugins settings -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Make the builds reproducible - see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
+        <project.build.outputTimestamp>2024-01-01T00:00:00Z</project.build.outputTimestamp>
 
         <!--
             Options to override the compiler arguments directly on the compiler argument line to separate between what
@@ -118,14 +122,13 @@
 
     <build>
         <plugins>
-
             <!-- Check for the minimum version of Java and Maven.  Runs during the validate phase. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-java-maven-prerequisites</id>
+                        <id>enforce</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
@@ -275,6 +278,7 @@
                                 <Implementation-URL>${project.url}</Implementation-URL>
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                                <Bundle-License>Apache License 2.0</Bundle-License>
                             </manifestEntries>
                         </archive>
                     </configuration>
@@ -283,6 +287,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${version.deploy.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>${version.plugin.plugin}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -400,510 +409,6 @@
                     <artifactId>versions-maven-plugin</artifactId>
                     <version>${version.versions.plugin}</version>
                 </plugin>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <!-- You can debug caching by adding -Dorg.slf4j.simpleLogger.log.gradle.goal.cache=debug to the command line -->
-                        <!-- More information about this configuration:
-                        https://docs.gradle.com/enterprise/maven-extension/api/com/gradle/maven/extension/api/cache/MojoMetadataProvider.Context.html
-                        https://www.gradle.com/schema/gradle-enterprise-maven-project.xsd
-                        -->
-                        <gradleEnterprise xmlns="https://www.gradle.com/gradle-enterprise-maven-project">
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys>
-                                        <ignore>maven.repo.local</ignore>
-                                        <ignore>maven.settings</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                                <runtimeClassPath>
-                                    <ignoredFiles>
-                                        <ignoredFile>META-INF/ide-deps/**</ignoredFile>
-                                    </ignoredFiles>
-                                </runtimeClassPath>
-                            </normalization>
-                            <plugins>
-                                <plugin>
-                                    <groupId>org.jetbrains.kotlin</groupId>
-                                    <artifactId>kotlin-maven-plugin</artifactId>
-                                    <executions>
-                                        <execution>
-                                            <id>compile</id>
-                                            <outputs>
-                                                <cacheableBecause>compilation is CPU-bound</cacheableBecause>
-                                            </outputs>
-                                        </execution>
-                                        <execution>
-                                            <id>test-compile</id>
-                                            <inputs>
-                                                <fileSets>
-                                                    <fileSet>
-                                                        <name>defaultSourceDirs</name>
-                                                    </fileSet>
-                                                    <fileSet>
-                                                        <name>defaultSourceDir</name>
-                                                    </fileSet>
-                                                </fileSets>
-                                                <properties>
-                                                    <property>
-                                                        <name>skip</name>
-                                                    </property>
-                                                </properties>
-                                            </inputs>
-                                            <outputs>
-                                                <cacheableBecause>compilation is CPU-bound</cacheableBecause>
-                                            </outputs>
-                                        </execution>
-                                    </executions>
-                                    <inputs>
-                                        <fileSets>
-                                            <fileSet>
-                                                <name>sourceDirs</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                    <ignoreLineEndings>true</ignoreLineEndings>
-                                                </normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>classpath</name>
-                                                <normalization>COMPILE_CLASSPATH</normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>testClasspath</name>
-                                                <normalization>COMPILE_CLASSPATH</normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                        <properties>
-                                            <property>
-                                                <name>compilerPlugins</name>
-                                            </property>
-                                            <property>
-                                                <name>pluginOptions</name>
-                                            </property>
-                                            <property>
-                                                <name>multiPlatform</name>
-                                            </property>
-                                            <property>
-                                                <name>languageVersion</name>
-                                            </property>
-                                            <property>
-                                                <name>apiVersion</name>
-                                            </property>
-                                            <property>
-                                                <name>experimentalCoroutines</name>
-                                            </property>
-                                            <property>
-                                                <name>args</name>
-                                            </property>
-                                            <property>
-                                                <name>jvmTarget</name>
-                                            </property>
-                                            <property>
-                                                <name>moduleName</name>
-                                            </property>
-                                            <property>
-                                                <name>testModuleName</name>
-                                            </property>
-                                            <property>
-                                                <name>jdkHome</name>
-                                            </property>
-                                            <property>
-                                                <name>scriptTemplates</name>
-                                            </property>
-                                            <property>
-                                                <name>javaParameters</name>
-                                            </property>
-                                            <property>
-                                                <name>myIncremental</name>
-                                            </property>
-                                        </properties>
-                                        <ignoredProperties>
-                                            <ignore>module</ignore>
-                                            <ignore>testModule</ignore>
-                                            <ignore>nowarn</ignore>
-                                            <ignore>mojoExecution</ignore>
-                                            <ignore>project</ignore>
-                                            <ignore>session</ignore>
-                                        </ignoredProperties>
-                                    </inputs>
-                                    <outputs>
-                                        <directories>
-                                            <directory>
-                                                <name>output</name>
-                                            </directory>
-                                            <directory>
-                                                <name>testOutput</name>
-                                            </directory>
-                                        </directories>
-                                    </outputs>
-                                    <localState>
-                                        <fileSets>
-                                            <fileSet>
-                                                <name>incrementalCachesRoot</name>
-                                            </fileSet>
-                                        </fileSets>
-                                    </localState>
-                                </plugin>
-                                <plugin>
-                                    <groupId>com.diffplug.spotless</groupId>
-                                    <artifactId>spotless-maven-plugin</artifactId>
-                                    <inputs>
-                                        <fileSets>
-                                            <fileSet>
-                                                <name>baseDir</name>
-                                                <excludes>
-                                                    <exclude>.idea/*</exclude>
-                                                    <exclude>.classpath</exclude>
-                                                    <exclude>.project</exclude>
-                                                    <exclude>.settings/*</exclude>
-                                                    <exclude>target/*</exclude>
-                                                    <exclude>.cache/*</exclude>
-                                                    <exclude>.factorypath</exclude>
-                                                    <exclude>*.log</exclude>
-                                                </excludes>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                    <ignoreLineEndings>true</ignoreLineEndings>
-                                                </normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                        <properties>
-                                            <property>
-                                                <name>applySkip</name>
-                                            </property>
-                                            <property>
-                                                <name>encoding</name>
-                                            </property>
-                                            <property>
-                                                <name>checkSkip</name>
-                                            </property>
-                                            <property>
-                                                <name>filePatterns</name>
-                                            </property>
-                                            <property>
-                                                <name>formats</name>
-                                            </property>
-                                            <property>
-                                                <name>goal</name>
-                                            </property>
-                                            <property>
-                                                <name>setLicenseHeaderYearsFromGitHistory</name>
-                                            </property>
-                                            <property>
-                                                <name>skip</name>
-                                            </property>
-                                            <property>
-                                                <name>ratchetFrom</name>
-                                            </property>
-                                        </properties>
-                                        <ignoredProperties>
-                                            <ignore>repositorySystemSession</ignore>
-                                            <ignore>repositories</ignore>
-                                            <ignore>project</ignore>
-                                            <ignore>lineEndings</ignore>
-                                        </ignoredProperties>
-                                    </inputs>
-                                    <nestedProperties>
-                                        <property>
-                                            <name>licenseHeader</name>
-                                            <inputs>
-                                                <properties>
-                                                    <property>
-                                                        <name>file</name>
-                                                    </property>
-                                                    <property>
-                                                        <name>content</name>
-                                                    </property>
-                                                    <property>
-                                                        <name>delimiter</name>
-                                                    </property>
-                                                    <property>
-                                                        <name>skipLinesMatching</name>
-                                                    </property>
-                                                </properties>
-                                            </inputs>
-                                        </property>
-                                        <property>
-                                            <name>upToDateChecking</name>
-                                            <inputs>
-                                                <properties>
-                                                    <property>
-                                                        <name>enabled</name>
-                                                    </property>
-                                                    <property>
-                                                        <name>indexFile</name>
-                                                    </property>
-                                                </properties>
-                                            </inputs>
-                                        </property>
-                                        <!-- Entities used by Spotless with parameters defined in FormatterFactory -->
-                                        <property>
-                                            <name>java</name>
-                                        </property>
-                                        <property>
-                                            <name>python</name>
-                                        </property>
-                                        <property>
-                                            <name>scala</name>
-                                        </property>
-                                        <property>
-                                            <name>groovy</name>
-                                        </property>
-                                        <property>
-                                            <name>javascript</name>
-                                        </property>
-                                        <property>
-                                            <name>json</name>
-                                        </property>
-                                        <property>
-                                            <name>kotlin</name>
-                                        </property>
-                                        <property>
-                                            <name>cpp</name>
-                                        </property>
-                                        <property>
-                                            <name>antlr4</name>
-                                        </property>
-                                        <property>
-                                            <name>sql</name>
-                                        </property>
-                                        <property>
-                                            <name>typescript</name>
-                                        </property>
-                                        <property>
-                                            <name>yaml</name>
-                                        </property>
-                                        <property>
-                                            <name>pom</name>
-                                        </property>
-                                        <property>
-                                            <name>markdown</name>
-                                        </property>
-                                    </nestedProperties>
-                                    <outputs>
-                                        <directories>
-                                            <directory>
-                                                <name>buildDir</name>
-                                            </directory>
-                                        </directories>
-                                        <cacheableBecause>check should only run when inputs change
-                                        </cacheableBecause>
-                                    </outputs>
-                                </plugin>
-                                <plugin>
-                                    <groupId>net.revelc.code.formatter</groupId>
-                                    <artifactId>formatter-maven-plugin</artifactId>
-                                    <inputs>
-                                        <fileSets>
-                                            <fileSet>
-                                                <name>sourceDirectory</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>testSourceDirectory</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>directories</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                        <properties>
-                                            <property>
-                                                <name>includes</name>
-                                            </property>
-                                            <property>
-                                                <name>excludes</name>
-                                            </property>
-                                            <property>
-                                                <name>compilerSource</name>
-                                            </property>
-                                            <property>
-                                                <name>compilerCompliance</name>
-                                            </property>
-                                            <property>
-                                                <name>compilerTargetPlatform</name>
-                                            </property>
-                                            <property>
-                                                <name>lineEnding</name>
-                                            </property>
-                                            <property>
-                                                <name>configFile</name>
-                                            </property>
-                                            <property>
-                                                <name>configJsFile</name>
-                                            </property>
-                                            <property>
-                                                <name>configHtmlFile</name>
-                                            </property>
-                                            <property>
-                                                <name>configXmlFile</name>
-                                            </property>
-                                            <property>
-                                                <name>configJsonFile</name>
-                                            </property>
-                                            <property>
-                                                <name>configCssFile</name>
-                                            </property>
-                                            <property>
-                                                <name>skipFormattingCache</name>
-                                            </property>
-                                            <property>
-                                                <name>skipJavaFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipJsFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipHtmlFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipXmlFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipJsonFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipCssFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>skipFormatting</name>
-                                            </property>
-                                            <property>
-                                                <name>useEclipseDefaults</name>
-                                            </property>
-                                            <property>
-                                                <name>javaExclusionPattern</name>
-                                            </property>
-                                            <property>
-                                                <name>removeTrailingWhitespace</name>
-                                            </property>
-                                            <property>
-                                                <name>includeResources</name>
-                                            </property>
-                                        </properties>
-                                        <ignoredProperties>
-                                            <ignore>project</ignore>
-                                            <ignore>targetDirectory</ignore>
-                                            <ignore>basedir</ignore>
-                                        </ignoredProperties>
-                                    </inputs>
-                                    <nestedProperties>
-                                        <property>
-                                            <name>encoding</name>
-                                            <inputs>
-                                                <properties>
-                                                    <property>
-                                                        <name>displayName</name>
-                                                    </property>
-                                                </properties>
-                                            </inputs>
-                                        </property>
-                                    </nestedProperties>
-                                    <outputs>
-                                        <directories>
-                                            <directory>
-                                                <name>cachedir</name>
-                                            </directory>
-                                        </directories>
-                                        <cacheableBecause>check should only run when inputs change
-                                        </cacheableBecause>
-                                    </outputs>
-                                </plugin>
-                                <plugin>
-                                    <groupId>net.revelc.code</groupId>
-                                    <artifactId>impsort-maven-plugin</artifactId>
-                                    <inputs>
-                                        <fileSets>
-                                            <fileSet>
-                                                <name>sourceDirectory</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>testSourceDirectory</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                            <fileSet>
-                                                <name>directories</name>
-                                                <normalization>
-                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
-                                                </normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                        <properties>
-                                            <property>
-                                                <name>sourceEncoding</name>
-                                            </property>
-                                            <property>
-                                                <name>skip</name>
-                                            </property>
-                                            <property>
-                                                <name>staticGroups</name>
-                                            </property>
-                                            <property>
-                                                <name>groups</name>
-                                            </property>
-                                            <property>
-                                                <name>staticAfter</name>
-                                            </property>
-                                            <property>
-                                                <name>joinStaticWithNonStatic</name>
-                                            </property>
-                                            <property>
-                                                <name>includes</name>
-                                            </property>
-                                            <property>
-                                                <name>excludes</name>
-                                            </property>
-                                            <property>
-                                                <name>removeUnused</name>
-                                            </property>
-                                            <property>
-                                                <name>treatSamePackageAsUnused</name>
-                                            </property>
-                                            <property>
-                                                <name>breadthFirstComparator</name>
-                                            </property>
-                                            <property>
-                                                <name>lineEnding</name>
-                                            </property>
-                                            <property>
-                                                <name>compliance</name>
-                                            </property>
-                                        </properties>
-                                        <ignoredProperties>
-                                            <ignore>project</ignore>
-                                            <ignore>plugin</ignore>
-                                        </ignoredProperties>
-                                    </inputs>
-                                    <outputs>
-                                        <!-- For now we don't want to output the cachedir as it contains absolute paths
-                                        See https://github.com/revelc/impsort-maven-plugin/pull/87
-                                        <directories>
-                                            <directory>
-                                                <name>cachedir</name>
-                                            </directory>
-                                        </directories>
-                                        -->
-                                        <cacheableBecause>check should only run when inputs change
-                                        </cacheableBecause>
-                                    </outputs>
-                                </plugin>
-                            </plugins>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -946,6 +451,31 @@
             <id>release</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-license</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/classes/META-INF</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${maven.multiModuleProjectDirectory}</directory>
+                                            <filtering>false</filtering>
+                                            <includes>
+                                                <include>LICENSE</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <!--
                         ## IMPORTANT ##

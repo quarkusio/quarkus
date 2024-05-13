@@ -140,7 +140,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app").resolve("quarkus-run.jar")).exists();
 
-        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.jar.type=fast-jar");
 
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();
         assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app")).exists();

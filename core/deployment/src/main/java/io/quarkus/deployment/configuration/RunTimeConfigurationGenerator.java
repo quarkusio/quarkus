@@ -1197,24 +1197,24 @@ public final class RunTimeConfigurationGenerator {
                 Object.class);
 
         private void generateUnknownFilter() {
-            Set<String> mappedProperties = new HashSet<>();
+            Set<String> names = new HashSet<>();
             for (ConfigClassWithPrefix buildTimeMapping : buildTimeConfigResult.getBuildTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getKeys(buildTimeMapping));
+                names.addAll(ConfigMappings.getProperties(buildTimeMapping).keySet());
             }
             for (ConfigClassWithPrefix staticConfigMapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getKeys(staticConfigMapping));
+                names.addAll(ConfigMappings.getProperties(staticConfigMapping).keySet());
             }
             for (ConfigClassWithPrefix runtimeConfigMapping : buildTimeConfigResult.getRunTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getKeys(runtimeConfigMapping));
+                names.addAll(ConfigMappings.getProperties(runtimeConfigMapping).keySet());
             }
 
             // Add a method that generates a KeyMap that can check if a property is mapped by a @ConfigMapping
             MethodCreator mc = cc.getMethodCreator(C_MAPPED_PROPERTIES);
             mc.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
             ResultHandle keyMap = mc.newInstance(KM_NEW);
-            for (String mappedProperty : mappedProperties) {
-                ResultHandle mappedPropertyKeyMap = mc.invokeVirtualMethod(KM_FIND_OR_ADD, keyMap, mc.load(mappedProperty));
-                mc.invokeVirtualMethod(KM_PUT_ROOT_VALUE, mappedPropertyKeyMap, mc.load(true));
+            for (String name : names) {
+                mc.invokeVirtualMethod(KM_PUT_ROOT_VALUE, mc.invokeVirtualMethod(KM_FIND_OR_ADD, keyMap, mc.load(name)),
+                        mc.load(true));
             }
 
             mc.returnValue(keyMap);

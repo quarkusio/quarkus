@@ -1,5 +1,7 @@
 package io.quarkus.liquibase.mongodb;
 
+import java.io.FileNotFoundException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -8,12 +10,16 @@ import java.util.stream.Collectors;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
+import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.resource.CompositeResourceAccessor;
+import liquibase.resource.DirectoryResourceAccessor;
+import liquibase.resource.ResourceAccessor;
 
 public class LiquibaseMongodbFactory {
 
@@ -32,9 +38,52 @@ public class LiquibaseMongodbFactory {
         this.mongoClientConfig = mongoClientConfig;
     }
 
+    private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
+
+        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
+        compositeResourceAccessor
+                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+
+        if (!liquibaseMongodbBuildTimeConfig.changeLog.startsWith("filesystem:")
+                && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            return compositeResourceAccessor;
+        }
+
+        if (liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            compositeResourceAccessor.addResourceAccessor(
+                    new DirectoryResourceAccessor(
+                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog, "filesystem:", ""))
+                                    .getParent()));
+            return compositeResourceAccessor;
+        }
+
+        for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath.get()) {
+            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
+        }
+
+        return compositeResourceAccessor;
+    }
+
+    private String parseChangeLog(String changeLog) {
+
+        if (changeLog.startsWith("filesystem:") && liquibaseMongodbBuildTimeConfig.searchPath.isEmpty()) {
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+        }
+
+        if (changeLog.startsWith("filesystem:")) {
+            return StringUtil.changePrefix(changeLog, "filesystem:", "");
+        }
+
+        if (changeLog.startsWith("classpath:")) {
+            return StringUtil.changePrefix(changeLog, "classpath:", "");
+        }
+
+        return changeLog;
+    }
+
     public Liquibase createLiquibase() {
-        try (ClassLoaderResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(
-                Thread.currentThread().getContextClassLoader())) {
+        try (ResourceAccessor resourceAccessor = resolveResourceAccessor()) {
+            String parsedChangeLog = parseChangeLog(liquibaseMongodbBuildTimeConfig.changeLog);
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
 
             // Every MongoDB client configuration must be added to the connection string, we didn't add all as it would be too much to support.
@@ -83,7 +132,7 @@ public class LiquibaseMongodbFactory {
                     database.setDefaultSchemaName(liquibaseMongodbConfig.defaultSchemaName.get());
                 }
             }
-            Liquibase liquibase = new Liquibase(liquibaseMongodbBuildTimeConfig.changeLog, resourceAccessor, database);
+            Liquibase liquibase = new Liquibase(parsedChangeLog, resourceAccessor, database);
 
             for (Map.Entry<String, String> entry : liquibaseMongodbConfig.changeLogParameters.entrySet()) {
                 liquibase.getChangeLogParameters().set(entry.getKey(), entry.getValue());

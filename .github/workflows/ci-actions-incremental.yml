@@ -18,6 +18,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -33,6 +35,8 @@ on:
       - '.github/*.yml'
       - '.github/*.java'
       - '.github/*.conf'
+      - '.github/workflows/doc-build.yml'
+      - '.github/workflows/preview.yml'
   workflow_dispatch:
 
 concurrency:
@@ -43,12 +47,14 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests clean install -DskipDocs"
-  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
+  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
+  PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
-  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+  DEVELOCITY_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
 
 defaults:
@@ -70,7 +76,7 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
@@ -87,18 +93,12 @@ jobs:
     name: "Initial JDK 17 Build"
     runs-on: ubuntu-latest
     # Skip main in forks
-    # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
+    # Skip draft PRs, rerun as soon as its removed
     if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
            github.event_name != 'pull_request' || ( \
              github.event.pull_request.draft == false && \
              github.event.pull_request.state != 'closed' && \
-             contains(github.event.pull_request.title, 'wip ') == false && \
-             contains(github.event.pull_request.title, '[wip]') == false && \
-             (
-               github.event.action != 'edited' || \
-               contains(github.event.changes.title.from, 'wip ') || \
-               contains(github.event.changes.title.from, '[wip]') \
-             ) \
+             github.event.action != 'edited' \
            ) \
          )"
     outputs:
@@ -139,11 +139,12 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -194,7 +195,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -207,9 +208,9 @@ jobs:
           7z a -tzip build-reports.zip -r \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -356,31 +357,35 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
+      - name: Analyze disk space
+        if: always() && !startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')
+        run: .github/ci-disk-usage.sh
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
@@ -393,9 +398,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -403,7 +408,7 @@ jobs:
             build-reports.zip
           retention-days: 7
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
@@ -455,7 +460,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -467,22 +472,23 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
@@ -502,9 +508,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
@@ -552,7 +558,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -569,16 +575,17 @@ jobs:
         if: "!startsWith(matrix.java.os-name, 'windows')"
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -587,9 +594,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
@@ -639,7 +646,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -651,21 +658,22 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
@@ -678,9 +686,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
@@ -730,7 +738,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -742,21 +750,22 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-kubernetes-java${{matrix.java.name}}
@@ -769,9 +778,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -808,7 +817,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -820,17 +829,32 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
+      - uses: actions/github-script@v7
+        id: get-quickstarts-branch
+        with:
+          result-encoding: string
+          script: |
+            if (process.env.GITHUB_REPOSITORY != 'quarkusio/quarkus') {
+              return 'development'
+            }
+
+            const branch = process.env.GITHUB_BASE_REF ? process.env.GITHUB_BASE_REF : process.env.GITHUB_REF_NAME
+            if (branch == 'main') {
+              return 'development'
+            } else {
+              return branch
+            }
       - name: Compile Quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git clone --depth=1 -b ${{ steps.get-quickstarts-branch.outputs.result }} https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Prepare build reports archive
         if: always()
@@ -840,7 +864,7 @@ jobs:
               'quarkus-quickstarts/target/build-report.json' \
               'quarkus-quickstarts/LICENSE' \
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
@@ -873,7 +897,7 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
@@ -891,18 +915,19 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
           CAPTURE_BUILD_SCAN: true
         run: |
-          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
+          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Prepare build reports archive
         if: always()
         run: |
@@ -910,9 +935,9 @@ jobs:
               'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
               'integration-tests/virtual-threads/target/build-report.json' \
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -952,24 +977,25 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
@@ -977,7 +1003,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-tcks
@@ -990,9 +1016,9 @@ jobs:
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-MicroProfile TCKs Tests"
@@ -1060,29 +1086,35 @@ jobs:
           # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
       - name: Download .m2/repository/io/quarkus
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/develocity-actions/maven-setup@v1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
-          wrapper-init: true
+          add-pr-comment: false
+          add-job-summary: false
+      - name: Cache Quarkus metadata
+        uses: actions/cache@v4
+        with:
+          path: '**/.quarkus/quarkus-prod-config-dump'
+          key: ${{ runner.os }}-quarkus-metadata
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
           CAPTURE_BUILD_SCAN: true
-        run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
@@ -1096,9 +1128,9 @@ jobs:
               '**/build/test-results/test/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
-              LICENSE.txt
+              LICENSE
       - name: Upload build reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
@@ -1112,7 +1144,7 @@ jobs:
     needs: [build-jdk17,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: build-reports-artifacts
       - name: Set up JDK 17

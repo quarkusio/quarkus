@@ -10,7 +10,9 @@ public class VertxHybridPoolObjectMapperCustomizer implements ObjectMapperCustom
 
     @Override
     public void customize(ObjectMapper objectMapper) {
-        if (objectMapper.getFactory()._getRecyclerPool() == JsonRecyclerPools.defaultPool()) {
+        var existingMapperPool = objectMapper.getFactory()._getRecyclerPool();
+        // JsonRecyclerPools.defaultPool() by default should create a LockFreePool
+        if (existingMapperPool instanceof JsonRecyclerPools.LockFreePool) {
             objectMapper.getFactory().setRecyclerPool(HybridJacksonPool.getInstance());
         }
     }

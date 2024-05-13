@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -12,12 +13,16 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
+import io.smallrye.graphql.client.model.ClientModels;
 import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 import io.smallrye.graphql.client.vertx.VertxManager;
+import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuilder;
 import io.vertx.core.Vertx;
 
 @Recorder
@@ -25,10 +30,14 @@ public class SmallRyeGraphQLClientRecorder {
 
     private final Logger logger = Logger.getLogger(SmallRyeGraphQLClientRecorder.class);
 
-    public <T> Supplier<T> typesafeClientSupplier(Class<T> targetClassName) {
-        return () -> {
-            TypesafeGraphQLClientBuilder builder = TypesafeGraphQLClientBuilder.newBuilder();
-            return builder.build(targetClassName);
+    public <T> Function<SyntheticCreationalContext<T>, T> typesafeClientSupplier(Class<T> targetClassName) {
+        return new Function<>() {
+            @Override
+            public T apply(SyntheticCreationalContext<T> context) {
+                TypesafeGraphQLClientBuilder builder = TypesafeGraphQLClientBuilder.newBuilder();
+                ClientModels clientModels = context.getInjectedReference(ClientModels.class);
+                return (((VertxTypesafeGraphQLClientBuilder) builder).clientModels(clientModels)).build(targetClassName);
+            }
         };
     }
 
@@ -134,6 +143,10 @@ public class SmallRyeGraphQLClientRecorder {
         // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so guessing
         // is somewhat limited
         return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081) + "/graphql";
+    }
+
+    public RuntimeValue<ClientModels> getRuntimeClientModel(ClientModels clientModel) {
+        return new RuntimeValue<>(clientModel);
     }
 
 }

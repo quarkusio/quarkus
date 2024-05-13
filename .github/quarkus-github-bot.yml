@@ -383,20 +383,20 @@ triage:
     - id: scheduler
       labels: [area/scheduler]
       title: "schedule(r)?"
-      notify: [mkouba]
+      notify: [mkouba, manovotn]
       directories:
         - extensions/scheduler/
     - id: quartz
       labels: [area/scheduler]
       title: "quartz"
-      notify: [mkouba, machi1990]
+      notify: [mkouba, machi1990, manovotn]
       directories:
         - extensions/quartz/
         - integration-tests/quartz/
     - id: redis
       labels: [area/redis]
       title: "redis"
-      notify: [machi1990, gsmet, cescoffier]
+      notify: [machi1990, Ladicek, cescoffier]
       directories:
         - extensions/redis-client/
         - integration-tests/redis-client/
@@ -474,10 +474,12 @@ triage:
       notify: [ebullient]
     - id: config
       labels: [area/config]
+      title: "config"
       directories:
         - extensions/config-yaml/
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/
+      notify: [radcortez]
     - id: core
       labels: [area/core]
       notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
@@ -645,6 +647,12 @@ triage:
       directories:
         - extensions/vault/
         - integration-tests/vault
+    - id: netty
+      labels: [area/netty]
+      title: "netty"
+      notify: [franz1981, cescoffier, jponge]
+      directories:
+        - extensions/netty
     - id: vertx
       labels: [area/vertx]
       title: "vert.?x"

@@ -71,7 +71,7 @@ public class RestClientOpenTelemetryTest {
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
-        assertEquals("GET", client.getName());
+        assertEquals("GET /hello", client.getName());
         assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
         assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
         assertSemanticAttribute(client, uri.toString() + "hello", HTTP_URL);
@@ -96,7 +96,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(CLIENT, client.getKind());
-        assertEquals("GET", client.getName());
+        assertEquals("GET /hello", client.getName());
         assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
         assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
         assertSemanticAttribute(client, uri.toString() + "hello?query=1", HTTP_URL);
@@ -132,7 +132,7 @@ public class RestClientOpenTelemetryTest {
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(CLIENT, client.getKind());
-        assertEquals("GET", client.getName());
+        assertEquals("GET /hello/{path}", client.getName());
         assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
         assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
         assertSemanticAttribute(client, uri.toString() + "hello/another", HTTP_URL);

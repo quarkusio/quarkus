@@ -2,7 +2,7 @@ package io.quarkus.deployment.pkg.steps;
 
 import java.util.function.BooleanSupplier;
 
-import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.NativeConfig;
 
 /**
  * Supplier that can be used to only run build steps in the
@@ -12,17 +12,20 @@ import io.quarkus.deployment.pkg.PackageConfig;
  * the extension works properly when the build produces a {@code native-sources} artifact instead of a
  * native binary.
  * This build item should be used only when there is a real need for a step to run exclusively for a {@code native} build.
+ *
+ * @deprecated In the future, it will be possible to request multiple output types.
  */
+@Deprecated
 public class NativeBuild implements BooleanSupplier {
 
-    private final PackageConfig packageConfig;
+    private final NativeConfig nativeConfig;
 
-    NativeBuild(PackageConfig packageConfig) {
-        this.packageConfig = packageConfig;
+    public NativeBuild(final NativeConfig nativeConfig) {
+        this.nativeConfig = nativeConfig;
     }
 
     @Override
     public boolean getAsBoolean() {
-        return packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE);
+        return nativeConfig.enabled() && !nativeConfig.sourcesOnly();
     }
 }

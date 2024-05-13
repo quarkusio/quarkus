@@ -34,6 +34,10 @@ echo ''
 # get the Quarkus artifact ids from all gradle build files in this repo
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
+
+# make sure ordering is not locale-dependent
+export LANG="C"
+
 # note on sed: -deployment deps are added explicitly later and bom is upstream anyway
 ARTIFACT_IDS=$(grep -EhR --include 'build*.gradle*' --exclude-dir=build '[iI]mplementation|api|quarkusDev' "${PRG_PATH}" | \
               grep -Eo 'quarkus-[a-z0-9-]+' | \

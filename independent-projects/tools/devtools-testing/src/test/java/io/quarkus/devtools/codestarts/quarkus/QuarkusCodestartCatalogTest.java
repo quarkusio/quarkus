@@ -14,6 +14,7 @@ import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.FakeExtensionCatalog;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -47,7 +48,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void createProjectTestEmpty() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .noCode()
                 .noBuildToolWrapper()
                 .noDockerfiles()
@@ -68,7 +69,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void createProjectTestNoExample() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .noCode()
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -88,7 +89,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void createProjectTestGradle() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -98,7 +99,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void createProjectTestKotlin() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -108,7 +109,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void prepareProjectTestScala() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -118,7 +119,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void prepareProjectTestConfigYaml() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -128,7 +129,7 @@ class QuarkusCodestartCatalogTest {
 
     @Test
     void prepareProjectTestResteasy() throws IOException {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
@@ -139,6 +140,10 @@ class QuarkusCodestartCatalogTest {
                         "tooling-dockerfiles",
                         "tooling-maven-wrapper",
                         "resteasy-codestart");
+    }
+
+    private static QuarkusCodestartProjectInputBuilder newInputBuilder() {
+        return QuarkusCodestartProjectInput.builder().defaultCodestart(FakeExtensionCatalog.getDefaultCodestart());
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {

@@ -19,7 +19,7 @@ include::{includes}/extension-status.adoc[]
 
 The current integration of Stork supports:
 
-* the Reactive REST Client
+* the REST Client
 * the gRPC clients
 
 Warning: The gRPC client integration does not support statistic-based load balancers.

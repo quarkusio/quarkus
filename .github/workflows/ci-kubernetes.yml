@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven repository
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: maven-repo
           path: maven-repo.tgz
@@ -49,7 +49,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up Minikube-Kubernetes
-        uses: manusa/actions-setup-minikube@v2.10.0
+        uses: manusa/actions-setup-minikube@v2.11.0
         with:
           minikube version: v1.16.0
           kubernetes version: ${{ matrix.kubernetes }}
@@ -106,7 +106,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .
@@ -160,7 +160,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Download Maven repository
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: maven-repo
           path: .

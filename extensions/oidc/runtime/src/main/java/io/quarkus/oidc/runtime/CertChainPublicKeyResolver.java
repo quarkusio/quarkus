@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -10,21 +11,32 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.lang.UnresolvableKeyException;
 
-import io.quarkus.oidc.OidcTenantConfig.CertificateChain;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenCertificateValidator;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.runtime.X509IdentityProvider;
 import io.vertx.ext.auth.impl.CertificateHelper;
 
 public class CertChainPublicKeyResolver implements RefreshableVerificationKeyResolver {
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
+    final OidcTenantConfig oidcConfig;
     final Set<String> thumbprints;
+    final Optional<String> expectedLeafCertificateName;
+    final List<TokenCertificateValidator> certificateValidators;
 
-    public CertChainPublicKeyResolver(CertificateChain chain) {
-        if (chain.trustStorePassword.isEmpty()) {
+    public CertChainPublicKeyResolver(OidcTenantConfig oidcConfig) {
+        this.oidcConfig = oidcConfig;
+        if (oidcConfig.certificateChain.getTrustStorePassword().isEmpty()) {
             throw new ConfigurationException(
                     "Truststore with configured password which keeps thumbprints of the trusted certificates must be present");
         }
-        this.thumbprints = TrustStoreUtils.getTrustedCertificateThumbprints(chain.trustStoreFile.get(),
-                chain.trustStorePassword.get(), chain.trustStoreCertAlias, chain.getTrustStoreFileType());
+        this.thumbprints = TrustStoreUtils.getTrustedCertificateThumbprints(
+                oidcConfig.certificateChain.trustStoreFile.get(),
+                oidcConfig.certificateChain.getTrustStorePassword().get(),
+                oidcConfig.certificateChain.trustStoreCertAlias,
+                oidcConfig.certificateChain.getTrustStoreFileType());
+        this.expectedLeafCertificateName = oidcConfig.certificateChain.leafCertificateName;
+        this.certificateValidators = TenantFeatureFinder.find(oidcConfig, TokenCertificateValidator.class);
     }
 
     @Override
@@ -37,10 +49,12 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
                 LOG.debug("Token does not have an 'x5c' certificate chain header");
                 return null;
             }
-            String thumbprint = TrustStoreUtils.calculateThumprint(chain.get(0));
-            if (!thumbprints.contains(thumbprint)) {
-                throw new UnresolvableKeyException("Certificate chain thumprint is invalid");
+            if (chain.size() == 0) {
+                LOG.debug("Token 'x5c' certificate chain is empty");
+                return null;
             }
+
+            // General certificate chain validation
             //TODO: support revocation lists
             CertificateHelper.checkValidity(chain, null);
             if (chain.size() == 1) {
@@ -49,7 +63,45 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
                 final X509Certificate root = chain.get(0);
                 root.verify(root.getPublicKey());
             }
+
+            // Always do the root certificate thumbprint check
+            LOG.debug("Checking a thumbprint of the root chain certificate");
+            String rootThumbprint = TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1));
+            if (!thumbprints.contains(rootThumbprint)) {
+                LOG.error("Thumprint of the root chain certificate is invalid");
+                throw new UnresolvableKeyException("Thumprint of the root chain certificate is invalid");
+            }
+
+            // Run custom validators if any
+            if (!certificateValidators.isEmpty()) {
+                LOG.debug("Running custom TokenCertificateValidators");
+                for (TokenCertificateValidator validator : certificateValidators) {
+                    validator.validate(oidcConfig, chain, jws.getUnverifiedPayload());
+                }
+            }
+
+            // Finally, check the leaf certificate if required
+            if (!expectedLeafCertificateName.isEmpty()) {
+                // Compare the leaf certificate common name against the configured value
+                String leafCertificateName = X509IdentityProvider.getCommonName(chain.get(0).getSubjectX500Principal());
+                if (!expectedLeafCertificateName.get().equals(leafCertificateName)) {
+                    LOG.errorf("Wrong leaf certificate common name: %s", leafCertificateName);
+                    throw new UnresolvableKeyException("Wrong leaf certificate common name");
+                }
+            } else if (certificateValidators.isEmpty()) {
+                // No custom validators are registered and no leaf certificate CN is configured
+                // Check that the truststore contains a leaf certificate thumbprint
+                LOG.debug("Checking a thumbprint of the leaf chain certificate");
+                String thumbprint = TrustStoreUtils.calculateThumprint(chain.get(0));
+                if (!thumbprints.contains(thumbprint)) {
+                    LOG.error("Thumprint of the leaf chain certificate is invalid");
+                    throw new UnresolvableKeyException("Thumprint of the leaf chain certificate is invalid");
+                }
+            }
+
             return chain.get(0).getPublicKey();
+        } catch (UnresolvableKeyException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new UnresolvableKeyException("Invalid certificate chain", ex);
         }

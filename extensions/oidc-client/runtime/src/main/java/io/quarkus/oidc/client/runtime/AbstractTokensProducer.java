@@ -29,16 +29,21 @@ public abstract class AbstractTokensProducer {
 
     @PostConstruct
     public void init() {
-        Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
-        OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
-        if (clientId.isPresent()) {
-            // static named OidcClient
-            oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
-            earlyTokenAcquisition = oidcClientsConfig.namedClients.get(clientId.get()).earlyTokensAcquisition;
+        Optional<OidcClient> initializedClient = client();
+        if (initializedClient.isEmpty()) {
+            Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
+            OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
+            if (clientId.isPresent()) {
+                // static named OidcClient
+                oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
+                earlyTokenAcquisition = oidcClientsConfig.namedClients.get(clientId.get()).earlyTokensAcquisition;
+            } else {
+                // default OidcClient
+                earlyTokenAcquisition = oidcClientsConfig.defaultClient.earlyTokensAcquisition;
+                oidcClient = oidcClients.getClient();
+            }
         } else {
-            // default OidcClient
-            earlyTokenAcquisition = oidcClientsConfig.defaultClient.earlyTokensAcquisition;
-            oidcClient = oidcClients.getClient();
+            oidcClient = initializedClient.get();
         }
 
         initTokens();
@@ -69,6 +74,13 @@ public abstract class AbstractTokensProducer {
      *         Defaults to default OIDC client when {@link Optional#empty() empty}.
      */
     protected Optional<String> clientId() {
+        return Optional.empty();
+    }
+
+    /**
+     * @return Initialized OidcClient.
+     */
+    protected Optional<OidcClient> client() {
         return Optional.empty();
     }
 

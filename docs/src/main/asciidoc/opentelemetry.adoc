@@ -47,7 +47,7 @@ The solution is located in the `opentelemetry-quickstart` link:{quickstarts-tree
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
-:create-app-extensions: resteasy-reactive,quarkus-opentelemetry
+:create-app-extensions: rest,quarkus-opentelemetry
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
@@ -167,7 +167,21 @@ If you need to enable or disable the exporter at runtime, you can use the <<samp
 
 == Run the application
 
-The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
+First we need to start a system to visualise the OpenTelemetry data.
+We have 2 options:
+
+* Start an all-in-one Grafana OTel LGTM system for traces and metrics.
+* Jaeger system just for traces.
+
+=== Grafana OTel LGTM option
+
+* Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
+
+This features a Quarkus Dev service including a Grafana for visualizing data, Loky to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+
+=== Jaeger to see traces option
+
+Configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
 
 [NOTE]
 ====
@@ -196,6 +210,8 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
 ----
 You should remove the optional ports you don't need them.
+
+=== Start the application
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
 
@@ -381,10 +397,6 @@ public class CustomConfiguration {
     }
 }
 ----
-
-==== User data
-
-By setting `quarkus.otel.traces.eusp.enabled=true` you can add information about the user related to each span. The user's ID and roles will be added to the span attributes, if available.
 
 [[sampler]]
 === Sampler
@@ -597,9 +609,9 @@ public void tracedWork() {
 }
 ----
 
-=== SmallRye Reactive Messaging - Kafka
+=== Quarkus Messaging - Kafka
 
-When using the SmallRye Reactive Messaging extension for Kafka,
+When using the Quarkus Messaging extension for Kafka,
 we are able to propagate the span into the Kafka Record with:
 
 [source,java]
@@ -610,6 +622,16 @@ Message out = Message.of(...).withMetadata(tm);
 
 The above creates a `TracingMetadata` object we can add to the `Message` being produced,
 which retrieves the OpenTelemetry `Context` to extract the current span for propagation.
+
+=== Quarkus Security Events
+
+Quarkus supports exporting of the xref:security-customization.adoc#observe-security-events[Security events] as OpenTelemetry Span events.
+
+[source,application.properties]
+----
+quarkus.otel.security-events.enabled=true <1>
+----
+<1> Export Quarkus Security events as OpenTelemetry Span events.
 
 == Exporters
 
@@ -622,20 +644,21 @@ The exporter is automatically wired with CDI, that's why the `quarkus.otel.trace
 The `quarkus.otel.exporter.otlp.traces.protocol` default to `grpc` and `http/protobuf` can also be used.
 
 === On Quarkiverse
-Additional exporters will be available in the Quarkiverse https://github.com/quarkiverse/quarkus-opentelemetry-exporter/blob/main/README.md[quarkus-opentelemetry-exporter] project.
+Additional exporters will be available in the Quarkiverse https://docs.quarkiverse.io/quarkus-opentelemetry-exporter/dev/index.html[quarkus-opentelemetry-exporter] project.
 
 [[quarkus-extensions-using-opentelemetry]]
 == Quarkus core extensions instrumented with OpenTelemetry tracing
 
 * https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
 * https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/guides/redis[`quarkus-redis-client`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
+* https://quarkus.io/guides/rest[`quarkus-rest`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
-* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
-* https://quarkus.io/guides/rest-client[`quarkus-resteasy-client`]
+* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
 ** AMQP 1.0
 ** RabbitMQ
 ** Kafka

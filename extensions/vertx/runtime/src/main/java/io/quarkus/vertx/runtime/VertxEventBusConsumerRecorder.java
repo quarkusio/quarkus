@@ -28,7 +28,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.LocalEventBusCodec;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
@@ -260,7 +259,7 @@ public class VertxEventBusConsumerRecorder {
     @SuppressWarnings("unchecked")
     private void registerCodecs(Map<Class<?>, Class<?>> codecByClass, List<Class<?>> selectorTypes) {
         EventBus eventBus = vertx.eventBus();
-        boolean isDevMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
+        boolean isDevMode = LaunchMode.current() == LaunchMode.DEVELOPMENT;
         for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
             Class<?> target = codecEntry.getKey();
             Class<?> codec = codecEntry.getValue();

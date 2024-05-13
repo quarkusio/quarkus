@@ -1,3 +1,5 @@
+import static java.nio.file.Files.createTempDirectory
+
 plugins {
     id 'java'
     id 'io.quarkus'
@@ -31,7 +33,7 @@ compileTestJava {
 }
 
 quarkusDev {
-    workingDir = System.getProperty("java.io.tmpdir")
+    workingDirectory = createTempDirectory("").toFile()
 }
 
 test {

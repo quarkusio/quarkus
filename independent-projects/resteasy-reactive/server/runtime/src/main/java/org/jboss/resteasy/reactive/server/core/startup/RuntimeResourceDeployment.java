@@ -189,7 +189,7 @@ public class RuntimeResourceDeployment {
 
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
                 parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames(),
-                !defaultBlocking && !method.isBlocking());
+                !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
@@ -353,6 +353,8 @@ public class RuntimeResourceDeployment {
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.RESOLVE_METHOD_PARAMETERS);
         for (int i = 0; i < parameters.length; i++) {
             ServerMethodParameter param = (ServerMethodParameter) parameters[i];
+            if (param.parameterType.equals(ParameterType.SKIPPED))
+                continue;
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, locatableResource, param);
             ParameterConverter converter = null;
             ParamConverterProviders paramConverterProviders = info.getParamConverterProviders();

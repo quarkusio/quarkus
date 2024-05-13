@@ -32,7 +32,7 @@ The solution is located in the `spring-di-quickstart` link:{quickstarts-tree-url
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-di-quickstart
-:create-app-extensions: resteasy-reactive,spring-di
+:create-app-extensions: rest,spring-di
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-di` extension.
@@ -273,7 +273,7 @@ Please note that the Spring support in Quarkus does not start a Spring Applicati
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` , `org.springframework.context.ApplicationContext` for example) will not be executed.
-Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0] specification. If you want to learn more about it, we recommend you to read the xref:cdi.adoc[Quarkus introduction to CDI] and the xref:cdi-reference.adoc#arc-configuration-reference[CDI reference guide]
+Regarding the dependency injection in particular, Quarkus uses a Dependency Injection mechanism (called ArC) based on the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html[Jakarta Contexts and Dependency Injection 4.1] specification. If you want to learn more about it, we recommend you to read the xref:cdi.adoc[Quarkus introduction to CDI] and the xref:cdi-reference.adoc#arc-configuration-reference[CDI reference guide]
 The various Spring Boot test features are not supported by Quarkus. For testing purposes, please, check the xref:getting-started-testing.adoc[Quarkus testing guide].
 
 Some known limitations:

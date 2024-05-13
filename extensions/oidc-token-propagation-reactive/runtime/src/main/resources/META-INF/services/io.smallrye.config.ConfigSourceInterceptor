@@ -1,0 +1,2 @@
+io.quarkus.oidc.token.propagation.reactive.OidcTokenPropagationReactiveConfigFallbackInterceptor
+io.quarkus.oidc.token.propagation.reactive.OidcTokenPropagationReactiveConfigRelocateInterceptor

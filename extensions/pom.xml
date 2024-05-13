@@ -15,7 +15,6 @@
     <packaging>pom</packaging>
     <modules>
         <!-- Netty loom adaptor-->
-        <module>netty-loom-adaptor</module>
         <module>virtual-threads</module>
         <!-- Plumbing -->
         <module>arc</module>
@@ -38,7 +37,8 @@
         <module>vertx-http</module>
         <module>undertow</module>
         <module>websockets</module>
-        <module>webjars-locator</module>
+        <module>websockets-next</module>
+        <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
         <module>apache-httpclient</module>
@@ -52,6 +52,7 @@
         <module>micrometer-registry-prometheus</module>
         <module>opentelemetry</module>
         <module>info</module>
+        <module>observability-devservices</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -97,6 +98,7 @@
         <module>panache</module>
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-search-orm-outbox-polling</module>
+        <module>hibernate-search-standalone-elasticsearch</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-java-client</module>
@@ -143,13 +145,13 @@
         <module>oidc-db-token-state-manager</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client-common</module>
-        <module>keycloak-admin-client</module>
-        <module>keycloak-admin-client-reactive</module>
+        <module>keycloak-admin-rest-client</module>
+        <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
-        <module>csrf-reactive</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+        <module>infinispan-cache</module>
 
         <!-- Caching -->
         <module>caffeine</module>
@@ -223,49 +225,18 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-no-runtime-deps</id>
+                        <id>enforce</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
-                            <rules>
+                            <rules combine.children="append">
                                 <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-enforcer-rules</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <!--
-                            For now, do not store the output of the maven-compiler-plugin as we generate the config doc.
-                            Ideally, we would register them as additional output but their organization is too messy for now.
-                            -->
-                            <plugins combine.children="append">
-                                <plugin>
-                                    <artifactId>maven-compiler-plugin</artifactId>
-                                    <outputs>
-                                        <notCacheableBecause>the extension config doc generation tool shares data across all extensions</notCacheableBecause>
-                                    </outputs>
-                                </plugin>
-                            </plugins>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 </project>

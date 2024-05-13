@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "OpenID Connect Client Filter"
+name: "RESTEasy Client - OpenID Connect Filter"
 metadata:
   keywords:
   - "oauth2"
@@ -13,4 +13,5 @@ metadata:
   - "security"
   status: "stable"
   config:
+  - "quarkus.resteasy-client-oidc-filter."
   - "quarkus.oidc-client."

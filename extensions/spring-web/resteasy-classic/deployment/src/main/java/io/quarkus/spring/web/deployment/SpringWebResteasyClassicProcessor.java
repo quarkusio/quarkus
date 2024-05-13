@@ -1,7 +1,5 @@
 package io.quarkus.spring.web.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,12 +32,11 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
+import io.quarkus.resteasy.deployment.NonJaxRsClassBuildItem;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizerBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
@@ -234,9 +231,8 @@ public class SpringWebResteasyClassicProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(STATIC_INIT)
     public void registerWithDevModeNotFoundMapper(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ExceptionMapperRecorder recorder) {
+            BuildProducer<NonJaxRsClassBuildItem> nonJaxRsClassProducer) {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> restControllerAnnotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
         if (restControllerAnnotations.isEmpty()) {
@@ -290,7 +286,7 @@ public class SpringWebResteasyClassicProcessor {
         }
 
         if (!nonJaxRsPaths.isEmpty()) {
-            recorder.nonJaxRsClassNameToMethodPaths(nonJaxRsPaths);
+            nonJaxRsClassProducer.produce(new NonJaxRsClassBuildItem(nonJaxRsPaths));
         }
     }
 

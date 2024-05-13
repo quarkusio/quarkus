@@ -40,7 +40,7 @@ public class ReaugmentTask {
             List<AdditionalDependency> additional = new ArrayList<>();
 
             if (appModel.getUserProvidersDirectory() != null) {
-                System.setProperty("quarkus.package.user-providers-directory", appModel.getUserProvidersDirectory()); //bit of a hack, but keeps things simple
+                System.setProperty("quarkus.package.jar.user-providers-directory", appModel.getUserProvidersDirectory()); //bit of a hack, but keeps things simple
                 try (Stream<Path> files = Files.list(appRoot.resolve(appModel.getUserProvidersDirectory()))) {
                     files.forEach(new Consumer<Path>() {
                         @Override
@@ -54,7 +54,8 @@ public class ReaugmentTask {
             }
 
             final ApplicationModel existingModel = appModel.getAppModel(appRoot);
-            System.setProperty("quarkus.package.type", "mutable-jar");
+            System.setProperty("quarkus.package.jar.type", "mutable-jar");
+            System.setProperty("quarkus.native.enabled", "false");
             try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
                     .setAppArtifact(existingModel.getAppArtifact())
                     .setExistingModel(existingModel)

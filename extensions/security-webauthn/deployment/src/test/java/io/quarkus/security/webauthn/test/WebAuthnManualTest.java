@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.security.webauthn.WebAuthnController;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
@@ -61,8 +60,8 @@ public class WebAuthnManualTest {
                 .post("/register")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
+                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
+                .cookie("_quarkus_webauthn_username", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
@@ -89,8 +88,8 @@ public class WebAuthnManualTest {
                 .post("/login")
                 .then().statusCode(200)
                 .body(Matchers.is("OK"))
-                .cookie(WebAuthnController.CHALLENGE_COOKIE, Matchers.is(""))
-                .cookie(WebAuthnController.USERNAME_COOKIE, Matchers.is(""))
+                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
+                .cookie("_quarkus_webauthn_username", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we bumped the user

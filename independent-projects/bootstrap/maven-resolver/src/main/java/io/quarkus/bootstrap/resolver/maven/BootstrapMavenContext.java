@@ -79,8 +79,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.smallrye.beanbag.BeanSupplier;
-import io.smallrye.beanbag.Scope;
 import io.smallrye.beanbag.maven.MavenFactory;
 
 public class BootstrapMavenContext {
@@ -98,6 +96,7 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_SECURITY = "settings.security";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+    private static final String WARN_ON_FAILING_WS_MODULES_PROP = "quarkus.bootstrap.warn-on-failing-workspace-modules";
 
     private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
     private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
@@ -114,6 +113,11 @@ public class BootstrapMavenContext {
     private File userSettings;
     private File globalSettings;
     private Boolean offline;
+
+    // Typically, this property will not be enabled in Quarkus application development use-cases
+    // It was introduced to support use-cases of using the bootstrap resolver API beyond Quarkus application development
+    private Boolean warnOnFailingWorkspaceModules;
+
     private LocalWorkspace workspace;
     private LocalProject currentProject;
     private Settings settings;
@@ -132,6 +136,8 @@ public class BootstrapMavenContext {
     private Boolean effectiveModelBuilder;
     private Boolean wsModuleParentHierarchy;
     private SettingsDecrypter settingsDecrypter;
+    private final List<String> excludeSisuBeanPackages;
+    private final List<String> includeSisuBeanPackages;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -152,12 +158,16 @@ public class BootstrapMavenContext {
         this.artifactTransferLogging = config.artifactTransferLogging;
         this.localRepo = config.localRepo;
         this.offline = config.offline;
+        this.warnOnFailingWorkspaceModules = config.warnOnFailedWorkspaceModules;
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
         this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
+        this.settingsDecrypter = config.settingsDecrypter;
         this.cliOptions = config.cliOptions;
+        this.excludeSisuBeanPackages = config.getExcludeSisuBeanPackages();
+        this.includeSisuBeanPackages = config.getIncludeSisuBeanPackages();
         if (config.rootProjectDir == null) {
             final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
             if (topLevelBaseDirStr != null) {
@@ -271,6 +281,12 @@ public class BootstrapMavenContext {
                 : offline;
     }
 
+    public boolean isWarnOnFailingWorkspaceModules() {
+        return warnOnFailingWorkspaceModules == null
+                ? warnOnFailingWorkspaceModules = Boolean.getBoolean(WARN_ON_FAILING_WS_MODULES_PROP)
+                : warnOnFailingWorkspaceModules;
+    }
+
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
         if (repoSystem == null) {
             initRepoSystemAndManager();
@@ -297,7 +313,7 @@ public class BootstrapMavenContext {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
     }
 
-    private SettingsDecrypter getSettingsDecrypter() {
+    public SettingsDecrypter getSettingsDecrypter() {
         if (settingsDecrypter == null) {
             initRepoSystemAndManager();
         }
@@ -871,12 +887,15 @@ public class BootstrapMavenContext {
 
     protected MavenFactory configureMavenFactory() {
         return MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
-            builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
-                @Override
-                public ModelBuilder get(Scope scope) {
-                    return new MavenModelBuilder(BootstrapMavenContext.this);
-                }
-            }).setPriority(100).build();
+            for (var pkg : includeSisuBeanPackages) {
+                builder.includePackage(pkg);
+            }
+            for (var pkg : excludeSisuBeanPackages) {
+                builder.excludePackage(pkg);
+            }
+            builder.addBean(ModelBuilder.class)
+                    .setSupplier(scope -> new MavenModelBuilder(BootstrapMavenContext.this))
+                    .setPriority(100).build();
         });
     }
 
@@ -983,7 +1002,7 @@ public class BootstrapMavenContext {
         if (Files.isDirectory(path)) {
             path = path.resolve(LocalProject.POM_XML);
         }
-        return Files.exists(path) ? path : null;
+        return Files.exists(path) ? path.normalize() : null;
     }
 
     public Path getCurrentProjectBaseDir() {

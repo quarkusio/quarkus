@@ -1,7 +1,10 @@
 package io.quarkus.it.resteasy.elytron;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.util.stream.Stream;
@@ -13,6 +16,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.AttributeType;
 import io.quarkus.test.security.SecurityAttribute;
 import io.quarkus.test.security.TestSecurity;
 
@@ -92,6 +96,50 @@ class TestSecurityTestCase {
                 .then()
                 .statusCode(200)
                 .body(is("foo=bar"));
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", roles = "user", attributes = {
+            @SecurityAttribute(key = "foo", value = "9223372036854775807", type = AttributeType.LONG) })
+    void testLongAttributes() {
+        given()
+                .when()
+                .get("/attributes")
+                .then()
+                .statusCode(200)
+                .body(is("foo=" + Long.MAX_VALUE));
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", roles = "user", attributes = {
+            @SecurityAttribute(key = "foo", value = "[\"A\",\"B\",\"C\"]", type = AttributeType.JSON_ARRAY) })
+    void testJsonArrayAttributes() {
+        given()
+                .when()
+                .get("/attributes")
+                .then()
+                .statusCode(200)
+                .body(is("foo=[\"A\",\"B\",\"C\"]"));
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", roles = "user", attributes = {
+            @SecurityAttribute(key = "foo", value = "\"A\",\"B\",\"C\"", type = AttributeType.STRING_SET) })
+    void testStringSetAttributes() {
+        given()
+                .when()
+                .get("/attributes")
+                .then()
+                .statusCode(200)
+                .body(startsWith("foo=["))
+                .and()
+                .body(endsWith("]"))
+                .and()
+                .body(containsString("\"A\""))
+                .and()
+                .body(containsString("\"B\""))
+                .and()
+                .body(containsString("\"C\""));
     }
 
     static Stream<Arguments> arrayParams() {

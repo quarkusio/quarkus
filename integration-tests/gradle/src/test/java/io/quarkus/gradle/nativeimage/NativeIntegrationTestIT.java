@@ -43,7 +43,7 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
         final File projectDir = getProjectDir("it-test-basic-project");
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
-                "-Dquarkus.package.add-runner-suffix=false");
+                "-Dquarkus.package.jar.add-runner-suffix=false");
         soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
         soft.assertThat(projectDir.toPath().resolve("build/code-with-quarkus-1.0.0-SNAPSHOT")).isRegularFile()
                 .isExecutable();

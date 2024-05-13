@@ -256,7 +256,7 @@ converted default value. However, when the property is explicitly empty, the def
 [source,properties]
 ----
 # missing value, optional property
-greeting.name =
+greeting.name=
 ----
 
 In this case, since `greeting.name` was configured to be `Optional*` up above, the corresponding property value will
@@ -268,7 +268,7 @@ On the other hand, this example:
 [source,properties]
 ----
 # missing value, non-optional
-greeting.suffix =
+greeting.suffix=
 ----
 
 will result in a `java.util.NoSuchElementException: SRCFG02004: Required property greeting.message not found` on
@@ -341,6 +341,7 @@ With the `dev` profile enabled, the property `bar` has the value `hallo`, but th
 `bonjour`. If the `prod` profile is enabled, `bar` has the value `hello` (as there is no specific value for the `prod`
 profile), and `baz` the value `bonjour`.
 
+[[default-profiles]]
 === Default Profiles
 
 By default, Quarkus provides three profiles, that activate automatically in certain conditions:
@@ -397,6 +398,9 @@ Properties in the profile aware file have priority over profile aware properties
 
 [WARNING]
 ====
+Do not use profile aware files to set `quarkus.profile` or `quarkus.test.profile`. This will not work because the
+profile is required in advance to load the profile aware files.
+
 A profile aware file is only loaded if the unprofiled `application.properties` is also available in the same location
 and the file extension matches between the files. This is required to keep a consistent loading order and pair all the
 resources together.
@@ -696,7 +700,7 @@ Setting `quarkus.config-tracking.enabled` to `true` will enable a configuration 
 
 The `prod` part of the `quarkus-prod-config-dump` file name refers to the Quarkus build mode, indicating that the dump was taken for the production build.
 
-The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Gradle Enterprise Build Cache]) whether the application binary has to be re-built.
+The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Develocity Build Cache]) whether the application binary has to be re-built.
 
 ==== Filtering configuration options
 
@@ -737,6 +741,11 @@ Maven projects could add the following goal to their `quarkus-maven-plugin` conf
 
 The `track-config-changes` goal looks for `${project.basedir}/.quarkus/quarkus-prod-config-dump` (file name and directory are configurable) and, if the file already exists, checks whether the values stored in the config dump have changed.
 It will log the changed options and save the current values of each of the options present in `${project.basedir}/.quarkus/quarkus-prod-config-dump` in `${project.basedir}/target/quarkus-prod-config.check` (the target file name and location can be configured). If the build time configuration has not changed since the last build both `${project.basedir}/.quarkus/quarkus-prod-config-dump` and `${project.basedir}/.quarkus/quarkus-prod-config-dump` will be identical.
+
+==== Dump Quarkus application dependencies
+
+In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies, along with their checksums (Adler32). This file could be used to check whether Quarkus build classpath has changed since the previous run.
+By default, the dependency checksums will be stored under `target/quarkus-prod-dependency-checksums.txt` file. A different location could be configured using plugin parameters.
 
 ==== Dump current build configuration when the recorded configuration isn't found
 

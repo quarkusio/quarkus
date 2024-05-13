@@ -48,6 +48,7 @@ import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.hibernate.query.criteria.JpaCriteriaInsert;
 import org.hibernate.query.criteria.JpaCriteriaInsertSelect;
 import org.hibernate.stat.SessionStatistics;
 
@@ -1311,6 +1312,14 @@ public class TransactionScopedSession implements Session {
 
     @Override
     public MutationQuery createMutationQuery(JpaCriteriaInsertSelect insertSelect) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.createMutationQuery(insertSelect);
+        }
+    }
+
+    @Override
+    public MutationQuery createMutationQuery(JpaCriteriaInsert insertSelect) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.session.createMutationQuery(insertSelect);

@@ -1,18 +1,20 @@
 package io.quarkus.oidc.token.propagation.reactive;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Build time configuration for OIDC Token Propagation Reactive.
  */
+@ConfigMapping(prefix = "quarkus.rest-client-oidc-token-propagation")
 @ConfigRoot
-public class OidcTokenPropagationReactiveBuildTimeConfig {
+public interface OidcTokenPropagationReactiveBuildTimeConfig {
     /**
      * If the OIDC Token Reactive Propagation is enabled.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Whether the token propagation is enabled during the `SecurityIdentity` augmentation.
@@ -25,6 +27,6 @@ public class OidcTokenPropagationReactiveBuildTimeConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabledDuringAuthentication;
+    @WithDefault("false")
+    boolean enabledDuringAuthentication();
 }

@@ -27,7 +27,7 @@ This guide will help you with:
 
 * Bootstrapping a reactive CRUD application with Quarkus
 * Using Hibernate Reactive with Panache to interact with a database in a reactive fashion
-* Using RESTEasy Reactive to implement HTTP API while enforcing the reactive principle
+* Using Quarkus REST (formerly RESTEasy Reactive) to implement HTTP API while enforcing the reactive principle
 * Packaging and Running the application
 
 == Prerequisites
@@ -103,7 +103,7 @@ While we recommend you to follow the step-by-step instructions, you can find the
 
 First, go to https://code.quarkus.io[code.quarkus.io] and select the following extensions:
 
-1. RESTEasy Reactive Jackson
+1. Quarkus REST Jackson
 2. Hibernate Reactive with Panache
 3. Reactive PostgreSQL client
 
@@ -213,7 +213,7 @@ Open http://localhost:8080/fruits to invoke this method:
 ----
 
 We get the expected JSON array.
-RESTEasy Reactive automatically maps the list into a JSON Array, except if instructed otherwise.
+Quarkus REST automatically maps the list into a JSON Array, except if instructed otherwise.
 
 Look at the return type; it returns a `Uni` of `List<Fruit>`.
 `Uni` is an asynchronous type.

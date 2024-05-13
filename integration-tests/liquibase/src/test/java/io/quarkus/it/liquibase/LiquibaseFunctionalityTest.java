@@ -18,6 +18,13 @@ public class LiquibaseFunctionalityTest {
         doTestLiquibaseQuarkusFunctionality(isIncludeAllExpectedToWork());
     }
 
+    @Test
+    @DisplayName("Migrates a schema correctly using dedicated username and password from config properties")
+    public void testLiquibaseUsingDedicatedUsernameAndPassword() {
+        when().get("/liquibase/updateWithDedicatedUser").then().body(is(
+                "ADMIN"));
+    }
+
     static void doTestLiquibaseQuarkusFunctionality(boolean isIncludeAllExpectedToWork) {
         when()
                 .get("/liquibase/update")

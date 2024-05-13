@@ -33,7 +33,7 @@ public interface ArcContainer {
     /**
      *
      * @param scopeType
-     * @return the matching context objects, never null
+     * @return immutable list of the matching context objects, never null
      */
     List<InjectableContext> getContexts(Class<? extends Annotation> scopeType);
 
@@ -230,4 +230,12 @@ public interface ArcContainer {
      * @return true is strict mode is enabled, false otherwise.
      */
     boolean strictCompatibility();
+
+    /**
+     *
+     * @param eventType
+     * @param eventQualifiers
+     * @return an ordered list of observer methods
+     */
+    <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType, Annotation... eventQualifiers);
 }

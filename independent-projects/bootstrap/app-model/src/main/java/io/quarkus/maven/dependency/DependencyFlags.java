@@ -45,5 +45,4 @@ public interface DependencyFlags {
      */
     int COMPILE_ONLY                         = 0b01000000000000;
     /* @formatter:on */
-
 }

@@ -9,12 +9,14 @@ import '@vaadin/details';
 import '@vaadin/tabs';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
-import 'qui-code-block';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@quarkus-webcomponents/codeblock';
 
 /**
  * This component shows the Kafka Streams Topology
  */
-export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
+export class QwcKafkaStreamsTopology extends observeState(QwcHotReloadElement) {
 
     jsonRpc = new JsonRpc(this);
 
@@ -132,15 +134,15 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
     }
 
     _selectDescribeTab() {
-      this._tabContent = html`<qui-code-block mode='text' content='${this._topology.describe}' class="codeBlock"></qui-code-block>`;
+      this._tabContent = html`<qui-code-block theme='${themeState.theme.name}' content='${this._topology.describe}' class="codeBlock"></qui-code-block>`;
     }
 
     _selectGraphvizTab() {
-      this._tabContent = html`<qui-code-block mode='gv' content='${this._topology.graphviz}' class="codeBlock"></qui-code-block>`;
+      this._tabContent = html`<qui-code-block mode='gv' theme="${themeState.theme.name}" content='${this._topology.graphviz}' class="codeBlock"></qui-code-block>`;
     }
 
     _selectMermaidTab() {
-      this._tabContent = html`<qui-code-block mode='mermaid' content='${this._topology.mermaid}' class="codeBlock"></qui-code-block>`;
+      this._tabContent = html`<qui-code-block mode='mermaid' theme="${themeState.theme.name}" content='${this._topology.mermaid}' class="codeBlock"></qui-code-block>`;
     }
 }
 customElements.define('qwc-kafka-streams-topology', QwcKafkaStreamsTopology);

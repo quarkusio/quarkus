@@ -21,7 +21,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Split package (same package coming from multiple app archives) is considered a bad practice and
@@ -38,16 +38,6 @@ import io.quarkus.maven.dependency.ArtifactKey;
 public class SplitPackageProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SplitPackageProcessor.class);
-
-    private static final Predicate<String> IGNORE_PACKAGE = new Predicate<>() {
-
-        @Override
-        public boolean test(String packageName) {
-            // Remove the elements from this list when the original issue is fixed
-            // so that we can detect further issues.
-            return packageName.startsWith("io.fabric8.kubernetes");
-        }
-    };
 
     @BuildStep
     void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem,
@@ -82,9 +72,6 @@ public class SplitPackageProcessor {
         // - "com.me.app.sub" found in [archiveA, archiveB]
         StringBuilder splitPackagesWarning = new StringBuilder();
         for (String packageName : packageToArchiveMap.keySet()) {
-            if (IGNORE_PACKAGE.test(packageName)) {
-                continue;
-            }
 
             // skip packages based on pre-built predicates
             boolean skipEvaluation = false;
@@ -105,9 +92,9 @@ public class SplitPackageProcessor {
                 Set<String> splitPackages = new TreeSet<>();
                 while (iterator.hasNext()) {
                     final ApplicationArchive next = iterator.next();
-                    final ArtifactKey a = next.getKey();
+                    ResolvedDependency dep = next.getResolvedDependency();
                     // can be null for instance in test mode where all application classes go under target/classes
-                    if (a == null) {
+                    if (dep == null) {
                         if (archivesBuildItem.getRootArchive().equals(next)) {
                             // the archive we found is a root archive, e.g. application classes
                             splitPackages.add("application classes");
@@ -122,8 +109,8 @@ public class SplitPackageProcessor {
                             }
                         }
                     } else {
-                        // Generates an app archive information in form of groupId:artifactId:classifier:type
-                        splitPackages.add(a.toString());
+                        // Generates an app archive information in form of groupId:artifactId[:classifier][:type]:version
+                        splitPackages.add(dep.toCompactCoords());
                     }
                 }
                 splitPackagesWarning.append(splitPackages.stream().collect(Collectors.joining(", ", "[", "]")));

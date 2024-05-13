@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormDataPart;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
@@ -83,6 +84,11 @@ public abstract class ClientMultipartForm {
 
     public ClientMultipartForm multiAsTextFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
         parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, true));
+        return this;
+    }
+
+    public ClientMultipartForm fileUpload(FileUpload fileUpload) {
+        binaryFileUpload(fileUpload.name(), fileUpload.fileName(), fileUpload.filePath().toString(), fileUpload.contentType());
         return this;
     }
 

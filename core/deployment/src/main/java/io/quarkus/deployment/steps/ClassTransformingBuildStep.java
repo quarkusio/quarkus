@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -94,7 +96,6 @@ public class ClassTransformingBuildStep {
                 bytecodeTransformerBuildItems.size());
         Set<String> noConstScanning = new HashSet<>();
         Map<String, Set<String>> constScanning = new HashMap<>();
-        Set<String> eager = new HashSet<>();
         Set<String> nonCacheable = new HashSet<>();
         Map<String, Integer> classReaderOptions = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
@@ -105,9 +106,6 @@ public class ClassTransformingBuildStep {
             } else {
                 constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
                         .addAll(i.getRequireConstPoolEntry());
-            }
-            if (i.isEager()) {
-                eager.add(i.getClassToTransform());
             }
             if (!i.isCacheable()) {
                 nonCacheable.add(i.getClassToTransform());
@@ -149,7 +147,7 @@ public class ClassTransformingBuildStep {
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(transformCl);
-                    String classFileName = className.replace('.', '/') + ".class";
+                    String classFileName = fromClassNameToResourceName(className);
                     List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
                     if (!archives.isEmpty()) {
                         ClassPathElement classPathElement = archives.get(0);
@@ -164,7 +162,7 @@ public class ClassTransformingBuildStep {
                                 classReaderOptions.getOrDefault(className, 0));
                         TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                 className, data,
-                                classFileName, eager.contains(className));
+                                classFileName);
                         return transformedClass.getData();
                     } else {
                         return originalBytes;
@@ -199,7 +197,7 @@ public class ClassTransformingBuildStep {
                     }
                 }
             }
-            String classFileName = className.replace('.', '/') + ".class";
+            String classFileName = fromClassNameToResourceName(className);
             List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
             if (!archives.isEmpty()) {
                 ClassPathElement classPathElement = archives.get(0);
@@ -241,7 +239,7 @@ public class ClassTransformingBuildStep {
                                     classReaderOptions.getOrDefault(className, 0));
                             TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
                                     className, data,
-                                    classFileName, eager.contains(className));
+                                    classFileName);
                             if (cacheable && launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
                                     && classData != null) {
                                 transformedClassesCache.put(className, transformedClass);
@@ -279,7 +277,7 @@ public class ClassTransformingBuildStep {
             }
         }
 
-        if (packageConfig.writeTransformedBytecodeToBuildOutput && (launchMode.getLaunchMode() == LaunchMode.NORMAL)) {
+        if (packageConfig.writeTransformedBytecodeToBuildOutput() && (launchMode.getLaunchMode() == LaunchMode.NORMAL)) {
             // the idea here is to write the transformed classes into the build tool's output directory to make core coverage work
 
             for (Path path : archiveRoot.getRootDirectories()) {
@@ -376,7 +374,7 @@ public class ClassTransformingBuildStep {
             if (!debugPath.exists()) {
                 debugPath.mkdir();
             }
-            File classFile = new File(debugPath, className.replace('.', '/') + ".class");
+            File classFile = new File(debugPath, fromClassNameToResourceName(className));
             classFile.getParentFile().mkdirs();
             try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                 classWriter.write(data);

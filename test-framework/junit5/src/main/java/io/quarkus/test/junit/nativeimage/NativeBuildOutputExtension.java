@@ -56,15 +56,17 @@ public class NativeBuildOutputExtension implements BeforeAllCallback {
 
         Properties properties = getProperties(propertiesFileName);
 
-        properties.forEach((key, value) -> {
-            if (((String) key).endsWith(".tolerance")) {
+        Assertions.assertAll(properties.entrySet().stream().map(entry -> () -> {
+            var key = (String) entry.getKey();
+            var value = (String) entry.getValue();
+            if (key.endsWith(".tolerance")) {
                 return;
             }
-            String[] keyParts = ((String) key).split("\\.");
+            String[] keyParts = key.split("\\.");
             String tolerance = properties.getProperty(key + ".tolerance");
             assert tolerance != null : "tolerance not defined for " + key;
-            assertValueWithinRange(Integer.parseInt((String) value), Integer.parseInt(tolerance), keyParts);
-        });
+            assertValueWithinRange(Integer.parseInt(value), Integer.parseInt(tolerance), keyParts);
+        }));
     }
 
     private Properties getProperties(String propertiesFileName) {

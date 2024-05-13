@@ -10,9 +10,6 @@ import java.util.Map;
 import java.util.concurrent.Flow.Publisher;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
@@ -51,8 +48,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
-        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> staticCustomizers) {
-            super(requestContext, staticCustomizers);
+        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> staticCustomizers,
+                long demand) {
+            super(requestContext, staticCustomizers, demand);
         }
 
         @Override
@@ -63,67 +61,43 @@ public class PublisherResponseHandler implements ServerRestHandler {
             } else {
                 event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
             }
-            SseUtil.send(requestContext, event, staticCustomizers).whenComplete(new BiConsumer<Object, Throwable>() {
-                @Override
-                public void accept(Object v, Throwable t) {
-                    if (t != null) {
-                        // need to cancel because the exception didn't come from the Multi
-                        subscription.cancel();
-                        handleException(requestContext, t);
-                    } else {
-                        // send in the next item
-                        subscription.request(1);
-                    }
+            SseUtil.send(requestContext, event, staticCustomizers).whenComplete((v, t) -> {
+                if (t != null) {
+                    // need to cancel because the exception didn't come from the Multi
+                    subscription.cancel();
+                    handleException(requestContext, t);
+                } else {
+                    // send in the next item
+                    subscription.request(demand);
                 }
             });
         }
     }
 
-    private static class ChunkedStreamingMultiSubscriber extends StreamingMultiSubscriber {
+    @SuppressWarnings("rawtypes")
+    private static class StreamingMultiSubscriber extends AbstractMultiSubscriber {
 
         private static final String LINE_SEPARATOR = "\n";
 
-        private boolean isFirstItem = true;
-
-        ChunkedStreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext,
-                List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher, boolean json) {
-            super(requestContext, staticCustomizers, publisher, json);
-        }
-
-        @Override
-        protected String messagePrefix() {
-            // When message is chunked, we don't need to add prefixes at first
-            return null;
-        }
-
-        @Override
-        protected String messageSuffix() {
-            return LINE_SEPARATOR;
-        }
-
-        @Override
-        protected String onCompleteText() {
-            // When message is chunked, we don't need to add text at the end of the messages
-            return null;
-        }
-    }
-
-    private static class StreamingMultiSubscriber extends AbstractMultiSubscriber {
+        private final Publisher publisher;
+        private final boolean json;
+        private final boolean encodeAsJsonArray;
 
         // Huge hack to stream valid json
-        private boolean json;
-        private String nextJsonPrefix;
-        private boolean hadItem;
-
-        private final Publisher publisher;
+        private volatile String nextJsonPrefix;
+        private volatile boolean hadItem;
 
         StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext,
                 List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher,
-                boolean json) {
-            super(requestContext, staticCustomizers);
+                boolean json, long demand, boolean encodeAsJsonArray) {
+            super(requestContext, staticCustomizers, demand);
             this.publisher = publisher;
             this.json = json;
-            this.nextJsonPrefix = "[";
+            // encodeAsJsonArray == true means JSON array "encoding"
+            // encodeAsJsonArray == false mean no prefix, no suffix and LF as message separator,
+            //     also used for/same as chunked-streaming
+            this.encodeAsJsonArray = encodeAsJsonArray;
+            this.nextJsonPrefix = encodeAsJsonArray ? "[" : null;
             this.hadItem = false;
         }
 
@@ -132,33 +106,29 @@ public class PublisherResponseHandler implements ServerRestHandler {
             List<StreamingResponseCustomizer> customizers = determineCustomizers(!hadItem);
             hadItem = true;
             StreamingUtil.send(requestContext, customizers, item, messagePrefix(), messageSuffix())
-                    .handle(new BiFunction<Object, Throwable, Object>() {
-                        @Override
-                        public Object apply(Object v, Throwable t) {
-                            if (t != null) {
-                                // need to cancel because the exception didn't come from the Multi
-                                try {
-                                    subscription.cancel();
-                                } catch (Throwable t2) {
-                                    t2.printStackTrace();
-                                }
-                                handleException(requestContext, t);
-                            } else {
-                                // next item will need this prefix if json
-                                nextJsonPrefix = ",";
-                                // send in the next item
-                                subscription.request(1);
+                    .handle((v, t) -> {
+                        if (t != null) {
+                            // need to cancel because the exception didn't come from the Multi
+                            try {
+                                subscription.cancel();
+                            } catch (Throwable t2) {
+                                t2.printStackTrace();
                             }
-                            return null;
+                            handleException(requestContext, t);
+                        } else {
+                            // next item will need this prefix if json
+                            nextJsonPrefix = encodeAsJsonArray ? "," : null;
+                            // send in the next item
+                            subscription.request(demand);
                         }
+                        return null;
                     });
         }
 
         private List<StreamingResponseCustomizer> determineCustomizers(boolean isFirst) {
             // we only need to obtain the customizers from the Publisher if it's the first time we are sending data and the Publisher has customizable data
             // at this point no matter the type of RestMulti we can safely obtain the headers and status
-            if (isFirst && (publisher instanceof RestMulti)) {
-                RestMulti<?> restMulti = (RestMulti<?>) publisher;
+            if (isFirst && (publisher instanceof RestMulti<?> restMulti)) {
                 Map<String, List<String>> headers = restMulti.getHeaders();
                 Integer status = restMulti.getStatus();
                 if (headers.isEmpty() && (status == null)) {
@@ -181,7 +151,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onComplete() {
             if (!hadItem) {
-                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), staticCustomizers);
+                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), this.determineCustomizers(true));
             }
             if (json) {
                 String postfix = onCompleteText();
@@ -201,6 +171,10 @@ public class PublisherResponseHandler implements ServerRestHandler {
         }
 
         protected String onCompleteText() {
+            if (!encodeAsJsonArray) {
+                return null;
+            }
+
             String postfix;
             // check if we never sent the open prefix
             if (!hadItem) {
@@ -218,20 +192,23 @@ public class PublisherResponseHandler implements ServerRestHandler {
         }
 
         protected String messageSuffix() {
-            return null;
+            return !encodeAsJsonArray ? LINE_SEPARATOR : null;
         }
     }
 
     static abstract class AbstractMultiSubscriber implements Subscriber<Object> {
-        protected Subscription subscription;
-        protected ResteasyReactiveRequestContext requestContext;
-        protected List<StreamingResponseCustomizer> staticCustomizers;
-        private boolean weClosed = false;
+        protected final ResteasyReactiveRequestContext requestContext;
+        protected final List<StreamingResponseCustomizer> staticCustomizers;
+        protected final long demand;
+
+        protected volatile Subscription subscription;
+        private volatile boolean weClosed = false;
 
         AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext,
-                List<StreamingResponseCustomizer> staticCustomizers) {
+                List<StreamingResponseCustomizer> staticCustomizers, long demand) {
             this.requestContext = requestContext;
             this.staticCustomizers = staticCustomizers;
+            this.demand = demand;
             // let's make sure we never restart by accident, also make sure we're not marked as completed
             requestContext.restart(AWOL, true);
             requestContext.serverResponse().addCloseHandler(() -> {
@@ -245,7 +222,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         public void onSubscribe(Subscription s) {
             this.subscription = s;
             // initially ask for one item
-            s.request(1);
+            s.request(demand);
         }
 
         @Override
@@ -279,13 +256,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
     private static final Logger log = Logger.getLogger(PublisherResponseHandler.class);
 
     private static final ServerRestHandler[] AWOL = new ServerRestHandler[] {
-            new ServerRestHandler() {
-
-                @Override
-                public void handle(ResteasyReactiveRequestContext requestContext)
-                        throws Exception {
-                    throw new IllegalStateException("FAILURE: should never be restarted");
-                }
+            requestContext -> {
+                throw new IllegalStateException("FAILURE: should never be restarted");
             }
     };
 
@@ -296,8 +268,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         if (requestContextResult instanceof org.reactivestreams.Publisher) {
             requestContextResult = AdaptersToFlow.publisher((org.reactivestreams.Publisher<?>) requestContextResult);
         }
-        if (requestContextResult instanceof Publisher) {
-            Publisher<?> result = (Publisher<?>) requestContextResult;
+        if (requestContextResult instanceof Publisher<?> result) {
             // FIXME: if we make a pretend Response and go through the normal route, we will get
             // media type negotiation and fixed entity writer set up, perhaps it's better than
             // cancelling the normal route?
@@ -310,7 +281,6 @@ public class PublisherResponseHandler implements ServerRestHandler {
                     throw new IllegalStateException(
                             "Negotiation or dynamic media type resolution for Multi is only supported when using 'org.jboss.resteasy.reactive.RestMulti'");
                 }
-
             }
             MediaType[] mediaTypes = produces.getSortedOriginalMediaTypes();
             if (mediaTypes.length != 1) {
@@ -343,24 +313,43 @@ public class PublisherResponseHandler implements ServerRestHandler {
     }
 
     private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new ChunkedStreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json));
+        long demand = 1L;
+        if (result instanceof RestMulti.SyncRestMulti) {
+            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+            demand = rest.getDemand();
+        }
+        result.subscribe(
+                new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json, demand, false));
     }
 
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json));
+        long demand = 1L;
+        boolean encodeAsJsonArray = true;
+        if (result instanceof RestMulti.SyncRestMulti) {
+            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+            demand = rest.getDemand();
+            encodeAsJsonArray = rest.encodeAsJsonArray();
+        }
+        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json, demand,
+                encodeAsJsonArray));
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
+        long demand;
+        if (result instanceof RestMulti.SyncRestMulti) {
+            RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
+            demand = rest.getDemand();
+        } else {
+            demand = 1L;
+        }
+
         SseUtil.setHeaders(requestContext, requestContext.serverResponse(), streamingResponseCustomizers);
         requestContext.suspend();
-        requestContext.serverResponse().write(EMPTY_BUFFER, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) {
-                if (throwable == null) {
-                    result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers));
-                } else {
-                    requestContext.resume(throwable);
-                }
+        requestContext.serverResponse().write(EMPTY_BUFFER, throwable -> {
+            if (throwable == null) {
+                result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers, demand));
+            } else {
+                requestContext.resume(throwable);
             }
         });
     }

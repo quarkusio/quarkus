@@ -42,6 +42,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -58,7 +59,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
     public static final String INVOKED_METHOD_PARAMETERS_PROP = "io.quarkus.rest.client.invokedMethodParameters";
     public static final String DEFAULT_CONTENT_TYPE_PROP = "io.quarkus.rest.client.defaultContentType";
-    public static final String DEFAULT_USER_AGENT_VALUE = "Resteasy Reactive Client";
+    public static final String DEFAULT_USER_AGENT_VALUE = "Quarkus REST Client";
     private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     static final MediaType IGNORED_MEDIA_TYPE = new MediaType("ignored", "ignored");
@@ -167,6 +168,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return null;
     }
 
+    public Annotation[] getMethodDeclaredAnnotationsSafe() {
+        Method invokedMethod = getInvokedMethod();
+        if (invokedMethod != null) {
+            return invokedMethod.getDeclaredAnnotations();
+        }
+        return null;
+    }
+
     @Override
     protected Throwable unwrapException(Throwable t) {
         var res = super.unwrapException(t);
@@ -190,12 +199,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     @SuppressWarnings("unchecked")
     public <T> T readEntity(InputStream in,
-            GenericType<T> responseType, MediaType mediaType,
+            GenericType<T> responseType,
+            MediaType mediaType,
+            Annotation[] annotations,
             MultivaluedMap<String, Object> metadata)
             throws IOException {
         if (in == null)
             return null;
-        return (T) ClientSerialisers.invokeClientReader(null, responseType.getRawType(), responseType.getType(),
+        return (T) ClientSerialisers.invokeClientReader(annotations, responseType.getRawType(), responseType.getType(),
                 mediaType, properties, this, metadata, restClient.getClientContext().getSerialisers(), in,
                 getReaderInterceptors(), configuration);
     }
@@ -482,6 +493,15 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public boolean isFileUpload() {
         return entity != null && ((entity.getEntity() instanceof File) || (entity.getEntity() instanceof Path));
+    }
+
+    public boolean isInputStreamUpload() {
+        return entity != null && entity.getEntity() instanceof InputStream;
+    }
+
+    public boolean isMultiBufferUpload() {
+        // we don't check the generic because Multi<Buffer> is checked at build time
+        return entity != null && entity.getEntity() instanceof Multi;
     }
 
     public boolean isMultipart() {

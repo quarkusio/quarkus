@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - Jakarta CDI</name>
 
     <properties>
-        <version.cdi-tck>4.0.13</version.cdi-tck>
+        <version.cdi-tck>4.1.0</version.cdi-tck>
     </properties>
 
     <dependencies>
@@ -78,8 +78,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <org.jboss.cdi.tck.cdiLiteMode>true</org.jboss.cdi.tck.cdiLiteMode>
+                        <org.jboss.cdi.tck.cdiCoreMode>true</org.jboss.cdi.tck.cdiCoreMode>
                         <org.jboss.cdi.tck.libraryDirectory>${project.build.directory}/porting-pkg</org.jboss.cdi.tck.libraryDirectory>
+                        <quarkus.arc.optimize-contexts>false</quarkus.arc.optimize-contexts>
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                         <quarkus.arc.strict-compatibility>true</quarkus.arc.strict-compatibility>
                         <quarkus.arc.transform-unproxyable-classes>false</quarkus.arc.transform-unproxyable-classes>

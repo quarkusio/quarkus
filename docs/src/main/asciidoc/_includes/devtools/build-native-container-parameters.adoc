@@ -16,6 +16,6 @@ ifdef::devtools-wrapped[+]
 [source,bash,subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
 .Gradle
 ----
-./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true {build-additional-parameters}
+./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true {build-additional-parameters}
 ----
 endif::[]

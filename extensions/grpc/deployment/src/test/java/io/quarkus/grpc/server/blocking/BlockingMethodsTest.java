@@ -1,6 +1,8 @@
 package io.quarkus.grpc.server.blocking;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
 import java.util.Iterator;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.EmptyProtos;
 
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.testing.integration.Messages;
 import io.quarkus.grpc.GrpcClient;
@@ -38,7 +41,8 @@ public class BlockingMethodsTest {
                             .addPackage(EmptyProtos.class.getPackage())
                             .addPackage(Messages.class.getPackage())
                             .addPackage(BlockingTestServiceGrpc.class.getPackage())
-                            .addClasses(BlockingTestService.class, AssertHelper.class))
+                            .addClasses(BlockingTestService.class, AssertHelper.class,
+                                    io.quarkus.grpc.blocking.BlockingTestService.class))
             .withConfigurationResource("blocking-test-config.properties");
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -48,6 +52,9 @@ public class BlockingMethodsTest {
 
     @GrpcClient("blocking-test")
     MutinyBlockingTestServiceGrpc.MutinyBlockingTestServiceStub mutiny;
+
+    @GrpcClient("blocking-test")
+    io.quarkus.grpc.blocking.BlockingTestService client;
 
     @Test
     @Timeout(5)
@@ -79,6 +86,20 @@ public class BlockingMethodsTest {
         Messages.SimpleResponse response = service
                 .unaryCallBlocking(Messages.SimpleRequest.newBuilder().build());
         assertThat(response).isNotNull();
+    }
+
+    @Test
+    @Timeout(5)
+    public void testUnaryMethodBlockingClient() {
+        Messages.SimpleRequest request = Messages.SimpleRequest.newBuilder()
+                .setMsg("IllegalArgument")
+                .build();
+        try {
+            client.unaryCallBlocking(request).await().indefinitely();
+            fail(); // should get SRE ...
+        } catch (StatusRuntimeException e) {
+            assertEquals(Status.INVALID_ARGUMENT.getCode(), e.getStatus().getCode());
+        }
     }
 
     @Test

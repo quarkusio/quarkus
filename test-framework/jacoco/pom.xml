@@ -17,30 +17,4 @@
         <module>deployment</module>
         <module>runtime</module>
     </modules>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <!--
-                            For now, do not store the output of the maven-compiler-plugin as we generate the config doc.
-                            Ideally, we would register them as additional output but their organization is too messy for now.
-                            -->
-                            <plugins combine.children="append">
-                                <plugin>
-                                    <artifactId>maven-compiler-plugin</artifactId>
-                                    <outputs>
-                                        <notCacheableBecause>the extension config doc generation tool shares data across all extensions</notCacheableBecause>
-                                    </outputs>
-                                </plugin>
-                            </plugins>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>

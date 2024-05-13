@@ -21,16 +21,19 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
     private final Collection<io.quarkus.arc.processor.BeanInfo> allBeans;
     private final Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors;
     private final Collection<io.quarkus.arc.processor.ObserverInfo> allObservers;
+    private final io.quarkus.arc.processor.InvokerFactory invokerFactory;
     private final io.quarkus.arc.processor.AssignabilityCheck assignability;
 
     ExtensionPhaseRegistration(ExtensionInvoker invoker, IndexView beanArchiveIndex, SharedErrors errors,
             AllAnnotationOverlays annotationOverlays, Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
-            Collection<InterceptorInfo> allInterceptors, Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+            Collection<InterceptorInfo> allInterceptors, Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
+            io.quarkus.arc.processor.InvokerFactory invokerFactory) {
         super(ExtensionPhase.REGISTRATION, invoker, beanArchiveIndex, errors);
         this.annotationOverlays = annotationOverlays;
         this.allBeans = allBeans;
         this.allInterceptors = allInterceptors;
         this.allObservers = allObservers;
+        this.invokerFactory = invokerFactory;
         this.assignability = new io.quarkus.arc.processor.AssignabilityCheck(beanArchiveIndex, null);
     }
 
@@ -125,7 +128,9 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
 
     @Override
     Object argumentForExtensionMethod(ExtensionMethodParameter type, ExtensionMethod method) {
-        if (type == ExtensionMethodParameter.TYPES) {
+        if (type == ExtensionMethodParameter.INVOKER_FACTORY) {
+            return new InvokerFactoryImpl(invokerFactory);
+        } else if (type == ExtensionMethodParameter.TYPES) {
             return new TypesImpl(index, annotationOverlays);
         }
 

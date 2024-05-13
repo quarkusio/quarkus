@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: security,web
 :topics: security,authorization,http,rest
-:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-rest,io.quarkus:quarkus-resteasy
 
 Quarkus incorporates a pluggable web security layer.
 When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.
@@ -65,15 +65,41 @@ quarkus.http.auth.permission.roles1.policy=role-policy1
 ----
 <1> This permission references the default built-in `permit` policy to allow `GET` methods to `/public`.
 In this case, the demonstrated setting would not affect this example because this request is allowed anyway.
-<2> This permission references the built-in `deny` policy for `/forbidden`.
+<2> This permission references the built-in `deny` policy for both `/forbidden` and `/forbidden/` paths.
 It is an exact path match because it does not end with `*`.
 <3> This permission set references the previously defined policy.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
-[WARNING]
+[IMPORTANT]
 ====
-The exact path `/forbidden` in the example will not secure the `/forbidden/` path.
-It is necessary to add a new exact path for the `/forbidden/` path to ensure proper security coverage.
+The exact path pattern `/forbidden` in the example above also secures the `/forbidden/` path.
+This way, the `forbidden` endpoint in the example below is secured by the `deny1` permission.
+
+[source,java]
+----
+package org.acme.crud;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/forbidden")
+public class ForbiddenResource {
+    @GET
+    public String forbidden() { <1>
+        return "No!";
+    }
+}
+----
+<1> Both `/forbidden` and `/forbidden/` paths need to be secured in order to secure the `forbidden` endpoint.
+
+If you need to permit access to the `/forbidden/` path, please add new permission with more specific exact path like in the example below:
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=/forbidden/ <1>
+quarkus.http.auth.permission.permit1.policy=permit
+----
+<1> The `/forbidden/` path is not secured.
 ====
 
 [[custom-http-security-policy]]
@@ -361,15 +387,25 @@ For more information, see link:https://quarkus.io/blog/path-resolution-in-quarku
 === Map `SecurityIdentity` roles
 
 Winning role-based policy can map the `SecurityIdentity` roles to the deployment-specific roles.
-These roles are then applicable for endpoint authorization by using the @RolesAllowed annotation.
+These roles are then applicable for endpoint authorization by using the `@RolesAllowed` annotation.
 
 [source,properties]
 ----
 quarkus.http.auth.policy.admin-policy1.roles.admin=Admin1 <1>
-quarkus.http.auth.permission.roles1.paths=/*
+quarkus.http.auth.permission.roles1.paths=/* <2>
 quarkus.http.auth.permission.roles1.policy=admin-policy1
 ----
 <1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is secured, only authenticated HTTP requests are granted access.
+
+If all that you need is to map the `SecurityIdentity` roles to the deployment-specific roles regardless of a path, you can also do this:
+
+[source,properties]
+----
+quarkus.http.auth.roles-mapping.admin=Admin1 <1> <2>
+----
+<1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is not secured. You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
 
 === Shared permission checks
 

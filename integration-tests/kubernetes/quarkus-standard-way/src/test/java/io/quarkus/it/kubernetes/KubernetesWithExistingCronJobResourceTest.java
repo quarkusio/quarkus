@@ -72,9 +72,7 @@ public class KubernetesWithExistingCronJobResourceTest {
                             });
                         });
                     });
-                    assertThat(jobSpec.getSelector()).satisfies(ls -> {
-                        assertThat(ls.getMatchLabels()).containsEntry("app.kubernetes.io/name", APP_NAME);
-                    });
+                    assertThat(jobSpec.getSelector()).isEqualTo(null);
                 });
             });
         });

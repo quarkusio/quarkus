@@ -739,19 +739,9 @@ Depending on your developer API subscription level, some providers may enforce a
 
 It may not be a problem when Quarkus fetches public verification keys from OIDC-compliant providers like the <<google>> provider and keeps verifying the user session with these keys locally. However, for pure OAuth2 providers where only an access token is available and which has to be verified indirectly by requesting UserInfo from the provider endpoint on every request done by an already authenticated user, it can become a problem.
 
-In such cases consider xref:security-oidc-bearer-token-authentication#token-introspection-userinfo-cache[caching UserInfo], using either a default or custom cache implementation or even embedding UserInfo in an internally generated ID token which is encrypted by default, for example:
+Therefore, UserInfo is embedded in an internally generated ID token and is encrypted in the session cookie. You can disable it with `quarkus.oidc.cache-user-info-in-idtoken=false`.
 
-[source,properties]
-----
-quarkus.oidc.provider=x
-quarkus.oidc.client-id=<Client ID>
-quarkus.oidc.credentials.secret=<Secret>
-quarkus.oidc.authentication.extra-params.scope=tweet.write
-quarkus.rest-client.twitter-client.url=https://api.twitter.com/2
-
-quarkus.oidc.cache-user-info-in-idtoken=true <1>
-----
-<1> Cache UserInfo by embedding it in the internally generated ID token
+Alternatively, use a default or custom UserInfo cache provider, please see the xref:security-oidc-bearer-token-authentication#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 == References
 

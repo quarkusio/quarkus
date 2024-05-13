@@ -22,19 +22,6 @@
         <classes>
             <!-- === exclusions from the canonical exclusion list in the CDI TCK === -->
 
-            <!-- https://github.com/jakartaee/cdi-tck/issues/453 -->
-            <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
-                <methods>
-                    <exclude name="testDestroyForSameCreationalContextOnly"/>
-                </methods>
-            </class>
-
-            <!-- https://github.com/jakartaee/cdi-tck/issues/485 -->
-            <class name="org.jboss.cdi.tck.tests.definition.bean.types.ManagedBeanTypesTest">
-                <methods>
-                    <exclude name=".*"/>
-                </methods>
-            </class>
         </classes>
     </test>
 </suite>

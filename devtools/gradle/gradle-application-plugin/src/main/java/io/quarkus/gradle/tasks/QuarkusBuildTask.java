@@ -29,6 +29,7 @@ import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.maven.dependency.GACTV;
 import io.smallrye.config.Expressions;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
@@ -64,8 +65,20 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         return extension().baseConfig().cachingRelevantProperties(vars.get());
     }
 
-    PackageConfig.BuiltInType packageType() {
-        return extension().baseConfig().packageType();
+    PackageConfig.JarConfig.JarType jarType() {
+        return extension().baseConfig().jarType();
+    }
+
+    boolean jarEnabled() {
+        return extension().baseConfig().packageConfig().jar().enabled();
+    }
+
+    boolean nativeEnabled() {
+        return extension().baseConfig().nativeConfig().enabled();
+    }
+
+    boolean nativeSourcesOnly() {
+        return extension().baseConfig().nativeConfig().sourcesOnly();
     }
 
     Path gradleBuildDir() {
@@ -131,17 +144,17 @@ abstract class QuarkusBuildTask extends QuarkusTask {
 
     String runnerBaseName() {
         BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().outputName.orElseGet(() -> extension().finalName());
+        return baseConfig.packageConfig().outputName().orElseGet(() -> extension().finalName());
     }
 
     String outputDirectory() {
         BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().outputDirectory.orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY);
+        return baseConfig.packageConfig().outputDirectory().map(Path::toString).orElse(QuarkusPlugin.DEFAULT_OUTPUT_DIRECTORY);
     }
 
     private String runnerSuffix() {
         BaseConfig baseConfig = extension().baseConfig();
-        return baseConfig.packageConfig().getRunnerSuffix();
+        return baseConfig.packageConfig().computedRunnerSuffix();
     }
 
     ApplicationModel resolveAppModelForBuild() {
@@ -170,11 +183,19 @@ abstract class QuarkusBuildTask extends QuarkusTask {
      * <li>populate the
      * </ol>
      */
+    @SuppressWarnings("deprecation") // legacy JAR
     void generateBuild() {
         Path buildDir = gradleBuildDir();
         Path genDir = genBuildDir();
-        PackageConfig.BuiltInType packageType = packageType();
-        getLogger().info("Building Quarkus app for package type {} in {}", packageType, genDir);
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Building Quarkus app for native (sources only) packaging in {}", genDir);
+            } else {
+                getLogger().info("Building Quarkus app for native packaging in {}", genDir);
+            }
+        } else {
+            getLogger().info("Building Quarkus app for JAR type {} in {}", jarType(), genDir);
+        }
 
         // Need to delete app-cds.jsa specially, because it's usually read-only and Gradle's delete file-system
         // operation doesn't delete "read only" files :(
@@ -185,52 +206,57 @@ abstract class QuarkusBuildTask extends QuarkusTask {
             delete.delete(genDir);
 
             // Delete directories inside Gradle's build/ dir that are going to be populated by the Quarkus build.
-            switch (packageType) {
-                case JAR:
-                case FAST_JAR:
-                    delete.delete(buildDir.resolve(nativeImageSourceJarDirName()));
-                    // fall through
-                case NATIVE:
-                case NATIVE_SOURCES:
-                    delete.delete(fastJar());
-                    break;
-                case LEGACY_JAR:
-                case LEGACY:
-                    delete.delete(buildDir.resolve("lib"));
-                    break;
-                case MUTABLE_JAR:
-                case UBER_JAR:
-                    break;
-                default:
-                    throw new GradleException("Unsupported package type " + packageType);
-            }
-        });
-
-        ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = new HashMap<>();
-        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
-        Expressions.withoutExpansion(() -> {
-            for (Map.Entry<String, String> entry : effectiveConfig.configMap().entrySet()) {
-                if (entry.getKey().startsWith("quarkus.")) {
-                    configMap.put(entry.getKey(), effectiveConfig.config().getRawValue(entry.getKey()));
+            if (nativeEnabled()) {
+                if (jarEnabled()) {
+                    throw QuarkusBuild.nativeAndJar();
+                }
+                delete.delete(fastJar());
+            } else if (jarEnabled()) {
+                switch (jarType()) {
+                    case FAST_JAR -> {
+                        delete.delete(buildDir.resolve(nativeImageSourceJarDirName()));
+                        delete.delete(fastJar());
+                    }
+                    case LEGACY_JAR -> delete.delete(buildDir.resolve("lib"));
+                    case MUTABLE_JAR, UBER_JAR -> {
+                    }
                 }
             }
         });
 
-        getLogger().info("Starting Quarkus application build for package type {}", packageType);
+        ApplicationModel appModel = resolveAppModelForBuild();
+        SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
+        Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
+            Map<String, String> values = new HashMap<>();
+            for (String key : config.getMapKeys("quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
+            return values;
+        });
+
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Starting Quarkus application build for native (sources only) packaging");
+            } else {
+                getLogger().info("Starting Quarkus application build for native packaging");
+            }
+        } else {
+            getLogger().info("Starting Quarkus application build for JAR type {}", jarType());
+        }
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
-                    configMap.entrySet().stream()
+                    quarkusProperties.entrySet().stream()
                             .map(Object::toString)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
+        WorkQueue workQueue = workQueue(quarkusProperties, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(extension().buildSystemProperties(appModel.getAppArtifact()));
+            params.getBuildSystemProperties()
+                    .putAll(extension().buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);
@@ -244,31 +270,35 @@ abstract class QuarkusBuildTask extends QuarkusTask {
             copy.from(buildDir);
             copy.into(genDir);
             copy.eachFile(new CopyActionDeleteNonWriteableTarget(genDir));
-            switch (packageType) {
-                case NATIVE:
+            if (nativeEnabled()) {
+                if (jarEnabled()) {
+                    throw QuarkusBuild.nativeAndJar();
+                }
+                if (nativeSourcesOnly()) {
+                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                    copy.include(nativeImageSourceJarDirName() + "/**");
+                } else {
                     copy.include(nativeRunnerFileName());
                     copy.include(nativeImageSourceJarDirName() + "/**");
-                    // fall through
-                case JAR:
-                case FAST_JAR:
                     copy.include(outputDirectory() + "/**");
                     copy.include(QUARKUS_ARTIFACT_PROPERTIES);
-                    break;
-                case LEGACY_JAR:
-                case LEGACY:
-                    copy.include("lib/**");
-                    // fall through
-                case MUTABLE_JAR:
-                case UBER_JAR:
-                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
-                    copy.include(runnerJarFileName());
-                    break;
-                case NATIVE_SOURCES:
-                    copy.include(QUARKUS_ARTIFACT_PROPERTIES);
-                    copy.include(nativeImageSourceJarDirName() + "/**");
-                    break;
-                default:
-                    throw new GradleException("Unsupported package type " + packageType);
+                }
+            } else if (jarEnabled()) {
+                switch (jarType()) {
+                    case FAST_JAR -> {
+                        copy.include(outputDirectory() + "/**");
+                        copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                    }
+                    case LEGACY_JAR -> {
+                        copy.include("lib/**");
+                        copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                        copy.include(runnerJarFileName());
+                    }
+                    case MUTABLE_JAR, UBER_JAR -> {
+                        copy.include(QUARKUS_ARTIFACT_PROPERTIES);
+                        copy.include(runnerJarFileName());
+                    }
+                }
             }
         });
     }

@@ -1,9 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.CRONJOB;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
-import static io.quarkus.kubernetes.deployment.Constants.JOB;
-import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
+import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,19 +19,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class KubernetesConfig implements PlatformConfiguration {
-
-    public enum DeploymentResourceKind {
-        Deployment(DEPLOYMENT),
-        StatefulSet(STATEFULSET),
-        Job(JOB),
-        CronJob(CRONJOB);
-
-        final String kind;
-
-        DeploymentResourceKind(String kind) {
-            this.kind = kind;
-        }
-    }
 
     /**
      * The name of the group this component belongs too
@@ -59,7 +43,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * Supported values are 'StatefulSet', 'Job', 'CronJob' and 'Deployment' defaulting to the latter.
      */
     @ConfigItem
-    Optional<KubernetesConfig.DeploymentResourceKind> deploymentKind;
+    Optional<DeploymentResourceKind> deploymentKind;
 
     /**
      * The namespace the generated resources should belong to.
@@ -398,6 +382,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean idempotent;
 
     /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
+    /**
      * Optionally set directory generated kubernetes resources will be written to. Default is `target/kubernetes`.
      */
     @ConfigItem
@@ -616,6 +606,11 @@ public class KubernetesConfig implements PlatformConfiguration {
         return idempotent;
     }
 
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
+    }
+
     public DeployStrategy getDeployStrategy() {
         return deployStrategy;
     }
@@ -625,13 +620,12 @@ public class KubernetesConfig implements PlatformConfiguration {
         return rbac;
     }
 
-    public KubernetesConfig.DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
+    public DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
         if (deploymentKind.isPresent()) {
-            return deploymentKind.get();
+            return deploymentKind.filter(k -> k.isAvailalbleOn(KUBERNETES)).get();
         } else if (capabilities.isPresent(Capability.PICOCLI)) {
-            return KubernetesConfig.DeploymentResourceKind.Job;
+            return DeploymentResourceKind.Job;
         }
-
         return DeploymentResourceKind.Deployment;
     }
 

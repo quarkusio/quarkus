@@ -8,8 +8,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.runtime.BlockingOperationControl;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.ext.auth.webauthn.Authenticator;
@@ -39,18 +41,38 @@ public class WebAuthnAuthenticatorStorage {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private <T> Uni<T> runPotentiallyBlocking(Supplier<Uni<T>> supplier) {
+    private <T> Uni<T> runPotentiallyBlocking(Supplier<Uni<? extends T>> supplier) {
         if (BlockingOperationControl.isBlockingAllowed()
-                || !isBlocking(userProvider.getClass()))
-            return supplier.get();
+                || isNonBlocking(userProvider.getClass())) {
+            return (Uni<T>) supplier.get();
+        }
+        if (isRunOnVirtualThread(userProvider.getClass())) {
+            return Uni.createFrom().deferred(supplier).runSubscriptionOn(VirtualThreadsRecorder.getCurrent());
+        }
         // run it in a worker thread
         return vertx.executeBlocking(Uni.createFrom().deferred((Supplier) supplier));
     }
 
-    private boolean isBlocking(Class<?> klass) {
+    private boolean isNonBlocking(Class<?> klass) {
         do {
-            if (klass.isAnnotationPresent(Blocking.class))
+            if (klass.isAnnotationPresent(NonBlocking.class))
                 return true;
+            if (klass.isAnnotationPresent(Blocking.class))
+                return false;
+            if (klass.isAnnotationPresent(RunOnVirtualThread.class))
+                return false;
+            klass = klass.getSuperclass();
+        } while (klass != null);
+        // no information, assumed non-blocking
+        return true;
+    }
+
+    private boolean isRunOnVirtualThread(Class<?> klass) {
+        do {
+            if (klass.isAnnotationPresent(RunOnVirtualThread.class))
+                return true;
+            if (klass.isAnnotationPresent(Blocking.class))
+                return false;
             if (klass.isAnnotationPresent(NonBlocking.class))
                 return false;
             klass = klass.getSuperclass();

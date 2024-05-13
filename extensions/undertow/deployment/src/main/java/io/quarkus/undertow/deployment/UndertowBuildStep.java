@@ -61,6 +61,7 @@ import org.jboss.metadata.web.spec.AnnotationsMetaData;
 import org.jboss.metadata.web.spec.CookieConfigMetaData;
 import org.jboss.metadata.web.spec.DispatcherType;
 import org.jboss.metadata.web.spec.EmptyRoleSemanticType;
+import org.jboss.metadata.web.spec.ErrorPageMetaData;
 import org.jboss.metadata.web.spec.FilterMappingMetaData;
 import org.jboss.metadata.web.spec.FilterMetaData;
 import org.jboss.metadata.web.spec.FiltersMetaData;
@@ -550,7 +551,7 @@ public class UndertowBuildStep {
                 if (constraint.getAuthConstraint() == null) {
                     // no auth constraint means we permit the empty roles
                     securityConstraint.setEmptyRoleSemantic(PERMIT);
-                } else if (roleNames.size() == 1 && roleNames.contains("*")) {
+                } else if (roleNames.size() == 1 && (roleNames.contains("*") || roleNames.contains("**"))) {
                     securityConstraint.setEmptyRoleSemantic(AUTHENTICATE);
                 } else {
                     securityConstraint.addRolesAllowed(roleNames);
@@ -650,6 +651,16 @@ public class UndertowBuildStep {
 
             recorder.addServletContainerInitializer(deployment,
                     (Class<? extends ServletContainerInitializer>) context.classProxy(sci.sciClass), handlesTypes);
+        }
+        if (webMetaData.getErrorPages() != null) {
+            for (ErrorPageMetaData errorPage : webMetaData.getErrorPages()) {
+                if (errorPage.getErrorCode() != null && !errorPage.getErrorCode().isBlank()) {
+                    recorder.addErrorPage(deployment, errorPage.getLocation(), Integer.parseInt(errorPage.getErrorCode()));
+                } else if (errorPage.getExceptionType() != null && !errorPage.getExceptionType().isBlank()) {
+                    recorder.addErrorPage(deployment, errorPage.getLocation(),
+                            (Class<? extends Throwable>) context.classProxy(errorPage.getExceptionType()));
+                }
+            }
         }
         SessionConfigMetaData sessionConfig = webMetaData.getSessionConfig();
         if (sessionConfig != null) {

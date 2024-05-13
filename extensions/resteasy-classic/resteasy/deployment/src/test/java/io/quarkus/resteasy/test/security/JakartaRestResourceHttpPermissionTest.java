@@ -12,10 +12,12 @@ import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -33,23 +35,30 @@ public class JakartaRestResourceHttpPermissionTest {
             "quarkus.http.auth.permission.bar.policy=authenticated\n" +
             "quarkus.http.auth.permission.baz-fum-pub.paths=/api/baz/fum\n" +
             "quarkus.http.auth.permission.baz-fum-pub.policy=permit\n" +
+            "quarkus.http.auth.permission.baz-fum-deny.paths=/api/baz/fum/\n" +
+            "quarkus.http.auth.permission.baz-fum-deny.policy=authenticated\n" +
             "quarkus.http.auth.permission.baz-fum.paths=/api/baz/fum*\n" +
             "quarkus.http.auth.permission.baz-fum.policy=authenticated\n" +
             "quarkus.http.auth.permission.root.paths=/\n" +
             "quarkus.http.auth.permission.root.policy=authenticated\n" +
             "quarkus.http.auth.permission.dot.paths=dot,dot/\n" +
-            "quarkus.http.auth.permission.dot.policy=authenticated\n";
+            "quarkus.http.auth.permission.dot.policy=authenticated\n" +
+            "quarkus.http.auth.permission.jax-rs.paths=jax-rs\n" +
+            "quarkus.http.auth.permission.jax-rs.policy=admin-role\n" +
+            "quarkus.http.auth.policy.admin-role.roles-allowed=admin";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class,
-                            RootResource.class, PublicResource.class)
+                            RootResource.class, PublicResource.class, JaxRsResource.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles().add("test", "test", "test");
+        TestIdentityController.resetRoles()
+                .add("admin", "admin", "admin")
+                .add("test", "test", "test");
     }
 
     @TestHTTPResource
@@ -95,11 +104,32 @@ public class JakartaRestResourceHttpPermissionTest {
         assurePathAuthenticated(path, 404);
     }
 
+    @Test
+    public void testJaxRsRolesHttpSecurityPolicy() {
+        // insufficient role, expected admin
+        assurePath("/jax-rs", 401);
+        assurePath("///jax-rs///", 401);
+
+        assurePath("/jax-rs", 200, "admin", true, "admin:admin");
+    }
+
     private static String getLastNonEmptySegmentContent(String path) {
         while (path.endsWith("/") || path.endsWith(".")) {
             path = path.substring(0, path.length() - 1);
         }
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    @Path("jax-rs")
+    public static class JaxRsResource {
+
+        @Inject
+        SecurityIdentity identity;
+
+        @GET
+        public String getPrincipalName() {
+            return identity.getPrincipal().getName();
+        }
     }
 
     @Path("/api")
@@ -199,13 +229,17 @@ public class JakartaRestResourceHttpPermissionTest {
     }
 
     private void assurePath(String path, int expectedStatusCode, String body, boolean auth) {
+        assurePath(path, expectedStatusCode, body, auth, "test:test");
+    }
+
+    private void assurePath(String path, int expectedStatusCode, String body, boolean auth, String credentials) {
         var httpClient = vertx.createHttpClient();
         try {
             httpClient
                     .request(HttpMethod.GET, url.getPort(), url.getHost(), path)
                     .map(r -> {
                         if (auth) {
-                            r.putHeader("Authorization", "Basic " + encodeBase64URLSafeString("test:test".getBytes()));
+                            r.putHeader("Authorization", "Basic " + encodeBase64URLSafeString(credentials.getBytes()));
                         }
                         return r;
                     })

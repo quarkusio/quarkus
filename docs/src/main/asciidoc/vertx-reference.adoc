@@ -27,13 +27,14 @@ With this extension, you can retrieve the managed instance of Vert.x using eithe
 ----
 @ApplicationScoped
 public class MyBean {
-// Field injection
-@Inject Vertx vertx;
 
-// Constructor injection
-MyBean(Vertx vertx) {
-    // ...
-}
+    // Field injection
+    @Inject Vertx vertx;
+
+    // Constructor injection
+    MyBean(Vertx vertx) {
+        // ...
+    }
 
 }
 ----
@@ -82,8 +83,8 @@ Check the associated documentation to learn how to use them.
 |Documentation
 
 |AMQP Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
-|xref:amqp.adoc
+|`io.quarkus:quarkus-messaging-amqp` (extension)
+|xref:amqp.adoc[Getting Started to Quarkus Messaging with AMQP]
 
 |Circuit Breaker
 |`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
@@ -95,35 +96,35 @@ Check the associated documentation to learn how to use them.
 
 |DB2 Client
 |`io.quarkus:quarkus-reactive-db2-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Kafka Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
-|xref:kafka.adoc
+|`io.quarkus:quarkus-messaging-kafka` (extension)
+|xref:kafka.adoc[Apache Kafka Reference Guide]
 
 |Mail Client
 |`io.quarkus:quarkus-mailer` (extension)
-|xref:mailer.adoc
+|xref:mailer.adoc[Sending emails using SMTP]
 
 |MQTT Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
+|`io.quarkus:quarkus-messaging-mqtt` (extension)
 |No guide yet
 
 |MS SQL Client
 |`io.quarkus:quarkus-reactive-mssql-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |MySQL Client
 |`io.quarkus:quarkus-reactive-mysql-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Oracle Client
 |`io.quarkus:quarkus-reactive-oracle-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |PostgreSQL Client
 |`io.quarkus:quarkus-reactive-pg-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |RabbitMQ Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client` (external dependency)
@@ -131,7 +132,7 @@ Check the associated documentation to learn how to use them.
 
 |Redis Client
 |`io.quarkus:quarkus-redis-client` (extension)
-|xref:redis.adoc
+|xref:redis.adoc[Using the Redis Client]
 
 |Web Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-web-client` (external dependency)
@@ -143,7 +144,7 @@ To learn more about the usage of the Vert.x Mutiny API, refer to https://smallry
 
 === Use the Vert.x Web Client
 
-This section gives an example using the Vert.x `WebClient` in the context of a RESTEasy Reactive application.
+This section gives an example using the Vert.x `WebClient` in the context of a Quarkus REST (formerly RESTEasy Reactive) application.
 As indicated in the table above, add the following dependency to your project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -253,7 +254,7 @@ Note that these features use the mapper managed by the `quarkus-jackson` extensi
 Refer to xref:rest-json.adoc#json[Jackson configuration] to customize the mapping.
 
 
-JSON Object and JSON Array are both supported as Quarkus HTTP endpoint requests and response bodies (using classic RESTEasy and RESTEasy Reactive).
+JSON Object and JSON Array are both supported as Quarkus HTTP endpoint requests and response bodies (using classic RESTEasy and Quarkus REST).
 Consider these endpoints:
 
 
@@ -814,7 +815,7 @@ public class EventResource {
 <2> when we get the response, extract the body and send it to the user
 
 NOTE: the HTTP method returns a `Uni`.
-If you are using RESTEasy Reactive, `Uni` support is built-in.
+If you are using Quarkus REST, `Uni` support is built-in.
 If you are using _classic_ RESTEasy, you need to add the `quarkus resteasy-mutiny` extension to your project.
 
 We need a consumer listening on the `greeting` address.

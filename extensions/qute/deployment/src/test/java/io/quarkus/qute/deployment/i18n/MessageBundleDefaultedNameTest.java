@@ -2,8 +2,6 @@ package io.quarkus.qute.deployment.i18n;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Locale;
-
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -13,7 +11,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
-import io.quarkus.qute.i18n.MessageBundles;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MessageBundleDefaultedNameTest {
@@ -43,8 +40,7 @@ public class MessageBundleDefaultedNameTest {
     public void testBundles() {
         assertEquals("Hello world!",
                 Controller.Templates.index("world").render());
-        assertEquals("Ahoj svete!", Controller.Templates.index("svete")
-                .setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
+        assertEquals("Ahoj svete!", Controller.Templates.index("svete").setLocale("cs").render());
 
         assertEquals("Hello world!", engine.getTemplate("app").render());
         assertEquals("Hello alpha!", engine.getTemplate("alpha").render());

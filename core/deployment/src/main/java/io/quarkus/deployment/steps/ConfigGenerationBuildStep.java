@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
@@ -73,6 +74,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
@@ -86,12 +88,12 @@ import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
-import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DefaultValuesConfigSource;
+import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.SecretKeysHandler;
 import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfig;
@@ -175,19 +177,23 @@ public class ConfigGenerationBuildStep {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BuildProducer<ConfigClassBuildItem> configClasses) {
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ConfigClassBuildItem> configClasses,
+            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
 
-        processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, configClasses);
+        processConfigMapping(combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods, configClasses,
+                additionalConstrainedClasses);
 
         List<ConfigClassWithPrefix> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
         for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
             processExtensionConfigMapping(buildTimeRunTimeMapping, combinedIndex, generatedClasses, reflectiveClasses,
-                    configClasses);
+                    reflectiveMethods, configClasses, additionalConstrainedClasses);
         }
 
         List<ConfigClassWithPrefix> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
         for (ConfigClassWithPrefix runTimeMapping : runTimeMappings) {
-            processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedClasses, reflectiveClasses, configClasses);
+            processExtensionConfigMapping(runTimeMapping, combinedIndex, generatedClasses, reflectiveClasses, reflectiveMethods,
+                    configClasses, additionalConstrainedClasses);
         }
     }
 
@@ -202,14 +208,6 @@ public class ConfigGenerationBuildStep {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
         Map<String, String> defaultValues = new HashMap<>();
-        // Default values from extensions @ConfigMapping
-        for (ConfigClassWithPrefix runTimeMapping : configItem.getReadResult().getRunTimeMappings()) {
-            defaultValues.putAll(ConfigMappings.getDefaults(runTimeMapping));
-        }
-        // Default values from user @ConfigMapping
-        for (ConfigMappingBuildItem configMapping : configMappings) {
-            defaultValues.putAll(ConfigMappings.getDefaults(configMapping.toConfigClassWithPrefix()));
-        }
         // Default values from @ConfigRoot
         defaultValues.putAll(configItem.getReadResult().getRunTimeDefaultValues());
         // Default values from build item RunTimeConfigurationDefaultBuildItem override
@@ -217,6 +215,17 @@ public class ConfigGenerationBuildStep {
             defaultValues.put(e.getKey(), e.getValue());
         }
         // Recorded values from build time from any other source (higher ordinal then defaults, so override)
+        List<String> profiles = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles();
+        for (Map.Entry<String, String> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+            // Runtime values may contain active profiled names that override sames names in defaults
+            // We need to keep the original name definition in case a different profile is used to run the app
+            String activeName = ProfileConfigSourceInterceptor.activeName(entry.getKey(), profiles);
+            // But keep the default
+            if (!configItem.getReadResult().getRunTimeDefaultValues().containsKey(activeName)) {
+                defaultValues.remove(activeName);
+            }
+            defaultValues.put(entry.getKey(), entry.getValue());
+        }
         defaultValues.putAll(configItem.getReadResult().getRunTimeValues());
 
         Set<String> converters = discoverService(Converter.class, reflectiveClass);
@@ -235,8 +244,6 @@ public class ConfigGenerationBuildStep {
         staticMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         Set<String> staticCustomizers = new HashSet<>(staticSafeServices(configCustomizers));
         staticCustomizers.add(StaticInitConfigBuilder.class.getName());
-        String staticMappingsInfoClassName = "io.quarkus.runtime.generated.StaticInitMappingsInfo";
-        generateMappingsInfo(generatedClass, reflectiveClass, staticMappingsInfoClassName, staticMappings);
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_STATIC_NAME,
                 defaultValues,
@@ -248,7 +255,6 @@ public class ConfigGenerationBuildStep {
                 staticSafeServices(configSourceFactories),
                 secretKeyHandlers,
                 staticSafeServices(secretKeyHandlerFactories),
-                staticMappingsInfoClassName,
                 staticMappings,
                 staticCustomizers,
                 staticInitConfigBuilders.stream().map(StaticInitConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
@@ -261,8 +267,6 @@ public class ConfigGenerationBuildStep {
         runTimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
         Set<String> runtimeCustomizers = new HashSet<>(configCustomizers);
         runtimeCustomizers.add(RuntimeConfigBuilder.class.getName());
-        String runtimeMappingsInfoClassName = "io.quarkus.runtime.generated.RunTimeMappingsInfo";
-        generateMappingsInfo(generatedClass, reflectiveClass, runtimeMappingsInfoClassName, runTimeMappings);
 
         generateConfigBuilder(generatedClass, reflectiveClass, CONFIG_RUNTIME_NAME,
                 defaultValues,
@@ -274,7 +278,6 @@ public class ConfigGenerationBuildStep {
                 configSourceFactories,
                 secretKeyHandlers,
                 secretKeyHandlerFactories,
-                runtimeMappingsInfoClassName,
                 runTimeMappings,
                 runtimeCustomizers,
                 runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()));
@@ -509,66 +512,6 @@ public class ConfigGenerationBuildStep {
         return (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
     }
 
-    private static final MethodDescriptor MAP_PUT = MethodDescriptor.ofMethod(HashMap.class,
-            "put", Object.class, Object.class, Object.class);
-    private static final MethodDescriptor SET_ADD = MethodDescriptor.ofMethod(HashSet.class,
-            "add", boolean.class, Object.class);
-
-    private static void generateMappingsInfo(
-            BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            String className,
-            Set<ConfigClassWithPrefix> mappings) {
-
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
-                .className(className)
-                .setFinal(true)
-                .build()) {
-
-            for (ConfigMappings.ConfigClassWithPrefix mapping : mappings) {
-                generateMappingNames(classCreator, mapping);
-            }
-
-            MethodCreator keys = classCreator.getMethodCreator("keys", Set.class);
-            keys.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
-            ResultHandle set = keys.checkCast(keys.newInstance(MethodDescriptor.ofConstructor(HashSet.class)), Set.class);
-            for (ConfigMappings.ConfigClassWithPrefix mapping : mappings) {
-                for (String key : ConfigMappings.getKeys(mapping)) {
-                    keys.invokeVirtualMethod(SET_ADD, set, keys.load(key));
-                }
-            }
-            keys.returnValue(set);
-        }
-
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).build());
-    }
-
-    private static void generateMappingNames(ClassCreator classCreator, ConfigMappings.ConfigClassWithPrefix mapping) {
-        MethodCreator method = classCreator.getMethodCreator(
-                mapping.getKlass().getName().replaceAll("\\.", "_") + "_" + mapping.getPrefix().hashCode(), Map.class);
-        method.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
-        Map<String, Map<String, Set<String>>> properties = ConfigMappings.getNames(mapping);
-        ResultHandle map = method.checkCast(
-                method.newInstance(MethodDescriptor.ofConstructor(HashMap.class, int.class), method.load(properties.size())),
-                Map.class);
-        for (Map.Entry<String, Map<String, Set<String>>> entry : properties.entrySet()) {
-            ResultHandle groups = method.checkCast(method.newInstance(MethodDescriptor.ofConstructor(HashMap.class, int.class),
-                    method.load(entry.getValue().size())), Map.class);
-            for (Map.Entry<String, Set<String>> group : entry.getValue().entrySet()) {
-                ResultHandle names = method
-                        .checkCast(method.newInstance(MethodDescriptor.ofConstructor(HashSet.class, int.class),
-                                method.load(group.getValue().size())), Set.class);
-                for (String name : group.getValue()) {
-                    method.invokeVirtualMethod(SET_ADD, names, method.load(name));
-                }
-                method.invokeVirtualMethod(MAP_PUT, groups, method.load(group.getKey()), names);
-            }
-            method.invokeVirtualMethod(MAP_PUT, map, method.load(entry.getKey()), groups);
-        }
-        method.returnValue(map);
-    }
-
     private static final MethodDescriptor BUILDER_CUSTOMIZER = MethodDescriptor.ofMethod(SmallRyeConfigBuilderCustomizer.class,
             "configBuilder",
             void.class, SmallRyeConfigBuilder.class);
@@ -626,7 +569,6 @@ public class ConfigGenerationBuildStep {
             Set<String> configSourceFactories,
             Set<String> secretKeyHandlers,
             Set<String> secretKeyHandlerFactories,
-            String mappingsInfoClassName,
             Set<ConfigClassWithPrefix> mappings,
             Set<String> configCustomizers,
             Set<String> configBuilders) {
@@ -691,13 +633,7 @@ public class ConfigGenerationBuildStep {
             for (ConfigClassWithPrefix mapping : mappings) {
                 method.invokeStaticMethod(WITH_MAPPING, configBuilder, method.load(mapping.getKlass().getName()),
                         method.load(mapping.getPrefix()));
-                ResultHandle names = method.invokeStaticMethod(MethodDescriptor.ofMethod(mappingsInfoClassName,
-                        mapping.getKlass().getName().replaceAll("\\.", "_") + "_" + mapping.getPrefix().hashCode(), Map.class));
-                method.invokeVirtualMethod(WITH_NAMES, configBuilder, names);
             }
-            ResultHandle keys = method
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(mappingsInfoClassName, "keys", Set.class));
-            method.invokeVirtualMethod(WITH_KEYS, configBuilder, keys);
 
             method.returnVoid();
         }
@@ -750,6 +686,12 @@ public class ConfigGenerationBuildStep {
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
         Set<String> staticSafe = new HashSet<>();
         for (String service : services) {
+            // SmallRye Config services are always safe, but they cannot be annotated with @StaticInitSafe
+            if (service.startsWith("io.smallrye.config.")) {
+                staticSafe.add(service);
+                continue;
+            }
+
             try {
                 Class<?> serviceClass = classloader.loadClass(service);
                 if (serviceClass.isAnnotationPresent(StaticInitSafe.class)) {

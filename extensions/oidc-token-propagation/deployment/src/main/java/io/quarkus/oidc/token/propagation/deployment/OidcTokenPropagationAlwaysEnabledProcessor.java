@@ -9,7 +9,7 @@ public class OidcTokenPropagationAlwaysEnabledProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_TOKEN_PROPAGATION);
+        return new FeatureBuildItem(Feature.RESTEASY_CLIENT_OIDC_TOKEN_PROPAGATION);
     }
 
 }

@@ -45,6 +45,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -59,6 +60,8 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
+import io.quarkus.devui.spi.buildtime.BuildTimeAction;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
 import io.quarkus.devui.spi.page.AbstractPageBuildItem;
@@ -67,6 +70,7 @@ import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.json.jackson.DatabindCodec;
 
@@ -100,6 +104,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
         internalImportMapBuildItem.add("qwc-no-data", contextRoot + "qwc/qwc-no-data.js");
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
+        internalImportMapBuildItem.add("qwc-abstract-log-element", contextRoot + "qwc/qwc-abstract-log-element.js");
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
@@ -108,7 +113,6 @@ public class BuildTimeContentProcessor {
 
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
-        internalImportMapBuildItem.add("qui-code-block", contextRoot + "qui/qui-code-block.js");
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
 
         // Echarts
@@ -177,6 +181,24 @@ public class BuildTimeContentProcessor {
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    DeploymentMethodBuildItem mapDeploymentMethods(
+            List<BuildTimeActionBuildItem> buildTimeActions,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+
+        List<String> methodNames = new ArrayList<>();
+        for (BuildTimeActionBuildItem actions : buildTimeActions) {
+            String extensionPathName = actions.getExtensionPathName(curateOutcomeBuildItem);
+            for (BuildTimeAction bta : actions.getActions()) {
+                String fullName = extensionPathName + "." + bta.getMethodName();
+                DevConsoleManager.register(fullName, bta.getAction());
+                methodNames.add(fullName);
+            }
+        }
+
+        return new DeploymentMethodBuildItem(methodNames);
     }
 
     private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {
@@ -362,6 +384,7 @@ public class BuildTimeContentProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void createBuildTimeData(BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<InternalPageBuildItem> internalPages,
             ExtensionsBuildItem extensionsBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -373,7 +396,7 @@ public class BuildTimeContentProcessor {
         addThemeBuildTimeData(internalBuildTimeData, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem);
-        addVersionInfoBuildTimeData(internalBuildTimeData, nonApplicationRootPathBuildItem);
+        addVersionInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
@@ -471,10 +494,20 @@ public class BuildTimeContentProcessor {
     }
 
     private void addVersionInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+
+        Map<String, String> applicationInfo = new HashMap<>();
+
+        // Add GAV
+        ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
+        ResolvedDependency appArtifact = applicationModel.getAppArtifact();
+        String groupId = appArtifact.getGroupId();
+        applicationInfo.put("groupId", groupId);
+        String artifactId = appArtifact.getArtifactId();
+        applicationInfo.put("artifactId", artifactId);
         // Add version info
         String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + DEV_UI + SLASH;
-        Map<String, String> applicationInfo = new HashMap<>();
         applicationInfo.put("contextRoot", contextRoot);
         applicationInfo.put("quarkusVersion", Version.getVersion());
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));

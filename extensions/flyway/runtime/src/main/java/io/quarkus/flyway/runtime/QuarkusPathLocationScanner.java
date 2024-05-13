@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
+import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.api.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
@@ -30,7 +31,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private final Collection<LoadableResource> scannedResources;
     private final Collection<Class<? extends JavaMigration>> scannedMigrationClasses;
 
-    public QuarkusPathLocationScanner(Collection<Location> locations) {
+    public QuarkusPathLocationScanner(Configuration configuration, Collection<Location> locations) {
         LOGGER.debugv("Locations: {0}", locations);
 
         this.scannedResources = new ArrayList<>();
@@ -45,7 +46,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
             } else if (migrationFile.startsWith(Location.FILESYSTEM_PREFIX)) {
                 if (fileSystemScanner == null) {
-                    fileSystemScanner = new FileSystemScanner(StandardCharsets.UTF_8, false, false, false);
+                    fileSystemScanner = new FileSystemScanner(false, configuration);
                 }
                 LOGGER.debugf("Checking %s for migration files", migrationFile);
                 Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));

@@ -38,8 +38,8 @@
         },
         {
             "category": "Data6",
-            "timeout": 95,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-outbox-polling",
+            "timeout": 105,
+            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-outbox-polling, hibernate-search-standalone-elasticsearch, hibernate-search-standalone-opensearch",
             "os-name": "ubuntu-latest"
         },
         {
@@ -86,14 +86,14 @@
         },
         {
             "category": "Cache",
-            "timeout": 65,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache",
+            "timeout": 75,
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "HTTP",
             "timeout": 110,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth",
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
             "os-name": "ubuntu-latest"
         },
         {
@@ -116,8 +116,8 @@
         },
         {
             "category": "Misc4",
-            "timeout": 125,
-            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, opentelemetry-jdbc-instrumentation, webjars-locator",
+            "timeout": 130,
+            "test-modules": "picocli-native, gradle, micrometer-mp-metrics, micrometer-prometheus, logging-json, jaxp, jaxb, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-redis-instrumentation, web-dependency-locator",
             "os-name": "ubuntu-latest"
         },
         {
@@ -128,14 +128,14 @@
         },
         {
             "category": "gRPC",
-            "timeout": 70,
-            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls",
+            "timeout": 80,
+            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12, grpc-test-random-port",
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "Windows - RESTEasy Jackson",
-            "timeout": 25,
-            "test-modules": "resteasy-jackson",
+            "category": "Windows support",
+            "timeout": 50,
+            "test-modules": "resteasy-jackson, qute",
             "os-name": "windows-latest"
         },
         {

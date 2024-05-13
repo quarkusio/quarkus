@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
 :topics: messaging,kafka,apicurio,registry
-:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka
 
 This guide shows how your Quarkus application can use Apache Kafka, https://avro.apache.org/docs/current/[Avro] serialized
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry]).
@@ -49,7 +49,7 @@ The solution is located in the `kafka-avro-schema-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kafka-avro-schema-quickstart
-:create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-kafka,apicurio-registry-avro
+:create-app-extensions: rest-jackson,messaging-kafka,apicurio-registry-avro
 include::{includes}/devtools/create-app.adoc[]
 
 [TIP]
@@ -247,7 +247,7 @@ See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-regis
 [TIP]
 ====
 You might have noticed that we didn't configure the schema registry URL anywhere.
-This is because Dev Services for Apicurio Registry configures all Kafka channels in SmallRye Reactive Messaging to use the automatically started registry instance.
+This is because Dev Services for Apicurio Registry configures all Kafka channels in Quarkus Messaging to use the automatically started registry instance.
 
 Apicurio Registry, in addition to its native API, also exposes an endpoint that is API-compatible with Confluent Schema Registry.
 Therefore, this automatic configuration works both for Apicurio Registry serde and Confluent Schema Registry serde.
@@ -416,7 +416,7 @@ First, let's add test dependencies on REST Client and Awaitility to the build fi
 <!-- we'll use Jakarta REST Client for talking to the SSE endpoint -->
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-reactive</artifactId>
+    <artifactId>quarkus-rest-client</artifactId>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -429,7 +429,7 @@ First, let's add test dependencies on REST Client and Awaitility to the build fi
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("io.quarkus:quarkus-rest-client-reactive")
+testImplementation("io.quarkus:quarkus-rest-client")
 testImplementation("org.awaitility:awaitility")
 ----
 
@@ -742,7 +742,7 @@ Also, you need to add a few dependencies and a custom Maven repository to your `
     <!-- Confluent registry libraries use Jakarta REST client -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-rest-client-reactive</artifactId>
+        <artifactId>quarkus-rest-client</artifactId>
     </dependency>
     <dependency>
         <groupId>io.confluent</groupId>
@@ -786,7 +786,7 @@ dependencies {
     implementation("io.quarkus:quarkus-confluent-registry-avro")
 
     // Confluent registry libraries use Jakarta REST client
-    implementation("io.quarkus:quarkus-rest-client-reactive")
+    implementation("io.quarkus:quarkus-rest-client")
 
     implementation("io.confluent:kafka-avro-serializer:7.2.0") {
         exclude group: "jakarta.ws.rs", module: "jakarta.ws.rs-api"

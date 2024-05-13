@@ -51,7 +51,7 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
@@ -117,8 +117,7 @@ public final class IntegrationTestUtil {
 
     static Map<String, String> getSysPropsToRestore() {
         Map<String, String> sysPropRestore = new HashMap<>();
-        sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
-                System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
+        sysPropRestore.put(LaunchMode.DEVELOPMENT.getProfileKey(), System.getProperty(LaunchMode.TEST.getProfileKey()));
         return sysPropRestore;
     }
 
@@ -143,7 +142,7 @@ public final class IntegrationTestUtil {
             }
             final String configProfile = testProfile.getConfigProfile();
             if (configProfile != null) {
-                properties.put(ProfileManager.QUARKUS_PROFILE_PROP, configProfile);
+                properties.put(LaunchMode.NORMAL.getProfileKey(), configProfile);
             }
             properties.put("quarkus.configuration.build-time-mismatch-at-runtime", "fail");
             for (Map.Entry<String, String> i : properties.entrySet()) {
@@ -289,7 +288,9 @@ public final class IntegrationTestUtil {
             // when the application is going to be launched as a docker container, we need to make containers started by DevServices
             // use a shared network that the application container can then use as well
             augmentAction = curatedApplication.createAugmentor(
-                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory",
+                    Map.of(io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem.SOURCE_PROPERTY,
+                            "io.quarkus.test.junit"));
         } else {
             augmentAction = curatedApplication.createAugmentor();
         }

@@ -76,6 +76,7 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                         Object fieldValue = context.readEntity(in,
                                 fieldFiller.getFieldType(),
                                 MediaType.valueOf(fieldFiller.getMediaType()),
+                                context.getMethodDeclaredAnnotationsSafe(),
                                 // FIXME: we have strings, it wants objects, perhaps there's
                                 // an Object->String conversion too many
                                 (MultivaluedMap) responseContext.getHeaders());
@@ -104,6 +105,7 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     Object entity = context.readEntity(entityStream,
                             context.getResponseType(),
                             responseContext.getMediaType(),
+                            context.getMethodDeclaredAnnotationsSafe(),
                             // FIXME: we have strings, it wants objects, perhaps there's
                             // an Object->String conversion too many
                             (MultivaluedMap) responseContext.getHeaders());

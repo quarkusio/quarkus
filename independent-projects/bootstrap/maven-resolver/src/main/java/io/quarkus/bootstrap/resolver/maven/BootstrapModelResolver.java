@@ -57,13 +57,7 @@ public class BootstrapModelResolver implements ModelResolver {
                             Collection<? extends ArtifactRequest> requests) throws ArtifactResolutionException {
                         return repoSystem.resolveArtifacts(session, requests);
                     }
-                }, new VersionRangeResolver() {
-                    @Override
-                    public VersionRangeResult resolveVersionRange(RepositorySystemSession session,
-                            VersionRangeRequest request) throws VersionRangeResolutionException {
-                        return repoSystem.resolveVersionRange(session, request);
-                    }
-                }, ctx.getRemoteRepositoryManager(), ctx.getRemoteRepositories());
+                }, repoSystem::resolveVersionRange, ctx.getRemoteRepositoryManager(), ctx.getRemoteRepositories());
     }
 
     private final RepositorySystemSession session;

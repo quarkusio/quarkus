@@ -55,10 +55,10 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 
 == Bootstrapping the application
 
-Click on https://code.quarkus.io/?a=quarkus-getting-started-vertx&nc=true&e=resteasy-reactive-jackson&e=vertx[this link] to configure your application.
+Click on https://code.quarkus.io/?a=quarkus-getting-started-vertx&nc=true&e=rest-jackson&e=vertx[this link] to configure your application.
 It selected a few extensions:
 
-* `resteasy-reactive-jackson`, which also brings `resteasy-reactive`. We are going to use it to expose our HTTP endpoints.
+* `rest-jackson`, which also brings `rest`. We are going to use it to expose our HTTP endpoints.
 * `vertx`, which provides access to the underlying managed Vert.x
 
 Click on the `Generate your application` button, download the zip file and unzip it.
@@ -71,7 +71,7 @@ If you open the generated build file, you can see the selected extensions:
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+  <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
@@ -82,7 +82,7 @@ If you open the generated build file, you can see the selected extensions:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-rest-jackson")
 implementation("io.quarkus:quarkus-vertx")
 ----
 
@@ -151,7 +151,7 @@ The one we are going to use in this section is the Vert.x File System.
 It provides a non-blocking API to access files.
 
 
-In the `src/main/resource` directory, create a `lorem.txt` file with the following content:
+In the `src/main/resources` directory, create a `lorem.txt` file with the following content:
 
 [source, text]
 ----

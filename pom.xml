@@ -54,8 +54,8 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <gitflow-incremental-builder.version>4.5.1</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.102</quarkus-platform-bom-plugin.version>
+        <gitflow-incremental-builder.version>4.5.3</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.105</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -63,18 +63,19 @@
         <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
-        <jacoco.version>0.8.11</jacoco.version>
-        <kubernetes-client.version>6.10.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <jacoco.version>0.8.12</jacoco.version>
+        <kubernetes-client.version>6.11.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>5.4.0</rest-assured.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.61.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.63.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.25.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.30.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.39.0</proto-google-common-protos.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
-        <testng.version>7.4.0</testng.version>
+        <testng.version>7.8.0</testng.version>
     </properties>
 
     <modules>
@@ -166,7 +167,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.4.4</version>
+                <version>3.7.0</version>
             </extension>
         </extensions>
     </build>

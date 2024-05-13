@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Dev UI
+= Dev UI for extension developers
 include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Learn how to get your extension to contribute features to the Dev UI (v2).
@@ -26,26 +26,26 @@ image::dev-ui-overview-v2.png[alt=Dev UI overview,role="center"]
 It allows you to:
 
 - quickly visualize all the extensions currently loaded
-- view extension statuses and go directly to extension documentation 
+- view extension statuses and go directly to extension documentation
 - view and change `Configuration`
 - manage and visualize `Continuous Testing`
 - view `Dev Services` information
 - view the Build information
 - view and stream various logs
 
-Each extension used in the application will be listed and you can navigate to the guide for each extension, see some more information on the extension, and view configuration applicable for that extension:
+Each extension used in the application will be listed. There, you can find the guides, additional information, and the applicable configuration for each extension:
 
 image::dev-ui-extension-card-v2.png[alt=Dev UI extension card,role="center"]
 
 == Make my extension extend the Dev UI
 
-In order to make your extension listed in the Dev UI you don't need to do anything!
+To make your extension listed in the Dev UI, you don't need to do anything!
 
 So you can always start with that :)
 
 Extensions can:
 
-- <<add-links-to-an-extension-card,Add links to an extension card>> 
+- <<add-links-to-an-extension-card,Add links to an extension card>>
 - <<add-full-pages,Add full custom pages>>
 - <<add-a-log-file,Add a log stream>>
 - <<add-a-section-menu,Add a section menu>>
@@ -53,15 +53,15 @@ Extensions can:
 
 == Add links to an extension card
 
-=== External Links
+=== External links
 
-These are links that reference other (external from Dev UI) data. This data can be HTML pages, text or other data.
+These are links that reference other (external from Dev UI) data. This data can be HTML pages, text, or other data.
 
-A good example of this is the SmallRye OpenAPI extension that contains links to the generated openapi schema in both json and yaml format, and a link to Swagger UI:
+A good example of this is the SmallRye OpenAPI extension that contains links to the generated OpenAPI schema in both JSON and YAML format, and a link to Swagger UI:
 
 image::dev-ui-extension-openapi-v2.png[alt=Dev UI extension card,role="center"]
 
-The links to these external references is known at build time, so to get links like this on your card, all you need to do is add the following Build Step in your extension:
+The links to these external references are known at build time. So to get links like this on your card, you add the following Build Step in your extension:
 
 [source,java]
 ----
@@ -89,32 +89,32 @@ public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRoo
 }
 ----
 <1> Always make sure that this build step is only run when in dev mode
-<2> To add anything on the card, you need to return/produce a `CardPageBuildItem`.
-<3> To add a link, you can use the `addPage` method, as all links go to a "page". `Page` has some builders to assist with building a page. For `external` links, use the `externalPageBuilder`
-<4> Adding the url of the external link (in this case we use `NonApplicationRootPathBuildItem` to create this link, as this link is under the configurable non application path, default `/q`). Always use `NonApplicationRootPathBuildItem` if your link is available under `/q`.
+<2> To add anything on the card, you must return/produce a `CardPageBuildItem`.
+<3> To add a link, you can use the `addPage` method, as all links go to a "page". `Page` has some builders to assist with building a page. For `external` links, use the `externalPageBuilder`.
+<4> Adding the url of the external link (in this case, we use `NonApplicationRootPathBuildItem` to create this link, as this link is under the configurable non-application path, default `/q`). Always use `NonApplicationRootPathBuildItem` if your link is available under `/q`.
 <5> You can (optionally) hint the content type of the content you are navigating to. If there is no hint, a header call will be made to determine the `MediaType`;
 <6> You can add an icon. All free font-awesome icons are available.
 
 [NOTE]
 .Note about icons
 
-If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome], you can map as follow: Example `<i class="fa-solid fa-house"></i>` will map to `font-awesome-solid:house`, so `fa` becomes `font-awesome` and for the icon name, remove the `fa-`; 
+If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome], you can map as follow: Example `<i class="fa-solid fa-house"></i>` will map to `font-awesome-solid:house`, so `fa` becomes `font-awesome` and for the icon name, remove the `fa-`.
 
 ==== Embedding external content
 
-By default, even external links will render inside (embedded) in Dev UI. In the case of HTML, the page will be rendered and any other content will be shown using https://codemirror.net/[code-mirror] to markup the media type. For example the open api schema document in `yaml` format:
+By default, even external links will render inside (embedded) in Dev UI. In the case of HTML, the page will be rendered, and any other content will be shown using https://codemirror.net/[code-mirror] to markup the media type. For example, the OpenAPI schema document in YAML format:
 
 image::dev-ui-extension-openapi-embed-v2.png[alt=Dev UI embedded page,role="center"]
 
 If you do not want to embed the content, you can use the `.doNotEmbed()` on the Page Builder, this will then open the link in a new tab.
 
-==== Runtime external links 
+==== Runtime external links
 
-The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`. 
+The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case, you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`.
 
 ==== Adding labels
 
-You can add an option label to the link in the card using one of the builder methods on the page builder. These labels can be 
+You can add an option label to the link in the card using one of the builder methods on the page builder. These labels can be
 
 - static (known at build time) `.staticLabel("staticLabelValue")`
 - dynamic (loaded at runtime) `.dynamicLabelJsonRPCMethodName("yourJsonRPCMethodName")`
@@ -130,7 +130,7 @@ You can also link to an "internal" page (as opposed to the above "external" page
 
 === Build time data
 
-To make build time data available in your full page, you can add any data to your `CardPageBuildItem` with a key and a value:
+To make build time data available on your full page, you can add any data to your `CardPageBuildItem` with a key and a value:
 
 [source,java]
 ----
@@ -144,15 +144,15 @@ There are a few options to add full page content in Dev UI. Starting from the mo
 
 === Display some build time data on a screen (without having to do frontend coding):
 
-If you have some data that is known at build time that you want to display you can use one of the following builders in `Page`:
+If you have some data that is known at build time that you want to display, you can use one of the following builders in `Page`:
 
-- <<raw-data,Raw data>> 
+- <<raw-data,Raw data>>
 - <<table-data,Table data>>
 - <<qute-data,Qute data>>
 - <<web-component-page,Web Component page>>
 
 ==== Raw data
-This will display your data in it's raw (serialised) json value:
+This will display your data in its raw (serialised) JSON value:
 
 [source,java]
 ----
@@ -163,7 +163,7 @@ cardPageBuildItem.addPage(Page.rawDataPageBuilder("Raw data") // <1>
 <1> Use the `rawDataPageBuilder`.
 <2> Link back to the key used when you added the build time data in `addBuildTimeData` on the Page BuildItem.
 
-That will create a link to a page that renders the raw data in json:
+That will create a link to a page that renders the raw data in JSON:
 
 image::dev-ui-raw-page-v2.png[alt=Dev UI raw page,role="center"]
 
@@ -201,7 +201,7 @@ cardPageBuildItem.addPage(Page.quteDataPageBuilder("Qute data") // <1>
 <1> Use the `quteDataPageBuilder`.
 <2> Link to the Qute template in `/deployment/src/main/resources/dev-ui/`.
 
-Using any Qute template to display the data, for example `qute-jokes-template.html`:
+Use any Qute template to display the data, for example, `qute-jokes-template.html`:
 
 [source,html]
 ----
@@ -226,9 +226,9 @@ Using any Qute template to display the data, for example `qute-jokes-template.ht
 ----
 <1> `jokes` added as a build time data key on the Page Build Item.
 
-==== Web Component page
+==== Web component page
 
-To build an interactive page with actions and runtime (or build time) data, you need to use the web component page:
+To build an interactive page with actions and runtime (or build time) data, you must use the web component page:
 
 [source,java]
 ----
@@ -238,7 +238,7 @@ cardPageBuildItem.addPage(Page.webComponentPageBuilder() // <1>
                     .staticLabel(String.valueOf(beans.size())));
 ----
 <1> Use the `webComponentPageBuilder`.
-<2> Link to the Web Component in `/deployment/src/main/resources/dev-ui/`. The title can also be defined (using `.title("My title")` in the builder), but if not the title will be assumed from the componentLink, which should always have the format `qwc` (stands for Quarkus Web Component) dash `extensionName` (example, `arc` in this case ) dash `page title` ("Beans" in this case)
+<2> Link to the Web Component in `/deployment/src/main/resources/dev-ui/`. The title can also be defined (using `.title("My title")` in the builder), but if not, the title will be assumed from the componentLink, which should always have the format `qwc` (stands for Quarkus Web Component) dash `extensionName` (example, `arc` in this case ) dash `page title` ("Beans" in this case)
 
 Dev UI uses https://lit.dev/[Lit] to make building these web components easier. You can read more about Web Components and Lit:
 
@@ -292,21 +292,21 @@ export class QwcArcBeans extends LitElement { // <3>
 customElements.define('qwc-arc-beans', QwcArcBeans); // <10>
 ----
 
-<1> You can import Classes and/or functions from other libraries. 
-In this case we use the `LitElement` class and `html` & `css` functions from `Lit`
+<1> You can import Classes and/or functions from other libraries.
+In this case, we use the `LitElement` class and `html` & `css` functions from `Lit`
 <2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
-<3> The component should be named in the following format: Qwc (stands for Quarkus Web Component) then Extension Name then Page Title, all concatenated with Camel Case. This will also match the file name format as described earlier. The component should also extend `LitComponent`.
+<3> The component should be named in the following format: Qwc (stands for Quarkus Web Component), then Extension Name, then Page Title, all concatenated with Camel Case. This will also match the file name format as described earlier. The component should also extend `LitComponent`.
 <4> CSS styles can be added using the `css` function, and these styles only apply to your component.
-<5> Styles can reference globally defined CSS variables to make sure your page renders correctly, especially when switching between light and dark mode. You can find all CSS variables in the Vaadin documentation (https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/color[Color], https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/size-space[Sizing and Spacing], etc)
+<5> Styles can reference globally defined CSS variables to make sure your page renders correctly, especially when switching between light and dark mode. You can find all CSS variables in the Vaadin documentation (https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/color[Color], https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/size-space[Sizing and Spacing], etc.)
 <6> Properties can be added. Use `_` in front of a property if that property is private. Properties are usually injected in the HTML template, and can be defined as having state, meaning that if that property changes, the component should re-render. In this case, the beans are Build time data and only change on hot-reload, which will be covered later.
-<7> Constructors (optional) should always call `super` first, and then set the default values for the properties.
-<8> The render method (from `LitElement`) will be called to render the page. In this method you return the markup of the page you want. You can use the `html` function from `Lit`, that gives you a template language to output the HTML you want. Once the template is created, you only need to set/change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
+<7> Constructors (optional) should always call `super` first and then set the default values for the properties.
+<8> The render method (from `LitElement`) will be called to render the page. In this method, you return the markup of the page you want. You can use the `html` function from `Lit`, which gives you a template language to output the HTML you want. Once the template is created, you must only set or change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
 <9> You can use the built-in template functions to do conditional, list, etc. Read more about https://lit.dev/docs/templates/overview/[Lit Templates]
-<10> You always need to register your Web component as a custom element, with a unique tag. Here the tag will follow the same format as the filename (`qwc` dash `extension name` dash `page title` );
+<10> You must always register your Web component as a custom element, with a unique tag. Here, the tag will follow the same format as the filename (`qwc` dash `extension name` dash `page title` );
 
 ===== Using Vaadin UI components for rendering
 
-Dev UI makes extensive usage of https://vaadin.com/docs/latest/components[Vaadin web components] as UI Building blocks. 
+Dev UI makes extensive usage of https://vaadin.com/docs/latest/components[Vaadin web components] as UI Building blocks.
 
 As an example, the Arc Beans are rendered using a https://vaadin.com/docs/latest/components/grid[Vaadin Grid]:
 
@@ -375,7 +375,7 @@ export class QwcArcBeans extends LitElement {
                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-            
+
         } else {
             return html`No beans found`;
         }
@@ -413,10 +413,10 @@ export class QwcArcBeans extends LitElement {
       }else if(bean.kind.toLowerCase() === "synthetic"){
         level = "contrast";
       }
-      
+
       return html`
         ${level
-          ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>` 
+          ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>`
           : html`<qui-badge small><span>${kind}</span></qui-badge>`
         }`;
     }
@@ -435,7 +435,7 @@ export class QwcArcBeans extends LitElement {
             return html`<vaadin-vertical-layout>
                           ${bean.interceptorInfos.map(interceptor =>
                               html`<div>
-                                    <code>${interceptor.interceptorClass.name}</code> 
+                                    <code>${interceptor.interceptorClass.name}</code>
                                     <qui-badge class="${bean.kind.toLowerCase()}" small pill><span>${interceptor.priority}</span></qui-badge>
                                   </div>`
                           )}
@@ -502,7 +502,7 @@ image::dev-ui-qui-badge-v2.png[alt=Dev UI Badge,role="center"]
 import 'qui-badge';
 ----
 
-You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast` or set your own colors.
+You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast`, or set your own colors.
 
 [source,html]
 ----
@@ -523,7 +523,7 @@ You can use any combination of small, primary, pill, with icon and clickable wit
                     <qui-badge background="pink" color="purple" small><span>Custom colours</span></qui-badge>
                 </div>
             </div>
-        </qui-card> 
+        </qui-card>
         <qui-card title="Primary">
             <div slot="content">
                 <div class="cardcontents">
@@ -549,7 +549,7 @@ You can use any combination of small, primary, pill, with icon and clickable wit
             </div>
         </qui-card>
         <qui-card title="With icon">
-            <div slot="content">            
+            <div slot="content">
                 <div class="cardcontents">
                     <qui-badge text="Default" icon="font-awesome-solid:circle-info">
                         <span>Default icon</span>
@@ -606,7 +606,7 @@ https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d73
 
 Alerts are modeled around the Bootstrap alerts. Click https://getbootstrap.com/docs/4.0/components/alerts[here] for more info.
 
-Also see Notification controller below as an alternative.
+Also, see the Notification controller below as an alternative.
 
 image::dev-ui-qui-alert-v2.png[alt=Dev UI Alert,role="center"]
 
@@ -684,34 +684,62 @@ image::dev-ui-qui-code-block-v2.png[alt=Dev UI Code Block,role="center"]
 
 [source,javascript]
 ----
-import 'qui-code-block';
+import '@quarkus-webcomponents/codeblock';
 ----
 
 [source,html]
 ----
 <div class="codeBlock">
-    <qui-code-block 
+    <qui-code-block
         mode='yaml'
         content='${yaml}'>
     </qui-code-block>
 </div>;
 ----
 
-https://github.com/quarkusio/quarkus/blob/e03a97845738436c69443a591ec4ce88ed04ac91/extensions/kubernetes/vanilla/deployment/src/main/resources/dev-ui/qwc-kubernetes-manifest.js#L99[Example code]
+https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/kubernetes/vanilla/deployment/src/main/resources/dev-ui/qwc-kubernetes-manifest.js#L102[Example code]
 
-or fetching the contents from a URL:
+Or fetching the contents from a URL:
 
 [source,html]
 ----
 <div class="codeBlock">
-    <qui-code-block 
+    <qui-code-block
         mode='${this._mode}'
         src='${this._externalUrl}'>
     </qui-code-block>
 </div>
 ----
 
-https://github.com/quarkusio/quarkus/blob/95c54fa46a6b6f31d69477234486d9359a2a3a4a/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-external-page.js#L116[Example code]
+https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-external-page.js#L118[Example code]
+
+To make sure that the code block adopt the correct code-mirror theme (based on the current one in Dev UI), you can do the following:
+
+[source,javascript]
+----
+import { observeState } from 'lit-element-state'; 
+import { themeState } from 'theme-state';
+----
+
+Then change the `extends` to observe state:
+
+[source,javascript]
+----
+extends observeState(LitElement) {
+----
+
+Now you can get the current theme, so add the `theme` property to your code block, example:
+
+[source,html]
+----
+<div class="codeBlock">
+    <qui-code-block
+        mode='${this._mode}'
+        src='${this._externalUrl}'
+        theme='${themeState.theme.name}'>
+    </qui-code-block>
+</div>
+----
 
 ====== IDE link
 
@@ -724,7 +752,7 @@ import 'qui-ide-link';
 
 [source,html]
 ----
-<qui-ide-link title='Source full class name' 
+<qui-ide-link title='Source full class name'
                         class='text-source'
                         fileName='${sourceClassNameFull}'
                         lineNumber=${sourceLineNumber}>[${sourceClassNameFull}]</qui-ide-link>;
@@ -740,11 +768,11 @@ Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui
 - Storage
 - Log
 - Router
-- JsonRPC
+- <<JsonRPC>>
 
 ====== Notifier
 
-This is an easy way to show a toast message. The toast can be placed on the screen (default left bottom) and can have a level (Info, Success, Warning, Error). Any of the levels can also be primary, that will create a more prominent toast message.
+This is an easy way to show a toast message. The toast can be placed on the screen (default left bottom) and can have a level (Info, Success, Warning, Error). Any of the levels can also be primary, which will create a more prominent toast message.
 
 See the source of this controller https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/notifier.js[here].
 
@@ -775,7 +803,7 @@ https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d73
 
 ====== Storage
 
-An easy way to access the local storage in a safe way. This will store values in the local storage, scoped to your extension. This way you do not have to worry that you might clash with another extension.
+An easy way to access the local storage in a safe way. This will store values in the local storage, which is scoped for your extension. This way, you do not have to worry that you might clash with another extension.
 
 Local storage is useful to remember user preferences or state. For example, the footer remembers the state (open/close) and the size when open of the bottom drawer.
 
@@ -842,15 +870,17 @@ The router is mostly used internally. This uses https://github.com/vaadin/router
 See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
 
 [[JsonRPC]]
-====== JsonRPC
+== Communicating to the backend 
 
-This controller allows you to fetch or stream runtime data. (vs. <<Build time data>> discussed earlier). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
+=== JsonRPC against the Runtime classpath
+
+You can fetch or stream runtime data (rather than <<Build time data>> discussed earlier) or execute methods against the runtime classpath (as opposed to deployment classpath). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
 
 *Java part*
 
 This code is responsible for making data available to display on the UI.
 
-You need to register the JsonPRCService in your processor in the deployment module:
+You must register the `JsonPRCService` in your processor in the deployment module:
 
 [source,java]
 ----
@@ -860,21 +890,21 @@ JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <2>
 }
 ----
 <1> Always only do this in Dev Mode
-<2> Produce / return a `JsonRPCProvidersBuildItem`
+<2> Produce or return a `JsonRPCProvidersBuildItem`
 <3> Define the class in your runtime module that will contain methods that make data available in the UI
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/java/io/quarkus/cache/deployment/devui/CacheDevUiProcessor.java[Example code]
 
-Now, in your Runtime module create the JsonRPC Service. This class will default to an application scoped bean, except if you explicitly scope the bean. All public methods that return something will be made available to call from the Web component Javascript.
+Now, in your Runtime module, create the JsonRPC Service. This class will default to an application-scoped bean, except if you explicitly scope the bean. All public methods that return something will be made available to call from the Web component Javascript.
 
 The return object in these methods can be:
 
-- primitives or `String`, 
+- primitives or `String`,
 - `io.vertx.core.json.JsonArray`
 - `io.vertx.core.json.JsonObject`
-- any other POJO that can be serializable to Json
+- any other POJO that can be serializable to JSON
 
-All of the above can be blocking (POJO) or non-blocking (`@NonBlocking` or `Uni`). Or alternatively data can be streamed using `Multi`.
+All of the above can be blocking (POJO) or nonblocking (`@NonBlocking` or `Uni`). Alternatively, data can be streamed using `Multi`.
 
 [source,java]
 ----
@@ -897,14 +927,14 @@ public JsonArray getAll() { // <2>
     return array;
 }
 ----
-<1> This example runs non blocking. We could also return `Uni<JsonArray>`
+<1> This example runs nonblocking. We could also return `Uni<JsonArray>`
 <2> The method name `getAll` will be available in the Javascript
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devconsole/CacheJsonRPCService.java[Example code]
 
 *Webcomponent (Javascript) part*
 
-Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in you JsonRPC Service) 
+Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in your JsonRPC Service)
 
 [source,javascript]
 ----
@@ -912,7 +942,7 @@ import { JsonRpc } from 'jsonrpc';
 
 // ...
 
-jsonRpc = new JsonRpc(this); // Passing in this will scope the rpc calls to your extension
+jsonRpc = new JsonRpc(this); // Passing in this will scope the RPC calls to your extension
 
 // ...
 
@@ -931,9 +961,9 @@ connectedCallback() {
 ----
 
 <1> Note the method `getAll` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
-<2> In this case the result is an array, so we can loop over it.
+<2> In this case, the result is an array, so we can loop over it.
 
-JsonArray (or any Java collection) in either blocking or non-blocking will return an array, else a JsonObject will be returned.
+JsonArray (or any Java collection), either blocking or nonblocking, will return an array; otherwise, a JsonObject will be returned.
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/resources/dev-ui/qwc-cache-caches.js[Example code]
 
@@ -951,7 +981,7 @@ public Uni<JsonObject> clear(String name) { //<1>
     }
 }
 ----
-<1> the clear method takes one parameter called `name`
+<1> The clear method takes one parameter called `name`
 
 In the Webcomponent (Javascript):
 
@@ -963,9 +993,9 @@ _clear(name) {
     });
 }
 ----
-<1> the `name` parameter is passed in.
+<1> The `name` parameter is passed in.
 
-====== Streaming data
+==== Streaming data
 
 You can keep a UI screen updated with the latest data by continuously streaming data to the screen. This can be done with `Multi` (Java side) and `Observer` (Javascript side)
 
@@ -976,7 +1006,7 @@ Java side of streaming data:
 public class JokesJsonRPCService {
 
     private final BroadcastProcessor<Joke> jokeStream = BroadcastProcessor.create();
-    
+
     @PostConstruct
     void init() {
         Multi.createFrom().ticks().every(Duration.ofHours(4)).subscribe().with((item) -> {
@@ -1008,24 +1038,55 @@ this._observer = this.jsonRpc.streamJokes().onNext(jsonRpcResponse => { //<1>
 
 this._observer.cancel(); //<2>
 ----
-<1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event. 
+<1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event.
 <2> Make sure to keep an instance of the observer to cancel later if needed.
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
 
-====== Dev UI Log
+==== JsonRpc against the deployment classpath
 
-When running a local application using the `999-SNAPSHOT` version, the Dev UI will show a `Dev UI` Log in the footer. This is useful to debug all JSON RPC messages flowing between the browser and the Quarkus app.
+In certain cases you might need to execute methods and/or get data against the deployment classpath. This also happens over JsonRPC communication, but in this case you do not create a JsonRPC Service in the runtime module,
+you can just supply the code to be run in a supplier in the deployment module. To do this you will produce a `BuildTimeActionBuildItem`, example:
+
+[source,java]
+----
+    @BuildStep(onlyIf = IsDevelopment.class)
+    BuildTimeActionBuildItem createBuildTimeActions() { //<1>
+        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem();//<2>
+        generateManifestActions.addAction("generateManifests", ignored -> { //<3>
+            try {
+                List<Manifest> manifests = holder.getManifests();
+                // Avoid relying on databind.
+                Map<String, String> map = new LinkedHashMap<>();
+                for (Manifest manifest : manifests) {
+                    map.put(manifest.getName(), manifest.getContent());
+                }
+                return map;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return generateManifestActions;
+    }
+----
+<1> Return or use a BuildProducer to create a `BuildTimeActionBuildItem`
+<2> `BuildTimeActionBuildItem` is automatically scoped with your extension namespace
+<3> The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`
+
+===== Dev UI Log
+
+When running a local application using the `999-SNAPSHOT` version, the Dev UI will show a `Dev UI` Log in the footer. This is useful for debugging all JSON RPC messages flowing between the browser and the Quarkus app.
 
 image::dev-ui-jsonrpc-log-v2.png[alt=Dev UI Json RPC Log,role="center"]
 
 == Hot reload
 
-You can update a screen automatically when a Hot reload has happened. To do this replace the `LitElement` that your Webcomponent extends with `QwcHotReloadElement`.
+You can update a screen automatically when a hot reload happens. To do this, replace the `LitElement` that your Webcomponent extends with `QwcHotReloadElement`.
 
-`QwcHotReloadElement` extends `LitElement` so your component is still a Lit Element.
+`QwcHotReloadElement` extends `LitElement`, so your component is still a Lit Element.
 
-When extending a `QwcHotReloadElement` you have to provide the `hotReload` method. (You also still need to provide the `render` method from Lit)
+When extending a `QwcHotReloadElement`, you have to use the `hotReload` method. (You must also still provide the `render` method from Lit)
 
 [source,javascript]
 ----
@@ -1050,7 +1111,7 @@ export class QwcMyExtensionPage extends QwcHotReloadElement {
 
 You can customize the card that is being displayed on the extension page if you do not want to use the default built-in card.
 
-To do this, you need to provide a Webcomponent that will be loaded in the place of the provided card and register this in the Java Processor:
+To do this, you must provide a Webcomponent that will be loaded in the place of the provided card and register this in the Java Processor:
 
 [source,java]
 ----
@@ -1077,22 +1138,22 @@ static properties = {
     extensionName: {type: String},
     description: {type: String},
     guide: {type: String},
-    namespace: {type: String}    
+    namespace: {type: String}
 }
 ----
 
-== State (Advance)
+== State (advance)
 
-State allows properties to contain state and can be reused globally. An example of state properties are the theme, the connection state (if we are connected to the backend), etc.
+State allows properties to contain state and can be reused globally. An example of state properties is the theme, the connection state (if we are connected to the backend), etc.
 
 See the https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state[current built-in] state objects.
 
-The state in Dev UI uses https://github.com/gitaarik/lit-state[LitState] and you can read more about it in their https://gitaarik.github.io/lit-state/build/[documentation].
+The state in Dev UI uses https://github.com/gitaarik/lit-state[LitState]. You can read more about it in their https://gitaarik.github.io/lit-state/build/[documentation].
 
 
 == Add a log file
 
-Apart from adding a card and a page, extensions can add a log to the footer. This is useful to log things happening continuously. A page will lose connection to the backend when navigating away from that page, a log in the footer is permanently connected.
+Apart from adding a card and a page, extensions can add a log to the footer. This is useful for logging things that are happening continuously. A page will lose connection to the backend when navigating away from that page, and a log in the footer will be permanently connected.
 
 Adding something to the footer works exactly like adding a Card, except you use a `FooterPageBuildItem` rather than a `CardPageBuildItem`.
 
@@ -1110,7 +1171,7 @@ footerProducer.produce(footerPageBuildItem);
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/java/io/quarkus/jokes/deployment/devui/JokesDevUIProcessor.java#L87[Example code]
 
-In your Webcomponent you can then stream the log to the UI:
+In your Webcomponent, you can then stream the log to the UI:
 
 [source,javascript]
 ----
@@ -1153,7 +1214,7 @@ You can add tests to your extension that test:
 - Build time data
 - Runtime data via JsonRPC
 
-You need to add this to your pom:
+You must add this to your pom:
 
 [source,xml]
 ----
@@ -1175,7 +1236,7 @@ If you added Build time data, for example:
 cardPageBuildItem.addBuildTimeData("somekey", somevalue);
 ----
 
-To test that your build time data is generated correctly you can add a test that extends `DevUIBuildTimeDataTest`.
+To test that your build time data is generated correctly, you can add a test that extends `DevUIBuildTimeDataTest`.
 
 [source,java]
 ----
@@ -1210,7 +1271,7 @@ public boolean updateProperties(String content, String type) {
 }
 ----
 
-To test that `updateProperties` execute correctly via JsonRPC you can add a test that extends `DevUIJsonRPCTest`.
+To test that `updateProperties` executes correctly via JsonRPC, you can add a test that extends `DevUIJsonRPCTest`.
 
 [source,java]
 ----

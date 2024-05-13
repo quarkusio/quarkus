@@ -54,6 +54,6 @@ public class OidcGraphQLClientIntegrationProcessor {
                 }
             }
         }
-        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients, config.clientName.orElse(null));
+        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients, config.clientName().orElse(null));
     }
 }

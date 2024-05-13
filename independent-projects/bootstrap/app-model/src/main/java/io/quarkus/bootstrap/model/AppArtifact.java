@@ -2,8 +2,11 @@ package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -11,8 +14,11 @@ import io.quarkus.paths.PathList;
 /**
  * Represents an application (or its dependency) artifact.
  *
+ * @deprecated in favor of {@link ResolvedDependency} and {@link io.quarkus.maven.dependency.Dependency}.
+ *
  * @author Alexey Loubyansky
  */
+@Deprecated(forRemoval = true, since = "3.11.0")
 public class AppArtifact extends AppArtifactCoords implements ResolvedDependency, Serializable {
 
     private static final long serialVersionUID = -6226544163467103712L;
@@ -120,5 +126,10 @@ public class AppArtifact extends AppArtifactCoords implements ResolvedDependency
     @Override
     public int getFlags() {
         return flags;
+    }
+
+    @Override
+    public Collection<ArtifactCoords> getDependencies() {
+        return List.of();
     }
 }

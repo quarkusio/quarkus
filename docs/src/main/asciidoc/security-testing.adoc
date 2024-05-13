@@ -93,6 +93,24 @@ identity to be present.
 
 See xref:security-oidc-bearer-token-authentication.adoc#integration-testing-security-annotation[OpenID Connect Bearer Token Integration testing], xref:security-oidc-code-flow-authentication.adoc#integration-testing-security-annotation[OpenID Connect Authorization Code Flow Integration testing] and xref:security-jwt.adoc#integration-testing-security-annotation[SmallRye JWT Integration testing] for more details about testing the endpoint code which depends on the injected `JsonWebToken`.
 
+Additionally, you can specify attributes for the identity, perhaps custom items that were added with identity augmentation:
+
+[source,java]
+----
+@Inject
+SecurityIdentity identity;
+
+@Test
+@TestSecurity(user = "testUser", "roles = {"admin, "user"}, attributes = {
+            @SecurityAttribute(key = "answer", value = "42", type = AttributeType.LONG) }
+void someTestMethod() {
+    Long answer = identity.<Long>getAttribute("answer");
+...
+}
+----
+
+This will run the test with an identity with an attribute of type `Long` named `answer`.
+
 [WARNING]
 ====
 The feature is only available for `@QuarkusTest` and will **not** work on a `@QuarkusIntegrationTest`.
@@ -120,6 +138,75 @@ This is particularly useful if the same set of security settings needs to be use
 If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth
 mechanism when none is defined), then Basic Auth needs to be enabled explicitly,
 for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.auth.basic=true`.
+
+=== Path-based authentication
+
+`@TestSecurity` can also be used when xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[authentication mechanisms must be combined].
+Example below shows how to select authentication mechanism when path-based authentication is enabled.
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", roles = {"admin", "user"}, authMechanism = "basic") <1>
+void basicTestMethod() {
+    ...
+}
+
+@Test
+@TestSecurity(user = "testUser", roles = {"admin", "user"}, authMechanism = "form") <2>
+void formTestMethod() {
+    ...
+}
+----
+<1> The 'authMechanism' attribute selects Basic authentication.
+<2> The 'authMechanism' attribute selects Form-based authentication.
+
+In your Quarkus application, it is possible to use annotations to select an authentication mechanism specific to each Jakarta REST endpoint:
+
+[source,java]
+----
+package org.acme.security.testing;
+
+import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/")
+public class TestSecurityResource {
+
+    @BasicAuthentication <1>
+    @GET
+    @Path("basic-only")
+    public String basicOnly() {
+        return "basic-only";
+    }
+
+    @FormAuthentication <2>
+    @GET
+    @Path("form-only")
+    public String formOnly() {
+        return "form-only";
+    }
+}
+----
+<1> All HTTP requests to the `/basic-only` path from the `basicTestMethod` test are authenticated successfully.
+<2> Same HTTP requests will fail when invoked from the `formTestMethod` test as Basic authentication is required.
+
+Alternatively, it is possible to select path-specific authentication mechanism with HTTP Security Policy:
+
+[source,properties]
+----
+# require basic authentication for the '/basic-only' path
+quarkus.http.auth.permission.basic.paths=/basic-only
+quarkus.http.auth.permission.basic.policy=authenticated
+quarkus.http.auth.permission.basic.auth-mechanism=basic
+
+# require form-based authentication for the '/form-only' path
+quarkus.http.auth.permission.form.paths=/form-only
+quarkus.http.auth.permission.form.policy=authenticated
+quarkus.http.auth.permission.form.auth-mechanism=form
+----
 
 == Use Wiremock for Integration Testing
 

@@ -16,9 +16,9 @@ public class ContainerImageJibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21-runtime:1.18}
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21-runtime:1.19}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.18} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.19} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -56,7 +56,7 @@ public class ContainerImageJibConfig {
      * <ul>
      * <li>Entrypoint "INHERIT" means to inherit entrypoint from base image, {@code jvmArguments} field is used for
      * arguments</li>
-     * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.type})</li>
+     * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.jar.type})</li>
      * <li>A valid entrypoint depends on the location of both the launching scripts and the application jar file. To that
      * end it's helpful to remember that when {@code fast-jar} packaging is used (the default), all necessary application
      * jars are added to the {@code /work} directory and that the same

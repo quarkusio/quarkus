@@ -4,7 +4,7 @@ let pageNode = document.querySelector('#page');
 pageNode.textContent = '';
 
 export class RouterController {
-
+    
     static router = new Router(pageNode);
     static pageMap = new Map(); // We use this to lookup page for a path
     static namespaceMap = new Map(); // We use this to lookup all pages for a namespace
@@ -17,10 +17,20 @@ export class RouterController {
     }
     
     goHome(){
-        let firstPage = RouterController.pageMap.entries().next().value[0];
+        let firstPage = this.getFirstPageUrl();
         Router.go({pathname: firstPage});
     }
-
+    
+    getFirstPageUrl(){
+        for (let entry of RouterController.pageMap) {
+            let value = entry[1];
+            if(value.includeInMenu){
+                return entry[0];
+            }
+        }
+        return null;
+    }
+    
     getCurrentRoutePath(){
         var location = RouterController.router.location;
         if (location.route) {
@@ -166,6 +176,7 @@ export class RouterController {
     
     addRoute(path, component, name, page, defaultRoute = false) {
         path = this.getPageUrlFor(page);
+        const search = new URLSearchParams(window.location.search);
         if (!this.isExistingPath(path)) {
             RouterController.pageMap.set(path, page);
             if(RouterController.namespaceMap.has(page.namespace)){
@@ -187,20 +198,19 @@ export class RouterController {
             routes.push({...route});
 
             RouterController.router.addRoutes(routes);
-        }
-        
-        var currentSelection = window.location.pathname;
-        const search = this.getQueryParamsWithoutFrom();
+            
+            var currentSelection = window.location.pathname;
+            const search = this.getQueryParamsWithoutFrom();
 
-        var relocationRequest = this.getQueryParameter("from");
-        if (relocationRequest) {
-            // We know and already loaded the requested location
-            if (relocationRequest === path) {
+            var relocationRequest = this.getQueryParameter("from");
+            if (relocationRequest) {
+                // We know and already loaded the requested location
+                if (relocationRequest === path) {
+                    Router.go({pathname: path, search});
+                }
+            } else if(currentSelection === path){
                 Router.go({pathname: path, search});
-            }
-        } else {
-            // We know and already loaded the requested location
-            if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev-ui/')) {
+            } else if(!RouterController.router.location.route && currentSelection.endsWith('/dev-ui/') && defaultRoute) {
                 Router.go({pathname: path, search});
                 // We do not know and have not yet loaded the requested location
             } else if (!RouterController.router.location.route && defaultRoute) {

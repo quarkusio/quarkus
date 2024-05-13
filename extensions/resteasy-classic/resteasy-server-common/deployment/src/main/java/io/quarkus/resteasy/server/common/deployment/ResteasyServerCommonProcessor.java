@@ -477,6 +477,8 @@ public class ResteasyServerCommonProcessor {
                     }
 
                     if (restConstructorFound) {
+                        log.debug("Resource " + clazz.name()
+                                + " will not be considered a CDI bean because it has Jakarta REST annotations on its constructor parameters");
                         transformation.add(DotNames.VETOED);
                     }
 
@@ -736,8 +738,11 @@ public class ResteasyServerCommonProcessor {
 
             boolean hasNonJaxRSAnnotations = false;
             for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
-                final String packageName = packageName(instance.name());
+                DotName name = instance.name();
+                final String packageName = packageName(name);
                 if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
+                    log.debug("Annotation " + name + " results in Quarkus not being able to generate a default constructor for "
+                            + classInfo.name());
                     hasNonJaxRSAnnotations = true;
                     break;
                 }
@@ -750,7 +755,7 @@ public class ResteasyServerCommonProcessor {
 
             final String name = classInfo.name().toString();
             transformers
-                    .produce(new BytecodeTransformerBuildItem(true, name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                         @Override
                         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
                             ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {

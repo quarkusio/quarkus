@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -30,7 +31,11 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.core.http.HttpClient;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -291,6 +296,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
             // tenant-web-app2
             page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -300,7 +306,8 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
-
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app2"));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -651,6 +658,39 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBothGlobalAndTenantSpecificJwtValidator() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(200);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken("admin", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim/api/user")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testGlobalJwtValidator() {
+        // tests that tenant-specific validator is not applied as the @TenantFeature value is not matched
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(200);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken("admin", "b", "b"))
+                .when().get("/tenant/tenant-requiredclaim-alternative/api/user")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
     public void testRequiredClaimPass() {
         //Client id should match the required azp claim
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b", "b"))
@@ -683,6 +723,134 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant-opaque/tenant-oidc/api/admin-permission")
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    public void testResolveStaticTenantsByPathPatterns() {
+        // default tenant path pattern is more specific, therefore it wins over tenant-b pattern that is also matched
+        assertStaticTenantSuccess("a", "default", "tenant-b/default");
+        assertStaticTenantFailure("a", "tenant-b/default-b");
+        assertStaticTenantFailure("a", "tenant-b/default-b/");
+        assertStaticTenantFailure("b", "tenant-b/default");
+        assertStaticTenantFailure("b", "tenant-b/default/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/default-b");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/default-b/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/public-key");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/public-key");
+        assertStaticTenantFailure("public-key", "tenant-b/public-key");
+        assertStaticTenantFailure("public-key", "tenant-b/public-key/");
+        assertStaticTenantSuccess("public-key", "public-key", "tenant-c/public-key");
+        assertStaticTenantSuccess("public-key", "public-key", "tenant-c/public-key/");
+        assertStaticTenantSuccess("public-key", "public-key", "public-key/match");
+        assertStaticTenantSuccess("public-key", "public-key", "public-key/match/");
+        assertStaticTenantFailure("b", "public-key/match");
+        assertStaticTenantFailure("b", "public-key/match/");
+        assertStaticTenantFailure("public-key", "public-key-c/match");
+        assertStaticTenantFailure("public-key", "public-key-c/match/");
+        assertStaticTenantSuccess("a", "public-key", "public-key-c/match");
+
+        // assert path is normalized and tenant is selected by path-matching pattern before HTTP perms are checked
+        Vertx vertx = Vertx.vertx();
+        HttpClient httpClient = null;
+        try {
+            httpClient = vertx.createHttpClient();
+            httpClient
+                    .request(HttpMethod.GET, RestAssured.port, URI.create(RestAssured.baseURI).getHost(),
+                            "/api/tenant-paths///public-key//match")
+                    .flatMap(r -> r.putHeader("Authorization", "Bearer " + getAccessToken("public-key")).send())
+                    .flatMap(r -> {
+                        assertEquals(200, r.statusCode());
+                        return r.body();
+                    })
+                    .map(Buffer::toString)
+                    .invoke(b -> assertEquals("public-key", b))
+                    .await().indefinitely();
+            httpClient
+                    .request(HttpMethod.GET, RestAssured.port, URI.create(RestAssured.baseURI).getHost(),
+                            "/api/tenant-paths///public-key//match")
+                    .flatMap(r -> r.putHeader("Authorization", "Bearer " + getAccessToken("b")).send())
+                    .invoke(r -> assertEquals(401, r.statusCode()))
+                    .await().indefinitely();
+        } finally {
+            if (httpClient != null) {
+                httpClient.closeAndAwait();
+            }
+            vertx.closeAndAwait();
+        }
+    }
+
+    @Test
+    public void testResolveTenantsByIssuer() {
+        assertStaticTenantSuccess("e", "tenant-e", "tenant-by-issuer");
+        assertStaticTenantSuccess("f", "tenant-f", "tenant-by-issuer");
+    }
+
+    private void assertStaticTenantSuccess(String clientId, String tenant, String subPath) {
+        // tenant is resolved based on path pattern and access token is valid
+        final String accessToken = getAccessToken(clientId);
+        RestAssured.given().auth().oauth2(accessToken).when().get("/api/tenant-paths/" + subPath).then().statusCode(200)
+                .body(equalTo(tenant));
+    }
+
+    private String getAccessToken(String clientId) {
+        final String accessToken;
+        if ("public-key".equals(clientId)) {
+            accessToken = AnnotationBasedTenantTest.getTokenWithRole();
+        } else {
+            accessToken = getAccessToken("alice", clientId);
+        }
+        return accessToken;
+    }
+
+    private void assertStaticTenantFailure(String clientId, String subPath) {
+        // tenant is not resolved based on path pattern or access token is not valid
+        final String accessToken = getAccessToken(clientId);
+        RestAssured.given().auth().oauth2(accessToken).when().get("/api/tenant-paths/" + subPath).then().statusCode(401);
+    }
+
+    @Test
+    public void testAnnotationBasedAuthMechSelection() throws IOException {
+        // endpoint is annotated with @CodeFlow
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/code-flow-auth-mech-annotation");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("alice", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("1"))
+                .when().get("/tenant/tenant-oidc-no-discovery/api/user/code-flow-auth-mech-annotation")
+                .then()
+                .statusCode(401);
+
+        // endpoint is annotated with @Bearer
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("1"))
+                .when().get("/tenant/tenant-oidc-no-discovery/api/user/bearer-auth-mech-annotation")
+                .then()
+                .statusCode(204); // ID token name is null
+        boolean codeFlowAuthFailed = false;
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app-dynamic/api/user/bearer-auth-mech-annotation");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            webClient.getOptions().setRedirectEnabled(false);
+            loginForm.getInputByName("login").click();
+        } catch (FailingHttpStatusCodeException e) {
+            codeFlowAuthFailed = true;
+        }
+        if (!codeFlowAuthFailed) {
+            Assertions.fail(
+                    "Endpoint 'bearer-auth-mech-annotation' is annotated with the @Bearer annotation, code flow auth should fail");
+        }
     }
 
     private String getAccessToken(String userName, String clientId) {

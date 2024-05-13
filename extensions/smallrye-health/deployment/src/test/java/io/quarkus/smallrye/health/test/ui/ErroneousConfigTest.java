@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ErroneousConfigTest {
+class ErroneousConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -17,7 +17,7 @@ public class ErroneousConfigTest {
                     .addAsResource(new StringAsset("quarkus.smallrye-health.ui.root-path=/\n"), "application.properties"));
 
     @Test
-    public void shouldNotStartApplicationIfUIPathIsASlash() {
+    void shouldNotStartApplicationIfUIPathIsASlash() {
         Assertions.fail();
     }
 }

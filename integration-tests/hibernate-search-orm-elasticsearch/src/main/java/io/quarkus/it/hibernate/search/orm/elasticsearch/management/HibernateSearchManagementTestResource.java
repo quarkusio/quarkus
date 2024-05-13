@@ -36,9 +36,8 @@ public class HibernateSearchManagementTestResource {
     @Path("/search-count")
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
-    public long testAnalysisConfigured() {
+    public long searchCount() {
         return searchSession.search(ManagementTestEntity.class)
-                .select(f -> f.id())
                 .where(f -> f.matchAll())
                 .fetchTotalHitCount();
     }

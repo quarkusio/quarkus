@@ -156,6 +156,7 @@ public class GradleRunner implements BuildSystemRunner {
         args.add("-PquarkusPluginVersion=" + ToolsUtils.getGradlePluginVersion(props));
         args.add("--console");
         args.add("plain");
+        args.add("--no-daemon");
         args.add("--stacktrace");
         args.add("quarkusUpdate");
         if (!StringUtil.isNullOrEmpty(targetQuarkusVersion.platformVersion)) {
@@ -202,7 +203,8 @@ public class GradleRunner implements BuildSystemRunner {
         args.add(action);
 
         if (buildOptions.buildNative) {
-            args.add("-Dquarkus.package.type=native");
+            args.add("-Dquarkus.native.enabled=true");
+            args.add("-Dquarkus.jar.enabled=false");
         }
         if (buildOptions.skipTests()) {
             setSkipTests(args);

@@ -8,6 +8,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.ServerCookie;
@@ -15,9 +16,6 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class DefaultTokenStateManager implements TokenStateManager {
-
-    private static final String SESSION_AT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_at";
-    private static final String SESSION_RT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_rt";
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
@@ -137,19 +135,21 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     private static String getAccessTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return SESSION_AT_COOKIE_NAME + cookieSuffix;
+        return OidcUtils.SESSION_AT_COOKIE_NAME + cookieSuffix;
     }
 
     private static String getRefreshTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return SESSION_RT_COOKIE_NAME + cookieSuffix;
+        return OidcUtils.SESSION_RT_COOKIE_NAME + cookieSuffix;
     }
 
     private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
         if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
-                return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey());
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                return OidcUtils.encryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }
@@ -161,7 +161,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
         if (oidcConfig.tokenStateManager.encryptionRequired) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
-                return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey());
+                KeyEncryptionAlgorithm encAlgorithm = KeyEncryptionAlgorithm
+                        .valueOf(oidcConfig.tokenStateManager.encryptionAlgorithm.name());
+                return OidcUtils.decryptString(token, configContext.getTokenEncSecretKey(), encAlgorithm);
             } catch (Exception ex) {
                 throw new AuthenticationFailedException(ex);
             }

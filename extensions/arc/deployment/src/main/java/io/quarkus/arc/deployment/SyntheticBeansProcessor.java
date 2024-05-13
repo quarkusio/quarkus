@@ -94,7 +94,8 @@ public class SyntheticBeansProcessor {
 
     private String createName(ExtendedBeanConfigurator configurator) {
         return configurator.getImplClazz().toString().replace(".", "_") + "_"
-                + HashUtil.sha1(configurator.getTypes().toString() + configurator.getQualifiers().toString());
+                + HashUtil.sha1(configurator.getTypes().toString() + configurator.getQualifiers().toString()
+                        + (configurator.getIdentifier() != null ? configurator.getIdentifier() : ""));
     }
 
     private Consumer<MethodCreator> creator(String name, SyntheticBeanBuildItem bean) {

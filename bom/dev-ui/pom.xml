@@ -13,10 +13,10 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>24.3.5</vaadin.version>
-        <lit.version>3.1.2</lit.version>
-        <lit-element.version>4.0.4</lit-element.version>
-        <lit-html.version>3.1.2</lit-html.version>
+        <vaadin.version>24.3.11</vaadin.version>
+        <lit.version>3.1.3</lit.version>
+        <lit-element.version>4.0.5</lit-element.version>
+        <lit-html.version>3.1.3</lit-html.version>
         <ssr-dom-shim.version>1.2.0</ssr-dom-shim.version>
         <trusted-types.version>2.0.7</trusted-types.version>
         <reactive-element.version>2.0.4</reactive-element.version>
@@ -27,9 +27,9 @@
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <vaadin-router.version>1.7.5</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
-        <echarts.version>5.4.3</echarts.version>
-        <wc-codemirror.version>2.1.0</wc-codemirror.version>
-        <es-module-shims.version>1.8.2</es-module-shims.version>
+        <echarts.version>5.5.0</echarts.version>
+        <codeblock.version>1.0.13</codeblock.version>
+        <es-module-shims.version>1.9.0</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
 
         <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
@@ -262,12 +262,12 @@
 
             <!-- Code editor -->
             <dependency>
-                <groupId>org.mvnpm.at.vanillawc</groupId>
-                <artifactId>wc-codemirror</artifactId>
-                <version>${wc-codemirror.version}</version>
+                <groupId>org.mvnpm.at.mvnpm</groupId>
+                <artifactId>codeblock</artifactId>
+                <version>${codeblock.version}</version>
                 <scope>runtime</scope>
             </dependency>
-
+            
             <!-- Polyfill for importmaps -->
             <dependency>
                 <groupId>org.mvnpm</groupId>

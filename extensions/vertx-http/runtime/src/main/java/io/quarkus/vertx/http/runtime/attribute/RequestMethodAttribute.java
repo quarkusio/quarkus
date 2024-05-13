@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -10,16 +11,21 @@ public class RequestMethodAttribute implements ExchangeAttribute {
 
     public static final String REQUEST_METHOD_SHORT = "%m";
     public static final String REQUEST_METHOD = "%{METHOD}";
+    public static final String ORIGINAL_REQUEST_METHOD_SHORT = "%<m";
+    public static final String ORIGINAL_REQUEST_METHOD = "%{<METHOD}";
 
-    public static final ExchangeAttribute INSTANCE = new RequestMethodAttribute();
+    public static final ExchangeAttribute INSTANCE = new RequestMethodAttribute(false);
+    public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new RequestMethodAttribute(true);
 
-    private RequestMethodAttribute() {
+    private final boolean useOriginalRequest;
 
+    private RequestMethodAttribute(boolean useOriginalRequest) {
+        this.useOriginalRequest = useOriginalRequest;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return exchange.request().method().name();
+        return useOriginalRequest ? OriginalRequestContext.getMethod(exchange).name() : exchange.request().method().name();
     }
 
     @Override
@@ -38,6 +44,8 @@ public class RequestMethodAttribute implements ExchangeAttribute {
         public ExchangeAttribute build(final String token) {
             if (token.equals(REQUEST_METHOD) || token.equals(REQUEST_METHOD_SHORT)) {
                 return RequestMethodAttribute.INSTANCE;
+            } else if (token.equals(ORIGINAL_REQUEST_METHOD) || token.equals(ORIGINAL_REQUEST_METHOD_SHORT)) {
+                return RequestMethodAttribute.INSTANCE_ORIGINAL_REQUEST;
             }
             return null;
         }

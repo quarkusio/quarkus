@@ -25,6 +25,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
@@ -237,6 +238,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private final boolean skipNotRestParameters;
+
     private SerializerScanningResult serializerScanningResult;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
@@ -262,6 +265,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.targetJavaVersion = builder.targetJavaVersion;
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
+        this.skipNotRestParameters = builder.skipNotRestParameters;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -576,7 +580,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 Type paramType = currentMethodInfo.parameterType(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
-                if (skipParameter(anns)) {
+                if (skipParameter(anns) || skipNotRestParameters(skipNotRestParameters).apply(anns)) {
                     parameterResult = createIndexedParam()
                             .setCurrentClassInfo(currentClassInfo)
                             .setActualEndpointInfo(actualEndpointInfo)
@@ -611,8 +615,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                         + currentMethodInfo.parameterName(i));
                     bodyParamType = paramType;
                     if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
-                        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
-                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
                     }
                 }
                 String elementType = parameterResult.getElementType();
@@ -776,6 +779,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
                     + currentMethodInfo.name() + "'", e);
         }
+    }
+
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
+                + methodInfo.declaringClass().name() + "#" + methodInfo + "'");
+    }
+
+    private Function<Map<DotName, AnnotationInstance>, Boolean> skipNotRestParameters(boolean skipAllNotMethodParameter) {
+        return new Function<Map<DotName, AnnotationInstance>, Boolean>() {
+            @Override
+            public Boolean apply(Map<DotName, AnnotationInstance> anns) {
+                if (skipAllNotMethodParameter) {
+                    return anns.size() > 0
+                            && JAX_RS_ANNOTATIONS_FOR_FIELDS.stream().noneMatch(dotName -> anns.containsKey(dotName));
+                }
+                return false;
+            }
+        };
     }
 
     protected boolean skipParameter(Map<DotName, AnnotationInstance> anns) {
@@ -1675,6 +1696,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
 
+        private boolean skipNotRestParameters = false;
+
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
             return (B) this;
@@ -1794,6 +1817,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         public B setSkipMethodParameter(
                 Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
             this.skipMethodParameter = skipMethodParameter;
+            return (B) this;
+        }
+
+        public B skipNotRestParameters(boolean skipNotRestParameters) {
+            this.skipNotRestParameters = skipNotRestParameters;
             return (B) this;
         }
 

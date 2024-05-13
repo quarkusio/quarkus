@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: security
 :keywords: sso oidc security keycloak
 :topics: security,authentication,authorization,keycloak,sso
-:extensions: io.quarkus:quarkus-keycloak-admin-client-reactive,io.quarkus:quarkus-keycloak-admin-client
+:extensions: io.quarkus:quarkus-keycloak-admin-rest-client,io.quarkus:quarkus-keycloak-admin-resteasy-client
 
 The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
 
@@ -28,15 +28,15 @@ First, we need a new project.
 Create a new project with the following command:
 
 :create-app-artifact-id: security-keycloak-admin-client
-:create-app-extensions: keycloak-admin-client-reactive,resteasy-reactive-jackson
+:create-app-extensions: keycloak-admin-rest-client,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project which imports the `keycloak-admin-client-reactive` and `resteasy-reactive-jackson` extensions.
+This command generates a project which imports the `keycloak-admin-rest-client` and `rest-jackson` extensions.
 
-If you already have your Quarkus project configured, you can add the `keycloak-admin-client-reactive` and `resteasy-reactive-jackson` extensions
+If you already have your Quarkus project configured, you can add the `keycloak-admin-rest-client` and `rest-jackson` extensions
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: keycloak-admin-client-reactive,resteasy-reactive-jackson
+:add-extension-extensions: keycloak-admin-rest-client,rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -46,19 +46,19 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+    <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-keycloak-admin-client-reactive")
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-keycloak-admin-rest-client")
+implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
 We also are going to need a simple resource with a `Keycloak` injected as request scoped CDI bean.

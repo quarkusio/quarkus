@@ -427,6 +427,7 @@
   ],
   "metadata": {
     "project": {
+      "default-codestart": "resteasy-reactive",
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "4.3.2",
@@ -446,7 +447,7 @@
         "recommended-java-version": "17",
         "proposed-maven-version": "3.9.6",
         "maven-wrapper-version": "3.2.0",
-        "gradle-wrapper-version": "8.6"
+        "gradle-wrapper-version": "8.7"
       }
     },
     "codestarts-artifacts": [

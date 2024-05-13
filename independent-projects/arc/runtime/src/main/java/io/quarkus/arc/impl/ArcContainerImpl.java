@@ -494,6 +494,11 @@ public class ArcContainerImpl implements ArcContainer {
         return observers;
     }
 
+    @Override
+    public <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType, Annotation... eventQualifiers) {
+        return resolveObserverMethods(eventType, Set.of(eventQualifiers));
+    }
+
     InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {
         for (ResourceReferenceProvider resourceProvider : resourceProviders) {
             InstanceHandle<Object> ret = resourceProvider.get(type, annotations);
@@ -548,14 +553,14 @@ public class ArcContainerImpl implements ArcContainer {
             }
             InjectionPoint prev = null;
             if (resetCurrentInjectionPoint) {
-                prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
+                prev = InjectionPointProvider.setCurrent(creationalContext, CurrentInjectionPointProvider.EMPTY);
             }
             try {
                 return new EagerInstanceHandle<>(bean, bean.get(creationalContext), creationalContext, parentContext,
                         destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
-                    InjectionPointProvider.set(prev);
+                    InjectionPointProvider.setCurrent(creationalContext, prev);
                 }
             }
         } else {
@@ -871,7 +876,8 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     @SuppressWarnings("unchecked")
-    <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
+    <T> List<InjectableObserverMethod<? super T>> resolveObserverMethods(Type eventType,
+            Set<Annotation> eventQualifiers) {
         registeredQualifiers.verify(eventQualifiers);
         if (observers.isEmpty()) {
             return Collections.emptyList();

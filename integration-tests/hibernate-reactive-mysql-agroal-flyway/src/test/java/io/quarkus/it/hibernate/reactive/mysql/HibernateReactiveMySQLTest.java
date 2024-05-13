@@ -22,9 +22,9 @@ public class HibernateReactiveMySQLTest {
     }
 
     @Test
-    public void blockingFind() {
+    public void jdbcFind() {
         RestAssured.when()
-                .get("/tests/blockingFind")
+                .get("/tests/jdbcFind")
                 .then()
                 .body(is("{\"id\":6,\"name\":\"Iola\"}"));
     }

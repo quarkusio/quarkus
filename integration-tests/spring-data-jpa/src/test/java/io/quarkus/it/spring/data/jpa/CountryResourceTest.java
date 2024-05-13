@@ -80,7 +80,7 @@ public class CountryResourceTest {
                 .body(containsString("Greece"));
 
         when().get("/country/getOne/100").then()
-                .statusCode(500);
+                .statusCode(400);
     }
 
     @Test

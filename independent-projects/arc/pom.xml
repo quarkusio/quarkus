@@ -39,26 +39,26 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- specification versions -->
-        <version.cdi>4.0.1</version.cdi>
-        <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
+        <version.cdi>4.1.0</version.cdi>
+        <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
         <version.jpa>3.1.0</version.jpa>
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.8.0</version.gizmo>
-        <version.jandex>3.1.6</version.jandex>
+        <version.jandex>3.1.8</version.jandex>
         <version.jboss-logging>3.5.3.Final</version.jboss-logging>
-        <version.mutiny>2.5.6</version.mutiny>
+        <version.mutiny>2.6.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
         <version.assertj>3.25.3</version.assertj>
         <version.junit5>5.10.2</version.junit5>
-        <version.kotlin>1.9.22</version.kotlin>
-        <version.kotlin-coroutines>1.7.3</version.kotlin-coroutines>
-        <version.mockito>5.10.0</version.mockito>
+        <version.kotlin>1.9.23</version.kotlin>
+        <version.kotlin-coroutines>1.8.0</version.kotlin-coroutines>
+        <version.mockito>5.11.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
-        <version.cdi-tck>4.0.13</version.cdi-tck>
+        <version.cdi-tck>4.1.0</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
         <!-- Maven plugin versions -->
         <version.compiler.plugin>3.12.1</version.compiler.plugin>

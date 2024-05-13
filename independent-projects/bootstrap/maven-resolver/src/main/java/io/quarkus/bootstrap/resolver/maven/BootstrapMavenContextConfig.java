@@ -4,10 +4,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import org.apache.maven.model.Model;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -27,6 +29,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected List<RemoteRepository> remoteRepos;
     protected List<RemoteRepository> remotePluginRepos;
     protected RemoteRepositoryManager remoteRepoManager;
+    protected SettingsDecrypter settingsDecrypter;
     protected String alternatePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
@@ -36,6 +39,46 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected Boolean effectiveModelBuilder;
     protected Boolean wsModuleParentHierarchy;
     protected Function<Path, Model> modelProvider;
+    protected List<String> excludeSisuBeanPackages;
+    protected List<String> includeSisuBeanPackages;
+    protected Boolean warnOnFailedWorkspaceModules;
+
+    public T excludeSisuBeanPackage(String packageName) {
+        if (excludeSisuBeanPackages == null) {
+            excludeSisuBeanPackages = new ArrayList<>();
+        }
+        excludeSisuBeanPackages.add(packageName);
+        return (T) this;
+    }
+
+    protected List<String> getExcludeSisuBeanPackages() {
+        if (excludeSisuBeanPackages == null) {
+            return List.of("org.apache.maven.shared.release",
+                    "org.apache.maven.toolchain",
+                    "org.apache.maven.lifecycle",
+                    "org.apache.maven.execution",
+                    "org.apache.maven.plugin");
+        }
+        return excludeSisuBeanPackages;
+    }
+
+    public T includeSisuBeanPackage(String packageName) {
+        if (includeSisuBeanPackages == null) {
+            includeSisuBeanPackages = new ArrayList<>();
+        }
+        includeSisuBeanPackages.add(packageName);
+        return (T) this;
+    }
+
+    protected List<String> getIncludeSisuBeanPackages() {
+        if (includeSisuBeanPackages == null) {
+            return List.of("io.smallrye.beanbag",
+                    "org.eclipse.aether",
+                    "org.sonatype.plexus.components",
+                    "org.apache.maven");
+        }
+        return includeSisuBeanPackages;
+    }
 
     /**
      * Local repository location
@@ -80,7 +123,6 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
      * POM configuration will be picked up by the resolver and all the local projects
      * belonging to the workspace will be resolved at their original locations instead of
      * the actually artifacts installed in the repository.
-     * Note, that if {@link #workspace} is provided, this setting will be ignored.
      *
      * @param workspaceDiscovery enables or disables workspace discovery
      * @return this instance of the builder
@@ -130,7 +172,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     /**
      * Remote plugin repositories that should be used by the resolver
      *
-     * @param repoPluginRepos remote plugin repositories
+     * @param remotePluginRepos remote plugin repositories
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -148,6 +190,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setRemoteRepositoryManager(RemoteRepositoryManager remoteRepoManager) {
         this.remoteRepoManager = remoteRepoManager;
+        return (T) this;
+    }
+
+    /**
+     * Settings decryptor
+     *
+     * @param settingsDecrypter settings decrypter
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setSettingsDecrypter(SettingsDecrypter settingsDecrypter) {
+        this.settingsDecrypter = settingsDecrypter;
         return (T) this;
     }
 
@@ -278,6 +332,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setProjectModelProvider(Function<Path, Model> modelProvider) {
         this.modelProvider = modelProvider;
+        return (T) this;
+    }
+
+    /**
+     * Whether to warn about failures loading workspace modules instead of throwing errors
+     *
+     * @param warnOnFailedWorkspaceModules whether to warn about failures loading workspace modules instead of throwing errors
+     * @return this config instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setWarnOnFailedWorkspaceModules(boolean warnOnFailedWorkspaceModules) {
+        this.warnOnFailedWorkspaceModules = warnOnFailedWorkspaceModules;
         return (T) this;
     }
 

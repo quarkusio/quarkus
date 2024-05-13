@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -35,6 +36,8 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     private final Timer queueDelay;
     private final Map<String, LongAdder> webSockets = new ConcurrentHashMap<>();
     private final HttpBinderConfiguration config;
+
+    private final Meter.MeterProvider<Timer> responseTimes;
 
     VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration) {
         super(registry, prefix, tags);
@@ -61,6 +64,10 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                 return pending.longValue();
             }
         }).description("Number of requests waiting for a response");
+
+        responseTimes = Timer.builder(config.getHttpClientRequestsName())
+                .description("Response times")
+                .withRegistry(registry);
     }
 
     @Override
@@ -133,10 +140,10 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                 Tags list = tracker.tags
                         .and(HttpCommonTags.status(tracker.response.statusCode()))
                         .and(HttpCommonTags.outcome(tracker.response.statusCode()));
-                Timer.builder(config.getHttpClientRequestsName())
-                        .description("Response times")
-                        .tags(list)
-                        .register(registry).record(duration, TimeUnit.NANOSECONDS);
+
+                responseTimes
+                        .withTags(list)
+                        .record(duration, TimeUnit.NANOSECONDS);
             }
         };
     }
@@ -183,7 +190,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             this.tags = origin.and(
                     Tag.of("address", address),
                     HttpCommonTags.method(method),
-                    HttpCommonTags.uri(path, -1));
+                    HttpCommonTags.uri(path, null, -1));
         }
 
         void requestReset() {

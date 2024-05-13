@@ -76,9 +76,9 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
         return doNotEmbed(false);
     }
 
-    public ExternalPageBuilder doNotEmbed(boolean includeInSubMenu) {
+    public ExternalPageBuilder doNotEmbed(boolean includeInMenu) {
         super.embed = false;
-        super.includeInSubMenu = includeInSubMenu;
+        super.includeInMenu = includeInMenu;
         return this;
     }
 

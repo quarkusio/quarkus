@@ -10,12 +10,14 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -46,7 +48,7 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class PgPoolRecorder {
 
-    private static final TypeLiteral<Instance<PgPoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    private static final TypeLiteral<Instance<PgPoolCreator>> PG_POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
@@ -74,14 +76,28 @@ public class PgPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.pgclient.PgPool>, io.vertx.mutiny.pgclient.PgPool> mutinyPgPool(
-            Function<SyntheticCreationalContext<PgPool>, PgPool> function) {
+            String dataSourceName) {
         return new Function<>() {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.pgclient.PgPool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.pgclient.PgPool.newInstance(function.apply(context));
+                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
+                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
+
+                return io.vertx.mutiny.pgclient.PgPool.newInstance(
+                        (PgPool) context.getInjectedReference(PgPool.class, getReactiveDataSourceQualifier(dataSourceName)));
             }
         };
+    }
+
+    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private PgPool initialize(VertxInternal vertx,
@@ -202,10 +218,9 @@ public class PgPoolRecorder {
                 final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode().get();
                 pgConnectOptions.setSslMode(sslMode);
 
+                var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
                 // If sslMode is verify-full, we also need a hostname verification algorithm
-                if (sslMode == SslMode.VERIFY_FULL
-                        && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()
-                                || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get()))) {
+                if ("NONE".equalsIgnoreCase(algo) && sslMode == SslMode.VERIFY_FULL) {
                     throw new IllegalArgumentException(
                             "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
                 }
@@ -227,8 +242,12 @@ public class PgPoolRecorder {
 
             pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().ifPresent(
-                    pgConnectOptions::setHostnameVerificationAlgorithm);
+            var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+            if ("NONE".equalsIgnoreCase(algo)) {
+                pgConnectOptions.setHostnameVerificationAlgorithm("");
+            } else {
+                pgConnectOptions.setHostnameVerificationAlgorithm(algo);
+            }
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(pgConnectOptions::addProperty);
 
@@ -248,9 +267,9 @@ public class PgPoolRecorder {
             SyntheticCreationalContext<PgPool> context) {
         Instance<PgPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(TYPE_LITERAL);
+            instance = context.getInjectedReference(PG_POOL_CREATOR_TYPE_LITERAL);
         } else {
-            instance = context.getInjectedReference(TYPE_LITERAL,
+            instance = context.getInjectedReference(PG_POOL_CREATOR_TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

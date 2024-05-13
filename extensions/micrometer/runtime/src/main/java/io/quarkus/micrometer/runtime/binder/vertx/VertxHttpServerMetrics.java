@@ -7,8 +7,10 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.jboss.logging.Logger;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.LongTaskTimer;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -39,10 +41,11 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
 
     HttpBinderConfiguration config;
 
-    final String nameWebsocketConnections;
-    final String nameHttpServerPush;
-    final String nameHttpServerRequests;
     final LongAdder activeRequests;
+
+    final MeterProvider<Timer> requestsTimer;
+    final MeterProvider<LongTaskTimer> websocketConnectionTimer;
+    final MeterProvider<Counter> pushCounter;
 
     private final List<HttpServerMetricsTagsContributor> httpServerMetricsTagsContributors;
 
@@ -50,16 +53,25 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         super(registry, "http.server", null);
         this.config = config;
 
-        // not dev-mode changeable
-        nameWebsocketConnections = config.getHttpServerWebSocketConnectionsName();
-        nameHttpServerPush = config.getHttpServerPushName();
-        nameHttpServerRequests = config.getHttpServerRequestsName();
-
         activeRequests = new LongAdder();
         Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
                 .register(registry);
 
         httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
+
+        // not dev-mode changeable -----
+        requestsTimer = Timer.builder(config.getHttpServerRequestsName())
+                .description("HTTP server request processing time")
+                .withRegistry(registry);
+
+        websocketConnectionTimer = LongTaskTimer.builder(config.getHttpServerWebSocketConnectionsName())
+                .description("Server web socket connection time")
+                .withRegistry(registry);
+
+        pushCounter = Counter.builder(config.getHttpServerPushName())
+                .description("HTTP server response push counter")
+                .withRegistry(registry);
+        // not dev-mode changeable -----ˆ
     }
 
     private List<HttpServerMetricsTagsContributor> resolveHttpServerMetricsTagsContributors() {
@@ -98,11 +110,12 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());
         if (path != null) {
-            registry.counter(nameHttpServerPush, Tags.of(
-                    HttpCommonTags.uri(path, response.statusCode()),
-                    VertxMetricsTags.method(method),
-                    VertxMetricsTags.outcome(response),
-                    HttpCommonTags.status(response.statusCode())))
+            pushCounter
+                    .withTags(Tags.of(
+                            HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
+                            VertxMetricsTags.method(method),
+                            VertxMetricsTags.outcome(response),
+                            HttpCommonTags.status(response.statusCode())))
                     .increment();
         }
         log.debugf("responsePushed %s, %s", socketMetric, requestMetric);
@@ -150,14 +163,13 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
-            Timer.Builder builder = Timer.builder(nameHttpServerRequests)
-                    .tags(Tags.of(
-                            VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, 0),
-                            Outcome.CLIENT_ERROR.asTag(),
-                            HttpCommonTags.STATUS_RESET));
 
-            sample.stop(builder.register(registry));
+            sample.stop(requestsTimer
+                    .withTags(Tags.of(
+                            VertxMetricsTags.method(requestMetric.request().method()),
+                            HttpCommonTags.uri(path, requestMetric.initialPath, 0),
+                            Outcome.CLIENT_ERROR.asTag(),
+                            HttpCommonTags.STATUS_RESET)));
         }
         requestMetric.requestEnded();
     }
@@ -180,7 +192,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
-                    HttpCommonTags.uri(path, response.statusCode()),
+                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
@@ -194,9 +206,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                     }
                 }
             }
-            Timer.Builder builder = Timer.builder(nameHttpServerRequests).tags(allTags);
 
-            sample.stop(builder.register(registry));
+            sample.stop(requestsTimer.withTags(allTags));
         }
         requestMetric.requestEnded();
     }
@@ -204,7 +215,6 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     /**
      * Called when a server web socket connects.
      *
-     * @param socketMetric a Map for socket metric context or null
      * @param requestMetric a RequestMetricContext or null
      * @param serverWebSocket the server web socket
      * @return a LongTaskTimer.Sample or null
@@ -216,9 +226,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerMatchPatterns(),
                 config.getServerIgnorePatterns());
         if (path != null) {
-            return LongTaskTimer.builder(nameWebsocketConnections)
-                    .tags(Tags.of(HttpCommonTags.uri(path, 0)))
-                    .register(registry)
+            return websocketConnectionTimer
+                    .withTags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0)))
                     .start();
         }
         return null;

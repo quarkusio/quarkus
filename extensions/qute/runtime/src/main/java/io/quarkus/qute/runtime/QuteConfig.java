@@ -89,9 +89,15 @@ public class QuteConfig {
     public Charset defaultCharset;
 
     /**
-     * Dev mode configuration.
+     * Development mode configuration.
      */
     @ConfigItem
     public QuteDevModeConfig devMode;
+
+    /**
+     * Test mode configuration.
+     */
+    @ConfigItem
+    public QuteTestModeConfig testMode;
 
 }

@@ -14,6 +14,7 @@ import java.util.function.BiConsumer;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -30,6 +31,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtrac
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -42,7 +44,9 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.observability.HttpRequest;
 import io.vertx.core.spi.observability.HttpResponse;
+import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
 
 public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<HttpRequest, HttpResponse> {
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
@@ -100,6 +104,31 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         HttpServerRoute.update(spanOperation.getSpanContext(), SERVER_FILTER, RouteGetter.ROUTE_GETTER,
                 ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
+    }
+
+    @Override
+    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(Context context,
+            SpanKind kind,
+            TracingPolicy policy,
+            R request,
+            String operation,
+            BiConsumer<String, String> headers,
+            TagExtractor<R> tagExtractor) {
+        OpenTelemetryVertxTracer.SpanOperation spanOperation = InstrumenterVertxTracer.super.sendRequest(context, kind, policy,
+                request,
+                operation, headers, tagExtractor);
+        if (spanOperation != null) {
+            Context runningCtx = spanOperation.getContext();
+            if (VertxContext.isDuplicatedContext(runningCtx)) {
+                String pathTemplate = runningCtx.getLocal("ClientUrlPathTemplate");
+                if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                    Span.fromContext(spanOperation.getSpanContext())
+                            .updateName(((HttpRequest) spanOperation.getRequest()).method().name() + " " + pathTemplate);
+                }
+            }
+        }
+
+        return spanOperation;
     }
 
     @Override

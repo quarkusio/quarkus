@@ -13,7 +13,6 @@ import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -32,7 +31,6 @@ public class ResteasyReactiveOutputStream extends OutputStream {
 
     private boolean closed;
     protected boolean waitingForDrain;
-    protected boolean drainHandlerRegistered;
     protected boolean first = true;
     protected Throwable throwable;
     private ByteArrayOutputStream overflow;
@@ -40,7 +38,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
-        this.appendBuffer = AppendBuffer.withMinChunks(PooledByteBufAllocator.DEFAULT,
+        this.appendBuffer = AppendBuffer.withMinChunks(
                 context.getDeployment().getResteasyReactiveConfig().getMinChunkSize(),
                 context.getDeployment().getResteasyReactiveConfig().getOutputBufferSize());
         request.response().exceptionHandler(new Handler<Throwable>() {
@@ -94,7 +92,6 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 boolean bufferRequired = awaitWriteable() || (overflow != null && overflow.size() > 0);
                 if (bufferRequired) {
                     //just buffer everything
-                    //                    registerDrainHandler();
                     if (overflow == null) {
                         overflow = new ByteArrayOutputStream();
                     }
@@ -151,15 +148,6 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
         return false;
     }
-
-    //    private void registerDrainHandler() {
-    //        if (!drainHandlerRegistered) {
-    //            drainHandlerRegistered = true;
-    //            Handler<Void> handler = new DrainHandler(this);
-    //            request.response().drainHandler(handler);
-    //            request.response().closeHandler(handler);
-    //        }
-    //    }
 
     /**
      * {@inheritDoc}

@@ -301,6 +301,37 @@ public class OidcUtilsTest {
         assertEquals("openid+a%3A1+b%3A2+c+d", OidcUtils.encodeScopes(config));
     }
 
+    @Test
+    public void testEncodeAllScopesWithCustomSeparator() throws Exception {
+        OidcTenantConfig config = new OidcTenantConfig();
+        config.authentication.setScopeSeparator(",");
+        config.authentication.setScopes(List.of("a:1", "b:2"));
+        config.authentication.setExtraParams(Map.of("scope", "c,d"));
+        assertEquals("openid%2Ca%3A1%2Cb%3A2%2Cc%2Cd", OidcUtils.encodeScopes(config));
+    }
+
+    @Test
+    public void testSessionCookieCheck() throws Exception {
+        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME));
+        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME + "_tenant1"));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "_tenant1"));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME + "_tenant1"));
+
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "1"));
+    }
+
+    @Test
+    public void testGetSessionCookieTenantId() throws Exception {
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session", true));
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID,
+                OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_chunk_1", true));
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a", true));
+        assertEquals("a", OidcUtils.getTenantIdFromCookie(OidcUtils.SESSION_COOKIE_NAME, "q_session_a_chunk_1", true));
+    }
+
     public static JsonObject read(InputStream input) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return new JsonObject(buffer.lines().collect(Collectors.joining("\n")));

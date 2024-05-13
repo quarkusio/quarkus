@@ -164,7 +164,7 @@ void myMethod() { }
 
 An interval trigger defines a period between invocations.
 The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value of `@Scheduled#every()` is parsed with `java.time.Duration#parse(CharSequence)`.
-However, if an expression starts with a digit then the `PT` prefix is added automatically.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minutes".
 
 .Interval Trigger Example
@@ -237,7 +237,7 @@ NOTE: The final value is always rounded to full second.
 
 `@Scheduled#delayed()` is a text alternative to the properties above.
 The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value is parsed with `java.time.Duration#parse(CharSequence)`.
-However, if an expression starts with a digit, the `PT` prefix is added automatically.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15s` can be used instead of `PT15S` and is parsed as "15 seconds".
 
 [source,java]
@@ -437,6 +437,23 @@ class MyJobs {
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
 
 NOTE: If the xref:quartz.adoc[Quartz extension] is present and the DB store type is used then it's not possible to pass a task instance to the job definition and a task class must be used instead. The Quartz API can be also used to schedule a job programmatically.
+
+In certain cases, a more fine-grained approach might be needed which is why Quarkus also exposes `java.util.concurrent.ScheduledExecutorService` and `java.util.concurrent.ExecutorService` that can be injected as CDI beans.
+However, these executors are used by other Quarkus extensions and therefore should be approached with caution. Furthermore, users are never allowed to shut these executors down manually.
+
+[source,java]
+----
+class JobScheduler {
+
+   @Inject
+   ScheduledExecutorService executor;
+
+   void everySecondWithDelay() {
+       Runnable myRunnable = createMyRunnable();
+       executor.scheduleAtFixedRate(myRunnable, 3, 1, TimeUnit.SECONDS);
+   }
+}
+----
 
 == Scheduled Methods and Testing
 

@@ -2,14 +2,12 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.setIdentity;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -42,8 +40,8 @@ abstract class AbstractHttpAuthorizer {
     private final IdentityProviderManager identityProviderManager;
     private final AuthorizationController controller;
     private final List<HttpSecurityPolicy> policies;
-    private final BlockingSecurityExecutor blockingExecutor;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
+    private final HttpSecurityPolicy.AuthorizationRequestContext context;
 
     AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
@@ -53,32 +51,10 @@ abstract class AbstractHttpAuthorizer {
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
         this.policies = policies;
-        this.blockingExecutor = blockingExecutor;
+        this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
         this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
     }
-
-    /**
-     * context that allows for running blocking tasks
-     */
-    private final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
-        @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
-                BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
-            return identityUni
-                    .flatMap(new Function<SecurityIdentity, Uni<? extends HttpSecurityPolicy.CheckResult>>() {
-                        @Override
-                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
-                            return blockingExecutor.executeBlocking(new Supplier<HttpSecurityPolicy.CheckResult>() {
-                                @Override
-                                public HttpSecurityPolicy.CheckResult get() {
-                                    return function.apply(context, identity);
-                                }
-                            });
-                        }
-                    });
-        }
-    };
 
     /**
      * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will
@@ -103,8 +79,7 @@ abstract class AbstractHttpAuthorizer {
             if (augmentedIdentity != null) {
                 if (!augmentedIdentity.isAnonymous()
                         && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
-                    routingContext.setUser(new QuarkusHttpUser(augmentedIdentity));
-                    routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(augmentedIdentity));
+                    setIdentity(augmentedIdentity, routingContext);
                 }
                 if (securityEventHelper.fireEventOnSuccess()) {
                     securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,
@@ -121,12 +96,12 @@ abstract class AbstractHttpAuthorizer {
         }
         //get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
-        res.checkPermission(routingContext, identity, CONTEXT)
+        res.checkPermission(routingContext, identity, context)
                 .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
-                            doDeny(identity, routingContext, res);
+                            doDeny(identity, routingContext, res, checkResult.getAugmentedIdentity());
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
                                 doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
@@ -157,57 +132,65 @@ abstract class AbstractHttpAuthorizer {
                 });
     }
 
-    private void doDeny(Uni<SecurityIdentity> identity, RoutingContext routingContext, HttpSecurityPolicy policy) {
-        identity.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-            @Override
-            public void onSubscribe(UniSubscription subscription) {
+    private void doDeny(SecurityIdentity identity, RoutingContext routingContext, HttpSecurityPolicy policy) {
+        //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
+        if (identity.isAnonymous()) {
+            httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
+                @Override
+                public void onSubscribe(UniSubscription subscription) {
 
-            }
-
-            @Override
-            public void onItem(SecurityIdentity identity) {
-                //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
-                if (identity.isAnonymous()) {
-                    httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
-                        @Override
-                        public void onSubscribe(UniSubscription subscription) {
-
-                        }
-
-                        @Override
-                        public void onItem(Boolean item) {
-                            if (!routingContext.response().ended()) {
-                                routingContext.response().end();
-                            }
-                            fireAuthZFailureEvent(routingContext, policy, null, identity);
-                        }
-
-                        @Override
-                        public void onFailure(Throwable failure) {
-                            fireAuthZFailureEvent(routingContext, policy, failure, identity);
-                            if (!routingContext.response().ended()) {
-                                routingContext.fail(failure);
-                            } else if (!(failure instanceof IOException)) {
-                                log.error("Failed to send challenge", failure);
-                            } else {
-                                log.debug("Failed to send challenge", failure);
-                            }
-                        }
-                    });
-                } else {
-                    ForbiddenException forbiddenException = new ForbiddenException();
-                    fireAuthZFailureEvent(routingContext, policy, forbiddenException, identity);
-                    routingContext.fail(new ForbiddenException());
                 }
-            }
 
-            @Override
-            public void onFailure(Throwable failure) {
-                fireAuthZFailureEvent(routingContext, policy, failure, null);
-                routingContext.fail(failure);
-            }
-        });
+                @Override
+                public void onItem(Boolean item) {
+                    if (!routingContext.response().ended()) {
+                        routingContext.response().end();
+                    }
+                    fireAuthZFailureEvent(routingContext, policy, null, identity);
+                }
 
+                @Override
+                public void onFailure(Throwable failure) {
+                    fireAuthZFailureEvent(routingContext, policy, failure, identity);
+                    if (!routingContext.response().ended()) {
+                        routingContext.fail(failure);
+                    } else if (!(failure instanceof IOException)) {
+                        log.error("Failed to send challenge", failure);
+                    } else {
+                        log.debug("Failed to send challenge", failure);
+                    }
+                }
+            });
+        } else {
+            ForbiddenException forbiddenException = new ForbiddenException();
+            fireAuthZFailureEvent(routingContext, policy, forbiddenException, identity);
+            routingContext.fail(new ForbiddenException());
+        }
+    }
+
+    private void doDeny(Uni<SecurityIdentity> identity, RoutingContext routingContext, HttpSecurityPolicy policy,
+            SecurityIdentity augmentedIdentity) {
+        if (augmentedIdentity == null) {
+            identity.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                @Override
+                public void onSubscribe(UniSubscription subscription) {
+
+                }
+
+                @Override
+                public void onItem(SecurityIdentity identity) {
+                    doDeny(identity, routingContext, policy);
+                }
+
+                @Override
+                public void onFailure(Throwable failure) {
+                    fireAuthZFailureEvent(routingContext, policy, failure, null);
+                    routingContext.fail(failure);
+                }
+            });
+        } else {
+            doDeny(augmentedIdentity, routingContext, policy);
+        }
     }
 
     private void fireAuthZFailureEvent(RoutingContext routingContext, HttpSecurityPolicy policy, Throwable failure,

@@ -741,8 +741,10 @@ Add the following in your properties file.
 [[flyway]]
 == Automatically transitioning to Flyway to Manage Schemas
 
-If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode, Quarkus provides a simple way to turn
-your Hibernate ORM auto generated schema into a Flyway migration file. This is intended to make is easy to move from
+If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode,
+Quarkus provides a simple way to initialize your Flyway configuration
+using the schema generated automatically by Hibernate ORM.
+This is intended to ease the move from
 the early development phase, where Hibernate can be used to quickly set up the schema, to the production phase, where
 Flyway is used to manage schema changes.
 
@@ -1351,11 +1353,6 @@ and annotating the implementation with the appropriate qualifiers:
 @PersistenceUnitExtension // <2>
 public class MyJsonFormatMapper implements FormatMapper { // <3>
     @Override
-    public String inspect(String sql) {
-        // ...
-        return sql;
-    }
-    @Override
     public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
         // ...
     }
@@ -1382,11 +1379,6 @@ In case of a custom XML format mapper, a different CDI qualifier must be applied
 @XmlFormat // <1>
 @PersistenceUnitExtension // <2>
 public class MyJsonFormatMapper implements FormatMapper { // <3>
-    @Override
-    public String inspect(String sql) {
-        // ...
-        return sql;
-    }
     @Override
     public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
         // ...

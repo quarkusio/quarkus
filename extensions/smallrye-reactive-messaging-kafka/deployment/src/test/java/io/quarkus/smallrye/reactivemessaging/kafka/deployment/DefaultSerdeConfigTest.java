@@ -41,6 +41,7 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.commons.classloading.ClassloadHelper;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -53,6 +54,7 @@ import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.split.MultiSplitter;
+import io.smallrye.reactive.messaging.GenericPayload;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.Targeted;
 import io.smallrye.reactive.messaging.TargetedMessages;
@@ -145,9 +147,10 @@ public class DefaultSerdeConfigTest {
     private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
+            final String resourceName = ClassloadHelper.fromClassNameToResourceName(clazz.getName());
             try {
                 try (InputStream stream = DefaultSerdeConfigTest.class.getClassLoader()
-                        .getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
+                        .getResourceAsStream(resourceName)) {
                     indexer.index(stream);
                 }
             } catch (IOException e) {
@@ -2958,6 +2961,44 @@ public class DefaultSerdeConfigTest {
         @Channel("channel4")
         KafkaRequestReply<AvroDto, ConsumerRecord<Integer, JsonObject>> requestReply4;
 
+    }
+
+    @Test
+    void kafkaGenericPayload() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.out1.key.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.out1.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer"),
+                tuple("mp.messaging.outgoing.channel4.key.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+        };
+        doTest(expectations, GenericPayloadProducer.class);
+    }
+
+    private static class GenericPayloadProducer {
+        @Incoming("channel1")
+        @Outgoing("out1")
+        GenericPayload<ProducerRecord<Long, JsonObject>> method1(String msg) {
+            return null;
+        }
+
+        @Incoming("channel2")
+        void method2(GenericPayload<Record<Long, JsonObject>> msg) {
+        }
+
+        @Outgoing("channel3")
+        GenericPayload<Integer> method3() {
+            return null;
+        }
+
+
+        @Outgoing("channel4")
+        Multi<GenericPayload<ProducerRecord<String, Long>>> method4() {
+            return null;
+        }
     }
 
 

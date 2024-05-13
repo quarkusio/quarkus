@@ -10,6 +10,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.servers.Server;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import io.quarkus.security.PermissionsAllowed;
+
 @Path("/resource2")
 @Tag(name = "test")
 @Server(url = "serverUrl")
@@ -73,6 +75,13 @@ public class OpenApiResourceSecuredAtMethodLevel {
     @Path("/test-security/methodLevel/3")
     @RolesAllowed("admin")
     public String secureEndpoint3() {
+        return "secret";
+    }
+
+    @GET
+    @Path("/test-security/methodLevel/4")
+    @PermissionsAllowed("secure:read")
+    public String secureEndpoint5() {
         return "secret";
     }
 

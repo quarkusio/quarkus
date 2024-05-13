@@ -22,6 +22,7 @@ import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
 import io.smallrye.faulttolerance.api.RateLimit;
+import io.smallrye.faulttolerance.api.RetryWhen;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -126,6 +127,11 @@ public class FaultToleranceJsonRpcService {
         if (operation.hasCustomBackoff()) {
             result.put(CustomBackoff.class.getSimpleName(), new JsonObject()
                     .put("value", operation.getCustomBackoff().value().getName()));
+        }
+        if (operation.hasRetryWhen()) {
+            result.put(RetryWhen.class.getSimpleName(), new JsonObject()
+                    .put("result", operation.getRetryWhen().result().getName())
+                    .put("exception", operation.getRetryWhen().exception().getName()));
         }
         if (operation.hasTimeout()) {
             result.put(Timeout.class.getSimpleName(), new JsonObject()

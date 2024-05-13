@@ -159,6 +159,21 @@ public class OidcClientTest {
 
     }
 
+    @Test
+    public void testDeviceCodeGrant() {
+        RestAssured.given().queryParam("deviceCode", "987654321")
+                .when().get("/frontend/device-code-grant")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given().queryParam("deviceCode", "123456789")
+                .when().get("/frontend/device-code-grant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("device_code_access_token"));
+
+    }
+
     private void checkLog() {
         final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)

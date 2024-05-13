@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.nio.charset.Charset;
 import java.time.Duration;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -49,5 +50,11 @@ public class StaticResourcesConfig {
      */
     @ConfigItem(defaultValue = "10000")
     public int maxCacheSize;
+
+    /**
+     * Content encoding for text related files
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    public Charset contentEncoding;
 
 }

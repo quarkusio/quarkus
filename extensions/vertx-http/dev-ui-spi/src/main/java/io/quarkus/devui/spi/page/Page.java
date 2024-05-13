@@ -1,5 +1,8 @@
 package io.quarkus.devui.spi.page;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -21,7 +24,7 @@ public class Page {
     private final Map<String, String> metadata; // Key value Metadata
 
     private final boolean embed; // if the component is embedded in the page. true in all cases except maybe external pages
-    private final boolean includeInSubMenu; // if this link should be added to the submenu. true in all cases except maybe external pages
+    private final boolean includeInMenu; // if this link should be added to the submenu. true in all cases except maybe external pages
     private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the extension)
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc
@@ -37,7 +40,7 @@ public class Page {
             String componentLink,
             Map<String, String> metadata,
             boolean embed,
-            boolean includeInSubMenu,
+            boolean includeInMenu,
             boolean internalComponent,
             String namespace,
             String namespaceLabel,
@@ -52,7 +55,7 @@ public class Page {
         this.componentLink = componentLink;
         this.metadata = metadata;
         this.embed = embed;
-        this.includeInSubMenu = includeInSubMenu;
+        this.includeInMenu = includeInMenu;
         this.internalComponent = internalComponent;
         this.namespace = namespace;
         this.namespaceLabel = namespaceLabel;
@@ -61,6 +64,12 @@ public class Page {
 
     public String getId() {
         String id = this.title.toLowerCase().replaceAll(SPACE, DASH);
+        try {
+            id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex);
+        }
+
         if (!this.isInternal() && this.namespace != null) {
             // This is extension pages in Dev UI
             id = this.namespace.toLowerCase() + SLASH + id;
@@ -128,8 +137,8 @@ public class Page {
         return embed;
     }
 
-    public boolean isIncludeInSubMenu() {
-        return includeInSubMenu;
+    public boolean isIncludeInMenu() {
+        return includeInMenu;
     }
 
     public boolean isInternal() {
@@ -157,7 +166,7 @@ public class Page {
                 + ", \n\tcomponentName=" + componentName
                 + ", \n\tcomponentLink=" + componentLink
                 + ", \n\tembed=" + embed
-                + ", \n\tincludeInSubMenu=" + includeInSubMenu + "\n}";
+                + ", \n\tincludeInMenu=" + includeInMenu + "\n}";
     }
 
     /**

@@ -13,8 +13,6 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         new QuarkusConfigBuilderCustomizer().configBuilder(builder);
-        builder.withMappingDefaults(false);
-
         builder.withDefaultValue("quarkus.uuid", UUID.randomUUID().toString());
 
         builder.forClassLoader(Thread.currentThread().getContextClassLoader())

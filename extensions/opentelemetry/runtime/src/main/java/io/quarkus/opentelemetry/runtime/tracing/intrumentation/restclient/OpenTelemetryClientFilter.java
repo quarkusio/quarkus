@@ -17,6 +17,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
@@ -41,6 +42,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT = "otel.span.client.context";
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT = "otel.span.client.parentContext";
     public static final String REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE = "otel.span.client.scope";
+    private static final String URL_PATH_TEMPLATE_KEY = "UrlPathTemplate";
 
     /**
      * Property stored in the Client Request context to retrieve the captured Vert.x context.
@@ -118,6 +120,11 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
         Context spanContext = (Context) request.getProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT);
         try {
+            String pathTemplate = (String) request.getProperty(URL_PATH_TEMPLATE_KEY);
+            if (pathTemplate != null && !pathTemplate.isEmpty()) {
+                Span.fromContext(spanContext)
+                        .updateName(request.getMethod() + " " + pathTemplate);
+            }
             instrumenter.end(spanContext, request, response, null);
         } finally {
             scope.close();

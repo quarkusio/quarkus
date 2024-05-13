@@ -1,6 +1,5 @@
 package io.quarkus.keycloak.pep.deployment;
 
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
@@ -17,60 +16,29 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerBuildTimeConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
 import io.quarkus.keycloak.pep.runtime.PolicyEnforcerResolver;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 @BuildSteps(onlyIf = KeycloakPolicyEnforcerBuildStep.IsEnabled.class)
 public class KeycloakPolicyEnforcerBuildStep {
 
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
+    RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig,
+            KeycloakPolicyEnforcerRecorder recorder,
+            KeycloakPolicyEnforcerConfig runtimeConfig) {
         if (oidcBuildTimeConfig.enabled) {
-            if (isBodyHandlerRequired(config.defaultTenant)) {
-                return new RequireBodyHandlerBuildItem();
-            }
-            for (KeycloakPolicyEnforcerTenantConfig tenantConfig : config.namedTenants.values()) {
-                if (isBodyHandlerRequired(tenantConfig)) {
-                    return new RequireBodyHandlerBuildItem();
-                }
-            }
+            return new RequireBodyHandlerBuildItem(recorder.createBodyHandlerRequiredEvaluator(runtimeConfig));
         }
         return null;
     }
 
-    private static boolean isBodyHandlerRequired(KeycloakPolicyEnforcerTenantConfig config) {
-        if (isBodyClaimInformationPointDefined(config.policyEnforcer.claimInformationPoint.simpleConfig)) {
-            return true;
-        }
-        for (PathConfig path : config.policyEnforcer.paths.values()) {
-            if (isBodyClaimInformationPointDefined(path.claimInformationPoint.simpleConfig)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isBodyClaimInformationPointDefined(Map<String, Map<String, String>> claims) {
-        for (Map.Entry<String, Map<String, String>> entry : claims.entrySet()) {
-            Map<String, String> value = entry.getValue();
-
-            for (String nestedValue : value.values()) {
-                if (nestedValue.contains("request.body")) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     @BuildStep
-    public AdditionalBeanBuildItem beans(OidcBuildTimeConfig oidcBuildTimeConfig, KeycloakPolicyEnforcerConfig config) {
+    public AdditionalBeanBuildItem beans(OidcBuildTimeConfig oidcBuildTimeConfig) {
         if (oidcBuildTimeConfig.enabled) {
             return AdditionalBeanBuildItem.builder().setUnremovable()
                     .addBeanClass(KeycloakPolicyEnforcerAuthorizer.class).build();
@@ -86,12 +54,12 @@ public class KeycloakPolicyEnforcerBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     public SyntheticBeanBuildItem setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
-            TlsConfig tlsConfig,
-            KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder) {
+            TlsConfig tlsConfig, KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder,
+            HttpConfiguration httpConfiguration) {
         if (oidcBuildTimeConfig.enabled) {
             return SyntheticBeanBuildItem.configure(PolicyEnforcerResolver.class).unremovable()
                     .types(PolicyEnforcerResolver.class)
-                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig))
+                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, tlsConfig, httpConfiguration))
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .done();
@@ -103,7 +71,7 @@ public class KeycloakPolicyEnforcerBuildStep {
         KeycloakPolicyEnforcerBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.policyEnforcer.enable;
+            return config.policyEnforcer().enable();
         }
     }
 }

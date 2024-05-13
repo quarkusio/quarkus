@@ -7,6 +7,7 @@ import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.ext.Provider;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
@@ -27,6 +28,8 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
 
     private final HttpBinderConfiguration httpMetricsConfig;
 
+    private final Meter.MeterProvider<Timer> timer;
+
     // RESTEasy requires no-arg constructor for CDI injection: https://issues.redhat.com/browse/RESTEASY-1538
     // In the classic Rest Client this is the constructor called whereas in the Reactive one,
     // the constructor using HttpBinderConfiguration is called.
@@ -37,6 +40,10 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     @Inject
     public RestClientMetricsFilter(final HttpBinderConfiguration httpMetricsConfig) {
         this.httpMetricsConfig = httpMetricsConfig;
+
+        timer = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
+                .withRegistry(registry);
+
     }
 
     @Override
@@ -69,15 +76,13 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
                 Timer.Sample sample = requestMetric.getSample();
                 int statusCode = responseContext.getStatus();
 
-                Timer.Builder builder = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
-                        .tags(Tags.of(
+                sample.stop(timer
+                        .withTags(Tags.of(
                                 HttpCommonTags.method(requestContext.getMethod()),
-                                HttpCommonTags.uri(requestPath, statusCode),
+                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode),
                                 HttpCommonTags.outcome(statusCode),
                                 HttpCommonTags.status(statusCode),
-                                clientName(requestContext)));
-
-                sample.stop(builder.register(registry));
+                                clientName(requestContext))));
             }
         }
     }

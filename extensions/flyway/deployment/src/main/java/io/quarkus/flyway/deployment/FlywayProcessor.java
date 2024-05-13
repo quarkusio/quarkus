@@ -25,6 +25,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.extensibility.ConfigurationExtension;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -57,6 +58,7 @@ import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.FlywayDataSource;
@@ -71,6 +73,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
 @BuildSteps(onlyIf = FlywayEnabled.class)
 class FlywayProcessor {
 
+    private static final String MODEL_CLASS_SUFFIX = "Model";
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
     private static final String FLYWAY_CONTAINER_BEAN_NAME_PREFIX = "flyway_container_";
@@ -79,6 +82,26 @@ class FlywayProcessor {
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
+
+    @BuildStep
+    void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer) {
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigurationExtension.class).fields().methods().build());
+
+        for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
+            var extensionName = configurationExtension.name();
+            // we also register Model from the extension fields so that 'ConfigurationExtension#copy' works
+            var reflectiveHierarchyItem = ReflectiveHierarchyBuildItem
+                    .builder(extensionName)
+                    .ignoreTypePredicate(
+                            type -> !extensionName.equals(type) && !type.toString().endsWith(MODEL_CLASS_SUFFIX))
+                    .ignoreMethodPredicate(m -> !extensionName.equals(m.declaringClass().name()))
+                    .ignoreFieldPredicate(f -> !extensionName.equals(f.declaringClass().name())
+                            && !f.type().name().toString().endsWith(MODEL_CLASS_SUFFIX))
+                    .build();
+            reflectiveHierarchyProducer.produce(reflectiveHierarchyItem);
+        }
+    }
 
     @Record(STATIC_INIT)
     @BuildStep

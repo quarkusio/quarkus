@@ -65,11 +65,15 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
 
-    private static final ParameterizedType POOL_INJECTION_TYPE = ParameterizedType.create(DotName.createSimple(Instance.class),
+    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(
+            DotName.createSimple(Instance.class),
             new Type[] { ClassType.create(DotName.createSimple(DB2PoolCreator.class.getName())) }, null);
     private static final AnnotationInstance[] EMPTY_ANNOTATIONS = new AnnotationInstance[0];
 
     private static final DotName REACTIVE_DATASOURCE = DotName.createSimple(ReactiveDataSource.class);
+
+    private static final DotName VERTX_DB2_POOL = DotName.createSimple(DB2Pool.class);
+    private static final Type VERTX_DB2_POOL_TYPE = Type.create(VERTX_DB2_POOL, Type.Kind.CLASS);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -208,7 +212,7 @@ class ReactiveDB2ClientProcessor {
                 .defaultBean()
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
-                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .addInjectionPoint(ClassType.create(DataSourceSupport.class))
                 .createWith(poolFunction)
                 .unremovable()
@@ -223,9 +227,9 @@ class ReactiveDB2ClientProcessor {
                 .defaultBean()
                 .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
-                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(VERTX_DB2_POOL_TYPE, injectionPointAnnotations(dataSourceName))
                 .addInjectionPoint(ClassType.create(DataSourceSupport.class))
-                .createWith(recorder.mutinyDB2Pool(poolFunction))
+                .createWith(recorder.mutinyDB2Pool(dataSourceName))
                 .unremovable()
                 .setRuntimeInit();
 

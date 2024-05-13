@@ -1,16 +1,16 @@
 package io.quarkus.extest.runtime.config;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import io.smallrye.config.EnvConfigSource;
 
 public class EnvBuildTimeConfigSource extends EnvConfigSource {
     public EnvBuildTimeConfigSource() {
-        super(new HashMap<>() {
-            {
-                put("QUARKUS_RT_RT_STRING_OPT", "changed");
-                put("BT_DO_NOT_RECORD", "env-source");
-            }
-        }, Integer.MAX_VALUE);
+        super(Map.of(
+                "QUARKUS_PROFILE", "record",
+                "QUARKUS_MAPPING_RT_DO_NOT_RECORD", "value",
+                "BT_OK_TO_RECORD", "from-env",
+                "BT_DO_NOT_RECORD", "value",
+                "DO_NOT_RECORD", "value"), Integer.MAX_VALUE);
     }
 }

@@ -23,6 +23,9 @@
 
         <!-- do not update this dependency, it is only used for testing -->
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
+
+        <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 
     <dependencies>
@@ -508,6 +511,16 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>track-config-changes</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>track-config-changes</goal>
+                        </goals>
+                        <configuration>
+                            <dumpCurrentWhenRecordedUnavailable>true</dumpCurrentWhenRecordedUnavailable>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <goals>
                             <goal>build</goal>
                         </goals>
@@ -586,7 +599,7 @@
             <!-- these properties must not be defined in the general properties,
                  otherwise the native profile in the parent pom is not able to override them -->
             <properties>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
             </properties>
         </profile>
 

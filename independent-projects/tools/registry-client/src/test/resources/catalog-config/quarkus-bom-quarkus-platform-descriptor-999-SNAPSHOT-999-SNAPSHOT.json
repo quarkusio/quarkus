@@ -1023,7 +1023,7 @@
       "guide" : "https://quarkus.io/guides/kafka-reactive-getting-started",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.kafka." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.kafka." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-kafka-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty" ]
     },
@@ -1038,7 +1038,7 @@
       "guide" : "https://quarkus.io/guides/amqp",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.amqp." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.amqp." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },
@@ -1051,7 +1051,7 @@
       "keywords" : [ "mqtt", "reactive-mqtt" ],
       "categories" : [ "messaging" ],
       "status" : "preview",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },

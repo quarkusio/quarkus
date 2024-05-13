@@ -6,14 +6,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Apache Kafka Reference Guide
 include::_attributes.adoc[]
 :categories: messaging
-:summary: This reference guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
+:summary: This reference guide provides an in-depth look on Apache Kafka and Quarkus Messaging extensions.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
 :topics: messaging,kafka,reactive-messaging
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-messaging-kafka
 
-This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Kafka.
+This reference guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Kafka.
 
 == Introduction
 
@@ -35,12 +35,12 @@ Based on Eclipse MicroProfile Reactive Messaging specification 2.0, it proposes 
 [NOTE]
 ====
 This guide provides an in-depth look on Apache Kafka and SmallRye Reactive Messaging framework.
-For a quick start take a look at xref:kafka-reactive-getting-started.adoc[Getting Started to SmallRye Reactive Messaging with Apache Kafka].
+For a quick start take a look at xref:kafka-getting-started.adoc[Getting Started to Quarkus Messaging with Apache Kafka].
 ====
 
-You can add the `smallrye-reactive-messaging-kafka` extensions to your project by running the following command in your project base directory:
+You can add the `messaging-kafka` extension to your project by running the following command in your project base directory:
 
-:add-extension-extensions: smallrye-reactive-messaging-kafka
+:add-extension-extensions: messaging-kafka
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -50,14 +50,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    <artifactId>quarkus-messaging-kafka</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+implementation("io.quarkus:quarkus-messaging-kafka")
 ----
 
 [NOTE]
@@ -98,7 +98,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -211,7 +211,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, the RESTEasy Reactive endpoint handles that for you.
+In the example above, the Quarkus REST (formerly RESTEasy Reactive) endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -615,9 +615,10 @@ public class KafkaRebalancedConsumerRebalanceListener implements KafkaConsumerRe
 ----
 package inbound;
 
-import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletableFuture;
@@ -628,7 +629,7 @@ public class KafkaRebalancedConsumer {
 
     @Incoming("rebalanced-example")
     @Acknowledgment(Acknowledgment.Strategy.NONE)
-    public CompletionStage<Void> consume(IncomingKafkaRecord<Integer, String> message) {
+    public CompletionStage<Void> consume(Message<ConsumerRecord<Integer, String>> message) {
         // We don't need to ACK messages because in this example,
         // we set offset during consumer rebalance
         return CompletableFuture.completedFuture(null);
@@ -715,14 +716,14 @@ public void consume(List<Double> prices) {
 }
 ----
 
-The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>`, and `ConsumerRecords<Key, Payload>` types.
+The incoming method can also receive `Message<List<Payload>>`, `Message<ConsumerRecords<Key, Payload>>`, and `ConsumerRecords<Key, Payload>` types.
 They give access to record details such as offset or timestamp:
 
 [source, java]
 ----
 @Incoming("prices")
-public CompletionStage<Void> consumeMessage(KafkaRecordBatch<String, Double> records) {
-    for (KafkaRecord<String, Double> record : records) {
+public CompletionStage<Void> consumeMessage(Message<ConsumerRecords<String, Double>> records) {
+    for (ConsumerRecord<String, Double> record : records.getPayload()) {
         String payload = record.getPayload();
         String topic = record.getTopic();
         // process messages
@@ -1016,7 +1017,7 @@ In this case the producer will use this method as generator to create an infinit
 @Outgoing("prices-out") CompletionStage<Message<T>> generate();
 ----
 
-=== Sending messages with @Emitter
+=== Sending messages with Emitter
 
 Sometimes, you need to have an imperative way of sending messages.
 
@@ -1540,13 +1541,15 @@ The following example includes a batch of Kafka records inside a transaction.
 ----
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
-import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
 
 @ApplicationScoped
@@ -1557,10 +1560,10 @@ public class KafkaExactlyOnceProcessor {
     KafkaTransactions<Integer> txProducer;
 
     @Incoming("prices-in")
-    public Uni<Void> emitInTransaction(KafkaRecordBatch<String, Integer> batch) { // <1>
+    public Uni<Void> emitInTransaction(Message<ConsumerRecords<String, Integer>> batch) { // <1>
         return txProducer.withTransactionAndAck(batch, emitter -> { // <2>
-            for (KafkaRecord<String, Integer> record : batch) {
-                emitter.send(KafkaRecord.of(record.getKey(), record.getPayload() + 1)); // <3>
+            for (ConsumerRecord<String, Integer> record : batch.getPayload()) {
+                emitter.send(KafkaRecord.of(record.key(), record.value() + 1)); // <3>
             }
             return Uni.createFrom().voidItem();
         });
@@ -1571,7 +1574,7 @@ public class KafkaExactlyOnceProcessor {
 
 <1> It is recommended to use exactly-once processing along with the batch consumption mode.
 While it is possible to use it with a single Kafka message, it'll have a significant performance impact.
-<2> The consumed `KafkaRecordBatch` message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
+<2> The consumed message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
 <3> The `send` method writes records to Kafka inside the transaction, without waiting for send receipt from the broker.
 Messages pending to be written to Kafka will be buffered, and flushed before committing the transaction.
 It is therefore recommended configuring the `@OnOverflow` `bufferSize` in order to fit enough messages, for example the `max.poll.records`, maximum amount of records returned in a batch.
@@ -1888,7 +1891,7 @@ This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.a
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
-When using SmallRye Reactive Messaging with Kafka (`io.quarkus:quarkus-smallrye-reactive-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
+When using Quarkus Messaging with Kafka (`io.quarkus:quarkus-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare
@@ -1908,7 +1911,7 @@ Similarly, if you declare
 [source,java]
 ----
 @Incoming("my-kafka-records")
-public void consume(KafkaRecord<Long, byte[]> record) {
+public void consume(Record<Long, byte[]> record) {
     ...
 }
 ----
@@ -1953,7 +1956,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 
 If a serializer/deserializer is set by configuration, it won't be replaced by the autodetection.
 
-In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
+In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 [[serialization-generation]]
@@ -1969,7 +1972,7 @@ This generation can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.kafka.serializer-generation.enabled=false
+quarkus.messaging.kafka.serializer-generation.enabled=false
 ----
 
 IMPORTANT: Generation does not support collections such as `List<Fruit>`.
@@ -2048,14 +2051,31 @@ mp.messaging.incoming.data.tracing-enabled=false
 If the xref:telemetry-micrometer.adoc[Micrometer extension] is present,
 then Kafka producer and consumer clients metrics are exposed as Micrometer meters.
 
-Per channel metrics are also exposed as Micrometer meters.
-The number of messages produced or received per channel, acknowledgments and duration of processing are exposed.
+=== Channel metrics
 
-The messaging meters can be disabled:
+Per channel metrics can also be gathered and exposed as Micrometer meters.
+Following metrics can be gathered per channel, identified with the _channel_ tag:
+
+* `quarkus.messaging.message.count` : The number of messages produced or received
+* `quarkus.messaging.message.acks` : The number of messages processed successfully
+* `quarkus.messaging.message.failures` : The number of messages processed with failures
+* `quarkus.messaging.message.duration` : The duration of the message processing.
+
+For backwards compatibility reasons channel metrics are not enabled by default and can be enabled with:
+
+[IMPORTANT]
+====
+The https://smallrye.io/smallrye-reactive-messaging/latest/concepts/observability/[message observation]
+depends on intercepting messages and therefore doesn't support channels consuming messages with
+a custom message type such as `IncomingKafkaRecord`, `KafkaRecord`, `IncomingKafkaRecordBatch` or `KafkaRecordBatch`.
+
+The message interception, and observation, still work with channels consuming the generic `Message` type,
+or custom payloads enabled by https://smallrye.io/smallrye-reactive-messaging/latest/concepts/converters/[converters].
+====
 
 [source, properties]
 ----
-quarkus.micrometer.binder.messaging.enabled=false
+smallrye.messaging.observation.enabled=true
 ----
 
 
@@ -2927,7 +2947,7 @@ This makes sure that managed entity is not impacted by the Kafka serialization.
 
 To send to Kafka entities managed by Hibernate Reactive, we recommend using:
 
-* RESTEasy Reactive to serve HTTP requests
+* Quarkus REST to serve HTTP requests
 * A `MutinyEmitter` to send message to a channel, so it can be easily integrated with the Mutiny API exposed by Hibernate Reactive or Hibernate Reactive with Panache.
 
 The following example demonstrates how to receive a payload, store it in the database using Hibernate Reactive with Panache, and send the persisted entity to Kafka:
@@ -3033,7 +3053,7 @@ perform database updates and commit the Kafka transaction only if the database t
 
 The following example demonstrates:
 
-* Receive a payload by serving HTTP requests using RESTEasy Reactive,
+* Receive a payload by serving HTTP requests using Quarkus REST,
 * Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
 * Start a Kafka transaction and send the payload to Kafka record,
 * Store the payload in the database using Hibernate Reactive with Panache,
@@ -3363,6 +3383,6 @@ The configuration properties necessary to access the Kafka and Schema Registry i
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+It utilizes Quarkus Messaging to build data streaming applications.
 
 If you want to go further, check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

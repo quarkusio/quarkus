@@ -13,7 +13,6 @@ export class QwcEndpoints extends LitElement {
     static styles = css`
         .infogrid {
             width: 99%;
-            height: 99%;
         }
         a {
             cursor: pointer;
@@ -37,7 +36,7 @@ export class QwcEndpoints extends LitElement {
     `;
 
     static properties = {
-        _info: {state: true},
+        _info: {state: true}
     }
 
     constructor() {
@@ -51,19 +50,37 @@ export class QwcEndpoints extends LitElement {
     }
         
     async load() {
-        const response = await fetch(basepath + "/endpoints.json");
+        const response = await fetch("/quarkus404", {
+		method: 'GET',
+		headers: {
+			'Accept': 'application/json'
+		}
+	});
         const data = await response.json();
         this._info = data;
     }
 
     render() {
         if (this._info) {
-            const items = [];
-            for (const [key, value] of Object.entries(this._info)) {
-                items.push({"uri" : key, "description": value});
-            }
             
-            return html`<vaadin-grid .items="${items}" class="infogrid">
+            const typeTemplates = [];
+            for (const [type, list] of Object.entries(this._info)) {
+                typeTemplates.push(html`${this._renderType(type,list)}`);
+            }
+            return html`${typeTemplates}`;
+        }else{
+            return html`
+            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
+                <div>Fetching information...</div>
+                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
+            </div>
+            `;
+        }
+    }
+
+    _renderType(type, items){
+        return html`<h3>${type}</h3>
+                    <vaadin-grid .items="${items}" class="infogrid" all-rows-visible>
                         <vaadin-grid-sort-column header='URL'
                                                 path="uri" 
                                             ${columnBodyRenderer(this._uriRenderer, [])}>
@@ -75,14 +92,6 @@ export class QwcEndpoints extends LitElement {
                                             ${columnBodyRenderer(this._descriptionRenderer, [])}>
                         </vaadin-grid-sort-column>
                     </vaadin-grid>`;
-        }else{
-            return html`
-            <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching information...</div>
-                <vaadin-progress-bar indeterminate></vaadin-progress-bar>
-            </div>
-            `;
-        }
     }
 
     _uriRenderer(endpoint) {

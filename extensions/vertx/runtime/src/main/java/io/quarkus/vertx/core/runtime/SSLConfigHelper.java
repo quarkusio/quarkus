@@ -14,7 +14,7 @@ import io.vertx.core.net.TCPSSLOptions;
 public class SSLConfigHelper {
 
     public static void configurePemTrustOptions(TCPSSLOptions options, PemTrustCertConfiguration configuration) {
-        if (configuration.enabled()) {
+        if (configuration.enabled() || (configuration.certs().isPresent() && !configuration.certs().get().isEmpty())) {
             ensureTrustOptionsNotSet(options);
             options.setTrustOptions(toPemTrustOptions(configuration));
         }

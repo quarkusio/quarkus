@@ -19,6 +19,11 @@ public class LiquibaseConfig {
     public String changeLog = DEFAULT_CHANGE_LOG;
 
     /**
+     * The search path for DirectoryResourceAccessor
+     */
+    public Optional<List<String>> searchPath = Optional.empty();
+
+    /**
      * The migrate at start flag
      */
     public boolean migrateAtStart = false;
@@ -79,5 +84,17 @@ public class LiquibaseConfig {
      * The liquibase tables tablespace name
      */
     public Optional<String> liquibaseTablespaceName = Optional.empty();
+
+    /**
+     * The username that Liquibase uses to connect to the database.
+     * If no username is configured, falls back to the datasource username and password.
+     */
+    public Optional<String> username = Optional.empty();
+
+    /**
+     * The password that Liquibase uses to connect to the database.
+     * If no password is configured, falls back to the datasource username and password.
+     */
+    public Optional<String> password = Optional.empty();
 
 }

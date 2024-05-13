@@ -30,10 +30,14 @@ jobs:
         run: |
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
+            -Dscan=false \
+            -Dno-build-cache \
+            -Dgradle.cache.local.enabled=false \
+            -Dgradle.cache.remote.enabled=false \
             -Prelease \
             -DskipTests -DskipITs \
             -Ddokka \
-            -Dmaven.repo.local=$HOME/release/repository \
+            -Dno-test-modules \
             -Dgpg.skip \
             clean install
       - name: Report

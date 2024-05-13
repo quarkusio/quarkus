@@ -1,0 +1,27 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "REST Client Kotlin Serialization"
+metadata:
+  keywords:
+  - "rest-client-kotlin-serialization"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "json"
+  - "kotlin-serialization"
+  - "resteasy-reactive"
+  - "rest"
+  - "jakarta-rest"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"
+  codestart:
+    name: "rest"
+    kind: "core"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.rest-client-reactive."

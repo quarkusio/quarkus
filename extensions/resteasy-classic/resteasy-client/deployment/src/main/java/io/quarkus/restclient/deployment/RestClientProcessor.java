@@ -78,7 +78,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
@@ -190,7 +190,7 @@ class RestClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
-            PackageConfig packageConfig,
+            NativeConfig nativeConfig,
             List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -216,7 +216,7 @@ class RestClientProcessor {
             restClient.produce(new RestClientBuildItem(interfaze.toString()));
         }
 
-        warnAboutNotWorkingFeaturesInNative(packageConfig, interfaces);
+        warnAboutNotWorkingFeaturesInNative(nativeConfig, interfaces);
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
@@ -318,8 +318,8 @@ class RestClientProcessor {
     // that is annotated with ClientHeaderParam
     // leads to NPEs (see https://github.com/quarkusio/quarkus/issues/10249)
     // so let's warn users about its use
-    private void warnAboutNotWorkingFeaturesInNative(PackageConfig packageConfig, Map<DotName, ClassInfo> interfaces) {
-        if (!packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE)) {
+    private void warnAboutNotWorkingFeaturesInNative(NativeConfig nativeConfig, Map<DotName, ClassInfo> interfaces) {
+        if (!nativeConfig.enabled()) {
             return;
         }
         Set<DotName> dotNames = new HashSet<>();
@@ -402,6 +402,20 @@ class RestClientProcessor {
         ClassInfo classInfo = entry.getValue();
         Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, classInfo, configKey);
 
+        Optional<String> configuredGlobalDefaultScope = RestClientConfigUtils.getDefaultScope(config);
+        BuiltinScope globalDefaultScope;
+
+        if (configuredGlobalDefaultScope.isPresent()) {
+            globalDefaultScope = builtinScopeFromName(DotName.createSimple(configuredGlobalDefaultScope.get()));
+            if (globalDefaultScope == null) {
+                log.warnf("Unable to map the global REST client scope: '%s' to a scope. Using @Dependent",
+                        configuredGlobalDefaultScope.get());
+                globalDefaultScope = BuiltinScope.DEPENDENT;
+            }
+        } else {
+            globalDefaultScope = BuiltinScope.DEPENDENT;
+        }
+
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
             final BuiltinScope builtinScope = builtinScopeFromName(scope);
@@ -415,9 +429,8 @@ class RestClientProcessor {
 
             if (scopeToUse == null) {
                 log.warn(String.format(
-                        "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
+                        "Unsupported default scope %s provided for REST client %s. Defaulting to @Dependent.",
                         scope, entry.getKey()));
-                scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
             final Set<DotName> annotations = classInfo.annotationsMap().keySet();
@@ -435,7 +448,7 @@ class RestClientProcessor {
         }
 
         // Initialize a default @Dependent scope as per the spec
-        return scopeToUse != null ? scopeToUse : BuiltinScope.DEPENDENT.getInfo();
+        return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
     }
 
     private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {

@@ -18,10 +18,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
@@ -78,7 +76,6 @@ public class OidcDbTokenStateManagerProcessor {
 
     @BuildStep
     ReactiveSqlClientBuildItem validateReactiveSqlClient(
-            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             Capabilities capabilities) {
         ReactiveSqlClientBuildItem sqlClientDbTable = null;
         for (String reactiveClient : SUPPORTED_REACTIVE_CLIENTS) {
@@ -86,17 +83,15 @@ public class OidcDbTokenStateManagerProcessor {
                 if (sqlClientDbTable == null) {
                     sqlClientDbTable = new ReactiveSqlClientBuildItem(reactiveClient);
                 } else {
-                    validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                            new ConfigurationException("The OpenID Connect Database Token State Manager extension is "
-                                    + "only supported when exactly one Reactive SQL Client extension is present.")));
-                    return null;
+                    throw new ConfigurationException("The OpenID Connect Database Token State Manager extension is "
+                            + "only supported when exactly one Reactive SQL Client extension is present.");
                 }
             }
         }
         if (sqlClientDbTable == null) {
-            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(new ConfigurationException(
+            throw new ConfigurationException(
                     "The OpenID Connect Database Token State Manager extension requires Reactive SQL Client extension. "
-                            + "Please refer to the https://quarkus.io/guides/reactive-sql-clients for more information.")));
+                            + "Please refer to the https://quarkus.io/guides/reactive-sql-clients for more information.");
         }
         return sqlClientDbTable;
     }

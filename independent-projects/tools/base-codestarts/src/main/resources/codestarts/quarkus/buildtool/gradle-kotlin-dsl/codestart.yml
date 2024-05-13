@@ -14,10 +14,10 @@ language:
         cmd:
           dev: quarkusDev
           package: build
-          package-uber-jar: build -Dquarkus.package.type=uber-jar
-          package-legacy-jar: build -Dquarkus.package.type=legacy-jar
-          package-native: build -Dquarkus.package.type=native
-          package-native-container: build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+          package-uber-jar: build -Dquarkus.package.jar.type=uber-jar
+          package-legacy-jar: build -Dquarkus.package.jar.type=legacy-jar
+          package-native: build -Dquarkus.native.enabled=true
+          package-native-container: build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
           build-ci: build
   kotlin:
     dependencies:

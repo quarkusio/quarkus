@@ -11,11 +11,11 @@
 
     <artifactId>quarkus-integration-test-amazon-lambda-rest-resteasy-reactive</artifactId>
     <name>Quarkus - Integration Tests - Amazon Lambda AWS Gateway REST API</name>
-    <description>Module that contains Amazon Lambda related tests for RESTEasy Reactive</description>
+    <description>Module that contains Amazon Lambda related tests for Quarkus REST</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,7 +54,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -111,7 +111,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.type>native</quarkus.package.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
             <build>
                 <plugins>

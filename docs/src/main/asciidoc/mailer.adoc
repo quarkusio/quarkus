@@ -45,12 +45,12 @@ The solution is located in the `mailer-quickstart` link:{quickstarts-tree-url}/m
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mailer-quickstart
-:create-app-extensions: resteasy-reactive,mailer,qute
+:create-app-extensions: rest,mailer,qute
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven structure including the following extensions:
 
- * RESTEasy Reactive used to expose REST endpoints
+ * Quarkus REST (formerly RESTEasy Reactive) used to expose REST endpoints
  * Mailer so that we can send emails
  * Qute, our template engine
 
@@ -119,7 +119,7 @@ public class MailResource {
 <1> Configure the root path of our HTTP endpoint
 <2> Inject the `Mailer` object managed by Quarkus
 <3> Create a method that will handle the HTTP GET request on `/mail`
-<4> Because we are using RESTEasy Reactive and the _imperative_ mailer, we need to add the `@Blocking` annotation. We will see later the reactive variant.
+<4> Because we are using Quarkus REST and the _imperative_ mailer, we need to add the `@Blocking` annotation. We will see later the reactive variant.
 <5> Create a `Mail` object by configuring the _to_ recipient, the subject and body
 
 The `MailResource` class implements the HTTP API exposed by our application.
@@ -147,6 +147,12 @@ It prints it in the log, so you can check that what was about to be sent.
 
 NOTE: This section used the _imperative_ mailer API.
 It blocks the caller thread until the mail is sent.
+
+[TIP]
+====
+The https://github.com/quarkiverse/quarkus-mailpit[Quarkus Mailpit] extension is very handy for testing emails.
+It provides Dev Services for https://github.com/axllent/mailpit[Mailpit], a nice UI for testing and debugging email sending.
+====
 
 == Using the reactive mailer
 
@@ -223,7 +229,7 @@ The xref:mailer-reference.adoc[mailer reference guide] provides more details abo
 * xref:mailer-reference.adoc#html[how to format the email as HTML and use inline attachments]
 * xref:mailer-reference.adoc#templates[how to use Qute templates]
 * xref:mailer-reference.adoc#testing[how to test applications sending emails]
-* xref:mailer-reference.adoc#gmail-specific-configuration[how to configure the mailer to send emails with GMAIL]
+* xref:mailer-reference.adoc#popular[how to configure the mailer for popular email services (e.g. Gmail, AWS SES)]
 
 
 

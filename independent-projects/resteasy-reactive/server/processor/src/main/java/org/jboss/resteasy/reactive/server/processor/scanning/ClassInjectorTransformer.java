@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ArrayConver
 import org.jboss.resteasy.reactive.server.core.parameters.converters.DelegatingParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupport;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
@@ -76,6 +77,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     public static final String INIT_CONVERTER_METHOD_NAME = "__quarkus_init_converter__";
     private static final String INIT_CONVERTER_FIELD_NAME = "__quarkus_converter__";
     private static final String INIT_CONVERTER_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_DEPLOYMENT_DESCRIPTOR + ")V";
+
+    private static final String PARAMETER_CONVERTER_SUPPORT_BINARY_NAME = ParameterConverterSupport.class.getName().replace('.',
+            '/');
 
     private static final String MULTIPART_SUPPORT_BINARY_NAME = MultipartSupport.class.getName().replace('.', '/');
 
@@ -457,18 +461,14 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 initConverterMethod.visitJumpInsn(Opcodes.IFNONNULL, notNull);
                 // stack: [converter]
                 initConverterMethod.visitInsn(Opcodes.POP);
-                // stack: []
-                // let's instantiate our delegate
-                initConverterMethod.visitTypeInsn(Opcodes.NEW, delegateBinaryName);
-                // stack: [converter]
-                initConverterMethod.visitInsn(Opcodes.DUP);
-                // stack: [converter, converter]
-                initConverterMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegateBinaryName, "<init>",
-                        "()V", false);
-                // stack: [converter]
-                // If we don't cast this to ParameterConverter, ASM in computeFrames will call getCommonSuperType
-                // and try to load our generated class before we can load it, so we insert this cast to avoid that
-                initConverterMethod.visitTypeInsn(Opcodes.CHECKCAST, PARAMETER_CONVERTER_BINARY_NAME);
+
+                // className param
+                initConverterMethod.visitLdcInsn(delegateBinaryName.replace('/', '.'));
+                initConverterMethod.visitMethodInsn(Opcodes.INVOKESTATIC, PARAMETER_CONVERTER_SUPPORT_BINARY_NAME,
+                        "create",
+                        "(" + STRING_DESCRIPTOR + ")" + PARAMETER_CONVERTER_DESCRIPTOR,
+                        false);
+
                 // end default delegate
                 initConverterMethod.visitLabel(notNull);
             }

@@ -64,6 +64,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -76,13 +77,29 @@ public final class OidcUtils {
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
     public static final String TENANT_ID_ATTRIBUTE = "tenant-id";
+    public static final String TENANT_ID_SET_BY_ANNOTATION = "tenant-id-set-by-annotation";
+    public static final String TENANT_ID_SET_BY_SESSION_COOKIE = "tenant-id-set-by-session-cookie";
+    public static final String TENANT_ID_SET_BY_STATE_COOKIE = "tenant-id-set-by-state-cookie";
     public static final String DEFAULT_TENANT_ID = "Default";
     public static final String SESSION_COOKIE_NAME = "q_session";
-    public static final String SESSION_COOKIE_CHUNK = "_chunk_";
+    public static final String SESSION_COOKIE_CHUNK_START = "chunk_";
+    public static final String SESSION_COOKIE_CHUNK = "_" + SESSION_COOKIE_CHUNK_START;
+    public static final String ACCESS_TOKEN_COOKIE_SUFFIX = "_at";
+    public static final String REFRESH_TOKEN_COOKIE_SUFFIX = "_rt";
+    public static final String SESSION_AT_COOKIE_NAME = SESSION_COOKIE_NAME + ACCESS_TOKEN_COOKIE_SUFFIX;
+    public static final String SESSION_RT_COOKIE_NAME = SESSION_COOKIE_NAME + REFRESH_TOKEN_COOKIE_SUFFIX;
     public static final String STATE_COOKIE_NAME = "q_auth";
-    public static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
+
+    // Browsers enforce that the total Set-Cookie expression such as
+    // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096
+    // Setting the max cookie value length to 4056 gives extra 40 bytes to cover for the name, path, expires attributes in most cases
+    // and can be tuned further if necessary.
+    public static final Integer MAX_COOKIE_VALUE_LENGTH = 4056;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
+    public static final String DEFAULT_SCOPE_SEPARATOR = " ";
+    public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
+    static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
     static final String COMMA = ",";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
@@ -92,10 +109,16 @@ public final class OidcUtils {
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
+    private static final String EXTRACTED_BEARER_TOKEN = "quarkus.oidc.extracted-bearer-token";
     public static final String QUARKUS_IDENTITY_EXPIRE_TIME = "quarkus.identity.expire-time";
 
     private OidcUtils() {
 
+    }
+
+    public static String getSessionCookie(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
+        final Map<String, Cookie> cookies = context.request().cookieMap();
+        return getSessionCookie(context.data(), cookies, oidcTenantConfig);
     }
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
@@ -103,7 +126,7 @@ public final class OidcUtils {
         if (cookies.isEmpty()) {
             return null;
         }
-        final String sessionCookieName = OidcUtils.getSessionCookieName(oidcTenantConfig);
+        final String sessionCookieName = getSessionCookieName(oidcTenantConfig);
 
         if (cookies.containsKey(sessionCookieName)) {
             context.put(OidcUtils.SESSION_COOKIE_NAME, List.of(sessionCookieName));
@@ -149,7 +172,7 @@ public final class OidcUtils {
     public static String getCookieSuffix(OidcTenantConfig oidcConfig) {
         String tenantId = oidcConfig.tenantId.get();
         boolean cookieSuffixConfigured = oidcConfig.authentication.cookieSuffix.isPresent();
-        String tenantIdSuffix = (cookieSuffixConfigured || !"Default".equals(tenantId)) ? UNDERSCORE + tenantId : "";
+        String tenantIdSuffix = (cookieSuffixConfigured || !DEFAULT_TENANT_ID.equals(tenantId)) ? UNDERSCORE + tenantId : "";
 
         return cookieSuffixConfigured
                 ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication.cookieSuffix.get())
@@ -350,6 +373,10 @@ public final class OidcUtils {
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockingApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
+        TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT);
+        if (codeFlowAccessTokenResult != null) {
+            builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
+        }
         return builder.build();
     }
 
@@ -410,7 +437,7 @@ public final class OidcUtils {
     }
 
     public static void setTenantIdAttribute(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config) {
-        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse("Default"));
+        builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId.orElse(DEFAULT_TENANT_ID));
     }
 
     public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
@@ -452,6 +479,7 @@ public final class OidcUtils {
             TokenStateManager tokenStateManager) {
         List<String> cookieNames = context.get(SESSION_COOKIE_NAME);
         if (cookieNames != null) {
+            LOG.debugf("Remove session cookie names: %s", cookieNames);
             StringBuilder cookieValue = new StringBuilder();
             for (String cookieName : cookieNames) {
                 cookieValue.append(removeCookie(context, oidcConfig, cookieName));
@@ -547,6 +575,9 @@ public final class OidcUtils {
         if (tenant.authentication.scopes.isEmpty()) {
             tenant.authentication.scopes = provider.authentication.scopes;
         }
+        if (tenant.authentication.scopeSeparator.isEmpty()) {
+            tenant.authentication.scopeSeparator = provider.authentication.scopeSeparator;
+        }
         if (tenant.authentication.addOpenidScope.isEmpty()) {
             tenant.authentication.addOpenidScope = provider.authentication.addOpenidScope;
         }
@@ -606,8 +637,12 @@ public final class OidcUtils {
     }
 
     public static String encryptString(String jweString, SecretKey key) throws Exception {
+        return encryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
+    }
+
+    public static String encryptString(String jweString, SecretKey key, KeyEncryptionAlgorithm algorithm) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256GCMKW.getAlgorithm());
+        jwe.setAlgorithmHeaderValue(algorithm.getAlgorithm());
         jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
         jwe.setKey(key);
         jwe.setPlaintext(jweString);
@@ -656,7 +691,8 @@ public final class OidcUtils {
     }
 
     public static String encodeScopes(OidcTenantConfig oidcConfig) {
-        return OidcCommonUtils.urlEncode(String.join(" ", getAllScopes(oidcConfig)));
+        return OidcCommonUtils.urlEncode(String.join(oidcConfig.authentication.scopeSeparator.orElse(DEFAULT_SCOPE_SEPARATOR),
+                getAllScopes(oidcConfig)));
     }
 
     public static List<String> getAllScopes(OidcTenantConfig oidcConfig) {
@@ -677,5 +713,77 @@ public final class OidcUtils {
         }
 
         return scopes;
+    }
+
+    public static boolean isSessionCookie(String cookieName) {
+        return cookieName.startsWith(SESSION_COOKIE_NAME)
+                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), ACCESS_TOKEN_COOKIE_SUFFIX, 0, 3)
+                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), REFRESH_TOKEN_COOKIE_SUFFIX, 0, 3);
+    }
+
+    static String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
+        if (context.get(EXTRACTED_BEARER_TOKEN) != null) {
+            return context.get(EXTRACTED_BEARER_TOKEN);
+        }
+        final HttpServerRequest request = context.request();
+        String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
+                : HttpHeaders.AUTHORIZATION.toString();
+        LOG.debugf("Looking for a token in the %s header", header);
+        final String headerValue = request.headers().get(header);
+
+        if (headerValue == null) {
+            return null;
+        }
+
+        int idx = headerValue.indexOf(' ');
+        final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
+
+        if (scheme != null) {
+            LOG.debugf("Authorization scheme: %s", scheme);
+        }
+
+        if (scheme == null && !header.equalsIgnoreCase(HttpHeaders.AUTHORIZATION.toString())) {
+            return headerValue;
+        }
+
+        if (!oidcConfig.token.authorizationScheme.equalsIgnoreCase(scheme)) {
+            return null;
+        }
+
+        return headerValue.substring(idx + 1);
+    }
+
+    static void storeExtractedBearerToken(RoutingContext context, String token) {
+        context.put(EXTRACTED_BEARER_TOKEN, token);
+    }
+
+    public static String getTenantIdFromCookie(String cookiePrefix, String cookieName, boolean sessionCookie) {
+        // It has already been checked the cookieName starts with the cookiePrefix
+        if (cookieName.length() == cookiePrefix.length()) {
+            return OidcUtils.DEFAULT_TENANT_ID;
+        } else {
+            String suffix = cookieName.substring(cookiePrefix.length() + 1);
+
+            if (sessionCookie && suffix.startsWith(OidcUtils.SESSION_COOKIE_CHUNK_START)) {
+                return OidcUtils.DEFAULT_TENANT_ID;
+            } else {
+                // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
+                // or it can be a session cookie chunk like q_session_chunk_1 in which case the suffix will be chunk_1
+                int index = suffix.indexOf("_", 0);
+                return index == -1 ? suffix : suffix.substring(0, index);
+            }
+        }
+    }
+
+    public static boolean cacheUserInfoInIdToken(DefaultTenantConfigResolver resolver, OidcTenantConfig oidcConfig) {
+
+        if (resolver.getUserInfoCache() != null && oidcConfig.allowUserInfoCache) {
+            return false;
+        }
+        if (oidcConfig.cacheUserInfoInIdtoken.isPresent()) {
+            return oidcConfig.cacheUserInfoInIdtoken.get();
+        }
+        return resolver.getTokenStateManager() instanceof DefaultTokenStateManager
+                && oidcConfig.tokenStateManager.encryptionRequired;
     }
 }

@@ -15,7 +15,7 @@ public abstract class AbstractRemovedResourceTest {
                         .add(new StringAsset(
                                 "quarkus.class-loading.removed-resources.\"io.quarkus\\:quarkus-integration-test-shared-library\"=io/quarkus/it/shared/RemovedResource.class\n"
                                         +
-                                        "quarkus.package.type=" + packageType),
+                                        "quarkus.package.jar.type=" + packageType),
                                 "application.properties"))
                 .setApplicationName("no-paging-test")
                 .setApplicationVersion(Version.getVersion())

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
+import static io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem.getBodyHandlerRequiredConditions;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
 
 import java.io.IOException;
@@ -67,11 +68,9 @@ import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
-import io.vertx.core.Handler;
 import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
 
@@ -362,10 +361,6 @@ class VertxHttpProcessor {
                 .filter(f -> f.getHandler() != null)
                 .map(ManagementInterfaceFilterBuildItem::toFilter).collect(Collectors.toList());
 
-        //if the body handler is required then we know it is installed for all routes, so we don't need to register it here
-        Handler<RoutingContext> bodyHandler = !requireBodyHandlerBuildItems.isEmpty() ? bodyHandlerBuildItem.getHandler()
-                : null;
-
         Optional<RuntimeValue<Router>> mainRouter = httpRouteRouter.getMainRouter() != null
                 ? Optional.of(httpRouteRouter.getMainRouter())
                 : Optional.empty();
@@ -396,8 +391,8 @@ class VertxHttpProcessor {
                 httpRootPathBuildItem.getRootPath(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
-                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, gracefulShutdownFilter,
-                shutdownConfig, executorBuildItem.getExecutorProxy());
+                getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
+                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy());
 
         return new ServiceStartBuildItem("vertx-http");
     }

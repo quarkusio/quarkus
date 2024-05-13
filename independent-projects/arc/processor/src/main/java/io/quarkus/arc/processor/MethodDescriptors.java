@@ -99,6 +99,8 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor OBJECT_HASH_CODE = MethodDescriptor.ofMethod(Object.class, "hashCode", int.class);
 
+    public static final MethodDescriptor OBJECT_GET_CLASS = MethodDescriptor.ofMethod(Object.class, "getClass", Class.class);
+
     public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
     public static final MethodDescriptor INTERCEPTOR_INVOCATION_POST_CONSTRUCT = MethodDescriptor.ofMethod(
@@ -287,14 +289,11 @@ public final class MethodDescriptors {
     public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getDelegate", Object.class, InjectableBean.class);
 
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_SET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "set", Object.class, Object.class);
+    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_GET = MethodDescriptor.ofMethod(
+            DecoratorDelegateProvider.class, "getCurrent", Object.class, CreationalContext.class);
 
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_UNSET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "unset", void.class);
-
-    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_GET = MethodDescriptor
-            .ofMethod(DecoratorDelegateProvider.class, "get", Object.class);
+    public static final MethodDescriptor DECORATOR_DELEGATE_PROVIDER_SET = MethodDescriptor.ofMethod(
+            DecoratorDelegateProvider.class, "setCurrent", Object.class, CreationalContext.class, Object.class);
 
     public static final MethodDescriptor INSTANCES_LIST_OF = MethodDescriptor
             .ofMethod(Instances.class, "listOf", List.class, InjectableBean.class, Type.class, Type.class,

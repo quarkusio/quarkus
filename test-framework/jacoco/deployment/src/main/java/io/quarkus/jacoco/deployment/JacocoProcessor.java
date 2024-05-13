@@ -15,6 +15,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -36,6 +37,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class JacocoProcessor {
 
+    private static final Logger log = Logger.getLogger(JacocoProcessor.class);
+
     @BuildStep(onlyIf = IsTest.class)
     FeatureBuildItem feature() {
         return new FeatureBuildItem("jacoco");
@@ -51,6 +54,10 @@ public class JacocoProcessor {
             JacocoConfig config) throws Exception {
         if (launchModeBuildItem.isAuxiliaryApplication()) {
             //no code coverage for continuous testing, it does not really make sense
+            return;
+        }
+        if (!config.enabled) {
+            log.debug("quarkus-jacoco is disabled via config");
             return;
         }
 

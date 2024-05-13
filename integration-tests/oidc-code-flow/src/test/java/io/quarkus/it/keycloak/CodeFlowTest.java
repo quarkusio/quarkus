@@ -25,12 +25,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
+import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
 import com.gargoylesoftware.htmlunit.WebResponse;
@@ -228,9 +230,17 @@ public class CodeFlowTest {
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
 
             List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
-
             assertEquals("strict", sessionCookies.get(0).getSameSite());
             assertEquals("strict", sessionCookies.get(1).getSameSite());
+
+            // Check both session cookie chunks are removed if the new authentication is enforced
+            webClient.getOptions().setRedirectEnabled(false);
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+
+            TextPage textPage = webClient.getPage("http://localhost:8081/index.html");
+            assertEquals(302, textPage.getWebResponse().getStatusCode());
+            assertNull(getSessionCookies(webClient, "tenant-https"));
+
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -741,6 +751,8 @@ public class CodeFlowTest {
 
                             if (statusCode == 302) {
                                 assertNull(getSessionCookie(webClient, "tenant-refresh"));
+                                assertEquals("http://localhost:8081/session-expired-page",
+                                        webResponse.getResponseHeaderValue("location"));
                                 return true;
                             }
 
@@ -1483,6 +1495,51 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
+        }
+    }
+
+    @Test
+    public void testBasicAuthAndCodeFlow() throws Exception {
+        // assert that endpoint annotated with a @Basic is only accessible with a Basic auth mechanism
+        RestAssured.given().auth().preemptive().basic("admin", "admin").header("custom", "custom")
+                .get("http://localhost:8081/multiple-auth-mech/basic").then().statusCode(200)
+                .body(Matchers.is("basicAuthMech"));
+        boolean codeFlowAuthFailed = false;
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/multiple-auth-mech/basic");
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setRedirectEnabled(false);
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("alice", page.getBody().asNormalizedText());
+        } catch (FailingHttpStatusCodeException e) {
+            codeFlowAuthFailed = true;
+        }
+        if (!codeFlowAuthFailed) {
+            Assertions.fail("Endpoint 'basic' is annotated with the @Basic annotation, code flow auth should fail");
+        }
+
+        // assert that endpoint annotated with a @CodeFlow is only accessible with a CodeFlow auth mechanism
+        RestAssured.given().auth().preemptive().basic("admin", "admin").header("custom", "custom")
+                .get("http://localhost:8081/multiple-auth-mech/code-flow").then().statusCode(200)
+                .body(Matchers.containsString("Sign in to your account"));
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/multiple-auth-mech/code-flow");
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("codeFlowAuthMech", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
         }
     }
 

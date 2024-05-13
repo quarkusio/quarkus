@@ -16,10 +16,12 @@ import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
@@ -31,12 +33,13 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
-    final boolean resumeOn404;
+    final boolean servletPresent;
 
-    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset, boolean resumeOn404) {
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset,
+            boolean servletPresent) {
         this.mappers = mappers;
         this.parameterOffset = parameterOffset;
-        this.resumeOn404 = resumeOn404;
+        this.servletPresent = servletPresent;
     }
 
     @Override
@@ -223,7 +226,10 @@ public class ClassRoutingHandler implements ServerRestHandler {
     }
 
     private void throwNotFound(ResteasyReactiveRequestContext requestContext) {
-        if (resumeOn404) {
+        ProvidersImpl providers = requestContext.getProviders();
+        ExceptionMapper<NotFoundException> exceptionMapper = providers.getExceptionMapper(NotFoundException.class);
+
+        if (exceptionMapper == null || servletPresent) {
             if (requestContext.resumeExternalProcessing()) {
                 return;
             }

@@ -45,9 +45,11 @@ public class DevUIRecorder {
     }
 
     public void createJsonRpcRouter(BeanContainer beanContainer,
-            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
+            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
+            List<String> deploymentMethods) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.populateJsonRPCMethods(extensionMethodsMap);
+        jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
+        jsonRpcRouter.setJsonRPCDeploymentMethods(deploymentMethods);
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
 
@@ -91,10 +93,6 @@ public class DevUIRecorder {
         return new EndpointInfoHandler(basePath);
     }
 
-    public void setEndpoints(List<EndpointInfo> endpointInfos) {
-        EndpointInfoHandler.setEndpoints(endpointInfos);
-    }
-
     public Handler<RoutingContext> vaadinRouterHandler(String basePath) {
         return new VaadinRouterHandler(basePath);
     }
@@ -104,6 +102,10 @@ public class DevUIRecorder {
     }
 
     public Handler<RoutingContext> redirect(String contextRoot) {
+        return redirect(contextRoot, null);
+    }
+
+    public Handler<RoutingContext> redirect(String contextRoot, String page) {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext rc) {
@@ -112,8 +114,12 @@ public class DevUIRecorder {
                 // However, it caused issues with browser caches and prevented users to have applications using Quarkus 2
                 // and Quarkus 3 at the same time. So, we decided to switch to FOUND (302)
                 // See https://github.com/quarkusio/quarkus/issues/33658 for more context.
+                String location = contextRoot + "dev-ui";
+                if (page != null) {
+                    location = location + "/" + page;
+                }
                 rc.response()
-                        .putHeader("Location", contextRoot + "dev-ui")
+                        .putHeader("Location", location)
                         .setStatusCode(HttpResponseStatus.FOUND.code()).end();
             }
         };

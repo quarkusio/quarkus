@@ -24,7 +24,7 @@ public class OpenTelemetryDisabledTest extends BaseTest {
                 .when().get("/hello")
                 .then()
                 .statusCode(200)
-                .body(is("Hello from RESTEasy Reactive"));
+                .body(is("Hello from Quarkus REST"));
         // Service will start nevertheless.
         await().atMost(200, MILLISECONDS).until(() -> getSpans().size() == 0);
     }

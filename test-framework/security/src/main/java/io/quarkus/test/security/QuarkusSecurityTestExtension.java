@@ -26,10 +26,14 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         try {
             if (getAnnotationContainer(context).isPresent()) {
                 CDI.current().select(TestAuthController.class).get().setEnabled(true);
-                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(null);
+                CDI.current().select(TestHttpAuthenticationMechanism.class).get().setAuthMechanism(null);
+                var testIdentity = CDI.current().select(TestIdentityAssociation.class).get();
+                testIdentity.setTestIdentity(null);
+                testIdentity.setPathBasedIdentity(false);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unable to reset TestAuthController and TestIdentityAssociation", e);
+            throw new RuntimeException(
+                    "Unable to reset TestAuthController, TestIdentityAssociation and TestHttpAuthenticationMechanism", e);
         }
 
     }
@@ -56,11 +60,16 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
 
                 if (testSecurity.attributes() != null) {
                     user.addAttributes(Arrays.stream(testSecurity.attributes())
-                            .collect(Collectors.toMap(s -> s.key(), s -> s.value())));
+                            .collect(Collectors.toMap(s -> s.key(), s -> s.type().convert(s.value()))));
                 }
 
                 SecurityIdentity userIdentity = augment(user.build(), allAnnotations);
                 CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
+                if (!testSecurity.authMechanism().isEmpty()) {
+                    CDI.current().select(TestHttpAuthenticationMechanism.class).get()
+                            .setAuthMechanism(testSecurity.authMechanism());
+                    CDI.current().select(TestIdentityAssociation.class).get().setPathBasedIdentity(true);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to setup @TestSecurity", e);

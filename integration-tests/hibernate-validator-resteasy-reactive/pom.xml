@@ -11,16 +11,16 @@
 
     <artifactId>quarkus-integration-test-hibernate-validator-resteasy-reactive</artifactId>
     <name>Quarkus - Integration Tests - Hibernate Validator</name>
-    <description>Module that contains Hibernate Validator/Bean Validation related tests using RESTEasy Reactive</description>
+    <description>Module that contains Hibernate Validator/Bean Validation related tests using Quarkus REST</description>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+            <artifactId>quarkus-rest-jsonb</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jaxb</artifactId>
+            <artifactId>quarkus-rest-jaxb</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -122,7 +122,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <artifactId>quarkus-rest-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -135,7 +135,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jaxb-deployment</artifactId>
+            <artifactId>quarkus-rest-jaxb-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

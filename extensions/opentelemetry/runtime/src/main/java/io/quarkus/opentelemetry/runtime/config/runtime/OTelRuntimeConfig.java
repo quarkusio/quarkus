@@ -89,6 +89,16 @@ public interface OTelRuntimeConfig {
      * <p>
      * The default, by not defining a property value, will mean the use of the old legacy semantic attribute names.
      */
-    @WithName("otel.semconv-stability.opt-in")
+    @WithName("semconv-stability.opt-in")
     Optional<String> otelSemconvStabilityOptIn();
+
+    /**
+     * Prioritize OpenTelemetry configuration <code>otel.</code> on top of Quarkus OpenTelemetry configuration
+     * <code>quarkus.otel</code>.
+     * <p>
+     * By default, Quarkus configuration has priority over OpenTelemetry configuration.
+     */
+    @WithName("mp.compatibility")
+    @WithDefault("false")
+    boolean mpCompatibility();
 }

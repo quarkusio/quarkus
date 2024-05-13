@@ -15,7 +15,7 @@ public interface OidcRequestFilter {
      * Filter OIDC requests
      *
      * @param request HTTP request that can have its headers customized
-     * @param body request body, will be null for HTTP GET methods, may be null for other HTTP methods
+     * @param requestBody request body, will be null for HTTP GET methods, may be null for other HTTP methods
      * @param contextProperties context properties that can be available in context of some requests
      */
     void filter(HttpRequest<Buffer> request, Buffer requestBody, OidcRequestContextProperties contextProperties);

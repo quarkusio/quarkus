@@ -1,0 +1,23 @@
+name: "REST Kotlin Serialization"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "rest-kotlin-serialization"
+  keywords:
+    - "resteasy-reactive-json"
+    - "resteasy-reactive-kotlin-serialization"
+    - "kotlin-serialization"
+    - "kotlin"
+    - "jaxrs-json"
+    - "rest"
+    - "jaxrs"
+    - "json"
+    - "jakarta-rest"
+  categories:
+  - "web"
+  - "reactive"
+  status: "stable"
+  codestart:
+    name: "rest"
+    languages:
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -20,10 +20,10 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.12.1</compiler-plugin.version>
-        <kotlin.version>1.9.22</kotlin.version>
-        <dokka.version>1.9.10</dokka.version>
+        <kotlin.version>1.9.23</kotlin.version>
+        <dokka.version>1.9.20</dokka.version>
         <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
+        <scala-maven-plugin.version>4.9.0</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
@@ -33,18 +33,18 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.1.6</jandex.version>
+        <jandex.version>3.1.8</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
-        <asciidoctorj.version>2.5.11</asciidoctorj.version>
+        <asciidoctorj.version>2.5.12</asciidoctorj.version>
         <htmlunit.version>2.70.0</htmlunit.version>
-        <javaparser-core.version>3.25.8</javaparser-core.version>
+        <javaparser-core.version>3.25.9</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.32</freemarker.version>
-        <commonmark.version>0.21.0</commonmark.version>
+        <commonmark.version>0.22.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -54,17 +54,17 @@
 
         <!-- These 2 properties are used in catalog-overrides.json -->
         <minimum-java-version>${maven.compiler.release}</minimum-java-version>
-        <recommended-java-version>17</recommended-java-version>
+        <recommended-java-version>21</recommended-java-version>
 
         <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <supported-maven-versions>[3.8.2,)</supported-maven-versions>
+        <supported-maven-versions>[${maven.min.version},)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.6</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
-        <gradle-wrapper.version>8.6</gradle-wrapper.version>
+        <gradle-wrapper.version>8.7</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -83,19 +83,20 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>8.12.1</elasticsearch-server.version>
+        <elasticsearch-server.version>8.13.2</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>2.11.1</opensearch-server.version>
+        <opensearch-server.version>2.13.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
+        <junit-pioneer.version>2.2.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
+        <db2.image>icr.io/db2_community/db2:11.5.9.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -106,29 +107,29 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>23.0.6</keycloak.version>
+        <keycloak.version>23.0.7</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>6.0.11</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.0</unboundid-ldap.version>
 
         <assertj.version>3.25.3</assertj.version>
 
-        <wiremock.version>3.3.1</wiremock.version>
+        <wiremock.version>3.5.4</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.32.0</artemis.version>
+        <artemis.version>2.33.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.43.4</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.44.0</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
-        <maven-invoker-plugin.version>3.6.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>3.6.1</maven-invoker-plugin.version>
         <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
         <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>
@@ -160,8 +161,6 @@
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
 
-        <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
-
         <surefire.argLine.additional></surefire.argLine.additional>
         <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
@@ -174,6 +173,11 @@
         <!-- Quarkus Analytics -->
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
+
+        <!-- If PTS is enabled at the global level  -->
+        <develocity.pts.enabled>false</develocity.pts.enabled>
+        <!-- If PTS is active for specific modules -->
+        <develocity.pts.active>false</develocity.pts.active>
     </properties>
 
     <dependencyManagement>
@@ -234,7 +238,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-deployment</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
                 <type>test-jar</type>
@@ -289,6 +293,12 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit-pioneer</groupId>
+                <artifactId>junit-pioneer</artifactId>
+                <version>${junit-pioneer.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -373,6 +383,13 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>me.escoffier.certs</groupId>
+                <artifactId>certificate-generator-junit5</artifactId>
+                <version>0.5.0</version>
+                <scope>test</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -423,6 +440,11 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
                     <configuration>
+                        <properties>
+                            <predictiveSelection>
+                                <enabled>${develocity.pts.active}</enabled>
+                            </predictiveSelection>
+                        </properties>
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                         <systemPropertyVariables combine.self="override">
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
@@ -443,6 +465,11 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${failsafe-plugin.version}</version>
                     <configuration>
+                        <properties>
+                            <predictiveSelection>
+                                <enabled>${develocity.pts.active}</enabled>
+                            </predictiveSelection>
+                        </properties>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
@@ -502,65 +529,15 @@
                                 <rules>
                                     <dependencyConvergence/>
                                     <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
                                     </externalRules>
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                     </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-test.xml</location>
+                                    </externalRules>
                                 </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>enforce-test-deps-scope</id>
-                            <configuration>
-                                <rules>
-                                    <bannedDependencies>
-                                        <excludes>
-                                            <exclude>io.quarkus:quarkus-test-*</exclude>
-                                            <exclude>io.rest-assured:*</exclude>
-                                            <exclude>org.assertj:*</exclude>
-                                            <exclude>junit:junit</exclude>
-                                        </excludes>
-                                        <includes>
-                                            <include>io.quarkus:quarkus-test-*:*:*:test</include>
-                                            <include>io.rest-assured:*:*:*:test</include>
-                                            <include>org.assertj:*:*:*:test</include>
-                                            <include>junit:junit:*:*:test</include>
-                                        </includes>
-                                        <message>Found test dependencies with wrong scope:</message>
-                                    </bannedDependencies>
-                                </rules>
-                                <skip>${enforce-test-deps-scope.skip}</skip>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>enforce-test-deps-junit-scope</id>
-                            <configuration>
-                                <rules>
-                                    <bannedDependencies>
-                                        <searchTransitive>false</searchTransitive>
-                                        <excludes>
-                                            <exclude>org.junit.jupiter:*</exclude>
-                                        </excludes>
-                                        <includes>
-                                            <include>org.junit.jupiter:*:*:*:test</include>
-                                        </includes>
-                                        <message>Found JUnit dependencies with wrong scope:</message>
-                                    </bannedDependencies>
-                                </rules>
-                                <skip>${enforce-test-deps-scope.skip}</skip>
                             </configuration>
                             <goals>
                                 <goal>enforce</goal>
@@ -676,7 +653,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.18</version>
+                            <version>4.0.20</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -712,7 +689,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-plugin-plugin</artifactId>
-                    <version>${maven-plugin-plugin.version}</version>
                     <configuration>
                         <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                     </configuration>

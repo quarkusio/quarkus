@@ -114,7 +114,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
         }
 
-        final ResolvedDependency appArtifact = getProjectArtifact(project, workspaceDiscovery);
+        final ResolvedDependencyBuilder appArtifact = getProjectArtifact(project, workspaceDiscovery);
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
                 .addReloadableWorkspaceModule(appArtifact.getKey())
@@ -159,7 +159,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    public static ResolvedDependency getProjectArtifact(Project project, boolean workspaceDiscovery) {
+    public static ResolvedDependencyBuilder getProjectArtifact(Project project, boolean workspaceDiscovery) {
         final ResolvedDependencyBuilder appArtifact = ResolvedDependencyBuilder.newInstance()
                 .setGroupId(project.getGroup().toString())
                 .setArtifactId(project.getName())
@@ -206,7 +206,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         collectDestinationDirs(mainModule.getMainSources().getSourceDirs(), paths);
         collectDestinationDirs(mainModule.getMainSources().getResourceDirs(), paths);
 
-        return appArtifact.setWorkspaceModule(mainModule).setResolvedPaths(paths.build()).build();
+        return appArtifact.setWorkspaceModule(mainModule).setResolvedPaths(paths.build());
     }
 
     private static void collectDestinationDirs(Collection<SourceDir> sources, final PathList.Builder paths) {

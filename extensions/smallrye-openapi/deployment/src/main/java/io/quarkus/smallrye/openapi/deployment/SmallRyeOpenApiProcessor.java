@@ -12,7 +12,6 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,6 +88,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
@@ -565,6 +565,9 @@ public class SmallRyeOpenApiProcessor {
             Map<String, List<String>> rolesAllowedMethodReferences = getRolesAllowedMethodReferences(
                     apiFilteredIndexViewBuildItem);
 
+            getPermissionsAllowedMethodReferences(apiFilteredIndexViewBuildItem)
+                    .forEach(k -> rolesAllowedMethodReferences.putIfAbsent(k, List.of()));
+
             List<String> authenticatedMethodReferences = getAuthenticatedMethodReferences(
                     apiFilteredIndexViewBuildItem);
 
@@ -613,11 +616,14 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private Map<String, List<String>> getRolesAllowedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
+        IndexView index = indexViewBuildItem.getIndex();
         return SecurityConstants.ROLES_ALLOWED
                 .stream()
-                .map(indexViewBuildItem.getIndex()::getAnnotations)
+                .map(index::getAnnotations)
                 .flatMap(Collection::stream)
-                .flatMap(SmallRyeOpenApiProcessor::getMethods)
+                .flatMap((t) -> {
+                    return getMethods(t, index);
+                })
                 .collect(Collectors.toMap(
                         e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()),
                         e -> List.of(e.getValue().value().asStringArray()),
@@ -630,17 +636,37 @@ public class SmallRyeOpenApiProcessor {
                         }));
     }
 
-    private List<String> getAuthenticatedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
-        return indexViewBuildItem.getIndex()
-                .getAnnotations(DotName.createSimple(Authenticated.class.getName()))
+    private List<String> getPermissionsAllowedMethodReferences(
+            OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
+
+        FilteredIndexView index = indexViewBuildItem.getIndex();
+
+        return index
+                .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
                 .stream()
-                .flatMap(SmallRyeOpenApiProcessor::getMethods)
+                .flatMap((t) -> {
+                    return getMethods(t, index);
+                })
                 .map(e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
                 .distinct()
                 .toList();
     }
 
-    private static Stream<Map.Entry<MethodInfo, AnnotationInstance>> getMethods(AnnotationInstance annotation) {
+    private List<String> getAuthenticatedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
+        IndexView index = indexViewBuildItem.getIndex();
+        return index
+                .getAnnotations(DotName.createSimple(Authenticated.class.getName()))
+                .stream()
+                .flatMap((t) -> {
+                    return getMethods(t, index);
+                })
+                .map(e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .distinct()
+                .toList();
+    }
+
+    private static Stream<Map.Entry<MethodInfo, AnnotationInstance>> getMethods(AnnotationInstance annotation,
+            IndexView index) {
         if (annotation.target().kind() == Kind.METHOD) {
             MethodInfo method = annotation.target().asMethod();
 
@@ -649,8 +675,8 @@ public class SmallRyeOpenApiProcessor {
             }
         } else if (annotation.target().kind() == Kind.CLASS) {
             ClassInfo classInfo = annotation.target().asClass();
-
-            return classInfo.methods()
+            List<MethodInfo> methods = getMethods(classInfo, index);
+            return methods
                     .stream()
                     // drop methods that specify the annotation directly
                     .filter(method -> !method.hasDeclaredAnnotation(annotation.name()))
@@ -767,6 +793,24 @@ public class SmallRyeOpenApiProcessor {
             }
         }
         return false;
+    }
+
+    private static List<MethodInfo> getMethods(ClassInfo declaringClass, IndexView index) {
+
+        List<MethodInfo> methods = new ArrayList<>();
+        methods.addAll(declaringClass.methods());
+
+        // Check if the method overrides a method from an interface
+        for (Type interfaceType : declaringClass.interfaceTypes()) {
+            ClassInfo interfaceClass = index.getClassByName(interfaceType.name());
+            if (interfaceClass != null) {
+                for (MethodInfo interfaceMethod : interfaceClass.methods()) {
+                    methods.add(interfaceMethod);
+                }
+            }
+        }
+        return methods;
+
     }
 
     private static Set<DotName> getAllOpenAPIEndpoints() {
@@ -894,14 +938,19 @@ public class SmallRyeOpenApiProcessor {
         Path outputDirectory = out.getOutputDirectory();
 
         if (!directory.isAbsolute() && outputDirectory != null) {
-            directory = Paths.get(outputDirectory.getParent().toString(), directory.toString());
+            var baseDir = outputDirectory.getParent();
+            // check if outputDirectory is the root of the filesystem
+            if (baseDir == null) {
+                baseDir = outputDirectory;
+            }
+            directory = baseDir.resolve(directory);
         }
 
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
 
-        Path file = Paths.get(directory.toString(), "openapi." + format.toString().toLowerCase());
+        Path file = directory.resolve("openapi." + format.toString().toLowerCase());
         if (!Files.exists(file)) {
             Files.createFile(file);
         }
@@ -971,7 +1020,7 @@ public class SmallRyeOpenApiProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             extensions.add(new RESTEasyExtension(indexView));
             openApiConfig.doAllowNakedPathParameter();
-            appPath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class).orElse("");
+            appPath = config.getOptionalValue("quarkus.rest.path", String.class).orElse("");
         }
 
         extensions.add(new CustomPathExtension(rootPath, appPath));

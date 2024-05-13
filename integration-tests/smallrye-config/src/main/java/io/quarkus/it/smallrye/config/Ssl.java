@@ -4,9 +4,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.config.WithDefault;
 
-// TODO - Add hierarchy here but requires https://github.com/smallrye/smallrye-config/pull/590
+@RegisterForReflection
 public interface Ssl {
     @JsonProperty
     int port();

@@ -34,7 +34,7 @@ The solution is located in the `micrometer-quickstart` link:{quickstarts-tree-ur
 Create a new project with the following command:
 
 :create-app-artifact-id: micrometer-quickstart
-:create-app-extensions: resteasy-reactive,micrometer-registry-prometheus
+:create-app-extensions: rest,micrometer-registry-prometheus
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.

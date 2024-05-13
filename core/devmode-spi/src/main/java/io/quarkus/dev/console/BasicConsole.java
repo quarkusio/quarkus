@@ -29,7 +29,7 @@ public class BasicConsole extends QuarkusConsole {
 
     public BasicConsole(boolean color, boolean inputSupport, PrintStream printStream, Console console) {
         this(color, inputSupport, (s) -> {
-            if (console != null) {
+            if (TerminalUtils.isTerminal(console)) {
                 console.writer().print(s);
                 console.writer().flush();
             } else {

@@ -62,6 +62,10 @@ public interface BeanRegistrar extends BuildExtension {
             return get(BuildExtension.Key.INJECTION_POINTS);
         }
 
+        default InvokerFactory getInvokerFactory() {
+            return get(BuildExtension.Key.INVOKER_FACTORY);
+        }
+
     }
 
 }

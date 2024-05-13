@@ -13,7 +13,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-arc
 
 ArC, the CDI container in Quarkus, is bootstrapped at build time.
-To integrate with the container, https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#spi_lite[CDI Build Compatible Extensions, window="_blank"] can be used, as well as a Quarkus-specific extension API.
+To integrate with the container, https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#spi_lite[CDI Build Compatible Extensions, window="_blank"] can be used, as well as a Quarkus-specific extension API.
 CDI Portable Extensions are not and cannot be supported.
 This guide focuses on the Quarkus-specific extensions API.
 
@@ -40,7 +40,7 @@ In the following sections we will describe all the relevant build items and comm
 == Metadata Sources
 
 Classes and annotations are the primary source of bean-level metadata.
-The initial metadata are read from the _bean archive index_, an immutable https://github.com/wildfly/jandex[Jandex index, window="_blank"] which is built from various sources during <<cdi-reference.adoc#bean_discovery,bean discovery>>.
+The initial metadata are read from the _bean archive index_, an immutable https://github.com/smallrye/jandex[Jandex index, window="_blank"] which is built from various sources during <<cdi-reference.adoc#bean_discovery,bean discovery>>.
 However, extensions can add, remove or transform the metadata at certain stages of the bootstrap.
 Moreover, extensions can also register <<synthetic_beans,synthetic components>>.
 This is an important aspect to realize when integrating CDI components in Quarkus.
@@ -93,8 +93,8 @@ NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
 === _Reason 2_: Class Is Discovered but Has No Bean Defining Annotation
 
-In Quarkus, the application is represented by a single bean archive with the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"].
-Therefore, bean classes that don't have a https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bean_defining_annotations[bean defining annotation, window="_blank"] are ignored.
+In Quarkus, the application is represented by a single bean archive with the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#default_bean_discovery[bean discovery mode `annotated`, window="_blank"].
+Therefore, bean classes that don't have a https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bean_defining_annotations[bean defining annotation, window="_blank"] are ignored.
 Bean defining annotations are declared on the class-level and include scopes, stereotypes and `@Interceptor`.
 
 _Solution 1_: Use the `AutoAddScopeBuildItem`. This build item can be used to add a scope to a class that meets certain conditions.
@@ -163,7 +163,7 @@ _Solution_: Use the `AdditionalBeanBuildItem` as described in <<additional_bean_
 == Use Case - I Need To Transform Annotation Metadata
 
 In some cases, it's useful to be able to modify the annotation metadata.
-Quarkus provides a powerful alternative to https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#process_annotated_type[`jakarta.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"] and https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bce_enhancement[`jakarta.enterprise.inject.build.compatible.spi.Enhancement`, window="_blank"].
+Quarkus provides a powerful alternative to https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#process_annotated_type[`jakarta.enterprise.inject.spi.ProcessAnnotatedType`, window="_blank"] and https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bce_enhancement[`jakarta.enterprise.inject.build.compatible.spi.Enhancement`, window="_blank"].
 With an `AnnotationsTransformerBuildItem` it's possible to override the annotations that exist on bean classes.
 
 NOTE: Keep in mind that annotation transformers must be produced _before_ the bean discovery starts.
@@ -282,7 +282,7 @@ void doSomethingWithNamedBeans(SynthesisFinishedBuildItem synthesisFinished, Bui
 Sometimes it is practical to be able to register a _synthetic bean_.
 Bean attributes of a synthetic bean are not derived from a Java class, method or field.
 Instead, all the attributes are defined by an extension.
-In regular CDI, this could be achieved using the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#after_bean_discovery[`AfterBeanDiscovery.addBean()`, window="_blank"] and https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bce_synthesis[`SyntheticComponents.addBean()`] methods.
+In regular CDI, this could be achieved using the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#after_bean_discovery[`AfterBeanDiscovery.addBean()`, window="_blank"] and https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html#bce_synthesis[`SyntheticComponents.addBean()`] methods.
 
 _Solution_: If you need to register a synthetic bean then use the `SyntheticBeanBuildItem`.
 

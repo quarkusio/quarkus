@@ -1,7 +1,9 @@
 package io.quarkus.qute;
 
+import java.util.Locale;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -31,8 +33,13 @@ public interface TemplateInstance {
     String SELECTED_VARIANT = "selectedVariant";
 
     /**
+     * Attribute key - locale.
+     */
+    String LOCALE = "locale";
+
+    /**
      * Set the the root data object. Invocation of this method removes any data set previously by
-     * {@link #data(String, Object)}.
+     * {@link #data(String, Object)} and {@link #computedData(String, Function)}.
      *
      * @param data
      * @return
@@ -42,8 +49,8 @@ public interface TemplateInstance {
     }
 
     /**
-     * Put the data in a map. The map will be used as the root context object during rendering. Invocation of this
-     * method removes the root data object previously set by {@link #data(Object)}.
+     * Put the data in a map. The map will be used as the root context object during rendering. Remove the root data object
+     * previously set by {@link #data(Object)}.
      *
      * @param key
      * @param data
@@ -54,7 +61,21 @@ public interface TemplateInstance {
     }
 
     /**
+     * Associates the specified mapping function with the specified key. The function is applied each time a value for the given
+     * key is requested. Also removes the root data object previously set by {@link #data(Object)}.
+     * <p>
+     * If the key is already associated with a value using the {@link #data(String, Object)} method then the mapping function is
+     * never used.
      *
+     * @param key
+     * @param function
+     * @return self
+     */
+    default TemplateInstance computedData(String key, Function<String, Object> function) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @param key
      * @param value
      * @return self
@@ -64,7 +85,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @param key
      * @return the attribute or null
      */
@@ -126,7 +146,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @return the timeout
      * @see TemplateInstance#TIMEOUT
      */
@@ -135,7 +154,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @return the original template
      */
     default Template getTemplate() {
@@ -143,7 +161,6 @@ public interface TemplateInstance {
     }
 
     /**
-     *
      * @param id
      * @return the fragment or {@code null}
      * @see Template#getFragment(String)
@@ -160,6 +177,38 @@ public interface TemplateInstance {
      */
     default TemplateInstance onRendered(Runnable action) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Sets the {@code locale} attribute that can be used to localize parts of the template, i.e. to specify the locale for all
+     * message bundle expressions in the template.
+     *
+     * @param locale a language tag
+     * @return self
+     */
+    default TemplateInstance setLocale(String locale) {
+        return setAttribute(LOCALE, Locale.forLanguageTag(locale));
+    }
+
+    /**
+     * Sets the {@code locale} attribute that can be used to localize parts of the template, i.e. to specify the locale for all
+     * message bundle expressions in the template.
+     *
+     * @param locale a {@link Locale} instance
+     * @return self
+     */
+    default TemplateInstance setLocale(Locale locale) {
+        return setAttribute(LOCALE, locale);
+    }
+
+    /**
+     * Sets the variant attribute that can be used to select a specific variant of the template.
+     *
+     * @param variant the variant
+     * @return self
+     */
+    default TemplateInstance setVariant(Variant variant) {
+        return setAttribute(SELECTED_VARIANT, variant);
     }
 
     /**

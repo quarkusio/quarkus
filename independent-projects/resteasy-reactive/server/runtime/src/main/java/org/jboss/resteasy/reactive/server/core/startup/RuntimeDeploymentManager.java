@@ -234,7 +234,8 @@ public class RuntimeDeploymentManager {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig(),
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isServletPresent(),
+                info.getResteasyReactiveConfig(),
                 disabledEndpoints);
     }
 
@@ -243,8 +244,7 @@ public class RuntimeDeploymentManager {
         int classTemplateNameCount = key.path.countPathParamNames();
         RuntimeMappingDeployment runtimeMappingDeployment = new RuntimeMappingDeployment(classTemplates);
         ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(runtimeMappingDeployment.buildClassMapper(),
-                classTemplateNameCount,
-                info.isResumeOn404());
+                classTemplateNameCount, info.isServletPresent());
         classMappers.add(new RequestMapper.RequestPath<>(true, key.path,
                 new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
                         runtimeMappingDeployment.getMaxMethodTemplateNameCount() + classTemplateNameCount)));

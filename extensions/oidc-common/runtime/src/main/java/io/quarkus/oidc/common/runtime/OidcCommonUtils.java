@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -54,8 +58,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
@@ -274,8 +280,8 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds) {
-        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.keyFile.isPresent()
-                || creds.jwt.keyStoreFile.isPresent();
+        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.key.isPresent()
+                || creds.jwt.keyFile.isPresent() || creds.jwt.keyStoreFile.isPresent();
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -323,7 +329,10 @@ public class OidcCommonUtils {
         } else {
             Key key = null;
             try {
-                if (creds.jwt.getKeyFile().isPresent()) {
+                if (creds.jwt.getKey().isPresent()) {
+                    key = KeyUtils.tryAsPemSigningPrivateKey(creds.jwt.getKey().get(),
+                            getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
+                } else if (creds.jwt.getKeyFile().isPresent()) {
                     key = KeyUtils.readSigningKey(creds.jwt.getKeyFile().get(), creds.jwt.keyId.orElse(null),
                             getSignatureAlgorithm(creds, SignatureAlgorithm.RS256));
                 } else if (creds.jwt.keyStoreFile.isPresent()) {
@@ -433,21 +442,30 @@ public class OidcCommonUtils {
     }
 
     public static Uni<JsonObject> discoverMetadata(WebClient client, Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            String authServerUrl, long connectionDelayInMillisecs) {
+            OidcRequestContextProperties contextProperties, String authServerUrl,
+            long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
         if (!filters.isEmpty()) {
-            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(
-                    Map.of(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl));
+            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                    : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
+            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(newProperties);
             for (OidcRequestFilter filter : getMatchingOidcRequestFilters(filters, OidcEndpoint.Type.DISCOVERY)) {
                 filter.filter(request, null, requestProps);
             }
         }
-        return request.send().onItem().transform(resp -> {
+        return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
-                LOG.warnf("Discovery has failed, status code: %d", resp.statusCode());
+                String errorMessage = resp.bodyAsString();
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
+                            resp.statusCode(), errorMessage);
+                } else {
+                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl, resp.statusCode());
+                }
                 throw new OidcEndpointAccessException(resp.statusCode());
             }
         }).onFailure(oidcEndpointNotAvailable())
@@ -498,8 +516,13 @@ public class OidcCommonUtils {
             for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
                 OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
-                OidcEndpoint.Type type = endpoint != null ? endpoint.value() : OidcEndpoint.Type.ALL;
-                map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                if (endpoint != null) {
+                    for (OidcEndpoint.Type type : endpoint.value()) {
+                        map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                    }
+                } else {
+                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                }
             }
             return map;
         }
@@ -524,5 +547,38 @@ public class OidcCommonUtils {
             return combined;
         }
 
+    }
+
+    public static Uni<HttpResponse<Buffer>> sendRequest(io.vertx.core.Vertx vertx, HttpRequest<Buffer> request,
+            boolean blockingDnsLookup) {
+        if (blockingDnsLookup) {
+            return sendRequest(new Vertx(vertx), request, true);
+        } else {
+            return request.send();
+        }
+    }
+
+    public static Uni<HttpResponse<Buffer>> sendRequest(Vertx vertx, HttpRequest<Buffer> request, boolean blockingDnsLookup) {
+        if (blockingDnsLookup) {
+            return vertx.executeBlocking(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    try {
+                        // cache DNS lookup
+                        InetAddress.getByName(request.host());
+                    } catch (UnknownHostException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return null;
+                }
+            }).flatMap(new Function<Void, Uni<? extends HttpResponse<Buffer>>>() {
+                @Override
+                public Uni<? extends HttpResponse<Buffer>> apply(Void unused) {
+                    return request.send();
+                }
+            });
+        } else {
+            return request.send();
+        }
     }
 }

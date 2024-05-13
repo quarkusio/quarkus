@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.processor.scanning;
 
-import java.util.Arrays;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +10,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.resteasy.reactive.NoCache;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
@@ -27,32 +28,59 @@ public class CacheControlScanner implements MethodScanner {
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
+
+        ClassInfo currentClassInfo = method.declaringClass();
+
+        // Check whether the actualEndpointClass is implementing an interface containing the method
+        // In this case, allow annotations on the implementation itself to take precedence over annotations on the
+        // interface.
+        if (!actualEndpointClass.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
+            MethodInfo actualMethod = actualEndpointClass.method(method.name(), method.parameterTypes().toArray(new Type[0]));
+            if (actualMethod == null) {
+                // method from interface not overridden in actual class. Use original method from interface.
+                actualMethod = method;
+            }
+
+            // first check bean implementation
+            List<HandlerChainCustomizer> customizers = doScan(actualMethod, actualEndpointClass, methodContext);
+            if (customizers.isEmpty()) {
+                // if no annotations where found on implementation, check the interface
+                customizers = doScan(method, currentClassInfo, methodContext);
+            }
+            return customizers;
+        } else {
+            return doScan(method, actualEndpointClass, methodContext);
+        }
+    }
+
+    private List<HandlerChainCustomizer> doScan(MethodInfo methodInfo, ClassInfo classInfo,
+            Map<String, Object> methodContext) {
         AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
-        ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(method, NO_CACHE));
+        ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(methodInfo, NO_CACHE));
         if (cacheControl != null) {
-            if (method.annotation(CACHE) != null) {
+            if (methodInfo.annotation(CACHE) != null) {
                 throw new IllegalStateException(
                         "A resource method cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending method is '"
-                                + method.name() + "' of class '" + method.declaringClass().name() + "'");
+                                + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
             }
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(actualEndpointClass, NO_CACHE));
+            cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(classInfo, NO_CACHE));
             if (cacheControl != null) {
-                if (actualEndpointClass.declaredAnnotation(CACHE) != null) {
+                if (classInfo.declaredAnnotation(CACHE) != null) {
                     throw new IllegalStateException(
                             "A resource class cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending class is '"
-                                    + actualEndpointClass.name() + "'");
+                                    + classInfo.name() + "'");
                 }
                 return cacheControlToCustomizerList(cacheControl);
             }
         }
 
-        cacheControl = cacheToCacheControl(method.annotation(CACHE));
+        cacheControl = cacheToCacheControl(methodInfo.annotation(CACHE));
         if (cacheControl != null) {
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = cacheToCacheControl(actualEndpointClass.declaredAnnotation(CACHE));
+            cacheControl = cacheToCacheControl(classInfo.declaredAnnotation(CACHE));
             if (cacheControl != null) {
                 return cacheControlToCustomizerList(cacheControl);
             }
@@ -72,7 +100,7 @@ public class CacheControlScanner implements MethodScanner {
         if (fieldsValue != null) {
             String[] fields = fieldsValue.asStringArray();
             if ((fields != null) && (fields.length > 0)) {
-                cacheControl.getNoCacheFields().addAll(Arrays.asList(fields));
+                cacheControl.getNoCacheFields().addAll(List.of(fields));
 
             }
         }

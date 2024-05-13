@@ -72,6 +72,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
@@ -165,6 +166,7 @@ public class KafkaProcessor {
         log.produce(new LogCategoryBuildItem("org.apache.kafka.clients", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.utils", Level.WARNING));
         log.produce(new LogCategoryBuildItem("org.apache.kafka.common.metrics", Level.WARNING));
+        log.produce(new LogCategoryBuildItem("org.apache.kafka.common.telemetry", Level.WARNING));
     }
 
     @BuildStep
@@ -303,8 +305,12 @@ public class KafkaProcessor {
 
     @BuildStep(onlyIf = HasSnappy.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadSnappyIfEnabled(SnappyRecorder recorder, KafkaBuildTimeConfig config) {
-        recorder.loadSnappy();
+    void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
+        boolean loadFromSharedClassLoader = false;
+        if (launch.isTest()) {
+            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader;
+        }
+        recorder.loadSnappy(loadFromSharedClassLoader);
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -414,6 +420,9 @@ public class KafkaProcessor {
         // Add a condition for the optional authenticate callback handler
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
                 "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler",
+                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
+        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler",
                 "org.jose4j.keys.resolvers.VerificationKeyResolver"));
     }
 

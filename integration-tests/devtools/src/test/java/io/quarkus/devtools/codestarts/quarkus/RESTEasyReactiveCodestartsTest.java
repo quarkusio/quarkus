@@ -12,7 +12,7 @@ public class RESTEasyReactiveCodestartsTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("resteasy-reactive", "resteasy-reactive-qute")
+            .codestarts("rest", "rest-qute")
             .languages(JAVA, KOTLIN)
             .build();
 

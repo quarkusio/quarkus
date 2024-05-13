@@ -175,7 +175,11 @@ public class SchedulerUtils {
 
     private static Duration parseDuration(Scheduled scheduled, String value, String memberName) {
         if (Character.isDigit(value.charAt(0))) {
-            value = "PT" + value;
+            if (Character.toLowerCase(value.charAt(value.length() - 1)) == 'd') {
+                value = "P" + value;
+            } else {
+                value = "PT" + value;
+            }
         }
 
         try {

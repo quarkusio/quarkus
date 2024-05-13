@@ -3,8 +3,6 @@ package io.quarkus.maven.it;
 import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -70,7 +68,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     public void testFlattenedPomInTargetDir() throws MavenInvocationException, IOException {
         testDir = initProject("projects/pom-in-target-dir");
         run(true);
-        assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("Hello from RESTEasy Reactive");
+        assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("Hello from Quarkus REST");
     }
 
     @Test
@@ -517,7 +515,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                         "        </dependency>"));
 
         runAndCheck();
-        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource not found");
+        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource Not Found");
         shutdownTheApp();
 
         runAndCheck("-f", alternatePomName);
@@ -941,37 +939,6 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(60, TimeUnit.SECONDS)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
-    }
-
-    @Test
-    public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-resource-change");
-        runAndCheck();
-
-        // Create a new resource
-        File source = new File(testDir, "src/main/resources/META-INF/resources/lorem.txt");
-        FileUtils.write(source,
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                "UTF-8");
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
-                .until(() -> devModeClient.getHttpResponse("/lorem.txt"), containsString("Lorem ipsum"));
-
-        // Update the resource
-        String uuid = UUID.randomUUID().toString();
-        FileUtils.write(source, uuid, "UTF-8");
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
-                .until(() -> devModeClient.getHttpResponse("/lorem.txt"), equalTo(uuid));
-
-        // Delete the resource
-        source.delete();
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
-                .until(() -> devModeClient.getHttpResponse("/lorem.txt", 404));
     }
 
     @Test

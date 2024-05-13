@@ -68,6 +68,8 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -159,11 +161,11 @@ public class GrpcServerRecorder {
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
 
         for (GrpcServiceDefinition service : toBeRegistered) {
-            ServerServiceDefinition defWithInterceptors = serviceWithInterceptors(
-                    vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor, service,
+            ServerServiceDefinition serviceDefinition = serviceWithInterceptors(
+                    vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor,
+                    globalInterceptors, service,
                     launchMode == LaunchMode.DEVELOPMENT);
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
-            ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(defWithInterceptors, globalInterceptors);
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
             definitions.add(service.definition);
@@ -186,7 +188,7 @@ public class GrpcServerRecorder {
 
         initHealthStorage();
 
-        LOGGER.info("Starting new Vert.x gRPC server ...");
+        LOGGER.info("Starting new Quarkus gRPC server (using Vert.x transport)...");
         Route route = routerSupplier.getValue().route().handler(ctx -> {
             if (!isGrpc(ctx)) {
                 ctx.next();
@@ -216,7 +218,13 @@ public class GrpcServerRecorder {
 
     // TODO -- handle Avro, plain text ... when supported / needed
     private static boolean isGrpc(RoutingContext rc) {
-        String header = rc.request().getHeader("content-type");
+        HttpServerRequest request = rc.request();
+        HttpVersion version = request.version();
+        if (HttpVersion.HTTP_1_0.equals(version) || HttpVersion.HTTP_1_1.equals(version)) {
+            LOGGER.debugf("Expecting %s, received %s - not a gRPC request", HttpVersion.HTTP_2, version);
+            return false;
+        }
+        String header = request.getHeader("content-type");
         return header != null && GRPC_CONTENT_TYPE.matcher(header.toLowerCase(Locale.ROOT)).matches();
     }
 
@@ -427,12 +435,14 @@ public class GrpcServerRecorder {
             definitions.add(service.definition);
         }
 
+        List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
+
         List<ServerServiceDefinition> servicesWithInterceptors = new ArrayList<>();
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
         for (GrpcServiceDefinition service : services) {
             servicesWithInterceptors.add(
                     serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService,
-                            compressionInterceptor, service, true));
+                            compressionInterceptor, globalInterceptors, service, true));
         }
 
         // add after actual services, so we don't inspect them for interceptors, etc
@@ -447,15 +457,14 @@ public class GrpcServerRecorder {
 
         initHealthStorage();
 
-        List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
-
+        List<ServerInterceptor> devModeInterceptors = new ArrayList<>();
         if (provider != null) {
-            globalInterceptors.add(new DevModeInterceptor(Thread.currentThread().getContextClassLoader()));
-            globalInterceptors.add(new GrpcHotReplacementInterceptor());
-            provider.devModeReload(servicesWithInterceptors, methods, globalInterceptors, shutdown);
+            devModeInterceptors.add(new DevModeInterceptor(Thread.currentThread().getContextClassLoader()));
+            devModeInterceptors.add(new GrpcHotReplacementInterceptor());
+            provider.devModeReload(servicesWithInterceptors, methods, devModeInterceptors, shutdown);
         } else {
             devModeWrapper = new DevModeWrapper(Thread.currentThread().getContextClassLoader());
-            GrpcServerReloader.reinitialize(servicesWithInterceptors, methods, globalInterceptors);
+            GrpcServerReloader.reinitialize(servicesWithInterceptors, methods, devModeInterceptors);
             shutdown.addShutdownTask(GrpcServerReloader::reset);
         }
     }
@@ -522,23 +531,21 @@ public class GrpcServerRecorder {
 
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
 
+        List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
+
         for (GrpcServiceDefinition service : toBeRegistered) {
             builder.addService(
                     serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService,
                             virtualMethodsPerService,
-                            compressionInterceptor, service, launchMode == LaunchMode.DEVELOPMENT));
+                            compressionInterceptor, globalInterceptors, service, launchMode == LaunchMode.DEVELOPMENT));
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             definitions.add(service.definition);
         }
 
         if (reflectionServiceEnabled) {
             LOGGER.info("Registering gRPC reflection service");
-            builder.addService(new ReflectionServiceV1(definitions));
-            builder.addService(new ReflectionServiceV1alpha(definitions));
-        }
-
-        for (ServerInterceptor serverInterceptor : grpcContainer.getSortedGlobalInterceptors()) {
-            builder.intercept(serverInterceptor);
+            builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1(definitions), globalInterceptors));
+            builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1alpha(definitions), globalInterceptors));
         }
 
         String msg = "Starting ";
@@ -569,12 +576,13 @@ public class GrpcServerRecorder {
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
             CompressionInterceptor compressionInterceptor,
+            List<ServerInterceptor> globalInterceptors,
             GrpcServiceDefinition service, boolean devMode) {
         List<ServerInterceptor> interceptors = new ArrayList<>();
         if (compressionInterceptor != null) {
             interceptors.add(compressionInterceptor);
         }
-
+        interceptors.addAll(globalInterceptors);
         interceptors.addAll(grpcContainer.getSortedPerServiceInterceptors(service.getImplementationClassName()));
 
         // We only register the blocking interceptor if needed by at least one method of the service (either blocking or runOnVirtualThread)
@@ -587,6 +595,7 @@ public class GrpcServerRecorder {
                                 VirtualThreadsRecorder.getCurrent(), devMode));
             }
         }
+        interceptors.sort(Interceptors.INTERCEPTOR_COMPARATOR);
         return ServerInterceptors.intercept(service.definition, interceptors);
     }
 

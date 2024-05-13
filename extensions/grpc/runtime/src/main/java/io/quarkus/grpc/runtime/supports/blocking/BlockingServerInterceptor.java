@@ -12,6 +12,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.spi.Prioritized;
+
 import org.jboss.logging.Logger;
 
 import io.grpc.Context;
@@ -23,6 +25,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.runtime.Interceptors;
 import io.vertx.core.Vertx;
 
 /**
@@ -31,7 +34,7 @@ import io.vertx.core.Vertx;
  * <p>
  * For non-annotated methods, the interceptor acts as a pass-through.
  */
-public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
+public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean>, Prioritized {
     private static final Logger log = Logger.getLogger(BlockingServerInterceptor.class);
 
     private final Vertx vertx;
@@ -133,6 +136,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
     }
 
+    @Override
+    public int getPriority() {
+        return Interceptors.BLOCKING_HANDLER;
+    }
+
     /**
      * Stores the incoming events until the listener is injected.
      * When injected, replay the events.
@@ -200,7 +208,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                         blockingHandler);
             }
             this.isConsumingFromIncomingEvents = true;
-            vertx.executeBlocking(blockingHandler, true).onComplete(p -> {
+            vertx.executeBlocking(blockingHandler, false).onComplete(p -> {
                 Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
                 if (next != null) {
                     executeBlockingWithRequestContext(next);

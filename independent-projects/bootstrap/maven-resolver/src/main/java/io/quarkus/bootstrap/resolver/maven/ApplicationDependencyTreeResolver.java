@@ -202,7 +202,6 @@ public class ApplicationDependencyTreeResolver {
             }
         }
 
-        // resolve and inject deployment dependency branches for the top (first met) runtime extension nodes
         for (ExtensionDependency extDep : topExtensionDeps) {
             injectDeploymentDependencies(extDep);
         }
@@ -427,6 +426,10 @@ public class ApplicationDependencyTreeResolver {
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
 
             if (dep == null) {
+                // in case it was relocated it might not survive conflict resolution in the deployment graph
+                if (!node.getRelocations().isEmpty()) {
+                    ((DefaultDependencyNode) node).setRelocations(List.of());
+                }
                 WorkspaceModule module = null;
                 if (resolver.getProjectModuleResolver() != null) {
                     module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(),
@@ -868,7 +871,7 @@ public class ApplicationDependencyTreeResolver {
         ExtensionDependency getExtensionDependency() {
             if (dependency == null) {
                 final DefaultDependencyNode rtNode = new DefaultDependencyNode(
-                        new Dependency(info.runtimeArtifact, JavaScopes.RUNTIME));
+                        new Dependency(info.runtimeArtifact, JavaScopes.COMPILE));
                 rtNode.setVersion(new BootstrapArtifactVersion(info.runtimeArtifact.getVersion()));
                 rtNode.setVersionConstraint(new BootstrapArtifactVersionConstraint(
                         new BootstrapArtifactVersion(info.runtimeArtifact.getVersion())));

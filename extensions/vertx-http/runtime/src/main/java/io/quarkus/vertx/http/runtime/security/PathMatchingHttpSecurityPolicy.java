@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.PolicyMappingConfig.AppliesTo.ALL;
+
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
@@ -18,7 +20,7 @@ public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecu
 
     PathMatchingHttpSecurityPolicy(HttpConfiguration httpConfig, HttpBuildTimeConfig buildTimeConfig,
             Instance<HttpSecurityPolicy> installedPolicies) {
-        super(httpConfig.auth.permissions, httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies);
+        super(httpConfig.auth.permissions, httpConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies, ALL);
     }
 
 }

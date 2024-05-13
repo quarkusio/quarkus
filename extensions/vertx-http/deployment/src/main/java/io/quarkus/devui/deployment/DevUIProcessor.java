@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,6 +49,7 @@ import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.deployment.jsonrpc.DevUIDatabindCodec;
 import io.quarkus.devui.runtime.DevUICORSFilter;
 import io.quarkus.devui.runtime.DevUIRecorder;
+import io.quarkus.devui.runtime.VertxRouteInfoService;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
@@ -66,6 +68,7 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.qute.Qute;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
@@ -131,6 +134,7 @@ public class DevUIProcessor {
             DevUIRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             ShutdownContextBuildItem shutdownContext) throws IOException {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
@@ -167,7 +171,7 @@ public class DevUIProcessor {
                     .handler(uihandler);
 
             if (route.endsWith(DEVUI + SLASH)) {
-                builder = builder.displayOnNotFoundPage("Dev UI (v2)");
+                builder = builder.displayOnNotFoundPage("Dev UI");
                 routeProducer.produce(builder.build());
             }
 
@@ -204,7 +208,7 @@ public class DevUIProcessor {
         Handler<RoutingContext> endpointInfoHandler = recorder.endpointInfoHandler(basepath);
 
         routeProducer.produce(
-                nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + "endpoints.json")
+                nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + "endpoints" + SLASH + "*")
                         .handler(endpointInfoHandler)
                         .build());
 
@@ -230,6 +234,24 @@ public class DevUIProcessor {
                 .route("dev")
                 .handler(recorder.redirect(contextRoot))
                 .build());
+
+        // Redirect naked to welcome if there is no index.html
+        if (!hasOwnIndexHtml()) {
+            routeProducer.produce(httpRootPathBuildItem.routeBuilder()
+                    .orderedRoute("/", Integer.MAX_VALUE)
+                    .handler(recorder.redirect(contextRoot, "welcome"))
+                    .build());
+        }
+    }
+
+    private boolean hasOwnIndexHtml() {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        try {
+            Enumeration<URL> jarsWithIndexHtml = tccl.getResources("META-INF/resources/index.html");
+            return jarsWithIndexHtml.hasMoreElements();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     /**
@@ -242,6 +264,7 @@ public class DevUIProcessor {
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JsonRpcRouter.class)
+                .addBeanClass(VertxRouteInfoService.class)
                 .setUnremovable().build());
 
         // Make sure all JsonRPC Providers is in the index
@@ -270,12 +293,13 @@ public class DevUIProcessor {
      * This goes through all jsonRPC methods and discover the methods using Jandex
      */
     @BuildStep(onlyIf = IsDevelopment.class)
-    void findAllJsonRPCMethods(BuildProducer<JsonRPCMethodsBuildItem> jsonRPCMethodsProvider,
+    void findAllJsonRPCMethods(BuildProducer<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsProvider,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             LaunchModeBuildItem launchModeBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
+            List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems,
+            DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
@@ -346,8 +370,12 @@ public class DevUIProcessor {
             }
         }
 
+        if (deploymentMethodBuildItem.hasMethods()) {
+            requestResponseMethods.addAll(deploymentMethodBuildItem.getMethods());
+        }
+
         if (!extensionMethodsMap.isEmpty()) {
-            jsonRPCMethodsProvider.produce(new JsonRPCMethodsBuildItem(extensionMethodsMap));
+            jsonRPCMethodsProvider.produce(new JsonRPCRuntimeMethodsBuildItem(extensionMethodsMap));
         }
 
         BuildTimeConstBuildItem methodInfo = new BuildTimeConstBuildItem("devui-jsonrpc");
@@ -367,7 +395,8 @@ public class DevUIProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
-            JsonRPCMethodsBuildItem jsonRPCMethodsBuildItem) {
+            JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
+            DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
         if (jsonRPCMethodsBuildItem != null) {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = jsonRPCMethodsBuildItem
@@ -375,7 +404,7 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap);
+            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods());
         }
     }
 
@@ -466,11 +495,11 @@ public class DevUIProcessor {
                         }
 
                         if (metaData.containsKey(CODESTART)) {
-                            Map<String, Object> codestartMap = (Map<String, Object>) metaData.get(metaData);
+                            Map<String, Object> codestartMap = (Map<String, Object>) metaData.get(CODESTART);
                             if (codestartMap != null) {
                                 Codestart codestart = new Codestart();
                                 codestart.setName((String) codestartMap.getOrDefault(NAME, null));
-                                codestart.setLanguages((List<String>) codestartMap.getOrDefault(LANGUAGES, null));
+                                codestart.setLanguages(listOrString(codestartMap, LANGUAGES));
                                 codestart.setArtifact((String) codestartMap.getOrDefault(ARTIFACT, null));
                                 extension.setCodestart(codestart);
                             }
@@ -563,6 +592,18 @@ public class DevUIProcessor {
                     .collect(Collectors.joining(", "));
         }
         return String.valueOf(value);
+    }
+
+    private List<String> listOrString(Map<String, Object> metaData, String key) {
+        Object value = metaData.getOrDefault(key, null);
+        if (value == null) {
+            return null;
+        } else if (String.class.isAssignableFrom(value.getClass())) {
+            return List.of((String) value);
+        } else if (List.class.isAssignableFrom(value.getClass())) {
+            return (List) value;
+        }
+        return List.of(String.valueOf(value));
     }
 
     private void produceResources(String artifactId,

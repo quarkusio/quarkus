@@ -86,8 +86,8 @@
             <configuration>
               <properties>
                 <quarkus.package.output-directory>fast-foo-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -104,8 +104,8 @@
             <configuration>
               <properties>
                 <quarkus.package.output-directory>fast-bar-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>
@@ -122,8 +122,8 @@
             <configuration>
               <properties>
                 <quarkus.package.output-directory>fast-foo-full-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -140,7 +140,7 @@
             <configuration>
               <properties>
                 <quarkus.package.output-directory>fast-bar-empty-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>
@@ -157,10 +157,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-foo-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -177,10 +177,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-bar-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>
@@ -197,10 +197,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-foo-full-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -217,9 +217,9 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-bar-empty-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>
@@ -236,10 +236,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-foo-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -256,10 +256,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-bar-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>
@@ -276,10 +276,10 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-foo-full-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
-                <quarkus.package.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.included-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
+                <quarkus.package.jar.included-optional-dependencies>org.apache.commons:commons-collections4::jar,commons-io:commons-io::</quarkus.package.jar.included-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>foo</quarkus.profile>
@@ -296,9 +296,9 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-bar-empty-quarkus-app</quarkus.package.output-directory>
-                <quarkus.package.filter-optional-dependencies>true</quarkus.package.filter-optional-dependencies>
+                <quarkus.package.jar.filter-optional-dependencies>true</quarkus.package.jar.filter-optional-dependencies>
               </properties>
               <systemProperties>
                 <quarkus.profile>bar</quarkus.profile>

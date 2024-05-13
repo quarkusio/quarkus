@@ -17,11 +17,9 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -397,7 +395,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
      * @return list of proxy hosts
      */
     private List<String> getProxyHostsAsRegex() {
-        String noProxyHostsSysProps = getSystemProperty("http.nonProxyHosts", null);
+        String noProxyHostsSysProps = System.getProperty("http.nonProxyHosts", null);
         if (noProxyHostsSysProps == null) {
             noProxyHostsSysProps = "localhost|127.*|[::1]";
         } else {
@@ -414,7 +412,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
      */
     private boolean useURLConnection() {
         if (useURLConnection == null) {
-            String defaultToURLConnection = getSystemProperty(
+            String defaultToURLConnection = System.getProperty(
                     "org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient", "false");
             useURLConnection = defaultToURLConnection.equalsIgnoreCase("true");
         }
@@ -818,13 +816,6 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             LOGGER.warnf("CDI container is not available");
             return null;
         }
-    }
-
-    private String getSystemProperty(String key, String def) {
-        if (System.getSecurityManager() == null) {
-            return System.getProperty(key, def);
-        }
-        return AccessController.doPrivileged((PrivilegedAction<String>) () -> System.getProperty(key, def));
     }
 
     private final MpClientBuilderImpl builderDelegate;

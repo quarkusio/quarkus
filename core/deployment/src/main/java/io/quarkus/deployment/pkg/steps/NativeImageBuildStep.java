@@ -87,7 +87,7 @@ public class NativeImageBuildStep {
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
-        return new ArtifactResultBuildItem(image.getPath(), PackageConfig.BuiltInType.NATIVE.getValue(),
+        return new ArtifactResultBuildItem(image.getPath(), "native",
                 graalVMVersion.toMap());
     }
 
@@ -157,7 +157,7 @@ public class NativeImageBuildStep {
         IoUtils.recursiveDelete(nativeImageSourceJarBuildItem.getPath().getParent());
 
         return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
-                PackageConfig.BuiltInType.NATIVE_SOURCES.getValue(),
+                "native-sources",
                 Collections.emptyMap());
     }
 
@@ -308,7 +308,7 @@ public class NativeImageBuildStep {
     }
 
     private String getNativeImageName(OutputTargetBuildItem outputTargetBuildItem, PackageConfig packageConfig) {
-        return outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix();
+        return outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix();
     }
 
     private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {
@@ -473,9 +473,15 @@ public class NativeImageBuildStep {
         log.info("Running Quarkus native-image plugin on " + version.distribution.name() + " " + version.getVersionAsString()
                 + " JDK " + version.javaVersion);
         if (version.isObsolete()) {
-            throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getVersionAsString() + "."
+            throw new IllegalStateException(
+                    "Out of date version of GraalVM or Mandrel detected: " + version.getVersionAsString() + "."
+                            + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
+                            + ". Please upgrade to this version.");
+        }
+        if (!version.isSupported()) {
+            log.warn("You are using an older version of GraalVM or Mandrel : " + version.getVersionAsString() + "."
                     + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
-                    + ". Please upgrade GraalVM to this version.");
+                    + ". Please upgrade to this version.");
         }
     }
 

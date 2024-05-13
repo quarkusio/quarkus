@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -39,13 +40,14 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.expression.Expression;
 
@@ -53,8 +55,8 @@ import io.smallrye.common.expression.Expression;
 @Named
 public class QuarkusBootstrapProvider implements Closeable {
 
-    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
-    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
+    private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.jar.manifest.sections";
+    private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.jar.manifest.attributes";
 
     private final QuarkusWorkspaceProvider workspaceProvider;
     private final RepositorySystem repoSystem;
@@ -125,7 +127,13 @@ public class QuarkusBootstrapProvider implements Closeable {
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
             throws MojoExecutionException {
-        return bootstrapper(mojo).bootstrapApplication(mojo, mode);
+        return bootstrapApplication(mojo, mode, null);
+    }
+
+    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer)
+            throws MojoExecutionException {
+        return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer);
     }
 
     public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
@@ -202,14 +210,18 @@ public class QuarkusBootstrapProvider implements Closeable {
             }
         }
 
-        private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
+        private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
                 throws MojoExecutionException {
+
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
+                    .setIncubatingModelResolver(
+                            IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties()))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
                     .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);
 
-            final ArtifactCoords appArtifact = appArtifact(mojo);
+            final ResolvedDependencyBuilder appArtifact = getApplicationArtifactBuilder(mojo);
             Set<ArtifactKey> reloadableModules = Set.of();
             if (mode == LaunchMode.NORMAL) {
                 // collect reloadable artifacts for remote-dev
@@ -249,6 +261,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setForcedDependencies(forcedDependencies);
 
             try {
+                if (builderCustomizer != null) {
+                    builderCustomizer.accept(builder);
+                }
                 return builder.build().bootstrap();
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
@@ -273,7 +288,7 @@ public class QuarkusBootstrapProvider implements Closeable {
             // quarkus. properties > ignoredEntries in pom.xml
             if (mojo.ignoredEntries() != null && mojo.ignoredEntries().length > 0) {
                 String joinedEntries = String.join(",", mojo.ignoredEntries());
-                effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+                effectiveProperties.setProperty("quarkus.package.jar.user-configured-ignored-entries", joinedEntries);
             }
 
             final Properties projectProperties = mojo.mavenProject().getProperties();
@@ -342,15 +357,16 @@ public class QuarkusBootstrapProvider implements Closeable {
                     key);
         }
 
-        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
+        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
                 throws MojoExecutionException {
             if (mode == LaunchMode.DEVELOPMENT) {
-                return devApp == null ? devApp = doBootstrap(mojo, mode) : devApp;
+                return devApp == null ? devApp = doBootstrap(mojo, mode, builderCustomizer) : devApp;
             }
             if (mode == LaunchMode.TEST) {
-                return testApp == null ? testApp = doBootstrap(mojo, mode) : testApp;
+                return testApp == null ? testApp = doBootstrap(mojo, mode, builderCustomizer) : testApp;
             }
-            return prodApp == null ? prodApp = doBootstrap(mojo, mode) : prodApp;
+            return prodApp == null ? prodApp = doBootstrap(mojo, mode, builderCustomizer) : prodApp;
         }
 
         protected ArtifactCoords managingProject(QuarkusBootstrapMojo mojo) {
@@ -363,7 +379,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     artifact.getVersion());
         }
 
-        private ArtifactCoords appArtifact(QuarkusBootstrapMojo mojo)
+        private ResolvedDependencyBuilder getApplicationArtifactBuilder(QuarkusBootstrapMojo mojo)
                 throws MojoExecutionException {
             String appArtifactCoords = mojo.appArtifactCoords();
             if (appArtifactCoords == null) {
@@ -384,9 +400,13 @@ public class QuarkusBootstrapProvider implements Closeable {
                         }
                     }
                 }
-                return new ResolvedArtifactDependency(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                        projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
-                        projectArtifact.getVersion(), projectFile.toPath());
+                return ResolvedDependencyBuilder.newInstance()
+                        .setGroupId(projectArtifact.getGroupId())
+                        .setArtifactId(projectArtifact.getArtifactId())
+                        .setClassifier(projectArtifact.getClassifier())
+                        .setType(projectArtifact.getArtifactHandler().getExtension())
+                        .setVersion(projectArtifact.getVersion())
+                        .setResolvedPath(projectFile.toPath());
             }
 
             final String[] coordsArr = appArtifactCoords.split(":");
@@ -425,7 +445,12 @@ public class QuarkusBootstrapProvider implements Closeable {
                 }
             }
 
-            return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
+            return ResolvedDependencyBuilder.newInstance()
+                    .setGroupId(groupId)
+                    .setArtifactId(artifactId)
+                    .setClassifier(classifier)
+                    .setType(type)
+                    .setVersion(version);
         }
 
         @Override

@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
@@ -54,6 +55,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         server.stubFor(WireMock.post("/non-standard-tokens")
                 .withHeader("X-Custom", matching("XCustomHeaderValue"))
                 .withHeader("GrantType", matching("password"))
+                .withHeader("client-id", containing("non-standard-response"))
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()
@@ -116,6 +118,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"ciba_access_token\", \"expires_in\":4, \"refresh_token\":\"ciba_refresh_token\"}")));
+
+        server.stubFor(WireMock.post("/device-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=quarkus-app&client_secret=secret&device_code=123456789"))
+                .willReturn(WireMock
+                        .ok()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"device_code_access_token\", \"expires_in\":4}")));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 

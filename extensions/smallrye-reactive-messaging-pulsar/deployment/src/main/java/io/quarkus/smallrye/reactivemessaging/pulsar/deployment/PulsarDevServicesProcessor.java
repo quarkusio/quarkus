@@ -203,7 +203,7 @@ public class PulsarDevServicesProcessor {
         Map<String, String> configMap = new HashMap<>();
         configMap.put(PULSAR_CLIENT_SERVICE_URL, pulsarBrokerUrl);
         configMap.put(PULSAR_ADMIN_SERVICE_URL, httpServiceUrl);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR.getName(), containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_PULSAR.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasPulsarChannelWithoutHostAndPort() {

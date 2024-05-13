@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
@@ -79,9 +80,10 @@ class KubernetesProcessor {
         List<DeploymentTargetEntry> entries = new ArrayList<>(mergedDeploymentTargets.size());
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
-                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
-                        deploymentTarget.getKind(), deploymentTarget.getPriority(),
-                        deploymentTarget.getDeployStrategy()));
+                DeploymentResourceKind deploymentResourceKind = DeploymentResourceKind.find(deploymentTarget.getGroup(),
+                        deploymentTarget.getVersion(), deploymentTarget.getKind());
+                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(), deploymentResourceKind,
+                        deploymentTarget.getPriority(), deploymentTarget.getDeployStrategy()));
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
@@ -263,18 +265,19 @@ class KubernetesProcessor {
             PackageConfig packageConfig,
             List<UberJarRequiredBuildItem> uberJarRequired,
             List<LegacyJarRequiredBuildItem> legacyJarRequired) {
-        if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
+        PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
+        if (!legacyJarRequired.isEmpty() || jarType == LEGACY_JAR
                 || !uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
+                || jarType == UBER_JAR) {
             // the jar is a legacy jar or uber jar, the next logic applies:
             return outputTarget.getOutputDirectory()
-                    .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+                    .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
         }
 
         // otherwise, it's a thin jar:
         Path buildDir;
 
-        if (packageConfig.outputDirectory.isPresent()) {
+        if (packageConfig.outputDirectory().isPresent()) {
             buildDir = outputTarget.getOutputDirectory();
         } else {
             buildDir = outputTarget.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);

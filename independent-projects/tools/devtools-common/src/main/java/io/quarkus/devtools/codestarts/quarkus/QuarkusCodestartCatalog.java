@@ -34,7 +34,6 @@ import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.smallrye.common.version.VersionScheme;
 
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 
@@ -77,7 +76,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public enum ExtensionCodestart implements DataKey {
         RESTEASY,
-        RESTEASY_REACTIVE,
+        REST,
         SPRING_WEB
     }
 
@@ -138,17 +137,21 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .filter(c -> !isExample(c) || projectInput.getExample() == null || c.matches(projectInput.getExample()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // include default codestarts depending on the versions and the extensions being chosen or not
-        Optional<ExtensionCodestart> selectedDefaultCodeStart = getSelectedDefaultCodeStart(projectInput);
+        // include default codestart depending on the versions and the extensions being chosen or not
+        Optional<String> selectedDefaultCodeStart = Optional.ofNullable(projectInput.getDefaultCodestart());
 
+        // if there is no extension selected or only language extensions, we should add the default code start
+        // this has been settled in https://github.com/quarkusio/quarkus/pull/39467
+        final boolean shouldAddDefaultCodeStart = projectInput.getExtensions().isEmpty() ||
+                (projectInput.getExtensions().size() == 1
+                        && isLanguageExtension(projectInput.getExtensions().iterator().next()));
         if (projectInput.getAppContent().contains(CODE)
                 && selectedDefaultCodeStart.isPresent()
-                && projectCodestarts.stream()
-                        .noneMatch(c -> c.getType() == CodestartType.CODE && !c.getSpec().isPreselected())) {
+                && shouldAddDefaultCodeStart) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.matches(selectedDefaultCodeStart.get().key()))
+                    .filter(c -> c.matches(selectedDefaultCodeStart.get()))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            selectedDefaultCodeStart.get().key() + " codestart not found"));
+                            selectedDefaultCodeStart.get() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);
@@ -176,32 +179,6 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         projectInput.getData().putAll(generateSelectionData(projectInput, projectCodestarts));
 
         return projectCodestarts;
-    }
-
-    private Optional<ExtensionCodestart> getSelectedDefaultCodeStart(QuarkusCodestartProjectInput projectInput) {
-        // This is very hackyish, we need a better data structure to do better
-        Optional<ArtifactCoords> quarkusBom = projectInput.getBoms().stream()
-                .map(ArtifactCoords::fromString)
-                .filter(b -> isCoreBom(b) || isPlatformBom(b) || isUniverseBom(b))
-                .findFirst();
-
-        String bomVersion = null;
-
-        if (quarkusBom.isPresent()) {
-            bomVersion = quarkusBom.get().getVersion();
-        }
-
-        if (bomVersion == null || VersionScheme.MAVEN.compare(bomVersion, "2.8") >= 0) {
-            if (projectInput.getExtensions().isEmpty() ||
-                    (projectInput.getExtensions().size() == 1
-                            && isLanguageExtension(projectInput.getExtensions().iterator().next()))) {
-                return Optional.of(ExtensionCodestart.RESTEASY_REACTIVE);
-            }
-
-            return Optional.empty();
-        }
-
-        return Optional.of(ExtensionCodestart.RESTEASY);
     }
 
     private boolean isCoreBom(ArtifactCoords artifactCoords) {

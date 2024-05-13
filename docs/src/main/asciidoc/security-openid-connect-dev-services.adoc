@@ -258,7 +258,7 @@ For more information, see xref:security-oidc-bearer-token-authentication.adoc#in
 [[keycloak-initialization]]
 === Keycloak initialization
 
-The `quay.io/keycloak/keycloak:23.0.6` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
+The `quay.io/keycloak/keycloak:23.0.7` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
 `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name.
 For example, set it to `quay.io/keycloak/keycloak:19.0.3-legacy` to use a Keycloak distribution powered by WildFly.
 Be aware that a Quarkus-based Keycloak distribution is only available starting from Keycloak `20.0.0`.
@@ -339,7 +339,7 @@ For more information, see the <<dev-ui-all-oidc-providers,Dev UI for all OpenID 
 The Dev UI for all OpenID Connect providers is activated if the following conditions are met:
 
 * The `quarkus.oidc.auth-server-url` points to an already started OpenID Connect provider, which can be Keycloak or other provider.
-* The `quarkus.oidc.auth-server-url` is set to `service`, the default value, or `hybrid`.
+* The `quarkus.oidc.application-type` is set to `service`, the default value, or `hybrid`.
 * The `quarkus.oidc.client-id` is set.
 
 Setting `quarkus.oidc.credentials.secret` is most likely required for Keycloak and other providers for the authorization code flow initiated from Dev UI to complete unless the client identified with `quarkus.oidc.client-id` is configured as a public client in your OpenID Connect provider's administration console.

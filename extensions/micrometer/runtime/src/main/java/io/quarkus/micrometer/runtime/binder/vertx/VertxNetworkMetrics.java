@@ -3,7 +3,9 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 import java.util.Map;
 import java.util.Objects;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -20,9 +22,10 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
     final MeterRegistry registry;
     final DistributionSummary nameBytesRead;
     final DistributionSummary nameBytesWritten;
-    final String nameExceptionOccurred;
 
     final Tags tags;
+
+    private final Meter.MeterProvider<Counter> exceptions;
 
     VertxNetworkMetrics(MeterRegistry registry, String prefix, Tags tags) {
         this.registry = registry;
@@ -35,7 +38,10 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
         }
         nameBytesRead = nameBytesReadBuilder.register(registry);
         nameBytesWritten = nameBytesWrittenBuilder.register(registry);
-        nameExceptionOccurred = prefix + ".errors";
+
+        exceptions = Counter.builder(prefix + ".errors")
+                .description("Number of exceptions")
+                .withRegistry(registry);
     }
 
     /**
@@ -72,8 +78,9 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
      */
     @Override
     public void exceptionOccurred(Map<String, Object> socketMetric, SocketAddress remoteAddress, Throwable t) {
-        Tags copy = Objects.requireNonNullElseGet(tags, Tags::empty).and(Tag.of("class", t.getClass().getName()));
-        registry.counter(nameExceptionOccurred, copy).increment();
+        exceptions
+                .withTags(Objects.requireNonNullElseGet(tags, Tags::empty).and(Tag.of("class", t.getClass().getName())))
+                .increment();
     }
 
     @Override

@@ -37,17 +37,17 @@ I am doing a first pass on the properties and I want to propose the following pr
 * `hibernate.dialect`
 * `hibernate.show_sql` (and then `hibernate.format_sql` ?)
     * should show_sql not do System.out but rather a proper log
-* `javax.persistence.schema-generation.database.action`
+* `jakarta.persistence.schema-generation.database.action`
 
 Anything else?
 
 I would force the following:
 
-* `javax.persistence.sharedCache.mode` to yes
-* `javax.persistence.sql-load-script-source` set to a default file name
+* `jakarta.persistence.sharedCache.mode` to yes
+* `jakarta.persistence.sql-load-script-source` set to a default file name
 
 Questions do we need:
 
-* `javax.persistence.transactionType`
+* `jakarta.persistence.transactionType`
 
 

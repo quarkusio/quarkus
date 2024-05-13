@@ -78,7 +78,7 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>legacy</quarkus.package.output-name>
-                <quarkus.package.type>legacy-jar</quarkus.package.type>
+                <quarkus.package.jar.type>legacy-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>legacy-quarkus-app</quarkus.package.output-directory>
               </properties>
             </configuration>
@@ -93,7 +93,7 @@
             <configuration>
               <properties>
                 <quarkus.package.output-name>uber</quarkus.package.output-name>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
                 <quarkus.package.output-directory>uber-quarkus-app</quarkus.package.output-directory>
               </properties>
             </configuration>

@@ -33,7 +33,7 @@ The solution is located in the `spring-scheduled-quickstart` link:{quickstarts-t
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-scheduler-quickstart
-:create-app-extensions: resteasy-reactive,spring-scheduled
+:create-app-extensions: rest,spring-scheduled
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project with the `spring-scheduled` extension.

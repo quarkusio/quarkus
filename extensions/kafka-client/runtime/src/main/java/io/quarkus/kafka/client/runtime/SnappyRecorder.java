@@ -8,14 +8,32 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 
 import org.xerial.snappy.OSInfo;
-import org.xerial.snappy.SnappyLoader;
 
+import io.quarkus.runtime.Application;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class SnappyRecorder {
 
-    public void loadSnappy() {
+    public void loadSnappy(boolean loadFromSharedClassLoader) {
+        if (loadFromSharedClassLoader) {
+            try {
+                Application.class.getClassLoader().loadClass(SnappyLoader.class.getName());
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            File out = getLibraryFile();
+            try {
+                System.load(out.getAbsolutePath());
+            } catch (UnsatisfiedLinkError e) {
+                // Try to load the library from the system library path
+                throw new RuntimeException("Failed to load Snappy native library", e);
+            }
+        }
+    }
+
+    static File getLibraryFile() {
         // Resolve the library file name with a suffix (e.g., dll, .so, etc.)
         String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
         String snappyNativeLibraryPath = "/org/xerial/snappy/native/" + OSInfo.getNativeLibFolderPathForCurrentOS();
@@ -27,18 +45,16 @@ public class SnappyRecorder {
             throw new RuntimeException(errorMessage);
         }
 
-        File out = extractLibraryFile(
+        return extractLibraryFile(
                 SnappyLoader.class.getResource(snappyNativeLibraryPath + "/" + snappyNativeLibraryName),
                 snappyNativeLibraryName);
-
-        System.load(out.getAbsolutePath());
     }
 
-    private static boolean hasResource(String path) {
+    static boolean hasResource(String path) {
         return SnappyLoader.class.getResource(path) != null;
     }
 
-    private static File extractLibraryFile(URL library, String name) {
+    static File extractLibraryFile(URL library, String name) {
         String tmp = System.getProperty("java.io.tmpdir");
         File extractedLibFile = new File(tmp, name);
 

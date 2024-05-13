@@ -1,5 +1,7 @@
 package io.quarkus.deployment.dev.filesystem;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -296,7 +298,7 @@ public class ReloadableFileManager extends QuarkusFileManager {
             // It would be easier to call the loadClass() methods of the delegateClassLoaders
             // here, but we have to load the class from the bytecode ourselves, because we
             // need it to be associated with our class loader.
-            String path = name.replace('.', '/') + ".class";
+            String path = fromClassNameToResourceName(name);
             URL url = findResource(path);
             if (url == null) {
                 throw new ClassNotFoundException(name);

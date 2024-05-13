@@ -57,6 +57,7 @@ updates:
       - dependency-name: net.alchim31.maven:scala-maven-plugin
       # SmallRye
       - dependency-name: io.smallrye:*
+      - dependency-name: io.smallrye.beanbag:*
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
       - dependency-name: io.smallrye.reactive:*
@@ -181,6 +182,8 @@ updates:
       - dependency-name: org.apache.groovy:*
       - dependency-name: org.apache.qpid:*
       - dependency-name: biz.paluch.logging:logstash-gelf
+      - dependency-name: org.bitbucket.b_c:jose4j
+      - dependency-name: io.fabric8:maven-model-helper
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

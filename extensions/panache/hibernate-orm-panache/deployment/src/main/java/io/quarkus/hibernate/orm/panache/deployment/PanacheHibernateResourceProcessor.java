@@ -119,7 +119,7 @@ public final class PanacheHibernateResourceProcessor {
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             modelClasses.add(entityClassName);
-            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, entityOperationsEnhancer));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
         }
 
         panacheEntities.addAll(modelClasses);

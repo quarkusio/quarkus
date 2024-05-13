@@ -41,11 +41,12 @@
         <compiler.plugin.version>3.12.1</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.2.5</surefire.plugin.version>
-        <jandex.version>3.1.6</jandex.version>
+        <jandex.version>3.1.8</jandex.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
 
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <assertj.version>3.25.3</assertj.version>
     </properties>
 
 
@@ -55,6 +56,12 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
             <version>${junit.jupiter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

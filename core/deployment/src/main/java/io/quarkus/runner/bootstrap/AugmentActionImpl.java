@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,7 +50,6 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 
 /**
@@ -184,6 +182,9 @@ public class AugmentActionImpl implements AugmentAction {
 
         // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
         // we want to write result of the final artifact created
+        if (artifactResultBuildItems.isEmpty()) {
+            throw new IllegalStateException("No artifact results were produced");
+        }
         ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
         writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
 
@@ -274,11 +275,7 @@ public class AugmentActionImpl implements AugmentAction {
         try {
             QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
             Thread.currentThread().setContextClassLoader(classLoader);
-            ProfileManager.setLaunchMode(launchMode);
-            ProfileManager.setRuntimeDefaultProfile(
-                    Optional.ofNullable(quarkusBootstrap.getBuildSystemProperties())
-                            .map(properties -> properties.getProperty(ProfileManager.QUARKUS_PROFILE_PROP))
-                            .orElse(null));
+            LaunchMode.set(launchMode);
 
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
                     .setRoot(quarkusBootstrap.getApplicationRoot())
@@ -334,7 +331,6 @@ public class AugmentActionImpl implements AugmentAction {
                 throw new RuntimeException(e);
             }
         } finally {
-            ProfileManager.setRuntimeDefaultProfile(null);
             Thread.currentThread().setContextClassLoader(old);
             QuarkusConfigFactory.setConfig(null);
         }

@@ -141,7 +141,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void searchRest() throws Exception {
+    public void searchHibernate() throws Exception {
         final QuarkusProject quarkusProject = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(quarkusProject, "commons-io:commons-io:2.5", "Agroal");
 
@@ -150,7 +150,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
             new ListExtensions(quarkusProject, MessageWriter.info(printStream))
                     .all(true)
                     .format("full")
-                    .search("Rest")
+                    .search("Hibernate")
                     .execute();
         }
         final String output = baos.toString("UTF-8");

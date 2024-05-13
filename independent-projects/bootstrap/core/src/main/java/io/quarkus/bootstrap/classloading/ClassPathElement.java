@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.Manifest;
@@ -28,6 +29,18 @@ public interface ClassPathElement extends Closeable {
      *         this element does not represent any Maven artifact
      */
     default ArtifactKey getDependencyKey() {
+        ResolvedDependency resolvedDependency = getResolvedDependency();
+        return resolvedDependency != null ? resolvedDependency.getKey() : null;
+    }
+
+    /**
+     * If this classpath element represents a Maven artifact, the method will return it,
+     * otherwise - null.
+     *
+     * @return the Maven artifact this classpath element represents or null, in case
+     *         this element does not represent any Maven artifact
+     */
+    default ResolvedDependency getResolvedDependency() {
         return null;
     }
 
@@ -85,7 +98,7 @@ public interface ClassPathElement extends Closeable {
     }
 
     static ClassPathElement fromDependency(ResolvedDependency dep) {
-        return new PathTreeClassPathElement(dep.getContentTree(), dep.isRuntimeCp(), dep.getKey());
+        return new PathTreeClassPathElement(dep.getContentTree(), dep.isRuntimeCp(), dep);
     }
 
     static ClassPathElement EMPTY = new ClassPathElement() {
@@ -129,4 +142,9 @@ public interface ClassPathElement extends Closeable {
 
         }
     };
+
+    default List<ClassPathResource> getResources(String name) {
+        ClassPathResource resource = getResource(name);
+        return resource == null ? List.of() : List.of(resource);
+    }
 }

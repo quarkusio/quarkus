@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :topics: messaging,kafka,reactive-messaging,virtual-threads
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-messaging-kafka
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html
 :rm_blocking_annotation: https://javadoc.io/doc/io.smallrye.reactive/smallrye-reactive-messaging-api/latest/io/smallrye/reactive/messaging/annotations/Blocking.html
 :rm_blocking_docs: http://smallrye.io/smallrye-reactive-messaging/4.8.0/concepts/blocking/
@@ -47,14 +47,14 @@ First, make sure to have a reactive messaging extension dependency to your build
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+  <artifactId>quarkus-messaging-kafka</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+implementation("io.quarkus:quarkus-messaging-kafka")
 ----
 
 You also need to make sure that you are using Java 19 or later (we recommend 21+), this can be enforced in your `pom.xml` file with the following:
@@ -84,7 +84,7 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
 ----
 
 Then you can start using the annotation `@RunOnVirtualThread` on your consumer methods also annotated with `@Incoming`.
-In the following example we'll use the xref:rest-client-reactive.adoc[RESTEasy Reactive REST Client] to make a blocking call to a REST endpoint:
+In the following example we'll use the xref:rest-client.adoc[REST Client] to make a blocking call to a REST endpoint:
 
 [source, java]
 ----

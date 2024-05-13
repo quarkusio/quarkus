@@ -61,17 +61,19 @@ public class WebAuthnRecorder {
                         byte[] data = new byte[32];
                         new SecureRandom().nextBytes(data);
                         key = encryptionKey = Base64.getEncoder().encodeToString(data);
-                        log.warn("Encryption key was not specified for persistent WebAuthn auth, using temporary key " + key);
+                        log.warn(
+                                "Encryption key was not specified (using `quarkus.http.auth.session.encryption-key` configuration) for persistent WebAuthn auth, using temporary key "
+                                        + key);
                     }
                 } else {
                     key = httpConfiguration.getValue().encryptionKey.get();
                 }
                 WebAuthnRunTimeConfig config = WebAuthnRecorder.this.config.getValue();
-                PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName,
-                        config.sessionTimeout.toMillis(),
-                        config.newCookieInterval.toMillis(), false, config.cookieSameSite.name(),
-                        config.cookiePath.orElse(null));
-                String loginPage = config.loginPage.startsWith("/") ? config.loginPage : "/" + config.loginPage;
+                PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName(),
+                        config.sessionTimeout().toMillis(),
+                        config.newCookieInterval().toMillis(), false, config.cookieSameSite().name(),
+                        config.cookiePath().orElse(null));
+                String loginPage = config.loginPage().startsWith("/") ? config.loginPage() : "/" + config.loginPage();
                 return new WebAuthnAuthenticationMechanism(loginManager, loginPage);
             }
         };

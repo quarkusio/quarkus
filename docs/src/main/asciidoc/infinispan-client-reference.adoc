@@ -748,8 +748,8 @@ When a method annotated with `@CacheInvalidateAll` is invoked, Infinispan will r
 == Querying
 
 The Infinispan client supports both indexed and non-indexed search as long as the
-`ProtoStreamMarshaller` is configured above. This allows the user to query based on the
-properties of the proto schema. *Indexed queries are preferred for performance reasons*.
+`ProtoStreamMarshaller` is configured above. This allows the user to query on *keys* or
+*values* based on the properties of the proto schema. *Indexed queries are preferred for performance reasons*.
 
 .XML
 [source,xml,options="nowrap",subs=attributes+,role="primary"]

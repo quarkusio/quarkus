@@ -125,6 +125,7 @@ public final class PanacheHibernateCommonResourceProcessor {
         // transform all users of those classes
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             for (ClassInfo userClass : index.getIndex().getKnownUsers(entityClassName)) {
+                //N.B. getKnownUsers(entityClassName) will include also the entityClassName
                 String cn = userClass.name().toString('.');
                 if (produced.contains(cn)) {
                     continue;
@@ -134,9 +135,10 @@ public final class PanacheHibernateCommonResourceProcessor {
                 //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
                 //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
                 //change without having solid integration tests.
+                final boolean cacheAble = entityClassName.equals(cn);//This case is always safe as the transformation would only depend on itself
                 final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
                         .setClassToTransform(cn)
-                        .setCacheable(false)//TODO this would be nice to improve on: see note above.
+                        .setCacheable(cacheAble)
                         .setVisitorFunction(panacheFieldAccessEnhancer)
                         .setRequireConstPoolEntry(entityClassNamesInternal)
                         .build();

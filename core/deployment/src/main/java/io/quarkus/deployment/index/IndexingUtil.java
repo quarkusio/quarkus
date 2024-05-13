@@ -1,8 +1,5 @@
 package io.quarkus.deployment.index;
 
-import static io.quarkus.bootstrap.classloading.JarClassPathElement.JAVA_VERSION;
-import static io.quarkus.bootstrap.classloading.JarClassPathElement.META_INF_VERSIONS;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +40,22 @@ public class IndexingUtil {
 
     public static final String JANDEX_INDEX = "META-INF/jandex.idx";
 
+    private static final String META_INF_VERSIONS = "META-INF/versions/";
+
+    private static final int JAVA_VERSION;
+
     // At least Jandex 2.1 is needed
     private static final int REQUIRED_INDEX_VERSION = 8;
+
+    static {
+        int version = 8;
+        try {
+            version = Runtime.version().version().get(0);
+        } catch (Exception e) {
+            //version 8
+        }
+        JAVA_VERSION = version;
+    }
 
     public static Index indexJar(Path path) throws IOException {
         return indexJar(path.toFile(), Collections.emptySet());

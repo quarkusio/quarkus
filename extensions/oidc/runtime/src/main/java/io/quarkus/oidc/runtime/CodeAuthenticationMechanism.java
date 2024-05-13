@@ -28,6 +28,8 @@ import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.JavaScriptRequestChecker;
+import io.quarkus.oidc.OidcRedirectFilter;
+import io.quarkus.oidc.OidcRedirectFilter.OidcRedirectContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
@@ -52,7 +54,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -61,6 +62,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final String AMP = "&";
+    static final String QUESTION_MARK = "?";
     static final String EQ = "=";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
@@ -227,8 +229,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                 String finalErrorUri = errorUri.toString();
                                 LOG.debugf("Error URI: %s", finalErrorUri);
-                                return Uni.createFrom().failure(new AuthenticationRedirectException(finalErrorUri));
+                                return Uni.createFrom().failure(new AuthenticationRedirectException(
+                                        filterRedirect(context, tenantContext, finalErrorUri)));
                             }
+
                         });
             } else {
                 LOG.error(
@@ -240,6 +244,24 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
 
+    }
+
+    private static String filterRedirect(RoutingContext context,
+            TenantConfigContext tenantContext, String redirectUri) {
+        if (!tenantContext.getOidcRedirectFilters().isEmpty()) {
+            OidcRedirectContext redirectContext = new OidcRedirectContext(context, tenantContext.getOidcTenantConfig(),
+                    redirectUri, MultiMap.caseInsensitiveMultiMap());
+            for (OidcRedirectFilter filter : tenantContext.getOidcRedirectFilters()) {
+                filter.filter(redirectContext);
+            }
+            MultiMap queries = redirectContext.additionalQueryParams();
+            if (!queries.isEmpty()) {
+                String encoded = OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(queries)).toString();
+                String sep = redirectUri.lastIndexOf("?") > 0 ? AMP : QUESTION_MARK;
+                redirectUri += (sep + encoded);
+            }
+        }
+        return redirectUri;
     }
 
     private Uni<SecurityIdentity> stateParamIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
@@ -432,7 +454,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         String sessionExpiredUri = sessionExpired.toString();
         LOG.debugf("Session Expired URI: %s", sessionExpiredUri);
         return removeSessionCookie(context, configContext.oidcConfig)
-                .chain(() -> Uni.createFrom().failure(new AuthenticationRedirectException(sessionExpiredUri)));
+                .chain(() -> Uni.createFrom().failure(new AuthenticationRedirectException(
+                        filterRedirect(context, configContext, sessionExpiredUri))));
     }
 
     private static String decryptIdTokenIfEncryptedByProvider(TenantConfigContext resolvedContext, String token) {
@@ -692,6 +715,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         String authorizationURL = configContext.provider.getMetadata().getAuthorizationUri() + "?"
                                 + codeFlowParams.toString();
 
+                        authorizationURL = filterRedirect(context, configContext, authorizationURL);
                         LOG.debugf("Code flow redirect to: %s", authorizationURL);
 
                         return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
@@ -848,7 +872,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             String finalRedirectUri = finalUriWithoutQuery.toString();
                                             LOG.debugf("Removing code flow redirect parameters, final redirect URI: %s",
                                                     finalRedirectUri);
-                                            throw new AuthenticationRedirectException(finalRedirectUri);
+                                            throw new AuthenticationRedirectException(
+                                                    filterRedirect(context, configContext, finalRedirectUri));
                                         } else {
                                             return identity;
                                         }
@@ -1150,18 +1175,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
             String name, String value, long maxAge, boolean sessionCookie) {
-        ServerCookie cookie = new CookieImpl(name, value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(oidcConfig.authentication.cookieForceSecure || context.request().isSSL());
-        cookie.setMaxAge(maxAge);
-        LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
-        Authentication auth = oidcConfig.getAuthentication();
-        OidcUtils.setCookiePath(context, auth, cookie);
-        if (auth.cookieDomain.isPresent()) {
-            cookie.setDomain(auth.getCookieDomain().get());
-        }
+        ServerCookie cookie = OidcUtils.createCookie(context, oidcConfig, name, value, maxAge);
         if (sessionCookie) {
-            cookie.setSameSite(CookieSameSite.valueOf(auth.cookieSameSite.name()));
+            cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication.cookieSameSite.name()));
         }
         context.response().addCookie(cookie);
         return cookie;
@@ -1368,7 +1384,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     public Void apply(Void t) {
                         String logoutUri = buildLogoutRedirectUri(configContext, idToken, context);
                         LOG.debugf("Logout uri: %s", logoutUri);
-                        throw new AuthenticationRedirectException(logoutUri);
+                        throw new AuthenticationRedirectException(filterRedirect(context, configContext, logoutUri));
                     }
                 });
     }

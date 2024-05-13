@@ -116,7 +116,7 @@ public class WebSocketServerRecorder {
                                                         LOG.debugf("@OnTextMessage callback consuming Multi completed: %s",
                                                                 connection);
                                                     } else {
-                                                        LOG.errorf(r.cause(),
+                                                        logFailure(r.cause(),
                                                                 "Unable to complete @OnTextMessage callback consuming Multi: %s",
                                                                 connection);
                                                     }
@@ -134,7 +134,7 @@ public class WebSocketServerRecorder {
                                                         LOG.debugf("@OnBinaryMessage callback consuming Multi completed: %s",
                                                                 connection);
                                                     } else {
-                                                        LOG.errorf(r.cause(),
+                                                        logFailure(r.cause(),
                                                                 "Unable to complete @OnBinaryMessage callback consuming Multi: %s",
                                                                 connection);
                                                     }
@@ -143,7 +143,7 @@ public class WebSocketServerRecorder {
                                         });
                                     }
                                 } else {
-                                    LOG.errorf(r.cause(), "Unable to complete @OnOpen callback: %s", connection);
+                                    logFailure(r.cause(), "Unable to complete @OnOpen callback: %s", connection);
                                 }
                             });
                         }
@@ -156,7 +156,7 @@ public class WebSocketServerRecorder {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
                                 } else {
-                                    LOG.errorf(r.cause(), "Unable to consume text message in @OnTextMessage callback: %s",
+                                    logFailure(r.cause(), "Unable to consume text message in @OnTextMessage callback: %s",
                                             connection);
                                 }
                             });
@@ -184,7 +184,7 @@ public class WebSocketServerRecorder {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnBinaryMessage callback consumed text message: %s", connection);
                                 } else {
-                                    LOG.errorf(r.cause(), "Unable to consume text message in @OnBinaryMessage callback: %s",
+                                    logFailure(r.cause(), "Unable to consume text message in @OnBinaryMessage callback: %s",
                                             connection);
                                 }
                             });
@@ -210,7 +210,7 @@ public class WebSocketServerRecorder {
                             if (r.succeeded()) {
                                 LOG.debugf("@OnPongMessage callback consumed text message: %s", connection);
                             } else {
-                                LOG.errorf(r.cause(), "Unable to consume text message in @OnPongMessage callback: %s",
+                                logFailure(r.cause(), "Unable to consume text message in @OnPongMessage callback: %s",
                                         connection);
                             }
                         });
@@ -226,7 +226,7 @@ public class WebSocketServerRecorder {
                                         if (r.succeeded()) {
                                             LOG.debugf("@OnClose callback completed: %s", connection);
                                         } else {
-                                            LOG.errorf(r.cause(), "Unable to complete @OnClose callback: %s", connection);
+                                            logFailure(r.cause(), "Unable to complete @OnClose callback: %s", connection);
                                         }
                                         connectionManager.remove(generatedEndpointClass, connection);
                                     });
@@ -237,6 +237,32 @@ public class WebSocketServerRecorder {
                 });
             }
         };
+    }
+
+    private static void logFailure(Throwable throwable, String message, WebSocketConnection connection) {
+        if (isWebSocketIsClosedFailure(throwable, connection)) {
+            LOG.debugf(throwable,
+                    message + ": %s",
+                    connection);
+        } else {
+            LOG.errorf(throwable,
+                    message + ": %s",
+                    connection);
+        }
+    }
+
+    private static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnection connection) {
+        if (!connection.isClosed()) {
+            return false;
+        }
+        if (throwable == null) {
+            return false;
+        }
+        String message = throwable.getMessage();
+        if (message == null) {
+            return false;
+        }
+        return message.contains("WebSocket is closed");
     }
 
     private void textMessageHandler(WebSocketConnection connection, WebSocketEndpoint endpoint, ServerWebSocket ws,

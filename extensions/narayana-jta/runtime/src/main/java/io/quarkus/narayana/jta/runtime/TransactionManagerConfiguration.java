@@ -27,7 +27,7 @@ public final class TransactionManagerConfiguration {
      * Whether the node name should be shortened if necessary.
      * The node name must not exceed a length of 28 bytes. If this property is set to {@code true}, and the node name exceeds 28
      * bytes, the node name is shortened by calculating the <a href="https://en.wikipedia.org/wiki/SHA-2">SHA-224</a> hash,
-     * which has a length of 28 bytes.
+     * which has a length of 28 bytes, encoded to Base64 format and then shorten to 28 bytes.
      *
      * @see #nodeName
      */

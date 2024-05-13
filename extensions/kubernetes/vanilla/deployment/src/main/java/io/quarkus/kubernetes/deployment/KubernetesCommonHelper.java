@@ -1194,9 +1194,19 @@ public class KubernetesCommonHelper {
     }
 
     private static String parseVCSUri(VCSUriConfig config, ScmInfo scm) {
-        if (config.enabled) {
-            return config.override.orElseGet(() -> scm != null ? Git.sanitizeRemoteUrl(scm.getRemote().get("origin")) : null);
+        if (!config.enabled) {
+            return null;
         }
-        return null;
+        if (config.override.isPresent()) {
+            return config.override.get();
+        }
+        if (scm == null) {
+            return null;
+        }
+        String originRemote = scm.getRemote().get("origin");
+        if (originRemote == null || originRemote.isBlank()) {
+            return null;
+        }
+        return Git.sanitizeRemoteUrl(originRemote);
     }
 }

@@ -1,4 +1,3 @@
-
 package io.quarkus.deployment.recording;
 
 import java.lang.reflect.Method;
@@ -10,17 +9,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 
 final class PropertyUtils {
 
-    static final ConcurrentMap<Class<?>, Property[]> CACHE = new ConcurrentHashMap<>();
-
-    private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
+    private static final ClassValue<Property[]> CACHE = new ClassValue<Property[]>() {
         @Override
-        public Property[] apply(Class<?> type) {
+        protected Property[] computeValue(Class<?> type) {
             if (type.isRecord()) {
                 RecordComponent[] recordComponents = type.getRecordComponents();
                 return Arrays.stream(recordComponents)
@@ -84,7 +78,7 @@ final class PropertyUtils {
     };
 
     public static Property[] getPropertyDescriptors(Object param) {
-        return CACHE.computeIfAbsent(param.getClass(), FUNCTION);
+        return CACHE.get(param.getClass());
     }
 
     public static class Property {

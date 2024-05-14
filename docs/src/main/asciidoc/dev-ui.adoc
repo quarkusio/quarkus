@@ -317,7 +317,7 @@ import { beans } from 'build-time-data';
 import '@vaadin/grid'; // <1>
 import { columnBodyRenderer } from '@vaadin/grid/lit.js'; // <2>
 import '@vaadin/vertical-layout';
-import 'qui-badge'; // <3>
+import '@qomponent/qui-badge'; // <3>
 
 /**
  * This component shows the Arc Beans
@@ -459,17 +459,16 @@ customElements.define('qwc-arc-beans', QwcArcBeans);
 ----
 <1> Import the Vaadin component you want to use
 <2> You can also import other functions if needed
-<3> There are some internal UI components that you can use, described below
+<3> You can also use any component in the Qomponent library, described below
 
-===== Using internal UI components
+===== Qomponent
 
-Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qui[internal UI components] (under the `qui` namespace) are available to make certain things easier:
+We also include all components from the [Qomponent](https://github.com/qomponent) library
 
-- Card
-- Badge
-- Alert
-- Code block
-- IDE Link
+- [Card](https://www.npmjs.com/package/@qomponent/qui-card)
+- [Badge](https://www.npmjs.com/package/@qomponent/qui-badge)
+- [Alert](https://www.npmjs.com/package/@qomponent/qui-alert)
+- [Code block](https://www.npmjs.com/package/@qomponent/qui-code-block)
 
 ====== Card
 
@@ -477,19 +476,19 @@ Card component to display contents in a card
 
 [source,javascript]
 ----
-import 'qui-card';
+import '@qomponent/qui-card';
 ----
 
 [source,html]
 ----
-<qui-card title="My title">
-    <div slot="content">
-        My contents
-    </div>
-</qui-card>
+    <qui-card header="Small">
+        <div slot="content">
+            <div class="cardcontents">
+                <span>Hello</span>
+            </div>
+        </div>
+    </qui-card>
 ----
-
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L110[Example code]
 
 ====== Badge
 
@@ -499,108 +498,98 @@ image::dev-ui-qui-badge-v2.png[alt=Dev UI Badge,role="center"]
 
 [source,javascript]
 ----
-import 'qui-badge';
+import '@qomponent/qui-badge';
 ----
 
 You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast`, or set your own colors.
 
 [source,html]
 ----
-<div class="badges">
-    <h3>Badges</h3>
-    <p>Badges wrap the Vaadin theme in a component.
-        See <a href="https://vaadin.com/docs/latest/components/badge">https://vaadin.com/docs/latest/components/badge</a> for more info.
-    </p>
-    <div class="cards">
-        <qui-card title="Small">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge small><span>Default</span></qui-badge>
-                    <qui-badge level="success" small><span>Success</span></qui-badge>
-                    <qui-badge level="warning" small><span>Warning</span></qui-badge>
-                    <qui-badge level="error" small><span>Error</span></qui-badge>
-                    <qui-badge level="contrast" small><span>Contrast</span></qui-badge>
-                    <qui-badge background="pink" color="purple" small><span>Custom colours</span></qui-badge>
-                </div>
-            </div>
-        </qui-card>
-        <qui-card title="Primary">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge primary><span>Default primary</span></qui-badge>
-                    <qui-badge level="success" primary><span>Success primary</span></qui-badge>
-                    <qui-badge level="warning" primary><span>Warning primary</span></qui-badge>
-                    <qui-badge level="error" primary><span>Error primary</span></qui-badge>
-                    <qui-badge level="contrast" primary><span>Contrast primary</span></qui-badge>
-                    <qui-badge background="pink" color="purple" primary><span>Custom colours</span></qui-badge>
-                </div>
-            </div>
-        </qui-card>
-        <qui-card title="Pill">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge pill><span>Default pill</span></qui-badge>
-                    <qui-badge level="success" pill><span>Success pill</span></qui-badge>
-                    <qui-badge level="warning" pill><span>Warning pill</span></qui-badge>
-                    <qui-badge level="error" pill><span>Error pill</span></qui-badge>
-                    <qui-badge level="contrast" pill><span>Contrast pill</span></qui-badge>
-                    <qui-badge background="pink" color="purple" pill><span>Custom colours</span></qui-badge>
-                </div>
-            </div>
-        </qui-card>
-        <qui-card title="With icon">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge text="Default" icon="font-awesome-solid:circle-info">
-                        <span>Default icon</span>
-                    </qui-badge>
-                    <qui-badge text="Success" level="success" icon="font-awesome-solid:check">
-                        <span>Success icon</span>
-                    </qui-badge>
-                    <qui-badge text="Warning" level="warning" icon="font-awesome-solid:triangle-exclamation">
-                        <span>Warning icon</span>
-                    </qui-badge>
-                    <qui-badge text="Error" level="error" icon="font-awesome-solid:circle-exclamation">
-                        <span>Error icon</span>
-                    </qui-badge>
-                    <qui-badge text="Contrast" level="contrast" icon="font-awesome-solid:hand">
-                        <span>Contrast icon</span>
-                    </qui-badge>
-                    <qui-badge text="Custom" background="pink" color="purple" icon="font-awesome-brands:redhat">
-                        <span>Custom colours</span>
-                    </qui-badge>
-                </div>
-            </div>
-        </qui-card>
-        <qui-card title="Icon only">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge icon="font-awesome-solid:clock"></qui-badge>
-                    <qui-badge level="success" icon="font-awesome-solid:check"></qui-badge>
-                    <qui-badge level="warning" icon="font-awesome-solid:triangle-exclamation"></qui-badge>
-                    <qui-badge level="error" icon="font-awesome-solid:circle-exclamation"></qui-badge>
-                    <qui-badge level="contrast" icon="font-awesome-solid:hand"></qui-badge>
-                    <qui-badge level="contrast" background="pink" color="purple" icon="font-awesome-brands:redhat"></qui-badge>
-                </div>
-            </div>
-        </qui-card>
-        <qui-card title="Clickable">
-            <div slot="content">
-                <div class="cardcontents">
-                    <qui-badge clickable @click=${() => this._info()}><span>Default</span></qui-badge>
-                    <qui-badge clickable level="success" @click=${() => this._success()}><span>Success</span></qui-badge>
-                    <qui-badge clickable level="warning" @click=${() => this._warning()}><span>Warning</span></qui-badge>
-                    <qui-badge clickable level="error" @click=${() => this._error()}><span>Error</span></qui-badge>
-                    <qui-badge clickable level="contrast" @click=${() => this._contrast()}><span>Contrast</span></qui-badge>
-                    <qui-badge clickable background="pink" color="purple" @click=${() => this._info()}><span>Custom colours</span></qui-badge>
-                </div>
-            </div>
-        </qui-card>
+<div class="cards">
+    <h3>Tiny</h3>
+    <div class="card">
+        <qui-badge tiny><span>Default</span></qui-badge>
+        <qui-badge level="success" tiny><span>Success</span></qui-badge>
+        <qui-badge level="warning" tiny><span>Warning</span></qui-badge>
+        <qui-badge level="error" tiny><span>Error</span></qui-badge>
+        <qui-badge level="contrast" tiny><span>Contrast</span></qui-badge>
+        <qui-badge background="pink" color="purple" tiny><span>Custom colors</span></qui-badge>
     </div>
+
+    <h3>Small</h3>
+    <div class="card">
+        <qui-badge small><span>Default</span></qui-badge>
+        <qui-badge level="success" small><span>Success</span></qui-badge>
+        <qui-badge level="warning" small><span>Warning</span></qui-badge>
+        <qui-badge level="error" small><span>Error</span></qui-badge>
+        <qui-badge level="contrast" small><span>Contrast</span></qui-badge>
+        <qui-badge background="pink" color="purple" small><span>Custom colors</span></qui-badge>
+    </div>
+    
+    <h3>Primary</h3>
+    <div class="card">
+        <qui-badge primary><span>Default primary</span></qui-badge>
+        <qui-badge level="success" primary><span>Success primary</span></qui-badge>
+        <qui-badge level="warning" primary><span>Warning primary</span></qui-badge>
+        <qui-badge level="error" primary><span>Error primary</span></qui-badge>
+        <qui-badge level="contrast" primary><span>Contrast primary</span></qui-badge>
+        <qui-badge background="pink" color="purple" primary><span>Custom colors</span></qui-badge>
+    </div>
+
+    <h3>Pill</h3>
+    <div class="card">
+        <qui-badge pill><span>Default pill</span></qui-badge>
+        <qui-badge level="success" pill><span>Success pill</span></qui-badge>
+        <qui-badge level="warning" pill><span>Warning pill</span></qui-badge>
+        <qui-badge level="error" pill><span>Error pill</span></qui-badge>
+        <qui-badge level="contrast" pill><span>Contrast pill</span></qui-badge>
+        <qui-badge background="pink" color="purple" pill><span>Custom colors</span></qui-badge>
+    </div>       
+    
+    <h3>With Icon</h3>
+    <div class="card">
+        <qui-badge text="Default" icon="circle-info">
+            <span>Default icon</span>
+        </qui-badge>
+        <qui-badge text="Success" level="success" icon="circle-check">
+            <span>Success icon</span>
+        </qui-badge>
+        <qui-badge text="Warning" level="warning" icon="warning">
+            <span>Warning icon</span>
+        </qui-badge>
+        <qui-badge text="Error" level="error" icon="circle-exclamation">
+            <span>Error icon</span>
+        </qui-badge>
+        <qui-badge text="Contrast" level="contrast" icon="adjust">
+            <span>Contrast icon</span>
+        </qui-badge>
+        <qui-badge text="Custom" background="pink" color="purple" icon="flag-checkered">
+            <span>Custom colors</span>
+        </qui-badge>
+    </div>
+
+    <h3>Icon only</h3>
+    <div class="card">
+        <qui-badge icon="circle-info"></qui-badge>
+        <qui-badge level="success" icon="circle-check"></qui-badge>
+        <qui-badge level="warning" icon="warning"></qui-badge>
+        <qui-badge level="error" icon="circle-exclamation"></qui-badge>
+        <qui-badge level="contrast" icon="adjust"></qui-badge>
+        <qui-badge level="contrast" background="pink" color="purple" icon="flag-checkered"></qui-badge>
+    </div>
+
+    <h3>Clickable</h3>
+    <div class="card">
+        <qui-badge clickable><span>Default</span></qui-badge>
+        <qui-badge clickable level="success"><span>Success</span></qui-badge>
+        <qui-badge clickable level="warning"><span>Warning</span></qui-badge>
+        <qui-badge clickable level="error"><span>Error</span></qui-badge>
+        <qui-badge clickable level="contrast"><span>Contrast</span></qui-badge>
+        <qui-badge clickable background="pink" color="purple"><span>Custom colors</span></qui-badge>
+    </div>
+    
 </div>
 ----
-
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L214[Example code]
 
 ====== Alert
 
@@ -612,68 +601,61 @@ image::dev-ui-qui-alert-v2.png[alt=Dev UI Alert,role="center"]
 
 [source,javascript]
 ----
-import 'qui-alert';
+import '@qomponent/qui-alert';
 ----
 
 [source,html]
 ----
-<div class="cards">
-    <div class="cardcontents">
-        <qui-alert><span>Info alert</span></qui-alert>
-        <qui-alert level="success"><span>Success alert</span></qui-alert>
-        <qui-alert level="warning"><span>Warning alert</span></qui-alert>
-        <qui-alert level="error"><span>Error alert</span></qui-alert>
-        <hr class="line">
-        <qui-alert permanent><span>Permanent Info alert</span></qui-alert>
-        <qui-alert level="success" permanent><span>Permanent Success alert</span></qui-alert>
-        <qui-alert level="warning" permanent><span>Permanent Warning alert</span></qui-alert>
-        <qui-alert level="error" permanent><span>Permanent Error alert</span></qui-alert>
-        <hr class="line">
-        <qui-alert center><span>Center Info alert</span></qui-alert>
-        <qui-alert level="success" center><span>Center Success alert</span></qui-alert>
-        <qui-alert level="warning" center><span>Center Warning alert</span></qui-alert>
-        <qui-alert level="error" center><span>Center Error alert</span></qui-alert>
-        <hr class="line">
-        <qui-alert showIcon><span>Info alert with icon</span></qui-alert>
-        <qui-alert level="success" showIcon><span>Success alert with icon</span></qui-alert>
-        <qui-alert level="warning" showIcon><span>Warning alert with icon</span></qui-alert>
-        <qui-alert level="error" showIcon><span>Error alert with icon</span></qui-alert>
-        <hr class="line">
-        <qui-alert icon="font-awesome-brands:redhat"><span>Info alert with custom icon</span></qui-alert>
-        <qui-alert level="success" icon="font-awesome-brands:redhat"><span>Success alert with custom icon</span></qui-alert>
-        <qui-alert level="warning" icon="font-awesome-brands:redhat"><span>Warning alert with custom icon</span></qui-alert>
-        <qui-alert level="error" icon="font-awesome-brands:redhat"><span>Error alert with custom icon</span></qui-alert>
-        <hr class="line">
-        <qui-alert size="small" showIcon><span>Small Info alert with icon</span></qui-alert>
-        <qui-alert level="success" size="small" showIcon><span>Small Success alert with icon</span></qui-alert>
-        <qui-alert level="warning" size="small" showIcon><span>Small Warning alert with icon</span></qui-alert>
-        <qui-alert level="error" size="small" showIcon><span>Small Error alert with icon</span></qui-alert>
-        <hr class="line">
-        <qui-alert showIcon><span>Info <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
-        <qui-alert level="success" showIcon><span>Success <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
-        <qui-alert level="warning" showIcon><span>Warning <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
-        <qui-alert level="error" showIcon><span>Error <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
-        <hr class="line">
-        <qui-alert showIcon primary><span>Primary Info alert with icon</span></qui-alert>
-        <qui-alert level="success" showIcon primary><span>Primary Success alert with icon</span></qui-alert>
-        <qui-alert level="warning" showIcon primary><span>Primary Warning alert with icon</span></qui-alert>
-        <qui-alert level="error" showIcon primary><span>Primary Error alert with icon</span></qui-alert>
-        <hr class="line">
-        <qui-alert title="Information"><span>Info alert with title</span></qui-alert>
-        <qui-alert title="Well done" level="success"><span>Success alert with title</span></qui-alert>
-        <qui-alert title="Beware" level="warning"><span>Warning alert with title</span></qui-alert>
-        <qui-alert title="Ka-boom" level="error"><span>Error alert with title</span></qui-alert>
-        <hr class="line">
-        <qui-alert title="Information" showIcon><span>Info alert with title and icon</span></qui-alert>
-        <qui-alert title="Well done" level="success" showIcon><span>Success alert with title and icon</span></qui-alert>
-        <qui-alert title="Beware" level="warning" showIcon><span>Warning alert with title and icon</span></qui-alert>
-        <qui-alert title="Ka-boom" level="error" showIcon><span>Error alert with title and icon</span></qui-alert>
-    </div>
-</div>
+<qui-alert><span>Info alert</span></qui-alert>
+<qui-alert level="success"><span>Success alert</span></qui-alert>
+<qui-alert level="warning"><span>Warning alert</span></qui-alert>
+<qui-alert level="error"><span>Error alert</span></qui-alert>
+
+<qui-alert permanent><span>Permanent Info alert</span></qui-alert>
+<qui-alert level="success" permanent><span>Permanent Success alert</span></qui-alert>
+<qui-alert level="warning" permanent><span>Permanent Warning alert</span></qui-alert>
+<qui-alert level="error" permanent><span>Permanent Error alert</span></qui-alert>
+
+<qui-alert center><span>Center Info alert</span></qui-alert>
+<qui-alert level="success" center><span>Center Success alert</span></qui-alert>
+<qui-alert level="warning" center><span>Center Warning alert</span></qui-alert>
+<qui-alert level="error" center><span>Center Error alert</span></qui-alert>
+
+<qui-alert showIcon><span>Info alert with icon</span></qui-alert>
+<qui-alert level="success" showIcon><span>Success alert with icon</span></qui-alert>
+<qui-alert level="warning" showIcon><span>Warning alert with icon</span></qui-alert>
+<qui-alert level="error" showIcon><span>Error alert with icon</span></qui-alert>
+
+<qui-alert icon="vaadin:flag-checkered"><span>Info alert with custom icon</span></qui-alert>
+<qui-alert level="success" icon="vaadin:flag-checkered"><span>Success alert with custom icon</span></qui-alert>
+<qui-alert level="warning" icon="vaadin:flag-checkered"><span>Warning alert with custom icon</span></qui-alert>
+<qui-alert level="error" icon="vaadin:flag-checkered"><span>Error alert with custom icon</span></qui-alert>
+
+<qui-alert size="small" showIcon><span>Small Info alert with icon</span></qui-alert>
+<qui-alert level="success" size="small" showIcon><span>Small Success alert with icon</span></qui-alert>
+<qui-alert level="warning" size="small" showIcon><span>Small Warning alert with icon</span></qui-alert>
+<qui-alert level="error" size="small" showIcon><span>Small Error alert with icon</span></qui-alert>
+
+<qui-alert showIcon><span>Info <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="success" showIcon><span>Success <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="warning" showIcon><span>Warning <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+<qui-alert level="error" showIcon><span>Error <code>alert</code> with markup <br><a href="https://quarkus.io/" target="_blank">quarkus.io</a></span></qui-alert>
+
+<qui-alert showIcon primary><span>Primary Info alert with icon</span></qui-alert>
+<qui-alert level="success" showIcon primary><span>Primary Success alert with icon</span></qui-alert>
+<qui-alert level="warning" showIcon primary><span>Primary Warning alert with icon</span></qui-alert>
+<qui-alert level="error" showIcon primary><span>Primary Error alert with icon</span></qui-alert>
+
+<qui-alert title="Information"><span>Info alert with title</span></qui-alert>
+<qui-alert title="Well done" level="success"><span>Success alert with title</span></qui-alert>
+<qui-alert title="Beware" level="warning"><span>Warning alert with title</span></qui-alert>
+<qui-alert title="Ka-boom" level="error"><span>Error alert with title</span></qui-alert>
+
+<qui-alert title="Information" showIcon><span>Info alert with title and icon</span></qui-alert>
+<qui-alert title="Well done" level="success" showIcon><span>Success alert with title and icon</span></qui-alert>
+<qui-alert title="Beware" level="warning" showIcon><span>Warning alert with title and icon</span></qui-alert>
+<qui-alert title="Ka-boom" level="error" showIcon><span>Error alert with title and icon</span></qui-alert>
 ----
-
-https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L316[Example code]
-
 
 ====== Code block
 
@@ -684,20 +666,17 @@ image::dev-ui-qui-code-block-v2.png[alt=Dev UI Code Block,role="center"]
 
 [source,javascript]
 ----
-import '@quarkus-webcomponents/codeblock';
+import '@qomponent/qui-code-block';
 ----
 
 [source,html]
 ----
-<div class="codeBlock">
-    <qui-code-block
-        mode='yaml'
-        content='${yaml}'>
-    </qui-code-block>
-</div>;
+<qui-code-block mode="properties">
+    <slot>
+        foo = bar
+    </slot>
+</qui-code-block>
 ----
-
-https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/kubernetes/vanilla/deployment/src/main/resources/dev-ui/qwc-kubernetes-manifest.js#L102[Example code]
 
 Or fetching the contents from a URL:
 
@@ -710,8 +689,6 @@ Or fetching the contents from a URL:
     </qui-code-block>
 </div>
 ----
-
-https://github.com/quarkusio/quarkus/blob/05800d2a74601247a465f91f50d18c4075fb7fe6/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-external-page.js#L118[Example code]
 
 To make sure that the code block adopt the correct code-mirror theme (based on the current one in Dev UI), you can do the following:
 
@@ -741,7 +718,22 @@ Now you can get the current theme, so add the `theme` property to your code bloc
 </div>
 ----
 
-====== IDE link
+Modes:
+ - properties
+ - js
+ - java
+ - xml
+ - json
+ - yaml
+ - sql
+ - html
+ - css
+ - sass
+ - markdown
+
+==== Internal components
+
+===== IDE link
 
 Creates a link to a resource (like a Java source file) that can be opened in the user's IDE (if we could detect the IDE).
 

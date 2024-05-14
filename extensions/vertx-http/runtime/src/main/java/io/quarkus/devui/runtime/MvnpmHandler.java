@@ -80,7 +80,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
 
     private String getContentType(String filename) {
         String f = filename.toLowerCase();
-        if (f.endsWith(DOT_JS)) {
+        if (f.endsWith(DOT_JS) || f.endsWith(DOT_MJS)) {
             return CONTENT_TYPE_JAVASCRIPT;
         } else if (f.endsWith(DOT_JSON)) {
             return CONTENT_TYPE_JSON;
@@ -103,7 +103,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
         // .woff 	Web Open Font Format (WOFF) 	font/woff
         // .woff2 	Web Open Font Format (WOFF) 	font/woff2
 
-        return CONTENT_TYPE_TEXT; // default
+        return CONTENT_TYPE_JAVASCRIPT; // default
 
     }
 
@@ -111,6 +111,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
     private static final String BASE_DIR = "META-INF/resources";
     private static final String DOT = ".";
     private static final String DOT_JS = ".js";
+    private static final String DOT_MJS = ".mjs";
     private static final String DOT_JSON = ".json";
     private static final String DOT_HTML = ".html";
     private static final String DOT_HTM = ".htm";

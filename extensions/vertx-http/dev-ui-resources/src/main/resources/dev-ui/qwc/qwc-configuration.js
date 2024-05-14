@@ -2,7 +2,6 @@ import { LitElement, html, css } from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import { RouterController } from 'router-controller';
 import '@vaadin/grid';
-import 'qui/qui-alert.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/icon';
@@ -14,13 +13,13 @@ import '@vaadin/text-field';
 import '@vaadin/select';
 import '@vaadin/details';
 import '@vaadin/combo-box';
+import '@qomponent/qui-badge';
 import { notifier } from 'notifier';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import { observeState } from 'lit-element-state';
 import { connectionState } from 'connection-state';
 import { devuiState } from 'devui-state';
-import 'qui-badge';
 
 /**
  * This component allows users to change the configuration

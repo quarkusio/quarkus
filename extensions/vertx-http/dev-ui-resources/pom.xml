@@ -105,6 +105,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Qomponent -->
+        <dependency>
+            <groupId>org.mvnpm.at.mvnpm</groupId>
+            <artifactId>qomponent</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Polyfill for importmaps -->
         <dependency>
             <groupId>org.mvnpm</groupId>

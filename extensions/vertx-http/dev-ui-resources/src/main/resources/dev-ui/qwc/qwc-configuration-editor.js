@@ -4,7 +4,7 @@ import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { devuiState } from 'devui-state';
 import { themeState } from 'theme-state';
-import '@quarkus-webcomponents/codeblock';
+import '@qomponent/qui-code-block';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/progress-bar';

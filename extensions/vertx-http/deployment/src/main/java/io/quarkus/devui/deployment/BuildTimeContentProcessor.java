@@ -108,11 +108,6 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
-        internalImportMapBuildItem.add("qui/", contextRoot + "qui/");
-        internalImportMapBuildItem.add("qui-card", contextRoot + "qui/qui-card.js");
-
-        internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
-        internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
 
         // Echarts
@@ -142,6 +137,28 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("devui-state", contextRoot + "state/devui-state.js");
 
         return internalImportMapBuildItem;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    RelocationImportMapBuildItem createRelocationMap() {
+
+        RelocationImportMapBuildItem relocationImportMapBuildItem = new RelocationImportMapBuildItem();
+
+        // Backward compatibility mappings
+        relocationImportMapBuildItem.add("@quarkus-webcomponents/codeblock/", "@qomponent/qui-code-block/");
+        relocationImportMapBuildItem.add("@quarkus-webcomponents/codeblock", "@qomponent/qui-code-block");
+
+        relocationImportMapBuildItem.add("qui-badge", "@qomponent/qui-badge");
+        relocationImportMapBuildItem.add("qui/qui-badge.js", "@qomponent/qui-badge");
+
+        relocationImportMapBuildItem.add("qui-alert", "@qomponent/qui-alert");
+        relocationImportMapBuildItem.add("qui/qui-alert.js", "@qomponent/qui-alert");
+
+        relocationImportMapBuildItem.add("qui-card", "@qomponent/qui-card");
+        relocationImportMapBuildItem.add("qui/qui-card.js", "@qomponent/qui-card");
+
+        return relocationImportMapBuildItem;
+
     }
 
     /**
@@ -312,7 +329,8 @@ public class BuildTimeContentProcessor {
             MvnpmBuildItem mvnpmBuildItem,
             ThemeVarsBuildItem themeVarsBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            List<InternalImportMapBuildItem> internalImportMapBuildItems) {
+            List<InternalImportMapBuildItem> internalImportMapBuildItems,
+            RelocationImportMapBuildItem relocationImportMapBuildItem) {
         QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
                 QuteTemplateBuildItem.DEV_UI);
 
@@ -321,6 +339,22 @@ public class BuildTimeContentProcessor {
             Map<String, String> importMap = importMapBuildItem.getImportMap();
             aggregator.addMappings(importMap);
         }
+
+        Map<String, String> currentImportMap = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath())
+                .getImports();
+        Map<String, String> relocationMap = relocationImportMapBuildItem.getRelocationMap();
+        for (Map.Entry<String, String> relocation : relocationMap.entrySet()) {
+            String from = relocation.getKey();
+            String to = relocation.getValue();
+
+            if (currentImportMap.containsKey(to)) {
+                String newTo = currentImportMap.get(to);
+                aggregator.addMapping(from, newTo);
+            } else {
+                log.warn("Could not relocate " + from + " as " + to + " does not exist in the importmap");
+            }
+        }
+
         String esModuleShimsVersion = extractEsModuleShimsVersion(mvnpmBuildItem.getMvnpmJars());
         String importmap = aggregator.aggregateAsJson(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
         aggregator.reset();

@@ -44,9 +44,14 @@ public final class TransactionManagerBuildTimeConfig {
         ALLOW,
         /**
          * Allow using multiple XA unaware resources in the same transactional demarcation,
+         * but log a warning on the first occurrence.
+         */
+        WARN_FIRST,
+        /**
+         * Allow using multiple XA unaware resources in the same transactional demarcation,
          * but log a warning on each occurrence.
          */
-        WARN,
+        WARN_EACH,
         /**
          * Allow using multiple XA unaware resources in the same transactional demarcation,
          * but log a warning on each occurrence.

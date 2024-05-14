@@ -19,7 +19,9 @@ public interface InjectableContext extends AlterableContext {
     /**
      * Destroys the current context and all existing contextual instances.
      */
-    void destroy();
+    default void destroy() {
+        destroy(getState());
+    }
 
     /**
      * @return the current state

@@ -97,4 +97,9 @@ public class LiquibaseConfig {
      */
     public Optional<String> password = Optional.empty();
 
+    /**
+     * Allows duplicated changeset identifiers without failing Liquibase execution.
+     */
+    public Optional<Boolean> allowDuplicatedChangesetIdentifiers;
+
 }

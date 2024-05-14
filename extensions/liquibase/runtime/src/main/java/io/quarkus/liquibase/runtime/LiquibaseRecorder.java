@@ -14,6 +14,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
@@ -66,7 +67,9 @@ public class LiquibaseRecorder {
             if (!config.cleanAtStart && !config.migrateAtStart) {
                 return;
             }
-            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+            try (Liquibase liquibase = liquibaseFactory.createLiquibase();
+                    ResettableSystemProperties resettableSystemProperties = liquibaseFactory
+                            .createResettableSystemProperties()) {
                 if (config.cleanAtStart) {
                     liquibase.dropAll();
                 }

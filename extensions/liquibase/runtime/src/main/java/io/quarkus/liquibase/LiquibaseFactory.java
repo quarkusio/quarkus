@@ -10,6 +10,7 @@ import javax.sql.DataSource;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
+import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -149,5 +150,13 @@ public class LiquibaseFactory {
 
     public String getDataSourceName() {
         return dataSourceName;
+    }
+
+    public ResettableSystemProperties createResettableSystemProperties() {
+        if (config.allowDuplicatedChangesetIdentifiers.isEmpty()) {
+            return ResettableSystemProperties.empty();
+        }
+        return ResettableSystemProperties.of("liquibase.allowDuplicatedChangesetIdentifiers",
+                config.allowDuplicatedChangesetIdentifiers.get().toString());
     }
 }

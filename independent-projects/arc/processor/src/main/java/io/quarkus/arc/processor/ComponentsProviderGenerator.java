@@ -28,6 +28,7 @@ import org.objectweb.asm.Type;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
 import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -82,7 +83,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ComponentsProvider.class).build();
 
-        MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class)
+        MethodCreator getComponents = componentsProvider
+                .getMethodCreator("getComponents", Components.class, CurrentContextFactory.class)
                 .setModifiers(ACC_PUBLIC);
 
         Map<BeanInfo, List<BeanInfo>> dependencyMap = initBeanDependencyMap(beanDeployment);
@@ -100,9 +102,10 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         // Custom contexts
         ResultHandle contextsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        for (Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment.getCustomContexts()
+        for (Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> e : beanDeployment
+                .getCustomContexts()
                 .entrySet()) {
-            for (Function<MethodCreator, ResultHandle> func : entry.getValue()) {
+            for (Function<MethodCreator, ResultHandle> func : e.getValue()) {
                 ResultHandle contextHandle = func.apply(getComponents);
                 getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
             }

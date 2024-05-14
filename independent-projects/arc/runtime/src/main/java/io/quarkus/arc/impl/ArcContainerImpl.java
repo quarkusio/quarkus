@@ -125,7 +125,7 @@ public class ArcContainerImpl implements ArcContainer {
 
         List<Components> components = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
-            components.add(componentsProvider.getComponents());
+            components.add(componentsProvider.getComponents(this.currentContextFactory));
         }
 
         for (Components c : components) {

@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -29,7 +30,8 @@ public class OptimizeContextsAutoTest {
         assertTrue(bean.ping());
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             // We have less than 1000 beans
-            assertFalse(componentsProvider.getComponents().getContextInstances().isEmpty());
+            assertFalse(componentsProvider.getComponents(Arc.container().getCurrentContextFactory()).getContextInstances()
+                    .isEmpty());
         }
     }
 }

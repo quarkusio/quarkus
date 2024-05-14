@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -27,7 +28,8 @@ public class OptimizeContextsDisabledTest {
     public void testContexts() {
         assertTrue(bean.ping());
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
-            assertTrue(componentsProvider.getComponents().getContextInstances().isEmpty());
+            assertTrue(componentsProvider.getComponents(Arc.container().getCurrentContextFactory()).getContextInstances()
+                    .isEmpty());
         }
     }
 

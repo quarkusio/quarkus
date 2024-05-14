@@ -24,6 +24,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.CurrentContext;
+import io.quarkus.arc.CurrentContextFactory;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.impl.ComputingCacheContextInstances;
@@ -35,19 +36,13 @@ public class WebSocketSessionContext implements ManagedContext {
 
     private static final Logger LOG = Logger.getLogger(WebSocketSessionContext.class);
 
-    private final LazyValue<CurrentContext<SessionContextState>> currentContext;
+    private final CurrentContext<SessionContextState> currentContext;
     private final LazyValue<Event<Object>> initializedEvent;
     private final LazyValue<Event<Object>> beforeDestroyEvent;
     private final LazyValue<Event<Object>> destroyEvent;
 
-    public WebSocketSessionContext() {
-        // Use lazy value because no-args constructor is needed
-        this.currentContext = new LazyValue<>(new Supplier<CurrentContext<SessionContextState>>() {
-            @Override
-            public CurrentContext<SessionContextState> get() {
-                return Arc.container().getCurrentContextFactory().create(SessionScoped.class);
-            }
-        });
+    public WebSocketSessionContext(CurrentContextFactory currentContextFactory) {
+        this.currentContext = currentContextFactory.create(SessionScoped.class);
         this.initializedEvent = newEvent(Initialized.Literal.SESSION, Any.Literal.INSTANCE);
         this.beforeDestroyEvent = newEvent(BeforeDestroyed.Literal.SESSION, Any.Literal.INSTANCE);
         this.destroyEvent = newEvent(Destroyed.Literal.SESSION, Any.Literal.INSTANCE);
@@ -62,7 +57,6 @@ public class WebSocketSessionContext implements ManagedContext {
     public ContextState getState() {
         SessionContextState state = currentState();
         if (state == null) {
-            // Thread local not set - context is not active!
             throw notActive();
         }
         return state;
@@ -72,11 +66,11 @@ public class WebSocketSessionContext implements ManagedContext {
     public ContextState activate(ContextState initialState) {
         if (initialState == null) {
             SessionContextState state = initializeContextState();
-            currentContext().set(state);
+            currentContext.set(state);
             return state;
         } else {
             if (initialState instanceof SessionContextState) {
-                currentContext().set((SessionContextState) initialState);
+                currentContext.set((SessionContextState) initialState);
                 return initialState;
             } else {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
@@ -86,7 +80,7 @@ public class WebSocketSessionContext implements ManagedContext {
 
     @Override
     public void deactivate() {
-        currentContext().remove();
+        currentContext.remove();
     }
 
     @SuppressWarnings("unchecked")
@@ -176,12 +170,8 @@ public class WebSocketSessionContext implements ManagedContext {
         return state;
     }
 
-    private CurrentContext<SessionContextState> currentContext() {
-        return currentContext.get();
-    }
-
     private SessionContextState currentState() {
-        return currentContext().get();
+        return currentContext.get();
     }
 
     private IllegalArgumentException invalidScope() {

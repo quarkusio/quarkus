@@ -569,9 +569,13 @@ could possibly be applied to only some of the non-XA datasources,
 with other non-XA datasources having already committed their changes,
 leaving your overall system in an inconsistent state.
 
-Setting this property to `warn` leads to the same unsafe behavior,
-but with a warning being logged on each offending transaction,
-instead of a single one on startup.
+Alternatively, you can allow the same unsafe behavior,
+but with warnings when it is taken advantage of:
+
+* setting the property to `warn-each`
+would result in logging a warning on *each* offending transaction.
+* setting the property to `warn-first`
+would result in logging a warning on the *first* offending transaction.
 
 We do not recommend using this configuration property,
 and we plan to remove it in the future,

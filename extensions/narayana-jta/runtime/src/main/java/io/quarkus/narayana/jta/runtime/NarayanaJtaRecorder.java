@@ -7,7 +7,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -30,6 +29,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.util.StringUtil;
 
 @Recorder
 public class NarayanaJtaRecorder {
@@ -132,7 +132,7 @@ public class NarayanaJtaRecorder {
             TransactionManagerBuildTimeConfig.UnsafeMultipleLastResourcesMode mode) {
         log.warnf(
                 "Setting quarkus.transaction-manager.unsafe-multiple-last-resources to '%s' makes adding multiple resources to the same transaction unsafe.",
-                mode.name().toLowerCase(Locale.ROOT));
+                StringUtil.hyphenate(mode.name()).replace('_', '-'));
     }
 
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {

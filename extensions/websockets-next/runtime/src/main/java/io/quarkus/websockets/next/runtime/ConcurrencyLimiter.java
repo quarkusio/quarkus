@@ -25,7 +25,8 @@ class ConcurrencyLimiter {
     ConcurrencyLimiter(WebSocketConnectionBase connection) {
         this.connection = connection;
         this.uncompleted = new AtomicLong();
-        this.queueCounter = new AtomicLong();
+        // Counter is only used for debugging
+        this.queueCounter = LOG.isDebugEnabled() ? new AtomicLong() : null;
         this.queue = Queues.createMpscQueue();
     }
 
@@ -51,7 +52,7 @@ class ConcurrencyLimiter {
             LOG.debugf("Run action: %s", connection);
             action.run();
         } else {
-            long queueIndex = queueCounter.incrementAndGet();
+            long queueIndex = queueCounter != null ? queueCounter.incrementAndGet() : 0l;
             LOG.debugf("Action queued as %s: %s", queueIndex, connection);
             queue.offer(new Action(queueIndex, action, context));
             // We need to make sure that at least one completion is in flight
@@ -76,18 +77,7 @@ class ConcurrencyLimiter {
             try {
                 promise.fail(t);
             } finally {
-                if (uncompleted.decrementAndGet() == 0) {
-                    return;
-                }
-                Action queuedAction = queue.poll();
-                assert queuedAction != null;
-                LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
-                queuedAction.context.runOnContext(new Handler<Void>() {
-                    @Override
-                    public void handle(Void event) {
-                        queuedAction.runnable.run();
-                    }
-                });
+                tryNext();
             }
         }
 
@@ -95,19 +85,23 @@ class ConcurrencyLimiter {
             try {
                 promise.complete();
             } finally {
-                if (uncompleted.decrementAndGet() == 0) {
-                    return;
-                }
-                Action queuedAction = queue.poll();
-                assert queuedAction != null;
-                LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
-                queuedAction.context.runOnContext(new Handler<Void>() {
-                    @Override
-                    public void handle(Void event) {
-                        queuedAction.runnable.run();
-                    }
-                });
+                tryNext();
             }
+        }
+
+        private void tryNext() {
+            if (uncompleted.decrementAndGet() == 0) {
+                return;
+            }
+            Action queuedAction = queue.poll();
+            assert queuedAction != null;
+            LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
+            queuedAction.context.runOnContext(new Handler<Void>() {
+                @Override
+                public void handle(Void event) {
+                    queuedAction.runnable.run();
+                }
+            });
         }
     }
 

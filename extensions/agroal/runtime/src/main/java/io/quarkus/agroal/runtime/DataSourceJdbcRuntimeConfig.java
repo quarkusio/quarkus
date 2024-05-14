@@ -8,6 +8,7 @@ import java.util.OptionalInt;
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
@@ -131,6 +132,7 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * Other unspecified properties to be passed to the JDBC driver when creating new connections.
      */
+    @ConfigDocMapKey("property-key")
     Map<String, String> additionalJdbcProperties();
 
     /**

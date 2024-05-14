@@ -2,6 +2,7 @@ package io.quarkus.micrometer.runtime.config.runtime;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -23,5 +24,6 @@ public class PrometheusRuntimeConfig {
      */
     // @formatter:on
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("configuration-property-name")
     public Map<String, String> prometheus;
 }

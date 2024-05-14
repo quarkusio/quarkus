@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -99,6 +100,7 @@ public class ContainerImageJibConfig {
      * Environment variables to add to the container image
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> environmentVariables;
 
     /**
@@ -202,6 +204,7 @@ public class ContainerImageJibConfig {
      * when the container image is being built locally.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> dockerEnvironment;
 
     /**

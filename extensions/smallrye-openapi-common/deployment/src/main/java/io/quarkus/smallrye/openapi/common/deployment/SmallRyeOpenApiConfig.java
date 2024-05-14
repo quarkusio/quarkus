@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -73,6 +74,7 @@ public final class SmallRyeOpenApiConfig {
      * Add one or more extensions to the security scheme
      */
     @ConfigItem
+    @ConfigDocMapKey("extension-name")
     public Map<String, String> securitySchemeExtensions = Collections.emptyMap();
 
     /**

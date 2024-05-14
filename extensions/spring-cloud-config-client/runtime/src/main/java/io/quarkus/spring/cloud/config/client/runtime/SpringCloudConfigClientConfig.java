@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.DurationConverter;
@@ -109,6 +110,7 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Custom headers to pass the Spring Cloud Config Server when performing the HTTP request
      */
+    @ConfigDocMapKey("header-name")
     Map<String, String> headers();
 
     /**

@@ -17,6 +17,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -80,12 +81,14 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * Custom labels to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("label-name")
     Map<String, String> labels;
 
     /**
      * Custom annotations to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("annotation-name")
     Map<String, String> annotations;
 
     /**

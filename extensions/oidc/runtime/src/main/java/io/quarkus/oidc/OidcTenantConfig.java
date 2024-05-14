@@ -357,6 +357,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Additional properties which is added as the query parameters to the logout redirect URI.
          */
         @ConfigItem
+        @ConfigDocMapKey("query-parameter-name")
         public Map<String, String> extraParams;
 
         /**
@@ -1054,6 +1055,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Additional properties added as query parameters to the authentication redirect URI.
          */
         @ConfigItem
+        @ConfigDocMapKey("parameter-name")
         public Map<String, String> extraParams = new HashMap<>();
 
         /**
@@ -1501,12 +1503,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * which must be included to complete the authorization code grant request.
          */
         @ConfigItem
+        @ConfigDocMapKey("parameter-name")
         public Map<String, String> extraParams = new HashMap<>();
 
         /**
          * Custom HTTP headers which must be sent to complete the authorization code grant request.
          */
         @ConfigItem
+        @ConfigDocMapKey("header-name")
         public Map<String, String> headers = new HashMap<>();
 
         public Map<String, String> getExtraParams() {

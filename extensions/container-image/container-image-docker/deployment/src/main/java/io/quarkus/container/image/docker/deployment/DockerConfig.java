@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -38,6 +39,7 @@ public class DockerConfig {
      * Build args passed to docker via {@code --build-arg}
      */
     @ConfigItem
+    @ConfigDocMapKey("arg-name")
     public Map<String, String> buildArgs;
 
     /**

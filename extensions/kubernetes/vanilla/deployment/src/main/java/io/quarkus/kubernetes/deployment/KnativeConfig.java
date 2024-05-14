@@ -8,6 +8,7 @@ import java.util.Optional;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -49,12 +50,14 @@ public class KnativeConfig implements PlatformConfiguration {
      * Custom labels to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("label-name")
     Map<String, String> labels;
 
     /**
      * Custom annotations to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("annotation-name")
     Map<String, String> annotations;
 
     /**

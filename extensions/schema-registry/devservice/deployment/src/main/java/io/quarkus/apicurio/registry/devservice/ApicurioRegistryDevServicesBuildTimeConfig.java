@@ -3,6 +3,7 @@ package io.quarkus.apicurio.registry.devservice;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -66,6 +67,7 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
      * Environment variables that are passed to the container.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 
 }

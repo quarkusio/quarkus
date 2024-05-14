@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
@@ -147,5 +148,6 @@ public interface DataSourceReactiveRuntimeConfig {
      * Other unspecified properties to be passed through the Reactive SQL Client directly to the database when new connections
      * are initiated.
      */
+    @ConfigDocMapKey("property-key")
     Map<String, String> additionalProperties();
 }

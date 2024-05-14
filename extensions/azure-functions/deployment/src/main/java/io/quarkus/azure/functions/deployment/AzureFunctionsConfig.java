@@ -26,6 +26,7 @@ import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
 import com.microsoft.azure.toolkit.lib.common.exception.InvalidConfigurationException;
 import com.microsoft.azure.toolkit.lib.common.model.Region;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -117,6 +118,7 @@ public class AzureFunctionsConfig {
      * Specifies the application settings for your Azure Functions, which are defined in name-value pairs
      */
     @ConfigItem
+    @ConfigDocMapKey("setting-name")
     public Map<String, String> appSettings = Collections.emptyMap();
 
     @ConfigGroup

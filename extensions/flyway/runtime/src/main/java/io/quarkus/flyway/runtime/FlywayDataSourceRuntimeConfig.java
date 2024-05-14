@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -218,6 +219,7 @@ public final class FlywayDataSourceRuntimeConfig {
      * Sets the placeholders to replace in SQL migration scripts.
      */
     @ConfigItem
+    @ConfigDocMapKey("placeholder-key")
     public Map<String, String> placeholders = Collections.emptyMap();
 
     /**

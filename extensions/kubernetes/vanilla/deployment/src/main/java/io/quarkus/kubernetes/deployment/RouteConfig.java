@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -32,6 +33,7 @@ public class RouteConfig {
      * Custom annotations to add to exposition (route or ingress) resources
      */
     @ConfigItem
+    @ConfigDocMapKey("annotation-name")
     Map<String, String> annotations;
 
     /**

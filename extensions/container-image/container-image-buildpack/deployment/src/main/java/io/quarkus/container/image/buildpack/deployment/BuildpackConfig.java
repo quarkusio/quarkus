@@ -3,6 +3,7 @@ package io.quarkus.container.image.buildpack.deployment;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -26,6 +27,7 @@ public class BuildpackConfig {
      * Environment key/values to pass to buildpacks.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> builderEnv;
 
     /**

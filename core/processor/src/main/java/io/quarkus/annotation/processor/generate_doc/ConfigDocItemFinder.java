@@ -24,7 +24,6 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJ
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getKnownGenericType;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenateEnumValue;
-import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stringifyType;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static javax.lang.model.element.Modifier.ABSTRACT;
@@ -292,23 +291,21 @@ class ConfigDocItemFinder {
                         // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
                             type = getType(typeArguments.get(1));
+                            List<String> additionalNames;
+                            if (unnamedMapKey) {
+                                additionalNames = List
+                                        .of(name + String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey));
+                            } else {
+                                name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
+                                additionalNames = emptyList();
+                            }
                             if (isConfigGroup(type)) {
-                                List<String> additionalNames;
-                                if (unnamedMapKey) {
-                                    additionalNames = List
-                                            .of(name + String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey));
-                                } else {
-                                    name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
-                                    additionalNames = emptyList();
-                                }
                                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name,
                                         additionalNames, type, configSection, true, generateSeparateConfigGroupDocsFiles,
                                         configMapping);
                                 DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
                                 continue;
                             } else {
-                                type = BACK_TICK + stringifyType(declaredType) + BACK_TICK;
-                                configDocKey.setPassThroughMap(true);
                                 configDocKey.setWithinAMap(true);
                             }
                         } else {

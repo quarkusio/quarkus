@@ -26,8 +26,8 @@ public class PolicyConfig {
      * For example, the Quarkus OIDC extension can map roles from the verified JWT access token, and you may want
      * to remap them to a deployment specific roles.
      */
-    @ConfigDocMapKey("role1")
     @ConfigItem
+    @ConfigDocMapKey("role-name")
     public Map<String, List<String>> roles;
 
     /**
@@ -37,8 +37,8 @@ public class PolicyConfig {
      * `quarkus.http.auth.policy.role-policy1.permissions.admin=perm1:action1,perm1:action2` configuration property.
      * Granted permissions are used for authorization with the `@PermissionsAllowed` annotation.
      */
-    @ConfigDocMapKey("role1")
     @ConfigItem
+    @ConfigDocMapKey("role-name")
     public Map<String, List<String>> permissions;
 
     /**

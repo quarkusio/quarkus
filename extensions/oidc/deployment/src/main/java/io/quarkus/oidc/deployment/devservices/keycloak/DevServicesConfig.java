@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.oidc.deployment.DevUiConfig;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -95,6 +96,7 @@ public class DevServicesConfig {
      * Each map entry represents a mapping between an alias and a class or file system resource path.
      */
     @ConfigItem
+    @ConfigDocMapKey("alias-name")
     public Map<String, String> resourceAliases;
     /**
      * Additional class or file system resources that are used to initialize Keycloak.
@@ -102,6 +104,7 @@ public class DevServicesConfig {
      * location.
      */
     @ConfigItem
+    @ConfigDocMapKey("resource-name")
     public Map<String, String> resourceMappings;
 
     /**
@@ -161,6 +164,7 @@ public class DevServicesConfig {
      * This map is used for role creation when no realm file is found at the `realm-path`.
      */
     @ConfigItem
+    @ConfigDocMapKey("role-name")
     public Map<String, List<String>> roles;
 
     /**
@@ -223,6 +227,7 @@ public class DevServicesConfig {
      * Environment variables to be passed to the container.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     public Map<String, String> containerEnv;
 
     @Override

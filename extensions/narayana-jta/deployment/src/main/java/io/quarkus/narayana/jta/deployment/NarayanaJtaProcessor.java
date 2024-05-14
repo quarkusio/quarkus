@@ -182,7 +182,14 @@ class NarayanaJtaProcessor {
                 logCleanupFilters.produce(
                         new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
             }
-            case WARN -> {
+            case WARN_FIRST -> {
+                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);
+                // we will handle the warnings ourselves at runtime init when the option is set explicitly
+                // but we still want Narayana to produce a warning on the first offending transaction
+                logCleanupFilters.produce(
+                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012142"));
+            }
+            case WARN_EACH -> {
                 recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), false);
                 // we will handle the warnings ourselves at runtime init when the option is set explicitly
                 // but we still want Narayana to produce one warning per offending transaction
@@ -199,7 +206,7 @@ class NarayanaJtaProcessor {
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
         switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources
                 .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
-            case ALLOW, WARN -> {
+            case ALLOW, WARN_FIRST, WARN_EACH -> {
                 nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
             }
         }

@@ -907,14 +907,14 @@ TIP: It is also possible to clear the cached value via `io.quarkus.arc.Injectabl
 === Declaratively Choose Beans That Can Be Obtained by Programmatic Lookup
 
 It is sometimes useful to narrow down the set of beans that can be obtained by programmatic lookup via `jakarta.enterprise.inject.Instance`.
-Typically, a user needs to choose the appropriate implementation of an interface based on a runtime configuration property.
+Typically, a user needs to choose the appropriate implementation of an interface based on a build time configuration property.
 
 Imagine that we have two beans implementing the interface `org.acme.Service`.
 You can't inject the `org.acme.Service` directly unless your implementations declare a CDI qualifier.
 However, you can inject the `Instance<Service>` instead, then iterate over all implementations and choose the correct one manually.
 Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` annotations.
-`@LookupIfProperty` indicates that a bean should only be obtained if a runtime configuration property matches the provided value.
-`@LookupUnlessProperty`, on the other hand, indicates that a bean should only be obtained if a runtime configuration property does not match the provided value.
+`@LookupIfProperty` indicates that a bean should only be obtained if a build time configuration property matches the provided value.
+`@LookupUnlessProperty`, on the other hand, indicates that a bean should only be obtained if a build time configuration property does not match the provided value.
 
 .`@LookupIfProperty` Example
 [source,java]

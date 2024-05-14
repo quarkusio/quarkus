@@ -384,7 +384,7 @@ Note that dead letter topic can be used in different message redelivery methods,
 ----
 mp.messaging.incoming.data.failure-strategy=reconsume-later
 mp.messaging.incoming.data.reconsumeLater.delay=5000
-mp.messaging.incoming.data.enableRetry=true
+mp.messaging.incoming.data.retryEnable=true
 mp.messaging.incoming.data.negativeAck.redeliveryBackoff=1000,60000,2
 ----
 

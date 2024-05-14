@@ -93,6 +93,10 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> close(CloseReason reason) {
+        if (isClosed()) {
+            LOG.warnf("Connection already closed: %s", this);
+            return Uni.createFrom().voidItem();
+        }
         return UniHelper.toUni(webSocket().close((short) reason.getCode(), reason.getMessage()));
     }
 

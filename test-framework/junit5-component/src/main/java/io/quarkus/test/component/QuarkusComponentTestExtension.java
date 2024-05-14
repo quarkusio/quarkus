@@ -13,6 +13,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1200,10 +1201,10 @@ public class QuarkusComponentTestExtension
             // org.acme.Foo -> org/acme/Foo.class
             String testClassResourceName = fromClassNameToResourceName(testClass.getName());
             // org/acme/Foo.class -> /some/path/to/project/target/test-classes/org/acme/Foo.class
-            String testPath = testClass.getClassLoader().getResource(testClassResourceName).getFile();
+            String testPath = testClass.getClassLoader().getResource(testClassResourceName).toString();
             // /some/path/to/project/target/test-classes/org/acme/Foo.class -> /some/path/to/project/target/test-classes
             String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length());
-            testOutputDirectory = new File(testClassesRootPath);
+            testOutputDirectory = new File(URI.create(testClassesRootPath));
         }
         if (!testOutputDirectory.canWrite()) {
             throw new IllegalStateException("Invalid test output directory: " + testOutputDirectory);

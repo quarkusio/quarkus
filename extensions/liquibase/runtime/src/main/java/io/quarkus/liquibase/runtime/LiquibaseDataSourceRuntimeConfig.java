@@ -133,4 +133,10 @@ public final class LiquibaseDataSourceRuntimeConfig {
     @ConfigItem
     public Optional<String> liquibaseTablespaceName = Optional.empty();
 
+    /**
+     * Allows duplicated changeset identifiers without failing Liquibase execution.
+     */
+    @ConfigItem
+    public Optional<Boolean> allowDuplicatedChangesetIdentifiers = Optional.empty();
+
 }

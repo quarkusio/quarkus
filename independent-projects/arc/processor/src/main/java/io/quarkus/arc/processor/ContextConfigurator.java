@@ -1,6 +1,5 @@
 package io.quarkus.arc.processor;
 
-import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,6 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.NormalScope;
+
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.ContextCreator;
 import io.quarkus.arc.InjectableContext;
@@ -28,7 +29,7 @@ public final class ContextConfigurator {
 
     private final Consumer<ContextConfigurator> configuratorConsumer;
 
-    Class<? extends Annotation> scopeAnnotation;
+    DotName scopeAnnotation;
 
     boolean isNormal;
 
@@ -36,12 +37,11 @@ public final class ContextConfigurator {
 
     final Map<String, Object> params;
 
-    ContextConfigurator(Class<? extends Annotation> scopeAnnotation, Consumer<ContextConfigurator> configuratorConsumer) {
+    ContextConfigurator(DotName scopeAnnotation, Consumer<ContextConfigurator> configuratorConsumer) {
         this.consumed = new AtomicBoolean(false);
         this.scopeAnnotation = Objects.requireNonNull(scopeAnnotation);
         this.params = new HashMap<>();
         this.configuratorConsumer = configuratorConsumer;
-        this.isNormal = scopeAnnotation.isAnnotationPresent(NormalScope.class);
     }
 
     public ContextConfigurator param(String name, Class<?> value) {
@@ -100,7 +100,11 @@ public final class ContextConfigurator {
     }
 
     public ContextConfigurator contextClass(Class<? extends InjectableContext> contextClazz) {
-        return creator(mc -> mc.newInstance(MethodDescriptor.ofConstructor(contextClazz)));
+        return contextClass(DotName.createSimple(contextClazz));
+    }
+
+    public ContextConfigurator contextClass(DotName contextClazz) {
+        return creator(mc -> mc.newInstance(MethodDescriptor.ofConstructor(contextClazz.toString())));
     }
 
     public ContextConfigurator creator(Class<? extends ContextCreator> creatorClazz) {

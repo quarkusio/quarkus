@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.BeanProcessor.initAndSort;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -255,7 +254,7 @@ public class BeanDeployment {
             }
 
             @Override
-            public ContextConfigurator configure(Class<? extends Annotation> scopeAnnotation) {
+            public ContextConfigurator configure(DotName scopeAnnotation) {
                 return new ContextConfigurator(scopeAnnotation,
                         c -> {
                             ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);

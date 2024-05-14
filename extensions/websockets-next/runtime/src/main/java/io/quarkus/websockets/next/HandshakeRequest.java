@@ -13,6 +13,11 @@ public interface HandshakeRequest {
      *
      * @param name
      * @return the first header value for the given header name, or {@code null}
+     * @see HandshakeRequest#SEC_WEBSOCKET_KEY
+     * @see HandshakeRequest#SEC_WEBSOCKET_ACCEPT
+     * @see HandshakeRequest#SEC_WEBSOCKET_EXTENSIONS
+     * @see HandshakeRequest#SEC_WEBSOCKET_PROTOCOL
+     * @see HandshakeRequest#SEC_WEBSOCKET_VERSION
      */
     String header(String name);
 
@@ -21,6 +26,11 @@ public interface HandshakeRequest {
      *
      * @param name
      * @return an immutable list of header values for the given header name, never {@code null}
+     * @see HandshakeRequest#SEC_WEBSOCKET_KEY
+     * @see HandshakeRequest#SEC_WEBSOCKET_ACCEPT
+     * @see HandshakeRequest#SEC_WEBSOCKET_EXTENSIONS
+     * @see HandshakeRequest#SEC_WEBSOCKET_PROTOCOL
+     * @see HandshakeRequest#SEC_WEBSOCKET_VERSION
      */
     List<String> headers(String name);
 
@@ -62,28 +72,28 @@ public interface HandshakeRequest {
     String query();
 
     /**
-     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-57">The WebSocket Protocol</a>.
+     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.1">Sec-WebSocket-Key</a>.
      */
-    public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
+    String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
 
     /**
-     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-58">The WebSocket Protocol</a>.
+     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.2">Sec-WebSocket-Extensions</a>.
      */
-    public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
+    String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
 
     /**
-     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-58">The WebSocket Protocol</a>.
+     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.3">Sec-WebSocket-Accept</a>.
      */
-    public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
+    String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
 
     /**
-     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-59">The WebSocket Protocol</a>.
+     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.4">Sec-WebSocket-Protocol</a>.
      */
-    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+    String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
 
     /**
-     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-60">The WebSocket Protocol</a>.
+     * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-11.3.5">Sec-WebSocket-Version</a>.
      */
-    public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
+    String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
 
 }

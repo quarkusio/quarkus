@@ -543,7 +543,8 @@ public class BeanProcessor {
         // built-in contexts
         contextsForScope.put(BuiltinScope.REQUEST.getName(), 1);
         // custom contexts
-        for (Map.Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment.getCustomContexts()
+        for (Map.Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment
+                .getCustomContexts()
                 .entrySet()) {
             if (entry.getKey().isNormal()) {
                 contextsForScope.merge(entry.getKey().getDotName(), entry.getValue().size(), Integer::sum);

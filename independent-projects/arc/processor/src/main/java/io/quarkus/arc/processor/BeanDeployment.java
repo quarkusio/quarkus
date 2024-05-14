@@ -114,6 +114,7 @@ public class BeanDeployment {
 
     private final Set<BeanInfo> beansWithRuntimeDeferredUnproxyableError;
 
+    // scope -> list of funs that accept the method creator for ComponentsProvider#getComponents()
     private final Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts;
 
     private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
@@ -214,7 +215,7 @@ public class BeanDeployment {
             additionalStereotypes.addAll(stereotypeRegistrar.getAdditionalStereotypes());
         }
 
-        this.stereotypes = findStereotypes(interceptorBindings, customContexts, additionalStereotypes,
+        this.stereotypes = findStereotypes(interceptorBindings, customContexts.keySet(), additionalStereotypes,
                 annotationStore);
         buildContext.putInternal(Key.STEREOTYPES, Collections.unmodifiableMap(stereotypes));
 
@@ -734,7 +735,7 @@ public class BeanDeployment {
     }
 
     ScopeInfo getScope(DotName scopeAnnotationName) {
-        return getScope(scopeAnnotationName, customContexts);
+        return getScope(scopeAnnotationName, customContexts.keySet());
     }
 
     /**
@@ -874,8 +875,7 @@ public class BeanDeployment {
     }
 
     private Map<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
-            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts,
-            Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
+            Set<ScopeInfo> customContextScopes, Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
 
@@ -917,7 +917,7 @@ public class BeanDeployment {
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         alternativePriority = annotation.value().asInt();
                     } else {
-                        final ScopeInfo scope = getScope(annotation.name(), customContexts);
+                        final ScopeInfo scope = getScope(annotation.name(), customContextScopes);
                         if (scope != null) {
                             scopes.add(scope);
                         }
@@ -933,13 +933,12 @@ public class BeanDeployment {
         return stereotypes;
     }
 
-    private ScopeInfo getScope(DotName scopeAnnotationName,
-            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts) {
+    private ScopeInfo getScope(DotName scopeAnnotationName, Set<ScopeInfo> customContextScopes) {
         BuiltinScope builtin = BuiltinScope.from(scopeAnnotationName);
         if (builtin != null) {
             return builtin.getInfo();
         }
-        for (ScopeInfo customScope : customContexts.keySet()) {
+        for (ScopeInfo customScope : customContextScopes) {
             if (customScope.getDotName().equals(scopeAnnotationName)) {
                 return customScope;
             }

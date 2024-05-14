@@ -1069,6 +1069,47 @@ public class NoopAsyncObserverExceptionHandler implements AsyncObserverException
 }
 ----
 
+[[reactive_pitfalls]]
+== Pitfalls with Reactive Programming
+
+CDI is a purely synchronous framework.
+Its notion of asynchrony is very limited and based solely on thread pools and thread offloading.
+Therefore, there is a number of pitfalls when using CDI together with reactive programming.
+
+=== Detecting When Blocking Is Allowed
+
+The `io.quarkus.runtime.BlockingOperationControl#isBlockingAllowed()` method can be used to detect whether blocking is allowed on the current thread.
+When it is not, and you need to perform a blocking operation, you have to offload it to another thread.
+The easiest way is to use the `Vertx.executeBlocking()` method:
+
+[source,java]
+----
+import io.quarkus.runtime.BlockingOperationControl;
+
+@ApplicationScoped
+public class MyBean {
+    @Inject
+    Vertx vertx;
+
+    @PostConstruct
+    void init() {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            somethingThatBlocks();
+        } else {
+            vertx.executeBlocking(() -> {
+                somethingThatBlocks();
+                return null;
+            });
+        }
+    }
+
+    void somethingThatBlocks() {
+        // use the file system or JDBC, call a REST service, etc.
+        Thread.sleep(5000);
+    }
+}
+----
+
 [[build_time_apis]]
 == Build Time Extensions
 

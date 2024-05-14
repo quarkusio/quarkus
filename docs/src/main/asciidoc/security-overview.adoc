@@ -53,6 +53,12 @@ For guidance on testing Quarkus Security features and ensuring that your Quarkus
 
 == More about security features in Quarkus
 
+=== WebSockets Next security
+
+The `quarkus-websockets-next` extension provides a modern, efficient implementation of the WebSocket API.
+It also provides an integration with Quarkus security.
+For more information, see the xref:websockets-next-reference.adoc#websocket-next-security[Security] section of the Quarkus "WebSockets Next reference" guide.
+
 [[cross-origin-resource-sharing]]
 === Cross-origin resource sharing
 

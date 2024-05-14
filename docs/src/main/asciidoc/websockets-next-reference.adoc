@@ -574,6 +574,67 @@ void pong(Buffer data) {
 }
 ----
 
+[[websocket-next-security]]
+== Security
+
+WebSocket endpoint callback methods can be secured with security annotations such as `io.quarkus.security.Authenticated`,
+`jakarta.annotation.security.RolesAllowed` and other annotations listed in the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Supported security annotations] documentation.
+
+For example:
+
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    @Inject
+    SecurityIdentity currentIdentity;
+
+    @OnOpen
+    String open() {
+        return "ready";
+    }
+
+    @RolesAllowed("admin")
+    @OnTextMessage
+    String echo(String message) { <1>
+        return message;
+    }
+
+    @OnError
+    String error(ForbiddenException t) { <2>
+        return "forbidden:" + currentIdentity.getPrincipal().getName();
+    }
+}
+----
+<1> The echo callback method can only be invoked if the current security identity has an `admin` role.
+<2> The error handler is invoked in case of the authorization failure.
+
+`SecurityIdentity` is initially created during a secure HTTP upgrade and associated with the websocket connection.
+
+Currently, for an HTTP upgrade be secured, users must configure an HTTP policy protecting the HTTP upgrade path.
+For example, to secure the `open()` method in the above websocket endpoint, one can add the following authentication policy:
+
+[source,properties]
+----
+quarkus.http.auth.permission.secured.paths=/end
+quarkus.http.auth.permission.secured.policy=authenticated
+----
+
+Other options for securing HTTP upgrade requests, such as using the security annotations, will be explored in the future.
+
 [[websocket-next-configuration-reference]]
 == Configuration reference
 

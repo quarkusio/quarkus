@@ -32,6 +32,7 @@ import io.smallrye.reactive.messaging.connector.OutboundConnector;
 import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
 import io.smallrye.reactive.messaging.keyed.Keyed;
 import io.smallrye.reactive.messaging.keyed.KeyedMulti;
+import io.smallrye.reactive.messaging.providers.extension.HealthCenter;
 
 public final class ReactiveMessagingDotNames {
 
@@ -100,6 +101,8 @@ public final class ReactiveMessagingDotNames {
 
     static final DotName UNI = DotName.createSimple(Uni.class.getName());
     static final DotName MULTI = DotName.createSimple(Multi.class.getName());
+
+    static final DotName HEALTH_CENTER = DotName.createSimple(HealthCenter.class.getName());
 
     private ReactiveMessagingDotNames() {
     }

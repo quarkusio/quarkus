@@ -182,6 +182,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <argLine>-Djava.security.manager=allow</argLine>
                             <systemPropertyVariables>
                                 <!-- Configure the app to test to resolve "keycloak" hostname to the Docker hostname -->
                                 <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
@@ -193,6 +194,7 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <argLine>-Djava.security.manager=allow</argLine>
                             <systemPropertyVariables>
                                 <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
                                 <keycloak.realm.json>${project.basedir}/src/test/resources/keycloak/realms/kafka-authz-realm.json</keycloak.realm.json>

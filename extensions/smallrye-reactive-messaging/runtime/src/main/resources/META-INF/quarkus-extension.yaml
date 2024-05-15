@@ -6,6 +6,7 @@ metadata:
   - "messaging"
   - "reactive-messaging"
   - "reactive"
+  guide: "https://quarkus.io/guides/messaging"
   categories:
   - "messaging"
   status: "stable"

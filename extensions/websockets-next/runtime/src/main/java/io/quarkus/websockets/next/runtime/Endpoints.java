@@ -13,6 +13,8 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
+import io.quarkus.websockets.next.CloseReason;
+import io.quarkus.websockets.next.UnhandledFailureStrategy;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.mutiny.Multi;
@@ -29,7 +31,7 @@ class Endpoints {
 
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
-            SecuritySupport securitySupport, Runnable onClose) {
+            SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, Runnable onClose) {
 
         Context context = vertx.getOrCreateContext();
 
@@ -75,7 +77,7 @@ class Endpoints {
                                             LOG.debugf("@OnTextMessage callback consuming Multi completed: %s",
                                                     connection);
                                         } else {
-                                            logFailure(r.cause(),
+                                            handleFailure(unhandledFailureStrategy, r.cause(),
                                                     "Unable to complete @OnTextMessage callback consuming Multi",
                                                     connection);
                                         }
@@ -93,7 +95,7 @@ class Endpoints {
                                             LOG.debugf("@OnBinaryMessage callback consuming Multi completed: %s",
                                                     connection);
                                         } else {
-                                            logFailure(r.cause(),
+                                            handleFailure(unhandledFailureStrategy, r.cause(),
                                                     "Unable to complete @OnBinaryMessage callback consuming Multi",
                                                     connection);
                                         }
@@ -102,7 +104,7 @@ class Endpoints {
                             });
                         }
                     } else {
-                        logFailure(r.cause(), "Unable to complete @OnOpen callback", connection);
+                        handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnOpen callback", connection);
                     }
                 });
             }
@@ -115,7 +117,8 @@ class Endpoints {
                     if (r.succeeded()) {
                         LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
                     } else {
-                        logFailure(r.cause(), "Unable to consume text message in @OnTextMessage callback",
+                        handleFailure(unhandledFailureStrategy, r.cause(),
+                                "Unable to consume text message in @OnTextMessage callback",
                                 connection);
                     }
                 });
@@ -130,7 +133,8 @@ class Endpoints {
                 } catch (Throwable throwable) {
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Text message >> Multi: %s", connection),
-                            t -> LOG.errorf(t, "Unable to send text message to Multi: %s", connection));
+                            t -> handleFailure(unhandledFailureStrategy, t, "Unable to send text message to Multi",
+                                    connection));
                 } finally {
                     contextSupport.end(false);
                 }
@@ -144,7 +148,8 @@ class Endpoints {
                     if (r.succeeded()) {
                         LOG.debugf("@OnBinaryMessage callback consumed binary message: %s", connection);
                     } else {
-                        logFailure(r.cause(), "Unable to consume binary message in @OnBinaryMessage callback",
+                        handleFailure(unhandledFailureStrategy, r.cause(),
+                                "Unable to consume binary message in @OnBinaryMessage callback",
                                 connection);
                     }
                 });
@@ -159,7 +164,8 @@ class Endpoints {
                 } catch (Throwable throwable) {
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Binary message >> Multi: %s", connection),
-                            t -> LOG.errorf(t, "Unable to send binary message to Multi: %s", connection));
+                            t -> handleFailure(unhandledFailureStrategy, t, "Unable to send binary message to Multi",
+                                    connection));
                 } finally {
                     contextSupport.end(false);
                 }
@@ -171,7 +177,8 @@ class Endpoints {
                 if (r.succeeded()) {
                     LOG.debugf("@OnPongMessage callback consumed text message: %s", connection);
                 } else {
-                    logFailure(r.cause(), "Unable to consume text message in @OnPongMessage callback", connection);
+                    handleFailure(unhandledFailureStrategy, r.cause(),
+                            "Unable to consume text message in @OnPongMessage callback", connection);
                 }
             });
         });
@@ -198,7 +205,8 @@ class Endpoints {
                             if (r.succeeded()) {
                                 LOG.debugf("@OnClose callback completed: %s", connection);
                             } else {
-                                logFailure(r.cause(), "Unable to complete @OnClose callback", connection);
+                                handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnClose callback",
+                                        connection);
                             }
                             onClose.run();
                             if (timerId != null) {
@@ -218,12 +226,28 @@ class Endpoints {
                     public void handle(Void event) {
                         endpoint.doOnError(t).subscribe().with(
                                 v -> LOG.debugf("Error [%s] processed: %s", t.getClass(), connection),
-                                t -> LOG.errorf(t, "Unhandled error occurred: %s", t.toString(),
-                                        connection));
+                                t -> handleFailure(unhandledFailureStrategy, t, "Unhandled error occurred", connection));
                     }
                 });
             }
         });
+    }
+
+    private static void handleFailure(UnhandledFailureStrategy strategy, Throwable cause, String message,
+            WebSocketConnectionBase connection) {
+        switch (strategy) {
+            case CLOSE -> closeConnection(cause, connection);
+            case LOG -> logFailure(cause, message, connection);
+            case NOOP -> LOG.tracef("Unhandled failure ignored: %s", connection);
+            default -> throw new IllegalArgumentException("Unexpected strategy: " + strategy);
+        }
+    }
+
+    private static void closeConnection(Throwable cause, WebSocketConnectionBase connection) {
+        connection.close(CloseReason.INTERNAL_SERVER_ERROR).subscribe().with(
+                v -> LOG.debugf("Connection closed due to unhandled failure %s: %s", cause, connection),
+                t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(), cause,
+                        t));
     }
 
     private static void logFailure(Throwable throwable, String message, WebSocketConnectionBase connection) {

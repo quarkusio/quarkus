@@ -102,7 +102,7 @@ public class WebSocketServerRecorder {
                     LOG.debugf("Connection created: %s", connection);
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            config.autoPingInterval(), securitySupport,
+                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(),
                             () -> connectionManager.remove(generatedEndpointClass, connection));
                 });
             }

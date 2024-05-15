@@ -109,7 +109,8 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
-    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false --hostname-strict-https=false";
+    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false --hostname-strict-https=false "
+            + "--spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
     private static final String OIDC_USERS = "oidc.users";
@@ -509,6 +510,7 @@ public class KeycloakDevServicesProcessor {
                 addEnv(KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
                 withCommand(startCommand.orElse(KEYCLOAK_QUARKUS_START_CMD)
                         + (useSharedNetwork ? " --hostname-port=" + fixedExposedPort.getAsInt() : ""));
+                addUpConfigResource();
             } else {
                 addEnv(KEYCLOAK_WILDFLY_USER_PROP, KEYCLOAK_ADMIN_USER);
                 addEnv(KEYCLOAK_WILDFLY_PASSWORD_PROP, KEYCLOAK_ADMIN_PASSWORD);
@@ -557,6 +559,13 @@ public class KeycloakDevServicesProcessor {
                                 resourcePath, mappedResource));
                 LOG.errorf("%s resource can not be mapped to %s because it is not available on the classpath and file system",
                         resourcePath, mappedResource);
+            }
+        }
+
+        private void addUpConfigResource() {
+            if (Thread.currentThread().getContextClassLoader().getResource("/dev-service/upconfig.json") != null) {
+                LOG.debug("Mapping the classpath /dev-service/upconfig.json resource to /opt/keycloak/upconfig.json");
+                withClasspathResourceMapping("/dev-service/upconfig.json", "/opt/keycloak/upconfig.json", BindMode.READ_ONLY);
             }
         }
 

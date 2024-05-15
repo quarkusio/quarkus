@@ -1,5 +1,7 @@
 package io.quarkus.test.component;
 
+import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,7 +14,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1197,9 +1198,20 @@ public class QuarkusComponentTestExtension
         if (outputDirectory != null) {
             testOutputDirectory = new File(outputDirectory);
         } else {
-            // Gets URL to the root test directory
-            URL testPath = testClass.getClassLoader().getResource(".");
-            testOutputDirectory = new File(URI.create(testPath.toString()));
+            // All below string transformations work with _URL encoded_ paths, where e.g.
+            // a space is replaced with %20. At the end, we feed this back to URI.create
+            // to make sure the encoding is dealt with properly, so we don't have to do this
+            // ourselves. Directly passing a URL-encoded string to the File() constructor
+            // does not work properly.
+
+            // org.acme.Foo -> org/acme/Foo.class
+            String testClassResourceName = fromClassNameToResourceName(testClass.getName());
+            // org/acme/Foo.class -> file:/some/path/to/project/target/test-classes/org/acme/Foo.class
+            String testPath = testClass.getClassLoader().getResource(testClassResourceName).toString();
+            // file:/some/path/to/project/target/test-classes/org/acme/Foo.class -> file:/some/path/to/project/target/test-classes
+            String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length() - 1);
+            // resolve back to File instance
+            testOutputDirectory = new File(URI.create(testClassesRootPath));
         }
         if (!testOutputDirectory.canWrite()) {
             throw new IllegalStateException("Invalid test output directory: " + testOutputDirectory);

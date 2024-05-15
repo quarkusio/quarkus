@@ -72,7 +72,7 @@
         <awaitility.version>4.2.1</awaitility.version>
         <smallrye-mutiny-vertx-core.version>3.12.0</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <mockito.version>5.11.0</mockito.version>
+        <mockito.version>5.12.0</mockito.version>
         <mutiny-zero.version>1.1.0</mutiny-zero.version>
 
         <!-- Forbidden API checks -->

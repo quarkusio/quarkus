@@ -1200,6 +1200,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         Set<String> handledProperties = new HashSet<>();
         Property[] desc = PropertyUtils.getPropertyDescriptors(param);
+        FieldsHelper fieldsHelper = new FieldsHelper(param.getClass());
         for (Property i : desc) {
             if (!i.getDeclaringClass().getPackageName().startsWith("java.")) {
                 // check if the getter is ignored
@@ -1207,13 +1208,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     continue;
                 }
                 // check if the matching field is ignored
-                try {
-                    Field field = param.getClass().getDeclaredField(i.getName());
-                    if (ignoreField(field)) {
-                        continue;
-                    }
-                } catch (NoSuchFieldException ignored) {
-
+                Field field = fieldsHelper.getDeclaredField(i.getName());
+                if (field != null && ignoreField(field)) {
+                    continue;
                 }
             }
             Integer ctorParamIndex = constructorParamNameMap.remove(i.name);

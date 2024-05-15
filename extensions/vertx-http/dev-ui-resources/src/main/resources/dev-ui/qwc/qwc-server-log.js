@@ -3,19 +3,19 @@ import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { JsonRpc } from 'jsonrpc';
 import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
+import { loggerLevels } from 'devui-data';
 import '@vaadin/icon';
 import '@vaadin/dialog';
 import '@vaadin/select';
 import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
-import 'qui-badge';
-import 'qui-ide-link';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import '@vaadin/vertical-layout';
-import { loggerLevels } from 'devui-data';
+import '@qomponent/qui-badge';
+import 'qui-ide-link';
 
 /**
  * This component represent the Server Log

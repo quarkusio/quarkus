@@ -2,7 +2,7 @@ import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
-import '@quarkus-webcomponents/codeblock';
+import '@qomponent/qui-code-block';
 
 /**
  * This component renders build time data in raw json format

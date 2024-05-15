@@ -5,12 +5,14 @@ import '@vaadin/icon';
 import '@vaadin/details';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
-import 'qui-badge';
-import 'qui-ide-link';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
+import { columnBodyRenderer } from '@vaadin/grid/lit.js';
+import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import '@qomponent/qui-badge';
+import 'qui-ide-link';
+
+
 import 'echarts-horizontal-stacked-bar';
 
 /**

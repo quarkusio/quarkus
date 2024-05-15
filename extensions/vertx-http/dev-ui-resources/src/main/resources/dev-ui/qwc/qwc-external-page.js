@@ -4,7 +4,7 @@ import { JsonRpc } from 'jsonrpc';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import '@vaadin/icon';
-import '@quarkus-webcomponents/codeblock';
+import '@qomponent/qui-code-block';
 import '@vaadin/progress-bar';
 
 /**

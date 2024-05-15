@@ -3,7 +3,7 @@ import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { infoUrl } from 'build-time-data';
 import '@vaadin/progress-bar';
-import 'qui-card';
+import '@qomponent/qui-card';
 import '@vaadin/icon';
 
 /**
@@ -83,7 +83,7 @@ export class QwcInfo extends LitElement {
     _renderOsInfo(info){
         if(info.os){
             let os = info.os;
-            return html`<qui-card title="Operating System">
+            return html`<qui-card header="Operating System">
                     <div class="cardContent" slot="content">
                         ${this._renderOsIcon(os.name)}    
                         <table class="table">
@@ -99,7 +99,7 @@ export class QwcInfo extends LitElement {
     _renderJavaInfo(info){
         if(info.java){
             let java = info.java;
-            return html`<qui-card title="Java">
+            return html`<qui-card header="Java">
                     <div class="cardContent" slot="content">
                         <vaadin-icon icon="font-awesome-brands:java"></vaadin-icon>
                         <table class="table">
@@ -126,7 +126,7 @@ export class QwcInfo extends LitElement {
     _renderGitInfo(info){
         if(info.git){
             let git = info.git;
-            return html`<qui-card title="Git">
+            return html`<qui-card header="Git">
                     <div class="cardContent" slot="content">
                         <vaadin-icon icon="font-awesome-brands:git"></vaadin-icon>
                         <table class="table">
@@ -162,7 +162,7 @@ export class QwcInfo extends LitElement {
     _renderBuildInfo(info){
         if(info.build){
             let build = info.build;
-            return html`<qui-card title="Build">
+            return html`<qui-card header="Build">
                     <div class="cardContent" slot="content">
                         <table class="table">
                             <tr><td class="row-header">Group</td><td>${build.group}</td></tr>
@@ -189,7 +189,7 @@ export class QwcInfo extends LitElement {
                     for (const property of Object.keys(extInfo)){
                         rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
                     }
-                    cards.push(html`<qui-card title=${key}>
+                    cards.push(html`<qui-card header=${key}>
                         <div class="cardContent" slot="content">
                             <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
                             <table class="table">

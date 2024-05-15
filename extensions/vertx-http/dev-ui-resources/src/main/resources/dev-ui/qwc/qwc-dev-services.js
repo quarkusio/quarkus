@@ -3,8 +3,8 @@ import { devServices } from 'devui-data';
 import { observeState } from 'lit-element-state';
 import { themeState } from 'theme-state';
 import '@vaadin/icon';
-import '@quarkus-webcomponents/codeblock';
-import 'qui-card';
+import '@qomponent/qui-code-block';
+import '@qomponent/qui-card';
 import 'qwc-no-data';
 
 /**
@@ -70,7 +70,7 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
     }
 
     _renderCard(devService){
-        return html`<qui-card title="${devService.name}">
+        return html`<qui-card header="${devService.name}">
                         <div slot="content">
                             ${this._renderContainerDetails(devService)}
                             ${this._renderConfigDetails(devService)}

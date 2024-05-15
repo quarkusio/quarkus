@@ -1,7 +1,5 @@
 package io.quarkus.test.component;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,6 +12,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1198,13 +1197,9 @@ public class QuarkusComponentTestExtension
         if (outputDirectory != null) {
             testOutputDirectory = new File(outputDirectory);
         } else {
-            // org.acme.Foo -> org/acme/Foo.class
-            String testClassResourceName = fromClassNameToResourceName(testClass.getName());
-            // org/acme/Foo.class -> /some/path/to/project/target/test-classes/org/acme/Foo.class
-            String testPath = testClass.getClassLoader().getResource(testClassResourceName).toString();
-            // /some/path/to/project/target/test-classes/org/acme/Foo.class -> /some/path/to/project/target/test-classes
-            String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length());
-            testOutputDirectory = new File(URI.create(testClassesRootPath));
+            // Gets URL to the root test directory
+            URL testPath = testClass.getClassLoader().getResource(".");
+            testOutputDirectory = new File(URI.create(testPath.toString()));
         }
         if (!testOutputDirectory.canWrite()) {
             throw new IllegalStateException("Invalid test output directory: " + testOutputDirectory);

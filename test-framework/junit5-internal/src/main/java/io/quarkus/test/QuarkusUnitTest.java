@@ -734,6 +734,9 @@ public class QuarkusUnitTest
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
+        if (testMethodInvokers != null) {
+            testMethodInvokers.clear();
+        }
 
         try {
             if (runningQuarkusApplication != null) {

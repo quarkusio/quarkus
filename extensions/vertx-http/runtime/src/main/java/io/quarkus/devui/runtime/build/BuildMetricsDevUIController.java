@@ -43,6 +43,8 @@ public class BuildMetricsDevUIController {
 
     void setBuildMetricsPath(Path buildMetricsPath) {
         this.buildMetricsPath = buildMetricsPath;
+        // Reread the data after reload
+        this.buildStepsMetrics = null;
     }
 
     Map<String, Object> getBuildStepsMetrics() {

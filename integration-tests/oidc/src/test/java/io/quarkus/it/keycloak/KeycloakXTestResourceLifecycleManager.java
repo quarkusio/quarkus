@@ -51,10 +51,12 @@ public class KeycloakXTestResourceLifecycleManager implements QuarkusTestResourc
         keycloak = keycloak
                 .withClasspathResourceMapping(SERVER_KEYSTORE, SERVER_KEYSTORE_MOUNTED_PATH, BindMode.READ_ONLY)
                 .withClasspathResourceMapping(SERVER_TRUSTSTORE, SERVER_TRUSTSTORE_MOUNTED_PATH, BindMode.READ_ONLY)
+                .withClasspathResourceMapping("/upconfig.json", "/opt/keycloak/upconfig.json", BindMode.READ_ONLY)
                 .withCommand("build --https-client-auth=required")
                 .withCommand(String.format(
                         "start --https-client-auth=required --hostname-strict=false --hostname-strict-https=false"
-                                + " --https-key-store-file=%s --https-trust-store-file=%s --https-trust-store-password=password",
+                                + " --https-key-store-file=%s --https-trust-store-file=%s --https-trust-store-password=password"
+                                + " --spi-user-profile-declarative-user-profile-config-file=/opt/keycloak/upconfig.json",
                         SERVER_KEYSTORE_MOUNTED_PATH, SERVER_TRUSTSTORE_MOUNTED_PATH));
         keycloak.start();
         LOGGER.info(keycloak.getLogs());

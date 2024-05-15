@@ -79,7 +79,8 @@ quarkus:
 ----
 quarkus:
   datasource:
-    url: jdbc:postgresql://localhost:5432/quarkus_test
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/quarkus_test
 
   hibernate-orm:
     database:

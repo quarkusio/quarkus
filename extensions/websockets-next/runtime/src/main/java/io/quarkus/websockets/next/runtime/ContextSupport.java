@@ -36,7 +36,6 @@ public class ContextSupport {
     void start(ContextState requestContextState) {
         LOG.debugf("Start contexts: %s", connection);
         startSession();
-        // Activate a new request context
         requestContext.activate(requestContextState);
     }
 

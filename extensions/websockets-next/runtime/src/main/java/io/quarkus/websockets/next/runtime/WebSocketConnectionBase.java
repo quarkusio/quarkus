@@ -125,6 +125,6 @@ public abstract class WebSocketConnectionBase {
         if (ws.isClosed()) {
             return new CloseReason(ws.closeStatusCode(), ws.closeReason());
         }
-        throw new IllegalStateException("Connection is not closed");
+        return null;
     }
 }

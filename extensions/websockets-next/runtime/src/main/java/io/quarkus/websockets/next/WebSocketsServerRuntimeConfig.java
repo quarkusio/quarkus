@@ -46,4 +46,12 @@ public interface WebSocketsServerRuntimeConfig {
      */
     Optional<Duration> autoPingInterval();
 
+    /**
+     * The strategy used when an error occurs but no error handler can handle the failure.
+     * <p>
+     * By default, the connection is closed when an unhandled failure occurs.
+     */
+    @WithDefault("close")
+    UnhandledFailureStrategy unhandledFailureStrategy();
+
 }

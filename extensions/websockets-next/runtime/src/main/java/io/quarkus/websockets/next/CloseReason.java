@@ -15,6 +15,8 @@ public class CloseReason {
 
     public static final CloseReason NORMAL = new CloseReason(WebSocketCloseStatus.NORMAL_CLOSURE.code());
 
+    public static final CloseReason INTERNAL_SERVER_ERROR = new CloseReason(WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code());
+
     private final int code;
 
     private final String message;

@@ -11,16 +11,21 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.amazon.lambda.runtime.AbstractLambdaPollLoop;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
-import io.quarkus.amazon.lambda.runtime.JacksonInputReader;
-import io.quarkus.amazon.lambda.runtime.JacksonOutputWriter;
 import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
 import io.quarkus.amazon.lambda.runtime.LambdaOutputWriter;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;
+import io.quarkus.funqy.lambda.config.FunqyAmazonConfig;
+import io.quarkus.funqy.lambda.event.AwsModule;
+import io.quarkus.funqy.lambda.event.EventDeserializer;
+import io.quarkus.funqy.lambda.event.EventProcessor;
+import io.quarkus.funqy.lambda.model.FunqyMethod;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
@@ -40,28 +45,39 @@ public class FunqyLambdaBindingRecorder {
 
     private static FunctionInvoker invoker;
     private static BeanContainer beanContainer;
-    private static LambdaInputReader reader;
-    private static LambdaOutputWriter writer;
+    private static EventProcessor eventProcessor;
 
-    public void init(BeanContainer bc) {
+    public void init(BeanContainer bc, FunqyAmazonBuildTimeConfig buildTimeConfig) {
         beanContainer = bc;
         FunctionConstructor.CONTAINER = bc;
-        ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
+        // We create a copy, because we register a custom deserializer for everything.
+        ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
+        EventDeserializer eventDeserializer = new EventDeserializer(buildTimeConfig);
+        final SimpleModule simpleModule = new AwsModule();
+        simpleModule.addDeserializer(Object.class, eventDeserializer);
+        objectMapper.registerModule(simpleModule);
+
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
+            ObjectReader reader = null;
+            JavaType javaInputType = null;
             if (invoker.hasInput()) {
-                JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
-                ObjectReader reader = objectMapper.readerFor(javaInputType);
-                invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
+                javaInputType = objectMapper.constructType(invoker.getInputType());
+                reader = objectMapper.readerFor(javaInputType);
             }
+            ObjectWriter writer = null;
+            JavaType javaOutputType = null;
             if (invoker.hasOutput()) {
-                JavaType javaOutputType = objectMapper.constructType(invoker.getOutputType());
-                ObjectWriter writer = objectMapper.writerFor(javaOutputType);
-                invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
+                javaOutputType = objectMapper.constructType(invoker.getOutputType());
+                writer = objectMapper.writerFor(javaOutputType);
             }
+            invoker.getBindingContext().put(EventProcessor.class.getName(),
+                    new EventProcessor(objectMapper, eventDeserializer,
+                            new FunqyMethod(reader, writer, javaInputType, javaOutputType),
+                            buildTimeConfig));
         }
     }
 
-    public void chooseInvoker(FunqyConfig config) {
+    public void chooseInvoker(FunqyConfig config, FunqyAmazonConfig amazonConfig) {
         // this is done at Runtime so that we can change it with an environment variable.
         if (config.export.isPresent()) {
             invoker = FunctionRecorder.registry.matchInvoker(config.export.get());
@@ -76,35 +92,24 @@ public class FunqyLambdaBindingRecorder {
         } else {
             invoker = FunctionRecorder.registry.invokers().iterator().next();
         }
-        if (invoker.hasInput()) {
-            reader = new JacksonInputReader((ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName()));
-        }
-        if (invoker.hasOutput()) {
-            writer = new JacksonOutputWriter((ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName()));
-        }
-
+        eventProcessor = (EventProcessor) invoker.getBindingContext().get(EventProcessor.class.getName());
+        eventProcessor.init(amazonConfig);
     }
 
     /**
      * Called by JVM handler wrapper
      *
      * @param inputStream
+     *        {@link InputStream} of the AWS SDK {@link com.amazonaws.services.lambda.runtime.RequestStreamHandler}
      * @param outputStream
+     *        {@link OutputStream} of the AWS SDK {@link com.amazonaws.services.lambda.runtime.RequestStreamHandler}
      * @param context
+     *        AWS context information provided to the Lambda
      * @throws IOException
+     *         Is thrown in case the (de)serialization fails
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
-        Object input = null;
-        if (invoker.hasInput()) {
-            input = reader.readValue(inputStream);
-        }
-        FunqyServerResponse response = dispatch(input);
-
-        Object value = response.getOutput().await().indefinitely();
-        if (value != null) {
-            writer.writeValue(outputStream, value);
-        }
-
+        eventProcessor.handle(inputStream, outputStream, FunqyLambdaBindingRecorder::dispatch, context);
     }
 
     @SuppressWarnings("rawtypes")
@@ -114,29 +119,28 @@ public class FunqyLambdaBindingRecorder {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
-                FunqyServerResponse response = dispatch(input);
-                return response.getOutput().await().indefinitely();
+                throw new RuntimeException("Unreachable");
             }
 
             @Override
             protected LambdaInputReader getInputReader() {
-                return reader;
+                throw new RuntimeException("Unreachable");
             }
 
             @Override
             protected LambdaOutputWriter getOutputWriter() {
-                return writer;
+                throw new RuntimeException("Unreachable");
             }
 
             @Override
             protected boolean isStream() {
-                return false;
+                return true;
             }
 
             @Override
             protected void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
                     throws Exception {
-                throw new RuntimeException("Unreachable!");
+                handle(input, output, context);
             }
         };
         loop.startPollLoop(context);

@@ -166,6 +166,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     @Override
                     public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessToken, Throwable t) {
                         if (t != null) {
+                            requestData.put(OidcUtils.CODE_ACCESS_TOKEN_FAILURE, t);
                             return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         }
 
@@ -217,6 +218,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessTokenResult,
                                             Throwable t) {
                                         if (t != null) {
+                                            requestData.put(OidcUtils.CODE_ACCESS_TOKEN_FAILURE, t);
                                             return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
                                                     : new AuthenticationFailedException(t));
                                         }

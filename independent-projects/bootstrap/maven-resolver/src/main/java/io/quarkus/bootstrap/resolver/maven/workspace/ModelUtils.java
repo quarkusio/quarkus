@@ -28,7 +28,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class ModelUtils {
@@ -182,7 +181,7 @@ public class ModelUtils {
         putAll(props, System.getProperties());
 
         Matcher matcher = getUnresolvedVersionPattern().matcher(rawVersion);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             final String resolved = props.get(matcher.group(1));
             if (resolved == null) {

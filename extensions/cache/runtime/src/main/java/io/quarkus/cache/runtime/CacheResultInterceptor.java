@@ -71,6 +71,11 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             throw new CacheException(e);
                         }
                     }
+                }).onFailure().call(new Function<>() {
+                    @Override
+                    public Uni<?> apply(Throwable throwable) {
+                        return cache.invalidate(key).replaceWith(throwable);
+                    }
                 }).emitOn(new Executor() {
                     // We need make sure we go back to the original context when the cache value is computed.
                     // Otherwise, we would always emit on the context having computed the value, which could

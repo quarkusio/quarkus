@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.FilteredPathTree;
 import io.quarkus.paths.MultiRootPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathFilter;
@@ -36,7 +37,7 @@ public interface ResolvedDependency extends Dependency {
         final WorkspaceModule module = getWorkspaceModule();
         final PathTree workspaceTree = module == null ? EmptyPathTree.getInstance() : module.getContentTree(getClassifier());
         if (!workspaceTree.isEmpty()) {
-            return workspaceTree;
+            return pathFilter == null ? workspaceTree : new FilteredPathTree(workspaceTree, pathFilter);
         }
         final PathCollection paths = getResolvedPaths();
         if (paths == null || paths.isEmpty()) {

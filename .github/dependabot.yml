@@ -180,6 +180,7 @@ updates:
       - dependency-name: org.apache.qpid:*
       - dependency-name: biz.paluch.logging:logstash-gelf
       - dependency-name: org.bitbucket.b_c:jose4j
+      - dependency-name: io.fabric8:maven-model-helper
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

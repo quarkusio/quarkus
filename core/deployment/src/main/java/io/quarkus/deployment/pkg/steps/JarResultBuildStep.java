@@ -5,7 +5,6 @@ import static io.quarkus.fs.util.ZipUtils.wrapForJDK8232879;
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
@@ -42,12 +41,12 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 import org.jboss.logging.Logger;
 
@@ -92,14 +91,14 @@ import io.quarkus.utilities.JavaBinFinder;
 
 /**
  * This build step builds both the thin jars and uber jars.
- *
+ * <p>
  * The way this is built is a bit convoluted. In general, we only want a single one built,
  * as determined by the {@link PackageConfig} (unless the config explicitly asks for both of them)
- *
+ * <p>
  * However, we still need an extension to be able to ask for a specific one of these despite the config,
  * e.g. if a serverless environment needs an uberjar to build its deployment package then we need
  * to be able to provide this.
- *
+ * <p>
  * To enable this we have two build steps that strongly produce the respective artifact type build
  * items, but not a {@link ArtifactResultBuildItem}. We then
  * have another two build steps that only run if they are configured to consume these explicit
@@ -931,7 +930,7 @@ public class JarResultBuildStep {
                 } else {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me
-                    filterZipFile(resolvedDep, targetPath, removedFromThisArchive);
+                    filterJarFile(resolvedDep, targetPath, removedFromThisArchive);
                 }
             }
         }
@@ -1125,7 +1124,7 @@ public class JarResultBuildStep {
                                 + resolvedDep.getFileName();
                         final Path targetPath = libDir.resolve(fileName);
                         classPath.append(" lib/").append(fileName);
-                        filterZipFile(resolvedDep, targetPath, transformedFromThisArchive);
+                        filterJarFile(resolvedDep, targetPath, transformedFromThisArchive);
                     }
                 } else {
                     // This case can happen when we are building a jar from inside the Quarkus repository
@@ -1240,16 +1239,26 @@ public class JarResultBuildStep {
         }
     }
 
-    private void filterZipFile(Path resolvedDep, Path targetPath, Set<String> transformedFromThisArchive) {
-
+    static void filterJarFile(Path resolvedDep, Path targetPath, Set<String> transformedFromThisArchive) {
         try {
             byte[] buffer = new byte[10000];
-            try (ZipFile in = new ZipFile(resolvedDep.toFile())) {
-                try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(targetPath.toFile()))) {
-                    Enumeration<? extends ZipEntry> entries = in.entries();
+            try (JarFile in = new JarFile(resolvedDep.toFile(), false)) {
+                Manifest manifest = in.getManifest();
+                if (manifest != null) {
+                    // Remove signature entries
+                    manifest.getEntries().clear();
+                } else {
+                    manifest = new Manifest();
+                }
+                try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(targetPath), manifest)) {
+                    Enumeration<JarEntry> entries = in.entries();
                     while (entries.hasMoreElements()) {
-                        ZipEntry entry = entries.nextElement();
-                        if (!transformedFromThisArchive.contains(entry.getName())) {
+                        JarEntry entry = entries.nextElement();
+                        String entryName = entry.getName();
+                        if (!transformedFromThisArchive.contains(entryName)
+                                && !entryName.equals(JarFile.MANIFEST_NAME)
+                                && !entryName.equals("META-INF/INDEX.LIST")
+                                && !isSignatureFile(entryName)) {
                             entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
                             try (InputStream inStream = in.getInputStream(entry)) {
@@ -1258,6 +1267,8 @@ public class JarResultBuildStep {
                                     out.write(buffer, 0, r);
                                 }
                             }
+                        } else {
+                            log.debugf("Removed %s from %s", entryName, resolvedDep);
                         }
                     }
                 }
@@ -1265,8 +1276,19 @@ public class JarResultBuildStep {
                 Files.setLastModifiedTime(targetPath, Files.getLastModifiedTime(resolvedDep));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
+    }
+
+    private static boolean isSignatureFile(String entry) {
+        entry = entry.toUpperCase();
+        if (entry.startsWith("META-INF/") && entry.indexOf('/', "META-INF/".length()) == -1) {
+            return entry.endsWith(".SF")
+                    || entry.endsWith(".DSA")
+                    || entry.endsWith(".RSA")
+                    || entry.endsWith(".EC");
+        }
+        return false;
     }
 
     /**
@@ -1612,12 +1634,8 @@ public class JarResultBuildStep {
                         "https://repo.maven.apache.org/maven2/org/vineflower/vineflower/%s/vineflower-%s.jar",
                         context.versionStr, context.versionStr);
                 try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
-                        FileOutputStream fileOutputStream = new FileOutputStream(decompilerJar.toFile())) {
-                    byte[] dataBuffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                        fileOutputStream.write(dataBuffer, 0, bytesRead);
-                    }
+                        OutputStream fileOutputStream = Files.newOutputStream(decompilerJar)) {
+                    in.transferTo(fileOutputStream);
                     return true;
                 } catch (IOException e) {
                     log.error("Unable to download Vineflower from " + downloadURL, e);

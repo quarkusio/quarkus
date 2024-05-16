@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +131,36 @@ class OtlpExporterProviderTest {
                         return new TrustCert() {
                             @Override
                             public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public ProxyConfig proxyOptions() {
+                        return new ProxyConfig() {
+                            @Override
+                            public boolean enabled() {
+                                return false;
+                            }
+
+                            @Override
+                            public Optional<String> username() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<String> password() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public OptionalInt port() {
+                                return OptionalInt.empty();
+                            }
+
+                            @Override
+                            public Optional<String> host() {
                                 return Optional.empty();
                             }
                         };

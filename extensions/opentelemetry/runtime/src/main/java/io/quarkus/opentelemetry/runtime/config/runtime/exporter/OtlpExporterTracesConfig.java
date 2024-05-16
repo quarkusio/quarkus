@@ -5,7 +5,9 @@ import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExpor
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
@@ -72,6 +74,11 @@ public interface OtlpExporterTracesConfig {
     @WithName("trust-cert")
     TrustCert trustCert();
 
+    /**
+     * Set proxy options
+     */
+    ProxyConfig proxyOptions();
+
     interface KeyCert {
         /**
          * Comma-separated list of the path to the key files (Pem format).
@@ -89,6 +96,36 @@ public interface OtlpExporterTracesConfig {
          * Comma-separated list of the trust certificate files (Pem format).
          */
         Optional<List<String>> certs();
+    }
+
+    interface ProxyConfig {
+
+        /**
+         * If proxy connection must be used.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Set proxy username.
+         */
+        Optional<String> username();
+
+        /**
+         * Set proxy password.
+         */
+        Optional<String> password();
+
+        /**
+         * Set proxy port.
+         */
+        @ConfigDocDefault("3128")
+        OptionalInt port();
+
+        /**
+         * Set proxy host.
+         */
+        Optional<String> host();
     }
 
     class Protocol {

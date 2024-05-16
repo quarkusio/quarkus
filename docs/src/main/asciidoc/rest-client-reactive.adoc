@@ -417,6 +417,13 @@ public ClientMultipartForm buildClientMultipartForm(MultiPartPayloadFormData inp
 <2> Adding attribute `jsonPayload` directly to `ClientMultipartForm`
 <3> Adding `FileUpload` objects to `ClientMultipartForm` as binaryFileUpload with contentType.
 
+[NOTE]
+====
+When sending multipart data that uses the same name, problems can arise if the client and server do not use the same multipart encoder mode.
+By default, the REST Client uses `RFC1738`, but depending on the situation, clients may need to be configured with `HTML5` or `RFC3986` mode.
+
+This configuration can be achieved via the `quarkus.rest-client.multipart-post-encoder-mode` property.
+====
 
 == Create the configuration
 

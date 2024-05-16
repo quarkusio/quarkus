@@ -363,7 +363,8 @@ This example showed how to use both the dynamic and typesafe GraphQL clients to 
 GraphQL service and explained the difference between the client types.
 
 == References
+ifndef::no-quarkus-oidc-client-graphql[]
+* xref:security-openid-connect-client-reference.adoc#quarkus-oidc-client-graphql[Integrating OIDC clients into GraphQL clients]
+endif::no-quarkus-oidc-client-graphql[]
 
-* xref:security-openid-connect-client-reference.adoc#oidc-client-graphql-client[Integrating OIDC clients into GraphQL clients]
 * https://smallrye.io/smallrye-graphql/latest/[Upstream SmallRye GraphQL Client documentation]
-

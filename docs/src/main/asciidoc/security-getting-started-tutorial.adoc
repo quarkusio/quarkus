@@ -54,12 +54,20 @@ You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tre
 
 == Create and verify the Maven project
 
-For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `security-jpa` or `security-jpa-reactive` extension.
+ifndef::no-quarkus-security-jpa-reactive[]
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `quarkus-security-jpa` or `quarkus-security-jpa-reactive` extension.
+endif::no-quarkus-security-jpa-reactive[]
+ifdef::no-quarkus-security-jpa-reactive[]
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `quarkus-security-jpa` extension.
+endif::no-quarkus-security-jpa-reactive[]
 
 [NOTE]
 ====
-xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities, but you can also use xref:hibernate-orm.adoc[Hibernate ORM] with the `security-jpa` extension.
-Both xref:hibernate-reactive.adoc[Hibernate Reactive] and xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] can be used with the `security-jpa-reactive` extension.
+xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities, but you can also use xref:hibernate-orm.adoc[Hibernate ORM] with the `quarkus-security-jpa` extension.
+
+ifndef::no-quarkus-security-jpa-reactive[]
+Both xref:hibernate-reactive.adoc[Hibernate Reactive] and xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] can be used with the `quarkus-security-jpa-reactive` extension.
+endif::no-quarkus-security-jpa-reactive[]
 
 You must also add your preferred database connector library.
 The instructions in this example tutorial use a PostgreSQL database for the identity store.
@@ -86,18 +94,20 @@ include::{includes}/devtools/create-app.adoc[]
 :add-extension-extensions: security-jpa
 include::{includes}/devtools/extension-add.adoc[]
 ====
+ifndef::no-quarkus-security-jpa-reactive[]
 ** To add the Security Jakarta Persistence extension to an existing Maven project with Hibernate Reactive, run the following command from your project base directory:
 +
 ====
 :add-extension-extensions: security-jpa-reactive
 include::{includes}/devtools/extension-add.adoc[]
 ====
+endif::no-quarkus-security-jpa-reactive[]
 
 === Verify the quarkus-security-jpa dependency
 
-After you have run either of the preceding commands to create the Maven project, verify that the `security-jpa` dependency was added to your project build XML file.
+After you have run either of the preceding commands to create the Maven project, verify that the `quarkus-security-jpa` dependency was added to your project build XML file.
 
-* To verify the `security-jpa` extension, check for the following configuration:
+* To verify the `quarkus-security-jpa` extension, check for the following configuration:
 +
 ====
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -115,7 +125,8 @@ After you have run either of the preceding commands to create the Maven project,
 implementation("io.quarkus:quarkus-security-jpa")
 ----
 ====
-* To verify the `security-jpa-reactive` extension, check for the following configuration:
+ifndef::no-quarkus-security-jpa-reactive[]
+* To verify the `quarkus-security-jpa-reactive` extension, check for the following configuration:
 +
 ====
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -133,6 +144,7 @@ implementation("io.quarkus:quarkus-security-jpa")
 implementation("io.quarkus:quarkus-security-jpa-reactive")
 ----
 ====
+endif::no-quarkus-security-jpa-reactive[]
 
 == Write the application
 
@@ -266,7 +278,7 @@ public class User extends PanacheEntity {
 
 ----
 
-The `security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
+The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
 
 <1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <2> Indicates the field used for the username.
@@ -280,12 +292,13 @@ You can configure it to use plain text or custom passwords.
 ====
 Don’t forget to set up the Panache and PostgreSQL JDBC driver, please see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache] for more information.
 ====
-
+ifndef::no-quarkus-security-jpa-reactive[]
 [NOTE]
 ====
 Hibernate Reactive Panache uses `io.quarkus.hibernate.reactive.panache.PanacheEntity` instead of `io.quarkus.hibernate.orm.panache.PanacheEntity`.
 For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
 ====
+endif::no-quarkus-security-jpa-reactive[]
 
 == Configure the application
 
@@ -299,7 +312,7 @@ When secure access is required, and no other authentication mechanisms are enabl
 Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
 ====
 +
-. Configure at least one data source in the `application.properties` file so the `security-jpa` extension can access your database.
+. Configure at least one data source in the `application.properties` file so the `quarkus-security-jpa` extension can access your database.
 For example:
 +
 ====
@@ -318,9 +331,10 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 +
 . To initialize the database with users and roles, implement the `Startup` class, as outlined in the following code snippet:
 
+ifndef::no-quarkus-security-jpa-reactive[]
 [NOTE]
 ====
-* The URLs of Reactive datasources that are used by the `security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
+* The URLs of Reactive datasources that are used by the `quarkus-security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
 configuration property and not the `quarkus.datasource.jdbc.url` configuration property typically used by JDBC datasources.
 +
 [source,properties]
@@ -333,6 +347,7 @@ link:https://hibernate.org/orm/[Hibernate ORM] automatically creates the databas
 This approach is suitable for development but is not recommended for production.
 Therefore, adjustments are needed in a production environment.
 ====
+endif::no-quarkus-security-jpa-reactive[]
 
 [source,java]
 ----
@@ -362,7 +377,7 @@ The preceding example demonstrates how the application can be protected and iden
 [IMPORTANT]
 ====
 In a production environment, do not store plain text passwords.
-As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
+As a result, the `quarkus-security-jpa` defaults to using bcrypt-hashed passwords.
 ====
 
 == Test your application by using Dev Services for PostgreSQL

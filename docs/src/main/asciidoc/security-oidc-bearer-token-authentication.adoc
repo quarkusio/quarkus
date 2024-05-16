@@ -750,6 +750,7 @@ public class NativeBearerTokenAuthenticationIT extends BearerTokenAuthentication
 
 For more information about initializing and configuring Dev Services for Keycloak, see the xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] guide.
 
+ifndef::no-deprecated-test-resource[]
 [[integration-testing-keycloak]]
 ==== `KeycloakTestResourceLifecycleManager`
 
@@ -852,6 +853,7 @@ By default:
 By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance, and this can be disabled by using `keycloak.use.https=false`.
 The default realm name is `quarkus`, and the client id is `quarkus-service-app`.
 If you want to customize these values, set the `keycloak.realm` and `keycloak.service.client` system properties.
+endif::no-deprecated-test-resource[]
 
 [[integration-testing-public-key]]
 ==== Local public key
@@ -1251,5 +1253,7 @@ For more information, see xref:security-oidc-code-flow-authentication#oidc-reque
 * xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
 * xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview.adoc[Quarkus Security overview]
+ifndef::no-quarkus-keycloak-admin-client[]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
+endif::no-quarkus-keycloak-admin-client[]
 * xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy]

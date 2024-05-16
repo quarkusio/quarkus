@@ -887,6 +887,7 @@ Open a browser, access http://localhost:8080/hello and get the name displayed in
 
 To confirm the permission is correctly enforced, change it to `echo.name`: `@PermissionsAllowed("echo.name")`. Clear the browser cache, access http://localhost:8080/hello again and you will get `403` reported by `ApiEchoService`. Now revert it back to `@PermissionsAllowed("echo:name")`.
 
+ifndef::no-deprecated-test-resource[]
 == Integration testing
 
 You have already used OIDC DevUI SPA to login to Auth0 and test the Quarkus endpoint with the access token, updating the endpoint code along the way.
@@ -1035,6 +1036,7 @@ image::auth0-test-success.png[Auth0 test success]
 By the way, if you like, you can run the tests in Continuous mode directly from DevUI:
 
 image::auth0-continuous-testing.png[Auth0 Continuous testing]
+endif::no-deprecated-test-resource[]
 
 [[production-mode]]
 == Production mode

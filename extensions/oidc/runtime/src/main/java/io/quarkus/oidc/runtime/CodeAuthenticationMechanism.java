@@ -848,10 +848,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private static void logAuthenticationError(RoutingContext context, Throwable t) {
         final String errorMessage = errorMessage(t);
-        final boolean accessTokenFailure = context.get(OidcConstants.ACCESS_TOKEN_VALUE) != null
-                && context.get(OidcUtils.CODE_ACCESS_TOKEN_RESULT) == null;
+        final boolean accessTokenFailure = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null;
         if (accessTokenFailure) {
-            LOG.errorf("Access token verification has failed: %s. ID token has not been verified yet", errorMessage);
+            LOG.errorf("Access token verification has failed: %s.", errorMessage);
         } else {
             LOG.errorf("ID token verification has failed: %s", errorMessage);
         }

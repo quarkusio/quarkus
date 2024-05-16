@@ -59,25 +59,27 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
                     String.format(Locale.ROOT, "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
                             persistenceUnitName, tenantId));
         }
-        if (multiTenancyStrategy == MultiTenancyStrategy.SCHEMA) {
-            return new SchemaTenantConnectionProvider(tenantId, dataSource);
-        }
-        return new QuarkusConnectionProvider(dataSource);
+        return switch (multiTenancyStrategy) {
+            case DATABASE -> new QuarkusConnectionProvider(dataSource);
+            case SCHEMA -> new SchemaTenantConnectionProvider(tenantId, dataSource);
+            default -> throw new IllegalStateException("Unexpected multitenancy strategy: " + multiTenancyStrategy);
+        };
     }
 
     private static AgroalDataSource tenantDataSource(Optional<String> dataSourceName, String tenantId,
             MultiTenancyStrategy strategy, String multiTenancySchemaDataSourceName) {
-        if (strategy != MultiTenancyStrategy.SCHEMA) {
-            return Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
-        }
-
-        if (multiTenancySchemaDataSourceName == null) {
-            // The datasource name should always be present when using a multi-tenancy other than DATABASE;
-            // we perform checks in HibernateOrmProcessor during the build.
-            return getDataSource(dataSourceName.get());
-        }
-
-        return getDataSource(multiTenancySchemaDataSourceName);
+        return switch (strategy) {
+            case DATABASE -> Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
+            case SCHEMA -> {
+                if (multiTenancySchemaDataSourceName == null) {
+                    // The datasource name should always be present when using a multi-tenancy other than DATABASE;
+                    // we perform checks in HibernateOrmProcessor during the build.
+                    yield getDataSource(dataSourceName.get());
+                }
+                yield getDataSource(multiTenancySchemaDataSourceName);
+            }
+            default -> throw new IllegalStateException("Unexpected multitenancy strategy: " + strategy);
+        };
     }
 
     private static AgroalDataSource getDataSource(String dataSourceName) {

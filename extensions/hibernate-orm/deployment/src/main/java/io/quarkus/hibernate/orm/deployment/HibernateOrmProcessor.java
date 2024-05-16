@@ -670,33 +670,37 @@ public final class HibernateOrmProcessor {
         boolean multitenancyEnabled = false;
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            if (persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
-                continue;
+            switch (persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy()) {
+                case NONE -> {
+                }
+                case DISCRIMINATOR -> multitenancyEnabled = true;
+                case DATABASE, SCHEMA -> {
+                    multitenancyEnabled = true;
+                    ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                            .configure(DataSourceTenantConnectionResolver.class)
+                            .scope(ApplicationScoped.class)
+                            .types(TenantConnectionResolver.class)
+                            .setRuntimeInit()
+                            .defaultBean()
+                            .unremovable()
+                            .supplier(recorder.dataSourceTenantConnectionResolver(
+                                    persistenceUnitDescriptor.getPersistenceUnitName(),
+                                    persistenceUnitDescriptor.getConfig().getDataSource(),
+                                    persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy(),
+                                    persistenceUnitDescriptor.getMultiTenancySchemaDataSource()));
+
+                    if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
+                        configurator.addQualifier(Default.class);
+                    } else {
+                        configurator.addQualifier().annotation(DotNames.NAMED)
+                                .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
+                        configurator.addQualifier().annotation(PersistenceUnit.class)
+                                .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
+                    }
+
+                    syntheticBeans.produce(configurator.done());
+                }
             }
-
-            multitenancyEnabled = true;
-
-            ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(DataSourceTenantConnectionResolver.class)
-                    .scope(ApplicationScoped.class)
-                    .types(TenantConnectionResolver.class)
-                    .setRuntimeInit()
-                    .defaultBean()
-                    .unremovable()
-                    .supplier(recorder.dataSourceTenantConnectionResolver(persistenceUnitDescriptor.getPersistenceUnitName(),
-                            persistenceUnitDescriptor.getConfig().getDataSource(),
-                            persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy(),
-                            persistenceUnitDescriptor.getMultiTenancySchemaDataSource()));
-
-            if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
-                configurator.addQualifier(Default.class);
-            } else {
-                configurator.addQualifier().annotation(DotNames.NAMED)
-                        .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
-                configurator.addQualifier().annotation(PersistenceUnit.class)
-                        .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
-            }
-
-            syntheticBeans.produce(configurator.done());
         }
 
         if (multitenancyEnabled) {

@@ -398,7 +398,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void setRemoteProblem(Throwable throwable) {
         compileProblem = throwable;
-        getCompileOutput().setMessage(throwable.getMessage());
+        if (throwable == null) {
+            getCompileOutput().setMessage(null);
+        } else {
+            getCompileOutput().setMessage(throwable.getMessage());
+        }
     }
 
     private StatusLine getCompileOutput() {
@@ -561,9 +565,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 return true;
             } else if (!filesChanged.isEmpty()) {
                 try {
-                    for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
-                        consumer.accept(filesChanged);
-                    }
+                    notifyExtensions(filesChanged);
                     hotReloadProblem = null;
                     getCompileOutput().setMessage(null);
                 } catch (Throwable t) {
@@ -583,6 +585,30 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             scanLock.unlock();
             codeGenLock.unlock();
         }
+    }
+
+    /**
+     * This notifies registered extensions of "no-restart" changed files.
+     *
+     * @param noRestartChangedFiles the Set of changed files
+     */
+    public void notifyExtensions(Set<String> noRestartChangedFiles) {
+        if (lastStartIndex == null) {
+            // we don't notify extensions if the application never started
+            return;
+        }
+        scanLock.lock();
+        codeGenLock.lock();
+        try {
+
+            for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
+                consumer.accept(noRestartChangedFiles);
+            }
+        } finally {
+            scanLock.unlock();
+            codeGenLock.unlock();
+        }
+
     }
 
     public boolean instrumentationEnabled() {

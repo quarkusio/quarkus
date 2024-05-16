@@ -11,7 +11,6 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
-import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -66,22 +65,6 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
         return new QuarkusConnectionProvider(dataSource);
     }
 
-    /**
-     * Create a new data source from the given configuration.
-     *
-     * @param config Configuration to use.
-     *
-     * @return New data source instance.
-     */
-    private static AgroalDataSource createFrom(AgroalDataSourceConfiguration config) {
-        try {
-            return AgroalDataSource.from(config);
-        } catch (SQLException ex) {
-            throw new IllegalStateException("Failed to create a new data source based on the existing datasource configuration",
-                    ex);
-        }
-    }
-
     private static AgroalDataSource tenantDataSource(Optional<String> dataSourceName, String tenantId,
             MultiTenancyStrategy strategy, String multiTenancySchemaDataSourceName) {
         if (strategy != MultiTenancyStrategy.SCHEMA) {
@@ -89,10 +72,9 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
         }
 
         if (multiTenancySchemaDataSourceName == null) {
-            // The datasource name should always be present when using SCHEMA multi-tenancy;
+            // The datasource name should always be present when using a multi-tenancy other than DATABASE;
             // we perform checks in HibernateOrmProcessor during the build.
-            AgroalDataSource dataSource = getDataSource(dataSourceName.get());
-            return createFrom(dataSource.getConfiguration());
+            return getDataSource(dataSourceName.get());
         }
 
         return getDataSource(multiTenancySchemaDataSourceName);

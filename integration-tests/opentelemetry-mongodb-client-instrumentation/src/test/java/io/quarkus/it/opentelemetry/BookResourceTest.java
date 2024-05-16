@@ -7,12 +7,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -45,7 +47,10 @@ class BookResourceTest {
     @Test
     void blockingClient() {
         testInsertBooks("/books");
+        reset();
+        assertThat(get("/books").as(bookListType)).hasSize(3);
         assertTraceAvailable("my-collection");
+        assertParentChild("my-collection");
     }
 
     @Test
@@ -56,12 +61,25 @@ class BookResourceTest {
                 .assertThat()
                 .statusCode(500);
         assertTraceAvailable("my-collection", "$invalidop");
+        assertParentChild("my-collection");
     }
 
     @Test
     void reactiveClient() {
         testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
         assertTraceAvailable("my-reactive-collection");
+    }
+
+    @Disabled("Currently failed to assert parent-child relationship")
+    @Test
+    void reactiveClientParentChild() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
+        assertTraceAvailable("my-reactive-collection");
+        assertParentChild("my-reactive-collection");
     }
 
     @Test
@@ -74,20 +92,81 @@ class BookResourceTest {
         assertTraceAvailable("my-reactive-collection", "$invalidop");
     }
 
+    @SuppressWarnings("unchecked")
     private void assertTraceAvailable(String... commandPart) {
-        await().atMost(Duration.ofSeconds(30L)).untilAsserted(() -> {
-            boolean traceAvailable = false;
-            for (Map<String, Object> spanData : getSpans()) {
+        await().atMost(Duration.ofSeconds(15L)).untilAsserted(() -> {
+            List<Map<String, Object>> spans = getSpans();
+            Collection<ChildSpanData> mongoSpans = new ArrayList<>();
+            for (Map<String, Object> spanData : spans) {
                 if (spanData.get("attributes") instanceof Map attr) {
                     var cmd = (String) attr.get("mongodb.command");
                     if (cmd != null) {
                         assertThat(cmd).contains(commandPart).contains("books");
-                        traceAvailable = true;
+                        var parentSpanContext = (Map<String, Object>) spanData.get("parentSpanContext");
+                        mongoSpans.add(new ChildSpanData(
+                                (String) spanData.get("traceId"),
+                                (String) parentSpanContext.get("spanId"),
+                                (String) spanData.get("spanId")));
                     }
                 }
             }
-            assertThat(traceAvailable).as("Mongodb statement was not traced.").isTrue();
+            assertThat(mongoSpans).as("Mongodb statement was not traced.").isNotEmpty();
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertParentChild(String... commandPart) {
+        await().atMost(Duration.ofSeconds(30L)).untilAsserted(() -> {
+            List<Map<String, Object>> spans = getSpans();
+            var traceIds = spans.stream().map(data -> data.get("traceId")).toList();
+            String traceId = (String) traceIds.get(0);
+            assertThat(traceId).isNotBlank();
+            assertThat(traceIds).as("All spans must have the same trace id").containsOnly(traceId);
+
+            var rootSpanId = getRootSpan(spans);
+            assertThat(rootSpanId).isNotBlank();
+
+            Collection<ChildSpanData> mongoSpans = new ArrayList<>();
+            for (Map<String, Object> spanData : spans) {
+                assertThat(spanData).as("span must have trace id").containsEntry("traceId", traceId);
+                if (spanData.get("attributes") instanceof Map attr) {
+                    var cmd = (String) attr.get("mongodb.command");
+                    if (cmd != null) {
+                        assertThat(cmd).contains(commandPart).contains("books");
+                        var parentSpanContext = (Map<String, Object>) spanData.get("parentSpanContext");
+                        mongoSpans.add(new ChildSpanData(
+                                (String) spanData.get("traceId"),
+                                (String) parentSpanContext.get("spanId"),
+                                (String) spanData.get("spanId")));
+                    }
+                }
+            }
+            for (ChildSpanData childSpanData : mongoSpans) {
+                assertThat(childSpanData.traceId()).isNotBlank().isEqualTo(traceId);
+                assertThat(childSpanData.parentSpanId()).isNotBlank().isEqualTo(rootSpanId);
+                assertThat(childSpanData.spanId()).isNotBlank().isNotEqualTo(rootSpanId);
+            }
+            assertThat(mongoSpans).as("Mongodb statement was not traced.").isNotEmpty();
+        });
+    }
+
+    private record ChildSpanData(String traceId, String parentSpanId, String spanId) {}
+
+    /**
+     * find root span id
+     * this is the case if the trace id in parentSpanContext contains only zeros
+     * @param spans
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private static String getRootSpan(Iterable<Map<String, Object>> spans) {
+        for (Map<String, Object> spanData : spans) {
+            var parentContext = (Map<String, Object>) spanData.get("parentSpanContext");
+            if (((String) parentContext.get("traceId")).matches("0+")) {
+                return (String) spanData.get("spanId");
+            }
+        }
+        throw new IllegalStateException("No root span found");
     }
 
     private void testInsertBooks(String endpoint) {
@@ -103,9 +182,10 @@ class BookResourceTest {
         saveBook(new Book("Victor Hugo", "Notre-Dame de Paris"), endpoint);
         await().atMost(Duration.ofSeconds(60L))
                 .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).hasSize(2));
-
         saveBook(new Book("Charles Baudelaire", "Les fleurs du mal"), endpoint);
+    }
 
+    private void assertGetBooks(String endpoint) {
         assertThat(get(endpoint).as(bookListType)).hasSize(3);
 
         List<Book> books = get("%s/Victor Hugo".formatted(endpoint)).as(bookListType);

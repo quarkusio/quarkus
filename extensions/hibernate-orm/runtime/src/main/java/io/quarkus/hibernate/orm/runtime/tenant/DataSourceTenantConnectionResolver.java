@@ -34,17 +34,14 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
 
     private MultiTenancyStrategy multiTenancyStrategy;
 
-    private String multiTenancySchemaDataSourceName;
-
     public DataSourceTenantConnectionResolver() {
     }
 
     public DataSourceTenantConnectionResolver(String persistenceUnitName, Optional<String> dataSourceName,
-            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+            MultiTenancyStrategy multiTenancyStrategy) {
         this.persistenceUnitName = persistenceUnitName;
         this.dataSourceName = dataSourceName;
         this.multiTenancyStrategy = multiTenancyStrategy;
-        this.multiTenancySchemaDataSourceName = multiTenancySchemaDataSourceName;
     }
 
     @Override
@@ -52,8 +49,7 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
         LOG.debugv("resolve((persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName, tenantId);
         LOG.debugv("multitenancy strategy: {0}", multiTenancyStrategy);
 
-        AgroalDataSource dataSource = tenantDataSource(dataSourceName, tenantId, multiTenancyStrategy,
-                multiTenancySchemaDataSourceName);
+        AgroalDataSource dataSource = tenantDataSource(dataSourceName, tenantId, multiTenancyStrategy);
         if (dataSource == null) {
             throw new IllegalStateException(
                     String.format(Locale.ROOT, "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
@@ -67,17 +63,12 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
     }
 
     private static AgroalDataSource tenantDataSource(Optional<String> dataSourceName, String tenantId,
-            MultiTenancyStrategy strategy, String multiTenancySchemaDataSourceName) {
+            MultiTenancyStrategy strategy) {
         return switch (strategy) {
             case DATABASE -> Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
-            case SCHEMA -> {
-                if (multiTenancySchemaDataSourceName == null) {
-                    // The datasource name should always be present when using a multi-tenancy other than DATABASE;
-                    // we perform checks in HibernateOrmProcessor during the build.
-                    yield getDataSource(dataSourceName.get());
-                }
-                yield getDataSource(multiTenancySchemaDataSourceName);
-            }
+            // The datasource name should always be present when using a multi-tenancy other than DATABASE;
+            // we perform checks in HibernateOrmProcessor during the build.
+            case SCHEMA -> getDataSource(dataSourceName.get());
             default -> throw new IllegalStateException("Unexpected multitenancy strategy: " + strategy);
         };
     }

@@ -1132,7 +1132,7 @@ quarkus.hibernate-orm.database.generation=none
 # Enable SCHEMA approach and use default datasource
 quarkus.hibernate-orm.multitenant=SCHEMA
 # You could use a non-default datasource by using the following setting
-# quarkus.hibernate-orm.multitenant-schema-datasource=other
+# quarkus.hibernate-orm.datasource=other
 
 # The default data source used for all tenant schemas
 quarkus.datasource.db-kind=postgresql

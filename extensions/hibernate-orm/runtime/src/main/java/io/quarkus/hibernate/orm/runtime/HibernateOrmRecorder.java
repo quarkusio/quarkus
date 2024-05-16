@@ -83,12 +83,11 @@ public class HibernateOrmRecorder {
 
     public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
             Optional<String> dataSourceName,
-            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+            MultiTenancyStrategy multiTenancyStrategy) {
         return new Supplier<DataSourceTenantConnectionResolver>() {
             @Override
             public DataSourceTenantConnectionResolver get() {
-                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy,
-                        multiTenancySchemaDataSourceName);
+                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy);
             }
         };
     }

@@ -43,6 +43,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
             "https://server.example.com");
     private static final String TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.token.audience",
             "https://server.example.com");
+    private static final String ID_TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.idtoken.audience",
+            "https://id.server.example.com");
     private static final String TOKEN_SUBJECT = "123456";
     private static final String BEARER_TOKEN_TYPE = "Bearer";
     private static final String ID_TOKEN_TYPE = "ID";
@@ -385,10 +387,11 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String generateJwtToken(String userName, Set<String> groups, String sub, String type) {
+        final String audience = ID_TOKEN_TYPE.equals(type) ? ID_TOKEN_AUDIENCE : TOKEN_AUDIENCE;
         JwtClaimsBuilder builder = Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
-                .audience(TOKEN_AUDIENCE)
+                .audience(audience)
                 .claim("sid", "session-id")
                 .subject(sub);
         if (type != null) {

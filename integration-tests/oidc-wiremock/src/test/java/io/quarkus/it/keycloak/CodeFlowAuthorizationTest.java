@@ -94,6 +94,31 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowVerifyIdAndAccessToken() throws IOException {
+        defineCodeFlowLogoutStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-verify-id-and-access-tokens");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("access token verified: true,"
+                    + " id_token issuer: https://server.example.com,"
+                    + " access_token issuer: https://server.example.com,"
+                    + " id_token audience: https://id.server.example.com,"
+                    + " access_token audience: https://server.example.com,"
+                    + " cache size: 0", textPage.getContent());
+            assertNotNull(getSessionCookie(webClient, "code-flow-verify-id-and-access-tokens"));
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
+    }
+
+    @Test
     public void testCodeFlowEncryptedIdTokenJwk() throws IOException {
         doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-jwk", KeyEncryptionAlgorithm.DIR);
     }

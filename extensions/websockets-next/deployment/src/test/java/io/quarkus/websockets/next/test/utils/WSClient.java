@@ -126,6 +126,10 @@ public class WSClient implements AutoCloseable {
         return socket.get().isClosed();
     }
 
+    public int closeStatusCode() {
+        return socket.get().closeStatusCode();
+    }
+
     @Override
     public void close() {
         disconnect();

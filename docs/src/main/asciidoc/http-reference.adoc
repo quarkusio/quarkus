@@ -35,7 +35,7 @@ location to function correctly.
 [[from-mvnpm]]
 === From mvnpm
 
-If you are using https://mvnpm.org/[mvnpm], as for the following JQuery dependency:
+If you are using https://mvnpm.org/[mvnpm], as for the following Bootstrap dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

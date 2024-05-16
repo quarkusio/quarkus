@@ -659,6 +659,7 @@ Additional exporters will be available in the Quarkiverse https://docs.quarkiver
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-mongodb-client[`quarkus-mongodb-client`]
 ** AMQP 1.0
 ** RabbitMQ
 ** Kafka

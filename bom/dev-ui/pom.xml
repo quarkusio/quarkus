@@ -28,7 +28,7 @@
         <vaadin-router.version>1.7.5</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.5.0</echarts.version>
-        <es-module-shims.version>1.9.0</es-module-shims.version>
+        <es-module-shims.version>1.10.0</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
         <codeblock.version>1.0.16</codeblock.version>
         <qomponent.version>1.0.0</qomponent.version>

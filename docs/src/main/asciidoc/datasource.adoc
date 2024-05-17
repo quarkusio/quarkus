@@ -543,7 +543,7 @@ All <<extensions-and-database-drivers-reference,supported JDBC drivers do>>,
 but <<other-databases,other JDBC drivers>> might not.
 . Make sure your database server is configured to enable XA.
 . Enable XA support explicitly for each relevant datasource by setting
-<<quarkus-agroal_quarkus-datasource-jdbc-transactions,`quarkus.datasource[.optional name].transactions`>> to `xa`.
+<<quarkus-agroal_quarkus-datasource-jdbc-transactions,`quarkus.datasource[.optional name].jdbc.transactions`>> to `xa`.
 
 Using XA, a rollback in one datasource will trigger a rollback in every other datasource enrolled in the transaction.
 

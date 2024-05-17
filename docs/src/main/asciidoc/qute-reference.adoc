@@ -2538,7 +2538,7 @@ There are several ways to solve this problem:
 ** In this case, an optimized value resolver is generated automatically and used at runtime
 ** This is the preferred solution
 * Annotate the model class with <<template_data,`@TemplateData`>> - a specialized value resolver is generated and used at runtime
-* Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
+* Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 
 
 [[rest_integration]]

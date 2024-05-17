@@ -751,8 +751,18 @@ public class CodeFlowTest {
 
                             if (statusCode == 302) {
                                 assertNull(getSessionCookie(webClient, "tenant-refresh"));
-                                assertEquals("http://localhost:8081/session-expired-page",
-                                        webResponse.getResponseHeaderValue("location"));
+                                String redirect = webResponse.getResponseHeaderValue("location");
+                                assertTrue(redirect.equals(
+                                        "http://localhost:8081/tenant-refresh/session-expired-page?redirect-filtered=true%2C&session-expired=true")
+                                        || redirect.equals(
+                                                "http://localhost:8081/tenant-refresh/session-expired-page?session-expired=true&redirect-filtered=true%2C"));
+                                assertNotNull(webClient.getCookieManager().getCookie("session_expired"));
+                                webResponse = webClient.loadWebResponse(
+                                        new WebRequest(URI.create(redirect).toURL()));
+                                assertEquals(
+                                        "alice, your session has expired. Please login again at http://localhost:8081/tenant-refresh",
+                                        webResponse.getContentAsString());
+                                assertNull(webClient.getCookieManager().getCookie("session_expired"));
                                 return true;
                             }
 

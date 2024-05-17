@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -10,6 +11,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
+import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -26,6 +28,8 @@ public class TenantConfigContext {
      * Tenant configuration
      */
     final OidcTenantConfig oidcConfig;
+
+    final List<OidcRedirectFilter> redirectFilters;
 
     /**
      * PKCE Secret Key
@@ -46,6 +50,7 @@ public class TenantConfigContext {
     public TenantConfigContext(OidcProvider client, OidcTenantConfig config, boolean ready) {
         this.provider = client;
         this.oidcConfig = config;
+        this.redirectFilters = TenantFeatureFinder.find(config, OidcRedirectFilter.class);
         this.ready = ready;
 
         boolean isService = OidcUtils.isServiceApp(config);
@@ -157,6 +162,10 @@ public class TenantConfigContext {
 
     public OidcTenantConfig getOidcTenantConfig() {
         return oidcConfig;
+    }
+
+    public List<OidcRedirectFilter> getOidcRedirectFilters() {
+        return redirectFilters;
     }
 
     public OidcConfigurationMetadata getOidcMetadata() {

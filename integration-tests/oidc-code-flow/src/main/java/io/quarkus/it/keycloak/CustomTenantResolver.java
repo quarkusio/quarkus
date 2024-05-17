@@ -52,7 +52,7 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-autorefresh";
         }
 
-        if (path.contains("tenant-refresh")) {
+        if (path.endsWith("tenant-refresh")) {
             return "tenant-refresh";
         }
 

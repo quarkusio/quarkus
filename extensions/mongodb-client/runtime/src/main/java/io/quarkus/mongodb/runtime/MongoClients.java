@@ -121,7 +121,7 @@ public class MongoClients {
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName), false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
         mongoclients.put(clientName, client);
         return client;
@@ -129,7 +129,7 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName), true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
@@ -254,13 +254,17 @@ public class MongoClients {
         }
     }
 
-    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config) {
+    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config, boolean isReactive) {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
         CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
+
+        if (isReactive) {
+            settings.contextProvider(new MongoReactiveContextProvider());
+        }
 
         ConnectionString connectionString;
         Optional<String> maybeConnectionString = config.connectionString;

@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
@@ -22,6 +23,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.quarkus.mongodb.runtime.MongoRequestContext;
 
 public class MongoTracingCommandListener implements CommandListener {
     private static final org.jboss.logging.Logger LOGGER = Logger.getLogger(MongoTracingCommandListener.class);
@@ -50,7 +52,9 @@ public class MongoTracingCommandListener implements CommandListener {
     public void commandStarted(CommandStartedEvent event) {
         LOGGER.tracef("commandStarted event %s", event.getCommandName());
 
-        Context parentContext = Context.current();
+        Context parentContext = Optional.ofNullable(event.getRequestContext())
+                .map(rc -> (Context) rc.get(MongoRequestContext.OTEL_CONTEXT_KEY))
+                .orElseGet(Context::current);
         var mongoCommand = new MongoCommand(event.getCommandName(), event.getCommand());
         if (instrumenter.shouldStart(parentContext, mongoCommand)) {
             Context context = instrumenter.start(parentContext, mongoCommand);

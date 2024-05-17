@@ -14,7 +14,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -70,9 +69,9 @@ class BookResourceTest {
         reset();
         assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
         assertTraceAvailable("my-reactive-collection");
+        assertParentChild("my-reactive-collection");
     }
 
-    @Disabled("Currently failed to assert parent-child relationship")
     @Test
     void reactiveClientParentChild() {
         testInsertBooks("/reactive-books");
@@ -90,6 +89,7 @@ class BookResourceTest {
                 .assertThat()
                 .statusCode(500);
         assertTraceAvailable("my-reactive-collection", "$invalidop");
+        assertParentChild("my-reactive-collection");
     }
 
     @SuppressWarnings("unchecked")
@@ -150,11 +150,13 @@ class BookResourceTest {
         });
     }
 
-    private record ChildSpanData(String traceId, String parentSpanId, String spanId) {}
+    private record ChildSpanData(String traceId, String parentSpanId, String spanId) {
+    }
 
     /**
      * find root span id
      * this is the case if the trace id in parentSpanContext contains only zeros
+     *
      * @param spans
      * @return
      */
@@ -176,20 +178,16 @@ class BookResourceTest {
                 .assertThat()
                 .statusCode(200);
 
-        assertThat(get(endpoint).as(bookListType)).isEmpty();
+        await().atMost(Duration.ofSeconds(60L))
+                .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).as("must delete all").isEmpty());
 
         saveBook(new Book("Victor Hugo", "Les Misérables"), endpoint);
         saveBook(new Book("Victor Hugo", "Notre-Dame de Paris"), endpoint);
         await().atMost(Duration.ofSeconds(60L))
                 .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).hasSize(2));
         saveBook(new Book("Charles Baudelaire", "Les fleurs du mal"), endpoint);
-    }
-
-    private void assertGetBooks(String endpoint) {
-        assertThat(get(endpoint).as(bookListType)).hasSize(3);
-
-        List<Book> books = get("%s/Victor Hugo".formatted(endpoint)).as(bookListType);
-        assertThat(books).hasSize(2);
+        await().atMost(Duration.ofSeconds(60L))
+                .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).hasSize(3));
     }
 
     private static void saveBook(Book book, String endpoint) {

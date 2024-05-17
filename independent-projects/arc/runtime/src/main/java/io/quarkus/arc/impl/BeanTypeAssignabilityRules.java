@@ -13,9 +13,6 @@ import java.util.Set;
  * This code was mainly copied from Weld codebase.
  *
  * Implementation of the Section 5.2.4 of the CDI specification.
- *
- * @author Jozef Hartinger
- * @author Matus Abaffy
  */
 class BeanTypeAssignabilityRules {
 

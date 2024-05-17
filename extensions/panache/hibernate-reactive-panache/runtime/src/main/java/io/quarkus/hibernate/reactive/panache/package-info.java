@@ -91,7 +91,5 @@
  *
  * We also support named queries, for Panache to know that a query is a named query and not an HQL one, you need
  * to prefix the name of the query with '#'.
- *
- * @author Stéphane Épardaud
  */
 package io.quarkus.hibernate.reactive.panache;

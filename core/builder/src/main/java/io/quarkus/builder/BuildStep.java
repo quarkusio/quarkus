@@ -3,8 +3,6 @@ package io.quarkus.builder;
 /**
  * A single atomic unit of build work. A build step either succeeds or it does not, with no intermediate states
  * possible. Build steps should be as fine-grained as possible.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 @FunctionalInterface
 public interface BuildStep {

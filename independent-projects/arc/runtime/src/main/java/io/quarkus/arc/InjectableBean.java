@@ -17,8 +17,6 @@ import io.quarkus.arc.impl.Qualifiers;
  * Quarkus representation of an injectable bean.
  * This interface extends the standard CDI {@link Bean} interface.
  *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<T> {

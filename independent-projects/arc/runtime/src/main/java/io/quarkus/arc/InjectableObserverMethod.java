@@ -15,8 +15,6 @@ import io.quarkus.arc.impl.EventMetadataImpl;
 /**
  * Represents an observer method.
  *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public interface InjectableObserverMethod<T> extends ObserverMethod<T> {

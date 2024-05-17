@@ -14,8 +14,6 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
  * <p>
  * It does this by iterating the available parser definitions, and returning
  * the first parser that is created.
- *
- * @author Stuart Douglas
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class FormParserFactory {

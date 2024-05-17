@@ -14,10 +14,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
-/**
- *
- * @author Martin Kouba
- */
 public class DisposerInfo implements InjectionTargetInfo {
 
     private final BeanInfo declaringBean;

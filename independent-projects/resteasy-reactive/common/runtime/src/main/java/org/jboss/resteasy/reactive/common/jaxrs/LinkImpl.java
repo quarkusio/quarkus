@@ -11,9 +11,6 @@ import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class LinkImpl extends Link {
     protected final URI uri;
 

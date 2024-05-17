@@ -9,8 +9,6 @@ import io.restassured.RestAssured;
 
 /**
  * Test reflection around JPA entities
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @QuarkusTest
 public class JPABootstrapTestCase {

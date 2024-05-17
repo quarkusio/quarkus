@@ -145,9 +145,6 @@ import net.bytebuddy.pool.TypePool;
  * <p>
  * This does not address the proper integration with Hibernate
  * Rather prepare the path to providing the right metadata
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateOrmProcessor {

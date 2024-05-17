@@ -24,8 +24,6 @@ import io.quarkus.jdbc.h2.runtime.H2Reflections;
 /**
  * Registers the {@code org.h2.Driver} so that it can be loaded
  * by reflection, as commonly expected.
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class H2JDBCReflections {
 

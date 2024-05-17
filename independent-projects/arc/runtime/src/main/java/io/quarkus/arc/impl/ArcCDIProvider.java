@@ -11,10 +11,6 @@ import jakarta.enterprise.util.TypeLiteral;
 
 import io.quarkus.arc.Arc;
 
-/**
- *
- * @author Martin Kouba
- */
 public class ArcCDIProvider implements CDIProvider {
 
     private final ArcCDI arcCDI;

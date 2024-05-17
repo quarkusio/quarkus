@@ -50,10 +50,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-/**
- *
- * @author Martin Kouba
- */
 public class ObserverGenerator extends AbstractGenerator {
 
     static final String OBSERVER_SUFFIX = "_Observer";

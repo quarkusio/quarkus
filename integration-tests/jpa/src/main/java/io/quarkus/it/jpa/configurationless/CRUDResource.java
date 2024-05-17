@@ -19,9 +19,7 @@ import org.hibernate.internal.SessionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
+
 @Path("/")
 @ApplicationScoped
 public class CRUDResource {

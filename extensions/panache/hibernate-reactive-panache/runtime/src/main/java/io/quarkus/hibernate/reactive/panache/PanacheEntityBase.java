@@ -27,8 +27,6 @@ import io.smallrye.mutiny.Uni;
  * methods. Unless you have a custom ID strategy, you should not extend this class directly but extend
  * {@link PanacheEntity} instead.
  * </p>
- *
- * @author Stéphane Épardaud
  * @see PanacheEntity
  */
 public abstract class PanacheEntityBase {

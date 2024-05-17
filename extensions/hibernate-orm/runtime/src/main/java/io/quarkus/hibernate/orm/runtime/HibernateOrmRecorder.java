@@ -31,9 +31,6 @@ import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @Recorder
 public class HibernateOrmRecorder {
 

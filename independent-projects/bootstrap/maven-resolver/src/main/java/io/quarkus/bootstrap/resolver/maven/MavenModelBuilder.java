@@ -21,10 +21,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class MavenModelBuilder implements ModelBuilder {
 
     private final ModelBuilder builder;

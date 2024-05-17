@@ -4,8 +4,6 @@ import jakarta.persistence.MappedSuperclass;
 
 /**
  * Mapped superclass test
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @MappedSuperclass
 public class Human extends Animal {

@@ -46,8 +46,6 @@ import org.jboss.logging.Logger;
  * Web threads do not touch the log file, but simply queue messages to be written later by a worker thread.
  * A lightweight CAS based locking mechanism is used to ensure than only 1 thread is active writing messages at
  * any given time
- *
- * @author Stuart Douglas
  */
 public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Closeable {
 

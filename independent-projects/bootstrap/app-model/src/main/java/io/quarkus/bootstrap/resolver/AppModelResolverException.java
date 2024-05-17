@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class AppModelResolverException extends Exception {
 
     /**

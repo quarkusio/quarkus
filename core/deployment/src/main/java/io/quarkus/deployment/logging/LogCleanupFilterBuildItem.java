@@ -10,8 +10,6 @@ import io.quarkus.runtime.logging.LogCleanupFilterElement;
 /**
  * Declare that a log filter should be applied to the specified <tt>loggerName</tt>,
  * provided the message starts with <tt>messageStart</tt>.
- *
- * @author Stéphane Épardaud
  */
 public final class LogCleanupFilterBuildItem extends MultiBuildItem {
 

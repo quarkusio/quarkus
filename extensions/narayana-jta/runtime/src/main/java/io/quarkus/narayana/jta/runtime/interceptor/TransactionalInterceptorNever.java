@@ -12,10 +12,6 @@ import jakarta.transaction.TransactionalException;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
 
-/**
- * @author paul.robinson@redhat.com 25/05/2013
- */
-
 @Interceptor
 @Transactional(Transactional.TxType.NEVER)
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)

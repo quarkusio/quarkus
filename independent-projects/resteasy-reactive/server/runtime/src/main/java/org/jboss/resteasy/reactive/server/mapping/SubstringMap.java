@@ -11,8 +11,6 @@ import java.util.NoSuchElementException;
  * for data that changes frequently.
  * <p>
  * This class does not actually implement the map interface to avoid implementing unnecessary operations.
- *
- * @author Stuart Douglas
  */
 class SubstringMap<V> {
     private static final int ALL_BUT_LAST_BIT = ~1;

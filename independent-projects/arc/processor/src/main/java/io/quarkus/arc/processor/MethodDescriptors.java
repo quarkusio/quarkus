@@ -49,10 +49,6 @@ import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- *
- * @author Martin Kouba
- */
 public final class MethodDescriptors {
 
     public static final MethodDescriptor FIXED_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(

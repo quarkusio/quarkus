@@ -14,8 +14,6 @@ import jakarta.enterprise.util.TypeLiteral;
 
 /**
  * Represents a container instance.
- *
- * @author Martin Kouba
  */
 public interface ArcContainer {
 

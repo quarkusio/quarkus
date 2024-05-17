@@ -46,9 +46,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 
 /**
- *
- * @author Martin Kouba
- *
  * @param <T>
  */
 class EventImpl<T> implements Event<T> {
@@ -512,9 +509,6 @@ class EventImpl<T> implements Event<T> {
      * during asynchronous event delivery never is never propagated directly. Instead, all the exceptions for a given
      * asynchronous event are collected and then
      * made available together using CompletionException.
-     *
-     * @author Jozef Hartinger
-     *
      */
     protected interface ObserverExceptionHandler {
 

@@ -1,8 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class ChallengeData {
     public final int status;
     public final CharSequence headerName;

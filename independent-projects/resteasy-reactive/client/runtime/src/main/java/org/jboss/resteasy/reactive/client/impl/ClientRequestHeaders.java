@@ -17,7 +17,6 @@ import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ClientRequestHeaders {

@@ -4,8 +4,6 @@ import java.util.function.Supplier;
 
 /**
  * {@link Supplier} implementation that supplies a pre-configured value.
- *
- * @author Maarten Mulders
  */
 public class FixedValueSupplier<T> implements Supplier<T> {
 

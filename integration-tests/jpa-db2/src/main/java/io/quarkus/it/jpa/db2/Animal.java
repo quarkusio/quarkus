@@ -1,8 +1,5 @@
 package io.quarkus.it.jpa.db2;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 public class Animal {
     private double weight;
 

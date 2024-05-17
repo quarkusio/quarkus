@@ -13,7 +13,6 @@ import org.jboss.logging.Logger;
  *
  * Describes the methods for multi-tenancy understood by Hibernate.
  *
- * @author Steve Ebersole
  * @deprecated This class should be removed after we're done migrating to Jakarta APIs and Hibernate ORM v6.
  */
 @Deprecated

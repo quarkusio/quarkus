@@ -11,10 +11,6 @@ import jakarta.enterprise.inject.Instance;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;
 
-/**
- *
- * @author Martin Kouba
- */
 public class InstanceProvider<T> implements InjectableReferenceProvider<Instance<T>> {
 
     private final Type requiredType;

@@ -6,8 +6,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Additional Jpa model class that we need to index
- *
- * @author Stéphane Épardaud
  */
 public final class AdditionalJpaModelBuildItem extends MultiBuildItem {
 

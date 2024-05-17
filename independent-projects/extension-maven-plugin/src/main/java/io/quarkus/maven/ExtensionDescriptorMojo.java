@@ -85,8 +85,6 @@ import io.quarkus.maven.dependency.GACTV;
  * Also generates META-INF/quarkus-extension.json which includes properties of
  * the extension such as name, labels, maven coordinates, etc that are used by
  * the tools.
- *
- * @author Alexey Loubyansky
  */
 @Mojo(name = "extension-descriptor", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class ExtensionDescriptorMojo extends AbstractMojo {

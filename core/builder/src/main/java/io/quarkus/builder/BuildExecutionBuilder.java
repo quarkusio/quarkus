@@ -12,8 +12,6 @@ import io.quarkus.builder.item.BuildItem;
 
 /**
  * A builder for a deployer execution.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildExecutionBuilder {
     private final BuildChain buildChain;

@@ -41,10 +41,6 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.paths.PathList;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class LocalProject {
 
     private static final String SRC_TEST_RESOURCES = "src/test/resources";

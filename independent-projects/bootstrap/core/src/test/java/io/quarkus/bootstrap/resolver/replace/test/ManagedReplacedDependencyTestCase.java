@@ -5,10 +5,6 @@ import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.maven.dependency.DependencyFlags;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class ManagedReplacedDependencyTestCase extends CollectDependenciesBase {
 
     @Override

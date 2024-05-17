@@ -13,8 +13,6 @@ package io.quarkus.panache.common;
  * Page page = Page.ofSize(25);
  * Page secondPage = page.next();
  * </pre></code>
- *
- * @author Stéphane Épardaud
  */
 public class Page {
 

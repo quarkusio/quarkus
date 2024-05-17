@@ -18,7 +18,6 @@ import io.smallrye.mutiny.Uni;
 /**
  * Type conversions and generic type manipulations
  *
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public final class Types {

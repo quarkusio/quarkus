@@ -8,9 +8,6 @@ import jakarta.ws.rs.Path;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
 @Path("/roles")
 @PermitAll
 public class RolesAllowedResource {

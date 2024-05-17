@@ -11,10 +11,6 @@ import jakarta.transaction.Transactional;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
-/**
- * @author paul.robinson@redhat.com 25/05/2013
- */
-
 @Interceptor
 @Transactional(Transactional.TxType.REQUIRED)
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)

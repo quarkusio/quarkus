@@ -19,10 +19,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.util.IoUtils;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class MavenLocalRepositoryManager implements LocalRepositoryManager {
 
     private final LocalRepositoryManager delegate;

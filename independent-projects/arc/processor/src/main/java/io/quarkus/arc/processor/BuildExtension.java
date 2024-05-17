@@ -11,8 +11,6 @@ import org.jboss.jandex.IndexView;
 
 /**
  * Build-time extension point.
- *
- * @author Martin Kouba
  */
 public interface BuildExtension {
 

@@ -5,9 +5,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @PermitAll
 @ApplicationScoped
 public class SubclassWithPermitAll extends BeanWithSecuredMethods {

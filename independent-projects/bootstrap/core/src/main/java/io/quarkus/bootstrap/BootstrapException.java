@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class BootstrapException extends Exception {
 
     /**

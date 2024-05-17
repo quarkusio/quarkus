@@ -11,9 +11,6 @@ import jakarta.interceptor.InvocationContext;
 import io.quarkus.arc.InjectableInterceptor;
 
 /**
- *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public class InitializedInterceptor<T> implements InjectableInterceptor<T> {

@@ -19,7 +19,6 @@ import org.jboss.jandex.MethodInfo;
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
  *
- * @author Martin Kouba
  * @see AnnotationsTransformer
  */
 public final class AnnotationStore {

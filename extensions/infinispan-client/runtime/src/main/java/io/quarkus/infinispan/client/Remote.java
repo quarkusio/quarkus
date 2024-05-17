@@ -15,8 +15,6 @@ import jakarta.inject.Qualifier;
 
 /**
  * Qualifier used to specify which remote cache will be injected.
- *
- * @author William Burns
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)

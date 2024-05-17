@@ -23,9 +23,6 @@ import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.inject.ConfigProducerUtil;
 
-/**
- * @author Martin Kouba
- */
 @Recorder
 public class ConfigRecorder {
 

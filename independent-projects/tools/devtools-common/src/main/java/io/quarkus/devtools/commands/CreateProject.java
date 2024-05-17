@@ -25,8 +25,6 @@ import io.quarkus.platform.tools.ToolsUtils;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.
- *
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
 public class CreateProject {
 

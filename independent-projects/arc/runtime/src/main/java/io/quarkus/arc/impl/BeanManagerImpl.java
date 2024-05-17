@@ -46,9 +46,6 @@ import jakarta.interceptor.InterceptorBinding;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 
-/**
- * @author Martin Kouba
- */
 public class BeanManagerImpl implements BeanManager {
 
     static final LazyValue<BeanManagerImpl> INSTANCE = new LazyValue<>(BeanManagerImpl::new);

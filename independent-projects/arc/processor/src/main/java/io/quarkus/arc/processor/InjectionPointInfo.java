@@ -31,8 +31,6 @@ import org.jboss.jandex.Type;
 
 /**
  * Represents an injection point.
- *
- * @author Martin Kouba
  */
 public class InjectionPointInfo {
 

@@ -11,9 +11,6 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 /**
  * Maps from the Quarkus {@link TenantResolver} to the Hibernate {@link CurrentTenantIdentifierResolver} model.
- *
- * @author Michael Schnell
- *
  */
 // TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
 public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {

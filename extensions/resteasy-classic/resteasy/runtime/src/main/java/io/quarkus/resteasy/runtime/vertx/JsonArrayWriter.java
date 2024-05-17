@@ -19,8 +19,6 @@ import io.vertx.core.json.JsonArray;
 
 /**
  * A body writer that allows to return a Vert.x {@link JsonArray} as JAX-RS response content.
- *
- * @author Thomas Segismont
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)

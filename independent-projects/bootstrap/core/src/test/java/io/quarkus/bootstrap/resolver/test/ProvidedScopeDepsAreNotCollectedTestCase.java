@@ -5,10 +5,6 @@ import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class ProvidedScopeDepsAreNotCollectedTestCase extends CollectDependenciesBase {
 
     @Override

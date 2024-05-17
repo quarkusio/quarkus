@@ -12,9 +12,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.it.keycloak.model.User;
 import io.quarkus.security.identity.SecurityIdentity;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @Path("/recovered/api/users")
 public class UsersResourceOidcRecovered {
 

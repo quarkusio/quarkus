@@ -8,10 +8,6 @@ import java.nio.file.Path;
 
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 
-/**
- *
- * @author Martin Kouba
- */
 class ResourceImpl implements ResourceOutput.Resource {
 
     private final boolean applicationClass;

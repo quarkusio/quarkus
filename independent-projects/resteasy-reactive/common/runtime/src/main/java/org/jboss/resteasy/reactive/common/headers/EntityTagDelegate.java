@@ -3,9 +3,6 @@ package org.jboss.resteasy.reactive.common.headers;
 import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class EntityTagDelegate implements RuntimeDelegate.HeaderDelegate<EntityTag> {
     public static final EntityTagDelegate INSTANCE = new EntityTagDelegate();
 

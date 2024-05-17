@@ -19,9 +19,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 public class PersistenceXmlTest {
 
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");

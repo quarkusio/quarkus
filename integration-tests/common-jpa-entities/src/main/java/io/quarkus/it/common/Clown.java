@@ -4,9 +4,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @Entity
 public class Clown {
     private Long id;

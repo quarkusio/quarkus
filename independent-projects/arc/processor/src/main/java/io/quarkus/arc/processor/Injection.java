@@ -37,8 +37,6 @@ import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
  * <li>an observer method,</li>
  * <li>a managed bean method for which an invoker with argument lookups is created.</li>
  * </ul>
- *
- * @author Martin Kouba
  */
 public class Injection {
 

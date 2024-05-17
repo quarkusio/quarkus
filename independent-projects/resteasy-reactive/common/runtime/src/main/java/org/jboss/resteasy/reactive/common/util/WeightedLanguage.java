@@ -7,9 +7,6 @@ import java.util.Map;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class WeightedLanguage implements Comparable<WeightedLanguage> {
     private float weight = 1.0f;
     private String language;

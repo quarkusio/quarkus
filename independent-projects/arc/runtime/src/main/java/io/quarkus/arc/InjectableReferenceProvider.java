@@ -4,8 +4,6 @@ import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public interface InjectableReferenceProvider<T> {

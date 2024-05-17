@@ -3,10 +3,6 @@ package io.quarkus.arc.impl;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 
-/**
- * @author Marko Luksa
- * @author Jozef Hartinger
- */
 public class GenericArrayTypeImpl implements GenericArrayType {
 
     private Type genericComponentType;

@@ -2,9 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.util.Locale;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class LocaleHelper {
     public static Locale extractLocale(String lang) {
         int q = lang.indexOf(';');

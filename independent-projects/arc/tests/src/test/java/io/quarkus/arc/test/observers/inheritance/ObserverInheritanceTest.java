@@ -9,11 +9,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- *         <br>
- *         Date: 18/07/2019
- */
 public class ObserverInheritanceTest {
 
     @RegisterExtension

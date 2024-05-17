@@ -8,8 +8,6 @@ import java.io.IOException;
  * form data.
  * <p>
  * This parser must be closed to make sure any temporary files have been cleaned up.
- *
- * @author Stuart Douglas
  */
 public interface FormDataParser extends Closeable {
 

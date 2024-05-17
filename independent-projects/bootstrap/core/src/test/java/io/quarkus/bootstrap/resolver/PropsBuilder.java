@@ -2,10 +2,6 @@ package io.quarkus.bootstrap.resolver;
 
 import java.util.Properties;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class PropsBuilder {
 
     public static Properties build(String name, Object value) {

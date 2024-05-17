@@ -14,10 +14,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class TsRepoBuilder {
 
     private static void error(String message, Throwable t) {

@@ -16,8 +16,6 @@ import io.quarkus.arc.processor.BuildExtension.BuildContext;
  * type. This is used in {@link InjectionPointInfo}, prior to creating actual injection points.
  *
  * In order to operate on up-to-date annotations, this class also leverages {@link AnnotationStore}.
- *
- * @author Matej Novotny
  */
 public class InjectionPointModifier {
 

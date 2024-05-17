@@ -19,8 +19,6 @@ import java.util.Map;
  *     .and("gee", gee)
  *     .map();
  * </pre></code>
- *
- * @author Stéphane Épardaud
  */
 public class Parameters {
     private final Map<String, Object> values = new HashMap<>();

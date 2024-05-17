@@ -7,9 +7,6 @@ import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @Path("/api/admin")
 public class AdminResource {
 

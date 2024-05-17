@@ -54,9 +54,6 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * need to be enhanced, collect them for storage in the JPADeploymentTemplate and registered
  * for reflective access.
  * TODO some of these are going to be redundant?
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class JpaJandexScavenger {
 

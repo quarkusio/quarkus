@@ -6,8 +6,6 @@ import jakarta.persistence.Id;
 
 /**
  * Used to test reflection references for JPA
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @Entity
 public class Customer extends Human {

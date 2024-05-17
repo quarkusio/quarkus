@@ -14,8 +14,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Application model resolver used to resolve application and/or its dependency artifacts.
- *
- * @author Alexey Loubyansky
  */
 public interface AppModelResolver {
 

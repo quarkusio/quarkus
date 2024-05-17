@@ -7,9 +7,6 @@ import org.wildfly.common.Assert;
 
 import io.quarkus.builder.diag.Diagnostic;
 
-/**
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
- */
 public class BuildException extends Exception {
     private static final long serialVersionUID = -2190774463525631311L;
 

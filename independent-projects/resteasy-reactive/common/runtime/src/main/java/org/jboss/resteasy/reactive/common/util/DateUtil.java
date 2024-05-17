@@ -14,9 +14,6 @@ import java.util.TimeZone;
  * A utility class for parsing and formatting HTTP dates as used in cookies and
  * other headers. This class handles dates as defined by RFC 2616 section
  * 3.3.1 as well as some other common non-standard formats.
- *
- * @author Christopher Brown
- * @author Michael Becke
  */
 public class DateUtil {
 

@@ -5,8 +5,6 @@ import java.util.function.Supplier;
 
 /**
  * {@link Supplier} implementation that supplies a value from a map. The key is pre-configured.
- *
- * @author Maarten Mulders
  */
 public class MapValueSupplier<T> implements Supplier<T> {
 

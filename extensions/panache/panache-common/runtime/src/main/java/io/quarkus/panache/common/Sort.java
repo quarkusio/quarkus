@@ -19,15 +19,12 @@ import java.util.List;
  * Sort sort3 = Sort.descending("name", "age");
  * </pre></code>
  *
- * @author Stéphane Épardaud
  * @see Direction
  */
 public class Sort {
 
     /**
      * Represents an SQL direction in which to sort results.
-     *
-     * @author Stéphane Épardaud
      */
     public enum Direction {
         /**

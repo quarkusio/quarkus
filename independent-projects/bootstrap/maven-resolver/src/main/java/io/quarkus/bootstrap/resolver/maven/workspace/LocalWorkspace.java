@@ -23,10 +23,6 @@ import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, ProjectModuleResolver {
 
     private final Map<ArtifactKey, LocalProject> projects = new HashMap<>();

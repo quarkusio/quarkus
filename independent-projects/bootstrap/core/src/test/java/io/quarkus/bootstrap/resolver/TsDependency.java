@@ -7,10 +7,6 @@ import java.util.List;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class TsDependency {
 
     protected final TsArtifact artifact;

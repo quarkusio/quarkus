@@ -20,8 +20,6 @@ import io.vertx.core.http.HttpServerResponse;
 /**
  * Helper/delegate class to unify Servlet and Filter dispatcher implementations
  *
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- * @author Norman Maurer
  * @version $Revision: 1 $
  */
 public class RequestDispatcher {

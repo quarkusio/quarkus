@@ -4,9 +4,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
-/**
- * @author Sanne Grinovero <sanne@hibernate.org>
- */
 public final class OracleNativeImage {
 
     /**

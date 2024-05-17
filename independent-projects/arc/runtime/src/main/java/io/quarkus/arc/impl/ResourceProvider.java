@@ -13,7 +13,6 @@ import io.quarkus.arc.ResourceReferenceProvider;
 /**
  * Represents a placeholder for all suppored non-CDI injection points.
  *
- * @author Martin Kouba
  * @see ResourceReferenceProvider
  */
 public class ResourceProvider implements InjectableReferenceProvider<Object> {

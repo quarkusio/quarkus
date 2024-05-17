@@ -9,9 +9,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @Path("/opaque/api/admin/bearer")
 public class OpaqueAdminResource {
 

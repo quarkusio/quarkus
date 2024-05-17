@@ -9,8 +9,6 @@ import io.quarkus.arc.InjectableReferenceProvider;
 
 /**
  * {@link Bean} metadata provider.
- *
- * @author Martin Kouba
  */
 public class BeanMetadataProvider implements InjectableReferenceProvider<InjectableBean<?>> {
 

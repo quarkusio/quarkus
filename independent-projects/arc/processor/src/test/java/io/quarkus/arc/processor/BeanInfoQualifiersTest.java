@@ -21,10 +21,6 @@ import io.quarkus.arc.processor.types.Bar;
 import io.quarkus.arc.processor.types.Foo;
 import io.quarkus.arc.processor.types.FooQualifier;
 
-/**
- *
- * @author Martin Kouba
- */
 public class BeanInfoQualifiersTest {
 
     @Test

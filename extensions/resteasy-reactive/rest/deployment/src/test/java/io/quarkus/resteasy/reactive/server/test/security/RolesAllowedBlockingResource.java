@@ -10,9 +10,7 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Path("/roles-blocking")
 @PermitAll
 @Blocking

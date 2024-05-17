@@ -10,9 +10,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class DenyingUnannotatedTransformer implements AnnotationsTransformer {
 
     @Override

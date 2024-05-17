@@ -15,11 +15,6 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.ext.web.RoutingContext;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- *         <br>
- *         Date: 05/10/2019
- */
 @Provider
 @Priority(Priorities.USER + 1)
 public class UnauthorizedExceptionMapper implements ExceptionMapper<UnauthorizedException> {

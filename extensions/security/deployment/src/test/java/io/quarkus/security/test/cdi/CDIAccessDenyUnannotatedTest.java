@@ -23,9 +23,7 @@ import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class CDIAccessDenyUnannotatedTest {
 
     @Inject

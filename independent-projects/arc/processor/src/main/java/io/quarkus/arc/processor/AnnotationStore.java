@@ -25,7 +25,6 @@ import io.quarkus.arc.processor.BuildExtension.BuildContext;
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
  *
- * @author Martin Kouba
  * @see AnnotationsTransformer
  */
 public final class AnnotationStore {

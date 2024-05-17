@@ -43,9 +43,6 @@ import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.test.devmode.util.DevModeClient;
 
-/**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
- */
 @DisableForNative
 public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 

@@ -4,10 +4,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-/**
- *
- * @author Martin Kouba
- */
 public class LazyValue<T> {
 
     private final Supplier<T> supplier;

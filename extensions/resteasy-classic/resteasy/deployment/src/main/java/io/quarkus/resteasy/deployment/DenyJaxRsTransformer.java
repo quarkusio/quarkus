@@ -9,9 +9,6 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
 public class DenyJaxRsTransformer implements AnnotationsTransformer {
     private final ResteasyDeployment resteasyDeployment;
 

@@ -6,9 +6,7 @@ import jakarta.ws.rs.Path;
 
 import io.smallrye.common.annotation.Blocking;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Path("/permitAllBlocking")
 @PermitAll
 @Blocking

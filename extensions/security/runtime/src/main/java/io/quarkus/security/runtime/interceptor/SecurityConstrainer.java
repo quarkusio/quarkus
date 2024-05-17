@@ -22,9 +22,7 @@ import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.smallrye.mutiny.Uni;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Singleton
 public class SecurityConstrainer {
 

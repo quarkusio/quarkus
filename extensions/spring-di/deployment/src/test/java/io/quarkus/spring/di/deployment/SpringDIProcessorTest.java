@@ -39,9 +39,6 @@ import org.springframework.stereotype.Service;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.DotNames;
 
-/**
- * @author <a href="mailto:brent.n.douglas@gmail.com">Brent Douglas</a>
- */
 class SpringDIProcessorTest {
 
     final SpringDIProcessor processor = new SpringDIProcessor();

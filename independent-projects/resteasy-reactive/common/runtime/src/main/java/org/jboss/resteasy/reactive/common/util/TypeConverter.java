@@ -13,7 +13,6 @@ import java.util.Map;
 /**
  * A utility class that can convert a String value as a typed object.
  *
- * @author <a href="ryan@damnhandy.com">Ryan J. McDonough</a>
  * @version $Revision: $
  *
  *          TODO: Do we really need this?

@@ -4,10 +4,6 @@ import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class OnlyDirectOptionalDepsAreCollectedTestCase extends CollectDependenciesBase {
 
     @Override

@@ -25,8 +25,6 @@ import io.quarkus.builder.item.BuildItem;
 
 /**
  * A build chain builder.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildChainBuilder {
 

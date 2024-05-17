@@ -4,8 +4,6 @@ import jakarta.persistence.Embeddable;
 
 /**
  * Class marked @Embeddable explicitly so it is picked up.
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @Embeddable
 public class WorkAddress {

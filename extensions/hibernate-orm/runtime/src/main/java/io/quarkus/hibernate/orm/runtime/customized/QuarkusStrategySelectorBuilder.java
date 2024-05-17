@@ -40,8 +40,6 @@ import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
  * Similar to {@link org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder} but
  * omits registering the components we don't support, and uses a new pattern of registration
  * meant to avoid class initializations.
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class QuarkusStrategySelectorBuilder {
 

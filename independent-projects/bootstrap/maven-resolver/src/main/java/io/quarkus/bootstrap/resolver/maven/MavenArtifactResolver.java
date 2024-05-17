@@ -49,10 +49,6 @@ import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class MavenArtifactResolver {
 
     private static final String SECONDARY_LOCAL_REPO_PROP = "io.quarkus.maven.secondary-local-repo";

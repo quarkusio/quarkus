@@ -6,10 +6,6 @@ import java.util.Map;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class SimpleDependencyGraphTransformationContext implements DependencyGraphTransformationContext {
 
     private final RepositorySystemSession session;

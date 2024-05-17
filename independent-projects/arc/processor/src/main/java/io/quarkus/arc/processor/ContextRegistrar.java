@@ -6,8 +6,6 @@ import io.quarkus.arc.InjectableContext;
 
 /**
  * Use this extension point to register a custom {@link InjectableContext} implementation.
- *
- * @author Martin Kouba
  */
 public interface ContextRegistrar extends BuildExtension {
 

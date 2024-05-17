@@ -25,8 +25,6 @@ import io.quarkus.arc.impl.EventImpl.Notifier;
 
 /**
  * The built-in context for {@link RequestScoped}.
- *
- * @author Martin Kouba
  */
 class RequestContext implements ManagedContext {
 

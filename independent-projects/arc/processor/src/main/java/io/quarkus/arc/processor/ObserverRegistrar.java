@@ -2,8 +2,6 @@ package io.quarkus.arc.processor;
 
 /**
  * Allows a build-time extension to register synthetic observers.
- *
- * @author Martin Kouba
  */
 public interface ObserverRegistrar extends BuildExtension {
 

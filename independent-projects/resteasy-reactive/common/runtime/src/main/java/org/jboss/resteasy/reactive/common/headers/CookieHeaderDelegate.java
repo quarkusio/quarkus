@@ -5,9 +5,6 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.CookieParser;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class CookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate<Cookie> {
     public static final CookieHeaderDelegate INSTANCE = new CookieHeaderDelegate();
 

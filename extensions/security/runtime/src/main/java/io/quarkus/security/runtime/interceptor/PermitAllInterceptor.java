@@ -7,9 +7,7 @@ import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Interceptor
 @PermitAll
 @Priority(Interceptor.Priority.LIBRARY_BEFORE)

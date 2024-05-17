@@ -8,9 +8,7 @@ import jakarta.ws.rs.Path;
 import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.NonBlocking;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Path("/unsecured")
 public class UnsecuredResource extends UnsecuredParentResource implements UnsecuredResourceInterface {
     @Path("/defaultSecurity")

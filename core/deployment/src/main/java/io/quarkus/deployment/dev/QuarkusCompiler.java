@@ -30,8 +30,6 @@ import io.quarkus.paths.PathCollection;
 
 /**
  * Class that handles compilation of source files
- *
- * @author Stuart Douglas
  */
 public class QuarkusCompiler implements Closeable {
 

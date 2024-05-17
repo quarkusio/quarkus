@@ -13,9 +13,6 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-/**
- * @author Thomas Ssegismont
- */
 @Path("/json-bodies")
 public class JsonTestResource {
 

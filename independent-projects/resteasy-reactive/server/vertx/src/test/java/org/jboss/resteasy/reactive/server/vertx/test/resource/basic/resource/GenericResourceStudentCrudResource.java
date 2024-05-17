@@ -9,8 +9,6 @@ import jakarta.ws.rs.Produces;
 
 /**
  * RESTEasy should be able to use type parameter values (Student, Integer) for (de)marshalling parameters/entity body.
- *
- * @author Jozef Hartinger
  */
 @Path("/student")
 @Produces("application/student")

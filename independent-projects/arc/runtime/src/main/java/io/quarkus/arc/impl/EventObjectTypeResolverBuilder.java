@@ -35,9 +35,6 @@ import java.util.Map.Entry;
  * L -> String
  *
  * and resolves E to String. The resolver is capable of doing it recursively for parameterized types.
- *
- * @author Jozef Hartinger
- *
  */
 class EventObjectTypeResolverBuilder {
 

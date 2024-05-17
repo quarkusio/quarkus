@@ -21,8 +21,6 @@ import io.quarkus.hibernate.orm.deployment.HibernateEntityEnhancer;
 
 /**
  * Verifies the HibernateEntityEnhancer actually does enhance the entity class
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public class HibernateEntityEnhancerTest {
 

@@ -7,9 +7,6 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<CacheControl> {
     public static final CacheControlDelegate INSTANCE = new CacheControlDelegate();
 

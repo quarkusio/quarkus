@@ -27,9 +27,6 @@ import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
-/**
- * @author Alexey Loubyansky
- */
 public class ModelUtils {
 
     /**

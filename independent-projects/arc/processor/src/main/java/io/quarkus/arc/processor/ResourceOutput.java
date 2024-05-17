@@ -5,8 +5,6 @@ import java.io.IOException;
 
 /**
  * Represents a generated resource.
- *
- * @author Martin Kouba
  */
 public interface ResourceOutput {
 

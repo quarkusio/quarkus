@@ -12,9 +12,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 @SuppressWarnings({ "ForLoopReplaceableByForEach" })
 public class MediaTypeHelper {
     public static final MediaTypeComparator Q_COMPARATOR = new MediaTypeComparator("q");

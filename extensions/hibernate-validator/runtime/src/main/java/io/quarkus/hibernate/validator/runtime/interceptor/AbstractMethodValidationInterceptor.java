@@ -24,9 +24,6 @@ import jakarta.validation.executable.ExecutableValidator;
  * An interceptor which performs a validation of the Bean Validation constraints
  * specified at the parameters and/or return values of intercepted methods using
  * the method validation functionality provided by Hibernate Validator.
- *
- * @author Gunnar Morling
- * @author Hardy Ferentschik
  */
 public abstract class AbstractMethodValidationInterceptor implements Serializable {
 

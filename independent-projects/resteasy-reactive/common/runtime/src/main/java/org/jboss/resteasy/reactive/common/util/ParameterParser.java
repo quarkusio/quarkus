@@ -11,8 +11,6 @@ import java.util.Map;
  * <p>
  * <code>param1 = value; param2 = "anything goes; really"; param3</code>
  * </p>
- *
- * @author <a href="mailto:oleg@ural.ru">Oleg Kalnichevski</a>
  */
 
 @SuppressWarnings("ForLoopReplaceableByForEach")

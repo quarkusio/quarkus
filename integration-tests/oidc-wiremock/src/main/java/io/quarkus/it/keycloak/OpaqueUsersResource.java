@@ -10,9 +10,6 @@ import jakarta.ws.rs.core.MediaType;
 import io.quarkus.it.keycloak.model.User;
 import io.quarkus.security.identity.SecurityIdentity;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @Path("/opaque/api/users")
 public class OpaqueUsersResource {
 

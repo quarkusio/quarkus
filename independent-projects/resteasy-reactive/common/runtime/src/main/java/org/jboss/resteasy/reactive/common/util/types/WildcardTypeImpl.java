@@ -9,9 +9,6 @@ import java.lang.reflect.WildcardType;
  * Implementation of {@link WildcardType}.
  *
  * Note that per JLS a wildcard may define either the upper bound or the lower bound. A wildcard may not have multiple bounds.
- *
- * @author Jozef Hartinger
- *
  */
 public class WildcardTypeImpl implements WildcardType {
 

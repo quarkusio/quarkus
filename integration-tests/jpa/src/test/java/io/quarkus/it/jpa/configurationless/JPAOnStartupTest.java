@@ -7,9 +7,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @QuarkusTest
 public class JPAOnStartupTest {
 

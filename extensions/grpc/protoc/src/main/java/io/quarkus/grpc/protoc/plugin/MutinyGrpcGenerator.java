@@ -17,9 +17,6 @@ import com.salesforce.jprotoc.GeneratorException;
 import com.salesforce.jprotoc.ProtoTypeMap;
 import com.salesforce.jprotoc.ProtocPlugin;
 
-/**
- * @author Paulo Lopes
- */
 public class MutinyGrpcGenerator extends Generator {
 
     private static final Logger log = Logger.getLogger(MutinyGrpcGenerator.class.getName());

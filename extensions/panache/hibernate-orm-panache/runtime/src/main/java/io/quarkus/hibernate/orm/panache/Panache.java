@@ -11,8 +11,6 @@ import io.quarkus.panache.common.Parameters;
 
 /**
  * Utility class for Panache.
- *
- * @author Stéphane Épardaud
  */
 public class Panache {
 

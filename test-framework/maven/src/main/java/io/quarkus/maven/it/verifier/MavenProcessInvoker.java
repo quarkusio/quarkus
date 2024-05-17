@@ -11,8 +11,6 @@ import org.apache.maven.shared.utils.cli.StreamPumper;
 /**
  * An implementation of {@link DefaultInvoker} launching Maven, but does not wait for the termination of the process.
  * The launched process is passed in the {@link InvocationResult}.
- *
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 public class MavenProcessInvoker extends DefaultInvoker {
 

@@ -5,10 +5,6 @@ import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.InjectableReferenceProvider;
 
-/**
- *
- * @author Martin Kouba
- */
 public class InjectionPointProvider implements InjectableReferenceProvider<InjectionPoint> {
 
     @Override

@@ -32,10 +32,6 @@ import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-/**
- *
- * @author Martin Kouba
- */
 public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
 
     private static final Logger LOGGER = Logger.getLogger(InterceptorInfo.class);

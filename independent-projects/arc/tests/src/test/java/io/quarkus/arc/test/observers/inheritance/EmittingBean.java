@@ -4,11 +4,6 @@ import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- *         <br>
- *         Date: 18/07/2019
- */
 @Singleton
 public class EmittingBean {
 

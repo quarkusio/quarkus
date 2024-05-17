@@ -51,9 +51,6 @@ import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 
-/**
- * @author Alexey Loubyansky
- */
 public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;

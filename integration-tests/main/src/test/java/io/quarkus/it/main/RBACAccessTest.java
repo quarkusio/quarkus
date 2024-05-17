@@ -10,9 +10,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @QuarkusTest
 public class RBACAccessTest {
 

@@ -9,9 +9,6 @@ import java.util.Map.Entry;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 
-/**
- * @author Pascal S. de Kloe
- */
 public class AcceptHeaders {
 
     /**

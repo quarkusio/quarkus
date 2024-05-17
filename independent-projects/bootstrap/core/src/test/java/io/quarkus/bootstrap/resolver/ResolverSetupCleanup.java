@@ -24,10 +24,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class ResolverSetupCleanup {
 
     protected Path workDir;

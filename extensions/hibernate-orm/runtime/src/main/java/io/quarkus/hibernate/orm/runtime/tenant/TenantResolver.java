@@ -2,9 +2,6 @@ package io.quarkus.hibernate.orm.runtime.tenant;
 
 /**
  * Resolves tenant identifier dynamically so that the proper configuration can be used.
- *
- * @author Michael Schnell
- *
  */
 public interface TenantResolver {
 

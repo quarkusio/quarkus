@@ -8,8 +8,6 @@ import org.jboss.jandex.DotName;
 
 /**
  * Allows a build-time extension to register synthetic beans.
- *
- * @author Martin Kouba
  */
 public interface BeanRegistrar extends BuildExtension {
 

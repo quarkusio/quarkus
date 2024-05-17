@@ -33,9 +33,6 @@ import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
-/**
- * @author Stuart Douglas
- */
 public class MultiPartParserDefinition implements FormParserFactory.ParserDefinition<MultiPartParserDefinition> {
 
     private static final Logger log = Logger.getLogger(MultiPartParserDefinition.class);

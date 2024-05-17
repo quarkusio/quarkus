@@ -20,9 +20,6 @@ import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class UriBuilderImpl extends UriBuilder {
 
     private static final class URITemplateParametersMap extends HashMap<String, Object> {

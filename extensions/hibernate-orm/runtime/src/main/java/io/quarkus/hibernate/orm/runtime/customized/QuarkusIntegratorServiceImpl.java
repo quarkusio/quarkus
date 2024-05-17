@@ -12,7 +12,6 @@ import org.hibernate.integrator.spi.IntegratorService;
  * control.
  *
  * @see org.hibernate.integrator.internal.IntegratorServiceImpl
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class QuarkusIntegratorServiceImpl implements IntegratorService {
 

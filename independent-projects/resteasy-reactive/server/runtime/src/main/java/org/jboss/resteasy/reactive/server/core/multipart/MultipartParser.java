@@ -9,9 +9,6 @@ import java.util.Collections;
 
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
-/**
- * @author Stuart Douglas
- */
 public class MultipartParser {
 
     /**

@@ -6,9 +6,6 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class DateDelegate implements RuntimeDelegate.HeaderDelegate<Date> {
     public static final DateDelegate INSTANCE = new DateDelegate();
 

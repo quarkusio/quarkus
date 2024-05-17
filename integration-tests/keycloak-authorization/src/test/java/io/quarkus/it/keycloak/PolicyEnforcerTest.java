@@ -26,9 +26,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
 @QuarkusTestResource(KeycloakLifecycleManager.class)
 public class PolicyEnforcerTest {

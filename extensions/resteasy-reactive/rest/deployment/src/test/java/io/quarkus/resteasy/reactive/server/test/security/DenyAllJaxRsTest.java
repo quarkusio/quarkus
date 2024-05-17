@@ -26,9 +26,6 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
 public class DenyAllJaxRsTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()

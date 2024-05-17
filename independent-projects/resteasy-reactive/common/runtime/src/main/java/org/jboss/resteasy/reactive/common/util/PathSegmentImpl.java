@@ -6,9 +6,6 @@ import java.util.List;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class PathSegmentImpl implements PathSegment {
     private String path;
     private String original;

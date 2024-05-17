@@ -6,9 +6,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-/**
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
- */
 public final class Version {
     private static final String VERSION;
     private static final String JAR_NAME;

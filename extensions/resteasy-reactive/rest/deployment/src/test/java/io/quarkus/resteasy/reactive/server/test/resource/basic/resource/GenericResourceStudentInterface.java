@@ -9,8 +9,6 @@ import jakarta.ws.rs.Produces;
 
 /**
  * This interface is used on the client side only.
- *
- * @author Jozef Hartinger
  */
 
 @Path("/student/{id}")

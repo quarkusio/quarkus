@@ -9,9 +9,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @Path("/api/users")
 public class UsersResource {
 

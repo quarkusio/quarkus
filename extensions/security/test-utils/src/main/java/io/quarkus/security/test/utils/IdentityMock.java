@@ -17,9 +17,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Alternative
 @ApplicationScoped
 @Priority(1)

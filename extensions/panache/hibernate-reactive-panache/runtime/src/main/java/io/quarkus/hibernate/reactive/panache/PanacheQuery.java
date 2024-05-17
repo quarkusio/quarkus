@@ -26,8 +26,6 @@ import io.smallrye.mutiny.Uni;
  * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
  * modified, and instances of this interface can be reused to obtain multiple pages of results.
  * </p>
- *
- * @author Stéphane Épardaud
  * @param <Entity> The entity type being queried
  */
 public interface PanacheQuery<Entity> {

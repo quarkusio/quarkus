@@ -4,9 +4,6 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 
 /**
  * Resolves the {@link ConnectionProvider} for tenants dynamically.
- *
- * @author Michael Schnell
- *
  */
 public interface TenantConnectionResolver {
 

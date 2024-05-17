@@ -41,9 +41,6 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.http.HttpClient;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class BearerTokenAuthorizationTest {

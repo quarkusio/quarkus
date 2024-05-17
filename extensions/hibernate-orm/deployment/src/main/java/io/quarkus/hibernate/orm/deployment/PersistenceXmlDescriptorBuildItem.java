@@ -9,8 +9,6 @@ import io.quarkus.builder.item.MultiBuildItem;
  * of a persistence.xml file as it is after being located and parsed.
  * Exposed as a possible integration API: other extensions can produce additional
  * configuration instances.
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class PersistenceXmlDescriptorBuildItem extends MultiBuildItem {
 

@@ -23,7 +23,6 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  * implement this interface directly but implement {@link PanacheRepository} instead.
  * </p>
  *
- * @author Stéphane Épardaud
  * @param <Entity> The type of entity to operate on
  * @param <Id> The ID type of the entity
  */

@@ -65,9 +65,6 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
 
     /**
      * Represents a byte range for a range request
-     *
-     * @author Stuart Douglas
-     *
      *         NOTE: copied from Quarkus HTTP
      */
     public static class ByteRange {

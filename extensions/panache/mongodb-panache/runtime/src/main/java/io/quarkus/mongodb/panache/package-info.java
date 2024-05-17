@@ -94,7 +94,5 @@
  * <code>@BsonProperty</code>, but you can still use parameterized queries by index or name.<br/>
  * <code>find("{'field':?1}", value)</code> or <code>find("{'field'::key}", value)</code>
  * </p>
- *
- * @author Loïc Mathieu
  */
 package io.quarkus.mongodb.panache;

@@ -14,9 +14,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
     private static final Set<DotName> SECURITY_ANNOTATIONS = Set.of(DotName.createSimple(RolesAllowed.class.getName()),

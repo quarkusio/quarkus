@@ -21,8 +21,6 @@ package io.quarkus.vertx.http.runtime.filters.accesslog;
 /**
  * Interface that generates the header for an access log. This is called
  * every time a new log file is started.
- *
- * @author Stuart Douglas
  */
 public interface LogFileHeaderGenerator {
 

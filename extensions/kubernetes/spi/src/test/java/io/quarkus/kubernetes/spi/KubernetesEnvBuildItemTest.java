@@ -21,9 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * @author <a href="claprun@redhat.com">Christophe Laprun</a>
- */
 public class KubernetesEnvBuildItemTest {
 
     private static final String TARGET = "target";

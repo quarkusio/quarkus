@@ -13,9 +13,7 @@ import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.security.Authenticated;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Path("/rbac-secured")
 public class RBACSecuredResource {
 

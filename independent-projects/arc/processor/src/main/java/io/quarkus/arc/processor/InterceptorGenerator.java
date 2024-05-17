@@ -44,10 +44,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-/**
- *
- * @author Martin Kouba
- */
 public class InterceptorGenerator extends BeanGenerator {
 
     protected static final String FIELD_NAME_BINDINGS = "bindings";

@@ -9,9 +9,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-/**
- * @author Thomas Segismont
- */
 @QuarkusTest
 public class JsonWriterTest {
 

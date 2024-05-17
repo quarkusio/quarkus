@@ -13,7 +13,6 @@ import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.common.util.OrderedParameterParser;
 
 /**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {

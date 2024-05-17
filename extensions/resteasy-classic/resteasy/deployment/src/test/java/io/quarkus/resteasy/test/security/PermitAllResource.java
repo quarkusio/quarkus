@@ -4,9 +4,6 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
 @Path("/permitAll")
 @PermitAll
 public class PermitAllResource {

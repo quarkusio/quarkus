@@ -7,8 +7,6 @@ import jakarta.enterprise.inject.spi.DeploymentException;
 
 /**
  * Makes it possible to validate the bean deployment and also to skip some validation rules for specific components.
- *
- * @author Martin Kouba
  */
 public interface BeanDeploymentValidator extends BuildExtension {
 

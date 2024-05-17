@@ -15,10 +15,6 @@ import java.util.UUID;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.fs.util.ZipUtils;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class TsJar implements TsArtifact.ContentProvider {
 
     private Path target;

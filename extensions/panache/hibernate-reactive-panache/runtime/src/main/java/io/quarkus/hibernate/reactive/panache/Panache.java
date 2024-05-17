@@ -12,8 +12,6 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Utility class for Panache.
- *
- * @author Stéphane Épardaud
  */
 public class Panache {
 

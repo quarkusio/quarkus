@@ -18,7 +18,6 @@ import jakarta.persistence.Transient;
  * all the useful methods.
  * </p>
  *
- * @author Stéphane Épardaud
  * @see PanacheEntityBase
  */
 @MappedSuperclass

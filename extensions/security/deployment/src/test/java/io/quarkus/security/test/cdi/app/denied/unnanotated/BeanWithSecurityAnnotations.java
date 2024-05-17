@@ -8,9 +8,7 @@ import jakarta.inject.Named;
 
 import io.quarkus.security.Authenticated;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @ApplicationScoped
 @Named(BeanWithSecurityAnnotations.NAME)
 public class BeanWithSecurityAnnotations {

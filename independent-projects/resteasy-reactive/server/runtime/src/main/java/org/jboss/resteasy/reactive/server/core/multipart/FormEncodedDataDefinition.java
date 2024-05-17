@@ -21,8 +21,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
  * Parser definition for form encoded data. This handler takes effect for any request that has a mime type
  * of application/x-www-form-urlencoded. The handler attaches a {@link FormDataParser} to the chain
  * that can parse the underlying form data asynchronously.
- *
- * @author Stuart Douglas
  */
 public class FormEncodedDataDefinition implements FormParserFactory.ParserDefinition<FormEncodedDataDefinition> {
 

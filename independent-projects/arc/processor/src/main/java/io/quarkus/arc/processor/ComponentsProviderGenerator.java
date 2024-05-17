@@ -43,10 +43,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 
-/**
- *
- * @author Martin Kouba
- */
 public class ComponentsProviderGenerator extends AbstractGenerator {
 
     static final String COMPONENTS_PROVIDER_SUFFIX = "_ComponentsProvider";

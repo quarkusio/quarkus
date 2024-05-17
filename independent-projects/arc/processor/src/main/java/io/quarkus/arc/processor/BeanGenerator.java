@@ -79,10 +79,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 
-/**
- *
- * @author Martin Kouba
- */
 public class BeanGenerator extends AbstractGenerator {
 
     static final String BEAN_SUFFIX = "_Bean";

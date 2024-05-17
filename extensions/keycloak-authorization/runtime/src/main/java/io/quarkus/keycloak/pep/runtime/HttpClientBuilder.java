@@ -98,7 +98,6 @@ public class HttpClientBuilder {
     }
 
     /**
-     * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
      * @version $Revision: 1 $
      */
     private static class PassthroughTrustManager implements X509TrustManager {

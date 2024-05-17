@@ -6,9 +6,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Named;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @DenyAll
 @ApplicationScoped
 @Named(SubclassWithDenyAll.NAME)

@@ -22,8 +22,6 @@ import org.jboss.logging.Logger;
 
 /**
  * Access log receiver that logs messages at INFO level.
- *
- * @author Stuart Douglas
  */
 public class JBossLoggingAccessLogReceiver implements AccessLogReceiver {
 

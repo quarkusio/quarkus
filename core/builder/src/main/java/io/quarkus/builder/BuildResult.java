@@ -14,8 +14,6 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * The final result of a successful deployment operation.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildResult {
     private final ConcurrentHashMap<ItemId, BuildItem> simpleItems;

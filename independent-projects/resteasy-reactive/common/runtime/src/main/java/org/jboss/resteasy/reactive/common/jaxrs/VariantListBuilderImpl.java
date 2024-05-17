@@ -8,9 +8,6 @@ import java.util.Locale;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Variant;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class VariantListBuilderImpl extends Variant.VariantListBuilder {
     private final ArrayList<Variant> variants = new ArrayList<Variant>();
     private final ArrayList<Locale> currentLanguages = new ArrayList<Locale>();

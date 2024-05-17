@@ -2,9 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.nio.charset.StandardCharsets;
 
-/**
- * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
- */
 public final class URIDecoder {
 
     private URIDecoder() {

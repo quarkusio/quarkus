@@ -17,8 +17,6 @@ import jakarta.persistence.Transient;
  * instead, and write your own ID field. You will still get auto-generated accessors and
  * all the useful methods.
  * </p>
- *
- * @author Stéphane Épardaud
  * @see PanacheEntityBase
  */
 @MappedSuperclass

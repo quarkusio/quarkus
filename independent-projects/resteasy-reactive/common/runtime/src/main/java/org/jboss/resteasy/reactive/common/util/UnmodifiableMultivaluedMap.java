@@ -12,7 +12,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 /**
  * Unmodifiable implementation of {@link jakarta.ws.rs.core.MultivaluedMap} interface
  *
- * @author <a href="mailto:mstefank@redhat.conm">Martin Stefanko</a>
  * @version $Revision: 1 $
  */
 public class UnmodifiableMultivaluedMap<K, V> implements MultivaluedMap<K, V> {

@@ -25,9 +25,6 @@ import java.lang.reflect.WildcardType;
  *
  * TypeVariables are considered a specific unknown type restricted by the upper bound. No inference of type variables is
  * performed.
- *
- * @author Jozef Hartinger
- *
  */
 class InvariantTypes {
 

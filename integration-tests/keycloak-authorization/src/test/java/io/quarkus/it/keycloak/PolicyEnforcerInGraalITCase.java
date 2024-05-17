@@ -6,9 +6,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusIntegrationTest
 public class PolicyEnforcerInGraalITCase extends PolicyEnforcerTest {
 

@@ -10,11 +10,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- *         <br>
- *         Date: 18/07/2019
- */
 @ApplicationScoped
 @ObservingBean.THIS
 public class ObservingBean {

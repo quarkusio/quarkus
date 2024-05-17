@@ -11,8 +11,6 @@ import org.jboss.jandex.Type;
 /**
  * Allows a build-time extension to alter qualifiers on an injection point.
  * <p>
- *
- * @author Matej Novotny
  */
 public interface InjectionPointsTransformer extends BuildExtension {
 

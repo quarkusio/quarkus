@@ -34,10 +34,6 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.WithCaching;
 
-/**
- *
- * @author Martin Kouba
- */
 public class InstanceImpl<T> implements InjectableInstance<T> {
 
     public static Instance<Object> forSynthesis(CreationalContextImpl<?> creationalContext, boolean allowInjectionPointLookup) {

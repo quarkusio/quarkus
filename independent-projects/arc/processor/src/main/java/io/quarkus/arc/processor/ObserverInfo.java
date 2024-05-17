@@ -34,8 +34,6 @@ import io.quarkus.gizmo.MethodCreator;
 
 /**
  * Represents an observer method.
- *
- * @author Martin Kouba
  */
 public class ObserverInfo implements InjectionTargetInfo {
 

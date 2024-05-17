@@ -5,9 +5,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 @Entity
 public class Gift {
     private Long id;

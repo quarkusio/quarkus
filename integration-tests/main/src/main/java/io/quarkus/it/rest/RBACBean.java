@@ -7,9 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.security.Authenticated;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @ApplicationScoped
 public class RBACBean {
 

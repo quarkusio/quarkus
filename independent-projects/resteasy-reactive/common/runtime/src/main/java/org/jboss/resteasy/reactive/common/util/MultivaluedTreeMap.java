@@ -12,9 +12,6 @@ import java.util.function.BiConsumer;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class MultivaluedTreeMap<K, V> implements QuarkusMultivaluedMap<K, V>, Serializable {
     private static final long serialVersionUID = -5819694356897323354L;
 

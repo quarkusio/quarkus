@@ -8,9 +8,6 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-/**
- * @author William Burns
- */
 @TargetClass(ConfigurationProperties.class)
 public final class SubstituteConfigurationProperties {
     @Alias

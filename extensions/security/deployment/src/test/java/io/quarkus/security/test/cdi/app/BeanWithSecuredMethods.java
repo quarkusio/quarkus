@@ -9,9 +9,7 @@ import jakarta.inject.Named;
 
 import io.smallrye.mutiny.Uni;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @ApplicationScoped
 @Named(BeanWithSecuredMethods.NAME)
 public class BeanWithSecuredMethods {

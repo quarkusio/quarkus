@@ -47,10 +47,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-/**
- *
- * @author Martin Kouba
- */
 public final class Types {
 
     static final Logger LOGGER = Logger.getLogger(Types.class);

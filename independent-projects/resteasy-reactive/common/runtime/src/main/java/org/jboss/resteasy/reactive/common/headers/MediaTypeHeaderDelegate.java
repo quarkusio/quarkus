@@ -9,9 +9,6 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.HeaderParameterParser;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<MediaType> {
     public static final MediaTypeHeaderDelegate INSTANCE = new MediaTypeHeaderDelegate();
     private static final int MAX_MT_CACHE_SIZE = 200;

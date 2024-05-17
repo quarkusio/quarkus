@@ -19,8 +19,6 @@ import io.vertx.core.json.JsonObject;
 
 /**
  * A body writer that allows to return a Vert.x {@link JsonObject} as JAX-RS response content.
- *
- * @author Thomas Segismont
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)

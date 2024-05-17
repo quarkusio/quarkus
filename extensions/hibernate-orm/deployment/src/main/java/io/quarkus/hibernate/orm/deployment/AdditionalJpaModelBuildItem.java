@@ -7,7 +7,6 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Additional Jpa model class that we need to index
  *
- * @author Stéphane Épardaud
  * @deprecated Use {@link io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem} instead.
  *             Kept only temporarily for backwards compatibility with external extensions
  *             e.g. <a href="https://github.com/quarkiverse/quarkus-jberet">quarkus-jberet</a>

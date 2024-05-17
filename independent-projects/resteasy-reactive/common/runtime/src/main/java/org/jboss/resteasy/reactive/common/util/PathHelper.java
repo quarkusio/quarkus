@@ -9,9 +9,6 @@ import java.util.regex.Pattern;
  * A utility class for handling URI template parameters. As the Java
  * regulare expressions package does not handle named groups, this
  * class attempts to simulate that functionality by using groups.
- *
- * @author Ryan J. McDonough
- * @author Bill Burke
  */
 public class PathHelper {
     public static final String URI_PARAM_NAME_REGEX = "\\w[\\w\\.-]*";

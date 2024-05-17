@@ -22,8 +22,6 @@ import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Custom context configurator.
- *
- * @author Martin Kouba
  */
 public final class ContextConfigurator {
 

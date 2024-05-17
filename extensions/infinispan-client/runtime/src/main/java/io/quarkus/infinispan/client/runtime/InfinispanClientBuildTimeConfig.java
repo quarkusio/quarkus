@@ -8,9 +8,6 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
-/**
- * @author William Burns
- */
 @ConfigGroup
 public class InfinispanClientBuildTimeConfig {
 

@@ -39,9 +39,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
-/**
- * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
- */
 public class VertxRequestHandler implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 

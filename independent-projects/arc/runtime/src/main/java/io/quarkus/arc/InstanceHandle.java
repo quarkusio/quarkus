@@ -7,8 +7,6 @@ import jakarta.enterprise.inject.Instance;
 /**
  * Represents an instance handle.
  *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {

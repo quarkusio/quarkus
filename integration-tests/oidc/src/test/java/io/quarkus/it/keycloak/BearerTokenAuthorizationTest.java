@@ -16,9 +16,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
 @QuarkusTestResource(KeycloakXTestResourceLifecycleManager.class)
 public class BearerTokenAuthorizationTest {

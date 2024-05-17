@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class DeploymentInjectionException extends RuntimeException {
 
     /**

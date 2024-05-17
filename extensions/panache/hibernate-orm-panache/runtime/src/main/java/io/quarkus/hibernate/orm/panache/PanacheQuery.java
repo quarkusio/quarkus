@@ -27,7 +27,6 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
  * modified, and instances of this interface can be reused to obtain multiple pages of results.
  * </p>
  *
- * @author Stéphane Épardaud
  * @param <Entity> The entity type being queried
  */
 public interface PanacheQuery<Entity> {

@@ -8,8 +8,6 @@ import java.util.StringTokenizer;
  * This class contains code coming from org.apache.maven.shared.utils.cli.CommandLineUtils.
  * <p>
  * We don't want to directly use code coming from Maven as this artifact should be Maven-agnostic.
- *
- * @author <a href="mailto:trygvis@inamo.no">Trygve Laugst&oslash;l </a>
  */
 public final class CommandLineUtil {
 

@@ -8,10 +8,6 @@ import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.Transactional;
 
-/**
- * @author paul.robinson@redhat.com 25/05/2013
- */
-
 @Interceptor
 @Transactional(Transactional.TxType.SUPPORTS)
 @Priority(Interceptor.Priority.PLATFORM_BEFORE + 200)

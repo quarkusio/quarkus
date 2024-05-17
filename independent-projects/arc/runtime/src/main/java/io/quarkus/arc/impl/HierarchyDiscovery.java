@@ -17,11 +17,6 @@ import java.util.Set;
  * This code was mainly copied from Weld codebase.
  *
  * Utility class that discovers transitive type closure of a given type.
- *
- * @author Weld Community
- * @author Ales Justin
- * @author Marko Luksa
- * @author Jozef Hartinger
  */
 public final class HierarchyDiscovery {
 

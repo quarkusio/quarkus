@@ -14,9 +14,6 @@ import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InstanceHandle;
 
 /**
- *
- * @author Martin Kouba
- *
  * @param <T>
  */
 public class CreationalContextImpl<T> implements CreationalContext<T>, Function<Contextual<T>, CreationalContext<T>> {

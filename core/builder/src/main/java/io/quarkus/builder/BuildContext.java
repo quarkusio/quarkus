@@ -22,8 +22,6 @@ import io.quarkus.builder.location.Location;
 
 /**
  * The context passed to a deployer's operation.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildContext {
     private final ClassLoader classLoader;

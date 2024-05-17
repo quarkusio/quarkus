@@ -16,10 +16,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class TsArtifact {
 
     public static final String DEFAULT_GROUP_ID = "io.quarkus.bootstrap.test";

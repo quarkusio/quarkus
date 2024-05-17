@@ -12,10 +12,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class PropertyUtils {
 
     private static final String OS_NAME = "os.name";

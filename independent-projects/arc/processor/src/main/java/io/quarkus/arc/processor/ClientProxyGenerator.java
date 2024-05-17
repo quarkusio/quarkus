@@ -39,10 +39,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
-/**
- *
- * @author Martin Kouba
- */
 public class ClientProxyGenerator extends AbstractGenerator {
 
     static final String CLIENT_PROXY_SUFFIX = "_ClientProxy";

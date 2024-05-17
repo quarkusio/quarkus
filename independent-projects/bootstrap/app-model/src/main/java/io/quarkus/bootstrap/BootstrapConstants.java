@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public interface BootstrapConstants {
 
     String SERIALIZED_APP_MODEL = "quarkus-internal.serialized-app-model.path";

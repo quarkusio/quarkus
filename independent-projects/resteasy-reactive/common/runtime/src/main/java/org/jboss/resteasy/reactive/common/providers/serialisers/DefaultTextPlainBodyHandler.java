@@ -14,7 +14,6 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import org.jboss.resteasy.reactive.common.util.TypeConverter;
 
 /**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  *
  *          TODO: Reevaluate this as it depends on a lot of reflection for reading Java types.

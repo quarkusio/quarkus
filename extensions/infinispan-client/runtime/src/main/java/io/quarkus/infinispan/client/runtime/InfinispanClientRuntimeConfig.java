@@ -11,9 +11,6 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
-/**
- * @author Katia Aresti
- */
 @ConfigGroup
 public class InfinispanClientRuntimeConfig {
 

@@ -15,9 +15,6 @@ import java.util.regex.Pattern;
 
 import jakarta.ws.rs.core.MultivaluedMap;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class Encode {
     private static final String UTF_8 = StandardCharsets.UTF_8.name();
 

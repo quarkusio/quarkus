@@ -30,9 +30,6 @@ import io.fabric8.maven.Maven;
 import io.fabric8.maven.XMLFormat;
 import io.quarkus.commons.classloading.ClassloadHelper;
 
-/**
- * @author kameshs
- */
 public class MojoUtils {
 
     public static final String JAVA_FILE_EXTENSION = ".java";

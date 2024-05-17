@@ -8,9 +8,6 @@ import jakarta.ws.rs.core.Link;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriBuilderException;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class LinkBuilderImpl implements Link.Builder {
     /**
      * A map for all the link parameters such as "rel", "type", etc.

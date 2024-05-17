@@ -27,9 +27,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * Utilities for dealing with URLs
- *
- * @author Stuart Douglas
- * @author Andre Schaefer
  */
 public class URLUtils {
 

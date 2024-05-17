@@ -48,7 +48,6 @@ import io.quarkus.test.devmode.util.DevModeClient;
 /**
  * Tests tests in the quarkus:dev mojo.
  *
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
  *         <p>
  *         NOTE to anyone diagnosing failures in this test, to run a single method use:
  *         <p>

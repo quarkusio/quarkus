@@ -12,9 +12,7 @@ import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class SecurityAnnotationsRegistrar implements InterceptorBindingRegistrar {
 
     static final List<InterceptorBinding> SECURITY_BINDINGS = List.of(

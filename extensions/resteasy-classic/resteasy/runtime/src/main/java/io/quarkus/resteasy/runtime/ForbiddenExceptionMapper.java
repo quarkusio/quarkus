@@ -8,9 +8,7 @@ import jakarta.ws.rs.ext.Provider;
 
 import io.quarkus.security.ForbiddenException;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 @Provider
 @Priority(Priorities.USER + 1)
 public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {

@@ -13,9 +13,6 @@ import java.util.Set;
  * This code was mainly copied from Weld codebase.
  *
  * This class implements Section 10.3.1 of the CDI specification.
- *
- * @author Jozef Hartinger
- *
  */
 final class EventTypeAssignabilityRules {
 

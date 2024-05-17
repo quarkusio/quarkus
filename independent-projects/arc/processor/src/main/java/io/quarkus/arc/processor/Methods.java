@@ -33,11 +33,6 @@ import org.objectweb.asm.Opcodes;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- *
- * @author Martin Kouba
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
 final class Methods {
     private static final Logger LOGGER = Logger.getLogger(Methods.class);
     // constructor

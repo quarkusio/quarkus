@@ -6,8 +6,6 @@ import org.apache.maven.shared.utils.cli.CommandLineException;
 
 /**
  * Result of {@link MavenProcessInvoker#execute(InvocationRequest)}. It keeps a reference on the created process.
- *
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 public class MavenProcessInvocationResult implements InvocationResult {
 

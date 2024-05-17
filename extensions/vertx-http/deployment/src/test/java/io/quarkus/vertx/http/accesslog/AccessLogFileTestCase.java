@@ -50,8 +50,6 @@ import io.restassured.specification.RequestSpecification;
 
 /**
  * Tests writing the access log to a file
- *
- * @author Stuart Douglas
  */
 public class AccessLogFileTestCase {
 

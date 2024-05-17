@@ -16,10 +16,6 @@ import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected TsArtifact root;

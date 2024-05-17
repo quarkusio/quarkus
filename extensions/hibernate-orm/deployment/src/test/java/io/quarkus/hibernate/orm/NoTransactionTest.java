@@ -12,9 +12,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.enhancer.Address;
 import io.quarkus.test.QuarkusUnitTest;
 
-/**
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
 public class NoTransactionTest {
 
     @RegisterExtension

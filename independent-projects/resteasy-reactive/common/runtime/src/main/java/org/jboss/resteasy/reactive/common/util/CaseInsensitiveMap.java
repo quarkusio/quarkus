@@ -2,9 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.util.Comparator;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class CaseInsensitiveMap<V> extends MultivaluedTreeMap<String, V> {
     public static final Comparator<String> CASE_INSENSITIVE_ORDER = new CaseInsensitiveComparator();
 

@@ -27,7 +27,6 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  * {@link PanacheEntity} instead.
  * </p>
  *
- * @author Stéphane Épardaud
  * @see PanacheEntity
  */
 public abstract class PanacheEntityBase {

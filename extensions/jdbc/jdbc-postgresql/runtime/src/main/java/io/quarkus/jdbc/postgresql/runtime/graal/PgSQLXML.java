@@ -65,8 +65,6 @@ import com.oracle.svm.core.annotate.TargetClass;
  * to toggle the inclusion of this code; it so happens that we can
  * trigger the toggle automatically so to not manifest as semantic changes
  * for the Quarkus users who don't need to know about this.
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 @TargetClass(className = "org.postgresql.jdbc.PgSQLXML")
 @Substitute

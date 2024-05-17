@@ -3,10 +3,6 @@ package org.jboss.resteasy.reactive.common.util.types;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 
-/**
- * @author Marko Luksa
- * @author Jozef Hartinger
- */
 public class GenericArrayTypeImpl implements GenericArrayType {
 
     private Type genericComponentType;

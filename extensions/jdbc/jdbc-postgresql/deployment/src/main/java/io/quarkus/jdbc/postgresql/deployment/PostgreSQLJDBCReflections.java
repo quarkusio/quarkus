@@ -7,8 +7,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 /**
  * Registers the {@code org.postgresql.Driver} so that it can be loaded
  * by reflection, as commonly expected.
- *
- * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class PostgreSQLJDBCReflections {
 

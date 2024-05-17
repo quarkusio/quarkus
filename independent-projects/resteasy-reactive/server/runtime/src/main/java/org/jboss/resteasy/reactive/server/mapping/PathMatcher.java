@@ -12,8 +12,6 @@ import java.util.TreeSet;
  * <p>
  * /foo/bar
  * <p>
- *
- * @author Stuart Douglas
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 class PathMatcher<T> implements Dumpable {

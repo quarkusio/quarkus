@@ -10,9 +10,7 @@ import org.junit.jupiter.api.function.Executable;
 
 import io.smallrye.mutiny.Uni;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class SecurityTestUtils {
     public static <T> void assertSuccess(Supplier<T> action, T expectedResult, AuthData... auth) {
         for (AuthData authData : auth) {

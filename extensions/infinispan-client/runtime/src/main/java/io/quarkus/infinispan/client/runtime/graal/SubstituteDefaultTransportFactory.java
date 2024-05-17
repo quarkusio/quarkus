@@ -14,8 +14,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 
 /**
  * This class is here so there are no code paths to loading up native epoll
- *
- * @author William Burns
  */
 @TargetClass(DefaultTransportFactory.class)
 final class SubstituteDefaultTransportFactory {

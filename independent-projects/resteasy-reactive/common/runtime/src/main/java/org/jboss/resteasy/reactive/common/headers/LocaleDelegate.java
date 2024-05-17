@@ -6,9 +6,6 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.reactive.common.util.LocaleHelper;
 
-/**
- * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- */
 public class LocaleDelegate implements RuntimeDelegate.HeaderDelegate<Locale> {
     public static final LocaleDelegate INSTANCE = new LocaleDelegate();
 

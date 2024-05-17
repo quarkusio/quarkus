@@ -10,8 +10,6 @@ import org.wildfly.common.Assert;
 
 /**
  * A build chain.
- *
- * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public final class BuildChain {
     private final Set<ItemId> initialIds;

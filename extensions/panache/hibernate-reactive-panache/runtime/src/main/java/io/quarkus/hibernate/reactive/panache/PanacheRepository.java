@@ -8,7 +8,6 @@ package io.quarkus.hibernate.reactive.panache;
  * implement {@link PanacheRepositoryBase} instead.
  * </p>
  *
- * @author Stéphane Épardaud
  * @param <Entity> The type of entity to operate on
  */
 public interface PanacheRepository<Entity> extends PanacheRepositoryBase<Entity, Long> {

@@ -23,10 +23,6 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
-/**
- *
- * @author Alexey Loubyansky
- */
 public class IoUtils {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;

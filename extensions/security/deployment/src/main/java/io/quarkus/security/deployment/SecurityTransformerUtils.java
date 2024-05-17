@@ -15,9 +15,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 
-/**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- */
+
 public class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
     public static final DotName ROLES_ALLOWED = DotName.createSimple(RolesAllowed.class.getName());

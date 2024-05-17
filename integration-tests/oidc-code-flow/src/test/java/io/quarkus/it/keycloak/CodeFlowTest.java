@@ -47,9 +47,6 @@ import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 import io.vertx.core.json.JsonObject;
 
-/**
- * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- */
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class CodeFlowTest {

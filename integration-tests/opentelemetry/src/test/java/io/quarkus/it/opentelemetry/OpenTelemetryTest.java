@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +40,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.it.opentelemetry.util.SocketClient;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -703,6 +706,34 @@ public class OpenTelemetryTest {
             fail("Not failing graciously. Got: " + e.getMessage());
         }
         await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+    }
+
+    /**
+     * Test no End User attributes are added when the feature is disabled.
+     */
+    @Test
+    public void testNoEndUserAttributes() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("stuart", "writer")
+                .get("/otel/enduser/roles-allowed-only-writer-role")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("/roles-allowed-only-writer-role"));
+        RestAssured
+                .given()
+                .auth().preemptive().basic("scott", "reader")
+                .get("/otel/enduser/roles-allowed-only-writer-role")
+                .then()
+                .statusCode(403);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() > 1);
+        List<Map<String, Object>> spans = getSpans();
+        Assertions.assertTrue(spans
+                .stream()
+                .flatMap(m -> m.entrySet().stream())
+                .filter(e -> ("attr_" + SemanticAttributes.ENDUSER_ID.getKey()).equals(e.getKey())
+                        || ("attr_" + SemanticAttributes.ENDUSER_ROLE.getKey()).equals(e.getKey()))
+                .findAny().isEmpty());
     }
 
     private void verifyResource(Map<String, Object> spanData) {

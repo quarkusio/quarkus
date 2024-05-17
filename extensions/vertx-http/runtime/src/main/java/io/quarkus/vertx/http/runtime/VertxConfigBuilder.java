@@ -13,15 +13,12 @@ public class VertxConfigBuilder implements ConfigBuilder {
         // It may have been recorded, so only set if it not available in the defaults
         if (builder.getDefaultValues().get(QUARKUS_HTTP_HOST) == null) {
             // Sets the default host config value, depending on the launch mode
-            if (LaunchMode.isRemoteDev()) {
-                // in remote-dev mode we need to listen on all interfaces
+            if (LaunchMode.isRemoteDev() || (LaunchMode.current().isDevOrTest() && isWSL())) {
+                // we need to listen on all interfaces otherwise the application would not be accessible
                 builder.withDefaultValue(QUARKUS_HTTP_HOST, ALL_INTERFACES);
             } else {
-                // In dev-mode we want to only listen on localhost so others on the network cannot connect to the application.
-                // However, in WSL this would result in the application not being accessible,
-                // so in that case, we launch it on all interfaces.
-                builder.withDefaultValue(QUARKUS_HTTP_HOST,
-                        (LaunchMode.current().isDevOrTest() && !isWSL()) ? "localhost" : ALL_INTERFACES);
+                // Otherwise, we want to only listen on localhost so others on the network cannot connect to the application.
+                builder.withDefaultValue(QUARKUS_HTTP_HOST, "localhost");
             }
         }
         return builder;

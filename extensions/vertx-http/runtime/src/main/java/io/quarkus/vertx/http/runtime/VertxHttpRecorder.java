@@ -913,7 +913,7 @@ public class VertxHttpRecorder {
 
         if (!httpDisabled && httpServerOptions != null) {
             serverListeningMessage.append(String.format(
-                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort));
+                    "http://%s:%s", getDeveloperFriendlyHostName(httpServerOptions), actualHttpPort));
             socketCount++;
         }
 
@@ -921,7 +921,8 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage.append(String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort));
+            serverListeningMessage
+                    .append(String.format("https://%s:%s", getDeveloperFriendlyHostName(sslConfig), actualHttpsPort));
             socketCount++;
         }
 
@@ -929,15 +930,33 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage.append(String.format("unix:%s", domainSocketOptions.getHost()));
+            serverListeningMessage.append(String.format("unix:%s", getDeveloperFriendlyHostName(domainSocketOptions)));
         }
         if (managementConfig != null) {
             serverListeningMessage.append(
                     String.format(". Management interface listening on http%s://%s:%s.", managementConfig.isSsl() ? "s" : "",
-                            managementConfig.getHost(), actualManagementPort));
+                            getDeveloperFriendlyHostName(managementConfig), actualManagementPort));
         }
 
         Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
+    }
+
+    /**
+     * To improve developer experience in WSL dev/test mode, the server listening message should print "localhost" when
+     * the host is set to "0.0.0.0". Otherwise, display the actual host.
+     * Do not use this during the actual configuration, use options.getHost() there directly instead.
+     */
+    private static String getDeveloperFriendlyHostName(HttpServerOptions options) {
+        return (isWSL() && LaunchMode.current().isDevOrTest() && options.getHost().equals("0.0.0.0")) ? "localhost"
+                : options.getHost();
+    }
+
+    /**
+     * @return {@code true} if the application is running in a WSL (Windows Subsystem for Linux) environment
+     */
+    private static boolean isWSL() {
+        var sysEnv = System.getenv();
+        return sysEnv.containsKey("IS_WSL") || sysEnv.containsKey("WSL_DISTRO_NAME");
     }
 
     private static HttpServerOptions createHttpServerOptions(

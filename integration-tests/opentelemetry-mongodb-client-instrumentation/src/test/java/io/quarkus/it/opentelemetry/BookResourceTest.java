@@ -1,10 +1,13 @@
 package io.quarkus.it.opentelemetry;
 
-import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.given;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.mongodb.MongoTestResource;
+import io.restassured.common.mapper.TypeRef;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -12,15 +15,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.common.ResourceArg;
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.mongodb.MongoTestResource;
-import io.restassured.common.mapper.TypeRef;
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.VERSION, value = "V6_0"))
@@ -68,6 +67,24 @@ class BookResourceTest {
         testInsertBooks("/reactive-books");
         reset();
         assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
+        assertTraceAvailable("my-reactive-collection");
+        assertParentChild("my-reactive-collection");
+    }
+
+    @Test
+    void reactiveClientMultipleChain() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books/multiple-chain").as(Long.class)).isEqualTo(3L);
+        assertTraceAvailable("my-reactive-collection");
+        assertParentChild("my-reactive-collection");
+    }
+
+    @Test
+    void reactiveClientMultipleCombine() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books/multiple-combine").as(Long.class)).isEqualTo(3L);
         assertTraceAvailable("my-reactive-collection");
         assertParentChild("my-reactive-collection");
     }

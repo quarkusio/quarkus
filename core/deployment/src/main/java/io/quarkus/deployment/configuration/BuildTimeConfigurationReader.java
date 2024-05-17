@@ -1233,12 +1233,12 @@ public final class BuildTimeConfigurationReader {
                 ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
                 String defaultValue = itemMember.getDefaultValue();
                 if (defaultValue != null) {
-                    // lookup config to make sure we catch relocates or fallbacks
+                    // lookup config to make sure we catch relocates or fallbacks and override the value
                     ConfigValue configValue = config.getConfigValue(propertyName.toString());
-                    if (configValue.getValue() != null) {
-                        defaultValues.put(configValue.getName(), configValue.getValue());
+                    if (configValue.getValue() != null && !configValue.getName().equals(propertyName.toString())) {
+                        defaultValues.put(propertyName.toString(), configValue.getValue());
                     } else {
-                        defaultValues.put(configValue.getName(), defaultValue);
+                        defaultValues.put(propertyName.toString(), defaultValue);
                     }
                 }
             }

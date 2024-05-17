@@ -52,6 +52,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         this.codecs = codecs;
         this.connectionManager = connectionManager;
         this.config = config;
+        this.path = "";
         this.pathParamNames = Set.of();
     }
 
@@ -89,7 +90,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     }
 
     void setPath(String path) {
-        this.path = path;
+        this.path = Objects.requireNonNull(path);
         this.pathParamNames = getPathParamNames(path);
     }
 

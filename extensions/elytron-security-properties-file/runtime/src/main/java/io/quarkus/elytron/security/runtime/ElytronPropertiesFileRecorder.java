@@ -150,7 +150,7 @@ public class ElytronPropertiesFileRecorder {
                                     .generatePassword(new DigestPasswordSpec(user, config.realmName(), hashed));
                         } catch (Exception e) {
                             throw new RuntimeException("Unable to register password for user:" + user
-                                    + " make sure it is a valid hex encoded MD5 hash", e);
+                                    + " make sure it is a valid hex encoded " + runtimeConfig.algorithm().getName().toUpperCase() + " hash", e);
                         }
                     }
 

@@ -81,13 +81,30 @@ public interface WebSocketConnection extends Sender, BlockingSender {
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
-    Uni<Void> close();
+    default Uni<Void> close() {
+        return close(CloseReason.NORMAL);
+    }
 
     /**
-     * Close the connection.
+     * Close the connection with a specific reason.
+     *
+     * @param reason
+     * @return a new {@link Uni} with a {@code null} item
+     */
+    Uni<Void> close(CloseReason reason);
+
+    /**
+     * Close the connection and wait for the completion.
      */
     default void closeAndAwait() {
         close().await().indefinitely();
+    }
+
+    /**
+     * Close the connection and wait for the completion.
+     */
+    default void closeAndAwait(CloseReason reason) {
+        close(reason).await().indefinitely();
     }
 
     /**

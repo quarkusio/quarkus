@@ -137,7 +137,7 @@ public interface BasicWebSocketConnector {
      * @return self
      * @see #executionModel(ExecutionModel)
      */
-    BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, Short> consumer);
+    BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, CloseReason> consumer);
 
     /**
      * Set a callback to be invoked when an error occurs.

@@ -96,7 +96,8 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             }
 
             if (event.failure() instanceof RejectedExecutionException) {
-                // No more worker threads - return a 503
+                log.warn(
+                        "Worker thread pool exhaustion, no more worker threads available - returning a `503 - SERVICE UNAVAILABLE` response.");
                 event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code()).end();
                 return;
             }

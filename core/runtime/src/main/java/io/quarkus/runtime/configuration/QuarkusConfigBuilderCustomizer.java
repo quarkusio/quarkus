@@ -7,6 +7,7 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.function.Function;
@@ -25,7 +26,7 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
-        LaunchMode launchMode = ProfileManager.getLaunchMode();
+        LaunchMode launchMode = LaunchMode.current();
         builder.withDefaultValue(launchMode.getProfileKey(), launchMode.getDefaultProfile());
 
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
@@ -70,7 +71,12 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
 
                         return name;
                     }
-                });
+                }) {
+                    @Override
+                    public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
+                        return context.iterateNames();
+                    }
+                };
             }
 
             @Override
@@ -89,7 +95,12 @@ public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
                 fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
                 fallbacks.put("quarkus.config.mapping.validate-unknown", SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN);
                 fallbacks.put("quarkus.config.log.values", SMALLRYE_CONFIG_LOG_VALUES);
-                return new FallbackConfigSourceInterceptor(fallbacks);
+                return new FallbackConfigSourceInterceptor(fallbacks) {
+                    @Override
+                    public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
+                        return context.iterateNames();
+                    }
+                };
             }
 
             @Override

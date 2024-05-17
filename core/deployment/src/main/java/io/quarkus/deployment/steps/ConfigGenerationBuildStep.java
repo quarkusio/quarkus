@@ -220,7 +220,10 @@ public class ConfigGenerationBuildStep {
             // Runtime values may contain active profiled names that override sames names in defaults
             // We need to keep the original name definition in case a different profile is used to run the app
             String activeName = ProfileConfigSourceInterceptor.activeName(entry.getKey(), profiles);
-            defaultValues.remove(activeName);
+            // But keep the default
+            if (!configItem.getReadResult().getRunTimeDefaultValues().containsKey(activeName)) {
+                defaultValues.remove(activeName);
+            }
             defaultValues.put(entry.getKey(), entry.getValue());
         }
         defaultValues.putAll(configItem.getReadResult().getRunTimeValues());

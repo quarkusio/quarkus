@@ -616,7 +616,13 @@ public final class BuildTimeConfigurationReader {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
                     if (configValue.getValue() != null) {
-                        runTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        String configName = configValue.getNameProfiled();
+                        // record the profile parent in the original form; if recorded in the active profile it may mess the profile ordering
+                        if (configName.equals("quarkus.config.profile.parent")) {
+                            runTimeValues.put(propertyName, configValue.getValue());
+                        } else {
+                            runTimeValues.put(configName, configValue.getValue());
+                        }
                     }
 
                     // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
@@ -1039,6 +1045,7 @@ public final class BuildTimeConfigurationReader {
          * want to record properties set by the compiling JVM (or other properties that are only related to the build).
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
+            // Collects all properties from allowed sources
             Set<String> sourcesProperties = new HashSet<>();
             for (ConfigSource configSource : config.getConfigSources()) {
                 if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource
@@ -1114,7 +1121,16 @@ public final class BuildTimeConfigurationReader {
 
             List<String> profiles = config.getProfiles();
             for (String property : builder.build().getPropertyNames()) {
-                properties.add(ProfileConfigSourceInterceptor.activeName(property, profiles));
+                String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
+                // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
+                if (activeProperty.equals("quarkus.config.profile.parent")) {
+                    if (!activeProperty.equals(property)) {
+                        properties.remove(activeProperty);
+                        properties.add(property);
+                        continue;
+                    }
+                }
+                properties.add(activeProperty);
             }
 
             return properties;
@@ -1211,12 +1227,12 @@ public final class BuildTimeConfigurationReader {
                 ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
                 String defaultValue = itemMember.getDefaultValue();
                 if (defaultValue != null) {
-                    // lookup config to make sure we catch relocates or fallbacks
+                    // lookup config to make sure we catch relocates or fallbacks and override the value
                     ConfigValue configValue = config.getConfigValue(propertyName.toString());
-                    if (configValue.getValue() != null) {
-                        defaultValues.put(configValue.getName(), configValue.getValue());
+                    if (configValue.getValue() != null && !configValue.getName().equals(propertyName.toString())) {
+                        defaultValues.put(propertyName.toString(), configValue.getValue());
                     } else {
-                        defaultValues.put(configValue.getName(), defaultValue);
+                        defaultValues.put(propertyName.toString(), defaultValue);
                     }
                 }
             }

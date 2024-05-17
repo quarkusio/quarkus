@@ -51,6 +51,7 @@ public class ArcRecorder {
             @Override
             public void run() {
                 Arc.shutdown();
+                syntheticBeanProviders = null;
             }
         });
         return container;

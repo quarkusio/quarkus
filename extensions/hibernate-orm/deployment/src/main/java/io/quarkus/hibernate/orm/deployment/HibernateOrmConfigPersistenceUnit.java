@@ -229,7 +229,10 @@ public interface HibernateOrmConfigPersistenceUnit {
     /**
      * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
      * if not set.
+     *
+     * @deprecated Use {@link #datasource()} instead.
      */
+    @Deprecated
     @WithConverter(TrimmedStringConverter.class)
     Optional<String> multitenantSchemaDatasource();
 

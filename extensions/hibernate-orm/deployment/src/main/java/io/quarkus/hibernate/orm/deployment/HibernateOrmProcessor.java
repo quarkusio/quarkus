@@ -670,33 +670,51 @@ public final class HibernateOrmProcessor {
         boolean multitenancyEnabled = false;
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            if (persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
-                continue;
+            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
+            var multitenancyStrategy = persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy();
+            switch (multitenancyStrategy) {
+                case NONE -> {
+                }
+                case DISCRIMINATOR -> multitenancyEnabled = true;
+                case DATABASE, SCHEMA -> {
+                    multitenancyEnabled = true;
+
+                    String multiTenancySchemaDataSource = persistenceUnitDescriptor.getMultiTenancySchemaDataSource();
+                    Optional<String> datasource;
+                    if (multitenancyStrategy == MultiTenancyStrategy.SCHEMA && multiTenancySchemaDataSource != null) {
+                        LOG.warnf("Configuration property '%1$s' is deprecated. Use '%2$s' instead.",
+                                HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitConfigName,
+                                        "multitenant-schema-datasource"),
+                                HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitConfigName, "datasource"));
+                        datasource = Optional.of(multiTenancySchemaDataSource);
+                    } else {
+                        datasource = persistenceUnitDescriptor.getConfig().getDataSource();
+                    }
+
+                    ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                            .configure(DataSourceTenantConnectionResolver.class)
+                            .scope(ApplicationScoped.class)
+                            .types(TenantConnectionResolver.class)
+                            .setRuntimeInit()
+                            .defaultBean()
+                            .unremovable()
+                            .supplier(recorder.dataSourceTenantConnectionResolver(
+                                    persistenceUnitDescriptor.getPersistenceUnitName(),
+                                    datasource,
+                                    persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy()));
+
+                    if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
+                        configurator.addQualifier(Default.class);
+                    } else {
+                        configurator.addQualifier().annotation(DotNames.NAMED)
+                                .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
+                        configurator.addQualifier().annotation(PersistenceUnit.class)
+                                .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
+                    }
+
+                    syntheticBeans.produce(configurator.done());
+                }
             }
-
-            multitenancyEnabled = true;
-
-            ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(DataSourceTenantConnectionResolver.class)
-                    .scope(ApplicationScoped.class)
-                    .types(TenantConnectionResolver.class)
-                    .setRuntimeInit()
-                    .defaultBean()
-                    .unremovable()
-                    .supplier(recorder.dataSourceTenantConnectionResolver(persistenceUnitDescriptor.getPersistenceUnitName(),
-                            persistenceUnitDescriptor.getConfig().getDataSource(),
-                            persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy(),
-                            persistenceUnitDescriptor.getMultiTenancySchemaDataSource()));
-
-            if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
-                configurator.addQualifier(Default.class);
-            } else {
-                configurator.addQualifier().annotation(DotNames.NAMED)
-                        .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
-                configurator.addQualifier().annotation(PersistenceUnit.class)
-                        .addValue("value", persistenceUnitDescriptor.getPersistenceUnitName()).done();
-            }
-
-            syntheticBeans.produce(configurator.done());
         }
 
         if (multitenancyEnabled) {

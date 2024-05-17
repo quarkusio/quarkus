@@ -51,6 +51,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.SecurityEvents.SecurityEventType;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb.MongoReactiveContextProvider;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb.MongoTracingCommandListener;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -207,7 +208,9 @@ public class TracerProcessor {
                 .getOptionalValue("quarkus.mongodb.tracing.enabled", Boolean.class)
                 .orElse(false);
         if (mongoTracingEnabled) {
-            return new AdditionalIndexedClassesBuildItem(MongoTracingCommandListener.class.getName());
+            return new AdditionalIndexedClassesBuildItem(
+                    MongoTracingCommandListener.class.getName(),
+                    MongoReactiveContextProvider.class.getName());
         }
         return new AdditionalIndexedClassesBuildItem();
     }

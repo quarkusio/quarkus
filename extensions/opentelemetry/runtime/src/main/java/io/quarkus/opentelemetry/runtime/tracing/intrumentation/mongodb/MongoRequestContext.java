@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.runtime;
+package io.quarkus.opentelemetry.runtime.tracing.intrumentation.mongodb;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,9 +13,9 @@ public class MongoRequestContext implements RequestContext {
     public static final String OTEL_CONTEXT_KEY = "otel.context.current";
     private final Map<Object, Object> valuesMap;
 
-    MongoRequestContext(Context currentContext) {
+    MongoRequestContext() {
         valuesMap = new ConcurrentHashMap<>();
-        valuesMap.put(OTEL_CONTEXT_KEY, currentContext);
+        valuesMap.put(OTEL_CONTEXT_KEY, Context.current());
     }
 
     @Override

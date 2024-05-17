@@ -53,12 +53,6 @@
             <artifactId>quarkus-kubernetes-service-binding</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-opentelemetry</artifactId>
-            <optional>true</optional>
-        </dependency>
-
         <!-- Add the health extension as optional as we will produce the health check only if it's included -->
         <dependency>
             <groupId>io.quarkus</groupId>

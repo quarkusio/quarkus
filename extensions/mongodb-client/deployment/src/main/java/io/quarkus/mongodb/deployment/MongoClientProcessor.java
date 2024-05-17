@@ -32,6 +32,7 @@ import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.model.changestream.UpdateDescription;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 import com.mongodb.spi.dns.DnsClientProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -153,14 +154,26 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
+    ReactiveContextProviderBuildItem collectContextProviders(CombinedIndexBuildItem indexBuildItem) {
+        Collection<ClassInfo> contextProviders = indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(ReactiveContextProvider.class.getName()));
+        List<String> names = contextProviders.stream()
+                .map(ci -> ci.name().toString())
+                .collect(Collectors.toList());
+        return new ReactiveContextProviderBuildItem(names);
+    }
+
+    @BuildStep
     List<ReflectiveClassBuildItem> addExtensionPointsToNative(CodecProviderBuildItem codecProviders,
             PropertyCodecProviderBuildItem propertyCodecProviders, BsonDiscriminatorBuildItem bsonDiscriminators,
-            CommandListenerBuildItem commandListeners) {
+            CommandListenerBuildItem commandListeners,
+            ReactiveContextProviderBuildItem reactiveContextProviders) {
         List<String> reflectiveClassNames = new ArrayList<>();
         reflectiveClassNames.addAll(codecProviders.getCodecProviderClassNames());
         reflectiveClassNames.addAll(propertyCodecProviders.getPropertyCodecProviderClassNames());
         reflectiveClassNames.addAll(bsonDiscriminators.getBsonDiscriminatorClassNames());
         reflectiveClassNames.addAll(commandListeners.getCommandListenerClassNames());
+        reflectiveClassNames.addAll(reactiveContextProviders.getReactiveContextProvidersClassNames());
 
         List<ReflectiveClassBuildItem> reflectiveClass = reflectiveClassNames.stream()
                 .map(s -> ReflectiveClassBuildItem.builder(s).methods().build())
@@ -247,6 +260,7 @@ public class MongoClientProcessor {
             PropertyCodecProviderBuildItem propertyCodecProvider,
             BsonDiscriminatorBuildItem bsonDiscriminator,
             CommandListenerBuildItem commandListener,
+            ReactiveContextProviderBuildItem reactiveContextProviders,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
@@ -266,6 +280,9 @@ public class MongoClientProcessor {
             additionalBeansBuilder.addBeanClass(name);
         }
         for (String name : commandListener.getCommandListenerClassNames()) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        for (String name : reactiveContextProviders.getReactiveContextProvidersClassNames()) {
             additionalBeansBuilder.addBeanClass(name);
         }
         additionalBeanBuildItemProducer.produce(additionalBeansBuilder.build());

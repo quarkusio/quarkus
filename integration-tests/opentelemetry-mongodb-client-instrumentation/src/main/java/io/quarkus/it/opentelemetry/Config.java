@@ -1,8 +1,9 @@
 package io.quarkus.it.opentelemetry;
 
-import io.quarkus.mongodb.runtime.MongoClientCustomizer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+
+import io.quarkus.mongodb.runtime.MongoClientCustomizer;
 
 @ApplicationScoped
 public class Config {

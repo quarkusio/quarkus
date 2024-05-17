@@ -6,6 +6,8 @@ import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,6 +20,9 @@ import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 
 public class SubWebSocketTest {
+
+    @Inject
+    Vertx vertx;
 
     @TestHTTPResource("sub")
     URI echoUri;
@@ -44,7 +49,6 @@ public class SubWebSocketTest {
     }
 
     public void assertEcho(URI testUri, String path, String payload, String expected) throws Exception {
-        Vertx vertx = Vertx.vertx();
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();

@@ -10,6 +10,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,6 +23,12 @@ import io.vertx.core.http.WebSocketClient;
 
 public class BroadcastOnMessageTest {
 
+    @RegisterExtension
+    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .withApplicationRoot(root -> {
+                root.addClasses(Up.class, UpBlocking.class, UpMultiBidi.class);
+            });
+
     @TestHTTPResource("up")
     URI upUri;
 
@@ -30,11 +38,8 @@ public class BroadcastOnMessageTest {
     @TestHTTPResource("up-multi-bidi")
     URI upMultiBidiUri;
 
-    @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Up.class, UpBlocking.class, UpMultiBidi.class);
-            });
+    @Inject
+    Vertx vertx;
 
     @Test
     public void testUp() throws Exception {
@@ -52,7 +57,6 @@ public class BroadcastOnMessageTest {
     }
 
     public void assertBroadcast(URI testUri) throws Exception {
-        Vertx vertx = Vertx.vertx();
         WebSocketClient client1 = vertx.createWebSocketClient();
         WebSocketClient client2 = vertx.createWebSocketClient();
         try {

@@ -9,6 +9,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,21 +22,23 @@ import io.vertx.core.http.WebSocketClient;
 
 public class BroadcastConnectionTest {
 
-    @TestHTTPResource("lo-connection")
-    URI loConnectionUri;
-
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(LoConnection.class);
             });
 
+    @TestHTTPResource("lo-connection")
+    URI loConnectionUri;
+
+    @Inject
+    Vertx vertx;
+
     @Test
     public void testBroadcast() throws Exception {
         WebSocketClient client1 = null, client2 = null, client3 = null;
         try {
             List<String> messages = new CopyOnWriteArrayList<>();
-            Vertx vertx = Vertx.vertx();
             client1 = connect(vertx, "C1", messages);
             client2 = connect(vertx, "C2", messages);
             client3 = connect(vertx, "C3", messages);

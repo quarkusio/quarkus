@@ -6,6 +6,8 @@ import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,14 +21,17 @@ import io.vertx.core.json.JsonObject;
 
 public class DefaultTextCodecTest {
 
-    @TestHTTPResource("find")
-    URI findUri;
-
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Find.class, AbstractFind.class, Item.class);
             });
+
+    @TestHTTPResource("find")
+    URI findUri;
+
+    @Inject
+    Vertx vertx;
 
     @Test
     public void testCodec() throws Exception {
@@ -39,7 +44,6 @@ public class DefaultTextCodecTest {
 
     public void assertCodec(URI testUri, String payload, String expected)
             throws Exception {
-        Vertx vertx = Vertx.vertx();
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();

@@ -56,6 +56,7 @@ import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.reactivestreams.client.ReactiveContextProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -86,18 +87,21 @@ public class MongoClients {
 
     private final Map<String, MongoClient> mongoclients = new HashMap<>();
     private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private final Instance<ReactiveContextProvider> reactiveContextProviders;
     private final Instance<MongoClientCustomizer> customizers;
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             Instance<PropertyCodecProvider> propertyCodecProviders,
             Instance<CommandListener> commandListeners,
+            Instance<ReactiveContextProvider> reactiveContextProviders,
             @Any Instance<MongoClientCustomizer> customizers) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
         this.propertyCodecProviders = propertyCodecProviders;
         this.commandListeners = commandListeners;
+        this.reactiveContextProviders = reactiveContextProviders;
         this.customizers = customizers;
 
         try {
@@ -121,7 +125,8 @@ public class MongoClients {
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
         mongoclients.put(clientName, client);
         return client;
@@ -129,7 +134,8 @@ public class MongoClients {
 
     public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName));
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
+                true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
@@ -254,13 +260,17 @@ public class MongoClients {
         }
     }
 
-    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config) {
+    private MongoClientSettings createMongoConfiguration(String name, MongoClientConfig config, boolean isReactive) {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
         CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
+
+        if (isReactive) {
+            reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
+        }
 
         ConnectionString connectionString;
         Optional<String> maybeConnectionString = config.connectionString;

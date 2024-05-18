@@ -44,29 +44,132 @@ class BookResourceTest {
     @Test
     void blockingClient() {
         testInsertBooks("/books");
-        assertTraceAvailable("my-collection");
+        reset();
+        assertThat(get("/books").as(bookListType)).hasSize(3);
+        assertTraceAvailable(2, "my-collection");
+        assertParentChild(2, "my-collection");
+    }
+
+    @Test
+    void blockingClientError() {
+        given()
+                .get("/books/invalid")
+                .then()
+                .assertThat()
+                .statusCode(500);
+        assertTraceAvailable(2, "my-collection", "$invalidop");
+        assertParentChild(2, "my-collection");
     }
 
     @Test
     void reactiveClient() {
         testInsertBooks("/reactive-books");
-        assertTraceAvailable("my-reactive-collection");
+        reset();
+        assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
+        assertTraceAvailable(2, "my-reactive-collection");
+        assertParentChild(2, "my-reactive-collection");
     }
 
-    private void assertTraceAvailable(String dbCollectionName) {
-        await().atMost(Duration.ofSeconds(30L)).untilAsserted(() -> {
-            boolean traceAvailable = false;
-            for (Map<String, Object> spanData : getSpans()) {
-                if (spanData.get("attributes") instanceof Map attr) {
-                    var cmd = (String) attr.get("mongodb.command");
-                    if (cmd != null) {
-                        assertThat(cmd).contains(dbCollectionName, "books");
-                        traceAvailable = true;
-                    }
+    @Test
+    void reactiveClientMultipleChain() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books/multiple-chain").as(Long.class)).isEqualTo(3L);
+        assertTraceAvailable(3, "my-reactive-collection");
+        assertParentChild(3, "my-reactive-collection");
+    }
+
+    @Test
+    void reactiveClientMultipleCombine() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books/multiple-combine").as(Long.class)).isEqualTo(3L);
+        assertTraceAvailable(3, "my-reactive-collection");
+        assertParentChild(3, "my-reactive-collection");
+    }
+
+    @Test
+    void reactiveClientParentChild() {
+        testInsertBooks("/reactive-books");
+        reset();
+        assertThat(get("/reactive-books").as(bookListType)).hasSize(3);
+        assertTraceAvailable(2, "my-reactive-collection");
+        assertParentChild(2, "my-reactive-collection");
+    }
+
+    @Test
+    void reactiveClientError() {
+        given()
+                .get("/reactive-books/invalid")
+                .then()
+                .assertThat()
+                .statusCode(500);
+        assertTraceAvailable(2, "my-reactive-collection", "$invalidop");
+        assertParentChild(2, "my-reactive-collection");
+    }
+
+    private void assertTraceAvailable(int expectedNumOfSpans, String... commandPart) {
+        await().atMost(Duration.ofSeconds(10L)).until(() -> getSpans().size() == expectedNumOfSpans);
+        boolean found = false;
+        for (Map<String, Object> spanData : getSpans()) {
+            if (spanData.get("attributes") instanceof Map attr) {
+                var cmd = (String) attr.get("mongodb.command");
+                if (cmd != null) {
+                    assertThat(cmd).contains(commandPart).contains("books");
+                    found = true;
                 }
             }
-            assertThat(traceAvailable).as("Mongodb statement was not traced.").isTrue();
-        });
+        }
+        assertThat(found).isTrue();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertParentChild(int expectedNumOfSpans, String... commandPart) {
+        await().atMost(Duration.ofSeconds(10L)).until(() -> getSpans().size() == expectedNumOfSpans);
+        List<Map<String, Object>> spans = getSpans();
+        var traceIds = spans.stream().map(data -> data.get("traceId")).toList();
+        String traceId = (String) traceIds.get(0);
+        assertThat(traceId).isNotBlank();
+        assertThat(traceIds).as("All spans must have the same trace id").containsOnly(traceId);
+
+        var rootSpanId = getRootSpan(spans);
+        assertThat(rootSpanId).isNotBlank();
+
+        for (Map<String, Object> spanData : spans) {
+            assertThat(spanData).as("span must have trace id").containsEntry("traceId", traceId);
+            if (spanData.get("attributes") instanceof Map attr) {
+                var cmd = (String) attr.get("mongodb.command");
+                if (cmd != null) {
+                    assertThat(cmd).contains(commandPart).contains("books");
+                    var parentSpanContext = (Map<String, Object>) spanData.get("parentSpanContext");
+                    assertThat((String) spanData.get("traceId")).isNotBlank().isEqualTo(traceId);
+                    assertThat((String) parentSpanContext.get("spanId")).isNotBlank().isEqualTo(rootSpanId);
+                    assertThat((String) spanData.get("spanId")).isNotBlank().isNotEqualTo(rootSpanId);
+                }
+            }
+        }
+
+    }
+
+    private record ChildSpanData(String traceId, String parentSpanId, String spanId) {
+    }
+
+    /**
+     * find root span id
+     * this is the case if the trace id in parentSpanContext contains only zeros
+     *
+     * @param spans
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private static String getRootSpan(Iterable<Map<String, Object>> spans) {
+        for (Map<String, Object> spanData : spans) {
+            var parentContext = (Map<String, Object>) spanData.get("parentSpanContext");
+            if (((String) parentContext.get("traceId")).matches("0+")) {
+                return (String) spanData.get("spanId");
+            }
+        }
+        throw new IllegalStateException("No root span found");
     }
 
     private void testInsertBooks(String endpoint) {
@@ -76,19 +179,16 @@ class BookResourceTest {
                 .assertThat()
                 .statusCode(200);
 
-        assertThat(get(endpoint).as(bookListType)).isEmpty();
+        await().atMost(Duration.ofSeconds(60L))
+                .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).as("must delete all").isEmpty());
 
         saveBook(new Book("Victor Hugo", "Les Misérables"), endpoint);
         saveBook(new Book("Victor Hugo", "Notre-Dame de Paris"), endpoint);
         await().atMost(Duration.ofSeconds(60L))
                 .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).hasSize(2));
-
         saveBook(new Book("Charles Baudelaire", "Les fleurs du mal"), endpoint);
-
-        assertThat(get(endpoint).as(bookListType)).hasSize(3);
-
-        List<Book> books = get("%s/Victor Hugo".formatted(endpoint)).as(bookListType);
-        assertThat(books).hasSize(2);
+        await().atMost(Duration.ofSeconds(60L))
+                .untilAsserted(() -> assertThat(get(endpoint).as(bookListType)).hasSize(3));
     }
 
     private static void saveBook(Book book, String endpoint) {

@@ -55,6 +55,7 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -518,6 +519,7 @@ public class SecurityProcessor {
         }
     }
 
+    @Consume(Capabilities.class) // make sure extension combinations are validated before default security check
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
@@ -528,7 +530,7 @@ public class SecurityProcessor {
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
-            Optional<DefaultSecurityCheckBuildItem> defaultSecurityCheckBuildItem,
+            List<DefaultSecurityCheckBuildItem> defaultSecurityCheckBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
@@ -562,8 +564,14 @@ public class SecurityProcessor {
                     methodEntry.getValue());
         }
 
-        if (defaultSecurityCheckBuildItem.isPresent()) {
-            var roles = defaultSecurityCheckBuildItem.get().getRolesAllowed();
+        if (!defaultSecurityCheckBuildItem.isEmpty()) {
+            if (defaultSecurityCheckBuildItem.size() > 1) {
+                int itemCount = defaultSecurityCheckBuildItem.size();
+                throw new IllegalStateException("Found %d DefaultSecurityCheckBuildItem items, ".formatted(itemCount)
+                        + "please make sure the item is produced exactly once");
+            }
+
+            var roles = defaultSecurityCheckBuildItem.get(0).getRolesAllowed();
             if (roles == null) {
                 recorder.registerDefaultSecurityCheck(builder, recorder.denyAll());
             } else {

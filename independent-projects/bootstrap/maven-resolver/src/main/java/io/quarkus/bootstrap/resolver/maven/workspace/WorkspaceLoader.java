@@ -8,9 +8,14 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,6 +46,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private static final String POM_XML = "pom.xml";
 
+    private static final Model MISSING_MODEL = new Model();
+
     private static Path locateCurrentProjectPom(Path path) throws BootstrapMavenException {
         Path p = path;
         while (p != null) {
@@ -53,11 +60,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         throw new BootstrapMavenException("Failed to locate project pom.xml for " + path);
     }
 
-    private final List<RawModule> moduleQueue = new ArrayList<>();
-    private final Map<Path, Model> loadedPoms = new HashMap<>();
+    private final Deque<RawModule> moduleQueue = new ConcurrentLinkedDeque<>();
+    private final Map<Path, Model> loadedPoms = new ConcurrentHashMap<>();
 
     private final Function<Path, Model> modelProvider;
-    private final Map<GAV, Model> loadedModules = new HashMap<>();
+    private final Map<GAV, Model> loadedModules = new ConcurrentHashMap<>();
 
     private final LocalWorkspace workspace = new LocalWorkspace();
     private final Path currentProjectPom;
@@ -102,7 +109,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private void addModulePom(Path pom) {
         if (pom != null) {
-            moduleQueue.add(new RawModule(pom));
+            moduleQueue.push(new RawModule(pom));
         }
     }
 
@@ -152,11 +159,22 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             };
         }
 
-        int i = 0;
-        while (i < moduleQueue.size()) {
-            var newModules = new ArrayList<RawModule>();
-            while (i < moduleQueue.size()) {
-                loadModule(moduleQueue.get(i++), newModules);
+        while (!moduleQueue.isEmpty()) {
+            ConcurrentLinkedDeque<RawModule> newModules = new ConcurrentLinkedDeque<>();
+            while (!moduleQueue.isEmpty()) {
+                final Phaser phaser = new Phaser(1);
+                while (!moduleQueue.isEmpty()) {
+                    phaser.register();
+                    final RawModule module = moduleQueue.removeLast();
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            loadModule(module, newModules);
+                        } finally {
+                            phaser.arriveAndDeregister();
+                        }
+                    });
+                }
+                phaser.arriveAndAwaitAdvance();
             }
             for (var newModule : newModules) {
                 newModule.process(processor);
@@ -169,7 +187,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         return currentProject.get();
     }
 
-    private void loadModule(RawModule rawModule, List<RawModule> newModules) {
+    private void loadModule(RawModule rawModule, Collection<RawModule> newModules) {
         var moduleDir = rawModule.pom.getParent();
         if (moduleDir == null) {
             moduleDir = getFsRootDir();
@@ -183,7 +201,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             rawModule.model = readModel(rawModule.pom);
         }
         loadedPoms.put(moduleDir, rawModule.model);
-        if (rawModule.model == null) {
+        if (rawModule.model == MISSING_MODEL) {
             return;
         }
 
@@ -212,9 +230,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                     parentDir = getFsRootDir();
                 }
                 if (!loadedPoms.containsKey(parentDir)) {
-                    var parent = new RawModule(parentPom);
-                    rawModule.parent = parent;
-                    moduleQueue.add(parent);
+                    rawModule.parent = new RawModule(parentPom);
+                    moduleQueue.push(rawModule.parent);
                 }
             }
         }
@@ -226,7 +243,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private void queueModule(Path dir) {
         if (!loadedPoms.containsKey(dir)) {
-            moduleQueue.add(new RawModule(dir.resolve(POM_XML)));
+            moduleQueue.push(new RawModule(dir.resolve(POM_XML)));
         }
     }
 
@@ -273,7 +290,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             // which we don't support in this workspace loader
             log.warn("Module(s) under " + pom.getParent() + " will be handled as thirdparty dependencies because " + pom
                     + " does not exist");
-            return null;
+            return MISSING_MODEL;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to load POM from " + pom, e);
         }

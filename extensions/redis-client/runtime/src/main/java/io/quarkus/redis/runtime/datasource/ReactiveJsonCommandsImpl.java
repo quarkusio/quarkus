@@ -111,7 +111,7 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
         }
         // With Redis 7.2 the response is a BULK (String) but using a nested array.
         Buffer buffer = r.toBuffer();
-        if (buffer.toJson() instanceof JsonArray) {
+        if (buffer.toJsonValue() instanceof JsonArray) {
             var array = buffer.toJsonArray();
             if (array.size() == 0) {
                 return null;
@@ -127,7 +127,7 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
         }
         // With Redis 7.2 the response is a BULK (String) but using a nested array.
         Buffer buffer = r.toBuffer();
-        if (buffer.toJson() instanceof JsonArray) {
+        if (buffer.toJsonValue() instanceof JsonArray) {
             var array = buffer.toJsonArray();
             if (array.size() == 0) {
                 return new JsonArray();

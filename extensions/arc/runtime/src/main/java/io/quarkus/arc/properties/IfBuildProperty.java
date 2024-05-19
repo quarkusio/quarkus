@@ -1,5 +1,8 @@
 package io.quarkus.arc.properties;
 
+import io.quarkus.arc.lookup.LookupIfProperty;
+import io.quarkus.arc.lookup.LookupUnlessProperty;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
@@ -15,6 +18,10 @@ import java.lang.annotation.Target;
  * <p>
  * This annotation is repeatable. A bean will only be enabled if all the conditions defined by the {@link IfBuildProperty}
  * annotations are satisfied.
+ *
+ * @see UnlessBuildProperty
+ * @see LookupIfProperty
+ * @see LookupUnlessProperty
  */
 @Repeatable(IfBuildProperty.List.class)
 @Retention(RetentionPolicy.RUNTIME)

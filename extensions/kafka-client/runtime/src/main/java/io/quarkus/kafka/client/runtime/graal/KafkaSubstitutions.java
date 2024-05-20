@@ -1,4 +1,4 @@
-package io.smallrye.reactive.kafka.graal;
+package io.quarkus.kafka.client.runtime.graal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

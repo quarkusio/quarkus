@@ -1,10 +1,10 @@
-package io.quarkus.container.image.docker.deployment;
+package io.quarkus.container.image.docker.common.deployment;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-interface DockerFileBaseInformationProvider {
+public interface DockerFileBaseInformationProvider {
 
     Optional<DockerFileBaseInformation> determine(Path dockerFile);
 
@@ -16,32 +16,19 @@ interface DockerFileBaseInformationProvider {
 
             @Override
             public Optional<DockerFileBaseInformation> determine(Path dockerFile) {
-                for (DockerFileBaseInformationProvider delegate : delegates) {
-                    Optional<DockerFileBaseInformation> result = delegate.determine(dockerFile);
+                for (var delegate : delegates) {
+                    var result = delegate.determine(dockerFile);
+
                     if (result.isPresent()) {
                         return result;
                     }
                 }
+
                 return Optional.empty();
             }
         };
     }
 
-    class DockerFileBaseInformation {
-        private final int javaVersion;
-        private final String baseImage;
-
-        public DockerFileBaseInformation(String baseImage, int javaVersion) {
-            this.javaVersion = javaVersion;
-            this.baseImage = baseImage;
-        }
-
-        public int getJavaVersion() {
-            return javaVersion;
-        }
-
-        public String getBaseImage() {
-            return baseImage;
-        }
+    record DockerFileBaseInformation(String baseImage, int javaVersion) {
     }
 }

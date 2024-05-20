@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image</artifactId>
+            <artifactId>quarkus-container-image-docker-common</artifactId>
         </dependency>
     </dependencies>
 

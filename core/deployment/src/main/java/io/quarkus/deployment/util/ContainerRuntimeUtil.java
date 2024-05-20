@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -44,13 +46,21 @@ public final class ContainerRuntimeUtil {
         return detectContainerRuntime(true);
     }
 
+    public static ContainerRuntime detectContainerRuntime(List<ContainerRuntime> orderToCheckRuntimes) {
+        return detectContainerRuntime(true, orderToCheckRuntimes);
+    }
+
     public static ContainerRuntime detectContainerRuntime(boolean required) {
+        return detectContainerRuntime(required, List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
+    }
+
+    public static ContainerRuntime detectContainerRuntime(boolean required, List<ContainerRuntime> orderToCheckRuntimes) {
         ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
         if (containerRuntime != null) {
             return containerRuntime;
         }
 
-        final ContainerRuntime containerRuntimeEnvironment = getContainerRuntimeEnvironment();
+        final ContainerRuntime containerRuntimeEnvironment = getContainerRuntimeEnvironment(orderToCheckRuntimes);
         if (containerRuntimeEnvironment == ContainerRuntime.UNAVAILABLE) {
             storeContainerRuntimeInSystemProperty(ContainerRuntime.UNAVAILABLE);
 
@@ -70,47 +80,58 @@ public final class ContainerRuntimeUtil {
         return containerRuntime;
     }
 
-    private static ContainerRuntime getContainerRuntimeEnvironment() {
+    private static ContainerRuntime getContainerRuntimeEnvironment(List<ContainerRuntime> orderToCheckRuntimes) {
         // Docker version 19.03.14, build 5eb3275d40
-        String dockerVersionOutput;
-        boolean dockerAvailable;
+
         // Check if Podman is installed
         // podman version 2.1.1
-        String podmanVersionOutput;
-        boolean podmanAvailable;
+        var runtimesToCheck = new ArrayList<>(orderToCheckRuntimes.stream().distinct().toList());
+        runtimesToCheck.retainAll(List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
 
         if (CONTAINER_EXECUTABLE != null) {
-            if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("docker")) {
-                dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
-                dockerAvailable = dockerVersionOutput.contains("Docker version");
-                if (dockerAvailable) {
-                    return ContainerRuntime.DOCKER;
-                }
+            var runtime = runtimesToCheck.stream()
+                    .filter(containerRuntime -> CONTAINER_EXECUTABLE.trim()
+                            .equalsIgnoreCase(containerRuntime.getExecutableName()))
+                    .findFirst()
+                    .filter(r -> {
+                        var versionOutput = getVersionOutputFor(r);
+
+                        return switch (r) {
+                            case DOCKER, DOCKER_ROOTLESS -> versionOutput.contains("Docker version");
+                            case PODMAN, PODMAN_ROOTLESS -> PODMAN_PATTERN.matcher(versionOutput).matches();
+                            default -> false;
+                        };
+                    });
+
+            if (runtime.isPresent()) {
+                return runtime.get();
+            } else {
+                log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
+                        "and the executable must be available. Ignoring it.");
             }
-            if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
-                podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-                podmanAvailable = PODMAN_PATTERN.matcher(podmanVersionOutput).matches();
-                if (podmanAvailable) {
-                    return ContainerRuntime.PODMAN;
-                }
-            }
-            log.warn("quarkus.native.container-runtime config property must be set to either podman or docker " +
-                    "and the executable must be available. Ignoring it.");
         }
 
-        dockerVersionOutput = getVersionOutputFor(ContainerRuntime.DOCKER);
-        dockerAvailable = dockerVersionOutput.contains("Docker version");
-        if (dockerAvailable) {
-            // Check if "docker" is an alias to "podman"
-            if (PODMAN_PATTERN.matcher(dockerVersionOutput).matches()) {
-                return ContainerRuntime.PODMAN;
+        for (var runtime : runtimesToCheck) {
+            var versionOutput = getVersionOutputFor(runtime);
+
+            switch (runtime) {
+                case DOCKER:
+                case DOCKER_ROOTLESS:
+                    var dockerAvailable = versionOutput.contains("Docker version");
+                    if (dockerAvailable) {
+                        // Check if "docker" is an alias to podman
+                        return PODMAN_PATTERN.matcher(versionOutput).matches() ? ContainerRuntime.PODMAN
+                                : ContainerRuntime.DOCKER;
+                    }
+                    break;
+
+                case PODMAN:
+                case PODMAN_ROOTLESS:
+                    if (PODMAN_PATTERN.matcher(versionOutput).matches()) {
+                        return ContainerRuntime.PODMAN;
+                    }
+                    break;
             }
-            return ContainerRuntime.DOCKER;
-        }
-        podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-        podmanAvailable = PODMAN_PATTERN.matcher(podmanVersionOutput).matches();
-        if (podmanAvailable) {
-            return ContainerRuntime.PODMAN;
         }
 
         return ContainerRuntime.UNAVAILABLE;

@@ -1,4 +1,4 @@
-package io.quarkus.container.image.docker.deployment;
+package io.quarkus.container.image.docker.common.deployment;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,8 +14,7 @@ import java.util.stream.Stream;
  * Can extract information from Dockerfile that uses {@code registry.access.redhat.com/ubi8/ubi-minimal:$d.$d} as the
  * base image
  */
-class UbiMinimalBaseProvider
-        implements DockerFileBaseInformationProvider {
+class UbiMinimalBaseProvider implements DockerFileBaseInformationProvider {
 
     public static final String UBI_MINIMAL_PREFIX = "registry.access.redhat.com/ubi8/ubi-minimal";
 

@@ -13,12 +13,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -46,7 +44,6 @@ import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
-import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.vertx.core.AsyncResult;
@@ -584,15 +581,7 @@ public class VertxCoreRecorder {
                     // The CDI contexts must not be propagated
                     // First test if VertxCurrentContextFactory is actually used
                     if (currentContextFactory != null) {
-                        List<String> keys = currentContextFactory.keys();
-                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsScopeKey(keys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
-                            vertxContext.localContextData().putAll(local);
-                            keys.forEach(vertxContext.localContextData()::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
-                        }
+                        vertxContext = currentContextFactory.duplicateContextIfContainsAnyCreatedScopeKeys(vertxContext);
                     }
                     vertxContext.beginDispatch();
                     try {
@@ -603,23 +592,6 @@ public class VertxCoreRecorder {
                 } else {
                     task.run();
                 }
-            }
-
-            private boolean containsScopeKey(List<String> keys, Map<Object, Object> localContextData) {
-                if (keys.isEmpty()) {
-                    return false;
-                }
-                if (keys.size() == 1) {
-                    // Very often there will be only one key used
-                    return localContextData.containsKey(keys.get(0));
-                } else {
-                    for (String key : keys) {
-                        if (localContextData.containsKey(key)) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
             }
         };
     }

@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
@@ -15,14 +14,12 @@ import jakarta.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.DotName;
 
 class ExtensionPhaseEnhancement extends ExtensionPhaseBase {
-    private final AllAnnotationOverlays annotationOverlays;
-    private final AllAnnotationTransformations annotationTransformations;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
     ExtensionPhaseEnhancement(ExtensionInvoker invoker, org.jboss.jandex.IndexView beanArchiveIndex,
-            SharedErrors errors, AllAnnotationTransformations annotationTransformations) {
+            SharedErrors errors, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay) {
         super(ExtensionPhase.ENHANCEMENT, invoker, beanArchiveIndex, errors);
-        this.annotationOverlays = annotationTransformations.annotationOverlays;
-        this.annotationTransformations = annotationTransformations;
+        this.annotationOverlay = annotationOverlay;
     }
 
     @Override
@@ -56,35 +53,35 @@ class ExtensionPhaseEnhancement extends ExtensionPhaseBase {
                 .get(); // guaranteed to be there
 
         List<org.jboss.jandex.ClassInfo> matchingClasses = matchingClasses(method.jandex);
-        List<Object> allValuesForQueryParameter;
+        List<?> allValuesForQueryParameter;
         if (query == ExtensionMethodParameter.CLASS_INFO) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassInfoImpl(index, annotationOverlays, it))
-                    .collect(Collectors.toUnmodifiableList());
+                    .map(it -> new ClassInfoImpl(index, annotationOverlay, it))
+                    .toList();
         } else if (query == ExtensionMethodParameter.METHOD_INFO) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassInfoImpl(index, annotationOverlays, it))
+                    .map(it -> new ClassInfoImpl(index, annotationOverlay, it))
                     .flatMap(it -> Stream.concat(it.constructors().stream(), it.methods().stream()))
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         } else if (query == ExtensionMethodParameter.FIELD_INFO) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassInfoImpl(index, annotationOverlays, it))
+                    .map(it -> new ClassInfoImpl(index, annotationOverlay, it))
                     .flatMap(it -> it.fields().stream())
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         } else if (query == ExtensionMethodParameter.CLASS_CONFIG) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassConfigImpl(index, annotationTransformations, it))
-                    .collect(Collectors.toUnmodifiableList());
+                    .map(it -> new ClassConfigImpl(index, annotationOverlay, it))
+                    .toList();
         } else if (query == ExtensionMethodParameter.METHOD_CONFIG) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassConfigImpl(index, annotationTransformations, it))
+                    .map(it -> new ClassConfigImpl(index, annotationOverlay, it))
                     .flatMap(it -> Stream.concat(it.constructors().stream(), it.methods().stream()))
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         } else if (query == ExtensionMethodParameter.FIELD_CONFIG) {
             allValuesForQueryParameter = matchingClasses.stream()
-                    .map(it -> new ClassConfigImpl(index, annotationTransformations, it))
+                    .map(it -> new ClassConfigImpl(index, annotationOverlay, it))
                     .flatMap(it -> it.fields().stream())
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
         } else {
             throw new IllegalArgumentException("Unknown query parameter " + query);
         }
@@ -168,7 +165,7 @@ class ExtensionPhaseEnhancement extends ExtensionPhaseBase {
     @Override
     Object argumentForExtensionMethod(ExtensionMethodParameter type, ExtensionMethod method) {
         if (type == ExtensionMethodParameter.TYPES) {
-            return new TypesImpl(index, annotationOverlays);
+            return new TypesImpl(index, annotationOverlay);
         }
 
         return super.argumentForExtensionMethod(type, method);

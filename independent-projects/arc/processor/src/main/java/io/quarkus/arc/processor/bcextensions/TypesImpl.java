@@ -16,11 +16,11 @@ import org.jboss.jandex.DotName;
 
 class TypesImpl implements Types {
     private final org.jboss.jandex.IndexView jandexIndex;
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
-    TypesImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays) {
+    TypesImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
     }
 
     @Override
@@ -61,7 +61,7 @@ class TypesImpl implements Types {
 
         org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(DotName.createSimple(clazz.getName()),
                 org.jboss.jandex.Type.Kind.CLASS);
-        return new ClassTypeImpl(jandexIndex, annotationOverlays, jandexType.asClassType());
+        return new ClassTypeImpl(jandexIndex, annotationOverlay, jandexType.asClassType());
 
     }
 
@@ -69,21 +69,21 @@ class TypesImpl implements Types {
     public VoidType ofVoid() {
         org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(DotName.createSimple("void"),
                 org.jboss.jandex.Type.Kind.VOID);
-        return new VoidTypeImpl(jandexIndex, annotationOverlays, jandexType.asVoidType());
+        return new VoidTypeImpl(jandexIndex, annotationOverlay, jandexType.asVoidType());
     }
 
     @Override
     public PrimitiveType ofPrimitive(PrimitiveType.PrimitiveKind kind) {
         org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(DotName.createSimple(kind.name().toLowerCase()),
                 org.jboss.jandex.Type.Kind.PRIMITIVE);
-        return new PrimitiveTypeImpl(jandexIndex, annotationOverlays, jandexType.asPrimitiveType());
+        return new PrimitiveTypeImpl(jandexIndex, annotationOverlay, jandexType.asPrimitiveType());
     }
 
     @Override
     public ClassType ofClass(ClassInfo clazz) {
         org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(((ClassInfoImpl) clazz).jandexDeclaration.name(),
                 org.jboss.jandex.Type.Kind.CLASS);
-        return new ClassTypeImpl(jandexIndex, annotationOverlays, jandexType.asClassType());
+        return new ClassTypeImpl(jandexIndex, annotationOverlay, jandexType.asClassType());
     }
 
     @Override
@@ -94,14 +94,14 @@ class TypesImpl implements Types {
             return null;
         }
         org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(className, org.jboss.jandex.Type.Kind.CLASS);
-        return new ClassTypeImpl(jandexIndex, annotationOverlays, jandexType.asClassType());
+        return new ClassTypeImpl(jandexIndex, annotationOverlay, jandexType.asClassType());
     }
 
     @Override
     public ArrayType ofArray(Type componentType, int dimensions) {
         org.jboss.jandex.ArrayType jandexType = org.jboss.jandex.ArrayType.create(((TypeImpl<?>) componentType).jandexType,
                 dimensions);
-        return new ArrayTypeImpl(jandexIndex, annotationOverlays, jandexType);
+        return new ArrayTypeImpl(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
@@ -130,26 +130,26 @@ class TypesImpl implements Types {
 
         org.jboss.jandex.ParameterizedType jandexType = org.jboss.jandex.ParameterizedType.create(genericTypeName,
                 jandexTypeArguments, null);
-        return new ParameterizedTypeImpl(jandexIndex, annotationOverlays, jandexType);
+        return new ParameterizedTypeImpl(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
     public WildcardType wildcardWithUpperBound(Type upperBound) {
         org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType
                 .createUpperBound(((TypeImpl<?>) upperBound).jandexType);
-        return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType);
+        return new WildcardTypeImpl(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
     public WildcardType wildcardWithLowerBound(Type lowerBound) {
         org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType
                 .createLowerBound(((TypeImpl<?>) lowerBound).jandexType);
-        return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType);
+        return new WildcardTypeImpl(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
     public WildcardType wildcardUnbounded() {
-        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType.create(null, true);
-        return new WildcardTypeImpl(jandexIndex, annotationOverlays, jandexType);
+        org.jboss.jandex.WildcardType jandexType = org.jboss.jandex.WildcardType.UNBOUNDED;
+        return new WildcardTypeImpl(jandexIndex, annotationOverlay, jandexType);
     }
 }

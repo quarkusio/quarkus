@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -83,7 +84,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<QualifierRegistrar> qualifierRegistrars;
         private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         private final List<StereotypeRegistrar> stereotypeRegistrars;
-        private final List<AnnotationsTransformer> annotationsTransformers;
+        private final List<AnnotationTransformation> annotationsTransformers;
         private final List<InjectionPointsTransformer> injectionsPointsTransformers;
         private final List<ObserverTransformer> observerTransformers;
         private final List<BeanDeploymentValidator> beanDeploymentValidators;
@@ -152,8 +153,17 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        /**
+         * @deprecated use {@link #annotationTransformations(AnnotationTransformation...)}
+         */
+        @Deprecated(forRemoval = true)
         public Builder annotationsTransformers(AnnotationsTransformer... transformers) {
             Collections.addAll(this.annotationsTransformers, transformers);
+            return this;
+        }
+
+        public Builder annotationTransformations(AnnotationTransformation... transformations) {
+            Collections.addAll(this.annotationsTransformers, transformations);
             return this;
         }
 
@@ -247,7 +257,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final List<QualifierRegistrar> qualifierRegistrars;
     private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
     private final List<StereotypeRegistrar> stereotypeRegistrars;
-    private final List<AnnotationsTransformer> annotationsTransformers;
+    private final List<AnnotationTransformation> annotationsTransformers;
     private final List<InjectionPointsTransformer> injectionPointsTransformers;
     private final List<ObserverTransformer> observerTransformers;
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
@@ -444,7 +454,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             qualifierRegistrars.forEach(builder::addQualifierRegistrar);
             interceptorBindingRegistrars.forEach(builder::addInterceptorBindingRegistrar);
             stereotypeRegistrars.forEach(builder::addStereotypeRegistrar);
-            annotationsTransformers.forEach(builder::addAnnotationTransformer);
+            annotationsTransformers.forEach(builder::addAnnotationTransformation);
             injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
             observerTransformers.forEach(builder::addObserverTransformer);
             beanDeploymentValidators.forEach(builder::addBeanDeploymentValidator);

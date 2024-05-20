@@ -153,7 +153,10 @@ public class BeanDeployment {
         this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
         this.applicationClassPredicate = builder.applicationClassPredicate;
-        this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
+        this.annotationStore = new AnnotationStore(builder.beanArchiveComputingIndex != null
+                ? builder.beanArchiveComputingIndex
+                : builder.beanArchiveImmutableIndex,
+                builder.annotationTransformers);
         buildContext.putInternal(Key.ANNOTATION_STORE, annotationStore);
 
         this.injectionPointTransformer = new InjectionPointModifier(

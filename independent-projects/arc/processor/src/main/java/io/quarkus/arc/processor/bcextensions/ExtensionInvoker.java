@@ -10,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.interceptor.Interceptor;
 
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.JandexReflection;
 
 // only this class uses reflection, everything else in this package is reflection-free
 class ExtensionInvoker {
@@ -69,7 +67,7 @@ class ExtensionInvoker {
                     return p1 < p2 ? -1 : 1;
                 })
                 .map(ExtensionMethod::new)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     private int getExtensionMethodPriority(org.jboss.jandex.MethodInfo method) {
@@ -85,7 +83,7 @@ class ExtensionInvoker {
 
         Class<?>[] parameterTypes = new Class[arguments.size()];
         for (int i = 0; i < parameterTypes.length; i++) {
-            parameterTypes[i] = JandexReflection.loadRawType(method.parameterType(i));
+            parameterTypes[i] = org.jboss.jandex.JandexReflection.loadRawType(method.parameterType(i));
         }
 
         Class<?> extensionClass = extensionClasses.get(method.extensionClass.name().toString());

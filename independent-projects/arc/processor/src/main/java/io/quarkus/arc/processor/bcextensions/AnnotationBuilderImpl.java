@@ -3,7 +3,6 @@ package io.quarkus.arc.processor.bcextensions;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.build.compatible.spi.AnnotationBuilder;
 import jakarta.enterprise.lang.model.AnnotationInfo;
@@ -19,15 +18,15 @@ import io.quarkus.arc.processor.Types;
 
 class AnnotationBuilderImpl implements AnnotationBuilder {
     private final org.jboss.jandex.IndexView jandexIndex;
-    private final AllAnnotationOverlays annotationOverlays;
+    private final org.jboss.jandex.MutableAnnotationOverlay annotationOverlay;
 
     private final DotName jandexClassName;
     private final List<org.jboss.jandex.AnnotationValue> jandexAnnotationMembers = new ArrayList<>();
 
-    AnnotationBuilderImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    AnnotationBuilderImpl(org.jboss.jandex.IndexView jandexIndex, org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             DotName jandexAnnotationName) {
         this.jandexIndex = jandexIndex;
-        this.annotationOverlays = annotationOverlays;
+        this.annotationOverlay = annotationOverlay;
         this.jandexClassName = jandexAnnotationName;
     }
 
@@ -455,7 +454,7 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
         for (org.jboss.jandex.MethodInfo jandexAnnotationMember : jandexAnnotationClass.methods()
                 .stream()
                 .filter(MethodPredicates.IS_METHOD_JANDEX)
-                .collect(Collectors.toUnmodifiableList())) {
+                .toList()) {
             if (jandexAnnotationMember.defaultValue() != null) {
                 continue;
             }
@@ -471,6 +470,6 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
 
         org.jboss.jandex.AnnotationInstance jandexAnnotation = org.jboss.jandex.AnnotationInstance.create(
                 jandexClassName, null, jandexAnnotationMembers);
-        return new AnnotationInfoImpl(jandexIndex, annotationOverlays, jandexAnnotation);
+        return new AnnotationInfoImpl(jandexIndex, annotationOverlay, jandexAnnotation);
     }
 }

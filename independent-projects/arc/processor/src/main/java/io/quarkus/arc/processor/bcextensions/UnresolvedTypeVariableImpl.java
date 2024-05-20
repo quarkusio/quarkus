@@ -6,9 +6,10 @@ import jakarta.enterprise.lang.model.types.Type;
 import jakarta.enterprise.lang.model.types.TypeVariable;
 
 class UnresolvedTypeVariableImpl extends TypeImpl<org.jboss.jandex.UnresolvedTypeVariable> implements TypeVariable {
-    UnresolvedTypeVariableImpl(org.jboss.jandex.IndexView jandexIndex, AllAnnotationOverlays annotationOverlays,
+    UnresolvedTypeVariableImpl(org.jboss.jandex.IndexView jandexIndex,
+            org.jboss.jandex.MutableAnnotationOverlay annotationOverlay,
             org.jboss.jandex.UnresolvedTypeVariable jandexType) {
-        super(jandexIndex, annotationOverlays, jandexType);
+        super(jandexIndex, annotationOverlay, jandexType);
     }
 
     @Override
@@ -18,6 +19,6 @@ class UnresolvedTypeVariableImpl extends TypeImpl<org.jboss.jandex.UnresolvedTyp
 
     @Override
     public List<Type> bounds() {
-        return List.of(fromJandexType(jandexIndex, annotationOverlays, org.jboss.jandex.ClassType.OBJECT_TYPE));
+        return List.of(fromJandexType(jandexIndex, annotationOverlay, org.jboss.jandex.ClassType.OBJECT_TYPE));
     }
 }

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -569,7 +570,7 @@ public class BeanProcessor {
         ReflectionRegistration reflectionRegistration;
 
         final List<DotName> resourceAnnotations;
-        final List<AnnotationsTransformer> annotationTransformers;
+        final List<AnnotationTransformation> annotationTransformers;
         final List<InjectionPointsTransformer> injectionPointTransformers;
         final List<ObserverTransformer> observerTransformers;
         final List<BeanRegistrar> beanRegistrars;
@@ -714,8 +715,17 @@ public class BeanProcessor {
             return this;
         }
 
+        /**
+         * @deprecated use {@link #addAnnotationTransformation(AnnotationTransformation)}
+         */
+        @Deprecated(forRemoval = true)
         public Builder addAnnotationTransformer(AnnotationsTransformer transformer) {
             this.annotationTransformers.add(transformer);
+            return this;
+        }
+
+        public Builder addAnnotationTransformation(AnnotationTransformation transformation) {
+            this.annotationTransformers.add(transformation);
             return this;
         }
 

@@ -39,7 +39,7 @@ public class AdditionalStereotypesTest {
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(ToBeStereotype.class, SimpleBinding.class, SimpleInterceptor.class, SomeBean.class)
             .stereotypeRegistrars(new MyStereotypeRegistrar())
-            .annotationsTransformers(new MyAnnotationTrasnformer())
+            .annotationTransformations(new MyAnnotationTrasnformer())
             .build();
 
     @Test

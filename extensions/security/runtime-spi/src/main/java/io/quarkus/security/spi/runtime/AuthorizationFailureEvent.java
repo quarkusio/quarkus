@@ -12,6 +12,7 @@ public final class AuthorizationFailureEvent extends AbstractSecurityEvent {
     public static final String AUTHORIZATION_FAILURE_KEY = AuthorizationFailureEvent.class.getName()
             + ".FAILURE";
     public static final String AUTHORIZATION_CONTEXT_KEY = AuthorizationFailureEvent.class.getName() + ".CONTEXT";
+    public static final String SECURED_METHOD_KEY = AuthorizationFailureEvent.class.getName() + ".SECURED_METHOD";
 
     public AuthorizationFailureEvent(SecurityIdentity securityIdentity, Throwable authorizationFailure,
             String authorizationContext) {
@@ -21,6 +22,12 @@ public final class AuthorizationFailureEvent extends AbstractSecurityEvent {
     public AuthorizationFailureEvent(SecurityIdentity securityIdentity, Throwable authorizationFailure,
             String authorizationContext, Map<String, Object> eventProperties) {
         super(securityIdentity, withProperties(authorizationFailure, authorizationContext, eventProperties));
+    }
+
+    public AuthorizationFailureEvent(SecurityIdentity securityIdentity, Throwable authorizationFailure,
+            String authorizationContext, Map<String, Object> eventProperties, MethodDescription securedMethod) {
+        this(securityIdentity, authorizationFailure, authorizationContext,
+                withProperties(SECURED_METHOD_KEY, toString(securedMethod), eventProperties));
     }
 
     public Throwable getAuthorizationFailure() {

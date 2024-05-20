@@ -53,6 +53,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -388,6 +389,16 @@ public class HttpSecurityProcessor {
                     .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor))
                     .unremovable()
                     .done());
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void addRoutingCtxToSecurityEventsForCdiBeans(HttpSecurityRecorder recorder, Capabilities capabilities,
+            BuildProducer<AdditionalSecurityConstrainerEventPropsBuildItem> producer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            producer.produce(
+                    new AdditionalSecurityConstrainerEventPropsBuildItem(recorder.createAdditionalSecEventPropsSupplier()));
         }
     }
 

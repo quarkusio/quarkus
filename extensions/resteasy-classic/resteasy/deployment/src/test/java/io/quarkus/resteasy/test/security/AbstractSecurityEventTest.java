@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.enterprise.event.Observes;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
 import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
@@ -38,7 +40,7 @@ public abstract class AbstractSecurityEventTest {
     protected static final Class<?>[] TEST_CLASSES = {
             RolesAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
             UnsecuredResource.class, UnsecuredSubResource.class, EventObserver.class, UnsecuredResourceInterface.class,
-            UnsecuredParentResource.class
+            UnsecuredParentResource.class, RolesAllowedService.class, RolesAllowedServiceResource.class
     };
 
     @Inject
@@ -96,6 +98,99 @@ public abstract class AbstractSecurityEventTest {
     }
 
     @Test
+    public void testNestedRolesAllowed() {
+        // there are 2 different checks in place: user & admin on resource, admin on service
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/roles-service/hello").then().statusCode(200)
+                .body(is(RolesAllowedService.SERVICE_HELLO));
+        assertSyncObserved(3);
+        AuthenticationSuccessEvent successEvent = (AuthenticationSuccessEvent) observer.syncEvents.get(0);
+        SecurityIdentity identity = successEvent.getSecurityIdentity();
+        assertNotNull(identity);
+        assertEquals("admin", identity.getPrincipal().getName());
+        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties().get(RoutingContext.class.getName());
+        assertNotNull(routingContext);
+        assertTrue(routingContext.request().path().endsWith("/roles-service/hello"));
+        // authorization success on endpoint
+        AuthorizationSuccessEvent authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(1);
+        assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
+        identity = authZSuccessEvent.getSecurityIdentity();
+        assertEquals(routingContext, authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        String securedMethod = (String) authZSuccessEvent.getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.test.security.RolesAllowedServiceResource#getServiceHello",
+                securedMethod);
+        // authorization success on service level performed by CDI interceptor
+        authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(2);
+        securedMethod = (String) authZSuccessEvent.getEventProperties().get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.test.security.RolesAllowedService#hello", securedMethod);
+        assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
+        assertNotNull(authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertAsyncAuthZFailureObserved(0);
+        RestAssured.given().auth().preemptive().basic("user", "user").get("/roles-service/hello").then().statusCode(403);
+        assertSyncObserved(6);
+        // "roles-service" Jakarta REST resource requires 'admin' or 'user' role, therefore check succeeds
+        successEvent = (AuthenticationSuccessEvent) observer.syncEvents.get(3);
+        identity = successEvent.getSecurityIdentity();
+        assertNotNull(identity);
+        assertEquals("user", identity.getPrincipal().getName());
+        routingContext = (RoutingContext) successEvent.getEventProperties().get(RoutingContext.class.getName());
+        assertNotNull(routingContext);
+        assertTrue(routingContext.request().path().endsWith("/roles-service/hello"));
+        authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(4);
+        assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
+        assertEquals(routingContext, authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        // RolesService requires 'admin' role, therefore user fails
+        assertAsyncAuthZFailureObserved(1);
+        AuthorizationFailureEvent authZFailureEvent = observer.asyncAuthZFailureEvents.get(0);
+        securedMethod = (String) authZFailureEvent.getEventProperties().get(AuthorizationFailureEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.test.security.RolesAllowedService#hello", securedMethod);
+        SecurityIdentity userIdentity = authZFailureEvent.getSecurityIdentity();
+        assertNotNull(userIdentity);
+        assertTrue(userIdentity.hasRole("user"));
+        assertEquals("user", userIdentity.getPrincipal().getName());
+        assertNotNull(authZFailureEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertEquals(RolesAllowedCheck.class.getName(), authZFailureEvent.getAuthorizationContext());
+    }
+
+    @Test
+    public void testNestedPermitAll() {
+        // @PermitAll is on CDI bean but resource is not secured
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/roles-service/bye").then().statusCode(200)
+                .body(is(RolesAllowedService.SERVICE_BYE));
+        final int expectedEventsCount;
+        if (isProactiveAuth()) {
+            // auth + @PermitAll
+            expectedEventsCount = 2;
+        } else {
+            // @PermitAll
+            expectedEventsCount = 1;
+        }
+        assertSyncObserved(expectedEventsCount, true);
+
+        if (expectedEventsCount == 2) {
+            AuthenticationSuccessEvent successEvent = (AuthenticationSuccessEvent) observer.syncEvents.get(0);
+            SecurityIdentity identity = successEvent.getSecurityIdentity();
+            assertNotNull(identity);
+            assertEquals("admin", identity.getPrincipal().getName());
+            RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties()
+                    .get(RoutingContext.class.getName());
+            assertNotNull(routingContext);
+            assertTrue(routingContext.request().path().endsWith("/roles-service/bye"));
+        }
+        // authorization success on service level performed by CDI interceptor
+        var authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(expectedEventsCount - 1);
+        String securedMethod = (String) authZSuccessEvent.getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.test.security.RolesAllowedService#bye", securedMethod);
+        assertNotNull(authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        if (isProactiveAuth()) {
+            assertNotNull(authZSuccessEvent.getSecurityIdentity());
+            assertEquals("admin", authZSuccessEvent.getSecurityIdentity().getPrincipal().getName());
+        }
+        assertAsyncAuthZFailureObserved(0);
+    }
+
+    @Test
     public void testAuthenticated() {
         RestAssured.given().auth().preemptive().basic("admin", "admin").get("/unsecured/authenticated").then().statusCode(200)
                 .body(is("authenticated"));
@@ -115,6 +210,8 @@ public abstract class AbstractSecurityEventTest {
         SecurityIdentity anonymousIdentity = authZFailure.getSecurityIdentity();
         assertNotNull(anonymousIdentity);
         assertTrue(anonymousIdentity.isAnonymous());
+        String securedMethod = (String) authZFailure.getEventProperties().get(AuthorizationFailureEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.test.security.UnsecuredResource#authenticated", securedMethod);
     }
 
     @Test
@@ -152,8 +249,7 @@ public abstract class AbstractSecurityEventTest {
             assertNotNull(routingContext);
             assertTrue(routingContext.request().path().endsWith("/unsecured/permitAll"));
             AuthorizationSuccessEvent authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(1);
-            // SecurityIdentity is not required for the permit all check
-            assertNull(authZSuccessEvent.getSecurityIdentity());
+            assertNotNull(authZSuccessEvent.getSecurityIdentity());
         } else {
             assertSyncObserved(1, true);
             AuthorizationSuccessEvent authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(0);
@@ -186,6 +282,9 @@ public abstract class AbstractSecurityEventTest {
                 .untilAsserted(() -> assertEquals(count, observer.asyncAuthZFailureEvents.size()));
         if (count > 0) {
             assertTrue(observer.asyncAuthZFailureEvents.stream().allMatch(e -> e.getSecurityIdentity() != null));
+            assertTrue(observer.asyncAuthZFailureEvents.stream()
+                    .map(e -> e.getEventProperties().get(RoutingContext.class.getName()))
+                    .allMatch(Objects::nonNull));
         }
     }
 

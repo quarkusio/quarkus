@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
 import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 import static io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem.getBodyHandlerRequiredConditions;
 import static io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType.FRAMEWORK_ROUTE;
@@ -39,10 +40,15 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.GraalVM;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
@@ -50,6 +56,7 @@ import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsRegistryBuildItem;
+import io.quarkus.utilities.OS;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
@@ -506,5 +513,75 @@ class VertxHttpProcessor {
         }
 
         return false;
+    }
+
+    /**
+     * Compressors, deals with adding brotli compression via Brotli4J JNI wrapper.
+     */
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void brotliResources(HttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<NativeImageResourcePatternsBuildItem> resources,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) throws BuildException {
+
+        if (httpBuildTimeConfig.compressors.isPresent() &&
+                httpBuildTimeConfig.compressors.get().stream().anyMatch(s -> s.equalsIgnoreCase("br"))) {
+            final String arch = System.getProperty("os.arch");
+            final boolean amd64 = arch.matches("^(amd64|x64|x86_64)$");
+            final boolean aarch64 = "aarch64".equals(arch);
+            final String lib;
+            if (OS.determineOS() == OS.LINUX) {
+                if (amd64) {
+                    lib = "linux-x86_64/libbrotli.so";
+                } else if (aarch64) {
+                    lib = "linux-aarch64/libbrotli.so";
+                } else {
+                    throw new BuildException("Brotli compressor: No library for linux-" + arch);
+                }
+            } else if (OS.determineOS() == OS.WINDOWS) {
+                if (amd64) {
+                    lib = "windows-x86_64/brotli.dll";
+                } else if (aarch64) {
+                    lib = "windows-aarch64/brotli.dll";
+                } else {
+                    throw new BuildException("Brotli compressor: No library for windows-" + arch);
+                }
+            } else if (OS.determineOS() == OS.MAC) {
+                if (amd64) {
+                    lib = "osx-x86_64/libbrotli.dylib";
+                } else if (aarch64) {
+                    lib = "osx-aarch64/libbrotli.dylib";
+                } else {
+                    throw new BuildException("Brotli compressor: No library for osx-" + arch);
+                }
+            } else {
+                throw new BuildException("Brotli compressor: Your platform is not supported.");
+            }
+
+            resources.produce(NativeImageResourcePatternsBuildItem.builder()
+                    // We do have Brotli4J on classpath thanks to Vert.X -> Netty dependencies.
+                    .includePattern("\\QMETA-INF/services/com.aayushatharva.brotli4j.service.BrotliNativeProvider\\E")
+                    // Native library. We pick only the one relevant to our system.
+                    .includePattern("\\Qlib/" + lib + "\\E")
+                    .build());
+
+            // Static initializer tries to load the native library in Brotli4jLoader; must be done at runtime.
+            runtimeInitializedClasses
+                    .produce(new RuntimeInitializedClassBuildItem("com.aayushatharva.brotli4j.Brotli4jLoader"));
+            final GraalVM.Version v;
+            if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+                v = CURRENT;
+                logger.warnf("native-image is not installed. " +
+                        "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
+            } else {
+                v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+            }
+            // Newer 23.1+ GraalVM/Mandrel does not need this explicitly marked for runtime init thanks
+            // to a different strategy: https://github.com/oracle/graal/blob/vm-23.1.0/substratevm/CHANGELOG.md?plain=1#L10
+            if (v.compareTo(GraalVM.Version.VERSION_23_1_0) <= 0) {
+                runtimeInitializedClasses
+                        .produce(new RuntimeInitializedClassBuildItem("io.netty.handler.codec.compression.Brotli"));
+            }
+        }
     }
 }

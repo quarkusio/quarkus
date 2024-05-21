@@ -227,6 +227,7 @@
                 <module>hibernate-orm-jpamodelgen</module>
                 <module>hibernate-orm-envers</module>
                 <module>vertx-http</module>
+                <module>vertx-http-compressors</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>

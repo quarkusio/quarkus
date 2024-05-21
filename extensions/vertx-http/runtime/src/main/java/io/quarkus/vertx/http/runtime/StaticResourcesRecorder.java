@@ -134,7 +134,7 @@ public class StaticResourcesRecorder {
             return false;
         }
         final String resourcePath = path.endsWith("/") ? path + StaticHandler.DEFAULT_INDEX_PAGE : path;
-        String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
+        final String contentType = MimeMapping.getMimeTypeForFilename(resourcePath);
         return contentType != null && compressMediaTypes.contains(contentType);
     }
 

@@ -20,8 +20,8 @@ import io.quarkus.runtime.LaunchMode;
  * <p>
  * mvn install -Dit.test=DevMojoIT#methodName
  */
-@Disabled // because of https://github.com/quarkiverse/quarkus-pact/issues/73
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
+@Disabled("The base function now works via quarkus:test, but the test infrastructure for seeing how many tests ran needs the dev ui to be running")
 public class TestParameterTestModeIT extends RunAndCheckMojoTestBase {
 
     @Override

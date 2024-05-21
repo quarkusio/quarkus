@@ -56,14 +56,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-messaging-pulsar</artifactId>
+    <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-messaging-pulsar")
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-pulsar")
 ----
 
 [NOTE]

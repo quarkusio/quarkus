@@ -43,7 +43,7 @@
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <jackson-bom.version>2.17.1</jackson-bom.version>
         <smallrye-beanbag.version>1.4.1</smallrye-beanbag.version>
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <junit.jupiter.version>5.11.0-M2</junit.jupiter.version>
     </properties>
     <build>
         <testResources>

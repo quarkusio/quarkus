@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.security;
+package io.quarkus.resteasy.test.security;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -23,4 +23,5 @@ public class RolesAllowedServiceResource {
     public String getServiceBye() {
         return rolesAllowedService.bye();
     }
+
 }

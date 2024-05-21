@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.reactive.server.test.security;
+package io.quarkus.resteasy.test.security;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;

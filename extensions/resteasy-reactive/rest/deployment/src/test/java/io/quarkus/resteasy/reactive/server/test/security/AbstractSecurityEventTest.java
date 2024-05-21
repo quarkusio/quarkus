@@ -130,10 +130,16 @@ public abstract class AbstractSecurityEventTest {
         assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
         identity = authZSuccessEvent.getSecurityIdentity();
         assertEquals(routingContext, authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        String securedMethod = (String) authZSuccessEvent.getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.reactive.server.test.security.RolesAllowedServiceResource#getServiceHello",
+                securedMethod);
         // authorization success on service level performed by CDI interceptor
         authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(2);
+        securedMethod = (String) authZSuccessEvent.getEventProperties().get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.reactive.server.test.security.RolesAllowedService#hello", securedMethod);
         assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
-        assertNull(authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertNotNull(authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         assertAsyncAuthZFailureObserved(0);
         RestAssured.given().auth().preemptive().basic("user", "user").get("/roles-service/hello").then().statusCode(403);
         assertSyncObserved(6, false, false);
@@ -149,16 +155,54 @@ public abstract class AbstractSecurityEventTest {
         assertEquals(identity, authZSuccessEvent.getSecurityIdentity());
         assertEquals(routingContext, authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         // RolesService requires 'admin' role, therefore user fails
-        // here security check is performed on CDI bean by security interceptor, therefore no RoutingContext is added
-        assertAsyncAuthZFailureObserved(1, false);
+        assertAsyncAuthZFailureObserved(1);
         AuthorizationFailureEvent authZFailureEvent = observer.asyncAuthZFailureEvents.get(0);
+        securedMethod = (String) authZFailureEvent.getEventProperties().get(AuthorizationFailureEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.reactive.server.test.security.RolesAllowedService#hello", securedMethod);
         SecurityIdentity userIdentity = authZFailureEvent.getSecurityIdentity();
         assertNotNull(userIdentity);
         assertTrue(userIdentity.hasRole("user"));
         assertEquals("user", userIdentity.getPrincipal().getName());
-        // there is no RoutingContext as the check is performed by security interceptor
-        assertNull(authZFailureEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertNotNull(authZFailureEvent.getEventProperties().get(RoutingContext.class.getName()));
         assertEquals(RolesAllowedCheck.class.getName(), authZFailureEvent.getAuthorizationContext());
+    }
+
+    @Test
+    public void testNestedPermitAll() {
+        // @PermitAll is on CDI bean but resource is not secured
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/roles-service/bye").then().statusCode(200)
+                .body(is(RolesAllowedService.SERVICE_BYE));
+        final int expectedEventsCount;
+        if (isProactiveAuth()) {
+            // auth + @PermitAll
+            expectedEventsCount = 2;
+        } else {
+            // @PermitAll
+            expectedEventsCount = 1;
+        }
+        assertSyncObserved(expectedEventsCount, true, true);
+
+        if (expectedEventsCount == 2) {
+            AuthenticationSuccessEvent successEvent = (AuthenticationSuccessEvent) observer.syncEvents.get(0);
+            SecurityIdentity identity = successEvent.getSecurityIdentity();
+            assertNotNull(identity);
+            assertEquals("admin", identity.getPrincipal().getName());
+            RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties()
+                    .get(RoutingContext.class.getName());
+            assertNotNull(routingContext);
+            assertTrue(routingContext.request().path().endsWith("/roles-service/bye"));
+        }
+        // authorization success on service level performed by CDI interceptor
+        var authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(expectedEventsCount - 1);
+        String securedMethod = (String) authZSuccessEvent.getEventProperties()
+                .get(AuthorizationSuccessEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.reactive.server.test.security.RolesAllowedService#bye", securedMethod);
+        assertNotNull(authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        if (isProactiveAuth()) {
+            assertNotNull(authZSuccessEvent.getSecurityIdentity());
+            assertEquals("admin", authZSuccessEvent.getSecurityIdentity().getPrincipal().getName());
+        }
+        assertAsyncAuthZFailureObserved(0);
     }
 
     @Test
@@ -186,6 +230,8 @@ public abstract class AbstractSecurityEventTest {
         routingContext = (RoutingContext) authZFailure.getEventProperties().get(RoutingContext.class.getName());
         assertNotNull(routingContext);
         assertTrue(routingContext.request().path().endsWith("/unsecured/authenticated"));
+        String securedMethod = (String) authZFailure.getEventProperties().get(AuthorizationFailureEvent.SECURED_METHOD_KEY);
+        assertEquals("io.quarkus.resteasy.reactive.server.test.security.UnsecuredResource#authenticated", securedMethod);
     }
 
     @Test
@@ -227,8 +273,7 @@ public abstract class AbstractSecurityEventTest {
             assertNotNull(routingContext);
             assertTrue(routingContext.request().path().endsWith("/unsecured/permitAll"));
             AuthorizationSuccessEvent authZSuccessEvent = (AuthorizationSuccessEvent) observer.syncEvents.get(1);
-            // SecurityIdentity is not required for the permit all check
-            assertNull(authZSuccessEvent.getSecurityIdentity());
+            assertNotNull(authZSuccessEvent.getSecurityIdentity());
             assertEquals(routingContext, authZSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         } else {
             assertSyncObserved(1, true, true);
@@ -263,19 +308,13 @@ public abstract class AbstractSecurityEventTest {
     }
 
     private void assertAsyncAuthZFailureObserved(int count) {
-        assertAsyncAuthZFailureObserved(count, true);
-    }
-
-    private void assertAsyncAuthZFailureObserved(int count, boolean expectRoutingContext) {
         Awaitility.await().atMost(Duration.ofSeconds(2))
                 .untilAsserted(() -> assertEquals(count, observer.asyncAuthZFailureEvents.size()));
         if (count > 0) {
             assertTrue(observer.asyncAuthZFailureEvents.stream().allMatch(e -> e.getSecurityIdentity() != null));
-            if (expectRoutingContext) {
-                assertTrue(observer.asyncAuthZFailureEvents.stream()
-                        .map(e -> e.getEventProperties().get(RoutingContext.class.getName()))
-                        .allMatch(Objects::nonNull));
-            }
+            assertTrue(observer.asyncAuthZFailureEvents.stream()
+                    .map(e -> e.getEventProperties().get(RoutingContext.class.getName()))
+                    .allMatch(Objects::nonNull));
         }
     }
 

@@ -22,7 +22,9 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.ext.web.RoutingContext;
 
 @Priority(Priorities.AUTHENTICATION)
@@ -35,7 +37,7 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     ResourceInfo resourceInfo;
 
     @Inject
-    RoutingContext routingContext;
+    CurrentVertxRequest currentVertxRequest;
 
     @Inject
     SecurityCheckStorage securityCheckStorage;
@@ -71,19 +73,27 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     private void applySecurityChecks(MethodDescription description) {
         SecurityCheck check = securityCheckStorage.getSecurityCheck(description);
         if (check == null && securityCheckStorage.getDefaultSecurityCheck() != null
-                && routingContext.get(EagerSecurityFilter.class.getName()) == null
-                && routingContext.get(SKIP_DEFAULT_CHECK) == null) {
+                && routingContext().get(EagerSecurityFilter.class.getName()) == null
+                && routingContext().get(SKIP_DEFAULT_CHECK) == null) {
             check = securityCheckStorage.getDefaultSecurityCheck();
         }
         if (check != null) {
             if (check.isPermitAll()) {
-                fireEventOnAuthZSuccess(check, null);
+                // add the identity only if authentication has already finished
+                final SecurityIdentity identity;
+                if (routingContext().user() instanceof QuarkusHttpUser user) {
+                    identity = user.getSecurityIdentity();
+                } else {
+                    identity = null;
+                }
+
+                fireEventOnAuthZSuccess(check, identity, description);
             } else {
                 if (check.requiresMethodArguments()) {
                     if (identityAssociation.getIdentity().isAnonymous()) {
                         var exception = new UnauthorizedException();
                         if (jaxRsPermissionChecker.getEventHelper().fireEventOnFailure()) {
-                            fireEventOnAuthZFailure(exception, check);
+                            fireEventOnAuthZFailure(exception, check, description);
                         }
                         throw exception;
                     }
@@ -94,36 +104,43 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
                     try {
                         check.apply(identityAssociation.getIdentity(), description, null);
                     } catch (Exception e) {
-                        fireEventOnAuthZFailure(e, check);
+                        fireEventOnAuthZFailure(e, check, description);
                         throw e;
                     }
                 } else {
                     check.apply(identityAssociation.getIdentity(), description, null);
                 }
-                fireEventOnAuthZSuccess(check, identityAssociation.getIdentity());
+                fireEventOnAuthZSuccess(check, identityAssociation.getIdentity(), description);
             }
             // prevent repeated security checks
-            routingContext.put(EagerSecurityFilter.class.getName(), resourceInfo.getResourceMethod());
+            routingContext().put(EagerSecurityFilter.class.getName(), resourceInfo.getResourceMethod());
         }
     }
 
-    private void fireEventOnAuthZFailure(Exception exception, SecurityCheck check) {
+    private void fireEventOnAuthZFailure(Exception exception, SecurityCheck check, MethodDescription description) {
         jaxRsPermissionChecker.getEventHelper().fireFailureEvent(new AuthorizationFailureEvent(
                 identityAssociation.getIdentity(), exception, check.getClass().getName(),
-                Map.of(RoutingContext.class.getName(), routingContext)));
+                Map.of(RoutingContext.class.getName(), routingContext()), description));
     }
 
-    private void fireEventOnAuthZSuccess(SecurityCheck check, SecurityIdentity securityIdentity) {
+    private void fireEventOnAuthZSuccess(SecurityCheck check, SecurityIdentity securityIdentity,
+            MethodDescription description) {
         if (jaxRsPermissionChecker.getEventHelper().fireEventOnSuccess()) {
             jaxRsPermissionChecker.getEventHelper().fireSuccessEvent(new AuthorizationSuccessEvent(securityIdentity,
-                    check.getClass().getName(), Map.of(RoutingContext.class.getName(), routingContext)));
+                    check.getClass().getName(), Map.of(RoutingContext.class.getName(), routingContext()), description));
         }
+    }
+
+    private RoutingContext routingContext() {
+        // use actual RoutingContext (not the bean) to async events are invoked with new CDI request context
+        // where the RoutingContext is not available
+        return currentVertxRequest.getCurrent();
     }
 
     private void applyEagerSecurityInterceptors(MethodDescription description) {
         var interceptor = interceptorStorage.getInterceptor(description);
         if (interceptor != null) {
-            interceptor.accept(routingContext);
+            interceptor.accept(routingContext());
         }
     }
 }

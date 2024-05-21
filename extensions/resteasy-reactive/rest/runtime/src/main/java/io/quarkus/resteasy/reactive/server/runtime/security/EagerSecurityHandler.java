@@ -23,6 +23,7 @@ import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
@@ -132,8 +133,18 @@ public class EagerSecurityHandler implements ServerRestHandler {
             preventRepeatedSecurityChecks(requestContext, methodDescription);
             if (EagerSecurityContext.instance.eventHelper.fireEventOnSuccess()) {
                 requestContext.requireCDIRequestScope();
-                EagerSecurityContext.instance.eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(null,
-                        check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext)));
+
+                // add the identity only if authentication has already finished
+                final SecurityIdentity identity;
+                var event = requestContext.unwrap(RoutingContext.class);
+                if (event != null && event.user() instanceof QuarkusHttpUser user) {
+                    identity = user.getSecurityIdentity();
+                } else {
+                    identity = null;
+                }
+
+                EagerSecurityContext.instance.eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(identity,
+                        check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext), methodDescription));
             }
             return null;
         } else {
@@ -156,7 +167,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                             if (EagerSecurityContext.instance.eventHelper.fireEventOnFailure()) {
                                 EagerSecurityContext.instance.eventHelper
                                         .fireFailureEvent(new AuthorizationFailureEvent(securityIdentity, unauthorizedException,
-                                                theCheck.getClass().getName(), createEventPropsWithRoutingCtx(requestContext)));
+                                                theCheck.getClass().getName(), createEventPropsWithRoutingCtx(requestContext),
+                                                methodDescription));
                             }
                             throw unauthorizedException;
                         }
@@ -175,7 +187,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                             EagerSecurityContext.instance.eventHelper
                                                     .fireFailureEvent(new AuthorizationFailureEvent(
                                                             securityIdentity, throwable, theCheck.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext)));
+                                                            createEventPropsWithRoutingCtx(requestContext), methodDescription));
                                         }
                                     });
                         }
@@ -187,7 +199,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                             EagerSecurityContext.instance.eventHelper.fireSuccessEvent(
                                                     new AuthorizationSuccessEvent(securityIdentity,
                                                             theCheck.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext)));
+                                                            createEventPropsWithRoutingCtx(requestContext), methodDescription));
                                         }
                                     });
                         }

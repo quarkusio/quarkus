@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -69,6 +70,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -106,6 +108,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
@@ -459,14 +462,38 @@ public class SecurityProcessor {
         return providerClasses;
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void recordRuntimeConfigReady(SecurityCheckRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) {
+        recorder.setRuntimeConfigReady();
+        if (launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+            recorder.unsetRuntimeConfigReady(shutdownContextBuildItem);
+        }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void registerSecurityInterceptors(BuildProducer<InterceptorBindingRegistrarBuildItem> registrars,
-            BuildProducer<AdditionalBeanBuildItem> beans) {
+            BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, SecurityCheckRecorder recorder,
+            Optional<AdditionalSecurityConstrainerEventPropsBuildItem> additionalSecurityConstrainerEventsItem) {
         registrars.produce(new InterceptorBindingRegistrarBuildItem(new SecurityAnnotationsRegistrar()));
         Class<?>[] interceptors = { AuthenticatedInterceptor.class, DenyAllInterceptor.class, PermitAllInterceptor.class,
                 RolesAllowedInterceptor.class, PermissionsAllowedInterceptor.class };
         beans.produce(new AdditionalBeanBuildItem(interceptors));
-        beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class, SecurityConstrainer.class));
+        beans.produce(new AdditionalBeanBuildItem(SecurityHandler.class));
+
+        var additionalEventsSupplier = additionalSecurityConstrainerEventsItem
+                .map(AdditionalSecurityConstrainerEventPropsBuildItem::getAdditionalEventPropsSupplier)
+                .orElse(null);
+        syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                .configure(SecurityConstrainer.class)
+                .unremovable()
+                .scope(Singleton.class)
+                .supplier(recorder.createSecurityConstrainer(additionalEventsSupplier))
+                .done());
     }
 
     /**

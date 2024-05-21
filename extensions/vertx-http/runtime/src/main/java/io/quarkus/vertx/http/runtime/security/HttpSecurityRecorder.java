@@ -37,6 +37,7 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
@@ -141,6 +142,30 @@ public class HttpSecurityRecorder {
                 return name;
             }
         });
+    }
+
+    public Supplier<Map<String, Object>> createAdditionalSecEventPropsSupplier() {
+        return new Supplier<Map<String, Object>>() {
+            @Override
+            public Map<String, Object> get() {
+                if (Arc.container().requestContext().isActive()) {
+
+                    // if present, add RoutingContext from CDI request to the SecurityEvents produced in Security extension
+                    // it's done this way as Security extension is not Vert.x based, but users find RoutingContext useful
+                    var event = Arc.container().instance(CurrentVertxRequest.class).get().getCurrent();
+                    if (event != null) {
+
+                        if (event.user() instanceof QuarkusHttpUser user) {
+                            return Map.of(RoutingContext.class.getName(), event, SecurityIdentity.class.getName(),
+                                    user.getSecurityIdentity());
+                        }
+
+                        return Map.of(RoutingContext.class.getName(), event);
+                    }
+                }
+                return Map.of();
+            }
+        };
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

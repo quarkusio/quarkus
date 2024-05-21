@@ -29,7 +29,7 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
         client.createRealmFromPath(KEYCLOAK_REALM_JSON);
 
         //Start kafka container
-        this.kafka = new StrimziKafkaContainer("quay.io/strimzi/kafka:latest-kafka-3.0.0")
+        this.kafka = new StrimziKafkaContainer("quay.io/strimzi/kafka:latest-kafka-3.7.0")
                 .withBrokerId(1)
                 .withKafkaConfigurationMap(Map.of("listener.security.protocol.map",
                         "JWT:SASL_PLAINTEXT,BROKER1:PLAINTEXT",

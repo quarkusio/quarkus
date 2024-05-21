@@ -1263,8 +1263,8 @@ class TestEndpoint {
             .onItem()
             .invoke { _ -> Assertions.fail("Did not throw " + exceptionClass.name) }
             .onFailure(exceptionClass)
-            .recoverWithItem { null }
-            .map { null }
+            .recoverWithItem { -> null }
+            .map { it: Any? -> null }
     }
 
     private fun testPersist(persistsTest: PersistTest): Uni<Void> {

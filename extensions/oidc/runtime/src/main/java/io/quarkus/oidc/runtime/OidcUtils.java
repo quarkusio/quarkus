@@ -100,6 +100,7 @@ public final class OidcUtils {
     public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
     static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
+    static final String CODE_ACCESS_TOKEN_FAILURE = "code_flow_access_token_failure";
     static final String COMMA = ",";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();

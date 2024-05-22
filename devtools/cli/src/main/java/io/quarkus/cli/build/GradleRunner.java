@@ -204,7 +204,7 @@ public class GradleRunner implements BuildSystemRunner {
 
         if (buildOptions.buildNative) {
             args.add("-Dquarkus.native.enabled=true");
-            args.add("-Dquarkus.jar.enabled=false");
+            args.add("-Dquarkus.package.jar.enabled=false");
         }
         if (buildOptions.skipTests()) {
             setSkipTests(args);

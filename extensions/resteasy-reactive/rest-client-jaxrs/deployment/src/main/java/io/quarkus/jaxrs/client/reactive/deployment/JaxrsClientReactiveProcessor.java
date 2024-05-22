@@ -1030,7 +1030,7 @@ public class JaxrsClientReactiveProcessor {
                             // NOTE: don't use type here, because we're not going through the collection converters and stuff
                             Type parameterType = jandexMethod.parameterType(paramIdx);
                             addFormParam(methodCreator, param.name, methodCreator.getMethodParam(paramIdx),
-                                    parameterType, param.declaredType, param.signature, index,
+                                    parameterType, param.signature, index,
                                     restClientInterface.getClassName(), methodCreator.getThis(), formParams,
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
@@ -2538,7 +2538,7 @@ public class JaxrsClientReactiveProcessor {
                 case FORM_PARAM:
                     FormParamItem formParam = (FormParamItem) item;
                     addFormParam(creator, formParam.getFormParamName(), formParam.extract(creator, param),
-                            jandexMethod.parameterType(paramIndex), formParam.getParamType(), formParam.getParamSignature(),
+                            formParam.getParamType(), formParam.getParamSignature(),
                             index,
                             restClientInterfaceClassName, client,
                             formParams,
@@ -2810,7 +2810,6 @@ public class JaxrsClientReactiveProcessor {
             String paramName,
             ResultHandle formParamHandle,
             Type parameterType,
-            String parameterTypeStr,
             String parameterSignature,
             IndexView index,
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
@@ -2818,7 +2817,8 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle parameterAnnotations, boolean multipart,
             String partType, String partFilename, String errorLocation) {
         if (multipart) {
-            handleMultipartField(paramName, partType, partFilename, parameterTypeStr, parameterSignature, formParamHandle,
+            handleMultipartField(paramName, partType, partFilename, parameterType.name().toString(), parameterSignature,
+                    formParamHandle,
                     formParams, methodCreator,
                     client, restClientInterfaceClassName, parameterAnnotations, genericType,
                     errorLocation);
@@ -2846,7 +2846,8 @@ public class JaxrsClientReactiveProcessor {
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else {
-                ResultHandle convertedFormParam = convertParamToString(creator, client, formParamHandle, parameterTypeStr,
+                ResultHandle convertedFormParam = convertParamToString(creator, client, formParamHandle,
+                        parameterType.name().toString(),
                         genericType, parameterAnnotations);
                 BytecodeCreator parameterIsStringBranch = checkStringParam(creator, convertedFormParam,
                         restClientInterfaceClassName, errorLocation);

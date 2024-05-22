@@ -2,6 +2,7 @@ package io.quarkus.jdbc.oracle.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
@@ -14,7 +15,8 @@ public final class OracleNativeImage {
      * by reflection, as commonly expected.
      */
     @BuildStep
-    void reflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    void reflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
         //Not strictly necessary when using Agroal, as it also registers
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal.
@@ -22,6 +24,10 @@ public final class OracleNativeImage {
         // but it delegates all use to "oracle.jdbc.driver.OracleDriver" - which is also what's recommended by the docs.
         final String driverName = "oracle.jdbc.driver.OracleDriver";
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
+
+        // This is needed when using XA and we use the `@RegisterForReflection` trick to make sure all nested classes are registered for reflection
+        additionalIndexedClasses
+                .produce(new AdditionalIndexedClassesBuildItem("io.quarkus.jdbc.oracle.runtime.graal.OracleReflections"));
 
         // for ldap style jdbc urls. e.g. jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com
         //

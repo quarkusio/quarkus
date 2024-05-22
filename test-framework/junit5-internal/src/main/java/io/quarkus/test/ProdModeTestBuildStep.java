@@ -4,7 +4,7 @@ import java.util.Map;
 
 import io.quarkus.builder.BuildStep;
 
-// needs to be in a class of it's own in order to avoid java.lang.IncompatibleClassChangeError
+// needs to be in a class of its own in order to avoid java.lang.IncompatibleClassChangeError
 public abstract class ProdModeTestBuildStep implements BuildStep {
 
     private final Map<String, Object> testContext;

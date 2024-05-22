@@ -18,7 +18,12 @@ Enable xref:security-basic-authentication.adoc[Basic authentication] for your Qu
 * You have installed at least one extension that provides an `IdentityProvider` based on username and password.
 For example:
 
-** xref:security-jpa.adoc[Quarkus Security Jakarta Persistence extensions (`security-jpa` or `security-jpa-reactive`)]
+ifndef::no-quarkus-security-jpa-reactive[]
+** xref:security-jpa.adoc[Quarkus Security Jakarta Persistence extensions (`quarkus-security-jpa` or `quarkus-security-jpa-reactive`)]
+endif::no-quarkus-security-jpa-reactive[]
+ifdef::no-quarkus-security-jpa-reactive[]
+** xref:security-jpa.adoc[Quarkus Security Jakarta Persistence extension (`quarkus-security-jpa`)]
+endif::no-quarkus-security-jpa-reactive[]
 ** xref:security-properties.adoc[Elytron security properties file extension `(quarkus-elytron-security-properties-file)`]
 ** xref:security-jdbc.adoc[Elytron security JDBC extension `(quarkus-elytron-security-jdbc)`]
 

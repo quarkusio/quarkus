@@ -35,13 +35,18 @@ The following table maps specific authentication requirements to a supported mec
 
 |Username and password |xref:security-basic-authentication.adoc[Basic], <<form-auth>>
 
-|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT]
+ifndef::no-quarkus-elytron-security-oauth2[]
+, xref:security-oauth2.adoc[OAuth2]
+endif::no-quarkus-elytron-security-oauth2[]
 
 |Single sign-on (SSO) |xref:security-oidc-code-flow-authentication.adoc[OIDC Code Flow], <<form-auth>>
 
 |Client certificate |<<mutual-tls>>
 
+ifndef::no-webauthn-authentication[]
 |WebAuthn |xref:security-webauthn.adoc[WebAuthn]
+endif::no-webauthn-authentication[]
 
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |====
@@ -96,7 +101,7 @@ quarkus.http.auth.form.error-page=
 # Define testing user
 quarkus.security.users.embedded.enabled=true
 quarkus.security.users.embedded.plain-text=true
-quarkus.security.users.embedded.users.alice=alice 
+quarkus.security.users.embedded.users.alice=alice
 quarkus.security.users.embedded.roles.alice=user
 ----
 
@@ -312,17 +317,23 @@ For more information about customizing `SecurityIdentity`, see the xref:security
 
 Quarkus Security also supports the following authentication mechanisms through extensions:
 
+ifndef::no-webauthn-authentication[]
 * <<webauthn-authentication>>
+endif::no-webauthn-authentication[]
 * <<openid-connect-authentication>>
 * <<smallrye-jwt-authentication>>
+ifndef::no-quarkus-elytron-security-oauth2[]
 * <<oauth2-authentication>>
+endif::no-quarkus-elytron-security-oauth2[]
 
+ifndef::no-webauthn-authentication[]
 [[webauthn-authentication]]
 === WebAuthn authentication
 
 https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces passwords.
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
 For more information, see the xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
+endif::no-webauthn-authentication[]
 
 [[openid-connect-authentication]]
 === OpenID Connect authentication
@@ -357,7 +368,9 @@ For more information about OIDC authentication and authorization methods that yo
 |Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Securing Quarkus with commonly used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
+ifndef::no-quarkus-keycloak-admin-client[]
 |Configuring Keycloak programmatically |xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
+endif::no-quarkus-keycloak-admin-client[]
 |====
 
 [NOTE]
@@ -386,12 +399,15 @@ For example, it can be a public endpoint or be protected with mTLS.
 In this scenario, you do not need to protect your Quarkus endpoint by using the Quarkus OpenID Connect adapter.
 ====
 
+ifndef::no-quarkus-oidc-token-propagation[]
 The `quarkus-resteasy-client-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
 It provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer token or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, which must be protected by using the Quarkus OIDC adapter.
 This filter can propagate the access token to the downstream services.
 
 For more information, see the xref:security-openid-connect-client.adoc[OpenID Connect client and token propagation quickstart] and xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference] guides.
+endif::no-quarkus-oidc-token-propagation[]
+
 
 [[smallrye-jwt-authentication]]
 === SmallRye JWT authentication
@@ -404,6 +420,7 @@ It represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
 For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 
+ifndef::no-quarkus-elytron-security-oauth2[]
 [[oauth2-authentication]]
 === OAuth2 authentication
 
@@ -411,6 +428,7 @@ For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
 
 For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] guide.
+endif::no-quarkus-elytron-security-oauth2[]
 
 [[oidc-jwt-oauth2-comparison]]
 == Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms
@@ -425,13 +443,20 @@ In both cases, `quarkus-oidc` requires a connection to the specified OpenID Conn
 * If the user authentication requires Authorization Code flow, or you need to support multiple tenants, use `quarkus-oidc`.
 `quarkus-oidc` can also request user information by using both Authorization Code Flow and Bearer access tokens.
 
-* If your bearer tokens must be verified, use `quarkus-oidc`, `quarkus-smallrye-jwt`, or `quarkus-elytron-security-oauth2`.
+ifndef::no-quarkus-elytron-security-oauth2[]
+* If your bearer tokens must be verified, use `quarkus-oidc`, `quarkus-elytron-security-oauth2`, or `quarkus-smallrye-jwt`.
+endif::no-quarkus-elytron-security-oauth2[]
+ifdef::no-quarkus-elytron-security-oauth2[]
+* If your bearer tokens must be verified, use `quarkus-oidc` or `quarkus-smallrye-jwt`.
+endif::no-quarkus-elytron-security-oauth2[]
 
 * If your bearer tokens are in a JSON web token (JWT) format, you can use any extensions in the preceding list.
 Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the `JsonWebKey` (JWK) set when the OpenID Connect provider rotates the keys.
 Therefore, if remote token introspection must be avoided or is unsupported by the providers, use `quarkus-oidc` or `quarkus-smallrye-jwt` to verify JWT tokens.
 
-* To introspect the JWT tokens remotely, you can use either `quarkus-oidc` or `quarkus-elytron-security-oauth2` because they support verifying the opaque or binary tokens by using remote introspection.
+* To introspect the JWT tokens remotely, you can use `quarkus-oidc`
+ifndef::no-quarkus-elytron-security-oauth2[or `quarkus-elytron-security-oauth2`]
+for verifying the opaque or binary tokens by using remote introspection.
 `quarkus-smallrye-jwt` does not support the remote introspection of both opaque or JWT tokens but instead relies on the locally available keys that are usually retrieved from the OpenID Connect provider.
 
 * `quarkus-oidc` and `quarkus-smallrye-jwt` support the JWT and opaque token injection into the endpoint code.
@@ -442,9 +467,10 @@ All extensions can have the tokens injected as `Principal`.
 `quarkus-oidc` uses only the JWK-formatted keys that are part of a JWK set, whereas `quarkus-smallrye-jwt` supports PEM keys.
 
 * `quarkus-smallrye-jwt` handles locally signed, inner-signed-and-encrypted, and encrypted tokens.
-In contrast, although `quarkus-oidc` and `quarkus-elytron-security-oauth2` can also verify such tokens, they treat them as opaque tokens and verify them through remote introspection.
+ifndef::no-quarkus-elytron-security-oauth2[In contrast, although `quarkus-oidc` and `quarkus-elytron-security-oauth2` can also verify such tokens, they treat them as opaque tokens and verify them through remote introspection.]
+ifdef::no-quarkus-elytron-security-oauth2[In contrast, although `quarkus-oidc` can also verify such tokens, it treats them as opaque tokens and verifies them through remote introspection.]
 
-* If you need a lightweight library for the remote introspection of opaque or JWT tokens, use `quarkus-elytron-security-oauth2`.
+ifndef::no-quarkus-elytron-security-oauth2[* If you need a lightweight library for the remote introspection of opaque or JWT tokens, use `quarkus-elytron-security-oauth2`.]
 
 [NOTE]
 ====
@@ -459,26 +485,80 @@ Nonetheless, the providers effectively delegate most of the token-associated sta
 [[table]]
 .Token authentication mechanism comparison
 |===
-^|Feature required 3+^| Authentication mechanism
+// Display four columns
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Feature required 3+^| Authentication mechanism]
+// Display three columns and hide the quarkus-elytron-security-oauth2 column.
+ifdef::no-quarkus-elytron-security-oauth2[ ^|Feature required 2+^| Authentication mechanism]
 
-^| ^s|`quarkus-oidc` ^s|`quarkus-smallrye-jwt` ^s| `quarkus-elytron-security-oauth2`
+^|
+^s|`quarkus-oidc`
+^s|`quarkus-smallrye-jwt`
+ifndef::no-quarkus-elytron-security-oauth2[ ^s|`quarkus-elytron-security-oauth2`]
 
-s|Bearer JWT verification ^|Local verification or introspection  ^|Local verification  ^|Introspection
+s|Bearer JWT verification
+^|Local verification or introspection
+^|Local verification
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Introspection]
 
-s|Bearer opaque token verification ^|Introspection   ^|No  ^|Introspection
-s|Refreshing `JsonWebKey` set to verify JWT tokens  ^|Yes   ^|Yes  ^|No
-s|Represent token as `Principal`  ^|Yes   ^|Yes  ^|Yes
-s|Inject JWT as MP JWT  ^|Yes   ^|Yes  ^|No
+s|Bearer opaque token verification
+^|Introspection
+^|No
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Introspection]
 
-s|Authorization code flow  ^| Yes  ^|No  ^|No
-s|Multi-tenancy ^| Yes  ^|No  ^|No
-s|User information support  ^| Yes  ^|No  ^|No
-s|PEM key format support  ^|No   ^|Yes  ^|No
+s|Refreshing `JsonWebKey` set to verify JWT tokens
+^|Yes
+^|Yes
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
 
-s|SecretKey support ^|No ^|In JSON Web Key (JWK) format ^|No
-s|Inner-signed and encrypted or encrypted tokens ^|Introspection ^|Local verification ^|Introspection
-s|Custom token verification ^|No ^|With injected JWT parser ^|No
-s|JWT as a cookie support ^|No ^|Yes ^|Yes
+s|Represent token as `Principal`
+^|Yes
+^|Yes
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Yes]
+
+s|Inject JWT as MP JWT
+^|Yes
+^|Yes
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|Authorization code flow
+^| Yes
+^|No
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|Multi-tenancy
+^| Yes
+^|No
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|User information support
+^| Yes
+^|No
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|PEM key format support
+^|No
+^|Yes
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|SecretKey support
+^|No
+^|In JSON Web Key (JWK) format
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|Inner-signed and encrypted or encrypted tokens
+^|Introspection
+^|Local verification
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Introspection]
+
+s|Custom token verification
+^|No
+^|With injected JWT parser
+ifndef::no-quarkus-elytron-security-oauth2[ ^|No]
+
+s|JWT as a cookie support
+^|No
+^|Yes
+ifndef::no-quarkus-elytron-security-oauth2[ ^|Yes]
 |===
 
 [[combining-authentication-mechanisms]]
@@ -560,13 +640,29 @@ public class HelloResource {
 |===
 ^|Authentication mechanism^| Annotation
 
-s|Basic authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication`
-s|Form-based authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication`
-s|Mutual TLS authentication mechanism ^|`io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication`
-s|WebAuthn authentication mechanism ^|`io.quarkus.security.webauthn.WebAuthn`
-s|Bearer token authentication mechanism ^|`io.quarkus.oidc.BearerTokenAuthentication`
-s|OIDC authorization code flow mechanism ^|`io.quarkus.oidc.AuthorizationCodeFlow`
-s|SmallRye JWT authentication mechanism ^|`io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication`
+s|Basic authentication mechanism
+^|`io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication`
+
+s|Form-based authentication mechanism
+^|`io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication`
+
+s|Mutual TLS authentication mechanism
+^|`io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication`
+
+ifndef::no-webauthn-authentication[]
+s|WebAuthn authentication mechanism
+^|`io.quarkus.security.webauthn.WebAuthn`
+endif::no-webauthn-authentication[]
+
+s|Bearer token authentication mechanism
+^|`io.quarkus.oidc.BearerTokenAuthentication`
+
+s|OIDC authorization code flow mechanism
+^|`io.quarkus.oidc.AuthorizationCodeFlow`
+
+s|SmallRye JWT authentication mechanism
+^|`io.quarkus.smallrye.jwt.runtime.auth.BearerTokenAuthentication`
+
 |===
 
 TIP: Quarkus automatically secures endpoints annotated with the authentication mechanism annotation. When no standard security annotation is present on the REST endpoint and resource, the `io.quarkus.security.Authenticated` annotation is added for you.

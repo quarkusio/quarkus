@@ -68,6 +68,7 @@ The solution is in the `security-openid-connect-client-quickstart` link:{quickst
 First, you need a new project.
 Create a new project with the following command:
 
+ifndef::no-quarkus-oidc-token-propagation[]
 :create-app-artifact-id: security-openid-connect-client-quickstart
 :create-app-extensions: oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest
 include::{includes}/devtools/create-app.adoc[]
@@ -78,6 +79,20 @@ If you already have your Quarkus project configured, you can add these extension
 
 :add-extension-extensions: oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest
 include::{includes}/devtools/extension-add.adoc[]
+endif::no-quarkus-oidc-token-propagation[]
+
+ifdef::no-quarkus-oidc-token-propagation[]
+:create-app-artifact-id: security-openid-connect-client-quickstart
+:create-app-extensions: oidc,rest-client-oidc-filter,rest
+include::{includes}/devtools/create-app.adoc[]
+
+It generates a Maven project, importing the `oidc`, `rest-client-oidc-filter`, and `rest` extensions.
+
+If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
+
+:add-extension-extensions: oidc,rest-client-oidc-filter,rest
+include::{includes}/devtools/extension-add.adoc[]
+endif::no-quarkus-oidc-token-propagation[]
 
 It adds the following extensions to your build file:
 
@@ -92,21 +107,31 @@ It adds the following extensions to your build file:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-oidc-filter</artifactId>
 </dependency>
+ifndef::no-quarkus-oidc-token-propagation[]
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
 </dependency>
+endif::no-quarkus-oidc-token-propagation[]
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
+ifndef::no-quarkus-oidc-token-propagation[]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 ----
 implementation("io.quarkus:quarkus-oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest")
 ----
+endif::no-quarkus-oidc-token-propagation[]
+ifdef::no-quarkus-oidc-token-propagation[]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+----
+implementation("io.quarkus:quarkus-oidc,rest-client-oidc-filter,rest")
+----
+endif::no-quarkus-oidc-token-propagation[]
 
 == Writing the application
 
@@ -155,11 +180,13 @@ public class ProtectedResource {
 `ProtectedResource` returns a name from both `userName()` and `adminName()` methods.
 The name is extracted from the current `JsonWebToken`.
 
-Next, add three REST clients:
+Next, add the following REST clients:
 
 1. `RestClientWithOidcClientFilter`, which uses an OIDC client filter provided by the `quarkus-rest-client-oidc-filter` extension to get and propagate an access token.
 2. `RestClientWithTokenHeaderParam`, which accepts a token already acquired by the programmatically created OidcClient as an HTTP `Authorization` header value.
+ifndef::no-quarkus-oidc-token-propagation[]
 3. `RestClientWithTokenPropagationFilter`, which uses an OIDC token propagation filter provided by the `quarkus-rest-client-oidc-token-propagation` extension to get and propagate an access token.
+endif::no-quarkus-oidc-token-propagation[]
 
 Add the `RestClientWithOidcClientFilter` REST client:
 
@@ -217,7 +244,7 @@ public interface RestClientWithTokenHeaderParam {
     @Produces("text/plain")
     @Path("userName")
     Uni<String> getUserName(@HeaderParam("Authorization") String authorization); <1>
-    
+
     @GET
     @Produces("text/plain")
     @Path("adminName")
@@ -226,6 +253,7 @@ public interface RestClientWithTokenHeaderParam {
 ----
 <1> `RestClientWithTokenHeaderParam` REST client expects that the tokens will be passed to it as HTTP `Authorization` header values.
 
+ifndef::no-quarkus-oidc-token-propagation[]
 Add the `RestClientWithTokenPropagationFilter` REST client:
 
 [source,java]
@@ -263,6 +291,8 @@ public interface RestClientWithTokenPropagationFilter {
 
 IMPORTANT: Do not use the `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces in the same REST client because they can conflict, leading to issues.
 For example, the OIDC client filter can override the token from the OIDC token propagation filter, or the propagation filter might not work correctly if it attempts to propagate a token when none is available, expecting the OIDC client filter to obtain a new token instead.
+endif::no-quarkus-oidc-token-propagation[]
+
 
 Also, add `OidcClientCreator` to create an OIDC client programmatically at startup. `OidcClientCreator` supports `RestClientWithTokenHeaderParam` REST client calls:
 
@@ -340,12 +370,12 @@ public class FrontendResource {
     @Inject
     @RestClient
     RestClientWithOidcClientFilter restClientWithOidcClientFilter; <1>
-    
+
     @Inject
     @RestClient
     RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter; <2>
 
-    @Inject 
+    @Inject
     OidcClientCreator oidcClientCreator;
     TokensHelper tokenHelper = new TokensHelper(); <5>
     @Inject
@@ -387,7 +417,7 @@ public class FrontendResource {
     	return tokenHelper.getTokens(oidcClientCreator.getOidcClient()).onItem()
         		.transformToUni(tokens -> restClientWithTokenHeaderParam.getUserName("Bearer " + tokens.getAccessToken()));
     }
-    
+
     @GET
     @Path("admin-name-with-oidc-client-token-header-param")
     @Produces("text/plain")
@@ -403,7 +433,7 @@ public class FrontendResource {
     	Tokens tokens = tokenHelper.getTokens(oidcClientCreator.getOidcClient()).await().indefinitely();
         return restClientWithTokenHeaderParam.getUserName("Bearer " + tokens.getAccessToken()).await().indefinitely();
     }
-    
+
     @GET
     @Path("admin-name-with-oidc-client-token-header-param-blocking")
     @Produces("text/plain")
@@ -411,7 +441,7 @@ public class FrontendResource {
     	Tokens tokens = tokenHelper.getTokens(oidcClientCreator.getOidcClient()).await().indefinitely();
         return restClientWithTokenHeaderParam.getAdminName("Bearer " + tokens.getAccessToken()).await().indefinitely();
     }
-  
+
 }
 ----
 <1> `FrontendResource` uses the injected `RestClientWithOidcClientFilter` REST client with the OIDC client filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
@@ -663,7 +693,7 @@ curl -i -X GET \
 
 In contrast with the preceding command, this command returns a `403` status code.
 
-Next, test that the programmatically created OIDC client correctly acquires and propagates the token with `RestClientWithTokenHeaderParam` both in reactive and imperative (blocking) modes. 
+Next, test that the programmatically created OIDC client correctly acquires and propagates the token with `RestClientWithTokenHeaderParam` both in reactive and imperative (blocking) modes.
 
 Call the `/user-name-with-oidc-client-token-header-param`. This command returns the `200` status code and the name `alice`:
 

@@ -410,6 +410,7 @@ After a little while, you can run this binary directly:
 
 == Test the application
 
+ifndef::no-deprecated-test-resource[]
 === Use Dev Services for Keycloak
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] is recommended for the integration testing against Keycloak.
@@ -561,6 +562,7 @@ public class CodeFlowIT extends CodeFlowTest {
 ----
 
 For more information about how it is initialized and configured, see xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
+endif::no-deprecated-test-resource[]
 
 === Use the browser
 

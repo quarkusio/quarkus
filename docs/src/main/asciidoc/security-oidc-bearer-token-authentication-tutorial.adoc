@@ -228,13 +228,14 @@ docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=ad
 
 For more information, see the Keycloak documentation about link:https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[creating and configuring a new realm].
 
-
+ifndef::no-quarkus-keycloak-admin-client[]
 [NOTE]
 ====
 If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-rest-client` or the `quarkus-keycloak-admin-resteasy-client` (if the application uses `quarkus-rest-client`) extension.
 For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide.
-
 ====
+endif::no-quarkus-keycloak-admin-client[]
+
 
 
 [[keycloak-dev-mode]]
@@ -367,4 +368,6 @@ For information about writing integration tests that depend on `Dev Services for
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview.adoc[Quarkus Security overview]
+ifndef::no-quarkus-keycloak-admin-client[]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
+endif::no-quarkus-keycloak-admin-client[]

@@ -17,8 +17,12 @@ Before building security into your Quarkus applications, learn about the xref:se
 == Key features of Quarkus Security
 
 The Quarkus Security framework provides built-in security authentication mechanisms for Basic, Form-based, and mutual TLS (mTLS) authentication.
+ifndef::no-webauthn-authentication[]
 You can also use other well-known xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenID Connect (OIDC) and WebAuthn.
-
+endif::no-webauthn-authentication[]
+ifdef::no-webauthn-authentication[]
+You can also use other well-known xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenID Connect (OIDC).
+endif::no-webauthn-authentication[]
 Authentication mechanisms depend on xref:security-identity-providers.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance with the username, roles, original authentication credentials, and other attributes.
 
 {project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints, and Contexts and Dependency Injection (CDI) beans.

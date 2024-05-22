@@ -642,7 +642,7 @@ Set the `quarkus.oidc.authentication.user-info-required=true` property to reques
 A request is sent to the OIDC provider `UserInfo` endpoint by using the access token returned with the authorization code grant response, and an `io.quarkus.oidc.UserInfo` (a simple `jakarta.json.JsonObject` wrapper) object is created.
 `io.quarkus.oidc.UserInfo` can be injected or accessed as a SecurityIdentity `userinfo` attribute.
 
-`quarkus.oidc.authentication.user-info-required` is automatically enabled if one of these conditions is met: 
+`quarkus.oidc.authentication.user-info-required` is automatically enabled if one of these conditions is met:
 
 - if `quarkus.oidc.roles.source` is set to `userinfo` or `quarkus.oidc.token.verify-access-token-with-user-info` is set to `true` or `quarkus.oidc.authentication.id-token-required` is set to `false`, the current OIDC tenant must support a UserInfo endpoint in these cases.
 
@@ -788,8 +788,11 @@ OIDC `CodeAuthenticationMechanism` uses the default `io.quarkus.oidc.TokenStateM
 
 It makes Quarkus OIDC endpoints completely stateless and it is recommended to follow this strategy to achieve the best scalability results.
 
-See the <<db-token-state-manager>> and <<custom-token-state-manager>> sections of this guide for alternative approaches to storing tokens.
-For example, storing tokens in the database or other server-side storage, if you prefer and have good reasons for storing the token state on the server.
+ifndef::no-quarkus-oidc-db-token-state-manager[]
+Refer to the <<db-token-state-manager>> section of this guide for information on storing tokens in the database or other server-side storage solutions. This approach is suitable if you prefer and have compelling reasons to store the token state on the server.
+endif::no-quarkus-oidc-db-token-state-manager[]
+
+See the <<custom-token-state-manager>> section for alternative methods of token storage. This is ideal for those seeking customized solutions for token state management, especially when standard server-side storage does not meet your specific requirements.
 
 You can configure the default `TokenStateManager` to avoid saving an access token in the session cookie and to only keep ID and refresh tokens or a single ID token only.
 
@@ -815,8 +818,10 @@ In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to c
 If your chosen session cookie strategy combines tokens and generates a large session cookie value that is greater than 4KB, some browsers might not be able to handle such cookie sizes.
 This can occur when the ID, access, and refresh tokens are JWT tokens and the selected strategy is `keep-all-tokens` or with ID and refresh tokens when the strategy is `id-refresh-token`.
 To work around this issue, you can set `quarkus.oidc.token-state-manager.split-tokens=true` to create a unique session token for each token.
+ifndef::no-quarkus-oidc-db-token-state-manager[]
 An alternative solution is to have the tokens saved in the database.
 For more information, see <<db-token-state-manager>>.
+endif::no-quarkus-oidc-db-token-state-manager[]
 
 The default `TokenStateManager` encrypts the tokens before storing them in the session cookie.
 The following example shows how you configure it to split the tokens and encrypt them:
@@ -908,6 +913,7 @@ public class CustomTokenStateManager implements TokenStateManager {
 
 For information about the default `TokenStateManager` storing tokens in an encrypted session cookie, see <<token-state-manager>>.
 
+ifndef::no-quarkus-oidc-db-token-state-manager[]
 For information about the custom Quarkus `TokenStateManager` implementation storing tokens in a database, see <<db-token-state-manager>>.
 
 [[db-token-state-manager]]
@@ -1009,6 +1015,7 @@ public class OidcDbTokenStateManagerEntity {
 <1> The Hibernate ORM extension will only create this table for you when the database schema is generated.
 For more information, refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide.
 <2> You can choose a column length depending on the length of your tokens.
+endif::no-quarkus-oidc-db-token-state-manager[]
 
 === Logout and expiration
 
@@ -1693,6 +1700,7 @@ testImplementation("net.sourceforge.htmlunit:htmlunit")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
+ifndef::no-deprecated-test-resource[]
 [[integration-testing-wiremock]]
 === Wiremock
 
@@ -1779,6 +1787,7 @@ The user `admin` has the `user` and `admin` roles by default - it can be customi
 Additionally, `OidcWiremockTestResource` sets the token issuer and audience to `https://service.example.com`,  which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
 `OidcWiremockTestResource` can be used to emulate all OIDC providers.
+endif::no-deprecated-test-resource[]
 
 [[integration-testing-keycloak-devservices]]
 === Dev Services for Keycloak
@@ -1815,6 +1824,7 @@ public class CodeFlowAuthorizationTest {
 }
 ----
 
+ifndef::no-deprecated-test-resource[]
 [[integration-testing-keycloak]]
 === Using KeycloakTestResourceLifecycleManager
 
@@ -1879,6 +1889,7 @@ The user `admin` has the `user` and `admin` roles by default - it can be customi
 
 By default, `KeycloakTestResourceLifecycleManager` uses HTTPS to initialize a Keycloak instance that can be disabled by specifying `keycloak.use.https=false`.
 The default realm name is `quarkus` and client id is `quarkus-web-app` - set `keycloak.realm` and `keycloak.web-app.client` system properties to customize the values if needed.
+endif::no-deprecated-test-resource[]
 
 [[integration-testing-security-annotation]]
 === TestSecurity annotation
@@ -1924,4 +1935,3 @@ From the `quarkus dev` console, type `j` to change the application global log le
 * https://www.keycloak.org/documentation.html[Keycloak documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-

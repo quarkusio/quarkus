@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.narayana.lra.runtime.LRAConfiguration;
 import io.quarkus.narayana.lra.runtime.NarayanaLRAProducers;
 import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
+import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 
 class NarayanaLRAProcessor {
 
@@ -152,5 +153,15 @@ class NarayanaLRAProcessor {
                 .addBeanClass(ParticipantProxyResource.class)
                 .build());
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaLRAProducers.class));
+    }
+
+    @BuildStep
+    public void filterOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
+            Capabilities capabilities, LRABuildTimeConfiguration lraBuildTimeConfig) {
+
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(lraBuildTimeConfig.openapiIncluded);
+            openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(lraOpenAPIFilter));
+        }
     }
 }

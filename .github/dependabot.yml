@@ -217,10 +217,6 @@ updates:
       - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
-    commit-message:  # Workaround for bug https://github.com/dependabot/dependabot-core/issues/9784. Block can be removed once it's fixed
-      prefix: "Build"
-      prefix-development: "Build-Dev"
-      include: "scope"
   - package-ecosystem: gradle
     directory: "/devtools/gradle"
     schedule:
@@ -231,10 +227,6 @@ updates:
     labels:
       - area/dependencies
     rebase-strategy: disabled
-    commit-message:  # Workaround for bug https://github.com/dependabot/dependabot-core/issues/9784. Block can be removed once it's fixed
-      prefix: "Build"
-      prefix-development: "Build-Dev"
-      include: "scope"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -245,7 +237,3 @@ updates:
     labels:
       - area/infra
     rebase-strategy: disabled
-    commit-message:  # Workaround for bug https://github.com/dependabot/dependabot-core/issues/9784. Block can be removed once it's fixed
-      prefix: "Build"
-      prefix-development: "Build-Dev"
-      include: "scope"

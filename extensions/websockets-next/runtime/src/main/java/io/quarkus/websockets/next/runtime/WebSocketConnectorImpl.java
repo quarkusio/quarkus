@@ -115,7 +115,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
                     connectionManager.add(clientEndpoint.generatedEndpointClass, connection);
 
                     Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
-                            clientEndpoint.generatedEndpointClass, config.autoPingInterval(),
+                            clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
                             () -> {
                                 connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                                 client.close();

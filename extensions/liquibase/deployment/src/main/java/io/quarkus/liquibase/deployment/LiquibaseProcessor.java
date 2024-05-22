@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,6 +37,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -101,6 +103,7 @@ class LiquibaseProcessor {
             LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             CombinedIndexBuildItem combinedIndex,
+            Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> services,
@@ -212,7 +215,7 @@ class LiquibaseProcessor {
         // CommandStep implementations are needed
         consumeService(liquibase.command.CommandStep.class, (serviceClass, implementations) -> {
             var filteredImpls = implementations.stream()
-                    .filter(not("liquibase.command.core.StartH2CommandStep"::equals))
+                    .filter(commandStepPredicate(capabilities))
                     .toArray(String[]::new);
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), filteredImpls));
             reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls).constructors().build());
@@ -248,6 +251,14 @@ class LiquibaseProcessor {
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
+    }
+
+    private static Predicate<String> commandStepPredicate(Capabilities capabilities) {
+        if (capabilities.isPresent("io.quarkus.jdbc.h2")) {
+            return (s) -> true;
+        } else {
+            return not("liquibase.command.core.StartH2CommandStep"::equals);
+        }
     }
 
     private void consumeService(Class<?> serviceClass, BiConsumer<Class<?>, Collection<String>> consumer) {

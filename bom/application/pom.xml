@@ -119,7 +119,7 @@
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>1.7.0.Final</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.4.1.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.4.2.Final</wildfly-elytron.version>
         <jboss-threads.version>3.6.1.Final</jboss-threads.version>
         <vertx.version>4.5.7</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
@@ -197,7 +197,7 @@
         <picocli.version>4.7.6</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
         <commons-compress.version>1.26.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
-        <commons-text.version>1.11.0</commons-text.version>
+        <commons-text.version>1.12.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.2.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.23.1</log4j2-api.version>
@@ -205,8 +205,8 @@
         <avro.version>1.11.3</avro.version>
         <apicurio-registry.version>2.5.10.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.19.7</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.3.5</docker-java.version> <!-- must be the version Testcontainers use -->
+        <testcontainers.version>1.19.8</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.3.6</docker-java.version> <!-- must be the version Testcontainers use -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>1.4.5</com.dajudge.kindcontainer>

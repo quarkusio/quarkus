@@ -44,6 +44,8 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.Types;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -65,6 +67,7 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
@@ -79,6 +82,7 @@ import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
+import io.quarkus.websockets.next.runtime.SecuritySupport;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
@@ -400,12 +404,19 @@ public class WebSocketProcessor {
     @Record(RUNTIME_INIT)
     @BuildStep
     public void registerRoutes(WebSocketServerRecorder recorder, HttpRootPathBuildItem httpRootPath,
-            List<GeneratedEndpointBuildItem> generatedEndpoints,
+            List<GeneratedEndpointBuildItem> generatedEndpoints, HttpBuildTimeConfig httpConfig, Capabilities capabilities,
             BuildProducer<RouteBuildItem> routes) {
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
-            RouteBuildItem.Builder builder = RouteBuildItem.builder()
-                    .route(httpRootPath.relativePath(endpoint.path))
+            RouteBuildItem.Builder builder = RouteBuildItem.builder();
+            String relativePath = httpRootPath.relativePath(endpoint.path);
+            if (capabilities.isPresent(Capability.SECURITY) && !httpConfig.auth.proactive) {
+                // Add a special handler so that it's possible to capture the SecurityIdentity before the HTTP upgrade
+                builder.routeFunction(relativePath, recorder.initializeSecurityHandler());
+            } else {
+                builder.route(relativePath);
+            }
+            builder
                     .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));
@@ -546,8 +557,8 @@ public class WebSocketProcessor {
      *     }
      *
      *     public Echo_WebSocketEndpoint(WebSocketConnection connection, Codecs codecs,
-     *             WebSocketRuntimeConfig config, ContextSupport contextSupport) {
-     *         super(connection, codecs, config, contextSupport);
+     *             WebSocketRuntimeConfig config, ContextSupport contextSupport, SecuritySupport securitySupport) {
+     *         super(connection, codecs, config, contextSupport, securitySupport);
      *     }
      *
      *     public Uni doOnTextMessage(String message) {
@@ -617,12 +628,12 @@ public class WebSocketProcessor {
                 .build();
 
         MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketConnectionBase.class,
-                Codecs.class, ContextSupport.class);
+                Codecs.class, ContextSupport.class, SecuritySupport.class);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketConnectionBase.class,
-                        Codecs.class, ContextSupport.class),
+                        Codecs.class, ContextSupport.class, SecuritySupport.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
-                constructor.getMethodParam(2));
+                constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();
 
         MethodCreator inboundProcessingMode = endpointCreator.getMethodCreator("inboundProcessingMode",
@@ -1044,7 +1055,7 @@ public class WebSocketProcessor {
                     return uniOnFailureDoOnError(endpointThis, method, callback, uniChain, endpoint, globalErrorHandlers);
                 }
             } else if (callback.isReturnTypeMulti()) {
-                // return multiText(multi, broadcast, m -> {
+                // return multiText(multi, m -> {
                 //    try {
                 //      String text = encodeText(m);
                 //      return sendText(buffer,broadcast);

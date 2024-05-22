@@ -10,6 +10,9 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.mutiny.Multi;
@@ -25,7 +28,8 @@ class Endpoints {
     private static final Logger LOG = Logger.getLogger(Endpoints.class);
 
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
-            WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval, Runnable onClose) {
+            WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
+            SecuritySupport securitySupport, Runnable onClose) {
 
         Context context = vertx.getOrCreateContext();
 
@@ -38,7 +42,8 @@ class Endpoints {
                 container.requestContext());
 
         // Create an endpoint that delegates callbacks to the endpoint bean
-        WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport);
+        WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport,
+                securitySupport);
 
         // A broadcast processor is only needed if Multi is consumed by the callback
         BroadcastProcessor<Object> textBroadcastProcessor = endpoint.consumedTextMultiType() != null
@@ -118,6 +123,7 @@ class Endpoints {
         } else {
             textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                 contextSupport.start();
+                securitySupport.start();
                 try {
                     textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
                     LOG.debugf("Text message >> Multi: %s", connection);
@@ -146,6 +152,7 @@ class Endpoints {
         } else {
             binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
                 contextSupport.start();
+                securitySupport.start();
                 try {
                     binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
                     LOG.debugf("Binary message >> Multi: %s", connection);
@@ -224,11 +231,20 @@ class Endpoints {
             LOG.debugf(throwable,
                     message + ": %s",
                     connection);
+        } else if (isSecurityFailure(throwable)) {
+            // Avoid excessive logging for security failures
+            LOG.errorf("Security failure: %s", throwable.toString());
         } else {
             LOG.errorf(throwable,
                     message + ": %s",
                     connection);
         }
+    }
+
+    private static boolean isSecurityFailure(Throwable throwable) {
+        return throwable instanceof UnauthorizedException
+                || throwable instanceof AuthenticationFailedException
+                || throwable instanceof ForbiddenException;
     }
 
     private static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
@@ -298,8 +314,7 @@ class Endpoints {
     }
 
     private static WebSocketEndpoint createEndpoint(String endpointClassName, Context context,
-            WebSocketConnectionBase connection,
-            Codecs codecs, ContextSupport contextSupport) {
+            WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport, SecuritySupport securitySupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -309,8 +324,9 @@ class Endpoints {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
-                    .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class)
-                    .newInstance(connection, codecs, contextSupport);
+                    .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class,
+                            SecuritySupport.class)
+                    .newInstance(connection, codecs, contextSupport, securitySupport);
             return endpoint;
         } catch (Exception e) {
             throw new WebSocketException("Unable to create endpoint instance: " + endpointClassName, e);

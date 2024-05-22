@@ -80,8 +80,8 @@ public class UniFailureErrorTest {
         String runtimeProblem(RuntimeException e, WebSocketConnection connection) {
             assertTrue(Context.isOnWorkerThread());
             assertEquals(connection.id(), this.connection.id());
-            // The request context from @OnBinaryMessage is reused
-            assertEquals("ok", requestBean.getState());
+            // A new request context is used
+            assertEquals("nok", requestBean.getState());
             return e.getMessage();
         }
 

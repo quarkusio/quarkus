@@ -52,6 +52,9 @@
                     <parentFirstArtifacts>
                         <parentFirstArtifact>com.h2database:h2</parentFirstArtifact>
                     </parentFirstArtifacts>
+                    <capabilities>
+                        <provides>io.quarkus.jdbc.h2</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

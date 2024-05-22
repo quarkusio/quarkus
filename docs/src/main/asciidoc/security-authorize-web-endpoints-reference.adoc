@@ -882,7 +882,7 @@ public class MediaLibraryPermission extends LibraryPermission {
 
 }
 ----
-<1> When building a native executable, the permission class must be registered for reflection unless it is also used in at least one `io.quarkus.security.PermissionsAllowed#name` parameter.
+<1> When building a native executable, the permission class must be registered for reflection unless it is also used in at least one `io.quarkus.security.PermissionsAllowed#name` parameter. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 <2> We want to pass the `MediaLibrary` instance to the `LibraryPermission` constructor.
 
 [source,properties]

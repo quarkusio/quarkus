@@ -38,9 +38,9 @@ if [ -z $TARGET_DIR ]; then
     GIT_OPTIONS="--depth=1"
   fi
   if [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
-    git clone -b develop --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+    git clone --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
   else
-    git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+    git clone --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
   fi
 fi
 
@@ -148,7 +148,7 @@ then
     cd target/web-site
     git add -A
     git commit -m "Sync web site with Quarkus documentation"
-    git push origin develop
+    git push origin main
     echo "Web Site updated - wait for CI build"
 else
     echo "

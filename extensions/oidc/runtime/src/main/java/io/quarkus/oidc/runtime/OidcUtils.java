@@ -65,6 +65,7 @@ import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -100,6 +101,7 @@ public final class OidcUtils {
     public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
     static final String UNDERSCORE = "_";
     static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
+    static final String CODE_ACCESS_TOKEN_FAILURE = "code_flow_access_token_failure";
     static final String COMMA = ",";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
@@ -491,7 +493,7 @@ public final class OidcUtils {
         }
     }
 
-    static String removeCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName) {
+    public static String removeCookie(RoutingContext context, OidcTenantConfig oidcConfig, String cookieName) {
         ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
         String cookieValue = null;
         if (cookie != null) {
@@ -785,5 +787,21 @@ public final class OidcUtils {
         }
         return resolver.getTokenStateManager() instanceof DefaultTokenStateManager
                 && oidcConfig.tokenStateManager.encryptionRequired;
+    }
+
+    public static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
+            String name, String value, long maxAge) {
+        ServerCookie cookie = new CookieImpl(name, value);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(oidcConfig.authentication.cookieForceSecure || context.request().isSSL());
+        cookie.setMaxAge(maxAge);
+        LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
+        Authentication auth = oidcConfig.getAuthentication();
+        OidcUtils.setCookiePath(context, oidcConfig.getAuthentication(), cookie);
+        if (auth.cookieDomain.isPresent()) {
+            cookie.setDomain(auth.getCookieDomain().get());
+        }
+        context.response().addCookie(cookie);
+        return cookie;
     }
 }

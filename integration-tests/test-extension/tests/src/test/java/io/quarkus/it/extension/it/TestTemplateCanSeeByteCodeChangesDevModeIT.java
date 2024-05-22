@@ -21,15 +21,15 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  * <p>
  * mvn install -Dit.test=TestTemplateDevModeIT#methodName
  */
-@Disabled("NPE in JUnit stack; See discussion in https://github.com/quarkiverse/quarkiverse/issues/94, should be re-enabled when https://github.com/quarkusio/quarkus/pull/40751 is merged")
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
+@Disabled // Tracked by #27821
+public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoTestBase {
 
     /*
      * We have a few tests that will run in parallel, so set a unique port
      */
     protected int getPort() {
-        return 8092;
+        return 8090;
     }
 
     protected void runAndCheck(boolean performCompile, String... options)
@@ -59,7 +59,7 @@ public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(3, results.getTestsPassed());
+        Assertions.assertEquals(9, results.getTestsPassed());
     }
 
 }

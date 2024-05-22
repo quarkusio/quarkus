@@ -34,6 +34,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -586,6 +587,57 @@ public class DevMojoIT extends LaunchMojoTestBase {
         assertEquals(2, artifacts.size());
 
         assertThat(devModeClient.getHttpResponse("/app/frontend")).isEqualTo("CustomValue1 CustomValue2");
+    }
+
+    @Test
+    public void testThatJUnitTestTemplatesWork() throws MavenInvocationException, IOException {
+        //we also check continuous testing
+        testDir = initProject("projects/test-template", "projects/test-template-processed");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both modules run
+        Assertions.assertEquals(2, results.getTestsPassed());
+
+        // Re-running the tests when changes happen is covered by testThatChangesTriggerRerunsOfJUnitTestTemplates
+    }
+
+    @Disabled("Not working; tracked by #40770")
+    @Test
+    public void testThatChangesTriggerRerunsOfJUnitTestTemplates() throws MavenInvocationException, IOException {
+        //we also check continuous testing
+        testDir = initProject("projects/test-template", "projects/test-template-processed");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both modules run
+        Assertions.assertEquals(2, results.getTestsPassed());
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now
+        Assertions.assertEquals(0, results.getTestsPassed());
+        Assertions.assertEquals(2, results.getTestsFailed());
     }
 
     @Test

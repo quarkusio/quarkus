@@ -73,7 +73,7 @@ With the above rootless setup on Linux, you will need to configure clients, such
 
 [source,bash]
 ----
-export DOCKER_HOST=$(podman info --format '{{.Host.RemoteSocket.Path}}')
+export DOCKER_HOST=$(podman info --format 'unix://{{.Host.RemoteSocket.Path}}')
 ----
 
 == Other Linux settings

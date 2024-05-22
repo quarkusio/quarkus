@@ -400,7 +400,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         public ObserverTransformationContext(BuildContext buildContext, AnnotationTarget target,
                 Type observedType, Set<AnnotationInstance> qualifiers, Reception reception, TransactionPhase transactionPhase,
                 Integer priority, boolean async) {
-            super(buildContext, target, qualifiers);
+            super(buildContext, target, null, qualifiers);
             this.observedType = observedType;
             this.reception = reception;
             this.transactionPhase = transactionPhase;

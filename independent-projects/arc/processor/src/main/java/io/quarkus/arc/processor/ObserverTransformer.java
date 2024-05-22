@@ -78,7 +78,7 @@ public interface ObserverTransformer extends BuildExtension {
          * Retrieves all annotations declared on the observer method. This method is preferred to manual inspection
          * of {@link #getMethod()} which may, in some corner cases, hold outdated information.
          * <p>
-         * The resulting set of annotations contains contains annotations that belong to the method itself
+         * The resulting set of annotations contains annotations that belong to the method itself
          * as well as to its parameters.
          *
          * @return collection of all annotations or an empty list in case of synthetic observer
@@ -119,7 +119,7 @@ public interface ObserverTransformer extends BuildExtension {
 
         /**
          *
-         * @param reception
+         * @param transactionPhase
          * @return self
          */
         ObserverTransformation transactionPhase(TransactionPhase transactionPhase);

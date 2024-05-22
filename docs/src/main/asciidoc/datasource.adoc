@@ -513,20 +513,11 @@ public class MyProducer {
 By default, XA support on datasources is disabled,
 and thus a transaction may include at most one datasource.
 Attempting to access multiple non-XA datasources in the same transaction
-would result in an exception similar to this:
+is unsafe and will result in a warning.
 
-[source]
-----
-...
-Caused by: java.sql.SQLException: Exception in association of connection to existing transaction
-        at io.agroal.narayana.NarayanaTransactionIntegration.associate(NarayanaTransactionIntegration.java:130)
-        ...
-Caused by: java.sql.SQLException: Unable to enlist connection to existing transaction
-        at io.agroal.narayana.NarayanaTransactionIntegration.associate(NarayanaTransactionIntegration.java:121)
-        ...
-----
+In Quarkus 3.10+, this will result in an error by default.
 
-To allow using multiple JDBC datasources in the same transaction:
+To safely allow using multiple JDBC datasources in the same transaction:
 
 . Make sure your JDBC driver supports XA.
 All <<extensions-and-database-drivers-reference,supported JDBC drivers do>>,
@@ -560,22 +551,22 @@ or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more comple
 
 [CAUTION]
 ====
-As a last resort, and for compatibility with Quarkus 3.8 and earlier,
-you may allow unsafe transaction handling across multiple non-XA datasources
-by setting `quarkus.transaction-manager.unsafe-multiple-last-resources` to `allow`.
+If you want to make sure it is impossible to access multiple non-XA datasources in the same transaction,
+you can set `quarkus.transaction-manager.unsafe-multiple-last-resources` to `fail`.
+This value is the default for Quarkus 3.10+.
 
-With this property set to `allow`, a transaction rollback
+With any value different from `fail`, a transaction rollback
 could possibly be applied to only some of the non-XA datasources,
 with other non-XA datasources having already committed their changes,
 leaving your overall system in an inconsistent state.
 
-Alternatively, you can allow the same unsafe behavior,
-but with warnings when it is taken advantage of:
+By default in Quarkus 3.8, for compatibility reasons,
+you get warned once for the first occurrence (`warn-first`).
+You may fully allow unsafe transaction handling across multiple non-XA datasources
+by setting `quarkus.transaction-manager.unsafe-multiple-last-resources` to `allow`.
 
-* setting the property to `warn-each`
-would result in logging a warning on *each* offending transaction.
-* setting the property to `warn-first`
-would result in logging a warning on the *first* offending transaction.
+Alternatively, you can allow the same unsafe behavior
+but logging a warning on *each* offending transaction by setting the property to `warn-each`.
 
 We do not recommend using this configuration property,
 and we plan to remove it in the future,

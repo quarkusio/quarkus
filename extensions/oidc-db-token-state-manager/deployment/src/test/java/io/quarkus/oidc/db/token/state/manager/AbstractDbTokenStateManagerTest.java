@@ -10,16 +10,15 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.hamcrest.Matchers;
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.TextPage;
+import org.htmlunit.WebClient;
+import org.htmlunit.WebRequest;
+import org.htmlunit.WebResponse;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlPage;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-
-import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.TextPage;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.WebRequest;
-import com.gargoylesoftware.htmlunit.WebResponse;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;

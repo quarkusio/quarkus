@@ -69,7 +69,7 @@ updates:
       - dependency-name: org.hibernate.validator:*
       - dependency-name: org.hibernate.search:*
       # Test dependencies
-      - dependency-name: net.sourceforge.htmlunit:htmlunit
+      - dependency-name: org.htmlunit:htmlunit
       - dependency-name: io.rest-assured:*
       - dependency-name: org.hamcrest:hamcrest
       - dependency-name: org.junit:junit-bom

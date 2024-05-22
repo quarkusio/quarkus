@@ -343,15 +343,14 @@ public class InvokerGenerator extends AbstractGenerator {
             if (targetMethod.returnType().kind() == Type.Kind.VOID) {
                 result = tryBlock.loadNull();
             }
-            Type returnValueType = targetMethod.returnType();
-            result = findAndInvokeTransformer(invoker.returnValueTransformer, returnValueType,
+            if (lookup != null) {
+                result = lookup.destroyIfNecessary(tryBlock, result);
+            }
+            result = findAndInvokeTransformer(invoker.returnValueTransformer, targetMethod.returnType(),
                     invoker, result, tryBlock, null);
             if (finisher.wasCreated()) {
                 tryBlock.invokeVirtualMethod(MethodDescriptor.ofMethod(InvokerCleanupTasks.class, "finish", void.class),
                         finisher.getOrCreate());
-            }
-            if (lookup != null) {
-                result = lookup.destroyIfNecessary(tryBlock, result);
             }
             tryBlock.returnValue(result);
 

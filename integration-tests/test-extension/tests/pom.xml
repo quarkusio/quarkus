@@ -176,6 +176,29 @@
         <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
       </properties>
     </profile>
+    <profile>
+      <id>native-image</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
+      <!-- add some custom config, the rest comes from parent -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <!-- add a system property that can be used by JUnit to determine whether a native image can be built -->
+                <quarkus.test.native>true</quarkus.test.native>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
 </project>

@@ -253,14 +253,19 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                     @Override
                     public Map<String, byte[]> apply(Set<String> fileNames) {
                         Map<String, byte[]> ret = new HashMap<>();
-                        for (String i : fileNames) {
+                        for (String filename : fileNames) {
                             try {
-                                Path resolvedPath = appRoot.resolve(i);
+                                Path resolvedPath = appRoot.resolve(filename);
+                                // Ensure that path stays inside appRoot
+                                if (!resolvedPath.startsWith(appRoot)) {
+                                    log.errorf("Attempted to access %s outside of %s", resolvedPath, appRoot);
+                                    continue;
+                                }
                                 if (!Files.isDirectory(resolvedPath)) {
-                                    ret.put(i, Files.readAllBytes(resolvedPath));
+                                    ret.put(filename, Files.readAllBytes(resolvedPath));
                                 }
                             } catch (IOException e) {
-                                log.error("Failed to read file " + i, e);
+                                log.error("Failed to read file " + filename, e);
                             }
                         }
                         return ret;

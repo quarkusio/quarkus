@@ -54,7 +54,7 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 
@@ -266,7 +266,7 @@ public class CoreQuarkusTestExtension {
                 additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
             }
             if (profileInstance.getConfigProfile() != null) {
-                additional.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
+                additional.put(LaunchMode.TEST.getProfileKey(),
                         profileInstance.getConfigProfile());
             }
             //we just use system properties for now

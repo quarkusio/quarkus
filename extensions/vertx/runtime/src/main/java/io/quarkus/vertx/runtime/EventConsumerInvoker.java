@@ -3,6 +3,8 @@ package io.quarkus.vertx.runtime;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
+import jakarta.enterprise.invoke.Invoker;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
@@ -12,18 +14,22 @@ import io.vertx.core.eventbus.Message;
 /**
  * Invokes a business method annotated with {@link ConsumeEvent}.
  */
-public abstract class EventConsumerInvoker {
+public class EventConsumerInvoker {
+    /**
+     * The {@linkplain Invoker invoker} for the event consumer method.
+     */
+    private final Invoker<Object, Object> invoker;
 
-    public boolean isBlocking() {
-        return false;
-    }
+    /**
+     * Whether this event consumer method declares 2 parameters, where the first
+     * is the event headers and the second is the event body. In this case,
+     * we have to split the headers and body parameters explicitly.
+     */
+    private final boolean splitHeadersBodyParams;
 
-    public boolean isRunningOnVirtualThread() {
-        return false;
-    }
-
-    public boolean isOrdered() {
-        return false;
+    public EventConsumerInvoker(Invoker<Object, Object> invoker, boolean splitHeadersBodyParams) {
+        this.invoker = invoker;
+        this.splitHeadersBodyParams = splitHeadersBodyParams;
     }
 
     public void invoke(Message<Object> message) throws Exception {
@@ -66,7 +72,13 @@ public abstract class EventConsumerInvoker {
         }
     }
 
-    protected abstract Object invokeBean(Message<Object> message) throws Exception;
+    private Object invokeBean(Message<Object> message) throws Exception {
+        if (splitHeadersBodyParams) {
+            return invoker.invoke(null, new Object[] { message.headers(), message.body() });
+        } else {
+            return invoker.invoke(null, new Object[] { message });
+        }
+    }
 
     private static class RequestActiveConsumer implements BiConsumer<Object, Throwable> {
 

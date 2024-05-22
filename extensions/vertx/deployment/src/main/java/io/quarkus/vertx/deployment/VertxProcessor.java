@@ -1,6 +1,10 @@
 package io.quarkus.vertx.deployment;
 
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE_HEADERS;
+import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessage;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
 
@@ -22,12 +26,15 @@ import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CurrentContextFactoryBuildItem;
+import io.quarkus.arc.deployment.InvokerFactoryBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.InvokerBuilder;
+import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -48,12 +55,16 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.runtime.EventConsumerInfo;
 import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
 import io.quarkus.vertx.runtime.VertxProducer;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.smallrye.mutiny.Uni;
 
 class VertxProcessor {
 
@@ -75,18 +86,19 @@ class VertxProcessor {
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            BuildProducer<ServiceStartBuildItem> serviceStart, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes) {
-        Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
+            BuildProducer<ServiceStartBuildItem> serviceStart,
+            List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
+            RecorderContext recorderContext) {
+        List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
-            String invokerClass = EventBusConsumer.generateInvoker(businessMethod.getBean(), businessMethod.getMethod(),
-                    businessMethod.getConsumeEvent(), classOutput);
-            messageConsumerConfigurations.put(invokerClass,
-                    annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
-                            .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
-                            .build(classOutput));
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).build());
+            ConsumeEvent annotation = annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
+                    .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
+                    .build(classOutput);
+
+            messageConsumerConfigurations.add(new EventConsumerInfo(annotation, businessMethod.isBlockingAnnotation(),
+                    businessMethod.isRunOnVirtualThreadAnnotation(), businessMethod.isSplitHeadersBodyParams(),
+                    recorderContext.newInstance(businessMethod.getInvoker().getClassName())));
         }
 
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -124,6 +136,7 @@ class VertxProcessor {
     @BuildStep
     void collectEventConsumers(
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            InvokerFactoryBuildItem invokerFactory,
             BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<BeanConfiguratorBuildItem> errors) {
         // We need to collect all business methods annotated with @ConsumeEvent first
@@ -164,8 +177,33 @@ class VertxProcessor {
                                 "An event consumer business method that cannot use @RunOnVirtualThread and set the ordered attribute to true [method: %s, bean:%s]",
                                 method, bean));
                     }
-                    messageConsumerBusinessMethods
-                            .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
+
+                    InvokerBuilder builder = invokerFactory.createInvoker(bean, method)
+                            .withInstanceLookup();
+
+                    if (method.parametersCount() == 1 && method.parameterType(0).name().equals(MESSAGE)) {
+                        // io.vertx.core.eventbus.Message
+                        // no transformation required
+                    } else if (method.parametersCount() == 1 && method.parameterType(0).name().equals(MUTINY_MESSAGE)) {
+                        // io.vertx.mutiny.core.eventbus.Message
+                        builder.withArgumentTransformer(0, io.vertx.mutiny.core.eventbus.Message.class, "newInstance");
+                    } else if (method.parametersCount() == 1) {
+                        // parameter is payload
+                        builder.withArgumentTransformer(0, io.vertx.core.eventbus.Message.class, "body");
+                    } else if (method.parametersCount() == 2 && method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
+                        // if the method expects Mutiny MultiMap, wrap the Vert.x MultiMap
+                        builder.withArgumentTransformer(0, io.vertx.mutiny.core.MultiMap.class, "newInstance");
+                    }
+
+                    if (method.returnType().name().equals(UNI)) {
+                        builder.withReturnValueTransformer(Uni.class, "subscribeAsCompletionStage");
+                    }
+
+                    InvokerInfo invoker = builder.build();
+
+                    messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, consumeEvent,
+                            method.hasAnnotation(Blocking.class), method.hasAnnotation(RunOnVirtualThread.class),
+                            params.size() == 2, invoker));
                     LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
                 }
             }

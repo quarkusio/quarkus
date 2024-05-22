@@ -302,7 +302,7 @@ innerSpan.setTag("error.message", e.getMessage());```
 innerSpan.recordException(e);```
 
 |-
-|Baggage carried by SpanContext in the Span    | Baggage is an independent signal propagated in parallel with the OTel Context
+|Baggage carried by SpanContext in the Span
 |Baggage is an independent signal propagated in parallel with the OTel Context, it's not part of it.
 |===
 

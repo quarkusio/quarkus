@@ -23,7 +23,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  */
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 @Disabled // Tracked by #27821
-public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
+public class TestTemplateCanSeeByteCodeChangesDevModeIT extends RunAndCheckMojoTestBase {
 
     /*
      * We have a few tests that will run in parallel, so set a unique port
@@ -50,8 +50,8 @@ public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, IOException {
         //we also check continuous testing
-        String executionDir = "projects/project-using-test-template-from-extension-processed";
-        testDir = initProject("projects/project-using-test-template-from-extension", executionDir);
+        String executionDir = "projects/project-using-test-template-from-extension-with-bytecode-changes-processed";
+        testDir = initProject("projects/project-using-test-template-from-extension-with-bytecode-changes", executionDir);
         runAndCheck();
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());

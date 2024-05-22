@@ -21,7 +21,7 @@ import io.quarkus.runtime.LaunchMode;
  */
 @Disabled // Tracked by #27821
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
-public class TestTemplateTestModeIT extends RunAndCheckMojoTestBase {
+public class TestTemplateCanSeeByteCodeChangesTestModeIT extends RunAndCheckMojoTestBase {
 
     /*
      * We have a few tests that will run in parallel, so set a unique port

@@ -472,6 +472,12 @@ To use this failure handler, the bean must be exposed with the `@Identifier` qua
 The handler is called with details of the deserialization, including the action represented as `Uni<T>`.
 On the deserialization `Uni` failure strategies like retry, providing a fallback value or applying timeout can be implemented.
 
+If you don’t configure a deserialization failure handler and a deserialization failure happens, the application is marked unhealthy.
+You can also ignore the failure, which will log the exception and produce a `null` value.
+To enable this behavior, set the `mp.messaging.incoming.$channel.fail-on-deserialization-failure` attribute to `false`.
+
+If the `fail-on-deserialization-failure` attribute is set to `false` and the `failure-strategy` attribute is `dead-letter-queue` the failed record will be sent to the corresponding *dead letter queue* topic.
+
 === Consumer Groups
 
 In Kafka, a consumer group is a set of consumers which cooperate to consume data from a topic.

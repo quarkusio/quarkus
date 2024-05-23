@@ -570,7 +570,7 @@ public class ResteasyReactiveProcessor {
                                                 QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                         .ignoreMethodPredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                        .source(source)
+                                        .source(source + " > " + method.returnType().name().toString())
                                         .build());
                             }
 
@@ -587,7 +587,7 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                             .ignoreMethodPredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                            .source(source)
+                                            .source(source + " > " + parameterType.name().toString())
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {

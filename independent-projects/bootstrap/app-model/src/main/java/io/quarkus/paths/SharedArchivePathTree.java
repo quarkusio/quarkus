@@ -85,6 +85,11 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
+        public OpenPathTree open() {
+            return SharedArchivePathTree.this.open();
+        }
+
+        @Override
         public void close() throws IOException {
             writeLock().lock();
             final boolean close = users.decrementAndGet() == 0;

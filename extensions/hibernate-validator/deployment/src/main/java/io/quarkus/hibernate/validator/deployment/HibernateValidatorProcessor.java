@@ -309,8 +309,10 @@ class HibernateValidatorProcessor {
                     .map(DotName::createSimple)
                     .forEach(configComponentsInterfacesToRegisterForReflection::add);
         }
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                configComponentsInterfacesToRegisterForReflection.stream().map(DotName::toString).toArray(String[]::new))
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(configComponentsInterfacesToRegisterForReflection.stream().map(DotName::toString)
+                        .toArray(String[]::new))
+                .reason(getClass().getName())
                 .methods().build());
 
         String builderClassName = HibernateBeanValidationConfigValidator.class.getName() + "Builder";
@@ -634,8 +636,9 @@ class HibernateValidatorProcessor {
         exceptionMapperProducer.produce(new ExceptionMapperBuildItem(ResteasyReactiveViolationExceptionMapper.class.getName(),
                 ValidationException.class.getName(), Priorities.USER + 1, true));
         reflectiveClassProducer.produce(
-                ReflectiveClassBuildItem.builder(ViolationReport.class,
-                        ViolationReport.Violation.class).methods().fields().build());
+                ReflectiveClassBuildItem.builder(ViolationReport.class, ViolationReport.Violation.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     // We need to make sure that the standard process of obtaining a ValidationFactory is not followed,

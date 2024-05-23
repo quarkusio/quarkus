@@ -253,7 +253,9 @@ class HibernateSearchStandaloneProcessor {
 
     private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

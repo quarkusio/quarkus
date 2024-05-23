@@ -252,8 +252,9 @@ public class JaxrsClientReactiveProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(StorkClientRequestFilter.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(StorkClientRequestFilter.class.getName()));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(StorkClientRequestFilter.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(StorkClientRequestFilter.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @BuildStep
@@ -296,6 +297,7 @@ public class JaxrsClientReactiveProcessor {
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
                 .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
+                .reason(getClass().getName())
                 .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
@@ -426,6 +428,7 @@ public class JaxrsClientReactiveProcessor {
             recorder.registerReader(serialisers, additionalReader.getEntityClass(), reader);
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(readerClass)
+                            .reason(getClass().getName())
                             .build());
         }
 
@@ -438,6 +441,7 @@ public class JaxrsClientReactiveProcessor {
             recorder.registerWriter(serialisers, entry.getEntityClass(), writer);
             reflectiveClassBuildItemBuildProducer
                     .produce(ReflectiveClassBuildItem.builder(writerClass)
+                            .reason(getClass().getName())
                             .build());
         }
 

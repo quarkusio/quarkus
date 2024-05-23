@@ -473,6 +473,7 @@ public final class HibernateOrmProcessor {
                 annotationClassNames.add(name.toString());
             }
             reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
+                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .methods().fields().build());
             for (String annotationClassName : annotationClassNames) {
                 proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(annotationClassName));
@@ -744,8 +745,9 @@ public final class HibernateOrmProcessor {
                     .map(a -> a.target().asClass().name().toString())
                     .toArray(String[]::new);
 
-            reflective.produce(
-                    ReflectiveClassBuildItem.builder(metamodel).constructors(false).fields().build());
+            reflective.produce(ReflectiveClassBuildItem.builder(metamodel)
+                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                    .constructors(false).fields().build());
         }
     }
 
@@ -769,8 +771,9 @@ public final class HibernateOrmProcessor {
                 .forEach(classes::add);
 
         if (!classes.isEmpty()) {
-            reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).constructors(false)
-                    .methods().build());
+            reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
+                    .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
+                    .constructors(false).methods().build());
         }
     }
 

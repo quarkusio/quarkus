@@ -34,6 +34,6 @@ public class ResteasyReactiveJsonbProcessor {
 
     @BuildStep
     void reflection(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).methods().build());
+        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).reason(getClass().getName()).methods().build());
     }
 }

@@ -119,7 +119,9 @@ public class ConfigMappingUtils {
                     classBytes));
             additionalConstrainedClasses.produce(AdditionalConstrainedClassBuildItem.of(mappingMetadata.getClassName(),
                     classBytes));
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors().build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName())
+                    .reason(ConfigMappingUtils.class.getName())
+                    .build());
             reflectiveMethods
                     .produce(new ReflectiveMethodBuildItem(mappingMetadata.getClassName(), "getDefaults", new String[0]));
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(mappingMetadata.getClassName(), "getNames", new String[0]));
@@ -141,6 +143,8 @@ public class ConfigMappingUtils {
         ConfigMappingInterface mapping = ConfigMappingLoader.getConfigMapping(configClass);
         for (Property property : mapping.getProperties()) {
             Class<?> returnType = property.getMethod().getReturnType();
+            String reason = ConfigMappingUtils.class.getSimpleName() + " Required to process property "
+                    + property.getPropertyName();
 
             if (property.hasConvertWith()) {
                 Class<? extends Converter<?>> convertWith;
@@ -149,39 +153,44 @@ public class ConfigMappingUtils {
                 } else {
                     convertWith = property.asPrimitive().getConvertWith();
                 }
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(convertWith).build());
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(convertWith).reason(reason).build());
             }
 
-            registerImplicitConverter(property, reflectiveClasses);
+            registerImplicitConverter(property, reason, reflectiveClasses);
 
             if (property.isMap()) {
                 MapProperty mapProperty = property.asMap();
                 if (mapProperty.hasKeyConvertWith()) {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyConvertWith()).build());
+                    reflectiveClasses
+                            .produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyConvertWith()).reason(reason).build());
                 } else {
-                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyRawType()).build());
+                    reflectiveClasses
+                            .produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyRawType()).reason(reason).build());
                 }
 
-                registerImplicitConverter(mapProperty.getValueProperty(), reflectiveClasses);
+                registerImplicitConverter(mapProperty.getValueProperty(), reason, reflectiveClasses);
             }
         }
     }
 
     private static void registerImplicitConverter(
             Property property,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            String reason, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
 
         if (property.isLeaf() && !property.isOptional()) {
             LeafProperty leafProperty = property.asLeaf();
             if (leafProperty.hasConvertWith()) {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(leafProperty.getConvertWith()).build());
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(leafProperty.getConvertWith()).reason(reason).build());
             } else {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(leafProperty.getValueRawType()).methods().build());
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(leafProperty.getValueRawType()).reason(reason).methods()
+                                .build());
             }
         } else if (property.isOptional()) {
-            registerImplicitConverter(property.asOptional().getNestedProperty(), reflectiveClasses);
+            registerImplicitConverter(property.asOptional().getNestedProperty(), reason, reflectiveClasses);
         } else if (property.isCollection()) {
-            registerImplicitConverter(property.asCollection().getElement(), reflectiveClasses);
+            registerImplicitConverter(property.asCollection().getElement(), reason, reflectiveClasses);
         }
     }
 

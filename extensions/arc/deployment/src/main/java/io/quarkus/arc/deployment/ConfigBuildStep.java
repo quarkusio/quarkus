@@ -127,7 +127,9 @@ public class ConfigBuildStep {
             if (type.kind() != Kind.ARRAY) {
                 // Implicit converters are most likely used
                 reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods()
+                                .reason(getClass().getName() + " Custom config bean")
+                                .build());
             }
             DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
                     : type.name();
@@ -549,7 +551,9 @@ public class ConfigBuildStep {
         List<String> typeArgumentNames = Collections.emptyList();
 
         if (configProperty.getPropertyType().kind() != Kind.PRIMITIVE) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(typeName).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(typeName)
+                    .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property")
+                    .build());
         }
 
         if (configProperty.getPropertyType().kind() == Kind.PARAMETERIZED_TYPE) {
@@ -558,7 +562,10 @@ public class ConfigBuildStep {
             for (Type argumentType : argumentTypes) {
                 typeArgumentNames.add(argumentType.name().toString());
                 if (argumentType.kind() != Kind.PRIMITIVE) {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(argumentType.name().toString()).build());
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(argumentType.name().toString())
+                            .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property's " + typeName
+                                    + " parameter")
+                            .build());
                 }
             }
         }

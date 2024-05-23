@@ -455,4 +455,11 @@ public final class ClassNames {
             createConstant("java.util.UUID"),
             createConstant("java.lang.Void"));
 
+    public static final DotName HIBERNATE_ORM_PROCESSOR = createConstant(
+            "io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor");
+
+    public static final DotName HIBERNATE_USER_TYPE_PROCESSOR = createConstant(
+            "io.quarkus.hibernate.orm.deployment.HibernateUserTypeProcessor");
+
+    public static final DotName GRAAL_VM_FEATURES = createConstant("io.quarkus.hibernate.orm.deployment.GraalVMFeatures");
 }

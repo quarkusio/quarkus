@@ -21,12 +21,14 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassConditionBuild
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 public class NativeImageReflectConfigStep {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateReflectConfig(BuildProducer<GeneratedResourceBuildItem> reflectConfig,
+            NativeConfig nativeConfig,
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
@@ -42,7 +44,8 @@ public class NativeImageReflectConfigStep {
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
             addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isQueryConstructors(),
                     i.isMethods(), i.isQueryMethods(), i.isFields(), i.isClasses(),
-                    i.isWeak(), i.isSerialization(), i.isUnsafeAllocated(), i.getClassNames().toArray(new String[0]));
+                    i.isWeak(), i.isSerialization(), i.isUnsafeAllocated(), i.getReason(),
+                    i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
             addReflectiveField(reflectiveClasses, i);
@@ -127,6 +130,13 @@ public class NativeImageReflectConfigStep {
             if (info.unsafeAllocated) {
                 json.put("unsafeAllocated", true);
             }
+            if (nativeConfig.includeReasonsInConfigFiles() && info.reasons != null) {
+                JsonArrayBuilder reasonsArray = Json.array();
+                for (String reason : info.reasons) {
+                    reasonsArray.add(reason);
+                }
+                json.put("reasons", reasonsArray);
+            }
 
             root.add(json);
         }
@@ -173,13 +183,13 @@ public class NativeImageReflectConfigStep {
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
             boolean constructors, boolean queryConstructors, boolean method,
             boolean queryMethods, boolean fields, boolean classes, boolean weak, boolean serialization, boolean unsafeAllocated,
-            String... className) {
+            String reason, String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
                 String typeReachable = (!forcedNonWeakClasses.contains(cl) && weak) ? cl : null;
                 reflectiveClasses.put(cl, new ReflectionInfo(constructors, queryConstructors, method, queryMethods, fields,
-                        classes, typeReachable, serialization, unsafeAllocated));
+                        classes, typeReachable, serialization, unsafeAllocated, reason));
             } else {
                 if (constructors) {
                     existing.constructors = true;
@@ -205,6 +215,12 @@ public class NativeImageReflectConfigStep {
                 if (unsafeAllocated) {
                     existing.unsafeAllocated = true;
                 }
+                if (reason != null) {
+                    if (existing.reasons == null) {
+                        existing.reasons = new HashSet<>();
+                    }
+                    existing.reasons.add(reason);
+                }
             }
         }
     }
@@ -227,6 +243,7 @@ public class NativeImageReflectConfigStep {
         boolean classes;
         boolean serialization;
         boolean unsafeAllocated;
+        Set<String> reasons = null;
         String typeReachable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
@@ -234,12 +251,12 @@ public class NativeImageReflectConfigStep {
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {
-            this(false, false, false, false, false, false, null, false, false);
+            this(false, false, false, false, false, false, null, false, false, null);
         }
 
         private ReflectionInfo(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
                 boolean fields, boolean classes, String typeReachable,
-                boolean serialization, boolean unsafeAllocated) {
+                boolean serialization, boolean unsafeAllocated, String reason) {
             this.methods = methods;
             this.queryMethods = queryMethods;
             this.fields = fields;
@@ -249,6 +266,10 @@ public class NativeImageReflectConfigStep {
             this.queryConstructors = queryConstructors;
             this.serialization = serialization;
             this.unsafeAllocated = unsafeAllocated;
+            if (reason != null) {
+                reasons = new HashSet<>();
+                reasons.add(reason);
+            }
         }
     }
 

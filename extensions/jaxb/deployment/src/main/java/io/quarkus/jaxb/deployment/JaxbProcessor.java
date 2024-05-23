@@ -214,7 +214,17 @@ public class JaxbProcessor {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
                         && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
                     ClassInfo targetClassInfo = jaxbRootAnnotationInstance.target().asClass();
-                    addReflectiveHierarchyClass(targetClassInfo, reflectiveHierarchies, index);
+                    final var name = targetClassInfo.name();
+
+                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                            .builder(name)
+                            .index(index)
+                            .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
+                                    || IGNORE_TYPES.contains(t))
+                            .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
+                            .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
+                            .source(getClass().getSimpleName() + " annotated with @" + jaxbRootAnnotation + " > " + name)
+                            .build());
                     classesToBeBound.add(targetClassInfo.name().toString());
                     jaxbRootAnnotationsDetected = true;
                 }
@@ -420,22 +430,6 @@ public class JaxbProcessor {
         } catch (IOException e) {
             throw new IOError(e);
         }
-    }
-
-    private void addReflectiveHierarchyClass(ClassInfo classInfo,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            IndexView index) {
-        final var name = classInfo.name();
-
-        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                .builder(name)
-                .index(index)
-                .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
-                        || IGNORE_TYPES.contains(t))
-                .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
-                .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
-                .source(getClass().getSimpleName() + " > " + name)
-                .build());
     }
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,

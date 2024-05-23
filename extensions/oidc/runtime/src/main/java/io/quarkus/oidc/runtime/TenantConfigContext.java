@@ -1,7 +1,10 @@
 package io.quarkus.oidc.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -9,10 +12,12 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -29,7 +34,7 @@ public class TenantConfigContext {
      */
     final OidcTenantConfig oidcConfig;
 
-    final List<OidcRedirectFilter> redirectFilters;
+    final Map<Redirect.Location, List<OidcRedirectFilter>> redirectFilters;
 
     /**
      * PKCE Secret Key
@@ -50,7 +55,7 @@ public class TenantConfigContext {
     public TenantConfigContext(OidcProvider client, OidcTenantConfig config, boolean ready) {
         this.provider = client;
         this.oidcConfig = config;
-        this.redirectFilters = TenantFeatureFinder.find(config, OidcRedirectFilter.class);
+        this.redirectFilters = getRedirectFiltersMap(TenantFeatureFinder.find(config, OidcRedirectFilter.class));
         this.ready = ready;
 
         boolean isService = OidcUtils.isServiceApp(config);
@@ -164,10 +169,6 @@ public class TenantConfigContext {
         return oidcConfig;
     }
 
-    public List<OidcRedirectFilter> getOidcRedirectFilters() {
-        return redirectFilters;
-    }
-
     public OidcConfigurationMetadata getOidcMetadata() {
         return provider != null ? provider.getMetadata() : null;
     }
@@ -182,5 +183,38 @@ public class TenantConfigContext {
 
     public SecretKey getTokenEncSecretKey() {
         return tokenEncSecretKey;
+    }
+
+    private static Map<Redirect.Location, List<OidcRedirectFilter>> getRedirectFiltersMap(List<OidcRedirectFilter> filters) {
+        Map<Redirect.Location, List<OidcRedirectFilter>> map = new HashMap<>();
+        for (OidcRedirectFilter filter : filters) {
+            Redirect redirect = ClientProxy.unwrap(filter).getClass().getAnnotation(Redirect.class);
+            if (redirect != null) {
+                for (Redirect.Location loc : redirect.value()) {
+                    map.computeIfAbsent(loc, k -> new ArrayList<OidcRedirectFilter>()).add(filter);
+                }
+            } else {
+                map.computeIfAbsent(Redirect.Location.ALL, k -> new ArrayList<OidcRedirectFilter>()).add(filter);
+            }
+        }
+        return map;
+    }
+
+    List<OidcRedirectFilter> getOidcRedirectFilters(Redirect.Location loc) {
+        List<OidcRedirectFilter> typeSpecific = redirectFilters.get(loc);
+        List<OidcRedirectFilter> all = redirectFilters.get(Redirect.Location.ALL);
+        if (typeSpecific == null && all == null) {
+            return List.of();
+        }
+        if (typeSpecific != null && all == null) {
+            return typeSpecific;
+        } else if (typeSpecific == null && all != null) {
+            return all;
+        } else {
+            List<OidcRedirectFilter> combined = new ArrayList<>(typeSpecific.size() + all.size());
+            combined.addAll(typeSpecific);
+            combined.addAll(all);
+            return combined;
+        }
     }
 }

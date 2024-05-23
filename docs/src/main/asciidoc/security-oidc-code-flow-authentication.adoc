@@ -475,6 +475,7 @@ import org.eclipse.microprofile.jwt.Claims;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRedirectFilter;
+import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.build.Jwt;
@@ -482,27 +483,29 @@ import io.smallrye.jwt.build.Jwt;
 @ApplicationScoped
 @Unremovable
 @TenantFeature("tenant-refresh")
+@Redirect(Location.SESSION_EXPIRED_PAGE) <1>
 public class SessionExpiredOidcRedirectFilter implements OidcRedirectFilter {
 
     @Override
     public void filter(OidcRedirectContext context) {
 
         if (context.redirectUri().contains("/session-expired-page")) {
-            AuthorizationCodeTokens tokens = context.routingContext().get(AuthorizationCodeTokens.class.getName()); <1>
-            String userName = OidcUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name()); <2>
-            String jwe = Jwt.preferredUserName(userName).jwe()
-                    .encryptWithSecret(context.oidcTenantConfig().credentials.secret.get()); <3>
-            OidcUtils.createCookie(context.routingContext(), context.oidcTenantConfig(), "session_expired",
-                    jwe + "|" + context.oidcTenantConfig().tenantId.get(), 10); <4>
+        AuthorizationCodeTokens tokens = context.routingContext().get(AuthorizationCodeTokens.class.getName()); <2>
+        String userName = OidcUtils.decodeJwtContent(tokens.getIdToken()).getString(Claims.preferred_username.name()); <3>
+        String jwe = Jwt.preferredUserName(userName).jwe()
+                .encryptWithSecret(context.oidcTenantConfig().credentials.secret.get()); <4>
+        OidcUtils.createCookie(context.routingContext(), context.oidcTenantConfig(), "session_expired",
+                jwe + "|" + context.oidcTenantConfig().tenantId.get(), 10); <5>
      }
     }
 }
 
 ----
-<1> Access `AuthorizationCodeTokens` tokens associated with the now expired session as a `RoutingContext`  attribute.
-<2> Decode ID token claims and get a user name.
-<3> Save the user name in a JWT token encrypted with the current OIDC tenant's client secret.
-<4> Create a custom `session_expired` cookie valid for 5 seconds which joins the encrypted token and a tenant id using a "|" separator. Recording a tenant id in a custom cookie can help to generate correct session expired pages in a multi-tenant OIDC setup.
+<1> Make sure this redirect filter is only called during a redirect to the session expired page.
+<2> Access `AuthorizationCodeTokens` tokens associated with the now expired session as a `RoutingContext`  attribute.
+<3> Decode ID token claims and get a user name.
+<4> Save the user name in a JWT token encrypted with the current OIDC tenant's client secret.
+<5> Create a custom `session_expired` cookie valid for 5 seconds which joins the encrypted token and a tenant id using a "|" separator. Recording a tenant id in a custom cookie can help to generate correct session expired pages in a multi-tenant OIDC setup.
 
 Next, a public JAX-RS resource which generates session expired pages can use this cookie to create a page tailored for this user and the corresponding OIDC tenant, for example:
 

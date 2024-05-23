@@ -166,14 +166,17 @@ public class JacksonProcessor {
             if (CLASS.equals(annotationTarget.kind())) {
                 DotName dotName = annotationTarget.asClass().name();
                 if (!ignoredDotNames.contains(dotName)) {
-                    addReflectiveHierarchyClass(dotName, reflectiveHierarchyClass);
+                    addReflectiveHierarchyClass(getClass().getSimpleName() + " annotated with @" + JSON_DESERIALIZE,
+                            dotName, reflectiveHierarchyClass);
                 }
 
                 AnnotationValue annotationValue = deserializeInstance.value("builder");
                 if (null != annotationValue && AnnotationValue.Kind.CLASS.equals(annotationValue.kind())) {
                     DotName builderClassName = annotationValue.asClass().name();
                     if (!BUILDER_VOID.equals(builderClassName)) {
-                        addReflectiveHierarchyClass(builderClassName, reflectiveHierarchyClass);
+                        addReflectiveHierarchyClass(
+                                getClass().getSimpleName() + " @" + JSON_DESERIALIZE + " builder of " + dotName,
+                                builderClassName, reflectiveHierarchyClass);
                     }
                 }
             }
@@ -316,10 +319,10 @@ public class JacksonProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
     }
 
-    private void addReflectiveHierarchyClass(DotName className,
+    private void addReflectiveHierarchyClass(String reason, DotName className,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass) {
         reflectiveHierarchyClass.produce(ReflectiveHierarchyBuildItem.builder(className)
-                .source(getClass().getSimpleName() + " > " + className)
+                .source(reason)
                 .build());
     }
 

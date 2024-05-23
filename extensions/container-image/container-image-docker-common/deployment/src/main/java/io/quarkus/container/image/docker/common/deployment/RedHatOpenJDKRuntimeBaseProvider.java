@@ -9,10 +9,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Can extract information from Dockerfile that uses {@code registry.access.redhat.com/ubi8/openjdk-$d-runtime:$d.$d} as the
+ * Can extract information from Dockerfile that uses
+ * {@code registry.access.redhat.com/ubi([8-9]|[1-9][0-9]+)/openjdk-$d-runtime:$d.$d} as the
  * base image
  */
 class RedHatOpenJDKRuntimeBaseProvider implements DockerFileBaseInformationProvider {
+    private static final Pattern PATTERN = Pattern
+            .compile(".*ubi([8-9]|[1-9][0-9]+)/openjdk-(\\w+)-runtime.*");
 
     @Override
     public Optional<DockerFileBaseInformation> determine(Path dockerFile) {
@@ -21,10 +24,9 @@ class RedHatOpenJDKRuntimeBaseProvider implements DockerFileBaseInformationProvi
             if (fromOpt.isPresent()) {
                 String fromLine = fromOpt.get();
                 String baseImage = fromLine.substring(4).trim();
-                Pattern pattern = Pattern.compile(".*ubi8/openjdk-(\\w+)-runtime.*");
-                Matcher matcher = pattern.matcher(baseImage);
+                Matcher matcher = PATTERN.matcher(baseImage);
                 if (matcher.find()) {
-                    String match = matcher.group(1);
+                    String match = matcher.group(2);
                     try {
                         return Optional.of(new DockerFileBaseInformationProvider.DockerFileBaseInformation(baseImage,
                                 Integer.parseInt(match)));

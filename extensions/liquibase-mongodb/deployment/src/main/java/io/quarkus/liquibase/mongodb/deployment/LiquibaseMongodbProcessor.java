@@ -107,6 +107,7 @@ class LiquibaseMongodbProcessor {
                 .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
                         .map(classInfo -> classInfo.name().toString())
                         .toArray(String[]::new))
+                .reason(getClass().getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -149,6 +150,7 @@ class LiquibaseMongodbProcessor {
         }
         reflective.produce(
                 ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                        .reason(getClass().getName())
                         .constructors().methods().fields().build());
 
         resource.produce(
@@ -231,9 +233,9 @@ class LiquibaseMongodbProcessor {
             }
             services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
 
-            reflective.produce(ReflectiveClassBuildItem.builder(
-                    implementations.toArray(new String[0]))
-                    .constructors().methods().fields(shouldRegisterFieldForReflection).build());
+            reflective.produce(
+                    ReflectiveClassBuildItem.builder(implementations.toArray(new String[0])).reason(getClass().getName())
+                            .constructors().methods().fields(shouldRegisterFieldForReflection).build());
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }

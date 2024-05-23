@@ -113,7 +113,9 @@ public class ResteasyCommonProcessor {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
                 ServletContextConfigSource.class,
-                FilterConfigSource.class).build());
+                FilterConfigSource.class)
+                .reason(getClass().getName())
+                .build());
     }
 
     @BuildStep
@@ -240,6 +242,7 @@ public class ResteasyCommonProcessor {
             // This abstract one is also accessed directly via reflection
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder("org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider")
+                            .reason(getClass().getName())
                             .methods().fields().build());
         }
 

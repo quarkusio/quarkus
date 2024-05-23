@@ -290,7 +290,7 @@ public final class LoggingResourceProcessor {
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
                 reflectiveClassBuildItemBuildProducer.produce(
                         ReflectiveClassBuildItem.builder(discoveredLogComponents.getNameToFilterClass().values().toArray(
-                                EMPTY_STRING_ARRAY)).build());
+                                EMPTY_STRING_ARRAY)).reason(getClass().getName()).build());
                 serviceProviderBuildItemBuildProducer
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
             }

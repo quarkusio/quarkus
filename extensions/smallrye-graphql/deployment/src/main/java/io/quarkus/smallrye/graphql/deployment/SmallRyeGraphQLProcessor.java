@@ -329,11 +329,14 @@ public class SmallRyeGraphQLProcessor {
 
         // Make sure the complex object from the application can work in native mode
         reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema)).methods().fields().build());
+                .produce(ReflectiveClassBuildItem.builder(getSchemaJavaClasses(schema))
+                        .reason(getClass().getName())
+                        .methods().fields().build());
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
-        reflectiveClassProducer
-                .produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses()).methods().fields().build());
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses())
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     private void registerExtraScalarsInSchema(List<ExtraScalar> extraScalars) {

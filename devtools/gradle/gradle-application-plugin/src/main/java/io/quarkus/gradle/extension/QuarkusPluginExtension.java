@@ -270,10 +270,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public void set(String name, @Nullable String value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
     }
 
-    public void set(String name, Property<String> value) {
-        quarkusBuildProperties.put(String.format("quarkus.%s", name), value);
+    public void set(String name, Provider<String> value) {
+        quarkusBuildProperties.put(addQuarkusBuildPropertyPrefix(name), value);
+    }
+
+    private String addQuarkusBuildPropertyPrefix(String name) {
+        return String.format("quarkus.%s", name);
     }
 }

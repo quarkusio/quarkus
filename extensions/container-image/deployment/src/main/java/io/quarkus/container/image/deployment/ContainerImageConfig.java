@@ -91,7 +91,7 @@ public class ContainerImageConfig {
     public Optional<Boolean> push;
 
     /**
-     * The name of the container image extension to use (e.g. docker, jib, s2i).
+     * The name of the container image extension to use (e.g. docker, podman, jib, s2i).
      * The option will be used in case multiple extensions are present.
      */
     @ConfigItem

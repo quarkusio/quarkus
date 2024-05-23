@@ -1261,8 +1261,8 @@ This is covered in the xref:building-native-image.adoc[Native Executable Guide].
 `@QuarkusIntegrationTest` should be used to launch and test the artifact produced by the Quarkus build, and supports testing a jar (of whichever type), a native image or container image.
 Put simply, this means that if the result of a Quarkus build (`mvn package` or `gradle build`) is a jar, that jar will be launched as `java -jar ...` and tests run against it.
 If instead a native image was built, then the application is launched as `./application ...` and again the tests run against the running application.
-Finally, if a container image was created during the build (by including the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions and having the
-`quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` executable being present).
+Finally, if a container image was created during the build (by including the `quarkus-container-image-jib`, `quarkus-container-image-docker`, or `container-image-podman` extensions and having the
+`quarkus.container-image.build=true` property configured), then a container is created and run (this requires the `docker` or `podman` executable being present).
 
 This is a black box test that supports the same set features and has the same limitations.
 

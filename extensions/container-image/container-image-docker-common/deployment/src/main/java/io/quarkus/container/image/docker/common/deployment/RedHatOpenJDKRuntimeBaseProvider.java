@@ -1,4 +1,4 @@
-package io.quarkus.container.image.docker.deployment;
+package io.quarkus.container.image.docker.common.deployment;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,8 +12,7 @@ import java.util.stream.Stream;
  * Can extract information from Dockerfile that uses {@code registry.access.redhat.com/ubi8/openjdk-$d-runtime:$d.$d} as the
  * base image
  */
-class RedHatOpenJDKRuntimeBaseProvider
-        implements DockerFileBaseInformationProvider {
+class RedHatOpenJDKRuntimeBaseProvider implements DockerFileBaseInformationProvider {
 
     @Override
     public Optional<DockerFileBaseInformation> determine(Path dockerFile) {

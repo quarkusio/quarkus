@@ -6,14 +6,15 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Container Images
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Learn how to build and push container images with Jib, OpenShift or Docker as part of the Quarkus build.
+:summary: Learn how to build and push container images with Jib, OpenShift, Docker, or Podman as part of the Quarkus build.
 :topics: devops,cloud
-:extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-buildpack
+:extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-podman,io.quarkus:quarkus-container-image-buildpack
 
 Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
 
 - <<#jib,Jib>>
 - <<#docker,Docker>>
+- <<#podman,Podman>>
 - <<#openshift,OpenShift>>
 - <<#buildpack,Buildpack>>
 
@@ -120,6 +121,16 @@ The `quarkus-container-image-docker` extension is capable of https://docs.docker
 
 NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
 
+[[podman]]
+=== Podman
+
+The extension `quarkus-container-image-podman` uses https://podman.io/[Podman] and the generated `Dockerfiles` under `src/main/docker` in order to perform container builds.
+
+To use this feature, add the following extension to your project.
+
+:add-extension-extensions: container-image-podman
+include::{includes}/devtools/extension-add.adoc[]
+
 [[openshift]]
 === OpenShift
 
@@ -204,7 +215,7 @@ NOTE: If no registry is set (using `quarkus.container-image.registry`) then `doc
 
 It does not make sense to use multiple extension as part of the same build. When multiple container image extensions are present, an error will be raised to inform the user. The user can either remove the unneeded extensions or select one using `application.properties`.
 
-For example, if both `container-image-docker` and `container-image-openshift` are present and the user needs to use `container-image-docker`:
+For example, if both `container-image-docker` and `container-image-podman` are present and the user needs to use `container-image-docker`:
 
 [source,properties]
 ----
@@ -254,6 +265,13 @@ include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:
 
 include::{generated-dir}/config/quarkus-container-image-docker.adoc[opts=optional, leveloffset=+1]
+
+[[PodmanOptions]]
+=== Podman Options
+
+In addition to the generic container image options, the `container-image-podman` also provides the following options:
+
+include::{generated-dir}/config/quarkus-container-image-podman.adoc[opts=optional, leveloffset=+1]
 
 === OpenShift  Options
 

@@ -1,4 +1,4 @@
-package io.quarkus.container.image.docker.deployment;
+package io.quarkus.container.image.docker.common.deployment;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;

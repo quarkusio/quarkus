@@ -101,6 +101,7 @@ public interface Capability {
     String METRICS = QUARKUS_PREFIX + ".metrics";
     String CONTAINER_IMAGE_JIB = QUARKUS_PREFIX + ".container.image.jib";
     String CONTAINER_IMAGE_DOCKER = QUARKUS_PREFIX + ".container.image.docker";
+    String CONTAINER_IMAGE_PODMAN = QUARKUS_PREFIX + ".container.image.podman";
     String CONTAINER_IMAGE_OPENSHIFT = QUARKUS_PREFIX + ".container.image.openshift";
     String CONTAINER_IMAGE_BUILDPACK = QUARKUS_PREFIX + ".container.image.buildpack";
     String HIBERNATE_ORM = QUARKUS_PREFIX + ".hibernate.orm";

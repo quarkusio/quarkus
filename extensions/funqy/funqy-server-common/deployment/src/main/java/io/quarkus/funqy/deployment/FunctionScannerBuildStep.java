@@ -108,8 +108,9 @@ public class FunctionScannerBuildStep {
         }
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (ClassInfo clazz : classes) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).methods()
-                    .fields().build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(clazz.name().toString())
+                    .reason(getClass().getName())
+                    .methods().fields().build());
             if (!clazz.hasNoArgsConstructor()) {
                 withoutDefaultCtor.add(clazz);
             }

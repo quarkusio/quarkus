@@ -755,7 +755,9 @@ public class ResteasyServerCommonProcessor {
         // special case: our config providers
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
                 ServletContextConfigSource.class,
-                FilterConfigSource.class).build());
+                FilterConfigSource.class)
+                .reason(ResteasyServerCommonProcessor.class.getSimpleName())
+                .build());
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,

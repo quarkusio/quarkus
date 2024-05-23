@@ -127,12 +127,14 @@ class LiquibaseProcessor {
 
         reflective.produce(ReflectiveClassBuildItem
                 .builder(liquibase.change.AbstractSQLChange.class, liquibase.database.jvm.JdbcConnection.class).methods()
+                .reason(getClass().getName())
                 .build());
 
         reflective.produce(ReflectiveClassBuildItem
                 .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
                         .map(classInfo -> classInfo.name().toString())
                         .toArray(String[]::new))
+                .reason(getClass().getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -140,6 +142,7 @@ class LiquibaseProcessor {
                 liquibase.database.LiquibaseTableNamesFactory.class.getName(),
                 liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
                 liquibase.changelog.FastCheckService.class.getName())
+                .reason(getClass().getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -154,14 +157,18 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName())
+                .reason(getClass().getName())
                 .constructors().methods().fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.ConstraintsConfig.class.getName())
+                .reason(getClass().getName())
                 .fields().build());
 
         // liquibase seems to instantiate these types reflectively...
-        reflective.produce(ReflectiveClassBuildItem.builder(ConcurrentHashMap.class, ArrayList.class).build());
+        reflective.produce(ReflectiveClassBuildItem.builder(ConcurrentHashMap.class, ArrayList.class)
+                .reason(getClass().getName())
+                .build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();
@@ -175,6 +182,7 @@ class LiquibaseProcessor {
         }
         reflective.produce(
                 ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                        .reason(getClass().getName())
                         .constructors().methods().fields().build());
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
@@ -188,6 +196,7 @@ class LiquibaseProcessor {
         consumeService(liquibase.precondition.Precondition.class.getName(), (serviceClassName, implementations) -> {
             services.produce(new ServiceProviderBuildItem(serviceClassName, implementations.toArray(new String[0])));
             reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
+                    .reason(getClass().getName())
                     .constructors().methods().fields().build());
         });
 
@@ -197,7 +206,9 @@ class LiquibaseProcessor {
                     .filter(commandStepPredicate(capabilities))
                     .toArray(String[]::new);
             services.produce(new ServiceProviderBuildItem(serviceClassName, filteredImpls));
-            reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls).constructors().build());
+            reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls)
+                    .reason(getClass().getName())
+                    .constructors().build());
             for (String implementation : filteredImpls) {
                 runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(implementation));
             }

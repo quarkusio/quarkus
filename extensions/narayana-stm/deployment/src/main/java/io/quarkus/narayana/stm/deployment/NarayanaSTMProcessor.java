@@ -98,7 +98,9 @@ class NarayanaSTMProcessor {
 
         String[] classNames = proxies.toArray(new String[0]);
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames)
+                .reason(getClass().getName())
+                .methods().fields().build());
 
         return new NativeImageProxyDefinitionBuildItem(classNames);
     }

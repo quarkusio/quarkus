@@ -62,7 +62,9 @@ public class RedisCacheProcessor {
 
     @BuildStep
     void nativeImage(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class).methods(true).build());
+        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class)
+                .reason(getClass().getName())
+                .methods().build());
     }
 
     @BuildStep

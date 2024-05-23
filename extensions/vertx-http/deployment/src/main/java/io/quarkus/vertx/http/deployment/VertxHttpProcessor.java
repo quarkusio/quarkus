@@ -450,8 +450,7 @@ class VertxHttpProcessor {
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {
             reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class)
-                            .build());
+                    .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
         }
         boolean startSocket = requireSocket.isPresent() ||
                 ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)

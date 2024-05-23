@@ -228,6 +228,7 @@ public class ReflectiveHierarchyStep {
                         .fields()
                         .classes()
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
+                        .reason(source)
                         .build());
 
         processedReflectiveHierarchies.add(name);

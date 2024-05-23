@@ -546,7 +546,6 @@ public class OidcCommonUtils {
             combined.addAll(all);
             return combined;
         }
-
     }
 
     public static Uni<HttpResponse<Buffer>> sendRequest(io.vertx.core.Vertx vertx, HttpRequest<Buffer> request,

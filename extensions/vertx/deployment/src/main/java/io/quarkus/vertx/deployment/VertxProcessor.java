@@ -35,6 +35,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.InvokerBuilder;
 import io.quarkus.arc.processor.InvokerInfo;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -59,6 +60,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.deployment.spi.EventConsumerInvokerCustomizerBuildItem;
 import io.quarkus.vertx.runtime.EventConsumerInfo;
 import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
 import io.quarkus.vertx.runtime.VertxProducer;
@@ -137,6 +139,7 @@ class VertxProcessor {
     void collectEventConsumers(
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             InvokerFactoryBuildItem invokerFactory,
+            List<EventConsumerInvokerCustomizerBuildItem> invokerCustomizers,
             BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<BeanConfiguratorBuildItem> errors) {
         // We need to collect all business methods annotated with @ConsumeEvent first
@@ -149,8 +152,13 @@ class VertxProcessor {
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {
                     // Validate method params and return type
+                    int parametersCount = method.parametersCount();
+                    if (KotlinUtils.isKotlinSuspendMethod(method)) {
+                        parametersCount--;
+                    }
+
                     List<Type> params = method.parameterTypes();
-                    if (params.size() == 2) {
+                    if (parametersCount == 2) {
                         if (!isMessageHeaders(params.get(0).name())) {
                             // If there are two parameters, the first must be message headers.
                             throw new IllegalStateException(String.format(
@@ -161,12 +169,13 @@ class VertxProcessor {
                                     "An event consumer business method with two parameters must not accept io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message: %s [method: %s, bean:%s]",
                                     params, method, bean));
                         }
-                    } else if (params.size() != 1) {
+                    } else if (parametersCount != 1) {
                         throw new IllegalStateException(String.format(
                                 "An event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s]",
                                 params, method, bean));
                     }
-                    if (method.returnType().kind() != Kind.VOID && VertxConstants.isMessage(params.get(0).name())) {
+                    if (method.returnType().kind() != Kind.VOID && VertxConstants.isMessage(params.get(0).name())
+                            && !KotlinUtils.isKotlinSuspendMethod(method)) {
                         throw new IllegalStateException(String.format(
                                 "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void [method: %s, bean:%s]",
                                 method, bean));
@@ -181,16 +190,16 @@ class VertxProcessor {
                     InvokerBuilder builder = invokerFactory.createInvoker(bean, method)
                             .withInstanceLookup();
 
-                    if (method.parametersCount() == 1 && method.parameterType(0).name().equals(MESSAGE)) {
+                    if (parametersCount == 1 && method.parameterType(0).name().equals(MESSAGE)) {
                         // io.vertx.core.eventbus.Message
                         // no transformation required
-                    } else if (method.parametersCount() == 1 && method.parameterType(0).name().equals(MUTINY_MESSAGE)) {
+                    } else if (parametersCount == 1 && method.parameterType(0).name().equals(MUTINY_MESSAGE)) {
                         // io.vertx.mutiny.core.eventbus.Message
                         builder.withArgumentTransformer(0, io.vertx.mutiny.core.eventbus.Message.class, "newInstance");
-                    } else if (method.parametersCount() == 1) {
+                    } else if (parametersCount == 1) {
                         // parameter is payload
                         builder.withArgumentTransformer(0, io.vertx.core.eventbus.Message.class, "body");
-                    } else if (method.parametersCount() == 2 && method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
+                    } else if (parametersCount == 2 && method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
                         // if the method expects Mutiny MultiMap, wrap the Vert.x MultiMap
                         builder.withArgumentTransformer(0, io.vertx.mutiny.core.MultiMap.class, "newInstance");
                     }
@@ -199,11 +208,16 @@ class VertxProcessor {
                         builder.withReturnValueTransformer(Uni.class, "subscribeAsCompletionStage");
                     }
 
+                    // the rest of Kotlin suspend function support is in the `vertx-kotlin` extension
+                    for (EventConsumerInvokerCustomizerBuildItem invokerCustomizer : invokerCustomizers) {
+                        invokerCustomizer.getInvokerCustomizer().accept(method, builder);
+                    }
+
                     InvokerInfo invoker = builder.build();
 
                     messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, consumeEvent,
                             method.hasAnnotation(Blocking.class), method.hasAnnotation(RunOnVirtualThread.class),
-                            params.size() == 2, invoker));
+                            parametersCount == 2, invoker));
                     LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
                 }
             }

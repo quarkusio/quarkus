@@ -1795,7 +1795,7 @@ public class BeanGenerator extends AbstractGenerator {
                     // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
                     tryBlock.writeInstanceField(
                             FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
-                                    DescriptorUtils.typeToString(injectionPoint.getTarget().asField().type())),
+                                    DescriptorUtils.typeToString(injectionPoint.getAnnotationTarget().asField().type())),
                             instanceHandle, referenceHandle);
                 }
                 CatchBlockCreator catchBlock = tryBlock.addCatch(RuntimeException.class);
@@ -2288,13 +2288,13 @@ public class BeanGenerator extends AbstractGenerator {
         if (injectionPoint.isSynthetic()) {
             javaMemberHandle = bytecode.loadNull();
         } else if (injectionPoint.isField()) {
-            FieldInfo field = injectionPoint.getTarget().asField();
+            FieldInfo field = injectionPoint.getAnnotationTarget().asField();
             javaMemberHandle = bytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
                     bytecode.loadClass(field.declaringClass().name().toString()),
                     bytecode.load(field.name()));
             reflectionRegistration.registerField(field);
         } else {
-            MethodInfo method = injectionPoint.getTarget().asMethod();
+            MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
             reflectionRegistration.registerMethod(method);
             if (method.name().equals(Methods.INIT)) {
                 // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
@@ -2333,11 +2333,11 @@ public class BeanGenerator extends AbstractGenerator {
         }
         ResultHandle annotationsHandle = bytecode.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
-        if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
-            FieldInfo field = injectionPoint.getTarget().asField();
+        if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
+            FieldInfo field = injectionPoint.getAnnotationTarget().asField();
             annotations = beanDeployment.getAnnotations(field);
         } else {
-            MethodInfo method = injectionPoint.getTarget().asMethod();
+            MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
             annotations = Annotations.getParameterAnnotations(beanDeployment,
                     method, injectionPoint.getPosition());
         }

@@ -99,8 +99,8 @@ class QuarkusSecurityJpaProcessor {
             }
 
             public void transform(TransformationContext context) {
-                if (context.getTarget().kind() == AnnotationTarget.Kind.FIELD) {
-                    var declaringClassName = context.getTarget().asField().declaringClass().name();
+                if (context.getAnnotationTarget().kind() == AnnotationTarget.Kind.FIELD) {
+                    var declaringClassName = context.getAnnotationTarget().asField().declaringClass().name();
                     if (JPA_IDENTITY_PROVIDER_NAME.equals(declaringClassName)
                             || JPA_TRUSTED_IDENTITY_PROVIDER_NAME.equals(declaringClassName)) {
                         context.transform()

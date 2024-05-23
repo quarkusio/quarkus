@@ -713,10 +713,10 @@ public final class Types {
             throw new IllegalArgumentException("Delegate type not found in index: " + delegateType);
         }
         if (Kind.CLASS.equals(delegateType.kind())) {
-            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(), Collections.emptyMap(),
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getAnnotationTarget(), Collections.emptyMap(),
                     beanDeployment, null, unrestrictedBeanTypes);
         } else if (Kind.PARAMETERIZED_TYPE.equals(delegateType.kind())) {
-            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getTarget(),
+            types = getTypeClosure(delegateTypeClass, delegateInjectionPoint.getAnnotationTarget(),
                     buildResolvedMap(delegateType.asParameterizedType().arguments(), delegateTypeClass.typeParameters(),
                             Collections.emptyMap(), beanDeployment.getBeanArchiveIndex()),
                     beanDeployment, null, unrestrictedBeanTypes);

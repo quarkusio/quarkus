@@ -35,14 +35,11 @@ class InjectionPointInfoImpl implements InjectionPointInfo {
     @Override
     public DeclarationInfo declaration() {
         if (arcInjectionPointInfo.isField()) {
-            org.jboss.jandex.FieldInfo jandexField = arcInjectionPointInfo.getTarget().asField();
+            org.jboss.jandex.FieldInfo jandexField = arcInjectionPointInfo.getAnnotationTarget().asField();
             return new FieldInfoImpl(jandexIndex, annotationOverlay, jandexField);
         } else if (arcInjectionPointInfo.isParam()) {
-            org.jboss.jandex.MethodInfo jandexMethod = arcInjectionPointInfo.getTarget().asMethod();
-            int parameterPosition = arcInjectionPointInfo.getPosition();
-            org.jboss.jandex.MethodParameterInfo jandexParameter = org.jboss.jandex.MethodParameterInfo.create(
-                    jandexMethod, (short) parameterPosition);
-            return new ParameterInfoImpl(jandexIndex, annotationOverlay, jandexParameter);
+            return new ParameterInfoImpl(jandexIndex, annotationOverlay,
+                    arcInjectionPointInfo.getAnnotationTarget().asMethodParameter());
         } else {
             throw new IllegalStateException("Unknown injection point: " + arcInjectionPointInfo);
         }

@@ -264,7 +264,10 @@ public class WiringHelper {
     static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
             InjectionPointInfo injectionPoint,
             DotName annotationName) {
-        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
+        // Query annotations for either field, or whole method
+        AnnotationTarget annotationTarget = injectionPoint.isField() ? injectionPoint.getAnnotationTarget()
+                : injectionPoint.getAnnotationTarget().asMethodParameter().method();
+        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(annotationTarget);
         for (AnnotationInstance annotation : annotations) {
             if (annotationName.equals(annotation.name())) {
                 // For method parameter we must check the position

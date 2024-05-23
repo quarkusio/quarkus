@@ -3,7 +3,6 @@ package io.quarkus.smallrye.context.deployment;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -135,67 +134,40 @@ class SmallRyeContextPropagationProcessor {
                                 && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
                     return;
                 }
-                AnnotationTarget target = transformationContext.getTarget();
+                AnnotationTarget target = transformationContext.getAnnotationTarget();
+                AnnotationInstance meConfigInstance = Annotations.find(
+                        transformationContext.getAllTargetAnnotations(),
+                        DotNames.MANAGED_EXECUTOR_CONFIG);
+                AnnotationInstance tcConfigInstance = Annotations.find(
+                        transformationContext.getAllTargetAnnotations(),
+                        DotNames.THREAD_CONTEXT_CONFIG);
+                String mpConfigIpName = null;
                 if (target.kind().equals(AnnotationTarget.Kind.FIELD)) {
-                    AnnotationInstance meConfigInstance = Annotations.find(transformationContext.getAllAnnotations(),
-                            DotNames.MANAGED_EXECUTOR_CONFIG);
-                    AnnotationInstance tcConfigInstance = Annotations.find(transformationContext.getAllAnnotations(),
-                            DotNames.THREAD_CONTEXT_CONFIG);
-
                     if (meConfigInstance != null || tcConfigInstance != null) {
                         // create a unique name based on the injection point
-                        String mpConfigIpName = target.asField().declaringClass().name().toString()
+                        mpConfigIpName = target.asField().declaringClass().name().toString()
                                 + NAME_DELIMITER
                                 + target.asField().name();
-
-                        // add @NamedInstance with the generated name
-                        transformationContext.transform()
-                                .add(DotNames.NAMED_INSTANCE, AnnotationValue.createStringValue("value", mpConfigIpName))
-                                .done();
                     }
-                } else if (target.kind().equals(AnnotationTarget.Kind.METHOD)) {
-                    // If it's method, we can have multiple parameters that we might need to configure and
-                    // each injection point needs its own unique @NamedInstance.
-                    // Finally, we register these annotation instance with the transformer. Note that when creating
-                    // each annotation instance, we have to use AnnotationTarget of the _method parameter_
-                    Collection<AnnotationInstance> annotationsToAdd = new ArrayList<>();
-                    createRequiredAnnotationInstances(Annotations.getAnnotations(AnnotationTarget.Kind.METHOD_PARAMETER,
-                            DotNames.MANAGED_EXECUTOR_CONFIG, transformationContext.getAllAnnotations()),
-                            transformationContext.getQualifiers(), annotationsToAdd);
-                    createRequiredAnnotationInstances(Annotations.getAnnotations(AnnotationTarget.Kind.METHOD_PARAMETER,
-                            DotNames.THREAD_CONTEXT_CONFIG, transformationContext.getAllAnnotations()),
-                            transformationContext.getQualifiers(), annotationsToAdd);
-                    transformationContext.transform().addAll(annotationsToAdd).done();
+                } else if (target.kind().equals(AnnotationTarget.Kind.METHOD_PARAMETER)) {
+                    if (meConfigInstance != null || tcConfigInstance != null) {
+                        // create a unique name based on the injection point
+                        mpConfigIpName = target.asMethodParameter().method().declaringClass().name().toString()
+                                + NAME_DELIMITER
+                                + target.asMethodParameter().method().name()
+                                + NAME_DELIMITER
+                                + (target.asMethodParameter().position() + 1);
+                    }
                 }
 
+                if (mpConfigIpName != null) {
+                    // add @NamedInstance with the generated name
+                    transformationContext.transform()
+                            .add(DotNames.NAMED_INSTANCE, AnnotationValue.createStringValue("value", mpConfigIpName))
+                            .done();
+                }
             }
         });
-    }
-
-    private void createRequiredAnnotationInstances(Collection<AnnotationInstance> configAnnotationInstances,
-            Collection<AnnotationInstance> knownQualifiers,
-            Collection<AnnotationInstance> instancesToAdd) {
-        for (AnnotationInstance annotationInstance : configAnnotationInstances) {
-            if (annotationInstance.target().kind().equals(AnnotationTarget.Kind.METHOD_PARAMETER)) {
-                MethodParameterInfo methodParameterInfo = annotationInstance.target().asMethodParameter();
-                // skip if the method param injection point has custom qualifiers on it (including @NamedInstance)
-                if (methodParameterInfo.annotations().stream()
-                        .anyMatch(ann -> knownQualifiers.contains(ann)
-                                && !ann.name().equals(io.quarkus.arc.processor.DotNames.ANY)
-                                && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
-                    continue;
-                }
-                String mpConfigIpName = methodParameterInfo.method().declaringClass().name().toString()
-                        + NAME_DELIMITER
-                        + methodParameterInfo.method().name()
-                        + NAME_DELIMITER
-                        + (methodParameterInfo.position() + 1);
-                // create a new AnnotationInstance with annotation target set to the respective _method parameter_
-                instancesToAdd.add(AnnotationInstance.builder(DotNames.NAMED_INSTANCE)
-                        .value(mpConfigIpName)
-                        .buildWithTarget(methodParameterInfo));
-            }
-        }
     }
 
     @BuildStep
@@ -207,7 +179,7 @@ class SmallRyeContextPropagationProcessor {
         Map<String, ThreadConfig> threadContextMap = new HashMap<>();
         Set<String> unconfiguredContextIPs = new HashSet<>();
         for (InjectionPointInfo ipInfo : bdFinishedBuildItem.getInjectionPoints()) {
-            if (AnnotationTarget.Kind.FIELD.equals(ipInfo.getTarget().kind())) {
+            if (AnnotationTarget.Kind.FIELD.equals(ipInfo.getAnnotationTarget().kind())) {
                 AnnotationInstance namedAnnotation = ipInfo.getRequiredQualifier(DotNames.NAMED_INSTANCE);
                 // only look for IP with @NamedInstance on it because the IP transformation made sure it's there
                 if (namedAnnotation == null) {
@@ -220,9 +192,9 @@ class SmallRyeContextPropagationProcessor {
                                 && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
                     continue;
                 }
-                AnnotationInstance meConfigInstance = Annotations.find(ipInfo.getTarget().asField().annotations(),
+                AnnotationInstance meConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
                         DotNames.MANAGED_EXECUTOR_CONFIG);
-                AnnotationInstance tcConfigInstance = Annotations.find(ipInfo.getTarget().asField().annotations(),
+                AnnotationInstance tcConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
                         DotNames.THREAD_CONTEXT_CONFIG);
 
                 // get the name from @NamedInstance qualifier
@@ -255,7 +227,7 @@ class SmallRyeContextPropagationProcessor {
                                         tcConfigInstance.value("unchanged")));
                     }
                 }
-            } else if (AnnotationTarget.Kind.METHOD.equals(ipInfo.getTarget().kind())) {
+            } else if (AnnotationTarget.Kind.METHOD_PARAMETER.equals(ipInfo.getAnnotationTarget().kind())) {
                 // for a method, we need to process each parameter as a separate injection point
                 for (AnnotationInstance annotationInstance : ipInfo.getRequiredQualifiers()) {
                     // just METHOD_PARAMETER and filter to only @NamedInstance

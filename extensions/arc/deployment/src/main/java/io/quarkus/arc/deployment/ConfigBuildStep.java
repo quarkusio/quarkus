@@ -14,7 +14,7 @@ import static org.eclipse.microprofile.config.inject.ConfigProperties.UNCONFIGUR
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
-import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER;
 import static org.jboss.jandex.AnnotationValue.createStringValue;
 
 import java.util.ArrayList;
@@ -42,6 +42,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
@@ -174,12 +175,12 @@ public class ConfigBuildStep {
                 } else {
                     // org.acme.Foo.config
                     if (injectionPoint.isField()) {
-                        FieldInfo field = injectionPoint.getTarget().asField();
+                        FieldInfo field = injectionPoint.getAnnotationTarget().asField();
                         propertyName = getPropertyName(field.name(), field.declaringClass());
                     } else if (injectionPoint.isParam()) {
-                        MethodInfo method = injectionPoint.getTarget().asMethod();
-                        propertyName = getPropertyName(method.parameterName(injectionPoint.getPosition()),
-                                method.declaringClass());
+                        MethodParameterInfo methodParameterInfo = injectionPoint.getAnnotationTarget().asMethodParameter();
+                        propertyName = getPropertyName(methodParameterInfo.name(),
+                                methodParameterInfo.method().declaringClass());
                     } else {
                         throw new IllegalStateException("Unsupported injection point target: " + injectionPoint);
                     }
@@ -205,8 +206,8 @@ public class ConfigBuildStep {
                     propertyDefaultValue = defaultValue.asString();
                 }
 
-                if (injectionPoint.getTarget().kind().equals(METHOD)
-                        && observerMethods.contains(injectionPoint.getTarget().asMethod())) {
+                if (injectionPoint.getAnnotationTarget().kind().equals(METHOD_PARAMETER)
+                        && observerMethods.contains(injectionPoint.getAnnotationTarget().asMethodParameter().method())) {
                     configProperties
                             .produce(ConfigPropertyBuildItem.staticInit(propertyName, injectedType, propertyDefaultValue));
                 }
@@ -405,19 +406,17 @@ public class ConfigBuildStep {
             Type type = Type.create(injectionPoint.getRequiredType().name(), Type.Kind.CLASS);
             ConfigClassBuildItem configClass = configMappingTypes.get(type);
             if (configClass != null) {
-                AnnotationTarget target = injectionPoint.getTarget();
+                AnnotationTarget target = injectionPoint.getAnnotationTarget();
                 AnnotationInstance mapping = null;
                 if (target.kind().equals(FIELD)) {
                     mapping = target.asField().annotation(CONFIG_MAPPING_NAME);
-                } else if (target.kind().equals(METHOD)) {
-                    List<Type> parameters = target.asMethod().parameterTypes();
-                    for (int i = 0; i < parameters.size(); i++) {
-                        Type parameter = parameters.get(i);
-                        if (parameter.name().equals(type.name())) {
-                            Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
-                                    validationPhase.getBeanProcessor().getBeanDeployment(), target.asMethod(), i);
-                            mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
-                        }
+                } else if (target.kind().equals(METHOD_PARAMETER)) {
+                    MethodParameterInfo methodParameterInfo = target.asMethodParameter();
+                    if (methodParameterInfo.type().name().equals(type.name())) {
+                        Set<AnnotationInstance> parameterAnnotations = getParameterAnnotations(
+                                validationPhase.getBeanProcessor().getBeanDeployment(),
+                                target.asMethodParameter().method(), methodParameterInfo.position());
+                        mapping = Annotations.find(parameterAnnotations, CONFIG_MAPPING_NAME);
                     }
                 }
 

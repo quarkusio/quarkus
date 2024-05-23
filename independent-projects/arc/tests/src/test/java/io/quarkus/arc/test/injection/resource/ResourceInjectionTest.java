@@ -62,7 +62,7 @@ public class ResourceInjectionTest {
 
                 @Override
                 public void transform(TransformationContext transformationContext) {
-                    if (transformationContext.getAllAnnotations()
+                    if (transformationContext.getAllTargetAnnotations()
                             .stream()
                             .anyMatch(it -> it.name().toString().equals(Dummy.class.getName()))) {
                         // pretend that the injection point has an annotation whose class is missing

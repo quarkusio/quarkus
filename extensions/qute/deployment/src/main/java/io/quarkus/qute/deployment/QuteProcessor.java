@@ -3341,10 +3341,10 @@ public class QuteProcessor {
 
     public static String getName(InjectionPointInfo injectionPoint) {
         if (injectionPoint.isField()) {
-            return injectionPoint.getTarget().asField().name();
+            return injectionPoint.getAnnotationTarget().asField().name();
         } else if (injectionPoint.isParam()) {
-            String name = injectionPoint.getTarget().asMethod().parameterName(injectionPoint.getPosition());
-            return name == null ? injectionPoint.getTarget().asMethod().name() : name;
+            String name = injectionPoint.getAnnotationTarget().asMethodParameter().name();
+            return name == null ? injectionPoint.getAnnotationTarget().asMethodParameter().method().name() : name;
         }
         throw new IllegalArgumentException();
     }

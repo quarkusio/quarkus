@@ -62,8 +62,8 @@ public class BeanDeploymentValidatorTest {
         @Override
         public void validate(ValidationContext context) {
             assertTrue(context.getInjectionPoints().stream().filter(InjectionPointInfo::isProgrammaticLookup)
-                    .filter(ip -> ip.getTarget().kind() == org.jboss.jandex.AnnotationTarget.Kind.FIELD
-                            && ip.getTarget().asField().name().equals("foo"))
+                    .filter(ip -> ip.getAnnotationTarget().kind() == org.jboss.jandex.AnnotationTarget.Kind.FIELD
+                            && ip.getAnnotationTarget().asField().name().equals("foo"))
                     .findFirst().isPresent());
 
             assertFalse(context.removedBeans().withBeanClass(UselessBean.class).isEmpty());

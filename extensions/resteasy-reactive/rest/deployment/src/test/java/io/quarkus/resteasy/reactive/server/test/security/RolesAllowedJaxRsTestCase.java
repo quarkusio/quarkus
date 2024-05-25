@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
+import static io.quarkus.resteasy.reactive.server.test.security.RolesAllowedService.EVENT_BUS_MESSAGES;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.Provider;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -88,6 +90,20 @@ public class RolesAllowedJaxRsTestCase {
         RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate/admin").then()
                 .statusCode(403);
         Assertions.assertFalse(read);
+    }
+
+    @Test
+    public void testSecurityInterceptorsAfterHttpRequestCompleted() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("user", "user")
+                .body("message one")
+                .post("/roles-service/secured-event-bus")
+                .then()
+                .statusCode(204);
+        Awaitility.await().until(() -> !EVENT_BUS_MESSAGES.isEmpty());
+        Assertions.assertEquals(1, EVENT_BUS_MESSAGES.size(), EVENT_BUS_MESSAGES.toString());
+        Assertions.assertEquals("permit all message one", EVENT_BUS_MESSAGES.get(0));
     }
 
     static volatile boolean read = false;

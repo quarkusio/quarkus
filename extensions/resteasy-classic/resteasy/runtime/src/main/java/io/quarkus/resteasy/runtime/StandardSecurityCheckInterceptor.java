@@ -58,7 +58,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @RolesAllowed("")
-    @Priority(Interceptor.Priority.PLATFORM_BEFORE)
+    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
     public static final class RolesAllowedInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -68,7 +68,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @PermissionsAllowed("")
-    @Priority(Interceptor.Priority.PLATFORM_BEFORE)
+    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
     public static final class PermissionsAllowedInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -78,7 +78,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @PermitAll
-    @Priority(Interceptor.Priority.PLATFORM_BEFORE)
+    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
     public static final class PermitAllInterceptor extends StandardSecurityCheckInterceptor {
 
     }
@@ -88,7 +88,7 @@ public abstract class StandardSecurityCheckInterceptor {
      */
     @Interceptor
     @Authenticated
-    @Priority(Interceptor.Priority.PLATFORM_BEFORE)
+    @Priority(Interceptor.Priority.LIBRARY_BEFORE - 100)
     public static final class AuthenticatedInterceptor extends StandardSecurityCheckInterceptor {
 
     }

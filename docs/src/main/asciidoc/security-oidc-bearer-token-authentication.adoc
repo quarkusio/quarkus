@@ -1297,7 +1297,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.oidc.AccessTokenCredential;
-import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.ConsumeEvent;
@@ -1306,7 +1306,7 @@ import io.smallrye.common.annotation.Blocking;
 @ApplicationScoped
 public class OrderService {
 
-    @TenantFeature("tenantId")
+    @Tenant("tenantId")
     @Inject
     TenantIdentityProvider identityProvider;
 
@@ -1323,14 +1323,14 @@ public class OrderService {
 
 }
 ----
-<1> For the default tenant, the `TenantFeature` qualifier is optional.
+<1> For the default tenant, the `Tenant` qualifier is optional.
 <2> Executes token verification and converts the token to a `SecurityIdentity`.
 
 [NOTE]
 ====
 When the provider is used during an HTTP request, the tenant configuration can be resolved as described in
 the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide.
-However, when there is no active HTTP request, you must select the tenant explicitly with the `io.quarkus.oidc.TenantFeature` qualifier.
+However, when there is no active HTTP request, you must select the tenant explicitly with the `io.quarkus.oidc.Tenant` qualifier.
 ====
 
 [WARNING]

@@ -300,11 +300,10 @@ public class OidcBuildStep {
                     .getAnnotations(TENANT_NAME)
                     .stream()
                     .map(AnnotationInstance::target)
-                    // ignored field injection points and injection setters
-                    // as we don't want to count in the TenantIdentityProvider injection point
-                    .filter(t -> t.kind() == METHOD)
-                    .map(AnnotationTarget::asMethod)
-                    .anyMatch(m -> !m.isConstructor() && !m.hasAnnotation(DotNames.INJECT));
+                    // ignore field injection points and injection setters
+                    // as we don't want to count in the TenantIdentityProvider injection point;
+                    // if class is the target, we know it cannot be a TenantIdentityProvider as we produce it ourselves
+                    .anyMatch(t -> isMethodWithTenantAnnButNotInjPoint(t) || t.kind() == CLASS);
             if (foundTenantResolver) {
                 // register method interceptor that will be run before security checks
                 bindingProducer.produce(
@@ -313,6 +312,10 @@ public class OidcBuildStep {
                         Boolean.TRUE.toString()));
             }
         }
+    }
+
+    private static boolean isMethodWithTenantAnnButNotInjPoint(AnnotationTarget t) {
+        return t.kind() == METHOD && !t.asMethod().isConstructor() && !t.hasAnnotation(DotNames.INJECT);
     }
 
     private static boolean detectUserInfoRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem) {
@@ -354,14 +357,6 @@ public class OidcBuildStep {
         return injectionPointTargetInfo != null
                 && !injectionPointTargetInfo.startsWith(QUARKUS_TOKEN_PROPAGATION_PACKAGE)
                 && !injectionPointTargetInfo.startsWith(SMALLRYE_JWT_PACKAGE);
-    }
-
-    private static String toTargetName(AnnotationTarget target) {
-        if (target.kind() == CLASS) {
-            return target.asClass().name().toString();
-        } else {
-            return target.asMethod().declaringClass().name().toString() + "#" + target.asMethod().name();
-        }
     }
 
     public static class IsEnabled implements BooleanSupplier {

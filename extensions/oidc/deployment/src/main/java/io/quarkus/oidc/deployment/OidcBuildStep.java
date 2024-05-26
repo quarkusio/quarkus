@@ -2,10 +2,12 @@ package io.quarkus.oidc.deployment;
 
 import static io.quarkus.arc.processor.BuiltinScope.APPLICATION;
 import static io.quarkus.arc.processor.DotNames.DEFAULT;
+import static io.quarkus.arc.processor.DotNames.NAMED;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.List;
 import java.util.Map;
@@ -16,16 +18,23 @@ import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -151,6 +160,7 @@ public class OidcBuildStep {
     QualifierRegistrarBuildItem addQualifiers() {
         // this seems to be necessary; I think it's because sometimes we only access beans
         // annotated with @TenantFeature programmatically and no injection point is annotated with it
+        // TODO: drop @TenantFeature qualifier when 'TenantFeatureFinder' stop using this annotation as a qualifier
         return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
             @Override
             public Map<DotName, Set<String>> getAdditionalQualifiers() {
@@ -159,52 +169,94 @@ public class OidcBuildStep {
         });
     }
 
+    @BuildStep
+    InjectionPointTransformerBuildItem makeTenantIdentityProviderInjectionPointsNamed() {
+        // @Tenant annotation cannot be a qualifier as it is used on resource methods and lead to illegal states
+        return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
+            @Override
+            public boolean appliesTo(Type requiredType) {
+                return requiredType.name().equals(TENANT_IDENTITY_PROVIDER_NAME);
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (ctx.getTarget().kind() == METHOD) {
+                    ctx
+                            .getAllAnnotations()
+                            .stream()
+                            .filter(a -> TENANT_NAME.equals(a.name()))
+                            .forEach(a -> {
+                                var annotationValue = new AnnotationValue[] {
+                                        AnnotationValue.createStringValue("value", a.value().asString()) };
+                                ctx
+                                        .transform()
+                                        .add(AnnotationInstance.create(NAMED, a.target(), annotationValue))
+                                        .done();
+                            });
+                } else {
+                    // field
+                    var tenantAnnotation = Annotations.find(ctx.getAllAnnotations(), TENANT_NAME);
+                    if (tenantAnnotation != null && tenantAnnotation.value() != null) {
+                        ctx
+                                .transform()
+                                .add(NAMED, AnnotationValue.createStringValue("value", tenantAnnotation.value().asString()))
+                                .done();
+                    }
+                }
+            }
+        });
+    }
+
     /**
-     * Produce {@link OidcIdentityProvider} with already selected tenant for each {@link OidcIdentityProvider}
-     * injection point annotated with {@link TenantFeature} annotation.
-     * For example, we produce {@link OidcIdentityProvider} with pre-selected tenant 'my-tenant' for injection point:
+     * Produce {@link TenantIdentityProvider} with already selected tenant for each {@link TenantIdentityProvider}
+     * injection point annotated with {@link Tenant} annotation.
+     * For example, we produce {@link TenantIdentityProvider} with pre-selected tenant 'my-tenant' for injection point:
      *
      * <code>
      *  &#064;Inject
-     *  &#064;TenantFeature("my-tenant")
-     *  OidcIdentityProvider identityProvider;
+     *  &#064;Tenant("my-tenant")
+     *  TenantIdentityProvider identityProvider;
      * </code>
      */
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void produceTenantIdentityProviders(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             OidcRecorder recorder, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
-        // create TenantIdentityProviders for tenants selected with @TenantFeature like: @TenantFeature("my-tenant")
-        if (!combinedIndex.getIndex().getAnnotations(TENANT_FEATURE_NAME).isEmpty()) {
-            // create TenantIdentityProviders for tenants selected with @TenantFeature like: @TenantFeature("my-tenant")
+        if (!combinedIndex.getIndex().getAnnotations(TENANT_NAME).isEmpty()) {
+            // create TenantIdentityProviders for tenants selected with @Tenant like: @Tenant("my-tenant")
             beans
                     .getInjectionPoints()
                     .stream()
-                    .filter(ip -> ip.getRequiredQualifier(TENANT_FEATURE_NAME) != null)
                     .filter(OidcBuildStep::isTenantIdentityProviderType)
-                    .map(ip -> ip.getRequiredQualifier(TENANT_FEATURE_NAME).value().asString())
+                    .filter(ip -> ip.getRequiredQualifier(NAMED) != null)
+                    .map(ip -> ip.getRequiredQualifier(NAMED).value().asString())
                     .distinct()
                     .forEach(tenantName -> syntheticBeanProducer.produce(
                             SyntheticBeanBuildItem
                                     .configure(TenantIdentityProvider.class)
-                                    .addQualifier().annotation(TENANT_FEATURE_NAME).addValue("value", tenantName).done()
+                                    .named(tenantName)
                                     .scope(APPLICATION.getInfo())
                                     .supplier(recorder.createTenantIdentityProvider(tenantName))
                                     .unremovable()
                                     .done()));
         }
-        // create TenantIdentityProvider for default tenant when tenant is not explicitly selected via @TenantFeature
+        // create TenantIdentityProvider for default tenant when tenant is not explicitly selected via @Tenant
         boolean createTenantIdentityProviderForDefaultTenant = beans
                 .getInjectionPoints()
                 .stream()
-                .filter(InjectionPointInfo::hasDefaultedQualifier)
+                .filter(ip -> ip.getRequiredQualifier(NAMED) == null)
                 .anyMatch(OidcBuildStep::isTenantIdentityProviderType);
         if (createTenantIdentityProviderForDefaultTenant) {
             syntheticBeanProducer.produce(
                     SyntheticBeanBuildItem
                             .configure(TenantIdentityProvider.class)
-                            .addQualifier(DEFAULT)
                             .scope(APPLICATION.getInfo())
+                            .addQualifier(DEFAULT)
+                            // named beans are implicitly default according to the specs
+                            // when no other qualifiers are present other than @Named and @Any
+                            // which means we need to handle ambiguous resolution
+                            .alternative(true)
+                            .priority(1)
                             .supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
                             .unremovable()
                             .done());
@@ -243,8 +295,17 @@ public class OidcBuildStep {
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
         if (!buildTimeConfig.auth.proactive
                 && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
-            var annotationInstances = combinedIndexBuildItem.getIndex().getAnnotations(TENANT_NAME);
-            if (!annotationInstances.isEmpty()) {
+            boolean foundTenantResolver = combinedIndexBuildItem
+                    .getIndex()
+                    .getAnnotations(TENANT_NAME)
+                    .stream()
+                    .map(AnnotationInstance::target)
+                    // ignored field injection points and injection setters
+                    // as we don't want to count in the TenantIdentityProvider injection point
+                    .filter(t -> t.kind() == METHOD)
+                    .map(AnnotationTarget::asMethod)
+                    .anyMatch(m -> !m.isConstructor() && !m.hasAnnotation(DotNames.INJECT));
+            if (foundTenantResolver) {
                 // register method interceptor that will be run before security checks
                 bindingProducer.produce(
                         new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));

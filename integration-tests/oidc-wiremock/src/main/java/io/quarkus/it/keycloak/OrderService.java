@@ -7,7 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.oidc.AccessTokenCredential;
-import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.ConsumeEvent;
@@ -21,7 +21,7 @@ public class OrderService {
     @Inject
     SecurityIdentity identity;
 
-    @TenantFeature("bearer")
+    @Tenant("bearer")
     @Inject
     TenantIdentityProvider identityProvider;
 

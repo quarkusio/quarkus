@@ -9,11 +9,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.AuthenticationFailedException;
@@ -27,16 +28,18 @@ public class StartupService {
 
     private static final String ISSUER = "https://server.example.com";
 
-    @TenantFeature("bearer")
+    @Inject
+    @Tenant("bearer")
     TenantIdentityProvider identityProviderBearer;
 
-    @TenantFeature("bearer-role-claim-path")
+    @Inject
+    @Tenant("bearer-role-claim-path")
     TenantIdentityProvider identityProviderBearerRoleClaimPath;
 
     private final Map<String, Map<String, Set<String>>> tenantToIdentityWithRole = new ConcurrentHashMap<>();
 
     void onStartup(@Observes StartupEvent event,
-            @TenantFeature(DEFAULT_TENANT_ID) TenantIdentityProvider defaultTenantProvider,
+            @Tenant(DEFAULT_TENANT_ID) TenantIdentityProvider defaultTenantProvider,
             TenantIdentityProvider defaultTenantProviderDefaultQualifier) {
         assertDefaultTenantProviderInjection(defaultTenantProvider);
         assertDefaultTenantProviderInjection(defaultTenantProviderDefaultQualifier);

@@ -112,6 +112,44 @@
             <scope>runtime</scope>
         </dependency>
 
+
+        <!-- Markdown it -->
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>markdown-it</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>argparse</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>entities</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>linkify-it</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>mdurl</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>punycode.js</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>uc.micro</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Polyfill for importmaps -->
         <dependency>
             <groupId>org.mvnpm</groupId>

@@ -46,7 +46,7 @@
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
 
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <assertj.version>3.25.3</assertj.version>
+        <assertj.version>3.26.0</assertj.version>
     </properties>
 
 

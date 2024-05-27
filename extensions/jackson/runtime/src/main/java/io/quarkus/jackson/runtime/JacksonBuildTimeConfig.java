@@ -4,8 +4,8 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
+import io.quarkus.jackson.MapperBuilderType;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -74,4 +74,13 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem
     public Optional<String> propertyNamingStrategy;
+
+    /**
+     * If set, this will create a {@link com.fasterxml.jackson.databind.cfg.MapperBuilder} bean of the configured type.
+     * This builder bean will then be used to create an {@link com.fasterxml.jackson.databind.ObjectMapper} bean.
+     * Make sure you have the required dependencies on the classpath.
+     * e.g. for YAML, make sure that YAMLMapper is available
+     */
+    @ConfigItem
+    public Optional<MapperBuilderType> mapperBuilderType;
 }

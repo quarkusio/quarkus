@@ -29,7 +29,7 @@ class DevUIState extends LitState {
             applicationInfo: applicationInfo,
             welcomeData: welcomeData,
             allConfiguration: allConfiguration,
-            ideInfo: ideInfo, 
+            ideInfo: ideInfo,
         };
     }
     

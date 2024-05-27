@@ -269,6 +269,49 @@
                 <scope>runtime</scope>
             </dependency>
             
+            <!-- Markdown render -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>markdown-it</artifactId>
+                <version>14.1.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>argparse</artifactId>
+                <version>2.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>entities</artifactId>
+                <version>4.5.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>linkify-it</artifactId>
+                <version>5.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>mdurl</artifactId>
+                <version>2.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>punycode.js</artifactId>
+                <version>2.3.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>uc.micro</artifactId>
+                <version>2.1.0</version>
+                <scope>runtime</scope>
+            </dependency>
             <!-- Qomponent -->
             <dependency>
                 <groupId>org.mvnpm.at.mvnpm</groupId>

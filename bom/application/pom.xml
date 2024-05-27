@@ -6331,6 +6331,18 @@
                 </exclusions>
             </dependency>
 
+            <!-- JDK Flight Recorder -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jfr-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Relocations -->
             <dependency>
                 <groupId>io.quarkus</groupId>

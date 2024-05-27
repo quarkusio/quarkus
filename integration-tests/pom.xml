@@ -371,6 +371,9 @@
                 <module>logging-panache-kotlin</module>
                 <module>locales</module>
                 <module>redis-devservices</module>
+                <module>jfr-reactive</module>
+                <module>jfr-blocking</module>
+                <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
                 <module>grpc-descriptor-sets</module>
                 <module>grpc-inprocess</module>

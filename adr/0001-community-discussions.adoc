@@ -9,20 +9,20 @@ Quarkus community is growing and until now we've catered very well for core cont
 
 We have multiple communication channels: https://github.com/quarkusio/quarkus[issues], https://groups.google.com/g/quarkus-dev?pli=1[quarkus-dev mailing list], https://quarkusio.zulipchat.com[zulip], https://stackoverflow.com/questions/tagged/quarkus[stackoverflow]
 
-Isues are great for bugs/feature work. Mailing list for design conversations between developers, chat for watercooler style discussions and stackoverflow for user questions.
+Issues are great for bugs/feature work. Mailing list for design conversations between developers, chat for watercooler style discussions and stackoverflow for user questions.
 
 This setup has issues though, some are:
 
-- zulip chat is used for a lot of users questions but none of that is easily searchable/discoverable so it is very synchronous,
-- people reported that they don't feel okey posting on quarkus-dev or zulips as it is seems focused on dev work and not so much about community events, jobs, conferences, etc.
+- Zulip chat is used for a lot of users questions but none of that is easily searchable/discoverable so it is very synchronous,
+- people reported that they don't feel okey posting on quarkus-dev or Zulip as it seems focused on dev work and not so much about community events, jobs, conferences, etc.
 - its hard to monitor as contributor who wants to help answer/ask questions.
 - Users reported they do not have access to Zulip chat due to corporate or company policies/proxies. They do have access to GitHub.
 
-How can we improve this situaton and enable the broader community to more easily ask questions and find answers - without it all be relying on just a few Quarkus core contributors?
+How can we improve this situation and enable the broader community to more easily ask questions and find answers - without it all be relying on just a few Quarkus core contributors?
 
 == Scenarios (optional)
 
-User wants to locate a answer to a question - zulip chats does not show up in google search; stackoverflow might but might not have an answer.
+User wants to locate a answer to a question - Zulip chats does not show up in google search; stackoverflow might but might not have an answer.
 
 Contributor want to arrange or attend an event around Quarkus - where do he post/look for info on that ?
 
@@ -54,7 +54,7 @@ Enable GitHub discussions feature on `quarkusio/quarkusio` with the following in
 
 - Announcements (post only by admins)
 - Introductions (posts by anyone, optional place introduce yourself)
-- Comunity (post by anyone, general discussions)
+- Community (post by anyone, general discussions)
 - Q&A (post by anyone, Q&A mode enabled)
 - Quarkus Insights Episodes (show notes and offline comments)
 - Events (Setup and announce of interest or other events)

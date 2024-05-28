@@ -641,6 +641,8 @@ quarkus.http.auth.permission.secured.policy=authenticated
 
 Other options for securing HTTP upgrade requests, such as using the security annotations, will be explored in the future.
 
+NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
+
 [[websocket-next-configuration-reference]]
 == Configuration reference
 

@@ -80,7 +80,7 @@
         <quarkus-fs-util.version>0.0.10</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
+        <impsort-maven-plugin.version>1.10.0</impsort-maven-plugin.version>
     </properties>
     <modules>
         <module>bom</module>

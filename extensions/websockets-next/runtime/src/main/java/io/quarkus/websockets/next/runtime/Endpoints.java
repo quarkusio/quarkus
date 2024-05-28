@@ -208,6 +208,7 @@ class Endpoints {
                                 handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnClose callback",
                                         connection);
                             }
+                            securitySupport.onClose();
                             onClose.run();
                             if (timerId != null) {
                                 vertx.cancelTimer(timerId);

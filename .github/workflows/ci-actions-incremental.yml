@@ -1137,7 +1137,77 @@ jobs:
           path: |
             build-reports.zip
           retention-days: 7
+      - name: Collect build JSON stats
+        shell: bash
+        run: find . -name '*runner*.json' | tar czvf build-stats.tgz -T -
+      - name: Upload build JSON stats
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-stats-${{matrix.category}}
+          path: 'build-stats.tgz'
+          retention-days: 7
 
+  native-tests-stats-upload:
+    name: Upload build stats to collector
+    if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
+    needs:
+      - native-tests
+      - calculate-test-jobs
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
+    runs-on: ${{matrix.os-name}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: graalvm/mandrel
+          fetch-depth: 1
+          path: workflow-quarkus
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-stats-${{matrix.category}}
+          path: .
+      - name: Extract and import build stats
+        env:
+          UPLOAD_TOKEN: ${{ secrets.UPLOAD_COLLECTOR_TOKEN }}
+          COLLECTOR_URL: https://collector.foci.life/api/v1/image-stats
+          TAG: quarkus-main-ci
+        shell: bash
+        run: |
+          cat > ./runner-info.json <<EOF
+          {
+            "test_version": "$GITHUB_REF_NAME",
+            "quarkus_version": "$GITHUB_SHA",
+            "description": "Quarkus CI github runner on $GITHUB_REF_NAME branch/tag",
+            "triggered_by": "Quarkus CI"
+          }
+          EOF
+          jq . runner-info.json
+          # Add runner info
+          curl -s -w '\n' -H "Content-Type: application/json" -H "token: $UPLOAD_TOKEN" \
+            --post302 --data "@./runner-info.json" "${COLLECTOR_URL}/runner-info" | tee runner_info_id.json
+          runner_info_id=$( jq .id runner_info_id.json )
+          if [[ $runner_info_id =~ ^[0-9]+$ ]]; then
+              echo "runner_info_id to be used for uploads: $runner_info_id"
+          else
+              echo "Fatal error. runner_info_id is not a number: $runner_info_id"
+              exit 1
+          fi
+          tar -xf build-stats.tgz
+          echo "Tag to be used for uploads: '${TAG}'"
+          for bs in $(find ./ -name \*build-output-stats.json); do
+            jq . $(pwd)/$bs
+            # import the stat
+            curl -s -w '\n' -H "Content-Type: application/json" \
+              -H "token: $UPLOAD_TOKEN" --post302 --data "@$(pwd)/$bs" "$COLLECTOR_URL/import?t=${TAG}&runnerid=${runner_info_id}" | tee stat_id.json
+            stat_id=$( jq .id stat_id.json )
+            if [[ $stat_id =~ ^[0-9]+$ ]]; then
+              echo "ID of imported data: $stat_id"
+            else
+              echo "Fatal error. stat_id is not a number: $stat_id"
+              exit 1
+            fi
+          done
   build-report:
     runs-on: ubuntu-latest
     name: Build report

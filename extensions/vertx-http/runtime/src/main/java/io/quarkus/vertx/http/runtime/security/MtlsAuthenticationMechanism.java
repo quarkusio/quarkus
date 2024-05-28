@@ -20,8 +20,8 @@ package io.quarkus.vertx.http.runtime.security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
@@ -39,8 +39,8 @@ import io.vertx.ext.web.RoutingContext;
  * The authentication handler responsible for mTLS client authentication
  */
 public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism {
-    private static final String ROLES_ATTRIBUTE = "roles";
-    Map<String, Set<String>> roles = Map.of();
+    private static final String ROLES_MAPPER_ATTRIBUTE = "roles_mapper";
+    private Function<X509Certificate, Set<String>> certificateToRoles = null;
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -62,7 +62,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
 
         AuthenticationRequest authRequest = new CertificateAuthenticationRequest(
                 new CertificateCredential(X509Certificate.class.cast(certificate)));
-        authRequest.setAttribute(ROLES_ATTRIBUTE, roles);
+        authRequest.setAttribute(ROLES_MAPPER_ATTRIBUTE, certificateToRoles);
         return identityProviderManager
                 .authenticate(HttpSecurityUtils.setRoutingContextAttribute(authRequest, context));
     }
@@ -83,7 +83,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509"));
     }
 
-    void setRoleMappings(Map<String, Set<String>> roles) {
-        this.roles = Collections.unmodifiableMap(roles);
+    void setCertificateToRolesMapper(Function<X509Certificate, Set<String>> certificateToRoles) {
+        this.certificateToRoles = certificateToRoles;
     }
 }

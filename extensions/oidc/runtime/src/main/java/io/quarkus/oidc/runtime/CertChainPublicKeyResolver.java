@@ -14,7 +14,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenCertificateValidator;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.security.runtime.X509IdentityProvider;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.ext.auth.impl.CertificateHelper;
 
 public class CertChainPublicKeyResolver implements RefreshableVerificationKeyResolver {
@@ -83,7 +83,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
             // Finally, check the leaf certificate if required
             if (!expectedLeafCertificateName.isEmpty()) {
                 // Compare the leaf certificate common name against the configured value
-                String leafCertificateName = X509IdentityProvider.getCommonName(chain.get(0).getSubjectX500Principal());
+                String leafCertificateName = HttpSecurityUtils.getCommonName(chain.get(0).getSubjectX500Principal());
                 if (!expectedLeafCertificateName.get().equals(leafCertificateName)) {
                     LOG.errorf("Wrong leaf certificate common name: %s", leafCertificateName);
                     throw new UnresolvableKeyException("Wrong leaf certificate common name");

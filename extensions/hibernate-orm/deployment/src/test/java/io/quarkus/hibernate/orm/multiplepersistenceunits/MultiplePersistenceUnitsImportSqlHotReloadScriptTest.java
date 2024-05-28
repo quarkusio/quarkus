@@ -4,9 +4,11 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.function.Function;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.inventory.Plane;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.shared.SharedEntity;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.user.User;
@@ -17,6 +19,7 @@ import io.restassured.RestAssured;
 /**
  * See https://github.com/quarkusio/quarkus/issues/13722
  */
+@Tag(TestTags.DEVMODE)
 public class MultiplePersistenceUnitsImportSqlHotReloadScriptTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

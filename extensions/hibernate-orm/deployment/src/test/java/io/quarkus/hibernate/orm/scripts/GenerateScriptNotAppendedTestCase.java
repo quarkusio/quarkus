@@ -7,11 +7,14 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 
+@Tag(TestTags.DEVMODE)
 public class GenerateScriptNotAppendedTestCase {
 
     @RegisterExtension

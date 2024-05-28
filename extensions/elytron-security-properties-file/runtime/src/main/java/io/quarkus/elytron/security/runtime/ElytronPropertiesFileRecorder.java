@@ -59,7 +59,7 @@ public class ElytronPropertiesFileRecorder {
                     PropertiesRealmConfig config = propertiesConfig.file();
                     log.debugf("loadRealm, config=%s", config);
                     SecurityRealm secRealm = realm.getValue();
-                    if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
+                    if (!(secRealm instanceof LegacyPropertiesSecurityRealm propsRealm)) {
                         return;
                     }
                     log.debugf("Trying to loader users: /%s", config.users());
@@ -86,7 +86,6 @@ public class ElytronPropertiesFileRecorder {
                                 PropertiesRealmConfig.help());
                         throw new IllegalStateException(msg);
                     }
-                    LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
                     ClassPathUtils.consumeStream(users, usersStream -> {
                         try {
                             ClassPathUtils.consumeStream(roles, rolesStream -> {
@@ -123,10 +122,9 @@ public class ElytronPropertiesFileRecorder {
                 MPRealmConfig config = propertiesConfig.embedded();
                 log.debugf("loadRealm, config=%s", config);
                 SecurityRealm secRealm = realm.getValue();
-                if (!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
+                if (!(secRealm instanceof SimpleMapBackedSecurityRealm memRealm)) {
                     return;
                 }
-                SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
                 HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
                 Map<String, String> userInfo = runtimeConfig.users();
                 log.debugf("UserInfoMap: %s%n", userInfo);
@@ -150,7 +148,8 @@ public class ElytronPropertiesFileRecorder {
                                     .generatePassword(new DigestPasswordSpec(user, config.realmName(), hashed));
                         } catch (Exception e) {
                             throw new RuntimeException("Unable to register password for user:" + user
-                                    + " make sure it is a valid hex encoded MD5 hash", e);
+                                    + " make sure it is a valid hex encoded "
+                                    + runtimeConfig.algorithm().getName().toUpperCase() + " hash", e);
                         }
                     }
 

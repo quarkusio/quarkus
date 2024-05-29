@@ -1195,8 +1195,9 @@ jobs:
           fi
           tar -xf build-stats.tgz
           echo "Tag to be used for uploads: '${TAG}'"
+          IFS=$'\n'
           for bs in $(find ./ -name \*build-output-stats.json); do
-            jq . $(pwd)/$bs
+            jq . "$(pwd)/$bs"
             # import the stat
             curl -s -w '\n' -H "Content-Type: application/json" \
               -H "token: $UPLOAD_TOKEN" --post302 --data "@$(pwd)/$bs" "$COLLECTOR_URL/import?t=${TAG}&runnerid=${runner_info_id}" | tee stat_id.json
@@ -1208,6 +1209,7 @@ jobs:
               exit 1
             fi
           done
+
   build-report:
     runs-on: ubuntu-latest
     name: Build report

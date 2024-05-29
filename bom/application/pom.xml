@@ -4818,11 +4818,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.jboss.marshalling</groupId>
-                <artifactId>jboss-marshalling</artifactId>
-                <version>${jboss-marshalling.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.threads</groupId>
                 <artifactId>jboss-threads</artifactId>
                 <version>${jboss-threads.version}</version>

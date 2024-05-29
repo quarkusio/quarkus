@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -51,6 +52,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -104,7 +106,7 @@ import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
-import io.quarkus.test.junit.internal.NewSerializingDeepClone;
+import io.quarkus.test.junit.internal.SerializationWithXStreamFallbackDeepClone;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         implements BeforeEachCallback, BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback,
@@ -353,7 +355,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private void populateDeepCloneField(StartupAction startupAction) {
-        deepClone = new NewSerializingDeepClone(originalCl, startupAction.getClassLoader());
+        deepClone = new SerializationWithXStreamFallbackDeepClone(startupAction.getClassLoader());
     }
 
     private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
@@ -960,13 +962,49 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Parameter[] parameters = invocationContext.getExecutable().getParameters();
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
+                boolean cloneRequired = false;
+                Object replacement = null;
                 Class<?> argClass = parameters[i].getType();
+                if (arg != null) {
+                    Class<?> theclass = argClass;
+                    while (theclass.isArray()) {
+                        theclass = theclass.getComponentType();
+                    }
+                    if (theclass.isPrimitive()) {
+                        cloneRequired = false;
+                    } else if (TestInfo.class.isAssignableFrom(theclass)) {
+                        TestInfo info = (TestInfo) arg;
+                        Method newTestMethod = info.getTestMethod().isPresent()
+                                ? determineTCCLExtensionMethod(info.getTestMethod().get(), testClassFromTCCL)
+                                : null;
+                        replacement = new TestInfoImpl(info.getDisplayName(), info.getTags(),
+                                Optional.of(testClassFromTCCL),
+                                Optional.ofNullable(newTestMethod));
+                    } else if (clonePattern.matcher(theclass.getName()).matches()) {
+                        cloneRequired = true;
+                    } else {
+                        try {
+                            cloneRequired = runningQuarkusApplication.getClassLoader()
+                                    .loadClass(theclass.getName()) != theclass;
+                        } catch (ClassNotFoundException e) {
+                            if (arg instanceof Supplier) {
+                                cloneRequired = true;
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                }
 
-                if (testMethodInvokerToUse != null) {
+                if (replacement != null) {
+                    argumentsFromTccl.add(replacement);
+                } else if (cloneRequired) {
+                    argumentsFromTccl.add(deepClone.clone(arg));
+                } else if (testMethodInvokerToUse != null) {
                     argumentsFromTccl.add(testMethodInvokerToUse.getClass().getMethod("methodParamInstance", String.class)
                             .invoke(testMethodInvokerToUse, argClass.getName()));
                 } else {
-                    argumentsFromTccl.add(deepClone.clone(arg));
+                    argumentsFromTccl.add(arg);
                 }
             }
 
@@ -976,7 +1014,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .invoke(testMethodInvokerToUse, effectiveTestInstance, newMethod, argumentsFromTccl,
                                 extensionContext.getRequiredTestClass().getName());
             } else {
-                return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(Object[]::new));
+                return newMethod.invoke(effectiveTestInstance, argumentsFromTccl.toArray(new Object[0]));
             }
 
         } catch (InvocationTargetException e) {

@@ -1,4 +1,4 @@
-package io.quarkus.test.junit.internal;
+package io.quarkus.test.junit;
 
 import java.lang.reflect.Method;
 import java.util.Optional;

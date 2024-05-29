@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -787,6 +788,13 @@ public final class Beans {
 
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             Set<DotName> classesReceivingNoArgsCtor, Set<BeanInfo> injectedBeans) {
+
+        System.out.println("HOLLY validating bean " + bean + " using my classloader " + Beans.class.getClassLoader());
+        if (bean.getImplClazz() != null) {
+            System.out.println("at this point " + bean + " says no args is " + bean.getImplClazz()
+                    .hasNoArgsConstructor());
+        }
+        System.out.println("HOLLY and the list we got given is " + Arrays.toString(classesReceivingNoArgsCtor.toArray()));
 
         // by default, we fail deployment due to unproxyability for all beans, but in strict mode,
         // we only do that for beans that are injected somewhere -- and defer the error to runtime otherwise,

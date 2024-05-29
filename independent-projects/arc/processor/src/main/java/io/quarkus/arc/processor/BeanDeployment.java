@@ -1018,6 +1018,10 @@ public class BeanDeployment {
                 continue;
             }
 
+            if (beanClass.toString().contains("ConfigFromParseResult")) {
+                System.out.println("checking everything about " + beanClass);
+            }
+
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
                     || beanClass.isAnnotation() || beanClass.isEnum()) {
                 // Skip interfaces, abstract classes, annotations and enums
@@ -1035,7 +1039,14 @@ public class BeanDeployment {
                 continue;
             }
 
+            if (beanClass.toString().contains("ConfigFromParseResult")) {
+                System.out.println("checking constructir about " + beanClass + " -> " + beanClass.hasNoArgsConstructor()
+                        + " my loader is " + this.getClass().getClassLoader());
+            }
+
             if (!beanClass.hasNoArgsConstructor()) {
+                System.out.println("HOLLY found somebody who needs a new constructor" + beanClass + " i am "
+                        + this.getClass().getClassLoader());
                 int numberOfConstructorsWithoutInject = 0;
                 int numberOfConstructorsWithInject = 0;
                 for (MethodInfo m : beanClass.methods()) {

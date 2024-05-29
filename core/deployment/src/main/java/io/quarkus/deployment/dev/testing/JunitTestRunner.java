@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -139,6 +140,7 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance().get()::isDisplayTestOutput);
             Thread.currentThread().setContextClassLoader(tcl);
+            System.out.println("139 HOLLY junit runner  set classloader to deployment" + tcl);
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
                     .getDeclaredConstructor().newInstance();
             currentTestAppConsumer.accept(testApplication);
@@ -151,14 +153,24 @@ public class JunitTestRunner {
             LauncherDiscoveryRequestBuilder launchBuilder = LauncherDiscoveryRequestBuilder.request()
                     .selectors(quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
                             .collect(Collectors.toList()));
+
+            System.out.println("HOLLY in prepare, launch is "
+                    + quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
+                            .collect(Collectors.toList()));
             launchBuilder.filters(new PostDiscoveryFilter() {
                 @Override
                 public FilterResult apply(TestDescriptor testDescriptor) {
+                    System.out.println("HOLLY not-fultering " + testDescriptor);
                     allDiscoveredIds.add(testDescriptor.getUniqueId());
                     return FilterResult.included(null);
                 }
             });
             if (classScanResult != null) {
+                System.out.println("HOLLY class scan result is " + classScanResult);
+                System.out.println("HOLLY changed class names is "
+                        + classScanResult.getChangedClassNames());
+                System.out.println("HOLLY filtering is "
+                        + testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
                 launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
             }
             if (!includeTags.isEmpty()) {
@@ -187,6 +199,7 @@ public class JunitTestRunner {
                     .build();
             TestPlan testPlan = launcher.discover(request);
             long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
+            System.out.println("HOLLY to run is " + toRun);
             for (TestRunListener listener : listeners) {
                 listener.runStarted(toRun);
             }
@@ -223,6 +236,7 @@ public class JunitTestRunner {
                         AtomicReference<TestIdentifier> currentNonDynamicTest = new AtomicReference<>();
 
                         Thread.currentThread().setContextClassLoader(tcl);
+                        System.out.println("224 HOLLY junit runner set classloader to " + tcl);
                         launcher.execute(testPlan, new TestExecutionListener() {
 
                             @Override
@@ -243,6 +257,7 @@ public class JunitTestRunner {
                                 for (TestRunListener listener : listeners) {
                                     listener.testStarted(testIdentifier, testClassName);
                                 }
+                                System.out.println("HOLLY runner pushing onto touched ");
                                 touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
                             }
 
@@ -254,6 +269,7 @@ public class JunitTestRunner {
                                 touchedClasses.pop();
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
+                                System.out.println("HOLLY skipping " + displayName);
                                 UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
                                 if (testClass != null) {
                                     Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
@@ -282,6 +298,10 @@ public class JunitTestRunner {
                             @Override
                             public void executionFinished(TestIdentifier testIdentifier,
                                     TestExecutionResult testExecutionResult) {
+                                System.out.println("execution finished, " + testExecutionResult);
+                                if (testExecutionResult.getThrowable().isPresent()) {
+                                    testExecutionResult.getThrowable().get().printStackTrace();
+                                }
                                 if (aborted) {
                                     return;
                                 }
@@ -289,6 +309,7 @@ public class JunitTestRunner {
                                 Set<String> touched = touchedClasses.pop();
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
+                                System.out.println("execution finished display name was " + displayName);
                                 UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
 
                                 if (testClass == null) {
@@ -395,6 +416,7 @@ public class JunitTestRunner {
                             TracingHandler.setTracingHandler(null);
                             QuarkusConsole.removeOutputFilter(logHandler);
                             Thread.currentThread().setContextClassLoader(old);
+                            System.out.println("398 HOLLY junit runner set classloader to old " + old);
                             tcl.close();
                             try {
                                 quarkusTestClasses.close();
@@ -403,6 +425,7 @@ public class JunitTestRunner {
                             }
                         } finally {
                             Thread.currentThread().setContextClassLoader(origCl);
+                            System.out.println("406 HOLLY junit runner set classloader to orig " + origCl);
                             synchronized (JunitTestRunner.this) {
                                 testsRunning = false;
                                 if (aborted) {
@@ -528,6 +551,7 @@ public class JunitTestRunner {
     }
 
     private DiscoveryResult discoverTestClasses() {
+        System.out.println(new Date() + "533 HOLLY doing discovery");
         //maven has a lot of rules around this and is configurable
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
@@ -549,6 +573,8 @@ public class JunitTestRunner {
         });
 
         Index index = indexer.complete();
+
+        System.out.println("HOLLY index found known classes " + Arrays.toString(index.getKnownClasses().toArray()));
         //we now have all the classes by name
         //these tests we never run
         Set<String> integrationTestClasses = new HashSet<>();
@@ -598,6 +624,9 @@ public class JunitTestRunner {
                 }
             }
         }
+        System.out.println("HOLLY all test classes is " + Arrays.toString(allTestClasses.toArray()));
+        System.out.println("HOLLY quarkus test classes is " + Arrays.toString(quarkusTestClasses.toArray()));
+        System.out.println("HOLLY integration classes is " + Arrays.toString(integrationTestClasses.toArray()));
         //now we have all the classes with @Test
         //figure out which ones we want to actually run
         Set<String> unitTestClasses = new HashSet<>();
@@ -626,13 +655,36 @@ public class JunitTestRunner {
 
         List<Class<?>> itClasses = new ArrayList<>();
         List<Class<?>> utClasses = new ArrayList<>();
+
+        // TODO batch by profile and start once for each profile
+
+        // TODO guard to only do this once? is this guard sufficient? see "wrongprofile" in QuarkusTestExtension
+
+        System.out.println(
+                "HOLLY after the re-add or whatever? quarkus test classes is " + Arrays.toString(quarkusTestClasses.toArray()));
+        ClassLoader rcl = null;
+        System.out.println("classload thread is " + Thread.currentThread());
+
         for (String i : quarkusTestClasses) {
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
+                if (rcl == null) {
+                    System.out.println("HOLLY Making a java start with " + testApplication);
+                    // Although it looks like we need to start once per class, the class is just indicative of where classes for this module live
+                    rcl = new CoreQuarkusTestExtension()
+                            .doJavaStart(Thread.currentThread().getContextClassLoader().loadClass(i), testApplication, true);
+                }
+                Thread.currentThread().setContextClassLoader(rcl);
+
+                System.out.println("639 HOLLY loading quarkus test with " + Thread.currentThread().getContextClassLoader());
                 itClasses.add(Thread.currentThread().getContextClassLoader().loadClass(i));
-            } catch (ClassNotFoundException e) {
+            } catch (Exception e) {
+                System.out.println("HOLLY BAD BAD" + e);
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
             }
         }
         itClasses.sort(Comparator.comparing(new Function<Class<?>, String>() {
@@ -647,12 +699,15 @@ public class JunitTestRunner {
             }
         }));
         QuarkusClassLoader cl = null;
+        System.out.println("HOLLY made unit test classes " + Arrays.toString(unitTestClasses.toArray()));
         if (!unitTestClasses.isEmpty()) {
             //we need to work the unit test magic
             //this is a lot more complex
             //we need to transform the classes to make the tracing magic work
             QuarkusClassLoader deploymentClassLoader = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            System.out.println("HOLLY asking classloader " + deploymentClassLoader);
             Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getLocalClassNames());
+            System.out.println("HOLLY to transform is " + Arrays.toString(classesToTransform.toArray()));
             Map<String, byte[]> transformedClasses = new HashMap<>();
             for (String i : classesToTransform) {
                 try {
@@ -672,6 +727,7 @@ public class JunitTestRunner {
             cl.reset(Collections.emptyMap(), transformedClasses);
             for (String i : unitTestClasses) {
                 try {
+                    System.out.println("678 HOLLY loaded " + i + " with loader " + cl);
                     utClasses.add(cl.loadClass(i));
                 } catch (ClassNotFoundException exception) {
                     log.warnf(
@@ -681,6 +737,7 @@ public class JunitTestRunner {
             }
 
         }
+        System.out.println("HOLLY test tyoe us " + testType);
         if (testType == TestType.ALL) {
             //run unit style tests first
             //before the quarkus tests have started
@@ -688,6 +745,7 @@ public class JunitTestRunner {
             List<Class<?>> ret = new ArrayList<>(utClasses.size() + itClasses.size());
             ret.addAll(utClasses);
             ret.addAll(itClasses);
+            System.out.println("RETURNING " + Arrays.toString(ret.toArray()));
             return new DiscoveryResult(cl, ret);
         } else if (testType == TestType.UNIT) {
             return new DiscoveryResult(cl, utClasses);

@@ -347,7 +347,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addElement(ClassPathElement.fromPath(root, true));
         }
-        return builder.build();
+
+        QuarkusClassLoader answer = builder.build();
+        System.out.println("Curated application made " + answer);
+        return answer;
+
     }
 
     public String getClassLoaderNameSuffix() {

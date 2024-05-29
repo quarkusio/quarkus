@@ -320,6 +320,7 @@ public class IndexWrapper implements IndexView {
                 indexer.index(stream);
                 result = true;
             } else {
+                System.out.println("HOLLY IndexWrapper error path" + className + classLoader);
                 LOGGER.warnf("Failed to index %s: Class does not exist in ClassLoader %s", className, classLoader);
             }
         } catch (IOException e) {

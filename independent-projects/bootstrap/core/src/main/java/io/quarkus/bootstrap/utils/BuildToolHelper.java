@@ -66,6 +66,7 @@ public class BuildToolHelper {
     }
 
     public static BuildTool findBuildTool(Path project) {
+        System.out.println("HOLLY finding build tool on " + project);
         Path currentPath = project;
         while (currentPath != null) {
             if (BuildTool.MAVEN.exists(currentPath)) {

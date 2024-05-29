@@ -14,6 +14,7 @@ public abstract class BootstrapFromWorkspaceModuleTestBase extends PackageAppTes
             throws Exception {
         final ApplicationModel appModel = resolver.resolveModel(composeApplication());
         Path applicationRoot = appModel.getAppArtifact().getResolvedPaths().getSinglePath();
+        System.out.println("HOLLY making bootstrap from workspace module test");
         final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
                 .setExistingModel(appModel)
                 .setApplicationRoot(applicationRoot)

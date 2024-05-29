@@ -1,6 +1,4 @@
-package io.quarkus.test.common;
-
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+package io.quarkus.deployment.dev.testing;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -104,6 +102,7 @@ public final class PathTestHelper {
         //endregion
 
         //region Maven
+        // TODO why is the file separator first on these fragments?
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 File.separator + "test-classes",
                 File.separator + "classes");
@@ -128,6 +127,55 @@ public final class PathTestHelper {
     }
 
     /**
+     * We normally start with a test class and work out the runtime classpath
+     * from that;
+     * here we need to go in the other direction. There's probably existing logic we
+     * can re-use, because this
+     * is seriously brittle
+     * This method finds directories not in BootstrapConstants.OUTPUT_SOURCES_DIR (in the case of Gradle additional sources)
+     */
+    // TODO can be deleted now that we have changed the quarkus plugin?
+    public static Path getTestClassesLocationWithNoContext() {
+
+        // TODO can we be more elegant about this? What about multi-module?
+        // TODO should we cross-reference against the classpath?
+        Path projectRoot = Paths.get("")
+                .normalize()
+                .toAbsolutePath();
+
+        Path applicationRoot = null;
+
+        // TODO this cannot be the right pattern because we don't do it anywhere else, but
+        String[] ses = System.getProperty("java.class.path")
+                .split(File.pathSeparator);
+        for (String s : ses) {
+            Path path = Paths.get(s);
+            if (path.normalize()
+                    .toAbsolutePath()
+                    .startsWith(projectRoot)) {
+                System.out.println("CANDIDATE CLASSPATH " + s);
+                // TODO ugly; set it if we didn't set it to something on the classpath
+                // TODO fragile, we miss other modules in multi-module
+                //  things like us to take the first element on the classpath that fits
+                // TODO we take the first classpath that matches, which is rather arbitrary and brittle
+
+                // The application root needs to be a directory that holds test classes `(or TODO maybe application classes)
+                if (applicationRoot == null) {
+                    applicationRoot = path;
+                    System.out.println("made app root" + applicationRoot);
+                    // TODO we do not break so we can continue logging
+                }
+            }
+        }
+
+        if (applicationRoot == null) {
+            throw new RuntimeException("Could not find any elements of the classpath inside the project root " + projectRoot);
+        }
+
+        return applicationRoot;
+    }
+
+    /**
      * Resolves the directory or the JAR file containing the test class.
      *
      * @param testClass the test class
@@ -135,9 +183,6 @@ public final class PathTestHelper {
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
-
-        // TODO this used to be on disk, now it's transformed and in memory ... but the URL has a quarkus:/ protocol
-        // We could make a file system provider and filesystem, but is the memory location actually what we want?
         URL resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
 
         if (resource.getProtocol().equals("jar")) {
@@ -148,7 +193,6 @@ public final class PathTestHelper {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
         }
-        System.out.println("HOLLY 147 path is " + resource);
         Path path = toPath(resource);
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
 
@@ -173,6 +217,57 @@ public final class PathTestHelper {
      */
     public static Path getAppClassLocation(Class<?> testClass) {
         return getAppClassLocationForTestLocation(getTestClassesLocation(testClass).toString());
+    }
+
+    public static Path getTestClassLocationForRootLocation(String rootLocation) {
+        if (rootLocation.endsWith(".jar")) {
+            if (rootLocation.endsWith("-tests.jar")) {
+                return Paths.get(new StringBuilder()
+                        .append(rootLocation, 0, rootLocation.length() - "-tests.jar".length())
+                        .append(".jar")
+                        .toString());
+            }
+            return Path.of(rootLocation);
+        }
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+
+        // TODO reduce duplicated code, check if we can get rid of some of the regexes
+
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "target" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+
+        // Try the gradle build dir
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "build" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+
+        // TODO is it safe to throw or return null? are there other build systems we should be considering?
+        // throw new IllegalStateException("Unable to find any application content in " + rootLocation);
+        return null;
     }
 
     /**
@@ -260,7 +355,7 @@ public final class PathTestHelper {
     }
 
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
-        URL resource = classLoader.getResource(fromClassNameToResourceName(className));
+        URL resource = classLoader.getResource(className.replace('.', '/') + ".class");
         if (resource == null) {
             return false;
         }

@@ -17,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -68,7 +69,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
-import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
@@ -189,6 +189,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        System.out.println("HOLLY doing java start for profile " + profile);
         JBossVersion.disableVersionLogging();
 
         TracingHandler.quarkusStarting();
@@ -213,23 +214,31 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            PrepareResult result = createAugmentor(context, profile, shutdownTasks);
-            AugmentAction augmentAction = result.augmentAction;
-            QuarkusTestProfile profileInstance = result.profileInstance;
+            //            PrepareResult result = createAugmentor(context, profile, shutdownTasks);
+            //            AugmentAction augmentAction = result.augmentAction;
+            //            QuarkusTestProfile profileInstance = result.profileInstance;
+            QuarkusTestProfile profileInstance = null;
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
-            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
+
+            System.out.println("HOLLY during execution, TCCL is " + Thread.currentThread().getContextClassLoader());
+            System.out.println("HOLLY the test was loaded with " + requiredTestClass.getClassLoader());
+            System.out.println("EXTENSION SEES CLASS OF STARTUO " + StartupAction.class.getClassLoader());
+            StartupAction startupAction = StartupAction.getStored();
+            System.out.println("HOLLY ext got startup action " + startupAction);
+
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
-            populateDeepCloneField(startupAction);
+            //            populateDeepCloneField(startupAction);
 
             //must be done after the TCCL has been set
-            testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
+            testResourceManager = (Closeable) Thread.currentThread().getContextClassLoader()
+                    .loadClass(TestResourceManager.class.getName())
                     .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class, Path.class)
                     .newInstance(requiredTestClass,
                             profile != null ? profile : null,
-                            getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
+                            getAdditionalTestResources(profileInstance, Thread.currentThread().getContextClassLoader()),
                             profileInstance != null && profileInstance.disableGlobalTestResources(),
-                            startupAction.getDevServicesProperties(), Optional.empty(), result.testClassLocation);
+                            startupAction.getDevServicesProperties(), Optional.empty(), StartupAction.getTestClassLocation());
             testResourceManager.getClass().getMethod("init", String.class).invoke(testResourceManager,
                     profile != null ? profile.getName() : null);
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
@@ -257,8 +266,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 runningQuarkusApplication = startupAction
                         .runMainClass(profileInstance.commandLineParameters());
             }
-            String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
-                    .orElse("java\\..*");
+            String patternString = "java\\..*"; // TODO infinite loop  runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class).orElse("java\\..*");
             clonePattern = Pattern.compile(patternString);
             TracingHandler.quarkusStarted();
 
@@ -266,11 +274,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             if (hangTaskKey != null) {
                 hangTaskKey.cancel(false);
-                hangTimeout = runningQuarkusApplication.getConfigValue(QUARKUS_TEST_HANG_DETECTION_TIMEOUT, Duration.class)
-                        .orElse(Duration.of(10, ChronoUnit.MINUTES));
+                hangTimeout = Duration.of(10, ChronoUnit.MINUTES); // TODO infinite loop runningQuarkusApplication.getConfigValue(QUARKUS_TEST_HANG_DETECTION_TIMEOUT, Duration.class).orElse(Duration.of(10, ChronoUnit.MINUTES));
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-            ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
+
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
@@ -398,13 +405,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
                 pushMockContext();
+                System.out.println("HOLLY before each callbacks is " + Arrays.toString(beforeEachCallbacks.toArray()));
                 Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
                 invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
                 String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
                 if (runningQuarkusApplication != null) {
                     boolean secure = false;
-                    Optional<String> insecureAllowed = runningQuarkusApplication
-                            .getConfigValue("quarkus.http.insecure-requests", String.class);
+                    //                    Optional<String> insecureAllowed = runningQuarkusApplication
+                    //                            .getConfigValue("quarkus.http.insecure-requests", String.class);
+                    // TODO infinite loop?
+                    Optional<String> insecureAllowed = Optional.of("enabled");
                     if (insecureAllowed.isPresent()) {
                         secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
                     }
@@ -538,11 +548,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         // go up the class hierarchy to fetch the proper test method
         Class<?> c = resolveDeclaringClass(originalTestMethod, actualTestClass);
+        System.out.println("looking at " + originalTestMethod);
+        System.out.println("delcaring class is " + c + "<_" + c.getClassLoader());
+
         List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
         for (Class<?> type : originalParameterTypes) {
             if (type.isPrimitive()) {
                 parameterTypesFromTccl.add(type);
             } else {
+                System.out.println("HOLLY doing class for name on classloader " + classLoader);
                 parameterTypesFromTccl
                         .add(Class.forName(type.getName(), true, classLoader));
             }
@@ -550,12 +564,29 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Class<?>[] parameterTypes = parameterTypesFromTccl.toArray(new Class[0]);
         try {
             if (c != null) {
+                // TODO this whole method is now useless, but it should basically work
+                System.out.println("all methods is " + Arrays.toString(c.getDeclaredMethods()));
+                for (Method m : c.getDeclaredMethods()) {
+                    if (m.getName().equals(originalTestMethod.getName())) {
+                        System.out.println("got a partial match" + originalTestMethod.getName());
+                        if (parameterTypes.length > 0) {
+                            System.out.println(
+                                    "desired params is " + parameterTypes[0].getClassLoader());
+                            System.out.println(
+                                    "here params is " + m.getParameterTypes()[0].getClassLoader());
+                            System.out.println("HOLLY match is " + (parameterTypes[0] == m.getParameterTypes()[0]));
+                        }
+                    }
+                }
+
                 actualTestMethod = c.getDeclaredMethod(originalTestMethod.getName(), parameterTypes);
+                System.out.println("HOLLY made " + actualTestMethod);
             }
         } catch (NoSuchMethodException ignored) {
 
         }
         if (actualTestMethod == null) {
+            System.out.println("could not find actual, c is " + c);
             throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
         }
 
@@ -627,8 +658,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {
+        // System.out.println("HOLLY quarkus text setting CCL to " + cl);
         final Thread thread = Thread.currentThread();
         final ClassLoader original = thread.getContextClassLoader();
+        //  System.out.println("HOLLY original was " + original);
         thread.setContextClassLoader(cl);
         return original;
     }
@@ -760,8 +793,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private void initTestState(ExtensionContext extensionContext, QuarkusTestExtensionState state) {
         try {
-            actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
-                    Thread.currentThread().getContextClassLoader());
+            //            actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
+            //                    Thread.currentThread().getContextClassLoader());
+            actualTestClass = extensionContext.getRequiredTestClass();
             if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
                 Class<?> outerClass = actualTestClass.getEnclosingClass();
                 Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(outerClass);
@@ -770,14 +804,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
                 } else {
-                    Object outerInstance = createActualTestInstance(outerClass, state);
+                    Object outerInstance = createActualTestInstance(outerClass, state, extensionContext);
                     invokeAfterConstructCallbacks(Object.class, outerInstance);
                     actualTestInstance = declaredConstructor.newInstance(outerInstance);
                     outerInstances.add(outerInstance);
                 }
             } else {
                 outerInstances.clear();
-                actualTestInstance = createActualTestInstance(actualTestClass, state);
+                actualTestInstance = createActualTestInstance(actualTestClass, state, extensionContext);
             }
 
             invokeAfterConstructCallbacks(Object.class, actualTestInstance);
@@ -787,9 +821,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state)
+    private Object createActualTestInstance(Class<?> testClass, QuarkusTestExtensionState state, ExtensionContext context)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        // TODO this is surely the wrong running application?
         Object testInstance = runningQuarkusApplication.instance(testClass);
+        System.out.println("running app gave us " + testInstance);
+        System.out.println(" of classloader " + testInstance.getClass().getClassLoader());
 
         Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
         resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, testInstance,
@@ -954,6 +991,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             // the arguments were not loaded from TCCL so we need to deep clone them into the TCCL
             // because the test method runs from a class loaded from the TCCL
+            // TODO all of this code can be deleted, right? we don't even honour the clone required setting
             //TODO: make this more pluggable
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
@@ -961,15 +999,14 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             for (int i = 0; i < originalArguments.size(); i++) {
                 Object arg = originalArguments.get(i);
                 Class<?> argClass = parameters[i].getType();
-
                 if (testMethodInvokerToUse != null) {
-                    argumentsFromTccl.add(testMethodInvokerToUse.getClass().getMethod("methodParamInstance", String.class)
+                    argumentsFromTccl.add(testMethodInvokerToUse.getClass()
+                            .getMethod("methodParamInstance", String.class)
                             .invoke(testMethodInvokerToUse, argClass.getName()));
                 } else {
                     argumentsFromTccl.add(deepClone.clone(arg));
                 }
             }
-
             if (testMethodInvokerToUse != null) {
                 return testMethodInvokerToUse.getClass()
                         .getMethod("invoke", Object.class, Method.class, List.class, String.class)
@@ -980,10 +1017,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
 
         } catch (InvocationTargetException e) {
+            System.out.println("HOLLY throwing " + e);
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
+            System.out.println("HOLLY 2 throwing " + e);
             throw new RuntimeException(e);
         } finally {
+            System.out.println("HOLLY got to the end of  runExtensionMethod");
             setCCL(old);
         }
     }
@@ -1038,6 +1078,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
+        System.out.println("HOLLY after all" + context);
         resetHangTimeout();
         runAfterAllCallbacks(context);
         try {
@@ -1056,6 +1097,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private void runAfterAllCallbacks(ExtensionContext context) throws Exception {
+        System.out.println("HOLLY after all callback, failed is: " + failedBoot);
         if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || failedBoot) {
             return;
         }

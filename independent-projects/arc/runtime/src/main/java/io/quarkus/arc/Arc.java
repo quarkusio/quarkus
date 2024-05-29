@@ -33,10 +33,12 @@ public final class Arc {
         if (container == null) {
             synchronized (INSTANCE) {
                 container = INSTANCE.get();
+                System.out.println("arc container instance is " + container);
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
                     container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility());
                     INSTANCE.set(container);
+                    System.out.println("arc did set container");
                     container.init();
                 }
             }

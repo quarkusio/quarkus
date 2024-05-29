@@ -126,6 +126,8 @@ public class QuarkusBootstrap implements Serializable {
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
+        System.out.println("HOLLY building curated application app root " + applicationRoot + " project root " + projectRoot);
+
         //all we want to do is resolve all our dependencies
         //once we have this it is up to augment to set up the class loader to actually use them
         final CurationResult curationResult = existingModel != null

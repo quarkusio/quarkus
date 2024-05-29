@@ -75,6 +75,7 @@ public class TestTracingProcessor {
     @Produce(ServiceStartBuildItem.class)
     void startTesting(TestConfig config, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, List<TestListenerBuildItem> testListenerBuildItems) {
+        System.out.println("HOLLY Tracung test processor starting testing " + TestSupport.instance().isEmpty());
         if (TestSupport.instance().isEmpty() || config.continuousTesting == TestConfig.Mode.DISABLED
                 || config.flatClassPath) {
             return;
@@ -83,9 +84,11 @@ public class TestTracingProcessor {
         if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
             return;
         }
+
         if (testingSetup) {
             return;
         }
+        System.out.println("HOLLY made it through all the guards");
         testingSetup = true;
         TestSupport testSupport = TestSupport.instance().get();
         for (TestListenerBuildItem i : testListenerBuildItems) {
@@ -108,6 +111,7 @@ public class TestTracingProcessor {
             }
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+        System.out.println("HOLLY talked to the classloader " + cl);
         ((QuarkusClassLoader) cl.parent()).addCloseTask(ContinuousTestingSharedStateManager::reset);
     }
 
@@ -115,13 +119,18 @@ public class TestTracingProcessor {
     public void instrumentTestClasses(CombinedIndexBuildItem combinedIndexBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformerProducer) {
+        System.out.println("HOLLY wull instrument" + !launchModeBuildItem.isAuxiliaryApplication());
         if (!launchModeBuildItem.isAuxiliaryApplication()) {
             return;
         }
+        System.out.println("HOLLY made it past the instrument guard");
 
         for (ClassInfo clazz : combinedIndexBuildItem.getIndex().getKnownClasses()) {
             String theClassName = clazz.name().toString();
+            //System.out.println("HOLLY looking to instrument " + theClassName);
             if (isAppClass(theClassName)) {
+                System.out.println("HOLLY yes, will instrumnt " + theClassName);
+
                 transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setEager(false)
                         .setClassToTransform(theClassName)
                         .setVisitorFunction(

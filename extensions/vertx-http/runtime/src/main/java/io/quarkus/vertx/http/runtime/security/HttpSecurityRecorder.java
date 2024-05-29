@@ -428,7 +428,10 @@ public class HttpSecurityRecorder {
                     roles.put((String) e.getKey(), parseRoles((String) e.getValue()));
                 }
 
-                mtls.get().setRoleMappings(roles);
+                if (!roles.isEmpty()) {
+                    var certRolesAttribute = new CertificateRoleAttribute(config.auth.certificateRoleAttribute, roles);
+                    mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
+                }
             } catch (Exception e) {
                 log.warnf("Unable to read roles mappings from %s:%s", rolesPath, e.getMessage());
             }
@@ -483,4 +486,5 @@ public class HttpSecurityRecorder {
         }
         return Set.copyOf(roles);
     }
+
 }

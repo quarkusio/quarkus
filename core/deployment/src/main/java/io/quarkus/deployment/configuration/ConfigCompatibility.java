@@ -285,12 +285,12 @@ public final class ConfigCompatibility {
 
     private static List<String> quarkusPackageDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         // simple mapping to a new name
-        return List.of("quarkus.package.decompiler.enabled");
+        return List.of("quarkus.package.jar.decompiler.enabled");
     }
 
     private static List<String> quarkusPackageDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         // simple mapping to a new name
-        return List.of("quarkus.package.decompiler.jar-directory");
+        return List.of("quarkus.package.jar.decompiler.jar-directory");
     }
 
     private static List<String> quarkusPackageManifestAttributes(ConfigSourceInterceptorContext ctxt, NameIterator ni) {

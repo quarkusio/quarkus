@@ -199,7 +199,7 @@ public class BearerTokenAuthorizationTest {
         // Send the token with the valid certificate chain and bind it to the token claim
         String accessToken = getAccessTokenForCustomValidator(
                 List.of(subjectCert, intermediateCert, rootCert),
-                subjectPrivateKey, true);
+                subjectPrivateKey, "https://service.example.com", true, false);
 
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-chain-custom-validator")
@@ -207,10 +207,29 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
 
-        // Send the token with the valid certificate chain but do bind it to the token claim
+        // Send the token with the valid certificate chain but do not bind it to the token claim
         accessToken = getAccessTokenForCustomValidator(
                 List.of(subjectCert, intermediateCert, rootCert),
-                subjectPrivateKey, false);
+                subjectPrivateKey, "https://service.example.com", false, false);
+
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-chain-custom-validator")
+                .then()
+                .statusCode(401);
+
+        // Send the token with the valid certificate chain bound to the token claim, but expired
+        accessToken = getAccessTokenForCustomValidator(
+                List.of(subjectCert, intermediateCert, rootCert),
+                subjectPrivateKey, "https://service.example.com", true, true);
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-chain-custom-validator")
+                .then()
+                .statusCode(401);
+
+        // Send the token with the valid certificate chain but with the wrong audience
+        accessToken = getAccessTokenForCustomValidator(
+                List.of(subjectCert, intermediateCert, rootCert),
+                subjectPrivateKey, "https://server.example.com", true, false);
 
         RestAssured.given().auth().oauth2(accessToken)
                 .when().get("/api/admin/bearer-chain-custom-validator")
@@ -748,18 +767,25 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessTokenForCustomValidator(List<X509Certificate> chain,
-            PrivateKey privateKey, boolean setLeafCertThumbprint) throws Exception {
+            PrivateKey privateKey, String aud, boolean setLeafCertThumbprint, boolean expired) throws Exception {
         JwtClaimsBuilder builder = Jwt.preferredUserName("alice")
                 .groups("admin")
                 .issuer("https://server.example.com")
-                .audience("https://service.example.com")
+                .audience(aud)
                 .claim("root-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(chain.size() - 1)));
         if (setLeafCertThumbprint) {
             builder.claim("leaf-certificate-thumbprint", TrustStoreUtils.calculateThumprint(chain.get(0)));
         }
-        return builder.jws()
+        if (expired) {
+            builder.expiresIn(1);
+        }
+        String jwt = builder.jws()
                 .chain(chain)
                 .sign(privateKey);
+        if (expired) {
+            Thread.sleep(2000);
+        }
+        return jwt;
     }
 
     private String getAccessTokenWithoutKidAndThumbprint(String userName, Set<String> groups) {

@@ -6,6 +6,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -24,6 +25,10 @@ public class FrontendResource {
     @Inject
     @RestClient
     ProtectedResourceServiceNamedFilter protectedResourceServiceNamedFilter;
+
+    @Inject
+    @RestClient
+    ProtectedResourceServiceDisabledClient protectedResourceServiceDisabledClient;
 
     @Inject
     @RestClient
@@ -48,6 +53,14 @@ public class FrontendResource {
     @Produces("text/plain")
     public Uni<String> userNameNamedFilter() {
         return protectedResourceServiceNamedFilter.getUserName();
+    }
+
+    @GET
+    @Path("userNameDisabledClient")
+    @Produces("text/plain")
+    public Uni<String> userNameDisabledClient() {
+        return protectedResourceServiceDisabledClient.getUserName()
+                .onFailure(WebApplicationException.class).recoverWithItem(t -> t.getMessage());
     }
 
     @GET

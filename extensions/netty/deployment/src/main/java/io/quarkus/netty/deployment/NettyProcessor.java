@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
@@ -35,6 +36,7 @@ import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.NettyRecorder;
+import sun.misc.Unsafe;
 
 class NettyProcessor {
 
@@ -81,6 +83,7 @@ class NettyProcessor {
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
@@ -167,6 +170,11 @@ class NettyProcessor {
 
         builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
                 .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+
+        // Called reflectively during io.netty.util.internal.PlatformDependent0 class initialization
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "getUnsafe", Unsafe.class));
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "registerNatives", Void.class));
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem("java.nio.DirectByteBuffer", "<init>", long.class, long.class));
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")

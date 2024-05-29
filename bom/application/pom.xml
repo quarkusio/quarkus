@@ -178,7 +178,7 @@
         <mockito.version>5.12.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.1.0</quarkus-security.version>
-        <keycloak.version>24.0.4</keycloak.version>
+        <keycloak.version>25.0.0</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.44.0</checker-qual.version>
         <error-prone-annotations.version>2.28.0</error-prone-annotations.version>
@@ -5959,18 +5959,6 @@
                 <version>${quarkus-spring-boot-api.version}</version>
             </dependency>
 
-            <!-- Keycloak -->
-            <dependency>
-                <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-adapter-core</artifactId>
-                <version>${keycloak.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-core</artifactId>

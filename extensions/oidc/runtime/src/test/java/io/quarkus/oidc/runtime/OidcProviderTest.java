@@ -54,14 +54,14 @@ public class OidcProviderTest {
             }
         }
 
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, new TokenCustomizer() {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, List.of(new TokenCustomizer() {
 
             @Override
             public JsonObject customizeHeaders(JsonObject headers) {
                 return Json.createObjectBuilder(headers).add("alg", "RS256").build();
             }
 
-        }, null, null)) {
+        }), null, null)) {
             TokenVerificationResult result = provider.verifyJwtToken(newToken, false, false, null);
             assertEquals("http://keycloak/realm", result.localVerificationResult.getString("iss"));
         }

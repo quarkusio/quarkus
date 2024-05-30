@@ -154,7 +154,7 @@ public class JarResultBuildStep {
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
-    private static final String VINEFLOWER_VERSION = "1.9.3";
+    private static final String VINEFLOWER_VERSION = "1.10.1";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {

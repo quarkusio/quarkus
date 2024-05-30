@@ -274,7 +274,7 @@ Uni<Void> consumeAsync(Message m) {
 }
 
 @OnTextMessage
-ReponseMessage process(Message m) {
+ResponseMessage process(Message m) {
 // Process the incoming message and send a response to the client.
 // The method is called for each incoming message.
 // Note that if the method returns `null`, no response will be sent to the client.
@@ -287,7 +287,7 @@ Uni<ResponseMessage> processAsync(Message m) {
 // Note that if the method returns `null`, no response will be sent to the client. The method completes when the returned Uni emits its item.
 }
 
-OnTextMessage
+@OnTextMessage
 Multi<ResponseMessage> stream(Message m) {
 // Process the incoming message and send multiple responses to the client.
 // The method is called for each incoming message.
@@ -642,6 +642,43 @@ quarkus.http.auth.permission.secured.policy=authenticated
 Other options for securing HTTP upgrade requests, such as using the security annotations, will be explored in the future.
 
 NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
+
+== Inspect and/or reject HTTP upgrade
+
+To inspect an HTTP upgrade, you must provide a CDI bean implementing the `io.quarkus.websockets.next.HttpUpgradeCheck` interface.
+Quarkus calls the `HttpUpgradeCheck#perform` method on every HTTP request that should be upgraded to a WebSocket connection.
+Inside this method, you can perform any business logic and/or reject the HTTP upgrade.
+
+.Example HttpUpgradeCheck
+[source, java]
+----
+package io.quarkus.websockets.next.test;
+
+import io.quarkus.websockets.next.HttpUpgradeCheck;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped <1>
+public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
+
+    @Override
+    public Uni<CheckResult> perform(HttpUpgradeContext ctx) {
+        if (rejectUpgrade(ctx)) {
+            return CheckResult.rejectUpgrade(400); <2>
+        }
+        return CheckResult.permitUpgrade();
+    }
+
+    private boolean rejectUpgrade(HttpUpgradeContext ctx) {
+        var headers = ctx.httpRequest().headers();
+        // implement your business logic in here
+    }
+}
+----
+<1> The CDI beans implementing `HttpUpgradeCheck` interface can be either `@ApplicationScoped`, `@Singleton` or `@Dependent` beans, but never the `@RequestScoped` beans.
+<2> Reject the HTTP upgrade. Initial HTTP handshake ends with the 400 Bad Request response status code.
+
+TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
 
 [[websocket-next-configuration-reference]]
 == Configuration reference

@@ -68,7 +68,12 @@ public class AuthenticationExpiredTest {
                 } else if (System.currentTimeMillis() > threeSecondsFromNow) {
                     Assertions.fail("Authentication expired, therefore connection should had been closed");
                 }
-                client.sendAndAwaitReply("Hello #" + i + " from ");
+                try {
+                    client.sendAndAwaitReply("Hello #" + i + " from ");
+                } catch (RuntimeException e) {
+                    // this sometimes fails as connection is closed when waiting for the reply
+                    break;
+                }
             }
 
             var receivedMessages = client.getMessages().stream().map(Buffer::toString).toList();
@@ -82,6 +87,8 @@ public class AuthenticationExpiredTest {
                     .atMost(Duration.ofSeconds(1))
                     .untilAsserted(() -> assertTrue(Endpoint.CLOSED_MESSAGE.get()
                             .startsWith("Connection closed with reason 'Authentication expired'")));
+
+            assertTrue(client.isClosed());
         }
     }
 

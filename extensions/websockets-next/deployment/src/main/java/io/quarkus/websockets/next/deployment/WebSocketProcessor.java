@@ -36,6 +36,7 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfig
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.Annotations;
@@ -68,6 +69,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
@@ -106,6 +108,7 @@ public class WebSocketProcessor {
     static final String SERVER_ENDPOINT_SUFFIX = "_WebSocketServerEndpoint";
     static final String CLIENT_ENDPOINT_SUFFIX = "_WebSocketClientEndpoint";
     static final String NESTED_SEPARATOR = "$_";
+    static final DotName HTTP_UPGRADE_CHECK_NAME = DotName.createSimple(HttpUpgradeCheck.class);
 
     // Parameter names consist of alphanumeric characters and underscore
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
@@ -422,6 +425,32 @@ public class WebSocketProcessor {
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName, endpoint.endpointId));
             routes.produce(builder.build());
         }
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem makeHttpUpgradeChecksUnremovable() {
+        // we access the checks programmatically
+        return UnremovableBeanBuildItem.beanTypes(HTTP_UPGRADE_CHECK_NAME);
+    }
+
+    @BuildStep
+    List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validateHttpUpgradeCheckNotRequestScoped(
+            ValidationPhaseBuildItem validationPhase) {
+        return validationPhase
+                .getContext()
+                .beans()
+                .withBeanType(HTTP_UPGRADE_CHECK_NAME)
+                .filter(b -> {
+                    var targetScope = BuiltinScope.from(b.getScope().getDotName());
+                    return BuiltinScope.APPLICATION != targetScope
+                            && BuiltinScope.SINGLETON != targetScope
+                            && BuiltinScope.DEPENDENT != targetScope;
+                })
+                .stream()
+                .map(b -> new ValidationErrorBuildItem(new RuntimeException(("Bean '%s' scope is '%s', but the '%s' "
+                        + "implementors must be one either `@ApplicationScoped', '@Singleton' or '@Dependent' beans")
+                        .formatted(b.getBeanClass(), b.getScope().getDotName(), HTTP_UPGRADE_CHECK_NAME))))
+                .toList();
     }
 
     @BuildStep

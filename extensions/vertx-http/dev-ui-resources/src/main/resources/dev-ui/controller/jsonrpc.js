@@ -249,19 +249,22 @@ export class JsonRpc {
             JsonRpc.webSocket.onmessage = function (event) {
                 var response = JSON.parse(event.data);
                 var devUiResponse = response.result;
-
+                var devUiError = response.error;
                 if (!devUiResponse && response.error) {
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);
                         var promise = saved.promise;
-                        var log = saved.log;
-
                         promise.reject_ex(response);
                         JsonRpc.promiseQueue.delete(response.id);
-                        if (log) {
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Error, MessageDirection.Down, jsonrpcpayload);
+                        JsonRpc.log(saved,response);
+                    }else if(JsonRpc.observerQueue.has(response.id)){
+                        var saved = JsonRpc.observerQueue.get(response.id);
+                        var observer = saved.observer;
+                        response.error = devUiError;
+                        if (typeof observer.onErrorCallback === "function") { 
+                            observer.onErrorCallback(response);
                         }
+                        JsonRpc.log(saved,response);
                     }
 
                     return;
@@ -279,16 +282,12 @@ export class JsonRpc {
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);
                         var promise = saved.promise;
-                        var log = saved.log;
                         var userData = devUiResponse.object;
                         response.result = userData;
 
                         promise.resolve_ex(response);
                         JsonRpc.promiseQueue.delete(response.id);
-                        if(log){
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
-                        }
+                        JsonRpc.log(saved,response);
                     } else {
                         JsonRpc.dispatchMessageLogEntry(Level.Warning, MessageDirection.Down, "Initial normal request not found [ " + devUiResponse.messageType + "], " + event.data);
                     }
@@ -296,14 +295,10 @@ export class JsonRpc {
                     if (JsonRpc.observerQueue.has(response.id)) {
                         var saved = JsonRpc.observerQueue.get(response.id);
                         var observer = saved.observer;
-                        var log = saved.log;
                         var userData = devUiResponse.object;
                         response.result = userData;
                         observer.onNextCallback(response);
-                        if(log){
-                            var jsonrpcpayload = JSON.stringify(response);
-                            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
-                        }
+                        JsonRpc.log(saved,response);
                     } else {
                         // Let's cancel as we do not have someone interested in this anymore
                         JsonRpc.cancelSubscription(response.id);
@@ -341,5 +336,13 @@ export class JsonRpc {
         logEntry.message = message;
         const event = new CustomEvent('jsonRPCLogEntryEvent', {detail: logEntry});
         document.dispatchEvent(event);
+    }
+    
+    static log(o, response){
+        var log = o.log;
+        if(log){
+            var jsonrpcpayload = JSON.stringify(response);
+            JsonRpc.dispatchMessageLogEntry(Level.Info, MessageDirection.Down, jsonrpcpayload);
+        }
     }
 }

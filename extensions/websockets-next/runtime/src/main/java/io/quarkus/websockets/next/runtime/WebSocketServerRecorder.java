@@ -1,5 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -14,6 +16,9 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.websockets.next.HttpUpgradeCheck;
+import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
+import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsServerRuntimeConfig;
 import io.smallrye.common.vertx.VertxContext;
@@ -88,8 +93,28 @@ public class WebSocketServerRecorder {
         Codecs codecs = container.instance(Codecs.class).get();
         return new Handler<RoutingContext>() {
 
+            private final HttpUpgradeCheck[] httpUpgradeChecks = getHttpUpgradeChecks(endpointId, container);
+
             @Override
             public void handle(RoutingContext ctx) {
+                if (httpUpgradeChecks != null) {
+                    checkHttpUpgrade(ctx).subscribe().with(result -> {
+                        if (!result.getResponseHeaders().isEmpty()) {
+                            result.getResponseHeaders().forEach((k, v) -> ctx.response().putHeader(k, v));
+                        }
+
+                        if (result.isUpgradePermitted()) {
+                            httpUpgrade(ctx);
+                        } else {
+                            ctx.response().setStatusCode(result.getHttpResponseCode()).end();
+                        }
+                    }, ctx::fail);
+                } else {
+                    httpUpgrade(ctx);
+                }
+            }
+
+            private void httpUpgrade(RoutingContext ctx) {
                 Future<ServerWebSocket> future = ctx.request().toWebSocket();
                 future.onSuccess(ws -> {
                     Vertx vertx = VertxCoreRecorder.getVertx().get();
@@ -106,7 +131,42 @@ public class WebSocketServerRecorder {
                             () -> connectionManager.remove(generatedEndpointClass, connection));
                 });
             }
+
+            private Uni<CheckResult> checkHttpUpgrade(RoutingContext ctx) {
+                SecurityIdentity identity = ctx.user() instanceof QuarkusHttpUser user ? user.getSecurityIdentity() : null;
+                return checkHttpUpgrade(new HttpUpgradeContext(ctx.request(), identity), httpUpgradeChecks, 0);
+            }
+
+            private static Uni<CheckResult> checkHttpUpgrade(HttpUpgradeContext ctx,
+                    HttpUpgradeCheck[] checks, int idx) {
+                return checks[idx].perform(ctx).flatMap(res -> {
+                    if (res == null) {
+                        return Uni.createFrom().failure(new IllegalStateException(
+                                "The '%s' returned null CheckResult, please make sure non-null value is returned"
+                                        .formatted(checks[idx])));
+                    }
+                    if (idx < checks.length - 1 && res.isUpgradePermitted()) {
+                        return checkHttpUpgrade(ctx, checks, idx + 1)
+                                .map(n -> n.withHeaders(res.getResponseHeaders()));
+                    }
+                    return Uni.createFrom().item(res);
+                });
+            }
         };
+    }
+
+    private static HttpUpgradeCheck[] getHttpUpgradeChecks(String endpointId, ArcContainer container) {
+        List<HttpUpgradeCheck> httpUpgradeChecks = null;
+        for (var check : container.select(HttpUpgradeCheck.class)) {
+            if (!check.appliesTo(endpointId)) {
+                continue;
+            }
+            if (httpUpgradeChecks == null) {
+                httpUpgradeChecks = new ArrayList<>();
+            }
+            httpUpgradeChecks.add(check);
+        }
+        return httpUpgradeChecks == null ? null : httpUpgradeChecks.toArray(new HttpUpgradeCheck[0]);
     }
 
     SecuritySupport initializeSecuritySupport(ArcContainer container, RoutingContext ctx, Vertx vertx,

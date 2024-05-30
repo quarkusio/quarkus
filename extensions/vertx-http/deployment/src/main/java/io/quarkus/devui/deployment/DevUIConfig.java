@@ -14,6 +14,12 @@ public class DevUIConfig {
     public int historySize;
 
     /**
+     * Show the JsonRPC Log. Useful for extension developers
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean showJsonRpcLog;
+
+    /**
      * CORS configuration.
      */
     public Cors cors = new Cors();

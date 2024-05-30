@@ -7,7 +7,6 @@ import java.io.IOException;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -21,7 +20,6 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
  * <p>
  * mvn install -Dit.test=TestTemplateDevModeIT#methodName
  */
-@Disabled("NPE in JUnit stack; See discussion in https://github.com/quarkiverse/quarkiverse/issues/94, should be re-enabled when https://github.com/quarkusio/quarkus/pull/40751 is merged")
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
 
@@ -50,8 +48,8 @@ public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, IOException {
         //we also check continuous testing
-        String executionDir = "projects/project-using-test-template-from-extension-with-bytecode-changes-processed";
-        testDir = initProject("projects/project-using-test-template-from-extension-with-bytecode-changes", executionDir);
+        String executionDir = "projects/project-using-test-template-from-extension-processed";
+        testDir = initProject("projects/project-using-test-template-from-extension", executionDir);
         runAndCheck();
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());

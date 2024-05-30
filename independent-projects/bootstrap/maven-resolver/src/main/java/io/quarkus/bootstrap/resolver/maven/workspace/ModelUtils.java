@@ -232,7 +232,9 @@ public class ModelUtils {
     }
 
     public static Model readModel(final Path pomXml) throws IOException {
-        return readModel(Files.newInputStream(pomXml));
+        Model model = readModel(Files.newInputStream(pomXml));
+        model.setPomFile(pomXml.toFile());
+        return model;
     }
 
     public static Model readModel(InputStream stream) throws IOException {

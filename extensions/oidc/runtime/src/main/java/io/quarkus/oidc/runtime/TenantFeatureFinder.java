@@ -37,7 +37,7 @@ public class TenantFeatureFinder {
                 }
             } else if (oidcConfig.tenantId.isPresent()) {
                 String tenantId = oidcConfig.tenantId.get();
-                List<TokenCustomizer> list = findTenantFeaturesByTenantId(TokenCustomizer.class, tenantId);
+                List<TokenCustomizer> list = findTenantFeaturesByTenantId(TokenCustomizer.class, tenantId, container);
                 if (!list.isEmpty()) {
                     if (list.size() >= 2) {
                         throw new OIDCException(
@@ -54,32 +54,33 @@ public class TenantFeatureFinder {
 
     public static <T> List<T> find(OidcTenantConfig oidcTenantConfig, Class<T> tenantFeatureClass) {
         if (oidcTenantConfig != null && oidcTenantConfig.tenantId.isPresent()) {
-            var tenantsValidators = new ArrayList<T>();
-            for (var instance : Arc.container().listAll(tenantFeatureClass, Default.Literal.INSTANCE)) {
-                if (instance.isAvailable()) {
-                    tenantsValidators.add(instance.get());
+            ArcContainer container = Arc.container();
+            if (container != null) {
+                var tenantsValidators = new ArrayList<T>();
+                for (var instance : container.listAll(tenantFeatureClass, Default.Literal.INSTANCE)) {
+                    if (instance.isAvailable()) {
+                        tenantsValidators.add(instance.get());
+                    }
                 }
-            }
-            tenantsValidators.addAll(findTenantFeaturesByTenantId(tenantFeatureClass, oidcTenantConfig.tenantId.get()));
-            if (!tenantsValidators.isEmpty()) {
-                return List.copyOf(tenantsValidators);
+                tenantsValidators
+                        .addAll(findTenantFeaturesByTenantId(tenantFeatureClass, oidcTenantConfig.tenantId.get(), container));
+                if (!tenantsValidators.isEmpty()) {
+                    return List.copyOf(tenantsValidators);
+                }
             }
         }
         return List.of();
     }
 
-    private static <T> List<T> findTenantFeaturesByTenantId(Class<T> tenantFeatureClass, String tenantId) {
-        ArcContainer container = Arc.container();
-        if (container != null) {
-            List<T> list = new ArrayList<>();
-            for (T tenantFeature : container.listAll(tenantFeatureClass).stream().map(InstanceHandle::get).toList()) {
-                TenantFeature annotation = ClientProxy.unwrap(tenantFeature).getClass().getAnnotation(TenantFeature.class);
-                if (annotation != null && Arrays.asList(annotation.value()).contains(tenantId)) {
-                    list.add(tenantFeature);
-                }
+    private static <T> List<T> findTenantFeaturesByTenantId(Class<T> tenantFeatureClass, String tenantId,
+            ArcContainer container) {
+        List<T> list = new ArrayList<>();
+        for (T tenantFeature : container.listAll(tenantFeatureClass).stream().map(InstanceHandle::get).toList()) {
+            TenantFeature annotation = ClientProxy.unwrap(tenantFeature).getClass().getAnnotation(TenantFeature.class);
+            if (annotation != null && Arrays.asList(annotation.value()).contains(tenantId)) {
+                list.add(tenantFeature);
             }
-            return list;
         }
-        return List.of();
+        return list;
     }
 }

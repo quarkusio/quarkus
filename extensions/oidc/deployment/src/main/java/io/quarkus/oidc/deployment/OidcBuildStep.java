@@ -10,6 +10,8 @@ import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
@@ -27,11 +29,13 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
+import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -49,6 +53,7 @@ import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.Tenant;
+import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
@@ -83,6 +88,7 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
+    private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
     private static final DotName USER_INFO_NAME = DotName.createSimple(UserInfo.class);
@@ -148,6 +154,19 @@ public class OidcBuildStep {
     @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC);
+    }
+
+    @BuildStep
+    QualifierRegistrarBuildItem addQualifiers() {
+        // this seems to be necessary; I think it's because sometimes we only access beans
+        // annotated with @TenantFeature programmatically and no injection point is annotated with it
+        // TODO: drop @TenantFeature qualifier when 'TenantFeatureFinder' stop using this annotation as a qualifier
+        return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
+            @Override
+            public Map<DotName, Set<String>> getAdditionalQualifiers() {
+                return Map.of(TENANT_FEATURE_NAME, Set.of());
+            }
+        });
     }
 
     @BuildStep

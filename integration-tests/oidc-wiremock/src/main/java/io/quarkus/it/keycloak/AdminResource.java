@@ -29,6 +29,14 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("custombearer")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String customBearerAdmin() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-required-algorithm")
     @GET
     @RolesAllowed("admin")

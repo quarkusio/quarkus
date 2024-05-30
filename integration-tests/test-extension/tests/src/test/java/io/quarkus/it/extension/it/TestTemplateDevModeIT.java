@@ -50,8 +50,8 @@ public class TestTemplateDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheTestsPassed() throws MavenInvocationException, IOException {
         //we also check continuous testing
-        String executionDir = "projects/project-using-test-template-from-extension-with-bytecode-changes-processed";
-        testDir = initProject("projects/project-using-test-template-from-extension-with-bytecode-changes", executionDir);
+        String executionDir = "projects/project-using-test-template-from-extension-processed";
+        testDir = initProject("projects/project-using-test-template-from-extension", executionDir);
         runAndCheck();
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());

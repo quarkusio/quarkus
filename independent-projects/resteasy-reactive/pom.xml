@@ -48,7 +48,7 @@
         <jandex.version>3.2.0</jandex.version>
         <bytebuddy.version>1.14.11</bytebuddy.version>
         <junit5.version>5.10.2</junit5.version>
-        <maven.version>3.9.6</maven.version>
+        <maven.version>3.9.7</maven.version>
         <assertj.version>3.26.0</assertj.version>
         <jboss-logging.version>3.6.0.Final</jboss-logging.version>
         <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
@@ -56,7 +56,7 @@
         <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <version.compiler.plugin>3.12.1</version.compiler.plugin>
+        <version.compiler.plugin>3.13.0</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <mutiny.version>2.6.0</mutiny.version>

@@ -49,15 +49,15 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
             if (pluginManager.getInstalledPlugins().containsKey(plugin.getName())) {
                 if (plugin.isInProjectCatalog()) {
                     output.warn(
-                            "The removed plugin was available both in user and project scopes. It was removed from the project but will remain available in the user scope!");
+                            "The removed plugin was available both in user and project scopes. It was removed from the project scope but will remain available in the user scope.");
                 } else {
                     output.warn(
-                            "The removed plugin was available both in user and project scopes. It was removed from the user but will remain available in the project scope!");
+                            "The removed plugin was available both in user and project scopes. It was removed from the user scope but will remain available in the project scope.");
                 }
             }
             return CommandLine.ExitCode.OK;
         }).orElseGet(() -> {
-            output.error("Plugin: " + name + " not found in catalog!");
+            output.error("Plugin: " + name + " not found in catalog.");
             return CommandLine.ExitCode.USAGE;
         });
     }

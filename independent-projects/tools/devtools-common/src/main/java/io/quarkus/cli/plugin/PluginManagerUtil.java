@@ -72,9 +72,9 @@ public class PluginManagerUtil {
                 .or(() -> path.map(Path::getFileName).map(Path::toString)
                         .map(s -> s.replaceAll("\\.jar$", "").replaceAll("\\.java$", "")))
                 .map(n -> stripCliSuffix(n))
-                .map(n -> n.replaceAll("^" + prefix + "\\-cli\\-", prefix + "")) // stip cli prefix (after the quarkus bit)
-                .map(n -> n.replaceAll("^" + prefix + "\\-", "")) // stip quarkus prefix (after the quarkus bit)
-                .map(n -> n.replaceAll("@.*$", "")) // stip the @sufix
+                .map(n -> n.replaceAll("^" + prefix + "\\-cli\\-", prefix + "")) // strip cli prefix (after the quarkus bit)
+                .map(n -> n.replaceAll("^" + prefix + "\\-", "")) // strip quarkus prefix (after the quarkus bit)
+                .map(n -> n.replaceAll("@.*$", "")) // strip the @suffix
                 .orElseThrow(() -> new IllegalStateException("Could not determinate name for location."));
     }
 

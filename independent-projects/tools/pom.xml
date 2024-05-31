@@ -38,7 +38,7 @@
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.8</proposed-maven-version>
-        <maven-wrapper.version>3.2.0</maven-wrapper.version>
+        <maven-wrapper.version>3.3.2</maven-wrapper.version>
         <gradle-wrapper.version>8.9</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->

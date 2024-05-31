@@ -446,7 +446,7 @@
         "minimum-java-version": "11",
         "recommended-java-version": "17",
         "proposed-maven-version": "3.9.8",
-        "maven-wrapper-version": "3.2.0",
+        "maven-wrapper-version": "3.3.2",
         "gradle-wrapper-version": "8.9"
       }
     },

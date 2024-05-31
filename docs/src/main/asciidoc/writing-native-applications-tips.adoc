@@ -234,6 +234,33 @@ The final order of business is to make the configuration file known to the `nati
 To do that, place the configuration file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
 This way they will be automatically parsed by the native build, without additional configuration.
 
+=== Registering for proxy
+
+Analogous to `@RegisterForReflection`, you can use `@RegisterForProxy` to register interfaces for dynamic proxy:
+
+[source,java]
+----
+@RegisterForProxy
+public interface MyInterface extends MySecondInterface {
+}
+----
+
+Note that `MyInterface` and all its super interfaces will be registered.
+
+Also, in case the interface is in a third-party jar, you can do it by using an empty class that will host the `@RegisterForProxy` for it.
+
+[source,java]
+----
+@RegisterForProxy(targets={MyInterface.class, MySecondInterface.class})
+public class MyReflectionConfiguration {
+}
+----
+
+[WARNING]
+====
+Note that the order of the specified proxy interfaces is significant. For more information, see link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Proxy.html[Proxy javadoc].
+====
+
 [[delay-class-init-in-your-app]]
 === Delaying class initialization
 

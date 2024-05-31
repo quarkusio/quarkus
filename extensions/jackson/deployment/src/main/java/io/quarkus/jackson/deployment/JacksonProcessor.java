@@ -63,6 +63,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.jackson.JacksonMixin;
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.runtime.ConfigurationCustomizer;
 import io.quarkus.jackson.runtime.JacksonBuildTimeConfig;
 import io.quarkus.jackson.runtime.JacksonSupport;
 import io.quarkus.jackson.runtime.JacksonSupportRecorder;
@@ -111,6 +112,8 @@ public class JacksonProcessor {
     @BuildStep
     void unremovable(Capabilities capabilities, BuildProducer<UnremovableBeanBuildItem> producer,
             BuildProducer<AdditionalBeanBuildItem> additionalProducer) {
+        additionalProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConfigurationCustomizer.class));
+
         if (capabilities.isPresent(Capability.VERTX_CORE)) {
             producer.produce(UnremovableBeanBuildItem.beanTypes(ObjectMapper.class));
             additionalProducer.produce(AdditionalBeanBuildItem.unremovableOf(VertxHybridPoolObjectMapperCustomizer.class));

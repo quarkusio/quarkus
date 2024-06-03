@@ -706,7 +706,7 @@ you should inspect the Quarkus build debug output and verify which resource patt
 ----
 $ ./mvnw -X verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...
-[INFO] --- quarkus:999-SNAPSHOT:native-image-agent (default) @ new-project ---
+[INFO] --- quarkus:{quarkus-version}:native-image-agent (default) @ new-project ---
 ...
 [DEBUG] Discarding resources from native image configuration that match the following regular expression: .*(application.properties|jakarta|jboss|logging.properties|microprofile|quarkus|slf4j|smallrye|vertx).*
 [DEBUG] Discarded included resource with pattern: \\QMETA-INF/microprofile-config.properties\\E

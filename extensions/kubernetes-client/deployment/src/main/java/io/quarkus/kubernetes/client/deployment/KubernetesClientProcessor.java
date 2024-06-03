@@ -35,6 +35,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.extension.ExtensionAdapter;
 import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.impl.KubernetesClientImpl;
+import io.fabric8.kubernetes.client.utils.OpenIDConnectionUtils;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -220,6 +221,11 @@ public class KubernetesClientProcessor {
                 .produce(ReflectiveClassBuildItem.builder(Config.ExecCredential.class,
                         Config.ExecCredentialSpec.class,
                         Config.ExecCredentialStatus.class).methods().fields().build());
+        // OpenID support
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(OpenIDConnectionUtils.OpenIdConfiguration.class,
+                        OpenIDConnectionUtils.OAuthToken.class)
+                        .methods().fields().build());
 
         if (log.isDebugEnabled()) {
             final String watchedClassNames = watchedClasses

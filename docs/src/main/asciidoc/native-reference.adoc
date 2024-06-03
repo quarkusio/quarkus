@@ -675,7 +675,7 @@ A message during the native build process will indicate that the native image ag
 ----
 $ ./mvnw verify -Dnative -Dquarkus.native.agent-configuration-apply
 ...
-[INFO] --- quarkus:999-SNAPSHOT:build (default) @ new-project ---
+[INFO] --- quarkus:{quarkus-version}:build (default) @ new-project ---
 [INFO] [io.quarkus.deployment.pkg.steps.JarResultBuildStep] Building native image source jar: /tmp/new-project/target/new-project-1.0.0-SNAPSHOT-native-image-source-jar/new-project-1.0.0-SNAPSHOT-runner.jar
 [INFO] [io.quarkus.deployment.steps.ApplyNativeImageAgentConfigStep] Applying native image agent generated files to current native executable build
 ----

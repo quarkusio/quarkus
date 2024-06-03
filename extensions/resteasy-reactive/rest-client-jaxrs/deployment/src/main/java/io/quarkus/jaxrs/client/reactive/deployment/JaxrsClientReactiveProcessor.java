@@ -826,6 +826,7 @@ public class JaxrsClientReactiveProcessor {
                             classContext.constructor.load(restClientInterface.getPath())));
             FieldDescriptor baseTargetField = classContext.classCreator
                     .getFieldCreator("baseTarget", WebTargetImpl.class.getName())
+                    .setModifiers(Modifier.FINAL)
                     .getFieldDescriptor();
             classContext.constructor.writeInstanceField(baseTargetField, classContext.constructor.getThis(), baseTarget);
 

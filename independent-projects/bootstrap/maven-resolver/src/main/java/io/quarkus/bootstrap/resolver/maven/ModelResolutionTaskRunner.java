@@ -58,8 +58,17 @@ class ModelResolutionTaskRunner {
                 log.error(prefix, error);
                 sb.append(System.lineSeparator()).append(prefix).append(" ").append(error.getLocalizedMessage());
                 for (var e : error.getStackTrace()) {
-                    sb.append(System.lineSeparator()).append(e);
+                    sb.append(System.lineSeparator());
+                    for (int j = 0; j < prefix.length(); ++j) {
+                        sb.append(" ");
+                    }
+                    sb.append("at ").append(e);
                     if (e.getClassName().contains("io.quarkus")) {
+                        sb.append(System.lineSeparator());
+                        for (int j = 0; j < prefix.length(); ++j) {
+                            sb.append(" ");
+                        }
+                        sb.append("...");
                         break;
                     }
                 }

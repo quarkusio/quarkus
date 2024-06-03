@@ -159,6 +159,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             };
         }
 
+        final ConcurrentLinkedDeque<Exception> errors = new ConcurrentLinkedDeque<>();
         while (!moduleQueue.isEmpty()) {
             ConcurrentLinkedDeque<RawModule> newModules = new ConcurrentLinkedDeque<>();
             while (!moduleQueue.isEmpty()) {
@@ -169,12 +170,15 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                     CompletableFuture.runAsync(() -> {
                         try {
                             loadModule(module, newModules);
+                        } catch (Exception e) {
+                            errors.add(e);
                         } finally {
                             phaser.arriveAndDeregister();
                         }
                     });
                 }
                 phaser.arriveAndAwaitAdvance();
+                assertNoErrors(errors);
             }
             for (var newModule : newModules) {
                 newModule.process(processor);
@@ -278,6 +282,35 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     public List<String> findVersions(Artifact artifact) {
         var model = loadedModules.get(new GAV(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
         return model == null ? List.of() : List.of(ModelUtils.getVersion(model));
+    }
+
+    private void assertNoErrors(Collection<Exception> errors) throws BootstrapMavenException {
+        if (!errors.isEmpty()) {
+            var sb = new StringBuilder("The following errors were encountered while loading the workspace:");
+            log.error(sb);
+            var i = 1;
+            for (var error : errors) {
+                var prefix = i++ + ")";
+                log.error(prefix, error);
+                sb.append(System.lineSeparator()).append(prefix).append(" ").append(error.getLocalizedMessage());
+                for (var e : error.getStackTrace()) {
+                    sb.append(System.lineSeparator());
+                    for (int j = 0; j < prefix.length(); ++j) {
+                        sb.append(" ");
+                    }
+                    sb.append("at ").append(e);
+                    if (e.getClassName().contains("io.quarkus")) {
+                        sb.append(System.lineSeparator());
+                        for (int j = 0; j < prefix.length(); ++j) {
+                            sb.append(" ");
+                        }
+                        sb.append("...");
+                        break;
+                    }
+                }
+            }
+            throw new BootstrapMavenException(sb.toString());
+        }
     }
 
     private static Model readModel(Path pom) {

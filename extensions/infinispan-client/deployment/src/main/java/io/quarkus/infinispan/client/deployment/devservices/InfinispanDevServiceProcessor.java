@@ -189,7 +189,6 @@ public class InfinispanDevServiceProcessor {
         }
 
         String configPrefix = getConfigPrefix(clientName);
-        log.info("Config prefix " + configPrefix);
 
         boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "hosts")
                 && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");

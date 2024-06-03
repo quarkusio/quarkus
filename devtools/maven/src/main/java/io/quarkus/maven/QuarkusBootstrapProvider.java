@@ -216,7 +216,10 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setIncubatingModelResolver(
-                            IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties()))
+                            IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties())
+                                    || mode == LaunchMode.DEVELOPMENT
+                                            && !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(
+                                                    mojo.mavenProject().getProperties(), "false"))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
                     .setCollectReloadableDependencies(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST);

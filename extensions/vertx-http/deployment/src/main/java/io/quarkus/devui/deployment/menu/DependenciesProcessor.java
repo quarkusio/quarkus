@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -83,8 +82,9 @@ public class DependenciesProcessor {
     }
 
     private boolean isEnabled() {
-        Config c = ConfigProvider.getConfig();
-        return c.getValue("quarkus.bootstrap.incubating-model-resolver", Boolean.class);
+        var value = ConfigProvider.getConfig().getConfigValue("quarkus.bootstrap.incubating-model-resolver");
+        // if it's not false and if it's false it doesn't come from the default value
+        return value == null || !"false".equals(value.getValue()) || "default values".equals(value.getSourceName());
     }
 
     private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs, Optional<String> toTarget) {

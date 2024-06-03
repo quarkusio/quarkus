@@ -160,9 +160,8 @@ public class InfinispanDevServiceProcessor {
             Map<String, RunningDevService> newDevServices,
             Map<String, String> properties) {
         try {
-            log.infof("Starting Dev Service for connection %s", clientName);
+
             InfinispanDevServicesConfig namedDevServiceConfig = config.devService.devservices;
-            log.infof("Apply Dev Services config %s", namedDevServiceConfig);
             RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
                     launchMode.getLaunchMode(),
                     !devServicesSharedNetworkBuildItem.isEmpty(), globalDevServicesConfig.timeout, properties);
@@ -190,7 +189,6 @@ public class InfinispanDevServiceProcessor {
         }
 
         String configPrefix = getConfigPrefix(clientName);
-        log.info("Config prefix " + configPrefix);
 
         boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "hosts")
                 && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
@@ -205,6 +203,8 @@ public class InfinispanDevServiceProcessor {
                     "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working docker instance");
             return null;
         }
+        log.infof("Starting Dev Service for connection %s", clientName);
+        log.infof("Apply Dev Services config %s", devServicesConfig);
 
         Supplier<RunningDevService> infinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(clientName, devServicesConfig,

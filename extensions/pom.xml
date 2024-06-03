@@ -53,6 +53,7 @@
         <module>opentelemetry</module>
         <module>info</module>
         <module>observability-devservices</module>
+        <module>jfr</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>

@@ -3,36 +3,36 @@ package io.quarkus.amazon.lambda.deployment.testing;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.amazon.lambda.deployment.testing.model.InputPerson;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class PersonListLambdaTest {
+class GreetingLambdaTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
-            .addClasses(PersonListLambda.class, Person.class));
+            .addClasses(GreetingLambda.class, InputPerson.class));
 
     @Test
-    void testFruitsLambda() throws Exception {
+    public void requestHandler_InputPerson_OutputString() throws Exception {
+        // you test your lambdas by invoking on http://localhost:8081
+        // this works in dev mode too
 
-        List<Person> personList = new ArrayList<>();
-        personList.add(new Person("Chris"));
-        personList.add(new Person("Fred"));
-
+        InputPerson in = new InputPerson("Stu");
         given()
-                .body(personList)
+                .contentType("application/json")
+                .accept("application/json")
+                .body(in)
                 .when()
                 .post()
                 .then()
                 .statusCode(200)
-                .body(containsString("Chris Fred"));
+                .body(containsString("Hey Stu"));
     }
+
 }

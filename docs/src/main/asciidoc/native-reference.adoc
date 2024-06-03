@@ -611,7 +611,7 @@ $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-wit
 2024-05-14 16:29:53,941 INFO  [io.qua.tes.com.DefaultDockerContainerLauncher] (main) Executing "podman run --name quarkus-integration-test-PodgW -i --rm --user 501:20 -p 8081:8081 -p 8444:8444 --entrypoint java -v /tmp/new-project/target:/project --env QUARKUS_LOG_CATEGORY__IO_QUARKUS__LEVEL=INFO --env QUARKUS_HTTP_PORT=8081 --env QUARKUS_HTTP_SSL_PORT=8444 --env TEST_URL=http://localhost:8081 --env QUARKUS_PROFILE=test-with-native-agent --env QUARKUS_TEST_INTEGRATION_TEST_PROFILE=test-with-native-agent quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 -agentlib:native-image-agent=access-filter-file=quarkus-access-filter.json,caller-filter-file=quarkus-caller-filter.json,config-output-dir=native-image-agent-base-config, -jar quarkus-app/quarkus-run.jar"
 ...
 [INFO]
-[INFO] --- quarkus:999-SNAPSHOT:native-image-agent (default) @ new-project ---
+[INFO] --- quarkus:{quarkus-version}:native-image-agent (default) @ new-project ---
 [INFO] Discovered native image agent generated files in /tmp/new-project/target/native-image-agent-final-config
 [INFO]
 ...

@@ -23,7 +23,7 @@ import io.quarkus.test.common.TestConfigUtil;
 public class JarLauncherProvider implements ArtifactLauncherProvider {
 
     @Override
-    public boolean supportsArtifactType(String type) {
+    public boolean supportsArtifactType(String type, String testProfile) {
         return isJar(type);
     }
 

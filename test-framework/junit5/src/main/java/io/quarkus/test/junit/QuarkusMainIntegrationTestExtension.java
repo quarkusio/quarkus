@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -27,6 +28,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
@@ -154,10 +157,13 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
 
                 testResourceManager.inject(context.getRequiredTestInstance());
 
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                String testProfile = TestConfigUtil.integrationTestProfile(config);
+
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType)) {
+                    if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
                                         devServicesLaunchResult));

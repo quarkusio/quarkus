@@ -275,13 +275,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 Config config = LauncherUtil.installAndGetSomeConfig();
                 Duration waitDuration = TestConfigUtil.waitTimeValue(config);
                 String target = TestConfigUtil.runTarget(config);
+                String testProfile = TestConfigUtil.integrationTestProfile(config);
                 // try to execute a run command published by an extension if it exists.  We do this so that extensions that have a custom run don't have to create any special artifact type
                 launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
                         target, waitDuration);
                 if (launcher == null) {
                     ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                     for (ArtifactLauncherProvider launcherProvider : loader) {
-                        if (launcherProvider.supportsArtifactType(artifactType)) {
+                        if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
                             launcher = launcherProvider.create(
                                     new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,
                                             requiredTestClass,

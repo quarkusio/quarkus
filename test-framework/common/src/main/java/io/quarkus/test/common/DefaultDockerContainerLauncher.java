@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +25,9 @@ import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -50,6 +53,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private final String containerName = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private Optional<String> entryPoint;
+    private List<String> programArgs;
 
     @Override
     public void init(DockerContainerArtifactLauncher.DockerInitContext initContext) {
@@ -65,6 +70,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.additionalExposedPorts = initContext.additionalExposedPorts();
         this.volumeMounts = initContext.volumeMounts();
         this.labels = initContext.labels();
+        this.entryPoint = initContext.entryPoint();
+        this.programArgs = initContext.programArgs();
     }
 
     @Override
@@ -75,7 +82,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     @Override
     public void start() throws IOException {
 
-        containerRuntimeBinaryName = determineBinary();
+        final ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+        containerRuntimeBinaryName = containerRuntime.getExecutableName();
 
         if (pullRequired) {
             log.infof("Pulling container image '%s'", containerImage);
@@ -109,17 +117,23 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerName);
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
+
+        args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+
         args.add("-p");
         args.add(httpPort + ":" + httpPort);
         args.add("-p");
         args.add(httpsPort + ":" + httpsPort);
+        if (entryPoint.isPresent()) {
+            args.add("--entrypoint");
+            args.add(entryPoint.get());
+        }
         for (Map.Entry<Integer, Integer> entry : additionalExposedPorts.entrySet()) {
             args.add("-p");
             args.add(entry.getKey() + ":" + entry.getValue());
         }
         for (Map.Entry<String, String> entry : volumeMounts.entrySet()) {
-            args.add("-v");
-            args.add(entry.getKey() + ":" + entry.getValue());
+            NativeImageBuildLocalContainerRunner.addVolumeParameter(entry.getKey(), entry.getValue(), args, containerRuntime);
         }
         // if the dev services resulted in creating a dedicated network, then use it
         if (devServicesLaunchResult.networkId() != null) {
@@ -151,6 +165,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add(e.getKey() + "=" + e.getValue());
         }
         args.add(containerImage);
+        args.addAll(programArgs);
 
         final Path logFile = PropertyTestUtil.getLogFilePath();
         try {
@@ -176,14 +191,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                     waitTimeSeconds, logFile);
             isSsl = result.isSsl();
         } else {
+            log.info("Wait for server to start by capturing listening data...");
             final ListeningAddress result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
+            log.infof("Server started on port %s", result.getPort());
             updateConfigForPort(result.getPort());
             isSsl = result.isSsl();
         }
-    }
-
-    private String determineBinary() {
-        return ContainerRuntimeUtil.detectContainerRuntime().getExecutableName();
     }
 
     private int getRandomPort() throws IOException {
@@ -217,14 +230,17 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
     @Override
     public void close() {
+        log.info("Close the container");
         try {
             final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
                     .redirectError(DISCARD)
                     .redirectOutput(DISCARD).start();
+            log.debug("Wait for container to stop");
             dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {
             log.errorf("Unable to stop container '%s'", containerName);
         }
+        log.debug("Container stopped");
         executorService.shutdown();
     }
 }

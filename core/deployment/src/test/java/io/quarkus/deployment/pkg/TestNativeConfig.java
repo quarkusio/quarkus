@@ -230,6 +230,11 @@ public class TestNativeConfig implements NativeConfig {
         return null;
     }
 
+    @Override
+    public boolean agentConfigurationApply() {
+        return false;
+    }
+
     private class TestBuildImageConfig implements BuilderImageConfig {
         private final String image;
         private final ImagePullStrategy pull;

@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -15,12 +16,14 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -87,6 +90,38 @@ public class OidcClientTest {
                         return System.currentTimeMillis() > expiredTokenTime;
                     }
                 });
+    }
+
+    /**
+     * same logic than {@link #testEchoAndRefreshTokens()}, but with concurrency
+     */
+    @Test
+    public void testEchoAndRefreshTokensWithConcurrency() {
+        server.resetRequests(); // reset request counters
+
+        // Given: the first call trigger the token retrieval
+        // When: 2 concurrent requests trigger token retrieval
+        IntStream.range(0, 2).parallel().forEach(i -> {
+            RestAssured.when().get("/frontend/crashTest")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("access_token_1"));
+        });
+        // Then: only one token retrieval should be made
+        server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
+
+        server.resetRequests(); // reset request counters
+
+        // Given : after 1s, the token expires
+        // When : 2 concurrents requests until the refresh was made (access_token_2 comes from the refresh)
+        await().atMost(2000, TimeUnit.MILLISECONDS).untilAsserted(() -> IntStream.range(0, 2).parallel().forEach(i -> {
+            RestAssured.when().get("/frontend/crashTest")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo("access_token_2"));
+        }));
+        // Then: only one token retrieval should be made
+        server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
     }
 
     @Test

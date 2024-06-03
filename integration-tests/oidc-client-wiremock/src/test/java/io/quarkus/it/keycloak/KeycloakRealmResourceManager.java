@@ -128,6 +128,24 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withBody(
                                 "{\"access_token\":\"device_code_access_token\", \"expires_in\":4}")));
 
+        // delay to expand the gap for concurrency tests
+        server.stubFor(WireMock.post("/tokens-with-delay")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_1\", \"expires_in\":1, \"refresh_token\":\"refresh_token_1\"}")
+                        .withFixedDelay(50)));
+        server.stubFor(WireMock.post("/tokens-with-delay")
+                .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":1, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")
+                        .withFixedDelay(50)));
+
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 
         Map<String, String> conf = new HashMap<>();

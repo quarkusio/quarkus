@@ -664,7 +664,7 @@ The typical workflow here would be to first run the integration tests with the n
 ----
 $ ./mvnw verify -DskipITs=false -Dquarkus.test.integration-test-profile=test-with-native-agent
 ...
-[INFO] --- quarkus:999-SNAPSHOT:native-image-agent (default) @ new-project ---
+[INFO] --- quarkus:{quarkus-version}:native-image-agent (default) @ new-project ---
 [INFO] Discovered native image agent generated files in /tmp/new-project/target/native-image-agent-final-config
 ----
 

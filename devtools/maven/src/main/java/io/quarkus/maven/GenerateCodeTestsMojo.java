@@ -27,10 +27,19 @@ public class GenerateCodeTestsMojo extends GenerateCodeMojo {
         generateCode(getParentDirs(mavenProject().getTestCompileSourceRoots()),
                 path -> mavenProject().addTestCompileSourceRoot(path.toString()), true);
 
-        final String testProfile = System.getProperty("quarkus.test.integration-test-profile");
-        if ("test-with-native-agent".equals(testProfile)) {
+        if (isTestWithNativeAgent()) {
             generateNativeAgentFilters();
         }
+    }
+
+    private boolean isTestWithNativeAgent() {
+        String value = System.getProperty("quarkus.test.integration-test-profile");
+        if ("test-with-native-agent".equals(value)) {
+            return true;
+        }
+
+        final Object obj = mavenProject().getProperties().get("quarkus.test.integration-test-profile");
+        return obj != null && "test-with-native-agent".equals(obj.toString());
     }
 
     private void generateNativeAgentFilters() throws MojoExecutionException {

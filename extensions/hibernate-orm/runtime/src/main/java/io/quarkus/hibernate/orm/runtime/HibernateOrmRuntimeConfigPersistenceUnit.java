@@ -182,6 +182,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         boolean formatSql();
 
         /**
+         * Highlight the SQL logs if SQL log is enabled
+         */
+        @WithDefault("true")
+        boolean highlightSql();
+
+        /**
          * Whether JDBC warnings should be collected and logged.
          */
         @ConfigDocDefault("depends on dialect")

@@ -360,7 +360,6 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
         }
     }
 
-    @MappedSuperclass
     public interface Identifiable {
         Object getId();
     }

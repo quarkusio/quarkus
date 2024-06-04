@@ -69,6 +69,7 @@ public final class ClassNames {
     public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
 
     public static final List<DotName> GENERATORS = List.of(
+            createConstant("org.hibernate.generator.Assigned"),
             createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
@@ -87,8 +88,6 @@ public final class ClassNames {
             createConstant("org.hibernate.id.enhanced.SequenceStyleGenerator"),
             createConstant("org.hibernate.id.enhanced.TableGenerator"),
             createConstant("org.hibernate.id.uuid.UuidGenerator"),
-            createConstant("org.hibernate.tuple.CreationTimestampGeneration"),
-            createConstant("org.hibernate.tuple.UpdateTimestampGeneration"),
             createConstant("org.hibernate.tuple.VmValueGeneration"));
 
     public static final List<DotName> PACKAGE_ANNOTATIONS = List.of(
@@ -118,7 +117,11 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.NamedNativeQuery"),
             createConstant("org.hibernate.annotations.NamedQueries"),
             createConstant("org.hibernate.annotations.NamedQuery"),
+            createConstant("jakarta.persistence.SequenceGenerator"),
+            createConstant("jakarta.persistence.SequenceGenerators"),
             createConstant("org.hibernate.annotations.SoftDelete"),
+            createConstant("jakarta.persistence.TableGenerator"),
+            createConstant("jakarta.persistence.TableGenerators"),
             createConstant("org.hibernate.annotations.TypeRegistration"),
             createConstant("org.hibernate.annotations.TypeRegistrations"));
 
@@ -130,6 +133,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.AttributeOverrides"),
             createConstant("jakarta.persistence.Basic"),
             createConstant("jakarta.persistence.Cacheable"),
+            createConstant("jakarta.persistence.CheckConstraint"),
             createConstant("jakarta.persistence.CollectionTable"),
             createConstant("jakarta.persistence.Column"),
             createConstant("jakarta.persistence.ColumnResult"),
@@ -143,6 +147,7 @@ public final class ClassNames {
             createConstant("jakarta.persistence.Embeddable"),
             createConstant("jakarta.persistence.Embedded"),
             createConstant("jakarta.persistence.EmbeddedId"),
+            createConstant("jakarta.persistence.EnumeratedValue"),
             createConstant("jakarta.persistence.Entity"),
             createConstant("jakarta.persistence.EntityListeners"),
             createConstant("jakarta.persistence.EntityResult"),
@@ -255,6 +260,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.ConcreteProxy"),
             createConstant("org.hibernate.annotations.ConverterRegistration"),
             createConstant("org.hibernate.annotations.ConverterRegistrations"),
+            createConstant("org.hibernate.boot.models.Copied"),
             createConstant("org.hibernate.annotations.CreationTimestamp"),
             createConstant("org.hibernate.annotations.CurrentTimestamp"),
             createConstant("org.hibernate.annotations.DialectOverride$Check"),
@@ -368,8 +374,8 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.Parameter"),
             createConstant("org.hibernate.annotations.Parent"),
             createConstant("org.hibernate.annotations.PartitionKey"),
-            createConstant("org.hibernate.annotations.Persister"),
             createConstant("org.hibernate.annotations.Polymorphism"),
+            createConstant("org.hibernate.annotations.PropertyRef"),
             createConstant("org.hibernate.annotations.Proxy"),
             createConstant("org.hibernate.annotations.QueryCacheLayout"),
             createConstant("org.hibernate.annotations.RowId"),

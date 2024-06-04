@@ -11,7 +11,11 @@ import java.util.Optional;
 
 import io.quarkus.vertx.http.runtime.CertificateConfig;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.*;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.KeyStoreOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.net.TrustOptions;
 
 /**
  * Utility class for TLS configuration.

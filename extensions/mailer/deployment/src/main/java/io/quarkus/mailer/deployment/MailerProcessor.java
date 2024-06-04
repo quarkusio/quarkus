@@ -50,6 +50,7 @@ import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
+import io.quarkus.tls.TlsRegistryBuildItem;
 import io.vertx.ext.mail.MailClient;
 
 public class MailerProcessor {
@@ -128,7 +129,9 @@ public class MailerProcessor {
     void generateMailerBeans(MailerRecorder recorder,
             MailersBuildItem mailers,
             MailersRuntimeConfig mailersRuntimeConfig,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            // Just to make sure it is initialized
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         if (mailers.hasDefaultMailer()) {
             generateMailerBeansForName(Mailers.DEFAULT_MAILER_NAME, recorder, mailersRuntimeConfig, syntheticBeans);
         }

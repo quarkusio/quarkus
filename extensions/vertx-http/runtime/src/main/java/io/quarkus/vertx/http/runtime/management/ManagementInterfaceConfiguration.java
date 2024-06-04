@@ -42,9 +42,9 @@ public class ManagementInterfaceConfiguration {
 
     /**
      * The HTTP host
-     *
+     * <p>
      * Defaults to 0.0.0.0
-     *
+     * <p>
      * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it
      * is not suitable for dev/test mode as other people on the network can connect to your
      * development machine.
@@ -62,6 +62,18 @@ public class ManagementInterfaceConfiguration {
      * The SSL config
      */
     public ServerSslConfig ssl;
+
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.management.ssl` will be used.
+     */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName;
 
     /**
      * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`

@@ -129,7 +129,42 @@ In both cases, a password must be provided. See the designated paragraph for a d
 To enable TLS/SSL support with native executables, please refer to our xref:native-and-ssl.adoc[Using SSL With Native Executables guide].
 ====
 
-=== Providing a certificate and key file
+=== Using the TLS centralized configuration
+
+Quarkus provides a xref:./tls-registry-reference.adoc[TLS centralized configuration] that can be used to configure the server's TLS context.
+It is the recommended approach to configure HTTPS.
+
+To configure the HTTP server to use HTTPS, you can use the following configuration:
+
+[source,properties]
+----
+quarkus.tls.key-store.pem.0.cert=server.crt
+quarkus.tls.key-store.pem.0.key=server.key
+quarkus.http.insecure-requests=disabled # Reject HTTP requests
+----
+
+So you a `p12` (PKCS12) key store, use the following configuration:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+quarkus.http.insecure-requests=disabled # Reject HTTP requests
+----
+
+Instead of the default configuration, you can use a named configuration:
+
+[source,properties]
+----
+quarkus.tls.https.key-store.p12.path=server-keystore.p12
+quarkus.tls.https.key-store.p12.password=secret
+quarkus.http.insecure-requests=disabled
+quarkus.http.tls-configuration-name=https
+----
+
+=== Configuring the HTTP server directly
+
+If you do not want to use the TLS registry, you can configure the HTTP server directly.
 
 If the certificate has not been loaded into a keystore, it can be provided directly using the properties listed below.
 Quarkus will first try to load the given files as resources, and uses the filesystem as a fallback.
@@ -142,8 +177,6 @@ Your `application.properties` would then look like this:
 quarkus.http.ssl.certificate.files=/path/to/certificate
 quarkus.http.ssl.certificate.key-files=/path/to/key
 ----
-
-=== Providing a keystore
 
 An alternate solution is to directly provide a keystore which already contains a default entry with a certificate.
  You will need to at least provide the file and a password.
@@ -164,8 +197,6 @@ If the type is not provided, Quarkus will try to deduce it from the file extensi
 ----
 quarkus.http.ssl.certificate.key-store-file-type=[one of JKS, JCEKS, P12, PKCS12, PFX]
 ----
-
-=== Setting the password
 
 In both aforementioned scenarios, a password needs to be provided to create/load the keystore with.
 The password can be set in your `application.properties` (in plain-text) using the following property:

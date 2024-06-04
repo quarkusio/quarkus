@@ -1,0 +1,521 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= TLS registry reference
+include::_attributes.adoc[]
+:categories: network
+:summary: TLS registry configuration and usage
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: TLS, http, SSL, HTTPS, security, network
+:extensions: io.quarkus:quarkus-tls-registry
+
+The TLS registry is a Quarkus extension centralizing the TLS configuration for the application.
+It allows to define the TLS configuration in a single place and to reference it from multiple places in the application.
+
+The TLS extension should be automatically added to your project as soon as you use a compatible extension.
+For example, if your application uses Quarkus REST, gRPC or reactive routes, the TLS registry is automatically added to your project.
+
+== Examples
+
+To configure a TLS connection, and more specifically the key stores and trust stores, you use the `quarkus.tls.*` properties.
+
+Configuration directly under `quarkus.tls` is the default configuration that will be used by all the TLS connections in the application.
+However, you can also have specific configurations for specific connections by using the `quarkus.tls.<name>.*` properties.
+
+=== Configure the HTTP server to use https://
+
+To configure the HTTP server to use HTTPS, you can use the following configuration:
+
+[source,properties]
+----
+quarkus.tls.key-store.pem.0.cert=server.crt
+quarkus.tls.key-store.pem.0.key=server.key
+quarkus.http.insecure-requests=disabled # Reject HTTP requests
+----
+
+So you a `p12` (PKCS12) key store, use the following configuration:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+quarkus.http.insecure-requests=disabled # Reject HTTP requests
+----
+
+Instead of the default configuration, you can use a named configuration:
+
+[source,properties]
+----
+quarkus.tls.https.key-store.p12.path=server-keystore.p12
+quarkus.tls.https.key-store.p12.password=secret
+quarkus.http.insecure-requests=disabled
+quarkus.http.tls-configuration-name=https
+----
+
+=== Configure a client to use https://
+
+As an example to illustrate client configuration, we will use a gRPC client:
+
+[source,properties]
+----
+quarkus.tls.trust-store.jks.path=grpc-client-truststore.jks
+quarkus.tls.trust-store.jks.password=password
+
+quarkus.grpc.clients.hello.plain-text=false
+quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
+----
+
+=== Configuring mTLS
+
+To configure mTLS, you need to configure both the server and the client.
+Both will receive a key store and a trust store:
+
+- the server key store contains the server certificate and private key
+- the client key store contains the client certificate and private key
+- the server trust store contains the client certificate (to authenticate the client)
+- the client trust store contains the server certificate (to authenticate the server)
+
+[source,properties]
+----
+quarkus.tls.my-server.key-store.p12.path=target/certs/grpc-keystore.p12
+quarkus.tls.my-server.key-store.p12.password=password
+quarkus.tls.my-server.trust-store.p12.path=target/certs/grpc-server-truststore.p12
+quarkus.tls.my-server.trust-store.p12.password=password
+
+quarkus.tls.my-client.trust-store.p12.path=target/certs/grpc-client-truststore.p12
+quarkus.tls.my-client.trust-store.p12.password=password
+quarkus.tls.my-client.key-store.p12.path=target/certs/grpc-client-keystore.p12
+quarkus.tls.my-client.key-store.p12.password=password
+
+quarkus.grpc.clients.hello.plain-text=false
+quarkus.grpc.clients.hello.tls-configuration-name=my-client
+quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
+
+quarkus.http.ssl.client-auth=REQUIRED # Enable mTLS
+quarkus.http.insecure-requests=disabled
+quarkus.http.tls-configuration-name=my-server
+quarkus.grpc.server.use-separate-server=false
+quarkus.grpc.server.plain-text=false
+----
+
+== Referencing a TLS configuration
+
+Once you have configured a _named_ configuration using `quarkus.tls.<name>`, you need to reference it.
+This is done using the `tls-configuration-name` property:
+
+[source,properties]
+----
+quarkus.tls.https.key-store.p12.path=server-keystore.p12
+quarkus.tls.https.key-store.p12.password=secret
+
+quarkus.http.insecure-requests=disabled
+quarkus.http.tls-configuration-name=https # Reference the named configuration
+----
+
+== Configuring TLS
+
+Configuring TLS is mainly about key stores and trust stores.
+The configuration depends on the format (`pem`, `p12`, `jks`...).
+There are other important properties too.
+This section details the various properties you can use to configure TLS.
+
+=== Key stores
+
+Key stores are used to store the private key and the certificate.
+They are mainly used on the server-side, but can also be used on the client-side when mTLS is used.
+
+==== PEM key stores
+
+PEM key stores are composed of a list of pair of two files: the certificate and the private key.
+The certificate file is a `.crt` or `.pem` file, and the private key file is often a `.key` file.
+
+To configure a PEM key store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.key-store.pem.a.cert=server.crt
+quarkus.tls.key-store.pem.a.key=server.key
+quarkus.tls.key-store.pem.b.cert=my-second-cert.crt
+quarkus.tls.key-store.pem.b.key=my-second-key.key
+----
+
+In general, you will only need one pair of certificate and private key.
+The certificate may contain multiple certificates (a chain), but there should be one private key.
+
+When multiple pairs are configured, the selection is done using SNI (Server Name Indication).
+The client will send the server name it wants to connect to, and the server will select the appropriate pair of certificate and private key.
+Make sure xref:./tls-registry-reference.adoc#sni[SNI] is enabled on both the client and server to use this feature.
+
+IMPORTANT: When configuring multiple key/cert pairs, the order is following the lexicographical order of the name (`a` and `b` in the previous snippet). So, the first pair is the one with the lowest lexicographical order. You can define the order by using the `quarkus.tls.key-store.pem.order` property, for example: `quarkus.tls.key-store.pem.order=b,c,a`. This is important when using SNI, as the first pair is the default one.
+
+==== PKCS12 key stores
+
+PKCS12 key stores are a single file containing the certificate and the private key.
+To configure a PKCS12 key store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+----
+
+`.p12` files are password-protected, so you need to provide the password to open the key store.
+Also, they can include more than one certificate and private key.
+In this case, you can:
+
+- either provide the alias of the certificate and private key you want to use
+- or use SNI to select the appropriate certificate and private key (all keys must use the same password)
+
+To configure the alias, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+quarkus.tls.key-store.p12.alias=my-alias
+quarkus.tls.key-store.p12.alias-password=my-alias-password
+----
+
+==== JKS key stores
+
+JKS key stores are a single file containing the certificate and the private key.
+Note that the JKS format should be avoided as it is less secure than PKCS12.
+To configure a JKS key store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.key-store.jks.path=server-keystore.jks
+quarkus.tls.key-store.jks.password=secret
+----
+
+`.jks` files are password-protected, so you need to provide the password to open the key store.
+Also, they can include more than one certificate and private key.
+In this case, you can:
+
+- either provide the alias of the certificate and private key you want to use
+- or use SNI to select the appropriate certificate and private key (all keys must use the same password)
+
+To configure the alias, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.key-store.jks.path=server-keystore.jks
+quarkus.tls.key-store.jks.password=secret
+quarkus.tls.key-store.jks.alias=my-alias
+quarkus.tls.key-store.jks.alias-password=my-alias-password
+----
+
+[#sni]
+==== SNI
+
+Server Name Indication (SNI) is a TLS extension that allows a client to specify the hostname it is attempting to connect to during the TLS handshake.
+It enables a server to present different TLS certificates for multiple domains on a single IP address, facilitating secure communication for virtual hosting scenarios.
+
+To enable SNI, use the following property:
+
+[source,properties]
+----
+quarkus.tls.key-store.sni=true # Disabled by default
+----
+
+With this setting enabled, the client indicate the server name during the TLS handshake, allowing the server to select the right certificate:
+
+- When configuring the keystore with PEM files, multiple CRT/Key must be given.
+- When configuring the keystore with a JKS or a P12 file, it selects one alias based on the SNI hostname. In this case, all the keystore password and alias password must be the same. Do not set the `alias` property in this case.
+
+==== Credential providers
+
+Instead of passing the key store password and alias password in the configuration, you can use a credential provider.
+
+A credential provider offers a way to retrieve the key store password and alias password.
+Note that the credential provider is only used if the password / alias password are not set in the configuration.
+
+To configure a credential provider, use the following properties:
+
+[source, properties]
+----
+# The name of the credential bucket in the credentials provider
+quarkus.tls.key-store.credentials-provider.name=my-credentials
+
+# The name of the bean providing the credential provider (optional, using the default credential provider if not set)
+quarkus.tls.key-store.credentials-provider.bean-name=my-credentials-provider
+
+# The key used to retrieve the key store password, `password` by default
+quarkus.tls.key-store.credentials-provider.password-key=password
+
+# The key used to retrieve the alias password, `alias-password` by default
+quarkus.tls.key-store.credentials-provider.alias-password-key=alias-password
+----
+
+IMPORTANT: The credential provider can only be used with PKCS12 and JKS key stores.
+
+=== Trust stores
+
+Trust stores are used to store the certificates of the trusted parties.
+They are generally used on the client-side, and on the server-side when mTLS is used.
+
+==== PEM trust stores
+
+PEM trust stores are composed of a list of `.crt` or `.pem` files.
+Each of them contains a certificate.
+
+To configure a PEM trust store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.trust-store.pem.certs=ca.crt,ca2.pem
+----
+
+==== PKCS12 trust stores
+
+PKCS12 trust stores are a single file containing the certificates.
+When multiple certificates are included, you can use the alias to select the appropriate certificate.
+
+To configure a PKCS12 trust store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.trust-store.p12.path=client-truststore.p12
+quarkus.tls.trust-store.p12.password=password
+quarkus.tls.trust-store.p12.alias=my-alias
+----
+
+`.p12` files are password-protected, so you need to provide the password to open the trust store.
+However, unlike for key stores, the alias does not require a password (because it's the public certificate and not a private key).
+
+==== JKS trust stores
+
+JKS trust stores are a single file containing the certificates.
+When multiple certificates are included, you can use the alias to select the appropriate certificate.
+Note that the JKS format should be avoided as it is less secure than PKCS12.
+
+To configure a JKS trust store, use the following properties:
+
+[source,properties]
+----
+quarkus.tls.trust-store.jks.path=client-truststore.jks
+quarkus.tls.trust-store.jks.password=password
+quarkus.tls.trust-store.jks.alias=my-alias
+----
+
+`.jks` files are password-protected, so you need to provide the password to open the trust store.
+However, unlike for key stores, the alias does not require a password (because it's the public certificate and not a private key).
+
+==== Credential providers
+
+Instead of passing the trust store password in the configuration, you can use a credential provider.
+
+A credential provider offers a way to retrieve passwords and other credentials.
+Note that the credential provider is only used if the password is not set in the configuration.
+
+To configure a credential provider, use the following properties:
+
+[source, properties]
+----
+# The name of the credential bucket in the credentials provider
+quarkus.tls.trust-store.credentials-provider.name=my-credentials
+
+# The name of the bean providing the credential provider (optional, using the default credential provider if not set)
+quarkus.tls.trust-store.credentials-provider.bean-name=my-credentials-provider
+
+# The key used to retrieve the trust store password, `password` by default
+quarkus.tls.trust-store.credentials-provider.password-key=password
+----
+
+IMPORTANT: The credential provider can only be used with PKCS12 and JKS trust stores.
+
+=== Other properties
+
+While key stores and trust stores are the most important properties, there are other properties you can use to configure TLS.
+
+NOTE: while the following examples use the _default_ configuration, you can use the _named_ configuration by prefixing the properties with the name of the configuration.
+
+==== Cipher suites
+
+The cipher suites are the list of ciphers that can be used during the TLS handshake.
+You can configure the ordered list of enabled cipher suites.
+If not configured, a reasonable default is selected from the built-in ciphers.
+However, when configured, it takes precedence over the default suite defined by the SSL engine in use.
+
+To configure the cipher suites, use the following property:
+
+[source,properties]
+----
+quarkus.tls.cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384
+----
+
+==== TLS Protocol versions
+
+The TLS protocol versions are the list of protocols that can be used during the TLS handshake.
+You can configure the ordered list of enabled TLS protocols.
+If not configured , it defaults to `TLSv1.3`, `TLSv1.2`.
+
+Are supported: `TLSv1`, `TLSv1.1`, `TLSv1.2`, `TLSv1.3`.
+
+To only enable `TLSv1.3`, configure the following property:
+
+[source,properties]
+----
+quarkus.tls.protocols=TLSv1.3
+----
+
+==== Handshake timeout
+
+When a TLS connection is established, the handshake phase is the first step.
+During this phase, the client and server exchange information to establish the connection, typically the cipher suite, the TLS protocol version, the certification validation and so on.
+
+To configure the timeout for the handshake phase, use the following property:
+
+[source,properties]
+----
+quarkus.tls.handshake-timeout=10S # Default.
+----
+
+==== ALPN
+
+Application-Layer Protocol Negotiation (ALPN) is a TLS extension that allows the client and server during the TLS handshake to negotiate which protocol they will use for communication.
+ALPN enables more efficient communication by allowing the client to indicate its preferred application protocol to the server before the TLS connection is established.
+
+This helps in scenarios such as HTTP/2 where multiple protocols may be available, allowing for faster protocol selection.
+
+ALPN is enabled by default.
+To disable it, use the following property:
+
+[source,properties]
+----
+quarkus.tls.alpn=false
+----
+
+==== Certificate Revocation List (CRL)
+
+A Certificate Revocation List (CRL) is a list of certificates that have been revoked by the issuing Certificate Authority (CA) before their scheduled expiration date.
+When a certificate is compromised, no longer needed, or deemed invalid for any reason, the CA adds it to the CRL to inform relying parties not to trust the certificate anymore.
+
+You can configure the CRL with the list of certificate files you do not trust anymore.
+Two formats are allowed: DER and PKCS#7 (also known as P7B).
+
+* When using the DER format, you must pass DER-encoded CRLs.
+* When using the PKCS#7 format, you must pass PKCS#7 `SignedData` object, with the only significant field being `crls`.
+
+To configure the CRL, use the following property:
+
+[source,properties]
+----
+quarkus.tls.certificate-revocation-list=ca.crl, ca2.crl
+----
+
+==== Trusting all certificates and hostname verification
+
+IMPORTANT: These two properties should not be used in production.
+
+You can configure your TLS connection to trust all certificates and to disable the hostname verification.
+These are two different steps:
+
+- trusting all certificates ignores the certificate validation, so all certificates are trusted. It is useful for testing with self-signed certificates, but should not be used in production.
+- hostname verification is the process of verifying the server's identity. It is useful to prevent man-in-the-middle attacks. It often defaults to `HTTPS` or `LDAPS`.
+
+To trust all certificates, use the following property:
+
+[source,properties]
+----
+quarkus.tls.trust-all=true
+----
+
+To disable the hostname verification, use the following property:
+
+[source,properties]
+----
+quarkus.tls.hostname-verification-algorithm=NONE
+----
+
+=== Configuration reference
+
+The following table lists the supported properties:
+
+include::{generated-dir}/config/quarkus-tls.adoc[opts=optional, leveloffset=+1]
+
+== The registry API
+
+While extensions will automatically use the TLS registry, you can also use the registry API to access the TLS configuration programmatically.
+
+To access the TLS configuration, inject the `TlsConfigurationRegistry` bean and gets the TLS configuration by name (or the default one):
+
+[source,java]
+----
+ @Inject
+ TlsConfigurationRegistry certificates;
+// ...
+TlsConfiguration def = certificates.getDefault().orElseThrow();
+TlsConfiguration named = certificates.get("name").orElseThrow();
+//...
+----
+
+The `TlsConfiguration` object contains the key stores, trust stores, cipher suites, protocols, and other properties.
+It also provides a way to create an `SSLContext` from the configuration.
+
+As Vert.x is omnipresent in Quarkus, you can also use the `TlsConfiguration` object to configure the Vert.x client or server such as `KeyCertOptions`, `TrustOptions`, and so on.
+
+== Registering a certificate from an extension
+
+This section is only for extension developers.
+An extension can register a certificate in the TLS registry.
+This is useful when an extension needs to provide a certificate to the application or provides a different format.
+
+To achieve this, the extension _processor_ must produce a `TlsCertificateBuildItem`.
+A `TlsCertificateBuildItem` is composed of a name and a `CertificateSupplier`.
+
+[source,java]
+----
+TlsCertificateBuildItem item = new TlsCertificateBuildItem("named",
+    new MyCertificateSupplier());
+----
+
+The certificate supplier is a runtime object that is generally retrieved using a recorder method.
+Here is an example of a certificate supplier:
+
+[source,java]
+----
+public class MyCertificateSupplier implements Supplier<TlsConfiguration> {
+
+        @Override
+        public TlsConfiguration get() {
+            try {
+                KeyStore ks = KeyStore.getInstance("PKCS12");
+                ks.load(getClass().getResourceAsStream("target/certs/test-registration-keystore.p12"),
+                        "password".toCharArray());
+                KeyStore ts = KeyStore.getInstance("PKCS12");
+                ts.load(getClass().getResourceAsStream("target/certs/test-registration-truststore.p12"),
+                        "password".toCharArray());
+                return new BaseTlsConfiguration() {
+                    @Override
+                    public KeyStore getKeyStore() {
+                        return ks;
+                    }
+
+                    @Override
+                    public KeyStore getTrustStore() {
+                        return ts;
+                    }
+                };
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+----
+
+== Startup checks
+
+When the application starts, the TLS registry performs some checks to ensure the configuration is correct:
+
+- the key stores and trust stores are accessible
+- the aliases are available and accessible in the key stores and trust stores
+- the certificates are valid
+- the cipher suites and protocols are valid
+- the CRLs are valid
+
+If any of these checks fail, the application will fail to start.

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -17,8 +18,9 @@ import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -49,14 +51,16 @@ public class Mailers {
     private final Map<String, MutinyMailerImpl> mutinyMailers;
 
     public Mailers(Vertx vertx, io.vertx.mutiny.core.Vertx mutinyVertx, MailersRuntimeConfig mailersRuntimeConfig,
-            TlsConfig globalTlsConfig, LaunchMode launchMode, MailerSupport mailerSupport) {
+            LaunchMode launchMode, MailerSupport mailerSupport, TlsConfigurationRegistry tlsRegistry) {
         Map<String, MailClient> localClients = new HashMap<>();
         Map<String, io.vertx.mutiny.ext.mail.MailClient> localMutinyClients = new HashMap<>();
         Map<String, MockMailboxImpl> localMockMailboxes = new HashMap<>();
         Map<String, MutinyMailerImpl> localMutinyMailers = new HashMap<>();
 
+        TlsConfiguration defaultTlsConfiguration = tlsRegistry.getDefault().orElse(null);
+
         if (mailerSupport.hasDefaultMailer) {
-            MailClient mailClient = createMailClient(vertx, mailersRuntimeConfig.defaultMailer, globalTlsConfig);
+            MailClient mailClient = createMailClient(vertx, mailersRuntimeConfig.defaultMailer, defaultTlsConfiguration);
             io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(mailClient);
             MockMailboxImpl mockMailbox = new MockMailboxImpl();
             localClients.put(DEFAULT_MAILER_NAME, mailClient);
@@ -68,7 +72,7 @@ public class Mailers {
                             mailersRuntimeConfig.defaultMailer.bounceAddress.orElse(null),
                             mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest()),
                             mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
-                                    .filter(p -> p != null).collect(Collectors.toList()),
+                                    .filter(Objects::nonNull).collect(Collectors.toList()),
                             mailersRuntimeConfig.defaultMailer.logRejectedRecipients));
         }
 
@@ -76,7 +80,7 @@ public class Mailers {
             MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.namedMailers
                     .getOrDefault(name, new MailerRuntimeConfig());
 
-            MailClient namedMailClient = createMailClient(vertx, namedMailerRuntimeConfig, globalTlsConfig);
+            MailClient namedMailClient = createMailClient(vertx, namedMailerRuntimeConfig, defaultTlsConfiguration);
             io.vertx.mutiny.ext.mail.MailClient namedMutinyMailClient = io.vertx.mutiny.ext.mail.MailClient
                     .newInstance(namedMailClient);
             MockMailboxImpl namedMockMailbox = new MockMailboxImpl();
@@ -126,8 +130,8 @@ public class Mailers {
         }
     }
 
-    private MailClient createMailClient(Vertx vertx, MailerRuntimeConfig config, TlsConfig tlsConfig) {
-        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
+    private MailClient createMailClient(Vertx vertx, MailerRuntimeConfig config, TlsConfiguration defaultTlsConfiguration) {
+        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, defaultTlsConfiguration);
         // Do not create a shared instance, as we want separated connection pool for each SMTP servers.
         return MailClient.create(vertx, cfg);
     }
@@ -194,7 +198,9 @@ public class Mailers {
         return vertxDkimOptions;
     }
 
-    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailerRuntimeConfig config, TlsConfig tlsConfig) {
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailerRuntimeConfig config,
+            TlsConfiguration defaultTlsConfiguration) {
+        boolean globalTrustAll = defaultTlsConfiguration != null && defaultTlsConfiguration.isTrustAll();
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
         if (config.authMethods.isPresent()) {
             cfg.setAuthMethods(config.authMethods.get());
@@ -236,7 +242,7 @@ public class Mailers {
         cfg.setKeepAliveTimeout((int) config.keepAliveTimeout.toMillis());
         cfg.setKeepAliveTimeoutUnit(TimeUnit.MILLISECONDS);
 
-        boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : tlsConfig.trustAll;
+        boolean trustAll = config.trustAll.isPresent() ? config.trustAll.get() : globalTrustAll;
         cfg.setTrustAll(trustAll);
         applyTruststore(config, cfg);
 

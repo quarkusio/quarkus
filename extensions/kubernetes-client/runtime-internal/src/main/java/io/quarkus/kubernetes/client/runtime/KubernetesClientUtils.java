@@ -8,7 +8,6 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
-import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesClientUtils {
 
@@ -17,9 +16,11 @@ public class KubernetesClientUtils {
     private KubernetesClientUtils() {
     }
 
-    public static Config createConfig(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
+    public static Config createConfig(KubernetesClientBuildConfig buildConfig) {
+        boolean globalTrustAll = ConfigProvider.getConfig().getOptionalValue("quarkus.tls.trust-all", Boolean.class)
+                .orElse(false);
         Config base = Config.autoConfigure(null);
-        boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : tlsConfig.trustAll;
+        boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : globalTrustAll;
         return new ConfigBuilder()
                 .withTrustCerts(trustAll)
                 .withWatchReconnectInterval((int) buildConfig.watchReconnectInterval().toMillis())
@@ -50,8 +51,8 @@ public class KubernetesClientUtils {
                 .build();
     }
 
-    public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
-        return new KubernetesClientBuilder().withConfig(createConfig(buildConfig, tlsConfig)).build();
+    public static KubernetesClient createClient(KubernetesClientBuildConfig buildConfig) {
+        return new KubernetesClientBuilder().withConfig(createConfig(buildConfig)).build();
     }
 
     public static KubernetesClient createClient() {

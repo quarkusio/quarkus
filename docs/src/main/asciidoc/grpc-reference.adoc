@@ -100,6 +100,22 @@ If you use the Vert.x based server, you can configure TLS by setting the followi
 [source,properties,subs=attributes+]
 ----
 quarkus.grpc.server.use-separate-server=false
+quarkus.grpc.server.plain-text=false
+
+quarkus.tls.key-store.p12.path=grpc-tls-keystore.p12
+quarkus.tls.key-store.p12.password=*****
+
+quarkus.http.insecure-requests=disabled
+----
+
+The previous configuration uses the xref:./tls-registry-reference.adoc[centralized TLS configuration].
+This is the recommended approach.
+
+You can also configure the server directly using the following properties:
+
+[source,properties,subs=attributes+]
+----
+quarkus.grpc.server.use-separate-server=false
 
 quarkus.grpc.server.plain-text=false
 quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-tls-keystore.p12
@@ -139,7 +155,24 @@ This server only supports `PEM` format for the certificate and the key.
 
 == Configuring TLS for gRPC clients
 
-When using the Vert.x based client, you can configure TLS by setting the following properties in your `application.properties` file:
+As for the server, you can configure the clients using the centralized TLS configuration or directly.
+
+=== With the centralized TLS configuration
+
+When using the Quarkus (Vert.x-based) client, you can configure TLS by setting the following properties in your `application.properties` file:
+
+[source,properties,subs=attributes+]
+----
+quarkus.tls.trust-store.p12.path=grpc-client-truststore.p12
+quarkus.tls.trust-store.p12.password=password
+
+quarkus.grpc.clients.hello.plain-text=false
+quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
+----
+
+=== Direct configuration
+
+When using the Quarkus (Vert.x-based) client, you can configure TLS by setting the following properties in your `application.properties` file:
 
 [source,properties,subs=attributes+]
 ----
@@ -182,6 +215,38 @@ gRPC Java client only support the `PEM` format for the trust-store.
 
 == Configuring mTLS
 
+You can configure mutual TLS (mTLS) for gRPC services and clients.
+
+=== Using the centralized TLS configuration
+
+When using the Quarkus HTTP server (`quarkus.grpc.server.use-separate-server=false`) and Quarkus gRPC client (`quarkus.grpc.clients.hello.use-quarkus-grpc-client=true`), you can configure mTLS by setting the following properties in your `application.properties` file:
+
+[source,properties,subs=attributes+]
+----
+quarkus.tls.my-server.key-store.p12.path=target/certs/grpc-keystore.p12
+quarkus.tls.my-server.key-store.p12.password=password
+quarkus.tls.my-server.trust-store.p12.path=target/certs/grpc-server-truststore.p12
+quarkus.tls.my-server.trust-store.p12.password=password
+
+quarkus.tls.my-client.trust-store.p12.path=target/certs/grpc-client-truststore.p12
+quarkus.tls.my-client.trust-store.p12.password=password
+quarkus.tls.my-client.key-store.p12.path=target/certs/grpc-client-keystore.p12
+quarkus.tls.my-client.key-store.p12.password=password
+
+quarkus.grpc.clients.hello.plain-text=false
+quarkus.grpc.clients.hello.tls-configuration-name=my-client
+quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
+
+quarkus.http.ssl.client-auth=REQUIRED # Enable mTLS
+quarkus.http.insecure-requests=disabled
+quarkus.http.tls-configuration-name=my-server
+quarkus.grpc.server.use-separate-server=false
+quarkus.grpc.server.plain-text=false
+----
+
+=== Direct configuration
+
+When using the gRPC Java server, you can configure mTLS by setting the following properties in your `application.properties` file:
 When using the Vert.x based server and Vert.x-based client, you can configure mTLS by setting the following properties in your `application.properties` file:
 
 [source,properties,subs=attributes+]

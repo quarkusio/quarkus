@@ -65,6 +65,21 @@ public class GrpcClientConfiguration {
     public SslClientConfig ssl;
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then,
+     * `quarkus.grpc.clients.$client-name.tls` will be used.
+     * <p>
+     * Important: This is only supported when using the Quarkus (Vert.x-based) gRPC client.
+     */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName;
+
+    /**
      * The TLS config.
      * Only use this if you want to use the Quarkus gRPC client.
      */

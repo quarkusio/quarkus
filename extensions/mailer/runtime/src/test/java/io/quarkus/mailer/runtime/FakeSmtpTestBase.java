@@ -11,7 +11,9 @@ import org.junit.jupiter.api.BeforeEach;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.TlsConfig;
+import io.quarkus.tls.BaseTlsConfiguration;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.mutiny.core.Vertx;
 
 public class FakeSmtpTestBase {
@@ -48,15 +50,31 @@ public class FakeSmtpTestBase {
         return getMailer(config, false);
     }
 
-    protected ReactiveMailer getMailer(MailersRuntimeConfig config, boolean globalTrustAll) {
-        TlsConfig globalTlsConfig = new TlsConfig();
-        if (globalTrustAll) {
-            globalTlsConfig.trustAll = true;
-        }
+    protected ReactiveMailer getMailer(MailersRuntimeConfig config, boolean trustAll) {
+        Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, LaunchMode.NORMAL,
+                new MailerSupport(true, Set.of()),
+                new TlsConfigurationRegistry() {
 
-        Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, globalTlsConfig, LaunchMode.NORMAL,
-                new MailerSupport(true, Set.of()));
+                    @Override
+                    public Optional<TlsConfiguration> get(String name) {
+                        throw new UnsupportedOperationException();
+                    }
 
+                    @Override
+                    public Optional<TlsConfiguration> getDefault() {
+                        return Optional.of(new BaseTlsConfiguration() {
+                            @Override
+                            public boolean isTrustAll() {
+                                return trustAll;
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void register(String name, TlsConfiguration configuration) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
         return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 

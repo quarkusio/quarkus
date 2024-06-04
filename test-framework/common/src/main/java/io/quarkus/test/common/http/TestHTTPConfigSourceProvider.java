@@ -22,7 +22,7 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
     static final String TEST_URL_SSL_VALUE = "https://${quarkus.http.host:localhost}:${quarkus.http.test-ssl-port:8444}${quarkus.http.root-path:${quarkus.servlet.context-path:}}";
     static final String TEST_URL_SSL_KEY = "test.url.ssl";
 
-    static final String TEST_MANAGEMENT_URL_SSL_VALUE = "https://${quarkus.management.host:localhost}:${quarkus.management.test-ssl-port:9001}${quarkus.management.root-path:/q}";
+    static final String TEST_MANAGEMENT_URL_SSL_VALUE = "https://${quarkus.management.host:localhost}:${quarkus.management.test-port:9001}${quarkus.management.root-path:/q}";
     static final String TEST_MANAGEMENT_URL_SSL_KEY = "test.management.url.ssl";
 
     static final Map<String, String> entries = Map.of(

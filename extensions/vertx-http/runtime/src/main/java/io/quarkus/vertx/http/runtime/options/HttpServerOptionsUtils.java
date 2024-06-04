@@ -7,7 +7,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
@@ -17,16 +21,22 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.net.*;
+import io.vertx.core.net.JdkSSLEngineOptions;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.TrafficShapingOptions;
+import io.vertx.core.net.TrustOptions;
 
 @SuppressWarnings("OptionalIsPresent")
 public class HttpServerOptionsUtils {
@@ -50,52 +60,18 @@ public class HttpServerOptionsUtils {
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     public static HttpServerOptions createSslOptions(HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
-            LaunchMode launchMode, List<String> websocketSubProtocols)
+            LaunchMode launchMode, List<String> websocketSubProtocols, TlsConfigurationRegistry registry)
             throws IOException {
         if (!httpConfiguration.hostEnabled) {
             return null;
         }
 
-        ServerSslConfig sslConfig = httpConfiguration.ssl;
-
-        // credentials provider
-        Map<String, String> credentials = Map.of();
-        if (sslConfig.certificate.credentialsProvider.isPresent()) {
-            String beanName = sslConfig.certificate.credentialsProviderName.orElse(null);
-            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = sslConfig.certificate.credentialsProvider.get();
-            credentials = credentialsProvider.getCredentials(name);
-        }
-
-        final Optional<String> keyStorePassword = getCredential(sslConfig.certificate.keyStorePassword, credentials,
-                sslConfig.certificate.keyStorePasswordKey);
-
-        Optional<String> keyStoreAliasPassword = Optional.empty();
-        if (sslConfig.certificate.keyStoreAliasPassword.isPresent() || sslConfig.certificate.keyStoreKeyPassword.isPresent()
-                || sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
-                || sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
-            if (sslConfig.certificate.keyStoreKeyPasswordKey.isPresent()
-                    && sslConfig.certificate.keyStoreAliasPasswordKey.isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPasswordKey` and `keyStoreAliasPasswordKey` - Use `keyStoreAliasPasswordKey` instead");
-            }
-            if (sslConfig.certificate.keyStoreAliasPassword.isPresent()
-                    && sslConfig.certificate.keyStoreKeyPassword.isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPassword` and `keyStoreAliasPassword` - Use `keyStoreAliasPassword` instead");
-            }
-            keyStoreAliasPassword = getCredential(
-                    or(sslConfig.certificate.keyStoreAliasPassword, sslConfig.certificate.keyStoreKeyPassword),
-                    credentials,
-                    or(sslConfig.certificate.keyStoreAliasPasswordKey, sslConfig.certificate.keyStoreKeyPasswordKey));
-        }
-
-        final Optional<String> trustStorePassword = getCredential(sslConfig.certificate.trustStorePassword, credentials,
-                sslConfig.certificate.trustStorePasswordKey);
-
         final HttpServerOptions serverOptions = new HttpServerOptions();
+        int sslPort = httpConfiguration.determineSslPort(launchMode);
+        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
+        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
+        serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
-        //ssl
         if (JdkSSLEngineOptions.isAlpnAvailable()) {
             serverOptions.setUseAlpn(httpConfiguration.http2);
             if (httpConfiguration.http2) {
@@ -104,46 +80,42 @@ public class HttpServerOptionsUtils {
         }
         setIdleTimeout(httpConfiguration, serverOptions);
 
-        var kso = computeKeyStoreOptions(sslConfig.certificate, keyStorePassword, keyStoreAliasPassword);
-        if (kso != null) {
-            serverOptions.setKeyCertOptions(kso);
+        TlsConfiguration bucket = getTlsConfiguration(httpConfiguration.tlsConfigurationName, registry);
+        if (bucket != null) {
+            applyTlsConfigurationToHttpServerOptions(bucket, serverOptions);
+            applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
+            return serverOptions;
         }
 
-        var to = computeTrustOptions(sslConfig.certificate, trustStorePassword);
-        if (to != null) {
-            serverOptions.setTrustOptions(to);
-        }
-
-        for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
-            serverOptions.addEnabledCipherSuite(cipher);
-        }
-
-        serverOptions.setEnabledSecureTransportProtocols(sslConfig.protocols);
-        serverOptions.setSsl(true);
-        serverOptions.setSni(sslConfig.sni);
-        int sslPort = httpConfiguration.determineSslPort(launchMode);
-        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
-        serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
-
+        // Legacy configuration:
+        applySslConfigToHttpServerOptions(httpConfiguration.ssl, serverOptions);
         applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
     }
 
-    /**
-     * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
-     */
-    public static HttpServerOptions createSslOptionsForManagementInterface(ManagementInterfaceBuildTimeConfig buildTimeConfig,
-            ManagementInterfaceConfiguration httpConfiguration,
-            LaunchMode launchMode, List<String> websocketSubProtocols)
-            throws IOException {
-        if (!httpConfiguration.hostEnabled) {
-            return null;
+    private static TlsConfiguration getTlsConfiguration(Optional<String> tlsConfigurationName,
+            TlsConfigurationRegistry registry) {
+        TlsConfiguration bucket = null;
+        if (tlsConfigurationName.isPresent()) {
+            var maybeTlsConfig = registry.get(tlsConfigurationName.get());
+            if (maybeTlsConfig.isEmpty()) {
+                throw new ConfigurationException("No TLS configuration named " + tlsConfigurationName.get()
+                        + " found in the TLS registry. Configure `quarkus.tls."
+                        + tlsConfigurationName.get() + "` in your application.properties.");
+            }
+            bucket = maybeTlsConfig.get();
+        } else if (registry != null && registry.getDefault().isPresent()
+                && registry.getDefault().get().getKeyStoreOptions() != null) {
+            // Verify that default is present and a key store has been configured, otherwise we get the default configuration.
+            bucket = registry.getDefault().get();
         }
+        return bucket;
+    }
 
-        ServerSslConfig sslConfig = httpConfiguration.ssl;
-
+    private static void applySslConfigToHttpServerOptions(ServerSslConfig httpConfiguration, HttpServerOptions serverOptions)
+            throws IOException {
+        ServerSslConfig sslConfig = httpConfiguration;
         // credentials provider
         Map<String, String> credentials = Map.of();
         if (sslConfig.certificate.credentialsProvider.isPresent()) {
@@ -179,17 +151,6 @@ public class HttpServerOptionsUtils {
         final Optional<String> trustStorePassword = getCredential(sslConfig.certificate.trustStorePassword, credentials,
                 sslConfig.certificate.trustStorePasswordKey);
 
-        final HttpServerOptions serverOptions = new HttpServerOptions();
-
-        //ssl
-        if (JdkSSLEngineOptions.isAlpnAvailable()) {
-            serverOptions.setUseAlpn(true);
-            serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
-        }
-        int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
-        serverOptions.setIdleTimeout(idleTimeout);
-        serverOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
-
         var kso = computeKeyStoreOptions(sslConfig.certificate, keyStorePassword, keyStoreAliasPassword);
         if (kso != null) {
             serverOptions.setKeyCertOptions(kso);
@@ -205,17 +166,74 @@ public class HttpServerOptionsUtils {
         }
 
         serverOptions.setEnabledSecureTransportProtocols(sslConfig.protocols);
-
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
-        int sslPort = httpConfiguration.determinePort(launchMode);
+    }
 
+    /**
+     * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
+     */
+    public static HttpServerOptions createSslOptionsForManagementInterface(ManagementInterfaceBuildTimeConfig buildTimeConfig,
+            ManagementInterfaceConfiguration httpConfiguration,
+            LaunchMode launchMode, List<String> websocketSubProtocols, TlsConfigurationRegistry registry)
+            throws IOException {
+        if (!httpConfiguration.hostEnabled) {
+            return null;
+        }
+
+        final HttpServerOptions serverOptions = new HttpServerOptions();
+        if (JdkSSLEngineOptions.isAlpnAvailable()) {
+            serverOptions.setUseAlpn(true);
+            serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
+        }
+        int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
+        serverOptions.setIdleTimeout(idleTimeout);
+        serverOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+
+        int sslPort = httpConfiguration.determinePort(launchMode);
         serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MANAGEMENT : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
+        TlsConfiguration bucket = getTlsConfiguration(httpConfiguration.tlsConfigurationName, registry);
+        if (bucket != null) {
+            applyTlsConfigurationToHttpServerOptions(bucket, serverOptions);
+            applyCommonOptionsForManagementInterface(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
+            return serverOptions;
+        }
+
+        // Legacy configuration:
+        applySslConfigToHttpServerOptions(httpConfiguration.ssl, serverOptions);
         applyCommonOptionsForManagementInterface(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
 
         return serverOptions;
+    }
+
+    public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
+        serverOptions.setSsl(true);
+
+        KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
+        TrustOptions trustStoreOptions = bucket.getTrustStoreOptions();
+        if (keyStoreOptions != null) {
+            serverOptions.setKeyCertOptions(keyStoreOptions);
+        }
+        if (trustStoreOptions != null) {
+            serverOptions.setTrustOptions(trustStoreOptions);
+        }
+        serverOptions.setSni(bucket.usesSni());
+
+        var other = bucket.getSSLOptions();
+        serverOptions.setSslHandshakeTimeout(other.getSslHandshakeTimeout());
+        serverOptions.setSslHandshakeTimeoutUnit(other.getSslHandshakeTimeoutUnit());
+        for (String suite : other.getEnabledCipherSuites()) {
+            serverOptions.addEnabledCipherSuite(suite);
+        }
+        for (Buffer buffer : other.getCrlValues()) {
+            serverOptions.addCrlValue(buffer);
+        }
+        if (!other.isUseAlpn()) {
+            serverOptions.setUseAlpn(false);
+        }
+        serverOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
     }
 
     public static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,

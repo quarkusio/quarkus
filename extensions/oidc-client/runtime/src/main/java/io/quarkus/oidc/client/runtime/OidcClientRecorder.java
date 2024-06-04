@@ -23,9 +23,10 @@ import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -39,24 +40,28 @@ public class OidcClientRecorder {
     private static final String CLIENT_ID_ATTRIBUTE = "client-id";
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
 
-    public OidcClients setup(OidcClientsConfig oidcClientsConfig, TlsConfig tlsConfig, Supplier<Vertx> vertx) {
+    public OidcClients setup(OidcClientsConfig oidcClientsConfig, Supplier<Vertx> vertx,
+            Supplier<TlsConfigurationRegistry> registrySupplier) {
 
         String defaultClientId = oidcClientsConfig.defaultClient.getId().orElse(DEFAULT_OIDC_CLIENT_ID);
-        OidcClient defaultClient = createOidcClient(oidcClientsConfig.defaultClient, defaultClientId, tlsConfig, vertx);
+        var defaultTlsConfiguration = registrySupplier.get().getDefault().orElse(null);
+        OidcClient defaultClient = createOidcClient(oidcClientsConfig.defaultClient, defaultClientId, vertx,
+                defaultTlsConfiguration);
 
         Map<String, OidcClient> staticOidcClients = new HashMap<>();
 
         for (Map.Entry<String, OidcClientConfig> config : oidcClientsConfig.namedClients.entrySet()) {
             OidcCommonUtils.verifyConfigurationId(defaultClientId, config.getKey(), config.getValue().getId());
             staticOidcClients.put(config.getKey(),
-                    createOidcClient(config.getValue(), config.getKey(), tlsConfig, vertx));
+                    createOidcClient(config.getValue(), config.getKey(), vertx, defaultTlsConfiguration));
         }
 
         return new OidcClientsImpl(defaultClient, staticOidcClients,
                 new Function<OidcClientConfig, Uni<OidcClient>>() {
                     @Override
                     public Uni<OidcClient> apply(OidcClientConfig config) {
-                        return createOidcClientUni(config, config.getId().get(), tlsConfig, vertx);
+                        return createOidcClientUni(config, config.getId().get(), vertx,
+                                registrySupplier.get().getDefault().orElse(null));
                     }
                 });
     }
@@ -91,13 +96,14 @@ public class OidcClientRecorder {
         };
     }
 
-    protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId,
-            TlsConfig tlsConfig, Supplier<Vertx> vertx) {
-        return createOidcClientUni(oidcConfig, oidcClientId, tlsConfig, vertx).await().atMost(oidcConfig.connectionTimeout);
+    protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId, Supplier<Vertx> vertx,
+            TlsConfiguration defaultTlsConfiguration) {
+        return createOidcClientUni(oidcConfig, oidcClientId, vertx, defaultTlsConfiguration).await()
+                .atMost(oidcConfig.connectionTimeout);
     }
 
     protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId,
-            TlsConfig tlsConfig, Supplier<Vertx> vertx) {
+            Supplier<Vertx> vertx, TlsConfiguration defaultTlsConfiguration) {
         if (!oidcConfig.isClientEnabled()) {
             String message = String.format("'%s' client configuration is disabled", oidcClientId);
             LOG.debug(message);
@@ -122,7 +128,7 @@ public class OidcClientRecorder {
 
         WebClientOptions options = new WebClientOptions();
 
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, defaultTlsConfiguration);
 
         var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx.get());
         WebClient client = WebClient.create(mutinyVertx, options);

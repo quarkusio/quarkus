@@ -16,3 +16,5 @@ metadata:
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.grpc."
+  cli-plugins:
+    - "${project.groupId}:quarkus-grpc-cli:${project.version}"

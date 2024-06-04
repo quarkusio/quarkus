@@ -101,7 +101,9 @@ For more information about pool size adjustment properties, see the <<jdbc-confi
 
 . Add the correct reactive extension for the database of your choice.
 
+ifndef::no-quarkus-reactive-db2-client[]
 * `quarkus-reactive-db2-client`
+endif::no-quarkus-reactive-db2-client[]
 * `quarkus-reactive-mssql-client`
 * `quarkus-reactive-mysql-client`
 * `quarkus-reactive-oracle-client`
@@ -300,7 +302,9 @@ Quarkus offers several reactive clients for use with a reactive datasource.
 
 . Add the corresponding extension to your application:
 +
+ifndef::no-quarkus-reactive-db2-client[]
 * DB2: `quarkus-reactive-db2-client`
+endif::no-quarkus-reactive-db2-client[]
 * MariaDB/MySQL: `quarkus-reactive-mysql-client`
 * Microsoft SQL Server: `quarkus-reactive-mssql-client`
 * Oracle: `quarkus-reactive-oracle-client`
@@ -592,6 +596,7 @@ However, the Quarkus Derby extension allows native compilation of the Derby JDBC
 * Embedding H2 within your native image is not recommended.
 Consider using an alternative approach, for example, using a remote connection to a separate database instead.
 
+ifndef::no-deprecated-test-resource[]
 ==== Run an integration test
 
 . Add a dependency on the artifacts providing the additional tools that are under the following Maven coordinates:
@@ -628,6 +633,7 @@ public class TestResources {
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:test
 ----
+endif::no-deprecated-test-resource[]
 
 [[datasource-reference]]
 == References
@@ -820,9 +826,11 @@ a|* JDBC: `org.postgresql.Driver`
 |`reactive-pg-client`
 |`io.vertx.pgclient.spi.PgDriver`
 
+ifndef::no-quarkus-reactive-db2-client[]
 |`db2`
 |`reactive-db2-client`
 |`io.vertx.db2client.spi.DB2Driver`
+endif::no-quarkus-reactive-db2-client[]
 |===
 
 [TIP]
@@ -836,9 +844,11 @@ This automatic resolution is applicable in most cases so that driver configurati
 
 include::{generated-dir}/config/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
 
+ifndef::no-quarkus-reactive-db2-client[]
 ==== Reactive DB2 configuration
 
 include::{generated-dir}/config/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
+endif::no-quarkus-reactive-db2-client[]
 
 ==== Reactive MariaDB/MySQL specific configuration
 

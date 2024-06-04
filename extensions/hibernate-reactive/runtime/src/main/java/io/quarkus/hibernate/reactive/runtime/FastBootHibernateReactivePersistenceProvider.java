@@ -346,6 +346,10 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             if (persistenceUnitConfig.log().formatSql()) {
                 runtimeSettingsBuilder.put(AvailableSettings.FORMAT_SQL, "true");
             }
+
+            if (persistenceUnitConfig.log().highlightSql()) {
+                runtimeSettingsBuilder.put(AvailableSettings.HIGHLIGHT_SQL, "true");
+            }
         }
 
         if (persistenceUnitConfig.log().jdbcWarnings().isPresent()) {

@@ -71,14 +71,15 @@
         <jacoco.version>0.8.13</jacoco.version>
         <kubernetes-client.version>7.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.5</rest-assured.version>
-        <hibernate-orm.version>6.6.17.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
-        <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-orm.version>7.0.0.Alpha3</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
+        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-models.version>0.7.8</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>2.4.8.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
-        <hibernate-search.version>7.2.4.Final</hibernate-search.version>
+        <hibernate-search.version>7.2.4.Final</hibernate-search.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate Search's needs -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

@@ -45,6 +45,7 @@ import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -128,6 +129,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
+import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
@@ -267,8 +269,12 @@ public final class HibernateOrmProcessor {
     public void parsePersistenceXmlDescriptors(HibernateOrmConfig config,
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
         if (!shouldIgnorePersistenceXmlResources(config)) {
-            var explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
-            for (var desc : explicitDescriptors) {
+            var parser = PersistenceXmlParser.create(Map.of(), null, FlatClassLoaderService.INSTANCE);
+            var urls = parser.getClassLoaderService().locateResources("META-INF/persistence.xml");
+            if (urls.isEmpty()) {
+                return;
+            }
+            for (var desc : parser.parse(urls).values()) {
                 persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
             }
         }

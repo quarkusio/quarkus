@@ -60,7 +60,6 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
 
     public static PrevalidatedQuarkusMetadata validateAndWrap(final MetadataImpl original) {
         original.validate();
-        original.getBootstrapContext().getReflectionManager().reset();
         return new PrevalidatedQuarkusMetadata(original);
     }
 
@@ -144,7 +143,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public void visitNamedHqlQueryDefinitions(Consumer<NamedHqlQueryDefinition> definitionConsumer) {
+    public void visitNamedHqlQueryDefinitions(Consumer<NamedHqlQueryDefinition<?>> definitionConsumer) {
         metadata.visitNamedHqlQueryDefinitions(definitionConsumer);
     }
 
@@ -154,7 +153,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public void visitNamedNativeQueryDefinitions(Consumer<NamedNativeQueryDefinition> definitionConsumer) {
+    public void visitNamedNativeQueryDefinitions(Consumer<NamedNativeQueryDefinition<?>> definitionConsumer) {
         metadata.visitNamedNativeQueryDefinitions(definitionConsumer);
     }
 
@@ -335,11 +334,11 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return metadata.getBootstrapContext();
     }
 
-    public Map<String, NamedHqlQueryDefinition> getNamedQueryMap() {
+    public Map<String, NamedHqlQueryDefinition<?>> getNamedQueryMap() {
         return metadata.getNamedQueryMap();
     }
 
-    public Map<String, NamedNativeQueryDefinition> getNamedNativeQueryMap() {
+    public Map<String, NamedNativeQueryDefinition<?>> getNamedNativeQueryMap() {
         return metadata.getNamedNativeQueryMap();
     }
 

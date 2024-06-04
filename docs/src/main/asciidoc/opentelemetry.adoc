@@ -177,7 +177,7 @@ We have 2 options:
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
-This features a Quarkus Dev service including a Grafana for visualizing data, Loky to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+This features a Quarkus Dev service including a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
 
 === Jaeger to see traces option
 

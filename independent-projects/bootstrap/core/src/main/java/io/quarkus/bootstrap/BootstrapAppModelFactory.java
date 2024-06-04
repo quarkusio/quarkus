@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -172,11 +173,12 @@ public class BootstrapAppModelFactory {
                 .setDevMode(devMode);
         var project = artifactResolver.getMavenContext().getCurrentProject();
         if (project != null) {
-            appModelResolver.setIncubatingModelResolver(
-                    IncubatingApplicationModelResolver.isIncubatingEnabled(
-                            project.getModelBuildingResult() == null
-                                    ? project.getRawModel().getProperties()
-                                    : project.getModelBuildingResult().getEffectiveModel().getProperties()));
+            final Properties modelProps = project.getModelBuildingResult() == null
+                    ? project.getRawModel().getProperties()
+                    : project.getModelBuildingResult().getEffectiveModel().getProperties();
+            appModelResolver.setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(modelProps)
+                    || devMode
+                            && !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(modelProps, "false"));
         }
         return appModelResolver;
     }

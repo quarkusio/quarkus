@@ -1361,7 +1361,9 @@ public class DevMojo extends AbstractMojo {
                     .setDevMode(true)
                     .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
-                    .setIncubatingModelResolver(IncubatingApplicationModelResolver.isIncubatingEnabled(project.getProperties()))
+                    // enabled the incubating model resolver for in dev mode
+                    .setIncubatingModelResolver(!IncubatingApplicationModelResolver
+                            .isIncubatingModelResolverProperty(project.getProperties(), "false"))
                     .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }
 

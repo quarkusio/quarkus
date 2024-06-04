@@ -147,8 +147,9 @@ public class DependencyTreeMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
+            // enable the incubating model resolver impl by default for this mojo
             modelResolver.setIncubatingModelResolver(
-                    IncubatingApplicationModelResolver.isIncubatingEnabled(project.getProperties()));
+                    !IncubatingApplicationModelResolver.isIncubatingModelResolverProperty(project.getProperties(), "false"));
             modelResolver.setDepLogConfig(DependencyLoggingConfig.builder()
                     .setMessageConsumer(log)
                     .setVerbose(verbose)

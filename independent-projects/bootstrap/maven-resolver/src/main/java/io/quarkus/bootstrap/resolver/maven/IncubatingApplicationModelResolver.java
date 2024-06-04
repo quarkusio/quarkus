@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -82,15 +83,44 @@ public class IncubatingApplicationModelResolver {
 
     /**
      * Temporary method that will be removed once this implementation becomes the default.
+     * <p>
+     * Returns {@code true} if system or POM property {@code quarkus.bootstrap.incubating-model-resolver}
+     * is set to {@code true}.
      *
      * @return true if this implementation is enabled
      */
     public static boolean isIncubatingEnabled(Properties projectProperties) {
+        return Boolean.parseBoolean(getIncubatingModelResolverProperty(projectProperties));
+    }
+
+    /**
+     * Temporary method that will be removed once this implementation becomes the default.
+     * <p>
+     * Calls {@link #getIncubatingModelResolverProperty(Properties)} and checks whether the returned value
+     * equals the passed in {@code value}.
+     *
+     * @return true if value of quarkus.bootstrap.incubating-model-resolver property is equal to the passed in value
+     */
+    public static boolean isIncubatingModelResolverProperty(Properties projectProperties, String value) {
+        Objects.requireNonNull(value);
+        return value.equals(getIncubatingModelResolverProperty(projectProperties));
+    }
+
+    /**
+     * Temporary method that will be removed once this implementation becomes the default.
+     * <p>
+     * Returns value of system or POM property {@code quarkus.bootstrap.incubating-model-resolver}.
+     * The system property is checked first and if its value is not {@code null}, it's returned.
+     * Otherwise, the value of POM property is returned as the result.
+     *
+     * @return value of system or POM property quarkus.bootstrap.incubating-model-resolver or null if it's not set
+     */
+    public static String getIncubatingModelResolverProperty(Properties projectProperties) {
         var value = System.getProperty(INCUBATING_MODEL_RESOLVER);
-        if (value == null && projectProperties != null) {
-            value = String.valueOf(projectProperties.get(INCUBATING_MODEL_RESOLVER));
+        if (value != null || projectProperties == null) {
+            return value;
         }
-        return Boolean.parseBoolean(value);
+        return String.valueOf(projectProperties.get(INCUBATING_MODEL_RESOLVER));
     }
 
     public static IncubatingApplicationModelResolver newInstance() {

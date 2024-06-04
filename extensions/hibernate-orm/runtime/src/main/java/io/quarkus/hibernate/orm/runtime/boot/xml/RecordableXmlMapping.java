@@ -3,8 +3,9 @@ package io.quarkus.hibernate.orm.runtime.boot.xml;
 import org.hibernate.boot.jaxb.Origin;
 import org.hibernate.boot.jaxb.SourceType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
-import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappingsImpl;
 import org.hibernate.boot.jaxb.spi.Binding;
+import org.hibernate.boot.jaxb.spi.JaxbBindableMappingDescriptor;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
@@ -16,17 +17,17 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
  */
 public class RecordableXmlMapping {
     // The following two properties are mutually exclusive: exactly one of them is non-null.
-    private final JaxbEntityMappings ormXmlRoot;
+    private final JaxbEntityMappingsImpl ormXmlRoot;
     private final JaxbHbmHibernateMapping hbmXmlRoot;
 
     private final SourceType originType;
     private final String originName;
 
-    public static RecordableXmlMapping create(Binding<?> binding) {
-        Object root = binding.getRoot();
+    public static RecordableXmlMapping create(Binding<? extends JaxbBindableMappingDescriptor> binding) {
+        JaxbBindableMappingDescriptor root = binding.getRoot();
         Origin origin = binding.getOrigin();
-        if (root instanceof JaxbEntityMappings) {
-            return new RecordableXmlMapping((JaxbEntityMappings) root, null, origin.getType(), origin.getName());
+        if (root instanceof JaxbEntityMappingsImpl) {
+            return new RecordableXmlMapping((JaxbEntityMappingsImpl) root, null, origin.getType(), origin.getName());
         } else if (root instanceof JaxbHbmHibernateMapping) {
             return new RecordableXmlMapping(null, (JaxbHbmHibernateMapping) root, origin.getType(), origin.getName());
         } else {
@@ -35,7 +36,7 @@ public class RecordableXmlMapping {
     }
 
     @RecordableConstructor
-    public RecordableXmlMapping(JaxbEntityMappings ormXmlRoot, JaxbHbmHibernateMapping hbmXmlRoot, SourceType originType,
+    public RecordableXmlMapping(JaxbEntityMappingsImpl ormXmlRoot, JaxbHbmHibernateMapping hbmXmlRoot, SourceType originType,
             String originName) {
         this.ormXmlRoot = ormXmlRoot;
         this.hbmXmlRoot = hbmXmlRoot;
@@ -50,7 +51,7 @@ public class RecordableXmlMapping {
                 '}';
     }
 
-    public JaxbEntityMappings getOrmXmlRoot() {
+    public JaxbEntityMappingsImpl getOrmXmlRoot() {
         return ormXmlRoot;
     }
 

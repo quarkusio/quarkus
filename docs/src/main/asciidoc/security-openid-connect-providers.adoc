@@ -362,13 +362,13 @@ quarkus.oidc.credentials.secret=<App secret>
 
 `quarkus.oidc.provider=facebook` will request `Facebook` to add `email` and `public_profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
-[[twitter]]
-=== Twitter
+[[x]]
+=== [[twitter]] X (formerly Twitter)
 
-You can use Twitter for OIDC login, but at the moment, it restricts access to the user's email, which means you
+You can use X (formerly Twitter) for OIDC login, but at the moment, it restricts access to the user's email, which means you
 will have to obtain it and verify it yourself.
 
-In order to set up OIDC for Twitter start by https://developer.twitter.com/en/portal/projects/new[Creating a project], enter a project name, and press `Next`:
+In order to set up OIDC for X, start by https://developer.twitter.com/en/portal/projects/new[Creating a project], enter a project name, and press `Next`:
 
 image::oidc-twitter-1.png[role="thumb"]
 
@@ -399,7 +399,7 @@ image::oidc-twitter-7.png[role="thumb"]
 Select `Web App` as application type, then fill in your application details (use `<host>/_renarde/security/twitter-success`
 for the `Callback URI`).
 
-NOTE: Twitter doesn't require https usage in practice, but won't accept your `Website URL` without it, so
+NOTE: X doesn't require https usage in practice, but won't accept your `Website URL` without it, so
 you can still use ngrok for it.
 
 Now press `Save`:
@@ -414,17 +414,17 @@ You can now configure your `application.properties`:
 
 [source,properties]
 ----
-quarkus.oidc.provider=twitter
+quarkus.oidc.provider=x
 quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
-`quarkus.oidc.provider=twitter` will request `Twitter` to add `offline.access`, `tweet.read` and `users.read` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+`quarkus.oidc.provider=x` will request X to add `offline.access`, `tweet.read` and `users.read` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
 [NOTE]
 ====
-Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=twitter` declaration.
-Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with Twitter is in progress and it will
+X provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=x` declaration.
+Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with X is in progress and it will
 generate a secure random secret key for encrypting it.
 
 You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.state-secret` property but
@@ -433,15 +433,8 @@ note that this secret should be 32 characters long, and an error will be reporte
 
 [NOTE]
 ====
-`X` is a new name for `Twitter`, see <<x>>. You can continue using `quarkus.oidc.provider=twitter` but it might need to be changed to `quarkus.oidc.provider=x` in the future.
+X is the new name of Twitter. You can continue using `quarkus.oidc.provider=twitter` for the time being but it might become deprecated in the future.
 ====
-
-[[x]]
-=== X
-
-`X` is a new name for `Twitter`. You can currently use either `quarkus.oidc.provider=x` or `quarkus.oidc.provider=twitter` but only `quarkus.oidc.provider=x` may end up supported in the future.
-
-Please see <<twitter>> for more information about registering your Quarkus application in `X` (`Twitter`).
 
 [[spotify]]
 === Spotify
@@ -463,7 +456,7 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
-`quarkus.oidc.provider=spotiify` will request `Spotify` to add `user-read-private` and `user-read-email` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+`quarkus.oidc.provider=spotify` will request `Spotify` to add `user-read-private` and `user-read-email` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
 [[twitch]]
 === Twitch

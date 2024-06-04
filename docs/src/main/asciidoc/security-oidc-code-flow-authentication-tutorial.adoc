@@ -15,7 +15,7 @@ Discover how to secure application HTTP endpoints by using the Quarkus OpenID Co
 
 For more information, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 
-To learn about how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers].
+To learn about how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Spotify, Twitch, and X (formerly Twitter) can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].

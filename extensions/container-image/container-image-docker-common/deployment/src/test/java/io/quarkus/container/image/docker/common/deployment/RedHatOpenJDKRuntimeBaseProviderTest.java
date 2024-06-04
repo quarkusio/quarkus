@@ -2,38 +2,53 @@ package io.quarkus.container.image.docker.common.deployment;
 
 import static io.quarkus.container.image.docker.common.deployment.TestUtil.getPath;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.ParameterizedTest.ARGUMENTS_WITH_NAMES_PLACEHOLDER;
+import static org.junit.jupiter.params.ParameterizedTest.DISPLAY_NAME_PLACEHOLDER;
+import static org.junit.jupiter.params.ParameterizedTest.INDEX_PLACEHOLDER;
 
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import io.quarkus.container.image.docker.common.deployment.DockerFileBaseInformationProvider.DockerFileBaseInformation;
 
 class RedHatOpenJDKRuntimeBaseProviderTest {
 
     private final DockerFileBaseInformationProvider sut = new RedHatOpenJDKRuntimeBaseProvider();
 
-    @Test
-    void testImageWithJava17() {
-        Path path = getPath("openjdk-17-runtime");
+    @ParameterizedTest(name = DISPLAY_NAME_PLACEHOLDER + "[" + INDEX_PLACEHOLDER + "] (" + ARGUMENTS_WITH_NAMES_PLACEHOLDER
+            + ")")
+    @MethodSource("imageCombinations")
+    void testImage(int javaVersion, int ubiVersion, String imageVersion) {
+        var path = getPath("ubi%d-openjdk-%d-runtime".formatted(ubiVersion, javaVersion));
         var result = sut.determine(path);
-        assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.baseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-17-runtime:1.19");
-            assertThat(v.javaVersion()).isEqualTo(17);
-        });
+        assertThat(result)
+                .isNotNull()
+                .get()
+                .extracting(
+                        DockerFileBaseInformation::baseImage,
+                        DockerFileBaseInformation::javaVersion)
+                .containsExactly(
+                        "registry.access.redhat.com/ubi%d/openjdk-%d-runtime:%s".formatted(ubiVersion, javaVersion,
+                                imageVersion),
+                        javaVersion);
     }
 
-    @Test
-    void testImageWithJava21() {
-        Path path = getPath("openjdk-21-runtime");
-        var result = sut.determine(path);
-        assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.baseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-21-runtime:1.19");
-            assertThat(v.javaVersion()).isEqualTo(21);
-        });
+    static Stream<Arguments> imageCombinations() {
+        return Stream.of(
+                Arguments.of(17, 8, "1.19"),
+                Arguments.of(21, 8, "1.19"),
+                Arguments.of(17, 9, "1.18"),
+                Arguments.of(21, 9, "1.18"));
     }
 
     @Test
     void testUnhandled() {
-        Path path = getPath("ubi-java17");
+        Path path = getPath("ubi8-java17");
         var result = sut.determine(path);
         assertThat(result).isEmpty();
     }

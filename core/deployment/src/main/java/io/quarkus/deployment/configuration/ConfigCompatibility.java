@@ -61,12 +61,6 @@ public final class ConfigCompatibility {
                     ConfigCompatibility::quarkusPackageDecompilerEnabled),
             entry(List.of("quarkus", "package", "decompiler", "jar-directory"),
                     ConfigCompatibility::quarkusPackageDecompilerJarDirectory),
-            entry(List.of("quarkus", "package", "vineflower", "version"),
-                    ConfigCompatibility::quarkusPackageDecompilerVersion),
-            entry(List.of("quarkus", "package", "vineflower", "enabled"),
-                    ConfigCompatibility::quarkusPackageDecompilerEnabled),
-            entry(List.of("quarkus", "package", "vineflower", "jar-directory"),
-                    ConfigCompatibility::quarkusPackageDecompilerJarDirectory),
             entry(List.of("quarkus", "package", "manifest", "attributes", "*"),
                     ConfigCompatibility::quarkusPackageManifestAttributes),
             entry(List.of("quarkus", "package", "manifest", "sections", "*", "*"),
@@ -510,11 +504,7 @@ public final class ConfigCompatibility {
     private static ConfigValue quarkusPackageJarDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.enabled");
         if (oldVal == null) {
-            oldVal = ctxt.restart("quarkus.package.vineflower.enabled");
-            if (oldVal == null) {
-                // on to the default value
-                return ctxt.proceed(ni.getName());
-            }
+            return ctxt.proceed(ni.getName());
         }
         // map old name to new name
         return oldVal.withName(ni.getName());
@@ -523,11 +513,7 @@ public final class ConfigCompatibility {
     private static ConfigValue quarkusPackageJarDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.jar-directory");
         if (oldVal == null) {
-            oldVal = ctxt.restart("quarkus.package.vineflower.jar-directory");
-            if (oldVal == null) {
-                // on to the default value
-                return ctxt.proceed(ni.getName());
-            }
+            return ctxt.proceed(ni.getName());
         }
         // map old name to new name
         return oldVal.withName(ni.getName());

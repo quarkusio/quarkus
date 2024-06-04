@@ -1340,8 +1340,12 @@ A very simple Jakarta REST Resource that uses `Person` could be:
 ----
 package org.acme.rest;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
 
 @Path("person")
 public class Person {
@@ -1351,8 +1355,25 @@ public class Person {
     public Person getPerson(Long id) {
         return new Person(id, "foo", "bar", "Brick Lane");
     }
+
+    @Produces(APPLICATION_JSON) <1>
+    @Path("/friend/{id}")
+    @GET
+    public Response getPersonFriend(Long id) {
+        var person = new Person(id, "foo", "bar", "Brick Lane");
+        return Response.ok(person).build();
+    }
 }
 ----
+<1> The `@SecureField` annotation is only effective when Quarkus recognizes that produced content type is the 'application/json' type.
+
+WARNING: Currently you cannot use the `@SecureField` annotation to secure your data returned from resource methods returning the `io.smallrye.mutiny.Multi` reactive type.
+
+[IMPORTANT]
+====
+All resource methods returning data secured with the `@SecureField` annotation should be tested.
+Please make sure data are secured as you intended.
+====
 
 Assuming security has been set up for the application (see our xref:security-overview.adoc[guide] for more details), when a user with the `admin` role
 performs an HTTP GET on `/person/1` they will receive:

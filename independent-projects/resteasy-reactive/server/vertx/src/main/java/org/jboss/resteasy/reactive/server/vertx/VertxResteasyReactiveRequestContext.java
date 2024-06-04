@@ -406,7 +406,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public boolean closed() {
-        return response.closed();
+        return response.ended() || response.closed();
     }
 
     @Override

@@ -52,6 +52,11 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security</artifactId>
+            <scope>test</scope>
+        </dependency>
         
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>

@@ -99,7 +99,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    HttpCommonTags.uri(path, response.statusCode()),
+                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode())))
@@ -153,7 +153,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Builder builder = Timer.builder(nameHttpServerRequests)
                     .tags(Tags.of(
                             VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, 0),
+                            HttpCommonTags.uri(path, requestMetric.initialPath, 0),
                             Outcome.CLIENT_ERROR.asTag(),
                             HttpCommonTags.STATUS_RESET));
 
@@ -180,7 +180,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
             Timer.Sample sample = requestMetric.getSample();
             Tags allTags = Tags.of(
                     VertxMetricsTags.method(requestMetric.request().method()),
-                    HttpCommonTags.uri(path, response.statusCode()),
+                    HttpCommonTags.uri(path, requestMetric.initialPath, response.statusCode()),
                     VertxMetricsTags.outcome(response),
                     HttpCommonTags.status(response.statusCode()));
             if (!httpServerMetricsTagsContributors.isEmpty()) {
@@ -217,7 +217,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             return LongTaskTimer.builder(nameWebsocketConnections)
-                    .tags(Tags.of(HttpCommonTags.uri(path, 0)))
+                    .tags(Tags.of(HttpCommonTags.uri(path, requestMetric.initialPath, 0)))
                     .register(registry)
                     .start();
         }

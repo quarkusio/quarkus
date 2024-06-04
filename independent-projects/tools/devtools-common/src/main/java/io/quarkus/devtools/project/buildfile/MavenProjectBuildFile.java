@@ -381,7 +381,7 @@ public class MavenProjectBuildFile extends BuildFile {
             return;
         }
         try {
-            model = ModelUtils.readModel(projectPom);
+            model = MojoUtils.readPom(projectPom.toFile());
         } catch (IOException e) {
             throw new RuntimeException("Failed to read " + projectPom, e);
         }

@@ -507,6 +507,75 @@ public class MyProducer {
 ----
 ====
 
+[[datasource-multiple-single-transaction]]
+=== Use multiple datasources in a single transaction
+
+By default, XA support on datasources is disabled,
+and thus a transaction may include at most one datasource.
+Attempting to access multiple non-XA datasources in the same transaction
+is unsafe and will result in a warning.
+
+In Quarkus 3.10+, this will result in an error by default.
+
+To safely allow using multiple JDBC datasources in the same transaction:
+
+. Make sure your JDBC driver supports XA.
+All <<extensions-and-database-drivers-reference,supported JDBC drivers do>>,
+but <<other-databases,other JDBC drivers>> might not.
+. Make sure your database server is configured to enable XA.
+. Enable XA support explicitly for each relevant datasource by setting
+<<quarkus-agroal_quarkus-datasource-jdbc-transactions,`quarkus.datasource[.optional name].transactions`>> to `xa`.
+
+Using XA, a rollback in one datasource will trigger a rollback in every other datasource enrolled in the transaction.
+
+[NOTE]
+====
+XA transactions on reactive datasources are not supported at the moment.
+====
+
+[NOTE]
+====
+If your transaction involves other, non-datasource resources,
+keep in mind *those* resources might not support XA transactions,
+or might require additional configuration.
+====
+
+If XA cannot be enabled for one of your datasources:
+
+* Be aware that enabling XA for all datasources _except one_ (and only one) is still supported
+through https://www.narayana.io/docs/project/index.html#d5e857[Last Resource Commit Optimization (LRCO)].
+* If you do not need a rollback for one datasource to trigger a rollback for other datasources,
+consider splitting your code into multiple transactions.
+To that end, use xref:transaction.adoc#programmatic-approach[`QuarkusTransaction.requiringNew()`]/xref:transaction.adoc#declarative-approach[`@Transactional(REQUIRES_NEW)`] (preferably)
+or xref:transaction.adoc#legacy-api-approach[`UserTransaction`] (for more complex use cases).
+
+[CAUTION]
+====
+If you want to make sure it is impossible to access multiple non-XA datasources in the same transaction,
+you can set `quarkus.transaction-manager.unsafe-multiple-last-resources` to `fail`.
+This value is the default for Quarkus 3.10+.
+
+With any value different from `fail`, a transaction rollback
+could possibly be applied to only some of the non-XA datasources,
+with other non-XA datasources having already committed their changes,
+leaving your overall system in an inconsistent state.
+
+By default in Quarkus 3.8, for compatibility reasons,
+you get warned once for the first occurrence (`warn-first`).
+You may fully allow unsafe transaction handling across multiple non-XA datasources
+by setting `quarkus.transaction-manager.unsafe-multiple-last-resources` to `allow`.
+
+Alternatively, you can allow the same unsafe behavior
+but logging a warning on *each* offending transaction by setting the property to `warn-each`.
+
+We do not recommend using this configuration property,
+and we plan to remove it in the future,
+so you should plan fixing your application accordingly.
+If you think your use case of this feature is valid and this option should be kept around,
+open an issue in the https://github.com/quarkusio/quarkus/issues/new?assignees=&labels=kind%2Fenhancement&projects=&template=feature_request.yml[Quarkus tracker]
+explaining why.
+====
+
 == Datasource integrations
 
 === Datasource health check

@@ -191,7 +191,7 @@ and will have it use the default datasource.
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
 Hibernate Reactive uses the same properties you would use for Hibernate ORM. You will notice that some properties
-contain `jdbc` in the name but there is not JDBC in Hibernate Reactive, these are simply legacy property names.
+contain `jdbc` in the name but there is no JDBC in Hibernate Reactive, these are simply legacy property names.
 
 include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 

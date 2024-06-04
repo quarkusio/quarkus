@@ -640,7 +640,9 @@ public abstract class ResteasyReactiveRequestContext
 
     protected void endResponse() {
         if (serverResponse().headWritten()) {
-            serverRequest().closeConnection();
+            if (!serverResponse().closed()) {
+                serverRequest().closeConnection();
+            }
         } else {
             serverResponse().setStatusCode(500).end();
         }

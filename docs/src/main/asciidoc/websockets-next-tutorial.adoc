@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting started with WebSockets-Next
+= Getting started with WebSockets Next
 include::_attributes.adoc[]
 :categories: web
 :diataxis-type: tutorial

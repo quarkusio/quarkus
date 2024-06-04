@@ -496,6 +496,31 @@ The `WebSocketConnection` provides both a blocking and a non-blocking method to 
 - `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
 - `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
 
+=== List open connections
+
+It is also possible to list all open connections.
+Quarkus provides a CDI bean of type `io.quarkus.websockets.next.OpenConnections` that declares convenient methods to access the connections.
+
+[source, java]
+----
+import io.quarkus.logging.Log;
+import io.quarkus.websockets.next.OpenConnections;
+
+class MyBean {
+
+  @Inject
+  OpenConnections connections;
+
+  void logAllOpenConnections() {
+     Log.infof("Open connections: %s", connections.listAll()); <1>
+  }
+}
+----
+<1> `OpenConnections#listAll()` returns an immutable snapshot of all open connections at the given time.
+
+There are also other convenient methods.
+For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
+
 == Serialization and Deserialization
 
 The WebSocket Next extension supports automatic serialization and deserialization of messages.

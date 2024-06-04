@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.TransactionRequiredException;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -174,6 +175,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createQuery(qlString, resultClass);
+        }
+    }
+
+    @Override
+    public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createQuery(typedQueryReference);
         }
     }
 

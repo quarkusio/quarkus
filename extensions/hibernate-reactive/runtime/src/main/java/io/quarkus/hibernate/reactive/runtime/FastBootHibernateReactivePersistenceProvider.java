@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -398,6 +399,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.
         return getJdbcHibernatePersistenceProviderDelegate().createContainerEntityManagerFactory(info, map);
+    }
+
+    @Override
+    public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration configuration) {
+        //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
+        //checks and possibly reject if it's not a suitable.
+        return getJdbcHibernatePersistenceProviderDelegate().createEntityManagerFactory(configuration);
     }
 
     @Override

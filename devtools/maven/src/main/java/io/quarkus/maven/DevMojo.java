@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -746,15 +745,15 @@ public class DevMojo extends AbstractMojo {
 
     private List<String> readAnnotationProcessors(Xpp3Dom pluginConfig) {
         if (pluginConfig == null) {
-            return Collections.emptyList();
+            return List.of();
         }
         Xpp3Dom annotationProcessors = pluginConfig.getChild("annotationProcessors");
         if (annotationProcessors == null) {
-            return Collections.emptyList();
+            return List.of();
         }
         Xpp3Dom[] processors = annotationProcessors.getChildren("annotationProcessor");
         if (processors.length == 0) {
-            return Collections.emptyList();
+            return List.of();
         }
         List<String> ret = new ArrayList<>(processors.length);
         for (Xpp3Dom processor : processors) {
@@ -765,21 +764,18 @@ public class DevMojo extends AbstractMojo {
 
     private Set<File> readAnnotationProcessorPaths(Xpp3Dom pluginConfig) throws MojoExecutionException {
         if (pluginConfig == null) {
-            return Collections.emptySet();
+            return Set.of();
         }
         Xpp3Dom annotationProcessorPaths = pluginConfig.getChild("annotationProcessorPaths");
         if (annotationProcessorPaths == null) {
-            return Collections.emptySet();
+            return Set.of();
         }
+        var versionConstraints = getAnnotationProcessorPathsDepMgmt(pluginConfig);
         Xpp3Dom[] paths = annotationProcessorPaths.getChildren("path");
         Set<File> elements = new LinkedHashSet<>();
         try {
             List<org.eclipse.aether.graph.Dependency> dependencies = convertToDependencies(paths);
-            // NOTE: The Maven Compiler Plugin also supports a flag (disabled by default) for applying managed dependencies to
-            // the dependencies of the APT plugins (not them directly), which we don't support yet here
-            // you can find the implementation at https://github.com/apache/maven-compiler-plugin/pull/180/files#diff-d4bac42d8f4c68d397ddbaa05c1cbbed7984ef6dc0bb9ea60739df78997e99eeR1610
-            // when/if we need it
-            CollectRequest collectRequest = new CollectRequest(dependencies, Collections.emptyList(),
+            CollectRequest collectRequest = new CollectRequest(dependencies, versionConstraints,
                     project.getRemoteProjectRepositories());
             DependencyRequest dependencyRequest = new DependencyRequest();
             dependencyRequest.setCollectRequest(collectRequest);
@@ -794,6 +790,18 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Resolution of annotationProcessorPath dependencies failed: " + e.getLocalizedMessage(), e);
         }
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> getAnnotationProcessorPathsDepMgmt(Xpp3Dom pluginConfig) {
+        final Xpp3Dom useDepMgmt = pluginConfig.getChild("annotationProcessorPathsUseDepMgmt");
+        if (useDepMgmt == null || !Boolean.parseBoolean(useDepMgmt.getValue())) {
+            return List.of();
+        }
+        var dm = project.getDependencyManagement();
+        if (dm == null) {
+            return List.of();
+        }
+        return getProjectAetherDependencyManagement();
     }
 
     private List<org.eclipse.aether.graph.Dependency> convertToDependencies(Xpp3Dom[] paths) throws MojoExecutionException {
@@ -848,7 +856,7 @@ public class DevMojo extends AbstractMojo {
     private List<Dependency> getProjectManagedDependencies() {
         DependencyManagement dependencyManagement = project.getDependencyManagement();
         if (dependencyManagement == null || dependencyManagement.getDependencies() == null) {
-            return Collections.emptyList();
+            return List.of();
         }
         return dependencyManagement.getDependencies();
     }
@@ -864,7 +872,7 @@ public class DevMojo extends AbstractMojo {
 
     private Set<org.eclipse.aether.graph.Exclusion> convertToAetherExclusions(Xpp3Dom exclusions) {
         if (exclusions == null) {
-            return Collections.emptySet();
+            return Set.of();
         }
         Set<Exclusion> aetherExclusions = new HashSet<>();
         for (Xpp3Dom exclusion : exclusions.getChildren("exclusion")) {
@@ -1489,21 +1497,6 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing version");
         }
 
-        final List<org.eclipse.aether.graph.Dependency> managed = new ArrayList<>(
-                project.getDependencyManagement().getDependencies().size());
-        project.getDependencyManagement().getDependencies().forEach(d -> {
-            final List<Exclusion> exclusions;
-            if (!d.getExclusions().isEmpty()) {
-                exclusions = new ArrayList<>(d.getExclusions().size());
-                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), "*", "*")));
-            } else {
-                exclusions = List.of();
-            }
-            managed.add(new org.eclipse.aether.graph.Dependency(
-                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
-                    d.getScope(), d.isOptional(), exclusions));
-        });
-
         final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, ArtifactCoords.TYPE_JAR,
                 devModeVersion);
         final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
@@ -1513,7 +1506,7 @@ public class DevMojo extends AbstractMojo {
                                         // it doesn't matter what the root artifact is, it's an alias
                                         .setRootArtifact(new DefaultArtifact(IO_QUARKUS, "quarkus-devmode-alias",
                                                 ArtifactCoords.TYPE_JAR, "1.0"))
-                                        .setManagedDependencies(managed)
+                                        .setManagedDependencies(getProjectAetherDependencyManagement())
                                         .setDependencies(List.of(
                                                 new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME),
                                                 new org.eclipse.aether.graph.Dependency(new DefaultArtifact(
@@ -1537,6 +1530,24 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         }
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> getProjectAetherDependencyManagement() {
+        final List<org.eclipse.aether.graph.Dependency> managed = new ArrayList<>(
+                project.getDependencyManagement().getDependencies().size());
+        project.getDependencyManagement().getDependencies().forEach(d -> {
+            final List<Exclusion> exclusions;
+            if (!d.getExclusions().isEmpty()) {
+                exclusions = new ArrayList<>(d.getExclusions().size());
+                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), "*", "*")));
+            } else {
+                exclusions = List.of();
+            }
+            managed.add(new org.eclipse.aether.graph.Dependency(
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
+                    d.getScope(), d.isOptional(), exclusions));
+        });
+        return managed;
     }
 
     private void setKotlinSpecificFlags(MavenDevModeLauncher.Builder builder) {

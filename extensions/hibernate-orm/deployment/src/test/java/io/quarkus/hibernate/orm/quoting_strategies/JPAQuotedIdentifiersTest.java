@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.quoting_strategies;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 
 /**
@@ -9,6 +11,7 @@ import io.quarkus.test.QuarkusDevModeTest;
  * <p>
  * To resolve the simulated situation, this test uses the quoting strategy {@code all-except-column-definitions}.
  */
+@Tag(TestTags.DEVMODE)
 public class JPAQuotedIdentifiersTest extends AbstractJPAQuotedTest {
 
     @RegisterExtension

@@ -8,6 +8,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +17,8 @@ import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class HibernateHotReloadTestCase {
+@Tag(TestTags.DEVMODE)
+public class HibernateHotReloadDevModeTest {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

@@ -248,17 +248,17 @@ public class OidcClientRecorder {
 
         @Override
         public Uni<Tokens> getTokens(Map<String, String> additionalGrantParameters) {
-            throw new DisabledOidcClientException(message);
+            return Uni.createFrom().failure(new DisabledOidcClientException(message));
         }
 
         @Override
         public Uni<Tokens> refreshTokens(String refreshToken, Map<String, String> additionalGrantParameters) {
-            throw new DisabledOidcClientException(message);
+            return Uni.createFrom().failure(new DisabledOidcClientException(message));
         }
 
         @Override
         public Uni<Boolean> revokeAccessToken(String accessToken, Map<String, String> additionalParameters) {
-            throw new DisabledOidcClientException(message);
+            return Uni.createFrom().failure(new DisabledOidcClientException(message));
         }
 
         @Override

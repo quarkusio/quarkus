@@ -423,13 +423,14 @@ public class BuildTimeContentProcessor {
             ExtensionsBuildItem extensionsBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
-            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem) {
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            DevUIConfig devUIConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
 
         addThemeBuildTimeData(internalBuildTimeData, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
-        addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem);
+        addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
         addVersionInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
@@ -490,7 +491,7 @@ public class BuildTimeContentProcessor {
     }
 
     private void addFooterTabBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
-            ExtensionsBuildItem extensionsBuildItem) {
+            ExtensionsBuildItem extensionsBuildItem, DevUIConfig devUIConfig) {
         // Add the Footer tabs
         @SuppressWarnings("unchecked")
         List<Page> footerTabs = new ArrayList();
@@ -509,7 +510,7 @@ public class BuildTimeContentProcessor {
         footerTabs.add(testLog);
 
         // This is only needed when extension developers work on an extension, so we only included it if you build from source.
-        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT")) {
+        if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog) {
             Page devUiLog = Page.webComponentPageBuilder().internal()
                     .namespace("devui-jsonrpcstream")
                     .title("Dev UI")

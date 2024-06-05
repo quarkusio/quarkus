@@ -55,6 +55,15 @@ public class OidcClientTest {
     }
 
     @Test
+    public void testGetUserNameDisabledClient() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameDisabledClient")
+                .then()
+                .statusCode(200)
+                .body(containsString("Unauthorized, status code 401"));
+    }
+
+    @Test
     public void testGetUserNameMisconfiguredClientFilter() {
         RestAssured.given().header("Accept", "text/plain")
                 .when().get("/frontend/userNameMisconfiguredClientFilter")

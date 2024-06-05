@@ -12,7 +12,7 @@ public final class TransactionManagerBuildTimeConfig {
      * Define the behavior when using multiple XA unaware resources in the same transactional demarcation.
      * <p>
      * Defaults to {@code fail}.
-     * {@code warn} and {@code allow} are UNSAFE and should only be used for compatibility.
+     * {@code warn-each}, {@code warn-first}, and {@code allow} are UNSAFE and should only be used for compatibility.
      * Either use XA for all resources if you want consistency, or split the code into separate
      * methods with separate transactions.
      * <p>
@@ -58,7 +58,7 @@ public final class TransactionManagerBuildTimeConfig {
          */
         FAIL;
 
-        // The default is WARN in Quarkus 3.8, FAIL in Quarkus 3.9+
+        // The default is WARN_FIRST in Quarkus 3.8, FAIL in Quarkus 3.9+
         // Make sure to update defaultValueDocumentation on unsafeMultipleLastResources when changing this.
         public static final UnsafeMultipleLastResourcesMode DEFAULT = FAIL;
     }

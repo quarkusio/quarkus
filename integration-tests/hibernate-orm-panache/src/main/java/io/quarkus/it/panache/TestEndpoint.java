@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1841,6 +1842,18 @@ public class TestEndpoint {
         Assertions.assertEquals(0, query.count());
         Assertions.assertEquals(0,
                 Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p"));
+        return "OK";
+    }
+
+    @GET
+    @Path("40962")
+    @Transactional
+    public String testBug40962() {
+        // should not throw
+        //        Bug40962Entity.find("name = :name ORDER BY locate(location, :location) DESC",
+        //                Map.of("name", "Demo", "location", "something")).count();
+        Bug40962Entity.find("FROM Bug40962Entity WHERE name = :name ORDER BY locate(location, :location) DESC",
+                Map.of("name", "Demo", "location", "something")).count();
         return "OK";
     }
 }

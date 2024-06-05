@@ -15,7 +15,7 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
             Object paramsArrayOrMap) {
         super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
             {
-                this.countQuery = customCountQuery;
+                this.customCountQueryForSpring = customCountQuery;
             }
         });
     }

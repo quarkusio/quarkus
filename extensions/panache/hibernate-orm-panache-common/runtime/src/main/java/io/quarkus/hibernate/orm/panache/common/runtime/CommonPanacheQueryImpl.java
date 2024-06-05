@@ -46,7 +46,12 @@ public class CommonPanacheQueryImpl<Entity> {
      * this is the original Panache-Query, if any (can be null)
      */
     private String originalQuery;
-    protected String countQuery;
+    /**
+     * This is only used by the Spring Data JPA extension, due to Spring's Query annotation allowing a custom count query
+     * See https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html#jpa.query-methods.at-query.native
+     * Otherwise we do not use this, and rely on ORM to generate count queries
+     */
+    protected String customCountQueryForSpring;
     private String orderBy;
     private EntityManager em;
 
@@ -72,7 +77,7 @@ public class CommonPanacheQueryImpl<Entity> {
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery) {
         this.em = previousQuery.em;
         this.query = newQueryString;
-        this.countQuery = countQuery;
+        this.customCountQueryForSpring = countQuery;
         this.orderBy = previousQuery.orderBy;
         this.paramsArrayOrMap = previousQuery.paramsArrayOrMap;
         this.page = previousQuery.page;
@@ -118,13 +123,14 @@ public class CommonPanacheQueryImpl<Entity> {
             }
 
             newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
-            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
+            // I think projections do not change the result count, so we can keep the custom count query
+            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), customCountQueryForSpring);
         }
 
         // build select clause with a constructor expression
         String selectClause = "SELECT " + getParametersFromClass(type, null);
-        return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery,
-                "select count(*) " + selectQuery);
+        // I think projections do not change the result count, so we can keep the custom count query
+        return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery, customCountQueryForSpring);
     }
 
     private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
@@ -276,33 +282,26 @@ public class CommonPanacheQueryImpl<Entity> {
 
     // Results
 
-    @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
-            String selectQuery = query;
-            if (PanacheJpaUtil.isNamedQuery(query)) {
-                org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
-                selectQuery = q.getQueryString();
-            }
-
-            Query countQuery = em.createQuery(countQuery(selectQuery));
-            if (paramsArrayOrMap instanceof Map)
-                AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
-            else
-                AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
-            try (NonThrowingCloseable c = applyFilters()) {
-                count = (Long) countQuery.getSingleResult();
+            if (customCountQueryForSpring != null) {
+                Query countQuery = em.createQuery(customCountQueryForSpring);
+                if (paramsArrayOrMap instanceof Map)
+                    AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
+                else
+                    AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
+                try (NonThrowingCloseable c = applyFilters()) {
+                    count = (Long) countQuery.getSingleResult();
+                }
+            } else {
+                @SuppressWarnings("rawtypes")
+                org.hibernate.query.Query query = (org.hibernate.query.Query) createBaseQuery();
+                try (NonThrowingCloseable c = applyFilters()) {
+                    count = query.getResultCount();
+                }
             }
         }
         return count;
-    }
-
-    private String countQuery(String selectQuery) {
-        if (countQuery != null) {
-            return countQuery;
-        }
-
-        return PanacheJpaUtil.getFastCountQuery(selectQuery);
     }
 
     @SuppressWarnings("unchecked")

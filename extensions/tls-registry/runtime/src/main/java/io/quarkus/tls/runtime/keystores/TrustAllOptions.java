@@ -68,6 +68,11 @@ public class TrustAllOptions implements TrustOptions {
 
     @Override
     public Function<String, TrustManager[]> trustManagerMapper(Vertx vertx) {
-        return name -> new TrustManager[] { TRUST_ALL_MANAGER };
+        return new Function<String, TrustManager[]>() {
+            @Override
+            public TrustManager[] apply(String name) {
+                return new TrustManager[] { TRUST_ALL_MANAGER };
+            }
+        };
     }
 }

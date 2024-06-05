@@ -57,7 +57,9 @@ public class P12KeyStores {
                         + "' - the key store password is not set and cannot be retrieved from the credential provider.");
             }
             options.setPassword(password);
-            config.alias().ifPresent(options::setAlias);
+            if (config.alias().isPresent()) {
+                options.setAlias(config.alias().get());
+            }
             String ap = CredentialProviders.getAliasPassword(config.aliasPassword(), pc).orElse(null);
             options.setAliasPassword(ap);
         } catch (UncheckedIOException e) {
@@ -80,7 +82,9 @@ public class P12KeyStores {
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
             }
             options.setPassword(password);
-            config.alias().ifPresent(options::setAlias);
+            if (config.alias().isPresent()) {
+                options.setAlias(config.alias().get());
+            }
         } catch (UncheckedIOException e) {
             throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name
                     + "' - cannot read the trust store file '" + config.path() + "'", e);

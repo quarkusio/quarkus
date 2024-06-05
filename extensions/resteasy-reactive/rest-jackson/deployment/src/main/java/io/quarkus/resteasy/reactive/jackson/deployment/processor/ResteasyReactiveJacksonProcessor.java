@@ -57,6 +57,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -370,6 +371,32 @@ public class ResteasyReactiveJacksonProcessor {
         }
     }
 
+    @BuildStep(onlyIf = JacksonOptimizationConfig.IsReflectionFreeSerializersEnabled.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    public void handleEndpointParams(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
+            JaxRsResourceIndexBuildItem jaxRsIndex, CombinedIndexBuildItem index,
+            ResteasyReactiveServerJacksonRecorder recorder,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+
+        IndexView indexView = jaxRsIndex.getIndexView();
+
+        Map<String, ClassInfo> jsonClasses = new HashMap<>();
+        for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
+            MethodInfo methodInfo = entry.getMethodInfo();
+            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
+            if (effectiveReturnClassInfo != null) {
+                jsonClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+            }
+        }
+
+        if (!jsonClasses.isEmpty()) {
+            JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
+                    index.getComputingIndex());
+            factory.create(jsonClasses.values())
+                    .forEach(recorder::recordGeneratedSerializer);
+        }
+    }
+
     @BuildStep
     public void handleFieldSecurity(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem index,
@@ -407,32 +434,7 @@ public class ResteasyReactiveJacksonProcessor {
                 continue;
             }
 
-            Type returnType = methodInfo.returnType();
-            if (returnType.kind() == Type.Kind.VOID) {
-                continue;
-            }
-            Type effectiveReturnType = returnType;
-            if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
-                if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
-                    continue;
-                }
-
-                effectiveReturnType = returnType.asParameterizedType().arguments().get(0);
-            }
-            if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
-                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
-                effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
-            } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
-                effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
-            }
-
-            ClassInfo effectiveReturnClassInfo = indexView.getClassByName(effectiveReturnType.name());
+            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
             if (effectiveReturnClassInfo == null) {
                 continue;
             }
@@ -459,6 +461,39 @@ public class ResteasyReactiveJacksonProcessor {
                 producer.produce(bi);
             }
         }
+    }
+
+    private static ClassInfo getEffectiveReturnClassInfo(MethodInfo methodInfo, IndexView indexView) {
+        Type returnType = methodInfo.returnType();
+        if (returnType.kind() == Type.Kind.VOID) {
+            return null;
+        }
+        Type effectiveReturnType = getEffectiveReturnType(returnType);
+        return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
+    }
+
+    private static Type getEffectiveReturnType(Type returnType) {
+        Type effectiveReturnType = returnType;
+        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
+
+            effectiveReturnType = returnType.asParameterizedType().arguments().get(0);
+        }
+        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
+                effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
+        } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
+            effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
+        }
+        return effectiveReturnType;
     }
 
     private static Map<String, Boolean> getTypesWithSecureField() {

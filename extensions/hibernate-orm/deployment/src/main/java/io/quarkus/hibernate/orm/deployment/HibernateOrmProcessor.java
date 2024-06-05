@@ -48,8 +48,8 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.spi.JpaSettings;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -118,6 +118,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
@@ -255,8 +256,8 @@ public final class HibernateOrmProcessor {
     public void parsePersistenceXmlDescriptors(HibernateOrmConfig config,
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
         if (!shouldIgnorePersistenceXmlResources(config)) {
-            List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
-            for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
+            var explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
+            for (var desc : explicitDescriptors) {
                 persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
             }
         }
@@ -304,14 +305,15 @@ public final class HibernateOrmProcessor {
 
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
-            ParsedPersistenceXmlDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
+            PersistenceUnitDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
             String puName = xmlDescriptor.getName();
             Optional<JdbcDataSourceBuildItem> jdbcDataSource = jdbcDataSources.stream()
                     .filter(i -> i.isDefault())
                     .findFirst();
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
             persistenceUnitDescriptors
-                    .produce(new PersistenceUnitDescriptorBuildItem(xmlDescriptor, puName,
+                    .produce(new PersistenceUnitDescriptorBuildItem(
+                            QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor),
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
@@ -362,7 +364,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) {
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptor : persistenceXmlDescriptors) {
-            ParsedPersistenceXmlDescriptor descriptor = persistenceXmlDescriptor.getDescriptor();
+            PersistenceUnitDescriptor descriptor = persistenceXmlDescriptor.getDescriptor();
             jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
                     descriptor.getName(), descriptor.getPersistenceUnitRootUrl(), descriptor.getManagedClassNames(),
                     descriptor.getMappingFileNames()));
@@ -898,27 +900,25 @@ public final class HibernateOrmProcessor {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
 
-        ParsedPersistenceXmlDescriptor descriptor = new ParsedPersistenceXmlDescriptor(null); //todo URL
-        descriptor.setName(persistenceUnitName);
-
-        descriptor.setExcludeUnlistedClasses(true);
         if (modelClassesAndPackages.isEmpty()) {
             LOG.warnf("Could not find any entities affected to the persistence unit '%s'.", persistenceUnitName);
-        } else {
-            // That's right, we're pushing both class names and package names
-            // to a method called "addClasses".
-            // It's a misnomer: while the method populates the set that backs getManagedClasses(),
-            // that method is also poorly named because it can actually return both class names
-            // and package names.
-            // See for proof:
-            // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
-            //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
-            // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
-            //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
-            descriptor.addClasses(new ArrayList<>(modelClassesAndPackages));
         }
 
-        descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
+        QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
+                persistenceUnitName, persistenceUnitName,
+                PersistenceUnitTransactionType.JTA,
+                // That's right, we're pushing both class names and package names
+                // to a method called "addClasses".
+                // It's a misnomer: while the method populates the set that backs getManagedClasses(),
+                // that method is also poorly named because it can actually return both class names
+                // and package names.
+                // See for proof:
+                // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
+                //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
+                // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
+                //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
+                new ArrayList<>(modelClassesAndPackages),
+                new Properties());
 
         MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
         collectDialectConfig(persistenceUnitName, persistenceUnitConfig,
@@ -938,7 +938,7 @@ public final class HibernateOrmProcessor {
         // Metadata builder contributor
         persistenceUnitConfig.metadataBuilderContributor().ifPresent(
                 className -> descriptor.getProperties()
-                        .setProperty(EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR, className));
+                        .setProperty(JpaSettings.METADATA_BUILDER_CONTRIBUTOR, className));
 
         // Mapping
         if (persistenceUnitConfig.mapping().timezone().timeZoneDefaultStorage().isPresent()) {
@@ -1096,7 +1096,6 @@ public final class HibernateOrmProcessor {
 
         persistenceUnitDescriptors.produce(
                 new PersistenceUnitDescriptorBuildItem(descriptor,
-                        descriptor.getName(),
                         new RecordedConfig(
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getName),
                                 jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),
@@ -1193,7 +1192,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static void collectDialectConfigForPersistenceXml(String persistenceUnitName,
-            ParsedPersistenceXmlDescriptor puDescriptor) {
+            PersistenceUnitDescriptor puDescriptor) {
         Properties properties = puDescriptor.getProperties();
         String dialect = puDescriptor.getProperties().getProperty(AvailableSettings.DIALECT);
         // Legacy behavior: we used to do this through a custom DialectSelector,
@@ -1231,7 +1230,7 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {
+    private static void setMaxFetchDepth(PersistenceUnitDescriptor descriptor, OptionalInt maxFetchDepth) {
         descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 

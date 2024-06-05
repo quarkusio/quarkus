@@ -42,7 +42,7 @@
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.2.5</surefire.plugin.version>
         <jandex.version>3.2.0</jandex.version>
-        <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
+        <formatter-maven-plugin.version>2.24.1</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.10.0</impsort-maven-plugin.version>
 
         <junit.jupiter.version>5.10.2</junit.jupiter.version>

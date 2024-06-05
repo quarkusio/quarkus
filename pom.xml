@@ -60,6 +60,9 @@
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
+        <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
+        <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
+
         <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
@@ -186,11 +189,13 @@
                 <skipITs>true</skipITs>
                 <skipDocs>true</skipDocs>
                 <enforcer.skip>true</enforcer.skip>
+                <maven-enforcer-plugin.phase>none</maven-enforcer-plugin.phase>
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
                 <skipCodestartValidation>true</skipCodestartValidation>
                 <truststore.skip>true</truststore.skip>
             </properties>

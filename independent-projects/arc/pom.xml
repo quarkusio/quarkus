@@ -212,6 +212,7 @@
                     <executions>
                         <execution>
                             <id>enforce</id>
+                            <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>

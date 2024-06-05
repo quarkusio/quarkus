@@ -166,7 +166,7 @@ quarkus.datasource.db-kind=mysql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
 ----
 
-When starting Dev Services (for example, in tests or in DEV mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand.
+When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand.
 
 [IMPORTANT]
 ====

@@ -233,7 +233,7 @@ However, this comes with a few drawbacks:
 
  * If you use the same executable in all environments, and a certificate expires, the application needs to be rebuilt, and redeployed into production with the new certificate, which is an inconvenience.
  * Even worse, if a certificate gets revoked because of a security breach, all applications that embed this certificate need to be rebuilt and redeployed in a timely manner.
- * This requires also to add into the application all certificates for all environments (e.g. DEV, TEST, PROD), which means that a certificate that is required for DEV but should not be used elsewhere, will make its way anyway in production.
+ * This requires also to add into the application all certificates for all environments (e.g. `dev`, `test`, `prod`), which means that a certificate that is required for dev mode but should not be used elsewhere, will make its way anyway in production.
  * Providing all certificates at build time complicates the CI, specifically in dynamic environments such as Kubernetes where valid certificates are provided by the platform in the `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` PEM file.
  * Lastly, this does not play well with third party software that do not provide a dedicated build for each customer environment.
 

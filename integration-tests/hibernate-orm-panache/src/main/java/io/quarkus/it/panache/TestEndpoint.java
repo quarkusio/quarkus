@@ -11,6 +11,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1858,6 +1859,18 @@ public class TestEndpoint {
         Assertions.assertEquals(1, Person.count("\r\n  \n\nfrom\n Person2\nwhere\n\rname = ?1", "stef"));
         Assertions.assertEquals(1, Person.update("\r\n  \n\nupdate\n Person2\nset\n\rname='foo' where\n\rname = ?1", "stef"));
         Assertions.assertEquals(1, Person.delete("\r\n  \n\ndelete\nfrom\n Person2\nwhere\nname = ?1", "foo"));
+        return "OK";
+    }
+
+    @GET
+    @Path("40962")
+    @Transactional
+    public String testBug40962() {
+        // should not throw
+        Bug40962Entity.find("name = :name ORDER BY locate(location, :location) DESC",
+                Map.of("name", "Demo", "location", "something")).count();
+        Bug40962Entity.find("FROM Bug40962Entity WHERE name = :name ORDER BY locate(location, :location) DESC",
+                Map.of("name", "Demo", "location", "something")).count();
         return "OK";
     }
 }

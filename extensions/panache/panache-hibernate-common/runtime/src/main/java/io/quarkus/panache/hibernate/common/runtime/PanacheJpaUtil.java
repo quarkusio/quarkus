@@ -39,6 +39,8 @@ public class PanacheJpaUtil {
     /**
      * This turns an HQL (already expanded from Panache-QL) query into a count query, using text manipulation
      * if we can, because it's faster, or fall back to using the ORM HQL parser in {@link #getCountQueryUsingParser(String)}
+     *
+     * @deprecated we should use SelectionQuery.getResultCount() when supported by HR (ORM already supports it)
      */
     public static String getFastCountQuery(String query) {
         // try to generate a good count query from the existing query
@@ -91,6 +93,8 @@ public class PanacheJpaUtil {
     /**
      * This turns an HQL (already expanded from Panache-QL) query into a count query, using the
      * ORM HQL parser. Slow version, see {@link #getFastCountQuery(String)} for the fast version.
+     *
+     * @deprecated we should use SelectionQuery.getResultCount() when supported by HR (ORM already supports it)
      */
     public static String getCountQueryUsingParser(String query) {
         HqlLexer lexer = new HqlLexer(CharStreams.fromString(query));

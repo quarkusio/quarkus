@@ -133,6 +133,12 @@
             </dependency>
 
             <dependency>
+                <groupId>io.quarkus.vertx.utils</groupId>
+                <artifactId>quarkus-vertx-utils</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.quarkus.resteasy.reactive</groupId>
                 <artifactId>resteasy-reactive-client-processor</artifactId>
                 <version>${project.version}</version>

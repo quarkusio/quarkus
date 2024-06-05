@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.core.runtime.VertxBufferImpl;
+import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
@@ -62,7 +62,7 @@ public abstract class WebSocketConnectionBase {
         String text;
         // Use the same conversion rules as defined for the OnTextMessage
         if (message instanceof JsonObject || message instanceof JsonArray || message instanceof BufferImpl
-                || message instanceof VertxBufferImpl) {
+                || message instanceof NoBoundChecksBuffer) {
             text = message.toString();
         } else if (message.getClass().isArray() && message.getClass().arrayType().equals(byte.class)) {
             text = Buffer.buffer((byte[]) message).toString();

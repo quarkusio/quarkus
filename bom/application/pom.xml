@@ -4899,6 +4899,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus.vertx.utils</groupId>
+                <artifactId>quarkus-vertx-utils</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.wildfly.common</groupId>
                 <artifactId>wildfly-common</artifactId>
                 <version>${wildfly-common.version}</version>

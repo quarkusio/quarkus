@@ -24,6 +24,10 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.vertx.utils</groupId>
+            <artifactId>quarkus-vertx-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-server-common</artifactId>
             <exclusions>

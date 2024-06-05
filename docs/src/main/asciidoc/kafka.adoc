@@ -361,7 +361,9 @@ If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it 
 For more information, see <<stateful-processing-checkpointing>>
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
-This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing.
+This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing. Specifically, the offset of the most recent acknowledged 
+message will always be committed, even if older messages have not finished being processed. In case of an incident such as a crash, processing would restart after the last commit, leading 
+to older messages never being successfully and fully processed, which would appear as message loss.
 This strategy should not be used in high load environment, as offset commit is expensive. However, it reduces the risk of duplicates.
 
 - `ignore` performs no commit. This strategy is the default strategy when the consumer is explicitly configured with `enable.auto.commit` to true.

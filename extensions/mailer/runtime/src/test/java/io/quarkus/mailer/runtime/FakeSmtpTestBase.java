@@ -15,12 +15,17 @@ import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.mutiny.core.Vertx;
+import me.escoffier.certs.Format;
+import me.escoffier.certs.junit5.Certificate;
+import me.escoffier.certs.junit5.Certificates;
 
+@Certificates(baseDir = "target/certs", certificates = {
+        @Certificate(name = "mailer-certs", formats = Format.PKCS12, password = "password") })
 public class FakeSmtpTestBase {
 
     protected static final int FAKE_SMTP_PORT = 1465;
-    protected static final String SERVER_JKS = "certs/server2.jks";
-    protected static final String CLIENT_JKS = "certs/client.jks";
+    protected static final String SERVER_JKS = "target/certs/mailer-certs-keystore.p12";
+    protected static final String CLIENT_TRUSTSTORE = "target/certs/mailer-certs-truststore.p12";
 
     protected static final String FROM = "test@test.org";
     protected static final String TO = "foo@quarkus.io";
@@ -78,6 +83,35 @@ public class FakeSmtpTestBase {
         return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 
+    protected ReactiveMailer getMailer(MailersRuntimeConfig config, String confName, TlsConfiguration configuration) {
+        Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, LaunchMode.NORMAL,
+                new MailerSupport(true, Set.of()),
+                new TlsConfigurationRegistry() {
+
+                    @Override
+                    public Optional<TlsConfiguration> get(String name) {
+                        if (confName != null && confName.equals(name)) {
+                            return Optional.of(configuration);
+                        }
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<TlsConfiguration> getDefault() {
+                        if (confName == null) {
+                            return Optional.of(configuration);
+                        }
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public void register(String name, TlsConfiguration configuration) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
+        return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
+    }
+
     protected MailersRuntimeConfig getDefaultConfig() {
         MailersRuntimeConfig mailersConfig = new MailersRuntimeConfig();
         mailersConfig.defaultMailer = new MailerRuntimeConfig();
@@ -87,6 +121,7 @@ public class FakeSmtpTestBase {
         mailersConfig.defaultMailer.startTLS = "DISABLED";
         mailersConfig.defaultMailer.login = "DISABLED";
         mailersConfig.defaultMailer.ssl = false;
+        mailersConfig.defaultMailer.tls = Optional.empty();
         mailersConfig.defaultMailer.authMethods = Optional.empty();
         mailersConfig.defaultMailer.maxPoolSize = 10;
         mailersConfig.defaultMailer.ownHostName = Optional.empty();

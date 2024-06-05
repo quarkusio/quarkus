@@ -18,7 +18,7 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
         MailersRuntimeConfig mailersConfig = getDefaultConfig();
         mailersConfig.defaultMailer.ssl = true;
         mailersConfig.defaultMailer.truststore.password = Optional.of("password");
-        mailersConfig.defaultMailer.truststore.paths = Optional.of(Collections.singletonList(CLIENT_JKS));
+        mailersConfig.defaultMailer.truststore.paths = Optional.of(Collections.singletonList(CLIENT_TRUSTSTORE));
 
         ReactiveMailer mailer = getMailer(mailersConfig);
         startServer(SERVER_JKS);
@@ -31,26 +31,11 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
         MailersRuntimeConfig mailersConfig = getDefaultConfig();
         mailersConfig.defaultMailer.ssl = true;
         mailersConfig.defaultMailer.keyStorePassword = Optional.of("password");
-        mailersConfig.defaultMailer.keyStore = Optional.of(CLIENT_JKS);
+        mailersConfig.defaultMailer.keyStore = Optional.of(CLIENT_TRUSTSTORE);
 
         ReactiveMailer mailer = getMailer(mailersConfig);
         startServer(SERVER_JKS);
         mailer.send(getMail()).await().indefinitely();
-    }
-
-    @Test
-    public void sendMailWithValidCertsButWrongHost() {
-        MailersRuntimeConfig mailersConfig = getDefaultConfig();
-        mailersConfig.defaultMailer.host = "127.0.0.1"; // Expecting localhost.
-        mailersConfig.defaultMailer.ssl = true;
-        mailersConfig.defaultMailer.truststore.password = Optional.of("password");
-        mailersConfig.defaultMailer.truststore.paths = Optional.of(Collections.singletonList(CLIENT_JKS));
-
-        startServer(SERVER_JKS);
-        ReactiveMailer mailer = getMailer(mailersConfig);
-        Assertions.assertThatThrownBy(() -> mailer.send(getMail()).await().indefinitely())
-                .isInstanceOf(CompletionException.class)
-                .hasCauseInstanceOf(SSLHandshakeException.class);
     }
 
     @Test

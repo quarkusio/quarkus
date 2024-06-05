@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next;
 
 import java.net.URI;
+import java.net.URLEncoder;
 
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.common.annotation.Experimental;
@@ -28,6 +29,9 @@ public interface WebSocketConnector<CLIENT> {
 
     /**
      * Set the path param.
+     * <p>
+     * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build the
+     * target URI.
      *
      * @param name
      * @param value

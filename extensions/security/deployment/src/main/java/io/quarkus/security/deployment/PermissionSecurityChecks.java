@@ -1,5 +1,6 @@
 package io.quarkus.security.deployment;
 
+import static io.quarkus.arc.processor.DotNames.CLASS;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.security.PermissionsAllowed.AUTODETECTED;
 import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
@@ -34,7 +35,9 @@ import io.quarkus.security.spi.runtime.SecurityCheck;
 
 interface PermissionSecurityChecks {
 
-    Map<MethodInfo, SecurityCheck> get();
+    Map<MethodInfo, SecurityCheck> getMethodSecurityChecks();
+
+    Map<DotName, SecurityCheck> getClassNameSecurityChecks();
 
     Set<String> permissionClasses();
 
@@ -43,8 +46,8 @@ interface PermissionSecurityChecks {
         private static final DotName STRING_PERMISSION = DotName.createSimple(StringPermission.class);
         private static final DotName PERMISSIONS_ALLOWED_INTERCEPTOR = DotName
                 .createSimple(PermissionsAllowedInterceptor.class);
-        private final Map<MethodInfo, List<List<PermissionKey>>> methodToPermissionKeys = new HashMap<>();
-        private final Map<MethodInfo, LogicalAndPermissionPredicate> methodToPredicate = new HashMap<>();
+        private final Map<AnnotationTarget, List<List<PermissionKey>>> targetToPermissionKeys = new HashMap<>();
+        private final Map<AnnotationTarget, LogicalAndPermissionPredicate> targetToPredicate = new HashMap<>();
         private final Map<String, MethodInfo> classSignatureToConstructor = new HashMap<>();
         private final SecurityCheckRecorder recorder;
 
@@ -53,22 +56,37 @@ interface PermissionSecurityChecks {
         }
 
         PermissionSecurityChecks build() {
+            final Map<LogicalAndPermissionPredicate, SecurityCheck> cache = new HashMap<>();
+            final Map<MethodInfo, SecurityCheck> methodToCheck = new HashMap<>();
+            final Map<DotName, SecurityCheck> classNameToCheck = new HashMap<>();
+            for (var targetToPredicate : targetToPredicate.entrySet()) {
+                SecurityCheck check = cache.computeIfAbsent(targetToPredicate.getValue(),
+                        new Function<LogicalAndPermissionPredicate, SecurityCheck>() {
+                            @Override
+                            public SecurityCheck apply(LogicalAndPermissionPredicate predicate) {
+                                return createSecurityCheck(predicate);
+                            }
+                        });
+
+                var annotationTarget = targetToPredicate.getKey();
+                if (annotationTarget.kind() == AnnotationTarget.Kind.CLASS) {
+                    DotName className = annotationTarget.asClass().name();
+                    classNameToCheck.put(className, check);
+                } else {
+                    MethodInfo securedMethod = annotationTarget.asMethod();
+                    methodToCheck.put(securedMethod, check);
+                }
+            }
+
             return new PermissionSecurityChecks() {
                 @Override
-                public Map<MethodInfo, SecurityCheck> get() {
-                    final Map<LogicalAndPermissionPredicate, SecurityCheck> cache = new HashMap<>();
-                    final Map<MethodInfo, SecurityCheck> methodToCheck = new HashMap<>();
-                    for (var methodToPredicate : methodToPredicate.entrySet()) {
-                        SecurityCheck check = cache.computeIfAbsent(methodToPredicate.getValue(),
-                                new Function<LogicalAndPermissionPredicate, SecurityCheck>() {
-                                    @Override
-                                    public SecurityCheck apply(LogicalAndPermissionPredicate predicate) {
-                                        return createSecurityCheck(predicate);
-                                    }
-                                });
-                        methodToCheck.put(methodToPredicate.getKey(), check);
-                    }
-                    return methodToCheck;
+                public Map<MethodInfo, SecurityCheck> getMethodSecurityChecks() {
+                    return Map.copyOf(methodToCheck);
+                }
+
+                @Override
+                public Map<DotName, SecurityCheck> getClassNameSecurityChecks() {
+                    return Map.copyOf(classNameToCheck);
                 }
 
                 @Override
@@ -99,8 +117,8 @@ interface PermissionSecurityChecks {
          */
         PermissionSecurityChecksBuilder createPermissionPredicates() {
             Map<PermissionCacheKey, PermissionWrapper> permissionCache = new HashMap<>();
-            for (Map.Entry<MethodInfo, List<List<PermissionKey>>> entry : methodToPermissionKeys.entrySet()) {
-                final MethodInfo securedMethod = entry.getKey();
+            for (var entry : targetToPermissionKeys.entrySet()) {
+                final AnnotationTarget securedTarget = entry.getKey();
                 final LogicalAndPermissionPredicate predicate = new LogicalAndPermissionPredicate();
 
                 // 'AND' operands
@@ -113,7 +131,7 @@ interface PermissionSecurityChecks {
                         // 'AND' operands
 
                         for (PermissionKey permissionKey : permissionKeys) {
-                            var permission = createPermission(permissionKey, securedMethod, permissionCache);
+                            var permission = createPermission(permissionKey, securedTarget, permissionCache);
                             if (permission.isComputed()) {
                                 predicate.markAsComputed();
                             }
@@ -128,7 +146,7 @@ interface PermissionSecurityChecks {
                         predicate.and(orPredicate);
 
                         for (PermissionKey permissionKey : permissionKeys) {
-                            var permission = createPermission(permissionKey, securedMethod, permissionCache);
+                            var permission = createPermission(permissionKey, securedTarget, permissionCache);
                             if (permission.isComputed()) {
                                 predicate.markAsComputed();
                             }
@@ -136,7 +154,7 @@ interface PermissionSecurityChecks {
                         }
                     }
                 }
-                methodToPredicate.put(securedMethod, predicate);
+                targetToPredicate.put(securedTarget, predicate);
             }
             return this;
         }
@@ -153,7 +171,7 @@ interface PermissionSecurityChecks {
         }
 
         PermissionSecurityChecksBuilder validatePermissionClasses(IndexView index) {
-            for (List<List<PermissionKey>> keyLists : methodToPermissionKeys.values()) {
+            for (List<List<PermissionKey>> keyLists : targetToPermissionKeys.values()) {
                 for (List<PermissionKey> keyList : keyLists) {
                     for (PermissionKey key : keyList) {
                         if (!classSignatureToConstructor.containsKey(key.classSignature())) {
@@ -187,7 +205,8 @@ interface PermissionSecurityChecks {
 
         PermissionSecurityChecksBuilder gatherPermissionsAllowedAnnotations(List<AnnotationInstance> instances,
                 Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
-                Map<ClassInfo, AnnotationInstance> alreadyCheckedClasses) {
+                Map<ClassInfo, AnnotationInstance> alreadyCheckedClasses,
+                List<AnnotationInstance> additionalClassInstances) {
 
             // make sure we process annotations on methods first
             instances.sort(new Comparator<AnnotationInstance>() {
@@ -217,7 +236,7 @@ interface PermissionSecurityChecks {
                                         methodInfo.name(), methodInfo.declaringClass()));
                     }
 
-                    gatherPermissionKeys(instance, methodInfo, cache, methodToPermissionKeys);
+                    gatherPermissionKeys(instance, methodInfo, cache, targetToPermissionKeys);
                 } else {
                     // class annotation
 
@@ -245,7 +264,7 @@ interface PermissionSecurityChecks {
                                 // ignore method annotated with other security annotation
                                 boolean noMethodLevelSecurityAnnotation = !alreadyCheckedMethods.containsKey(methodInfo);
                                 // ignore method annotated with method-level @PermissionsAllowed
-                                boolean noMethodLevelPermissionsAllowed = !methodToPermissionKeys.containsKey(methodInfo);
+                                boolean noMethodLevelPermissionsAllowed = !targetToPermissionKeys.containsKey(methodInfo);
                                 if (noMethodLevelSecurityAnnotation && noMethodLevelPermissionsAllowed) {
 
                                     gatherPermissionKeys(instance, methodInfo, cache, classMethodToPermissionKeys);
@@ -261,12 +280,16 @@ interface PermissionSecurityChecks {
                     }
                 }
             }
-            methodToPermissionKeys.putAll(classMethodToPermissionKeys);
+            targetToPermissionKeys.putAll(classMethodToPermissionKeys);
+            for (var instance : additionalClassInstances) {
+                gatherPermissionKeys(instance, instance.target(), cache, targetToPermissionKeys);
+            }
             return this;
         }
 
-        private static void gatherPermissionKeys(AnnotationInstance instance, MethodInfo methodInfo, List<PermissionKey> cache,
-                Map<MethodInfo, List<List<PermissionKey>>> methodToPermissionKeys) {
+        private static <T extends AnnotationTarget> void gatherPermissionKeys(AnnotationInstance instance, T annotationTarget,
+                List<PermissionKey> cache,
+                Map<T, List<List<PermissionKey>>> targetToPermissionKeys) {
             // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
             // here we transform it to permission -> actions
             final var permissionToActions = new HashMap<String, Set<String>>();
@@ -299,9 +322,15 @@ interface PermissionSecurityChecks {
             }
 
             if (permissionToActions.isEmpty()) {
-                throw new RuntimeException(String.format(
-                        "Method '%s' was annotated with '@PermissionsAllowed', but no valid permission was provided",
-                        methodInfo.name()));
+                if (annotationTarget.kind() == AnnotationTarget.Kind.METHOD) {
+                    throw new RuntimeException(String.format(
+                            "Method '%s' was annotated with '@PermissionsAllowed', but no valid permission was provided",
+                            annotationTarget.asMethod().name()));
+                } else {
+                    throw new RuntimeException(String.format(
+                            "Class '%s' was annotated with '@PermissionsAllowed', but no valid permission was provided",
+                            annotationTarget.asClass().name()));
+                }
             }
 
             // permissions specified via @PermissionsAllowed has 'one of' relation, therefore we put them in one list
@@ -324,13 +353,8 @@ interface PermissionSecurityChecks {
             }
 
             // store annotation value as permission keys
-            methodToPermissionKeys
-                    .computeIfAbsent(methodInfo, new Function<MethodInfo, List<List<PermissionKey>>>() {
-                        @Override
-                        public List<List<PermissionKey>> apply(MethodInfo methodInfo) {
-                            return new ArrayList<>();
-                        }
-                    })
+            targetToPermissionKeys
+                    .computeIfAbsent(annotationTarget, at -> new ArrayList<>())
                     .add(List.copyOf(orPermissions));
         }
 
@@ -378,10 +402,10 @@ interface PermissionSecurityChecks {
             return securityCheck;
         }
 
-        private PermissionWrapper createPermission(PermissionKey permissionKey, MethodInfo securedMethod,
+        private PermissionWrapper createPermission(PermissionKey permissionKey, AnnotationTarget securedTarget,
                 Map<PermissionCacheKey, PermissionWrapper> cache) {
             var constructor = classSignatureToConstructor.get(permissionKey.classSignature());
-            return cache.computeIfAbsent(new PermissionCacheKey(permissionKey, securedMethod, constructor),
+            return cache.computeIfAbsent(new PermissionCacheKey(permissionKey, securedTarget, constructor),
                     new Function<PermissionCacheKey, PermissionWrapper>() {
                         @Override
                         public PermissionWrapper apply(PermissionCacheKey permissionCacheKey) {
@@ -568,8 +592,14 @@ interface PermissionSecurityChecks {
             private final boolean computed;
             private final boolean passActionsToConstructor;
 
-            private PermissionCacheKey(PermissionKey permissionKey, MethodInfo securedMethod, MethodInfo constructor) {
+            private PermissionCacheKey(PermissionKey permissionKey, AnnotationTarget securedTarget, MethodInfo constructor) {
                 if (isComputed(permissionKey, constructor)) {
+                    if (securedTarget.kind() != AnnotationTarget.Kind.METHOD) {
+                        throw new IllegalArgumentException(
+                                "@PermissionAllowed instance that accepts method arguments must be placed on a method");
+                    }
+                    MethodInfo securedMethod = securedTarget.asMethod();
+
                     // computed permission
                     this.permissionKey = permissionKey;
                     this.computed = true;

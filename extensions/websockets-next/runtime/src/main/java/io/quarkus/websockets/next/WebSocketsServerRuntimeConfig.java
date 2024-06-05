@@ -54,4 +54,20 @@ public interface WebSocketsServerRuntimeConfig {
     @WithDefault("close")
     UnhandledFailureStrategy unhandledFailureStrategy();
 
+    /**
+     * WebSockets-specific security configuration.
+     */
+    Security security();
+
+    interface Security {
+
+        /**
+         * Quarkus redirects HTTP handshake request to this URL if an HTTP upgrade is rejected due to the authorization
+         * failure. This configuration property takes effect when you secure endpoint with a standard security annotation.
+         * For example, the HTTP upgrade is secured if an endpoint class is annotated with the `@RolesAllowed` annotation.
+         */
+        Optional<String> authFailureRedirectUrl();
+
+    }
+
 }

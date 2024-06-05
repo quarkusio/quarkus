@@ -655,18 +655,58 @@ public class Endpoint {
 
 `SecurityIdentity` is initially created during a secure HTTP upgrade and associated with the websocket connection.
 
-Currently, for an HTTP upgrade be secured, users must configure an HTTP policy protecting the HTTP upgrade path.
-For example, to secure the `open()` method in the above websocket endpoint, one can add the following authentication policy:
+NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
 
+== Secure HTTP upgrade
+
+An HTTP upgrade is secured when standard security annotation is placed on an endpoint class or an HTTP Security policy is defined.
+The advantage of securing HTTP upgrade is less processing, the authorization is performed early and only once.
+You should always prefer HTTP upgrade security unless, like in th example above, you need to perform action on error.
+
+.Use standard security annotation to secure an HTTP upgrade
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.Authenticated;
+import jakarta.inject.Inject;
+
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+
+@Authenticated <1>
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    @Inject
+    SecurityIdentity currentIdentity;
+
+    @OnOpen
+    String open() {
+        return "ready";
+    }
+
+    @OnTextMessage
+    String echo(String message) {
+        return message;
+    }
+}
+----
+<1> Initial HTTP handshake ends with the 401 status for anonymous users.
+You can also redirect the handshake request on authorization failure with the `quarkus.websockets-next.server.security.auth-failure-redirect-url` configuration property.
+
+IMPORTANT: HTTP upgrade is only secured when a security annotation is declared on an endpoint class next to the `@WebSocket` annotation.
+Placing a security annotation on an endpoint bean will not secure bean methods, only the HTTP upgrade.
+You must always verify that your endpoint is secured as intended.
+
+.Use HTTP Security policy to secure an HTTP upgrade
 [source,properties]
 ----
-quarkus.http.auth.permission.secured.paths=/end
-quarkus.http.auth.permission.secured.policy=authenticated
+quarkus.http.auth.permission.http-upgrade.paths=/end
+quarkus.http.auth.permission.http-upgrade.policy=authenticated
 ----
-
-Other options for securing HTTP upgrade requests, such as using the security annotations, will be explored in the future.
-
-NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
 
 == Inspect and/or reject HTTP upgrade
 

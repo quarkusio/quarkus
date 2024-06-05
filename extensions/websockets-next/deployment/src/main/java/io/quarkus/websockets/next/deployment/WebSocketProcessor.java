@@ -1,21 +1,25 @@
 package io.quarkus.websockets.next.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
@@ -27,6 +31,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -35,6 +40,7 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -50,10 +56,12 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -65,6 +73,10 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
+import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
+import io.quarkus.security.spi.SecurityTransformerUtils;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -84,6 +96,7 @@ import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
+import io.quarkus.websockets.next.runtime.SecurityHttpUpgradeCheck;
 import io.quarkus.websockets.next.runtime.SecuritySupport;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
@@ -404,6 +417,8 @@ public class WebSocketProcessor {
         }
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class) // HTTP Upgrade checks may need config during the initialization
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class) // SecurityHttpUpgradeCheck is runtime init due to runtime config
     @Record(RUNTIME_INIT)
     @BuildStep
     public void registerRoutes(WebSocketServerRecorder recorder, HttpRootPathBuildItem httpRootPath,
@@ -494,6 +509,61 @@ public class WebSocketProcessor {
                 .setRuntimeInit()
                 .supplier(recorder.createContext(endpointMap))
                 .done());
+    }
+
+    @BuildStep
+    void createSecurityChecksForHttpUpgradeCheck(Capabilities capabilities,
+            BuildProducer<ClassSecurityCheckAnnotationBuildItem> producer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            producer.produce(new ClassSecurityCheckAnnotationBuildItem(WebSocketDotNames.WEB_SOCKET));
+        }
+    }
+
+    @BuildStep
+    void preventRepeatedSecurityChecksForHttpUpgrade(Capabilities capabilities,
+            BuildProducer<AnnotationsTransformerBuildItem> producer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            producer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
+                    .forClasses()
+                    .whenAnyMatch(WebSocketDotNames.WEB_SOCKET)
+                    .transform(ctx -> ctx.remove(SecurityTransformerUtils::isStandardSecurityAnnotation))));
+        }
+    }
+
+    @Record(RUNTIME_INIT)
+    @BuildStep
+    void createSecurityHttpUpgradeCheck(Capabilities capabilities, BuildProducer<SyntheticBeanBuildItem> producer,
+            Optional<ClassSecurityCheckStorageBuildItem> storageItem,
+            BeanArchiveIndexBuildItem indexItem,
+            WebSocketServerRecorder recorder, List<WebSocketEndpointBuildItem> endpoints) {
+        if (capabilities.isPresent(Capability.SECURITY) && storageItem.isPresent()) {
+            var endpointIdToSecurityCheck = collectEndpointSecurityChecks(endpoints, storageItem.get(), indexItem.getIndex());
+            if (!endpointIdToSecurityCheck.isEmpty()) {
+                producer.produce(SyntheticBeanBuildItem
+                        .configure(HttpUpgradeCheck.class)
+                        .scope(BuiltinScope.SINGLETON.getInfo())
+                        .priority(SecurityHttpUpgradeCheck.BEAN_PRIORITY)
+                        .setRuntimeInit()
+                        .supplier(recorder.createSecurityHttpUpgradeCheck(endpointIdToSecurityCheck))
+                        .done());
+            }
+        }
+    }
+
+    private static Map<String, SecurityCheck> collectEndpointSecurityChecks(List<WebSocketEndpointBuildItem> endpoints,
+            ClassSecurityCheckStorageBuildItem storage, IndexView index) {
+        return endpoints
+                .stream().<Map.Entry<String, SecurityCheck>> mapMulti((endpoint, consumer) -> {
+                    var beanName = endpoint.beanClassName();
+                    if (storage.getSecurityCheck(beanName) instanceof SecurityCheck check) {
+                        consumer.accept(Map.entry(endpoint.id, check));
+                    } else if (hasSecurityAnnotation(index.getClassByName(beanName))) {
+                        throw new IllegalStateException("WebSocket endpoint '%s' requires ".formatted(beanName)
+                                + "secured HTTP upgrade but Quarkus did not configure security check "
+                                + "correctly. Please open issue in Quarkus project");
+                    }
+                })
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     static String mergePath(String prefix, String path) {

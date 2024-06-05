@@ -138,7 +138,12 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     }
 
     public Supplier<TlsConfigurationRegistry> getSupplier() {
-        return () -> this;
+        return new Supplier<TlsConfigurationRegistry>() {
+            @Override
+            public TlsConfigurationRegistry get() {
+                return CertificateRecorder.this;
+            }
+        };
     }
 
     public void register(String name, Supplier<TlsConfiguration> supplier) {

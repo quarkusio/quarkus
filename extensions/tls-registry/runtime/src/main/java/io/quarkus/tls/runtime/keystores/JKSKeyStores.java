@@ -58,7 +58,9 @@ public class JKSKeyStores {
                         + "' - the key store password is not set and cannot be retrieved from the credential provider.");
             }
             options.setPassword(p);
-            config.alias().ifPresent(options::setAlias);
+            if (config.alias().isPresent()) {
+                options.setAlias(config.alias().get());
+            }
             String ap = CredentialProviders.getAliasPassword(config.aliasPassword(), keyStoreCredentialProviderConfig)
                     .orElse(null);
             options.setAliasPassword(ap);
@@ -83,7 +85,9 @@ public class JKSKeyStores {
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
             }
             options.setPassword(password);
-            config.alias().ifPresent(options::setAlias);
+            if (config.alias().isPresent()) {
+                options.setAlias(config.alias().get());
+            }
         } catch (UncheckedIOException e) {
             throw new IllegalStateException("Invalid JKS trust store configuration for certificate '" + name
                     + "' - cannot read the trust store file '" + config.path() + "'", e);

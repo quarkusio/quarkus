@@ -16,7 +16,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import io.quarkus.tls.TlsConfiguration;
-import io.quarkus.tls.runtime.config.KeyStoreConfig;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.vertx.core.Vertx;
@@ -138,7 +137,10 @@ public class VertxCertificateHolder implements TlsConfiguration {
 
     @Override
     public boolean usesSni() {
-        return config.keyStore().map(KeyStoreConfig::sni).orElse(false);
+        if (config.keyStore().isPresent()) {
+            return config.keyStore().get().sni();
+        }
+        return false;
     }
 
     @Override

@@ -525,6 +525,7 @@
                     <executions>
                         <execution>
                             <id>enforce</id>
+                            <phase>${maven-enforcer-plugin.phase}</phase>
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
@@ -679,7 +680,7 @@
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
                                 <suppressAnnotations><annotation>**.SuppressForbidden</annotation></suppressAnnotations>
                             </configuration>
-                            <phase>compile</phase>
+                            <phase>${forbiddenapis-maven-plugin.phase}</phase>
                             <goals>
                                 <goal>check</goal>
                             </goals>

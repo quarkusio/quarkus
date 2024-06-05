@@ -282,6 +282,7 @@
                 <executions>
                     <execution>
                         <id>enforce-quarkus-maven-plugin</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <configuration>
                             <rules>
                                 <bannedDependencies>

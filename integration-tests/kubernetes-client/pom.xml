@@ -160,6 +160,7 @@
                 <executions>
                     <execution>
                         <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <goals>
                             <goal>enforce</goal>
                         </goals>

@@ -68,6 +68,7 @@ public final class ClassNames {
             createConstant("org.hibernate.generator.internal.TenantIdGeneration"),
             createConstant("org.hibernate.generator.internal.VersionGeneration"),
             createConstant("org.hibernate.id.Assigned"),
+            createConstant("org.hibernate.id.CompositeNestedGeneratedValueGenerator"),
             createConstant("org.hibernate.id.ForeignGenerator"),
             createConstant("org.hibernate.id.GUIDGenerator"),
             createConstant("org.hibernate.id.IdentityGenerator"),
@@ -75,6 +76,9 @@ public final class ClassNames {
             createConstant("org.hibernate.id.SelectGenerator"),
             createConstant("org.hibernate.id.UUIDGenerator"),
             createConstant("org.hibernate.id.UUIDHexGenerator"),
+            createConstant("org.hibernate.id.enhanced.SequenceStyleGenerator"),
+            createConstant("org.hibernate.id.enhanced.TableGenerator"),
+            createConstant("org.hibernate.id.uuid.UuidGenerator"),
             createConstant("org.hibernate.tuple.CreationTimestampGeneration"),
             createConstant("org.hibernate.tuple.UpdateTimestampGeneration"),
             createConstant("org.hibernate.tuple.VmValueGeneration"));

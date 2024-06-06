@@ -139,13 +139,13 @@ Meanwhile, the `consumeNested` method within the nested class can access both `v
 
 [source, java]
 ----
-@WebSocket("/ws/v{version}")
+@WebSocket(path = "/ws/v{version}")
 public class MyPrimaryWebSocket {
 
     @OnTextMessage
     void consumePrimary(String s)    { ... }
 
-    @WebSocket("/products/{id}")
+    @WebSocket(path = "/products/{id}")
     public static class MyNestedWebSocket {
 
       @OnTextMessage
@@ -163,12 +163,12 @@ However, developers can specify alternative scopes to suit their specific requir
 
 [source,java]
 ----
-@WebSocket("/ws")
+@WebSocket(path = "/ws")
 public class MyWebSocket {
     // Singleton scoped bean
 }
 
-@WebSocket("/ws")
+@WebSocket(path = "/ws")
 @ApplicationScoped
 public class MyRequestScopedWebSocket {
   // Application scoped.
@@ -420,7 +420,7 @@ Methods annotated with `@OnOpen` can utilize server-side streaming by returning 
 
 [source, java]
 ----
-@WebSocket("/foo")
+@WebSocket(path = "/foo")
 @OnOpen
 public Multi<Integer> streaming() {
     return Multi.createFrom().ticks().every(Duration.ofSecond(1))

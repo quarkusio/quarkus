@@ -247,10 +247,22 @@ quarkus.redis.password=<the password>
 
 To use TLS, you need to:
 
-1. Set the `quarkus.redis.tls.enabled=true` property
+1. Set the `quarkus.redis.tls.enabled=true` property or use the  xref:./tls-registry-reference.adoc[TLS registry] (recommended)
 2. Make sure that your URL starts with `rediss://` (with two `s`)
 
+
+When using the TLS registry, you need to use a named configuration to avoid conflicts with other TLS configurations:
+
+[source,properties]
+----
+quarkus.tls.redis.trust-store.p12.path=client.p12
+quarkus.tls.redis.trust-store.p12.password=secret
+
+quarkus.redis.tls-configuration-name=redis # Reference the named configuration
+----
+
 IMPORTANT: The default hostname verifier is set to `NONE`, meaning it does not verify the host name. You can change this behavior by setting the `quarkus.redis.tls.hostname-verification-algorithm` property, to `HTTPS` for example.
+
 
 === Configure the authentication
 

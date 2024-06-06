@@ -168,6 +168,18 @@ public interface RedisClientConfig {
     @ConfigDocSection
     TlsConfig tls();
 
+    /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration name is set then, {@code quarkus.redis.$client-name.tls} will be used.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
+     */
+    Optional<String> tlsConfigurationName();
+
     default String toDebugString() {
         return "RedisClientConfig{" +
                 "hosts=" + hosts() +

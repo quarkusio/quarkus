@@ -9,7 +9,6 @@ import java.util.List;
 
 import javax.tools.JavaFileObject;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -18,17 +17,9 @@ import com.karuslabs.elementary.junit.JavacExtension;
 import com.karuslabs.elementary.junit.annotations.Classpath;
 import com.karuslabs.elementary.junit.annotations.Processors;
 
-import io.quarkus.annotation.processor.fs.CustomMemoryFileSystemProvider;
-
 @ExtendWith(JavacExtension.class)
 @Processors({ ExtensionAnnotationProcessor.class })
 class ExtensionAnnotationProcessorTest {
-
-    @BeforeEach
-    void beforeEach() {
-        // This is of limited use, since the filesystem doesn't seem to directly generate files, in the current usage
-        CustomMemoryFileSystemProvider.reset();
-    }
 
     @Test
     @Classpath("org.acme.examples.ClassWithBuildStep")
@@ -40,7 +31,7 @@ class ExtensionAnnotationProcessorTest {
     @Classpath("org.acme.examples.ClassWithBuildStep")
     void shouldGenerateABscFile(Results results) throws IOException {
         assertNoErrrors(results);
-        List<JavaFileObject> sources = results.sources;
+        List<JavaFileObject> sources = results.generatedSources;
         JavaFileObject bscFile = sources.stream()
                 .filter(source -> source.getName()
                         .endsWith(".bsc"))

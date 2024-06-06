@@ -2,6 +2,8 @@ package io.quarkus.webdependency.locator.runtime;
 
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -11,30 +13,38 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class WebDependencyLocatorRecorder {
 
+    private static final Logger LOG = Logger.getLogger(WebDependencyLocatorRecorder.class.getName());
+
     public Handler<RoutingContext> getHandler(String webDependenciesRootUrl,
             Map<String, String> webDependencyNameToVersionMap) {
         return (event) -> {
             String path = event.normalizedPath();
             if (path.startsWith(webDependenciesRootUrl)) {
-                String rest = path.substring(webDependenciesRootUrl.length());
-                String webdep = rest.substring(0, rest.indexOf('/'));
-                if (webDependencyNameToVersionMap.containsKey(webdep)) {
-                    // Check this is not the actual path (ex: /webjars/jquery/${jquery.version}/...
-                    int endOfVersion = rest.indexOf('/', rest.indexOf('/') + 1);
-                    if (endOfVersion == -1) {
-                        endOfVersion = rest.length();
-                    }
-                    String nextPathEntry = rest.substring(rest.indexOf('/') + 1, endOfVersion);
-                    if (webDependencyNameToVersionMap.get(webdep) == null
-                            || nextPathEntry.equals(webDependencyNameToVersionMap.get(webdep))) {
-                        // go to the next handler (which should be the static resource handler, if one exists)
-                        event.next();
+                try {
+                    String rest = path.substring(webDependenciesRootUrl.length());
+                    String webdep = rest.substring(0, rest.indexOf('/'));
+                    if (webDependencyNameToVersionMap.containsKey(webdep)) {
+                        // Check this is not the actual path (ex: /webjars/jquery/${jquery.version}/...
+                        int endOfVersion = rest.indexOf('/', rest.indexOf('/') + 1);
+                        if (endOfVersion == -1) {
+                            endOfVersion = rest.length();
+                        }
+                        String nextPathEntry = rest.substring(rest.indexOf('/') + 1, endOfVersion);
+                        if (webDependencyNameToVersionMap.get(webdep) == null
+                                || nextPathEntry.equals(webDependencyNameToVersionMap.get(webdep))) {
+                            // go to the next handler (which should be the static resource handler, if one exists)
+                            event.next();
+                        } else {
+                            // reroute to the real resource
+                            event.reroute(webDependenciesRootUrl + webdep + "/"
+                                    + webDependencyNameToVersionMap.get(webdep) + rest.substring(rest.indexOf('/')));
+                        }
                     } else {
-                        // reroute to the real resource
-                        event.reroute(webDependenciesRootUrl + webdep + "/"
-                                + webDependencyNameToVersionMap.get(webdep) + rest.substring(rest.indexOf('/')));
+                        event.next();
                     }
-                } else {
+                } catch (Throwable t) {
+                    LOG.debug("Error while locating web jar " + path);
+                    // See if someone else can handle this.
                     event.next();
                 }
             } else {

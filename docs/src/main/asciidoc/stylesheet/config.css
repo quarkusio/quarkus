@@ -22,15 +22,11 @@ table.configuration-reference.tableblock > tbody > tr:nth-child(even) > th {
 table.configuration-reference.tableblock > tbody > tr > th {
   background-color: transparent;
   font-size: 1rem;
-  height: 60px;
   border: none;
   border-bottom: 1px solid #4695eb;
   vertical-align: bottom;
 }
 
-table.configuration-reference.tableblock > tbody > tr:first-child > th {
-  height: 30px;
-}
 table.configuration-reference.tableblock > tbody > tr > th:nth-child(2),
 table.configuration-reference.tableblock > tbody > tr > th:nth-child(3),
 table.configuration-reference.tableblock > tbody > tr > td:nth-child(2),

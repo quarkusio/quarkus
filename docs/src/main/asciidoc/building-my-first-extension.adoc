@@ -29,6 +29,12 @@ Keep in mind it's not representative of the power of moving things to build time
 :prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
 
+[CAUTION]
+====
+Writing extension with any other than Java and Maven has **not** been tested by the Quarkus team so your mileage may vary
+if you stray off this path
+====
+
 == Basic Concepts
 
 First things first, we will need to start with some basic concepts.

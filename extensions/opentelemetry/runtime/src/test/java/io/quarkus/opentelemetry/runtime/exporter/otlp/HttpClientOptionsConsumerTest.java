@@ -15,6 +15,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.http.HttpClientOptions;
 
 class HttpClientOptionsConsumerTest {
@@ -23,7 +25,8 @@ class HttpClientOptionsConsumerTest {
     void testNoProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
                 createExporterConfig(false),
-                URI.create("http://localhost:4317"));
+                URI.create("http://localhost:4317"),
+                new NoopTlsConfigurationRegistry());
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);
@@ -34,7 +37,8 @@ class HttpClientOptionsConsumerTest {
     void testWithProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
                 createExporterConfig(true),
-                URI.create("http://localhost:4317"));
+                URI.create("http://localhost:4317"),
+                new NoopTlsConfigurationRegistry());
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);
@@ -103,6 +107,11 @@ class HttpClientOptionsConsumerTest {
             }
 
             @Override
+            public Optional<String> tlsConfigurationName() {
+                return Optional.empty();
+            }
+
+            @Override
             public ProxyConfig proxyOptions() {
                 return new ProxyConfig() {
                     @Override
@@ -132,5 +141,22 @@ class HttpClientOptionsConsumerTest {
                 };
             }
         };
+    }
+
+    private static class NoopTlsConfigurationRegistry implements TlsConfigurationRegistry {
+        @Override
+        public Optional<TlsConfiguration> get(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<TlsConfiguration> getDefault() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void register(String name, TlsConfiguration configuration) {
+
+        }
     }
 }

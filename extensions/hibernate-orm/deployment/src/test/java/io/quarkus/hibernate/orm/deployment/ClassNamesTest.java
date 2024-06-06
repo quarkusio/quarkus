@@ -67,6 +67,14 @@ public class ClassNamesTest {
     }
 
     @Test
+    public void testNoMissingGeneratorClass() {
+        Set<DotName> generatorImplementors = findConcreteNamedImplementors(hibernateIndex, "org.hibernate.generator.Generator");
+
+        assertThat(ClassNames.GENERATORS)
+                .containsExactlyInAnyOrderElementsOf(generatorImplementors);
+    }
+
+    @Test
     public void testNoMissingJpaAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
@@ -189,6 +197,17 @@ public class ClassNamesTest {
 
         List<String> allowedTargetTypes = Arrays.asList(targetAnnotation.value().asEnumArray());
         return allowedTargetTypes.contains(targetType.name());
+    }
+
+    private Set<DotName> findConcreteNamedImplementors(Index index, String interfaceName) {
+        var interfaceDotName = DotName.createSimple(interfaceName);
+        assertThat(index.getClassByName(interfaceDotName)).isNotNull();
+        return index.getAllKnownImplementors(interfaceDotName).stream()
+                .filter(c -> !c.isInterface() && !c.isAbstract()
+                // Ignore anonymous classes
+                        && c.simpleName() != null)
+                .map(ClassInfo::name)
+                .collect(Collectors.toSet());
     }
 
     private static File determineJpaJarLocation() {

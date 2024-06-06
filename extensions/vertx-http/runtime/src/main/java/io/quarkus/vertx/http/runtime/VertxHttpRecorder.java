@@ -947,7 +947,7 @@ public class VertxHttpRecorder {
      * Do not use this during the actual configuration, use options.getHost() there directly instead.
      */
     private static String getDeveloperFriendlyHostName(HttpServerOptions options) {
-        return (isWSL() && LaunchMode.current().isDevOrTest() && options.getHost().equals("0.0.0.0")) ? "localhost"
+        return (LaunchMode.current().isDevOrTest() && "0.0.0.0".equals(options.getHost()) && isWSL()) ? "localhost"
                 : options.getHost();
     }
 

@@ -9,6 +9,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 
+import org.bson.BsonDocument;
+import org.bson.BsonDouble;
 import org.bson.Document;
 
 import com.mongodb.WriteConcern;
@@ -38,6 +40,10 @@ public class BookResource {
     @GET
     public List<Book> getBooks() {
         FindIterable<Book> iterable = getCollection().find();
+        return getBooks(iterable);
+    }
+
+    private List<Book> getBooks(FindIterable<Book> iterable) {
         List<Book> books = new ArrayList<>();
         WriteConcern writeConcern = client.getDatabase("temp").getWriteConcern();
         // force a test failure if we're not getting the correct, and correctly configured named mongodb client
@@ -47,6 +53,15 @@ public class BookResource {
             }
         }
         return books;
+    }
+
+    @GET
+    @Path("/invalid")
+    public List<Book> error() {
+        BsonDocument query = new BsonDocument();
+        query.put("$invalidop", new BsonDouble(0d));
+        FindIterable<Book> iterable = getCollection().find(query);
+        return getBooks(iterable);
     }
 
     @POST

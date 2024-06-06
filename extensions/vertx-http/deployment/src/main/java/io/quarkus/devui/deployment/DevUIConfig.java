@@ -1,5 +1,8 @@
 package io.quarkus.devui.deployment;
 
+import java.util.List;
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -18,6 +21,15 @@ public class DevUIConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean showJsonRpcLog;
+
+    /**
+     * More hosts allowed for Dev UI
+     *
+     * Comma separated list of valid URLs, e.g.: www.quarkus.io, myhost.com
+     * By default localhost and 127.0.0.1 will always be allowed
+     */
+    @ConfigItem
+    public Optional<List<String>> hosts = Optional.empty();
 
     /**
      * CORS configuration.

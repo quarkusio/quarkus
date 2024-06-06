@@ -125,6 +125,10 @@ public class DevUIRecorder {
         };
     }
 
+    public Handler<RoutingContext> createLocalHostOnlyFilter(List<String> hosts) {
+        return new LocalHostOnlyFilter(hosts);
+    }
+
     private static final class DeleteDirectoryRunnable implements Runnable {
 
         private final Path directory;

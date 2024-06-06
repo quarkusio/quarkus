@@ -1,0 +1,150 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Load Shedding reference guide
+include::_attributes.adoc[]
+:numbered:
+:sectnums:
+:categories: web
+:topics: web,load-shedding
+:extensions: io.quarkus:quarkus-load-shedding
+:extension-status: experimental
+
+include::{includes}/extension-status.adoc[]
+
+Load shedding is the practice of detecting service overload and rejecting requests.
+
+In Quarkus, the `quarkus-load-shedding` extension provides a load shedding mechanism.
+
+== Use the Load Shedding extension
+
+To use the load shedding extension, you need to add the `io.quarkus:quarkus-load-shedding` extension to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-load-shedding</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-load-shedding")
+----
+
+No configuration is required, though the possible configuration options are described below.
+
+== The load shedding algorithm
+
+The load shedding algorithm has 2 parts:
+
+* overload detection
+* priority load shedding (optional)
+
+=== Overload detection
+
+To detect whether the current service is overloaded, an adaptation of TCP Vegas is used.
+
+The algorithm starts with 100 allowed concurrent requests.
+For each request, it compares the number of current requests with the allowed limit and if the limit is exceeded, an overload situation is signalled.
+
+If the limit is not exceeded, or if priority load shedding determines that the request should not be rejected (see below), the request is allowed.
+When it finishes, its duration is compared with the lowest duration seen so far to estimate a queue size.
+If the queue size is lower than _alpha_, the current limit is increased, but only up to a given maximum, by default 1000.
+If the queue size is greater than _beta_, the current limit is decreased.
+Otherwise, the current limit is kept intact.
+
+Alpha and beta are computed by multiplying the configurable constants with a base 10 logarithm of the current limit.
+
+After some number of requests, which can be modified by configuring the _probe_ factor, the lowest duration seen is reset to the last seen duration of a request.
+
+=== Priority load shedding
+
+If an overload situation is signalled, priority load shedding is invoked.
+
+By default, priority load shedding is enabled, which means a request is only rejected if the current CPU load is high enough.
+To determine whether a request should be rejected, 2 attributes are considered:
+
+* request priority
+* request cohort
+
+There are 5 statically defined priorities and 128 cohorts, which amounts to 640 request groups in total.
+
+After both priority and cohort are assigned to a request, a request group number is computed: `group = priority * num_cohorts + cohort`.
+Then, the group number is compared to a simple cubic function of current CPU load, where `load` is a number between 0 and 1: `num_groups * (1 - load^3)`.
+If the group number is higher, the request is rejected, otherwise it is allowed even in an overload situation.
+
+If priority load shedding is disabled, all requests are rejected in an overload situation.
+
+==== Customizing request priority
+
+Priority is assigned by a `io.quarkus.load.shedding.RequestPrioritizer`.
+There is 5 statically defined priorities in the `io.quarkus.load.shedding.RequestPriority` enum: `CRITICAL`, `IMPORTANT`, `NORMAL`, `BACKGROUND` and `DEGRADED`.
+By default, if no request prioritizer applies, the priority is assumed to be `NORMAL`.
+
+There is one default prioritizer which assigns the priority of `CRITICAL` to requests to the non-application endpoints.
+It declares no `@Priority`.
+
+It is possible to define custom implementations of the `RequestPrioritizer` interface.
+The implementations must be CDI beans, otherwise they are ignored.
+The CDI rules of typesafe resolution must be followed.
+That is, if multiple implementations exist with a different `@Priority` value and some of them are ``@Alternative``s, only the alternatives with the highest priority value are retained.
+If no implementation is an alternative, all implementations are retained and are sorted in descending `@Priority` order (highest priority value comes first).
+
+==== Customizing request cohort
+
+Cohort is assigned by a `io.quarkus.load.shedding.RequestClassifier`.
+There is 128 statically defined cohorts, with the lowest number being 1 and highest number being 128.
+The classifier should return a number in this interval; if it does not, the number is adjusted automatically.
+
+There is one default classifier which assigns a cohort based on a hash of the remote IP address and current time, such that an IP address changes its cohort roughly every hour.
+It declares no `@Priority`.
+
+It is possible to define custom implementations of the `RequestClassifier` interface.
+The implementations must be CDI beans, otherwise they are ignored.
+The CDI rules of typesafe resolution must be followed.
+That is, if multiple implementations exist with a different `@Priority` value and some of them are ``@Alternative``s, only the alternatives with the highest priority value are retained.
+If no implementation is an alternative, all implementations are retained and are sorted in descending `@Priority` order (highest priority value comes first).
+
+== Limitations
+
+The load shedding extension currently only applies to HTTP requests, and is heavily skewed towards request/response network interactions.
+This means that gRPC, WebSocket and other kinds of streaming over HTTP are not supported.
+Other "entrypoints" to Quarkus applications, such as messaging, are not supported either.
+
+Further, the load shedding implementation is currently rather basic and not heavily tested in production.
+Improvements may be necessary.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-load-shedding.adoc[opts=optional, leveloffset=+1]
+
+== Further reading
+
+Netflix Technology Blog:
+
+* https://netflixtechblog.medium.com/performance-under-load-3e6fa9a60581[Performance Under Load]
+* https://netflixtechblog.com/keeping-netflix-reliable-using-prioritized-load-shedding-6cc827b02f94[Keeping Netflix Reliable Using Prioritized Load Shedding]
+
+Uber Engineering Blog:
+
+* https://www.uber.com/blog/cinnamon-using-century-old-tech-to-build-a-mean-load-shedder/[Cinnamon: Using Century Old Tech to Build a Mean Load Shedder]
+* https://www.uber.com/blog/pid-controller-for-cinnamon/[PID Controller for Cinnamon]
+* https://www.uber.com/blog/cinnamon-auto-tuner-adaptive-concurrency-in-the-wild/[Cinnamon Auto-Tuner: Adaptive Concurrency in the Wild]
+
+Amazon Builders' Library:
+
+* https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/[Using load shedding to avoid overload]
+
+Google Cloud Blog:
+
+* https://cloud.google.com/blog/products/gcp/using-load-shedding-to-survive-a-success-disaster-cre-life-lessons[Using load shedding to survive a success disaster]
+
+CodeReliant Blog:
+
+* https://www.codereliant.io/load-shedding/[Load Shedding for High Traffic Systems]

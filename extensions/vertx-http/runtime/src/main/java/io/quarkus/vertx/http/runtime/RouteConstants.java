@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 /**
- * Route order value constants used in Quarkus, update {@code reactive-routes.adoc} when changing this class.
+ * Route order value constants used in Quarkus, update {@code http-reference.adoc} when changing this class.
  */
 @SuppressWarnings("JavadocDeclaration")
 public final class RouteConstants {

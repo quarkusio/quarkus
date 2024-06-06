@@ -20,7 +20,7 @@ export class QuiIdeLink extends observeState(LitElement) {
     static properties = {
         fileName: {type: String},
         lang: {type: String},
-        lineNumber: {type: Number},
+        lineNumber: {type: String},
         stackTraceLine: {type: String},
         _fontWeight: {type: String}
     };
@@ -30,7 +30,7 @@ export class QuiIdeLink extends observeState(LitElement) {
         this.stackTraceLine = null;
         this.fileName = null;
         this.lang = "java";
-        this.lineNumber = 0;
+        this.lineNumber = "0";
         this._fontWeight = "normal";
     }
     
@@ -55,7 +55,7 @@ export class QuiIdeLink extends observeState(LitElement) {
                         if(givenClassName && givenClassName!== "" && this._checkIfStringStartsWith(givenClassName, devuiState.ideInfo.idePackages)){
                             this.fileName = givenClassName;
                             this.lang = lang;
-                            this.lineNumber = parseInt(lineNumber);
+                            this.lineNumber = lineNumber;
                             this._fontWeight = "bold";
                         }
                     }

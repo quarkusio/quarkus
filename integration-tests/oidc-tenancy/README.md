@@ -6,13 +6,13 @@ By default, the tests of this module are disabled.
 
 To run the tests in a standard JVM with Keycloak Server started as a Docker container, you can run the following command:
 
-```
+```shell
 mvn clean install -Dtest-containers -Dstart-containers
 ```
 
 Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
-```
+```shell
 mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
@@ -20,7 +20,7 @@ If you don't want to run Keycloak Server as a Docker container, you can start yo
 
 You can then run the tests as follows (either with `-Dnative` or not):
 
-```
+```shell
 mvn clean install -Dtest-containers
 ```
 

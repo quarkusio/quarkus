@@ -76,7 +76,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on https://s01.oss.sonatype.org/content/repositories/snapshots
+* either use the snapshots we publish daily on <https://s01.oss.sonatype.org/content/repositories/snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -86,7 +86,7 @@ the [Build section](#build) and the [Usage section](#usage).
 
 Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add https://s01.oss.sonatype.org/content/repositories/snapshots as a Maven repository **and** a plugin
+Then just add <https://s01.oss.sonatype.org/content/repositories/snapshots> as a Maven repository **and** a plugin
 repository in your settings xml:
 
 ```xml
@@ -129,7 +129,7 @@ repository in your settings xml:
 </settings>
 ```
 
-You can check the last publication date here: https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/ .
+You can check the last publication date here: <https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/>.
 
 ### Building main
 
@@ -395,7 +395,7 @@ productive. The following Maven tips can vastly speed up development when workin
 Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime`
 and `spi` modules which can all be built by executing following command:
 
-```
+```shell
 ./mvnw install -f extensions/jackson/
 ```
 
@@ -407,13 +407,13 @@ all modules in that path recursively.
 Let's say you want to make changes to the `deployment` module of the Jackson extension. There are two ways to accomplish
 this task as shown by the following commands:
 
-```
+```shell
 ./mvnw install -f extensions/jackson/deployment
 ```
 
 or
 
-```
+```shell
 ./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
 ```
 
@@ -427,7 +427,7 @@ Quarkus maintains compatibility as much as possible and for most renamed or move
 allowing the build to be redirected to the new artifact.
 However, relocations are not built by default, and to build and install them, you need to enable the `relocations` Maven profile as follows:
 
-```
+```shell
 ./mvnw -Dquickly -Prelocations
 ```
 
@@ -440,7 +440,7 @@ of the `resteasy-jackson` Quarkus integration test (which can be
 found [here](https://github.com/quarkusio/quarkus/blob/main/integration-tests/resteasy-jackson)). One way to accomplish
 this is by executing the following command:
 
-```
+```shell
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
 
@@ -452,7 +452,7 @@ directory which houses the test project.
 
 For example, in order to only run the MySQL test project of the container-image tests, the Maven command would be:
 
-```
+```shell
 ./mvnw verify -f integration-tests/container-image/maven-invoker-way -Dinvoker.test=container-build-jib-with-mysql
 ```
 
@@ -465,7 +465,7 @@ specific integration test mentioned above, `-Dstart-containers` and `-Dtest-cont
 The following standard Maven option can be used to build with multiple threads to speed things up (here 0.5 threads per
 CPU core):
 
-```
+```shell
 ./mvnw install -T0.5C
 ```
 
@@ -475,7 +475,7 @@ Please note that running tests in parallel is not supported at the moment!
 
 To omit building currently way over 100 pure test modules, run:
 
-```
+```shell
 ./mvnw install -Dno-test-modules
 ```
 
@@ -491,7 +491,7 @@ Instead of _manually_ specifying the modules to build as in the previous example
 tell [gitflow-incremental-builder (GIB)](https://github.com/gitflow-incremental-builder/gitflow-incremental-builder) to
 only build the modules that have been changed or depend on modules that have been changed (downstream). E.g.:
 
-```
+```shell
 ./mvnw install -Dincremental
 ```
 
@@ -502,7 +502,7 @@ If you just want to build the changes since the last commit on the current branc
 comparison via `-Dgib.disableBranchComparison` (or short: `-Dgib.dbc`).
 
 There are many more configuration options in GIB you can use to customize its
-behaviour: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+behaviour: <https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration>
 
 Parallel builds (`-T...`) should work without problems but parallel test execution is not yet supported (in general, not
 a GIB limitation).
@@ -534,16 +534,16 @@ For more details see the `Get GIB arguments` step in `.github/workflows/ci-actio
 
 ###### Getting set up
 
-Quarkus has a Develocity instance set up at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
+Quarkus has a Develocity instance set up at <https://ge.quarkus.io> that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
 
-If you have an account on https://ge.quarkus.io, this can speed up your local builds significantly.
+If you have an account on <https://ge.quarkus.io>, this can speed up your local builds significantly.
 
 If you have a need or interest to share your build scans and use the build cache, you will need to get an account for the Develocity instance.
 It is only relevant for members of the Quarkus team and you should contact either Guillaume Smet or Max Andersen to set up your account.
 
 When you have the account set up, from the root of your local Quarkus workspace, run:
 
-```
+```shell
 ./mvnw develocity:provision-access-key
 ```
 
@@ -553,7 +553,7 @@ From then your build scans will be sent to the Develocity instance and you will 
 
 You can alternatively also generate an API key from the Develocity UI and then use an environment variable like this:
 
-```
+```shell
 export DEVELOCITY_ACCESS_KEY=ge.quarkus.io=a_secret_key
 ```
 
@@ -640,7 +640,7 @@ When contributing a significant documentation change, it is highly recommended t
 
 First build the whole Quarkus repository with the documentation build enabled:
 
-```
+```shell
 ./mvnw -DquicklyDocs
 ```
 
@@ -649,7 +649,7 @@ directory and will avoid a lot of warnings when building the documentation modul
 
 Then you can build the `docs` module specifically:
 
-```
+```shell
 ./mvnw -f docs clean install
 ```
 
@@ -682,7 +682,7 @@ To include them into your project a few things have to be changed.
 
 *pom.xml*
 
-```
+```xml
 <properties>
     <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -698,7 +698,7 @@ To include them into your project a few things have to be changed.
 
 *gradle.properties*
 
-```
+```ini
 quarkusPlatformArtifactId=quarkus-bom
 quarkusPluginVersion=999-SNAPSHOT
 quarkusPlatformVersion=999-SNAPSHOT
@@ -707,7 +707,7 @@ quarkusPlatformGroupId=io.quarkus
 
 *settings.gradle*
 
-```
+```gradle
 pluginManagement {
     repositories {
         mavenLocal() // add mavenLocal() to first position
@@ -722,7 +722,7 @@ pluginManagement {
 
 *build.gradle*
 
-```
+```gradle
 repositories {
     mavenLocal() // add mavenLocal() to first position
     mavenCentral()
@@ -762,7 +762,7 @@ with `-f ...`).
 ### Descriptions
 
 Extensions descriptions (in the `runtime/pom.xml` description or in the YAML `quarkus-extension.yaml`)
-are used to describe the extension and are visible in https://code.quarkus.io and https://extensions.quarkus.io. Try and pay attention to it. Here are a
+are used to describe the extension and are visible in <https://code.quarkus.io> and <https://extensions.quarkus.io>. Try and pay attention to it. Here are a
 few recommendation guidelines:
 
 - keep it relatively short so that no hover is required to read it
@@ -820,12 +820,14 @@ This project is an open source project, please act responsibly, be nice, polite 
   In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
 
 * Build hangs with DevMojoIT running infinitely
-  ```
+
+  ```shell
   ./mvnw clean install
   # Wait...
   [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.192 s - in io.quarkus.maven.it.GenerateConfigIT
   [INFO] Running io.quarkus.maven.it.DevMojoIT
   ```
+
   DevMojoIT require a few minutes to run but anything more than that is not expected. Make sure that nothing is running
   on 8080.
 
@@ -849,10 +851,12 @@ This project is an open source project, please act responsibly, be nice, polite 
 
   Just scroll up, there should be an error or warning somewhere. Failing enforcer rules are known to cause such effects
   and in this case there'll be something like:
+
   ```
   [WARNING] Rule 0: ... failed with message:
   ...
   ```
+
 * Tests fail with `Caused by: io.quarkus.runtime.QuarkusBindException: Port(s) already bound: 8080: Address already in use`
 
     Check that you do not have other Quarkus dev environments, apps or other web servers running on this default 8080 port.

@@ -642,7 +642,10 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` is checked.
          * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication is
          * checked.
-         * The secret is auto-generated if it remains uninitialized after checking all of these properties.
+         * The secret is auto-generated every time an application starts if it remains uninitialized after checking all of these
+         * properties.
+         * Generated secret can not decrypt the session cookie encrypted before the restart, therefore a user re-authentication
+         * will be required.
          * <p>
          * The length of the secret used to encrypt the tokens should be at least 32 characters long.
          * A warning is logged if the secret length is less than 16 characters.

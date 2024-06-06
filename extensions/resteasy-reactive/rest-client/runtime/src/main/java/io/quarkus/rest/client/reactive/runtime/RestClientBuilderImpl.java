@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +28,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
+import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
@@ -45,6 +47,10 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.tls.TlsConfiguration;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.TrustOptions;
 
 /**
  * Builder implementation for MicroProfile Rest Client
@@ -98,6 +104,56 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     @Override
     public RestClientBuilderImpl readTimeout(long timeout, TimeUnit timeUnit) {
         clientBuilder.readTimeout(timeout, timeUnit);
+        return this;
+    }
+
+    public RestClientBuilderImpl tlsConfiguration(TlsConfiguration tlsConfiguration) {
+        clientBuilder.tlsConfig(new TlsConfig() {
+            @Override
+            public KeyStore getKeyStore() {
+                return tlsConfiguration.getKeyStore();
+            }
+
+            @Override
+            public KeyCertOptions getKeyStoreOptions() {
+                return tlsConfiguration.getKeyStoreOptions();
+            }
+
+            @Override
+            public KeyStore getTrustStore() {
+                return tlsConfiguration.getTrustStore();
+            }
+
+            @Override
+            public TrustOptions getTrustStoreOptions() {
+                return tlsConfiguration.getTrustStoreOptions();
+            }
+
+            @Override
+            public SSLOptions getSSLOptions() {
+                return tlsConfiguration.getSSLOptions();
+            }
+
+            @Override
+            public SSLContext createSSLContext() throws Exception {
+                return tlsConfiguration.createSSLContext();
+            }
+
+            @Override
+            public Optional<String> getHostnameVerificationAlgorithm() {
+                return tlsConfiguration.getHostnameVerificationAlgorithm();
+            }
+
+            @Override
+            public boolean usesSni() {
+                return tlsConfiguration.usesSni();
+            }
+
+            @Override
+            public boolean isTrustAll() {
+                return tlsConfiguration.isTrustAll();
+            }
+        });
         return this;
     }
 

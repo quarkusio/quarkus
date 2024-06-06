@@ -1,6 +1,7 @@
-package io.quarkus.hibernate.orm;
+package io.quarkus.hibernate.orm.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,18 +30,18 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.index.PersistentClassIndex;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.hibernate.orm.deployment.ClassNames;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmTypes;
 
 /**
- * Test that hardcoded lists of Hibernate ORM types stay up-to-date.
+ * Test that class name constants point to actual classes and stay up-to-date.
  */
-public class HibernateOrmTypesTest {
+public class ClassNamesTest {
 
     private static final DotName RETENTION = DotName.createSimple(Retention.class.getName());
     private static final DotName TARGET = DotName.createSimple(Target.class.getName());
@@ -54,12 +55,23 @@ public class HibernateOrmTypesTest {
         hibernateIndex = IndexingUtil.indexJar(determineHibernateJarLocation());
     }
 
+    @ParameterizedTest
+    @MethodSource("provideConstantsToTest")
+    void testClassNameRefersToExistingClass(DotName constant) {
+        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString()))
+                .doesNotThrowAnyException();
+    }
+
+    private static Set<DotName> provideConstantsToTest() {
+        return ClassNames.CREATED_CONSTANTS;
+    }
+
     @Test
     public void testNoMissingJpaAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
 
-        assertThat(HibernateOrmTypes.JPA_MAPPING_ANNOTATIONS)
+        assertThat(ClassNames.JPA_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
@@ -71,7 +83,7 @@ public class HibernateOrmTypesTest {
                 .filter(name -> listenerAnnotationNamePattern.matcher(name.toString()).matches())
                 .collect(Collectors.toSet());
 
-        assertThat(HibernateOrmTypes.JPA_LISTENER_ANNOTATIONS)
+        assertThat(ClassNames.JPA_LISTENER_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
@@ -82,7 +94,7 @@ public class HibernateOrmTypesTest {
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".spi."));
         ignoreInternalAnnotations(hibernateMappingAnnotations);
 
-        assertThat(HibernateOrmTypes.HIBERNATE_MAPPING_ANNOTATIONS)
+        assertThat(ClassNames.HIBERNATE_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(hibernateMappingAnnotations);
     }
 
@@ -100,7 +112,7 @@ public class HibernateOrmTypesTest {
         packageLevelHibernateAnnotations.removeIf(name -> name.toString().contains(".internal."));
         ignoreInternalAnnotations(packageLevelHibernateAnnotations);
 
-        assertThat(HibernateOrmTypes.PACKAGE_ANNOTATIONS)
+        assertThat(ClassNames.PACKAGE_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(packageLevelHibernateAnnotations);
     }
 
@@ -109,7 +121,7 @@ public class HibernateOrmTypesTest {
         Set<DotName> injectServiceAnnotatedClasses = findClassesWithMethodsAnnotatedWith(hibernateIndex,
                 ClassNames.INJECT_SERVICE);
 
-        assertThat(HibernateOrmTypes.ANNOTATED_WITH_INJECT_SERVICE)
+        assertThat(ClassNames.ANNOTATED_WITH_INJECT_SERVICE)
                 .containsExactlyInAnyOrderElementsOf(injectServiceAnnotatedClasses);
     }
 
@@ -132,7 +144,7 @@ public class HibernateOrmTypesTest {
             }
         }
 
-        assertThat(HibernateOrmTypes.JDBC_JAVA_TYPES)
+        assertThat(ClassNames.JDBC_JAVA_TYPES)
                 .containsExactlyInAnyOrderElementsOf(jdbcJavaTypeNames);
     }
 

@@ -616,6 +616,18 @@ This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enab
 So when you access the `/q/metrics` endpoint of your application you will have information about the connection pool status.
 When using xref:smallrye-metrics.adoc[SmallRye Metrics], connection pool metrics will be available under the `vendor` scope.
 
+
+== Tracing
+
+To use tracing with MongoDB, you need to add the xref:opentelemetry.adoc[`quarkus-opentelemetry`] extension to your project.
+
+Even with all the tracing infrastructure in place the mongodb tracing is not enabled by default, and you need to enable it by setting this property:
+[source, properties]
+----
+# enable tracing
+quarkus.mongodb.tracing.enabled=true
+----
+
 == Testing helpers
 
 xref:#dev-services[Dev Services for MongoDB] is your best option to start a MongoDB database for your unit tests.

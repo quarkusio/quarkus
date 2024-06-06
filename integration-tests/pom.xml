@@ -353,6 +353,7 @@
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
+                <module>opentelemetry-mongodb-client-instrumentation</module>
                 <module>opentelemetry-quartz</module>
                 <module>opentelemetry-scheduler</module>
                 <module>opentelemetry-vertx</module>

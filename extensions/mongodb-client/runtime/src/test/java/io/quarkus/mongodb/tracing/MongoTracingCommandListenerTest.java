@@ -1,11 +1,13 @@
 package io.quarkus.mongodb.tracing;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import org.bson.BsonDocument;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.mongodb.RequestContext;
 import com.mongodb.ServerAddress;
 import com.mongodb.connection.ClusterId;
 import com.mongodb.connection.ConnectionDescription;
@@ -15,6 +17,8 @@ import com.mongodb.event.CommandStartedEvent;
 import com.mongodb.event.CommandSucceededEvent;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
+import io.quarkus.mongodb.runtime.MongoRequestContext;
 
 class MongoTracingCommandListenerTest {
     private ConnectionDescription connDescr;
@@ -49,6 +53,25 @@ class MongoTracingCommandListenerTest {
                 startEvent.getCommand(),
                 10L);
         assertThatNoException().isThrownBy(() -> listener.commandSucceeded(successEvent));
+    }
+
+    @Test
+    void mustRemoveOtelContext() {
+        RequestContext requestContext = new MongoRequestContext(Context.current());
+        assertThat((Context) requestContext.get(MongoRequestContext.OTEL_CONTEXT_KEY)).isNotNull();
+
+        var startEvent = new CommandStartedEvent(
+                requestContext,
+                1L,
+                10,
+                connDescr,
+                "db",
+                "find",
+                command);
+        listener.commandStarted(startEvent);
+        assertThat((Context) requestContext.get(MongoRequestContext.OTEL_CONTEXT_KEY))
+                .as("Must remove otel context from request context")
+                .isNull();
     }
 
     @Test

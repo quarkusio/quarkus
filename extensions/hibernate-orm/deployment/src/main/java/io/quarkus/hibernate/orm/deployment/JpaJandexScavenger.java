@@ -86,7 +86,7 @@ public final class JpaJandexScavenger {
     public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
         Collector collector = new Collector();
 
-        for (DotName packageAnnotation : HibernateOrmTypes.PACKAGE_ANNOTATIONS) {
+        for (DotName packageAnnotation : ClassNames.PACKAGE_ANNOTATIONS) {
             enlistJPAModelAnnotatedPackages(collector, packageAnnotation);
         }
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
@@ -96,7 +96,7 @@ public final class JpaJandexScavenger {
         enlistEmbeddedsAndElementCollections(collector);
 
         enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
-        for (DotName annotation : HibernateOrmTypes.JPA_LISTENER_ANNOTATIONS) {
+        for (DotName annotation : ClassNames.JPA_LISTENER_ANNOTATIONS) {
             enlistPotentialCdiBeanClasses(collector, annotation);
         }
 

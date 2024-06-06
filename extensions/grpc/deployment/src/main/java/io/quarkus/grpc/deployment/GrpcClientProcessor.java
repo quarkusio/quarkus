@@ -346,21 +346,17 @@ public class GrpcClientProcessor {
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {
                     String clientName = null;
-                    AnnotationTarget annotationTarget = ctx.getTarget();
-                    if (ctx.getTarget().kind() == Kind.FIELD) {
+                    AnnotationTarget annotationTarget = ctx.getAnnotationTarget();
+                    if (ctx.getAnnotationTarget().kind() == Kind.FIELD) {
                         clientName = clientAnnotation.target().asField().name();
-                    } else if (ctx.getTarget().kind() == Kind.METHOD
-                            && clientAnnotation.target().kind().equals(Kind.METHOD_PARAMETER)) {
+                    } else if (annotationTarget.kind() == Kind.METHOD_PARAMETER) {
                         MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
-                        annotationTarget = param;
                         // We don't need to check if parameter names are recorded - that's validated elsewhere
                         clientName = param.method().parameterName(param.position());
                     }
                     if (clientName != null) {
                         ctx.transform().remove(GrpcDotNames::isGrpcClient)
-                                .add(AnnotationInstance.builder(GrpcDotNames.GRPC_CLIENT)
-                                        .value(clientName)
-                                        .buildWithTarget(annotationTarget))
+                                .add(AnnotationInstance.builder(GrpcDotNames.GRPC_CLIENT).value(clientName).build())
                                 .done();
                     }
                 }

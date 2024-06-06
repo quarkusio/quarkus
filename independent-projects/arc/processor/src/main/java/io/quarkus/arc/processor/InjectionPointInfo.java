@@ -61,7 +61,7 @@ public class InjectionPointInfo {
         }
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
-                transformer.applyTransformers(type, field, qualifiers), field, -1,
+                transformer.applyTransformers(type, field, qualifiers), field, null,
                 contains(annotations, DotNames.TRANSIENT_REFERENCE), contains(annotations, DotNames.DELEGATE));
     }
 
@@ -70,7 +70,7 @@ public class InjectionPointInfo {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
                 transformer.applyTransformers(type, field, new HashSet<>(Annotations.onlyRuntimeVisible(field.annotations()))),
-                InjectionPointKind.RESOURCE, field, -1, false, false);
+                InjectionPointKind.RESOURCE, field, null, false, false);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -100,15 +100,15 @@ public class InjectionPointInfo {
             }
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,
-                    transformer.applyTransformers(type, method, position, paramQualifiers),
-                    method, position, contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE),
+                    transformer.applyTransformers(type, method, method.parameters().get(position), paramQualifiers),
+                    method, method.parameters().get(position), contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE),
                     contains(paramAnnotations, DotNames.DELEGATE)));
         }
         return injectionPoints;
     }
 
     static InjectionPointInfo fromSyntheticInjectionPoint(TypeAndQualifiers typeAndQualifiers) {
-        return new InjectionPointInfo(typeAndQualifiers, InjectionPointKind.CDI, null, -1, false, false);
+        return new InjectionPointInfo(typeAndQualifiers, InjectionPointKind.CDI, null, null, false, false);
     }
 
     private final TypeAndQualifiers typeAndQualifiers;
@@ -117,25 +117,30 @@ public class InjectionPointInfo {
     private final InjectionPointKind kind;
     private final boolean hasDefaultQualifier;
     private final AnnotationTarget target;
+    // once we remove #getTarget(), 'target' field should contain method parameter AnnotationTarget for method parameter injection
+    // can be null for field injection as well as synth injection point
+    private final AnnotationTarget methodParameterTarget;
     private final int position;
     private final boolean isTransientReference;
     private final boolean isDelegate;
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position,
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target,
+            AnnotationTarget methodParameterTarget,
             boolean isTransientReference, boolean isDelegate) {
-        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position, isTransientReference, isDelegate);
+        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, methodParameterTarget, isTransientReference,
+                isDelegate);
     }
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
-            AnnotationTarget target, int position, boolean isTransientReference, boolean isDelegate) {
+            AnnotationTarget target, AnnotationTarget methodParameterTarget, boolean isTransientReference, boolean isDelegate) {
         this(new TypeAndQualifiers(requiredType, requiredQualifiers.isEmpty()
                 ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                 : requiredQualifiers),
-                kind, target, position, isTransientReference, isDelegate);
+                kind, target, methodParameterTarget, isTransientReference, isDelegate);
     }
 
     InjectionPointInfo(TypeAndQualifiers typeAndQualifiers, InjectionPointKind kind,
-            AnnotationTarget target, int position, boolean isTransientReference, boolean isDelegate) {
+            AnnotationTarget target, AnnotationTarget methodParameterTarget, boolean isTransientReference, boolean isDelegate) {
         this.typeAndQualifiers = typeAndQualifiers;
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.targetBean = new AtomicReference<BeanInfo>(null);
@@ -143,7 +148,9 @@ public class InjectionPointInfo {
         this.hasDefaultQualifier = typeAndQualifiers.qualifiers.size() == 1
                 && typeAndQualifiers.qualifiers.iterator().next().name().equals(DotNames.DEFAULT);
         this.target = target;
-        this.position = position;
+        this.methodParameterTarget = methodParameterTarget;
+        this.position = (methodParameterTarget == null || !Kind.METHOD_PARAMETER.equals(methodParameterTarget.kind())) ? -1
+                : methodParameterTarget.asMethodParameter().position();
         this.isTransientReference = isTransientReference;
         this.isDelegate = isDelegate;
 
@@ -229,12 +236,27 @@ public class InjectionPointInfo {
     }
 
     /**
+     * This method is deprecated and will be removed at some point after Quarkus 3.15.
+     * Use {@link #getAnnotationTarget()} instead.
+     * Both methods behave equally except for method parameter injection points where {@code getAnnotationTarget()}
+     * returns method parameter as {@link AnnotationTarget} instead of the whole method.
+     * <p>
      * For injected params, this method returns the corresponding method and not the param itself.
      *
      * @return the annotation target or {@code null} in case of synthetic injection point
      */
+    @Deprecated(forRemoval = true, since = "3.12")
     public AnnotationTarget getTarget() {
         return target;
+    }
+
+    /**
+     * Unlike {@link #getTarget()}, for injected params, this method returns the method parameter itself.
+     *
+     * @return the annotation target or {@code null} in case of synthetic injection point
+     */
+    public AnnotationTarget getAnnotationTarget() {
+        return methodParameterTarget == null ? target : methodParameterTarget;
     }
 
     public boolean isField() {
@@ -242,7 +264,7 @@ public class InjectionPointInfo {
     }
 
     public boolean isParam() {
-        return target != null && target.kind() == Kind.METHOD;
+        return methodParameterTarget != null && methodParameterTarget.kind() == Kind.METHOD_PARAMETER;
     }
 
     public boolean isTransient() {
@@ -272,7 +294,7 @@ public class InjectionPointInfo {
     }
 
     /**
-     * @return the parameter position or {@code -1} for a field injection point
+     * @return the parameter position or {@code -1} for a field injection point or synthetic injection point
      */
     public int getPosition() {
         return position;
@@ -297,6 +319,15 @@ public class InjectionPointInfo {
                     method = "#" + method + "()";
                 }
                 return "parameter '" + param + "' of " + target.asMethod().declaringClass().name() + method;
+            case METHOD_PARAMETER:
+                String name = methodParameterTarget.asMethodParameter().method().name();
+                if (name.equals(Methods.INIT)) {
+                    name = " constructor";
+                } else {
+                    name = "#" + name + "()";
+                }
+                return "parameter '" + methodParameterTarget.asMethodParameter().name() + "' of "
+                        + methodParameterTarget.asMethodParameter().method().declaringClass().name() + name;
             default:
                 return target.toString();
         }

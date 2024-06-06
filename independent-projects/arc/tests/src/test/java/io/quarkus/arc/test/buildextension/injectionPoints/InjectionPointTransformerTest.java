@@ -54,6 +54,7 @@ public class InjectionPointTransformerTest {
         Arc.container().beanManager().getEvent().select(Integer.class).fire(42);
         CasualObserver observer = arc.instance(CasualObserver.class).get();
         assertEquals("bar", observer.getChangedString());
+        assertEquals("foo", observer.getChanged2String());
         assertEquals("foo", observer.getUnchangedString());
     }
 
@@ -103,16 +104,23 @@ public class InjectionPointTransformerTest {
     static class CasualObserver {
 
         String changeMe;
+        String changeMe2;
         String dontChangeMe;
 
         // there is no String with qualifier @AnotherQualifier, we will remove it
-        public void observe(@Observes Integer payload, @AnotherQualifier String changeMe, @MyQualifier String dontChangeMe) {
+        public void observe(@Observes Integer payload, @AnotherQualifier String changeMe, @MyQualifier String dontChangeMe,
+                String changeMe2) {
             this.changeMe = changeMe;
+            this.changeMe2 = changeMe2;
             this.dontChangeMe = dontChangeMe;
         }
 
         public String getChangedString() {
             return changeMe;
+        }
+
+        public String getChanged2String() {
+            return changeMe2;
         }
 
         public String getUnchangedString() {
@@ -130,25 +138,29 @@ public class InjectionPointTransformerTest {
 
         @Override
         public void transform(TransformationContext transformationContext) {
-            AnnotationTarget.Kind kind = transformationContext.getTarget().kind();
+            AnnotationTarget.Kind kind = transformationContext.getAnnotationTarget().kind();
             if (AnnotationTarget.Kind.FIELD.equals(kind)) {
-                FieldInfo fieldInfo = transformationContext.getTarget().asField();
+                FieldInfo fieldInfo = transformationContext.getAnnotationTarget().asField();
                 // with this we should be able to filter out only fields we want to affect
                 if (fieldInfo.declaringClass().name().equals(DotName.createSimple(SimpleConsumer.class.getName()))
                         && fieldInfo.name().equals("foo")) {
                     transformationContext.transform().add(MyQualifier.class).done();
                 }
 
-            } else if (AnnotationTarget.Kind.METHOD.equals(kind)) {
-                MethodInfo methodInfo = transformationContext.getTarget().asMethod();
+            } else if (AnnotationTarget.Kind.METHOD_PARAMETER.equals(kind)) {
+                MethodInfo methodInfo = transformationContext.getAnnotationTarget().asMethodParameter().method();
                 DotName anotherQualifierDotName = DotName.createSimple(AnotherQualifier.class.getName());
                 if (methodInfo.declaringClass().name()
-                        .equals(DotName.createSimple(CasualObserver.class.getName()))
-                        && transformationContext.getAllAnnotations().stream()
-                                .anyMatch(p -> p.name().equals(anotherQualifierDotName))) {
-                    transformationContext.transform()
-                            .remove(annotationInstance -> annotationInstance.name().equals(anotherQualifierDotName))
-                            .done();
+                        .equals(DotName.createSimple(CasualObserver.class.getName()))) {
+                    if (transformationContext.getAllTargetAnnotations().stream()
+                            .anyMatch(p -> p.name().equals(anotherQualifierDotName))) {
+                        transformationContext.transform()
+                                .remove(annotationInstance -> annotationInstance.name().equals(anotherQualifierDotName))
+                                .done();
+                    } else if (transformationContext.getAllTargetAnnotations().isEmpty()) {
+                        transformationContext.transform().add(MyQualifier.class).done();
+                    }
+
                 }
             } else {
                 throw new IllegalStateException("Unexpected injection point kind: " + kind);

@@ -99,14 +99,17 @@ public class ConfiguredAndSharedBeansTest {
         final ManagedExecutor ctorExecutor1;
         final ManagedExecutor ctorExecutor2;
         final ThreadContext ctorThreadContext;
+        final ManagedExecutor ctorExecutor3;
 
-        // c-tor injection, three out of four params should be configured
+        // c-tor injection, three out of five params should be configured
         public SomeBean(@ManagedExecutorConfig(maxAsync = 8, maxQueued = 8) ManagedExecutor ctorExecutor1,
                 @ManagedExecutorConfig(maxAsync = 3, maxQueued = 3) ManagedExecutor ctorExecutor2, Foo foo,
-                @ThreadContextConfig(cleared = "CDI") ThreadContext ctorTc) {
+                @ThreadContextConfig(cleared = "CDI") ThreadContext ctorTc,
+                @MyQualifier ManagedExecutor ctorExecutor3) { // this one has custom qualifier, we shouldn't modify it
             this.ctorExecutor1 = ctorExecutor1;
             this.ctorExecutor2 = ctorExecutor2;
             this.ctorThreadContext = ctorTc;
+            this.ctorExecutor3 = ctorExecutor3;
         }
 
         @Inject
@@ -264,6 +267,10 @@ public class ConfiguredAndSharedBeansTest {
             Set<String> cleared = providersToStringSet(plan.clearedProviders);
             assertTrue(propagated.isEmpty());
             assertTrue(cleared.contains(ThreadContext.CDI));
+
+            exec = unwrapExecutor(ctorExecutor3);
+            assertEquals(2, exec.getMaxAsync());
+            assertEquals(-1, exec.getMaxQueued()); // default value
         }
     }
 

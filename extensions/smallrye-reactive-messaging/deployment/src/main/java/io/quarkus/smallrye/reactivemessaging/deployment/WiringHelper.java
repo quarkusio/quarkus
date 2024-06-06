@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -264,18 +263,13 @@ public class WiringHelper {
     static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
             InjectionPointInfo injectionPoint,
             DotName annotationName) {
-        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
+        // For field IP -> set of field annotations
+        // For method param IP -> set of param annotations
+        Collection<AnnotationInstance> annotations = transformedAnnotations
+                .getAnnotations(injectionPoint.getAnnotationTarget());
         for (AnnotationInstance annotation : annotations) {
             if (annotationName.equals(annotation.name())) {
-                // For method parameter we must check the position
-                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                        && injectionPoint.isParam()
-                        && annotation.target().asMethodParameter().position() == injectionPoint.getPosition()) {
-                    return Optional.of(annotation);
-                } else if (annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    // For other kind, no need to check anything else
-                    return Optional.of(annotation);
-                }
+                return Optional.of(annotation);
             }
         }
         return Optional.empty();

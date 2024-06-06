@@ -371,9 +371,9 @@ public enum BuiltinBean {
         // Register injection point for reflection
         InjectionPointInfo injectionPoint = ctx.injectionPoint;
         if (injectionPoint.isField()) {
-            ctx.reflectionRegistration.registerField(injectionPoint.getTarget().asField());
+            ctx.reflectionRegistration.registerField(injectionPoint.getAnnotationTarget().asField());
         } else {
-            ctx.reflectionRegistration.registerMethod(injectionPoint.getTarget().asMethod());
+            ctx.reflectionRegistration.registerMethod(injectionPoint.getAnnotationTarget().asMethodParameter().method());
         }
 
         MethodCreator mc = ctx.constructor;
@@ -464,9 +464,9 @@ public enum BuiltinBean {
             if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
                 ClassInfo declaringClass;
                 if (injectionPoint.isField()) {
-                    declaringClass = injectionPoint.getTarget().asField().declaringClass();
+                    declaringClass = injectionPoint.getAnnotationTarget().asField().declaringClass();
                 } else {
-                    declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
+                    declaringClass = injectionPoint.getAnnotationTarget().asMethodParameter().method().declaringClass();
                 }
                 if (isKotlinClass(declaringClass)) {
                     errors.accept(

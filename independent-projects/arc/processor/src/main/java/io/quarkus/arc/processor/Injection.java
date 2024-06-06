@@ -90,18 +90,18 @@ public class Injection {
                     && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1
                     && injectionPointInfo.hasDefaultedQualifier()) {
                 Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
-                AnnotationTarget ipTarget = injectionPointInfo.getTarget();
+                AnnotationTarget ipTarget = injectionPointInfo.getAnnotationTarget();
                 DotName expectedType = null;
                 if (ipTarget.kind() == Kind.FIELD) {
                     // field injection derives this from the class
                     expectedType = ipTarget.asField().declaringClass().name();
-                } else if (ipTarget.kind() == Kind.METHOD) {
+                } else if (ipTarget.kind() == Kind.METHOD_PARAMETER) {
                     // the injection point is a producer method parameter then the type parameter of the injected Bean
                     // must be the same as the producer method return type
                     if (beanType == BeanType.PRODUCER_METHOD) {
-                        expectedType = ipTarget.asMethod().returnType().name();
+                        expectedType = ipTarget.asMethodParameter().method().returnType().name();
                     } else {
-                        expectedType = ipTarget.asMethod().declaringClass().name();
+                        expectedType = ipTarget.asMethodParameter().method().declaringClass().name();
                     }
                 }
                 if (expectedType != null
@@ -137,12 +137,12 @@ public class Injection {
                     && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE
                     && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1) {
                 Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
-                AnnotationTarget ipTarget = injectionPointInfo.getTarget();
+                AnnotationTarget ipTarget = injectionPointInfo.getAnnotationTarget();
                 DotName expectedType = null;
                 if (ipTarget.kind() == Kind.FIELD) {
                     expectedType = ipTarget.asField().declaringClass().name();
-                } else if (ipTarget.kind() == Kind.METHOD) {
-                    expectedType = ipTarget.asMethod().declaringClass().name();
+                } else if (ipTarget.kind() == Kind.METHOD_PARAMETER) {
+                    expectedType = ipTarget.asMethodParameter().method().declaringClass().name();
                 }
                 if (expectedType != null
                         // This is very rudimentary check, might need to be expanded?

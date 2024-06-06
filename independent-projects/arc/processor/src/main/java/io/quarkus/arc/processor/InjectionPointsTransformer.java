@@ -35,11 +35,24 @@ public interface InjectionPointsTransformer extends BuildExtension {
     interface TransformationContext extends BuildExtension.BuildContext {
 
         /**
+         * This method is deprecated and will be removed at some point after Quarkus 3.15.
+         * Use {@link #getAnnotationTarget()} instead.
+         * <p>
          * Returns {@link AnnotationTarget} representing this injection point.
+         * For injected parameters, this method returns the {@link AnnotationTarget} of the whole method.
          *
          * @return the annotation target of this injection point
          */
+        @Deprecated(forRemoval = true, since = "3.12")
         AnnotationTarget getTarget();
+
+        /**
+         * Returns {@link AnnotationTarget} representing this injection point.
+         * Unlike {@link #getTarget()}, for injected parameters, this method returns the method parameter.
+         *
+         * @return the annotation target of this injection point
+         */
+        AnnotationTarget getAnnotationTarget();
 
         /**
          * Returns current set of annotations instances - qualifiers.
@@ -49,9 +62,15 @@ public interface InjectionPointsTransformer extends BuildExtension {
         Set<AnnotationInstance> getQualifiers();
 
         /**
-         * Retrieves all annotations attached to the {@link AnnotationTarget} that this transformer operates on
-         * even if they were altered by {@code AnnotationsTransformer}. This method is preferred to manual inspection
-         * of {@link AnnotationTarget} which may, in some corner cases, hold outdated information.
+         * This method is deprecated and will be removed at some point after Quarkus 3.15.
+         * Use {@link #getAllTargetAnnotations()} instead.
+         * <p>
+         * Retrieves all annotations attached to the {@link AnnotationTarget} that this transformer operates on.
+         * This {@link AnnotationTarget} is equal to what the {@link #getTarget()} ()} method returns.
+         *
+         * The result includes annotations that were altered by {@code AnnotationsTransformer}.
+         * This method is preferred to manual inspection of {@link AnnotationTarget} which may, in some corner cases,
+         * hold outdated information.
          *
          * The resulting set of annotations contains all annotations, not just CDI qualifiers.
          * If the annotation target is a method, then this set contains annotations that belong to the method itself
@@ -59,7 +78,22 @@ public interface InjectionPointsTransformer extends BuildExtension {
          *
          * @return collection of all annotations related to given {@link AnnotationTarget}
          */
+        @Deprecated(forRemoval = true, since = "3.12")
         Collection<AnnotationInstance> getAllAnnotations();
+
+        /**
+         * Retrieves all annotations attached to the {@link AnnotationTarget} that this transformer operates on.
+         * This {@link AnnotationTarget} is equal to what the {@link #getAnnotationTarget()} method returns.
+         *
+         * The result includes annotations that were altered by {@code AnnotationsTransformer}.
+         * This method is preferred to manual inspection of {@link AnnotationTarget} which may, in some corner cases,
+         * hold outdated information.
+         *
+         * The resulting set of annotations contains all annotations, not just CDI qualifiers.
+         *
+         * @return collection of all annotations related to given {@link AnnotationTarget}
+         */
+        Collection<AnnotationInstance> getAllTargetAnnotations();
 
         /**
          * The transformation is not applied until the {@link Transformation#done()} method is invoked.

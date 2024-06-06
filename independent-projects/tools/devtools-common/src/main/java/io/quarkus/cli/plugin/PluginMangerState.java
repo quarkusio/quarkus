@@ -1,7 +1,8 @@
 package io.quarkus.cli.plugin;
 
+import static io.quarkus.cli.plugin.PluginManagerUtil.ALIAS_SEPARATOR;
+
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.catalog.Extension;
 
 class PluginMangerState {
 
@@ -173,11 +175,15 @@ class PluginMangerState {
             try {
                 Set<ArtifactKey> installed = project.getExtensionManager().getInstalled().stream()
                         .map(ArtifactCoords::getKey).collect(Collectors.toSet());
-
-                extensionPlugins.putAll(project.getExtensionsCatalog().getExtensions().stream()
-                        .filter(e -> installed.contains(e.getArtifact().getKey()))
-                        .map(ExtensionProcessor::getCliPlugins).flatMap(Collection::stream).map(util::from)
-                        .collect(Collectors.toMap(p -> p.getName(), p -> p.inProjectCatalog())));
+                for (Extension e : project.getExtensionsCatalog().getExtensions()) {
+                    if (installed.contains(e.getArtifact().getKey())) {
+                        for (String cliPlugin : ExtensionProcessor.getCliPlugins(e)) {
+                            Plugin plugin = cliPlugin.contains(ALIAS_SEPARATOR) ? util.fromAlias(cliPlugin)
+                                    : util.fromLocation(cliPlugin);
+                            extensionPlugins.put(plugin.getName(), plugin);
+                        }
+                    }
+                }
             } catch (Exception ignore) {
                 output.warn("Failed to read the extension catalog. Ignoring extension plugins.");
             }

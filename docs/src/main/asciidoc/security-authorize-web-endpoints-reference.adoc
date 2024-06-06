@@ -446,7 +446,7 @@ quarkus.http.auth.policy.role-policy3.roles-allowed=admin
 quarkus.http.auth.permission.roles3.paths=/secured/admin/*
 quarkus.http.auth.permission.roles3.policy=role-policy3
 ----
-<1> Role `root` will be able to access `/secured/user/*` and `/secured/admin/*` paths.
+<1> Role `root` will be able to access `/secured/user/\*` and `/secured/admin/*` paths.
 <2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
@@ -460,11 +460,11 @@ based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAl
 [options="header"]
 |===
 s| Annotation type s| Description
-s| @DenyAll | Specifies that no security roles are allowed to invoke the specified methods.
-s| @PermitAll | Specifies that all security roles are allowed to invoke the specified methods.
+s| `@DenyAll` | Specifies that no security roles are allowed to invoke the specified methods.
+s| `@PermitAll` | Specifies that all security roles are allowed to invoke the specified methods.
 
 `@PermitAll` lets everybody in, even without authentication.
-s| @RolesAllowed | Specifies the list of security roles allowed to access methods in an application.
+s| `@RolesAllowed` | Specifies the list of security roles allowed to access methods in an application.
 
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
@@ -540,7 +540,6 @@ However, if that property is not specified, a role named `User` is required as a
 |===
 
 .Example of a property expressions usage in the `@RolesAllowed` annotation
-
 [source,properties]
 ----
 admin=Administrator
@@ -551,6 +550,8 @@ tester.role=Tester
 all-roles=Administrator,Software,Tester,User
 ----
 
+[[subject-access-control-example]]
+.Subject access control example
 [source,java]
 ----
 import java.security.Principal;

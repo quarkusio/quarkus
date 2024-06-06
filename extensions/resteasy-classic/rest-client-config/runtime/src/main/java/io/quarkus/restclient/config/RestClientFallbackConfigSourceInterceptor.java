@@ -38,6 +38,7 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
         CLIENT_PROPERTIES.put("key-store", "keyStore");
         CLIENT_PROPERTIES.put("key-store-password", "keyStorePassword");
         CLIENT_PROPERTIES.put("key-store-type", "keyStoreType");
+        CLIENT_PROPERTIES.put("tls-configuration-name", "tlsConfigurationName");
         CLIENT_PROPERTIES.put("follow-redirects", "followRedirects");
         CLIENT_PROPERTIES.put("proxy-address", "proxyAddress");
         CLIENT_PROPERTIES.put("query-param-style", "queryParamStyle");

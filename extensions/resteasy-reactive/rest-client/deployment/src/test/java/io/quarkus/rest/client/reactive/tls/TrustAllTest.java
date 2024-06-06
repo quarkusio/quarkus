@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive.ssl;
+package io.quarkus.rest.client.reactive.tls;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;

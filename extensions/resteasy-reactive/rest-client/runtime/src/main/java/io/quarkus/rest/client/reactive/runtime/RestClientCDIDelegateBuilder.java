@@ -26,10 +26,13 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 public class RestClientCDIDelegateBuilder<T> {
 
@@ -68,7 +71,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureBaseUrl(builder);
         configureTimeouts(builder);
         configureProviders(builder);
-        configureSsl(builder);
+        configureTLS(builder);
         configureRedirects(builder);
         configureQueryParamStyle(builder);
         configureProxy(builder);
@@ -216,8 +219,29 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private void configureSsl(QuarkusRestClientBuilder builder) {
+    private void configureTLS(QuarkusRestClientBuilder builder) {
+        Optional<TlsConfiguration> maybeConfiguration = resolveTlsConfigurationForRegistry();
+        if (maybeConfiguration.isPresent()) {
+            builder.tlsConfiguration(maybeConfiguration.get());
+        } else {
+            configureTLSFromProperties(builder);
+        }
+    }
 
+    private Optional<TlsConfiguration> resolveTlsConfigurationForRegistry() {
+        if (Arc.container() != null) {
+            var registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+            if (registry != null) {
+                Optional<String> maybeTlsConfigurationName = oneOf(clientConfigByClassName().tlsConfigurationName,
+                        clientConfigByConfigKey().tlsConfigurationName,
+                        configRoot.tlsConfigurationName);
+                return TlsConfiguration.from(registry, maybeTlsConfigurationName);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void configureTLSFromProperties(QuarkusRestClientBuilder builder) {
         Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
                 configRoot.trustStore);
         if (maybeTrustStore.isPresent() && !maybeTrustStore.get().isBlank() && !NONE.equals(maybeTrustStore.get())) {

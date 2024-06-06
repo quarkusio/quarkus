@@ -3,6 +3,7 @@ package io.quarkus.runtime;
 import java.util.Locale;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -30,6 +31,7 @@ public interface LocalesBuildTimeConfig {
      * to include all locales. Image size penalty applies.
      */
     @WithDefault(DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY)
+    @ConfigDocDefault("Set containing the build system locale")
     Set<Locale> locales();
 
     /**
@@ -43,5 +45,6 @@ public interface LocalesBuildTimeConfig {
      * runtime.
      */
     @WithDefault(DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY)
+    @ConfigDocDefault("Build system locale")
     Locale defaultLocale();
 }

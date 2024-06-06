@@ -43,14 +43,15 @@ public class ClientEndpointTest {
     void testClient() throws InterruptedException {
         WebSocketClientConnection connection = connector
                 .baseUri(uri)
-                .pathParam("name", "Lu")
+                // The value will be encoded automatically
+                .pathParam("name", "Lu=")
                 .connectAndAwait();
-        assertEquals("Lu", connection.pathParam("name"));
+        assertEquals("Lu=", connection.pathParam("name"));
         connection.sendTextAndAwait("Hi!");
 
         assertTrue(ClientEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
-        assertEquals("Lu:Hello Lu!", ClientEndpoint.MESSAGES.get(0));
-        assertEquals("Lu:Hi!", ClientEndpoint.MESSAGES.get(1));
+        assertEquals("Lu=:Hello Lu=!", ClientEndpoint.MESSAGES.get(0));
+        assertEquals("Lu=:Hi!", ClientEndpoint.MESSAGES.get(1));
 
         connection.closeAndAwait();
         assertTrue(ClientEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));

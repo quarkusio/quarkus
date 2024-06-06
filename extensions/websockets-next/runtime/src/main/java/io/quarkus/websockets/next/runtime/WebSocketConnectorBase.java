@@ -1,6 +1,8 @@
 package io.quarkus.websockets.next.runtime;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,7 +123,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
             if (val == null) {
                 throw new WebSocketClientException("Unable to obtain the path param for: " + paramName);
             }
-            m.appendReplacement(sb, val);
+            m.appendReplacement(sb, URLEncoder.encode(val, StandardCharsets.UTF_8));
         }
         m.appendTail(sb);
         return path.startsWith("/") ? sb.toString() : "/" + sb.toString();

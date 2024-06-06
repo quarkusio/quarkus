@@ -37,7 +37,7 @@ public interface WebSocketConnection extends Sender, BlockingSender {
     /**
      *
      * @param name
-     * @return the actual value of the path parameter or {@code null}
+     * @return the decoded value of the path parameter or {@code null}
      * @see WebSocket#path()
      */
     String pathParam(String name);

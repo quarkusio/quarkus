@@ -9,10 +9,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.websockets.next.Closed;
+import io.quarkus.websockets.next.Open;
 import io.quarkus.websockets.next.OpenConnections;
 import io.quarkus.websockets.next.WebSocketConnection;
 
@@ -21,9 +26,22 @@ public class ConnectionManager implements OpenConnections {
 
     private static final Logger LOG = Logger.getLogger(ConnectionManager.class);
 
+    // generatedEndpointClassName -> open connections
     private final ConcurrentMap<String, Set<WebSocketConnection>> endpointToConnections = new ConcurrentHashMap<>();
 
     private final List<ConnectionListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final Event<WebSocketConnection> openEvent;
+    private final Event<WebSocketConnection> closedEvent;
+
+    ConnectionManager(@Open Event<WebSocketConnection> openEvent, @Closed Event<WebSocketConnection> closedEvent) {
+        ArcContainer container = Arc.container();
+        this.openEvent = container.resolveObserverMethods(WebSocketConnection.class, Open.Literal.INSTANCE).isEmpty()
+                ? null
+                : openEvent;
+        this.closedEvent = container.resolveObserverMethods(WebSocketConnection.class, Closed.Literal.INSTANCE)
+                .isEmpty() ? null : closedEvent;
+    }
 
     @Override
     public Iterator<WebSocketConnection> iterator() {
@@ -38,6 +56,9 @@ public class ConnectionManager implements OpenConnections {
     void add(String endpoint, WebSocketConnection connection) {
         LOG.debugf("Add connection: %s", connection);
         if (endpointToConnections.computeIfAbsent(endpoint, e -> ConcurrentHashMap.newKeySet()).add(connection)) {
+            if (openEvent != null) {
+                openEvent.fireAsync(connection);
+            }
             if (!listeners.isEmpty()) {
                 for (ConnectionListener listener : listeners) {
                     try {
@@ -56,6 +77,9 @@ public class ConnectionManager implements OpenConnections {
         Set<WebSocketConnection> connections = endpointToConnections.get(endpoint);
         if (connections != null) {
             if (connections.remove(connection)) {
+                if (closedEvent != null) {
+                    closedEvent.fireAsync(connection);
+                }
                 if (!listeners.isEmpty()) {
                     for (ConnectionListener listener : listeners) {
                         try {

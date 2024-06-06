@@ -521,6 +521,26 @@ class MyBean {
 There are also other convenient methods.
 For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
 
+=== CDI events
+
+Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.ConnectionOpen` asynchronously when a new connection is opened.
+Moreover, a CDI event of type `WebSocketConnection` with qualifier `@io.quarkus.websockets.next.ConnectionClosed` is fired asynchronously when a connection is closed.
+
+[source, java]
+----
+import jakarta.enterprise.event.ObservesAsync;
+import io.quarkus.websockets.next.ConnectionOpen;
+import io.quarkus.websockets.next.WebSocketConnection;
+
+class MyBean {
+
+  void connectionOpened(@ObservesAsync @ConnectionOpen WebSocketConnection connection) { <1>
+     // This observer method is called when a connection is opened...
+  }
+}
+----
+<1> An asynchronous observer method is executed using the default blocking executor service.
+
 == Serialization and Deserialization
 
 The WebSocket Next extension supports automatic serialization and deserialization of messages.

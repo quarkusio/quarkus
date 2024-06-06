@@ -31,6 +31,7 @@
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
+        <processor-plugin.version>5.0</processor-plugin.version>
 
         <!-- Jandex versions -->
         <jandex.version>3.2.0</jandex.version>
@@ -702,7 +703,11 @@
                         </execution>
                     </executions>
                 </plugin>
-
+                <plugin>
+                    <groupId>org.bsc.maven</groupId>
+                    <artifactId>maven-processor-plugin</artifactId>
+                    <version>${processor-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

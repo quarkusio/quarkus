@@ -1462,9 +1462,9 @@ spec:
           protocol: "TCP"
       serviceAccount: "kubernetes-quickstart"
 ----
-<1> Retained were the provided replicas,
+<1> The provided replicas,
 <2> labels and
-<3> environment variables.
+<3> environment variables were retained.
 <4> However, the image and
 <5> the container port were modified.
 

@@ -17,6 +17,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.paths.FilteredPathTree;
@@ -35,15 +36,19 @@ public class StaticResourcesProcessor {
     @BuildStep
     void collectStaticResources(Capabilities capabilities,
             List<AdditionalStaticResourceBuildItem> additionalStaticResources,
-            BuildProducer<StaticResourcesBuildItem> staticResources) {
+            BuildProducer<StaticResourcesBuildItem> staticResources,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources();
-        for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
-            paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
+        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
+                paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
+            }
         }
+
         if (!paths.isEmpty()) {
             staticResources.produce(new StaticResourcesBuildItem(paths));
         }

@@ -55,8 +55,6 @@
         <commons-compress.version>1.26.2</commons-compress.version>
         <jboss-logging.version>3.6.0.Final</jboss-logging.version>
         <mockito.version>5.12.0</mockito.version>
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>36</maven-model-helper.version>
         <jandex.version>3.2.0</jandex.version>
@@ -205,14 +203,6 @@
     </distributionManagement>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -249,7 +239,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${version.surefire.plugin}</version>
                 <configuration>
                     <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                     <systemPropertyVariables combine.self="override"/>
@@ -261,7 +250,6 @@
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.24.1</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -280,7 +268,6 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.10.0</version>
                 <configuration>
                     <!-- store outside of target to speed up formatting when mvn clean is used -->
                     <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>

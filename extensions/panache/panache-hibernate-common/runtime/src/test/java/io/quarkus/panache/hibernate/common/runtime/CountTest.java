@@ -13,8 +13,10 @@ public class CountTest {
         // one column distinct
         assertCountQueryUsingParser("select count( distinct foo ) from bar", "select distinct foo from bar");
         // two columns distinct
-        Assertions.assertThrows(RuntimeException.class,
-                () -> assertCountQueryUsingParser("XX", "select distinct foo,gee from bar"));
+        assertCountQueryUsingParser("select count( * ) from ( select distinct foo as __v0, gee as __v1 from bar )",
+                "select distinct foo,gee from bar");
+        assertCountQueryUsingParser("select count( * ) from ( select distinct foo as __v0, gee as g from bar )",
+                "select distinct foo,gee as g from bar");
         // nested order by not touched
         assertCountQueryUsingParser("select count( * ) from ( from entity order by id )",
                 "select foo from (from entity order by id) order by foo, bar ASC");

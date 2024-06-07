@@ -164,6 +164,9 @@ public class OidcClientImpl implements OidcClient {
             if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
                 body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
                 body.add(OidcConstants.CLIENT_SECRET, jwt);
+            } else if (OidcCommonUtils.isJWTAsAuthorizationGrant(oidcConfig.credentials)) {
+                body.add(OidcConstants.JWT_AUTHORIZATION_GRANT_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                body.add(OidcConstants.JWT_AUTHORIZATION_ASSERTION, jwt);
             } else {
                 body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                 body.add(OidcConstants.CLIENT_ASSERTION, jwt);

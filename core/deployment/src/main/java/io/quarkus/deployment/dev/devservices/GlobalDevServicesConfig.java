@@ -17,7 +17,7 @@ public class GlobalDevServicesConfig {
     boolean enabled;
 
     /**
-     * Global flag that can be used to force the attachmment of Dev Services to shared netxork. Default is false.
+     * Global flag that can be used to force the attachmment of Dev Services to shared network. Default is false.
      */
     @ConfigItem(defaultValue = "false")
     public boolean launchOnSharedNetwork;

@@ -478,15 +478,19 @@ public class DevMojo extends AbstractMojo {
                     }
                     if (!changed.isEmpty()) {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
+
+                        // stop the runner before we build the new one as the debug port being free
+                        // is tested when building the runner
+                        runner.stop();
+
                         final DevModeRunner newRunner;
                         try {
                             bootstrapId = handleAutoCompile();
-                            newRunner = new DevModeRunner(runner.launcher.getDebugPortOk(), bootstrapId);
+                            newRunner = new DevModeRunner(runner.launcher.getActualDebugPort(), bootstrapId);
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
                         }
-                        runner.stop();
                         newRunner.run();
                         runner = newRunner;
                     }
@@ -1171,8 +1175,8 @@ public class DevMojo extends AbstractMojo {
             launcher = newLauncher(null, bootstrapId);
         }
 
-        private DevModeRunner(Boolean debugPortOk, String bootstrapId) throws Exception {
-            launcher = newLauncher(debugPortOk, bootstrapId);
+        private DevModeRunner(String actualDebugPort, String bootstrapId) throws Exception {
+            launcher = newLauncher(actualDebugPort, bootstrapId);
         }
 
         Collection<Path> pomFiles() {
@@ -1226,7 +1230,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private QuarkusDevModeLauncher newLauncher(Boolean debugPortOk, String bootstrapId) throws Exception {
+    private QuarkusDevModeLauncher newLauncher(String actualDebugPort, String bootstrapId) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -1244,8 +1248,7 @@ public class DevMojo extends AbstractMojo {
                 .suspend(suspend)
                 .debug(debug)
                 .debugHost(debugHost)
-                .debugPort(debugPort)
-                .debugPortOk(debugPortOk)
+                .debugPort(actualDebugPort)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);

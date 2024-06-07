@@ -97,9 +97,17 @@ public class PanacheJpaUtil {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         HqlParser parser = new HqlParser(tokens);
         SelectStatementContext statement = parser.selectStatement();
-        CountParserVisitor visitor = new CountParserVisitor();
-        statement.accept(visitor);
-        return visitor.result();
+        try {
+            CountParserVisitor visitor = new CountParserVisitor();
+            statement.accept(visitor);
+            return visitor.result();
+        } catch (RequiresSubqueryException x) {
+            // no luck
+            SubQueryAliasParserVisitor visitor = new SubQueryAliasParserVisitor();
+            statement.accept(visitor);
+            String ret = visitor.result();
+            return "select count( * ) from ( " + ret + " )";
+        }
     }
 
     public static String getEntityName(Class<?> entityClass) {

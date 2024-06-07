@@ -2,16 +2,16 @@ package io.quarkus.panache.hibernate.common.runtime;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.hibernate.grammars.hql.HqlParser.JoinContext;
-import org.hibernate.grammars.hql.HqlParser.QueryContext;
 import org.hibernate.grammars.hql.HqlParser.QueryOrderContext;
-import org.hibernate.grammars.hql.HqlParser.SelectClauseContext;
+import org.hibernate.grammars.hql.HqlParser.SelectionContext;
 import org.hibernate.grammars.hql.HqlParser.SimpleQueryGroupContext;
 import org.hibernate.grammars.hql.HqlParserBaseVisitor;
 
-public class CountParserVisitor extends HqlParserBaseVisitor<String> {
+public class SubQueryAliasParserVisitor extends HqlParserBaseVisitor<String> {
 
     private int inSimpleQueryGroup;
     private StringBuilder sb = new StringBuilder();
+    private int counter;
 
     @Override
     public String visitSimpleQueryGroup(SimpleQueryGroupContext ctx) {
@@ -24,34 +24,12 @@ public class CountParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     @Override
-    public String visitQuery(QueryContext ctx) {
-        super.visitQuery(ctx);
-        if (inSimpleQueryGroup == 1 && ctx.selectClause() == null) {
-            // insert a count because there's no select
-            sb.append(" select count( * )");
-        }
-        return null;
-    }
-
-    @Override
-    public String visitSelectClause(SelectClauseContext ctx) {
+    public String visitSelection(SelectionContext ctx) {
+        super.visitSelection(ctx);
         if (inSimpleQueryGroup == 1) {
-            if (ctx.SELECT() != null) {
-                ctx.SELECT().accept(this);
+            if (ctx.variable() == null) {
+                sb.append(" as __v" + counter++);
             }
-            if (ctx.DISTINCT() != null) {
-                sb.append(" count(");
-                ctx.DISTINCT().accept(this);
-                if (ctx.selectionList().children.size() != 1) {
-                    throw new RequiresSubqueryException();
-                }
-                ctx.selectionList().children.get(0).accept(this);
-                sb.append(" )");
-            } else {
-                sb.append(" count( * )");
-            }
-        } else {
-            super.visitSelectClause(ctx);
         }
         return null;
     }
@@ -94,8 +72,8 @@ public class CountParserVisitor extends HqlParserBaseVisitor<String> {
     }
 
     private void append(String nextResult) {
-        // don't add space at start, or around dots
-        if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != '.' && !nextResult.equals(".")) {
+        // don't add space at start, or around dots, commas
+        if (!sb.isEmpty() && sb.charAt(sb.length() - 1) != '.' && !nextResult.equals(".") && !nextResult.equals(",")) {
             sb.append(" ");
         }
         sb.append(nextResult);

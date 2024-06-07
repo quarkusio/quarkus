@@ -10,7 +10,10 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -20,12 +23,15 @@ import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.NetConfig;
 import io.quarkus.redis.runtime.client.config.RedisClientConfig;
-import io.quarkus.redis.runtime.client.config.TlsConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.core.net.SSLOptions;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisOptions;
@@ -37,11 +43,13 @@ public class VertxRedisClientFactory {
 
     public static final String DEFAULT_CLIENT = "<default>";
 
+    private static final Logger LOGGER = Logger.getLogger(VertxRedisClientFactory.class);
+
     private VertxRedisClientFactory() {
         // Avoid direct instantiation.
     }
 
-    public static Redis create(String name, Vertx vertx, RedisClientConfig config) {
+    public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry) {
         RedisOptions options = new RedisOptions();
 
         List<URI> hosts = new ArrayList<>();
@@ -86,6 +94,7 @@ public class VertxRedisClientFactory {
         config.replicas().ifPresent(options::setUseReplicas);
 
         options.setNetClientOptions(toNetClientOptions(config));
+        configureTLS(name, config, tlsRegistry, options.getNetClientOptions());
 
         options.setPoolName(name);
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with redis.
@@ -110,34 +119,13 @@ public class VertxRedisClientFactory {
 
     private static NetClientOptions toNetClientOptions(RedisClientConfig config) {
         NetConfig tcp = config.tcp();
-        TlsConfig tls = config.tls();
         NetClientOptions net = new NetClientOptions();
 
-        tcp.alpn().ifPresent(net::setUseAlpn);
         tcp.applicationLayerProtocols().ifPresent(net::setApplicationLayerProtocols);
         tcp.connectionTimeout().ifPresent(d -> net.setConnectTimeout((int) d.toMillis()));
-
-        String verificationAlgorithm = tls.hostnameVerificationAlgorithm();
-        if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
-            net.setHostnameVerificationAlgorithm("");
-        } else {
-            net.setHostnameVerificationAlgorithm(verificationAlgorithm);
-        }
-
         tcp.idleTimeout().ifPresent(d -> net.setIdleTimeout((int) d.toSeconds()));
-
         tcp.keepAlive().ifPresent(b -> net.setTcpKeepAlive(true));
         tcp.noDelay().ifPresent(b -> net.setTcpNoDelay(true));
-
-        net.setSsl(tls.enabled()).setTrustAll(tls.trustAll());
-
-        configurePemTrustOptions(net, tls.trustCertificatePem());
-        configureJksTrustOptions(net, tls.trustCertificateJks());
-        configurePfxTrustOptions(net, tls.trustCertificatePfx());
-
-        configurePemKeyCertOptions(net, tls.keyCertificatePem());
-        configureJksKeyCertOptions(net, tls.keyCertificateJks());
-        configurePfxKeyCertOptions(net, tls.keyCertificatePfx());
 
         net.setReconnectAttempts(config.reconnectAttempts());
         net.setReconnectInterval(config.reconnectInterval().toMillis());
@@ -189,6 +177,84 @@ public class VertxRedisClientFactory {
         }
 
         return providers.get();
+    }
+
+    private static void configureTLS(String name, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry,
+            NetClientOptions net) {
+        TlsConfiguration configuration = null;
+        boolean defaultTrustAll = false;
+
+        // Check if we have a named TLS configuration or a default configuration:
+        if (config.tlsConfigurationName().isPresent()) {
+            Optional<TlsConfiguration> maybeConfiguration = tlsRegistry.get(config.tlsConfigurationName().get());
+            if (maybeConfiguration.isEmpty()) {
+                throw new IllegalStateException("Unable to find the TLS configuration "
+                        + config.tlsConfigurationName().get() + " for the Redis client " + name + ".");
+            }
+            configuration = maybeConfiguration.get();
+        } else if (tlsRegistry.getDefault().isPresent() && (tlsRegistry.getDefault().get().isTrustAll())) {
+            defaultTrustAll = tlsRegistry.getDefault().get().isTrustAll();
+            if (defaultTrustAll) {
+                LOGGER.warn("The default TLS configuration is set to trust all certificates. This is a security risk."
+                        + "Please use a named TLS configuration for the Redis client " + name + " to avoid this warning.");
+            }
+        }
+
+        // Apply the configuration
+        if (configuration != null) {
+            // This part is often the same (or close) for every Vert.x client:
+            net.setSsl(true);
+
+            if (configuration.getTrustStoreOptions() != null) {
+                net.setTrustOptions(configuration.getTrustStoreOptions());
+            }
+
+            // For mTLS:
+            if (configuration.getKeyStoreOptions() != null) {
+                net.setKeyCertOptions(configuration.getKeyStoreOptions());
+            }
+
+            if (configuration.isTrustAll()) {
+                net.setTrustAll(true);
+            }
+            if (configuration.getHostnameVerificationAlgorithm().isPresent()) {
+                net.setHostnameVerificationAlgorithm(configuration.getHostnameVerificationAlgorithm().get());
+            }
+
+            SSLOptions sslOptions = configuration.getSSLOptions();
+            if (sslOptions != null) {
+                net.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
+                net.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
+                for (String suite : sslOptions.getEnabledCipherSuites()) {
+                    net.addEnabledCipherSuite(suite);
+                }
+                for (Buffer buffer : sslOptions.getCrlValues()) {
+                    net.addCrlValue(buffer);
+                }
+                net.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
+                net.setUseAlpn(sslOptions.isUseAlpn());
+            }
+
+        } else {
+            config.tcp().alpn().ifPresent(net::setUseAlpn);
+
+            String verificationAlgorithm = config.tls().hostnameVerificationAlgorithm();
+            if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
+                net.setHostnameVerificationAlgorithm("");
+            } else {
+                net.setHostnameVerificationAlgorithm(verificationAlgorithm);
+            }
+            net.setSsl(config.tls().enabled() || defaultTrustAll);
+            net.setTrustAll(config.tls().trustAll() || defaultTrustAll);
+
+            configurePemTrustOptions(net, config.tls().trustCertificatePem());
+            configureJksTrustOptions(net, config.tls().trustCertificateJks());
+            configurePfxTrustOptions(net, config.tls().trustCertificatePfx());
+
+            configurePemKeyCertOptions(net, config.tls().keyCertificatePem());
+            configureJksKeyCertOptions(net, config.tls().keyCertificateJks());
+            configurePfxKeyCertOptions(net, config.tls().keyCertificatePfx());
+        }
     }
 
 }

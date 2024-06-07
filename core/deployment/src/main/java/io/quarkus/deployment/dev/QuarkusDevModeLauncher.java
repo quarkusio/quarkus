@@ -86,12 +86,6 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B debugPortOk(Boolean debugPortOk) {
-            QuarkusDevModeLauncher.this.debugPortOk = debugPortOk;
-            return (B) this;
-        }
-
-        @SuppressWarnings("unchecked")
         public B suspend(String suspend) {
             QuarkusDevModeLauncher.this.suspend = suspend;
             return (B) this;
@@ -303,10 +297,10 @@ public abstract class QuarkusDevModeLauncher {
 
     private List<String> args = new ArrayList<>(0);
     private String debug;
-    private Boolean debugPortOk;
     private String suspend;
     private String debugHost = "localhost";
     private String debugPort = "5005";
+    private String actualDebugPort;
     private File projectDir;
     private File buildDir;
     private File outputDir;
@@ -390,12 +384,13 @@ public abstract class QuarkusDevModeLauncher {
 
         if (debug != null && debug.equalsIgnoreCase("client")) {
             args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend=" + suspend);
+            actualDebugPort = String.valueOf(port);
         } else if (debug == null || !debug.equalsIgnoreCase("false")) {
             // if the debug port is used, we want to make an effort to pick another one
             // if we can't find an open port, we don't fail the process launch, we just don't enable debugging
             // Furthermore, we don't check this on restarts, as the previous process is still running
             boolean warnAboutChange = false;
-            if (debugPortOk == null) {
+            if (actualDebugPort == null) {
                 int tries = 0;
                 while (true) {
                     boolean isPortUsed;
@@ -408,20 +403,19 @@ public abstract class QuarkusDevModeLauncher {
                         isPortUsed = false;
                     }
                     if (!isPortUsed) {
-                        debugPortOk = true;
+                        actualDebugPort = String.valueOf(port);
                         break;
                     }
                     if (++tries >= 5) {
-                        debugPortOk = false;
                         break;
                     } else {
                         port = getRandomPort();
                     }
                 }
             }
-            if (debugPortOk) {
+            if (actualDebugPort != null) {
                 if (warnAboutChange) {
-                    warn("Changed debug port to " + port + " because of a port conflict");
+                    warn("Changed debug port to " + actualDebugPort + " because of a port conflict");
                 }
                 args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend="
                         + suspend);
@@ -547,8 +541,8 @@ public abstract class QuarkusDevModeLauncher {
         return args;
     }
 
-    public Boolean getDebugPortOk() {
-        return debugPortOk;
+    public String getActualDebugPort() {
+        return actualDebugPort;
     }
 
     protected abstract boolean isDebugEnabled();

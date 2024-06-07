@@ -17,6 +17,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
@@ -54,7 +55,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
             if (exchangeTokenGrantType == Grant.Type.EXCHANGE) {
                 exchangeTokenProperty = "subject_token";
             } else if (exchangeTokenGrantType == Grant.Type.JWT) {
-                exchangeTokenProperty = "assertion";
+                exchangeTokenProperty = OidcConstants.JWT_BEARER_GRANT_ASSERTION;
             } else {
                 throw new ConfigurationException("Token exchange is required but OIDC client is configured "
                         + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");

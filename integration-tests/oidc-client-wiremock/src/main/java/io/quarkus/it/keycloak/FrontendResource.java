@@ -42,6 +42,10 @@ public class FrontendResource {
     OidcClient tokensWithoutHeader;
 
     @Inject
+    @NamedOidcClient("jwtbearer-grant")
+    OidcClient jwtBearerGrantClient;
+
+    @Inject
     OidcClients clients;
 
     @GET
@@ -54,6 +58,12 @@ public class FrontendResource {
     @Path("crashTest")
     public String crashTest() {
         return protectedResourceServiceCrashTestClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenJwtBearerGrant")
+    public String echoTokenJwtBearerGrant() {
+        return jwtBearerGrantClient.getTokens().await().indefinitely().getAccessToken();
     }
 
     @GET

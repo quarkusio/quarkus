@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.restassured.RestAssured;
 
-public class GeneratedStaticResourcesTest {
+public class GeneratedStaticClasspathResourcesTest {
 
     @RegisterExtension
     final static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(

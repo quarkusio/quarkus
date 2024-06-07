@@ -137,6 +137,11 @@ class OtlpExporterProviderTest {
                     }
 
                     @Override
+                    public Optional<String> tlsConfigurationName() {
+                        return Optional.empty();
+                    }
+
+                    @Override
                     public ProxyConfig proxyOptions() {
                         return new ProxyConfig() {
                             @Override

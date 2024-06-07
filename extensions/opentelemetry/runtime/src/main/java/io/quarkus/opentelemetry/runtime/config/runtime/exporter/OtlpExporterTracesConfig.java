@@ -75,6 +75,15 @@ public interface OtlpExporterTracesConfig {
     TrustCert trustCert();
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
      * Set proxy options
      */
     ProxyConfig proxyOptions();

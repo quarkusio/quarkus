@@ -24,7 +24,6 @@ import io.opentelemetry.exporter.otlp.internal.OtlpUserAgent;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
@@ -35,7 +34,6 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.ProxyOptions;
@@ -63,7 +61,10 @@ public class OTelExporterRecorder {
                 }
 
                 try {
-                    var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri);
+                    TlsConfigurationRegistry tlsConfigurationRegistry = context
+                            .getInjectedReference(TlsConfigurationRegistry.class);
+                    var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri,
+                            tlsConfigurationRegistry);
 
                     BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
 
@@ -80,7 +81,9 @@ public class OTelExporterRecorder {
             }
 
             private SpanExporter createSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig,
-                    Vertx vertx, final URI baseUri) {
+                    Vertx vertx,
+                    URI baseUri,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
                 if (tracesConfig.protocol().isEmpty()) {
                     throw new IllegalStateException("No OTLP protocol specified. " +
@@ -89,9 +92,9 @@ public class OTelExporterRecorder {
 
                 String protocol = tracesConfig.protocol().get();
                 if (GRPC.equals(protocol)) {
-                    return createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx, baseUri);
+                    return createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx, baseUri, tlsConfigurationRegistry);
                 } else if (HTTP_PROTOBUF.equals(protocol)) {
-                    return createHttpSpanExporter(exporterRuntimeConfig, vertx, baseUri, protocol);
+                    return createHttpSpanExporter(exporterRuntimeConfig, vertx, baseUri, protocol, tlsConfigurationRegistry);
                 }
 
                 throw new IllegalArgumentException(String.format("Unsupported OTLP protocol %s specified. " +
@@ -99,7 +102,8 @@ public class OTelExporterRecorder {
             }
 
             private SpanExporter createOtlpGrpcSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig,
-                    Vertx vertx, final URI baseUri) {
+                    Vertx vertx, final URI baseUri,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
 
@@ -111,13 +115,14 @@ public class OTelExporterRecorder {
                         determineCompression(tracesConfig),
                         tracesConfig.timeout(),
                         populateTracingExportHttpHeaders(tracesConfig),
-                        new HttpClientOptionsConsumer(tracesConfig, baseUri),
+                        new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfigurationRegistry),
                         vertx);
 
             }
 
             private SpanExporter createHttpSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, Vertx vertx,
-                    URI baseUri, String protocol) {
+                    URI baseUri, String protocol,
+                    TlsConfigurationRegistry tlsConfigurationRegistry) {
 
                 OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
 
@@ -132,7 +137,7 @@ public class OTelExporterRecorder {
                                 tracesConfig.timeout(),
                                 populateTracingExportHttpHeaders(tracesConfig),
                                 exportAsJson ? "application/json" : "application/x-protobuf",
-                                new HttpClientOptionsConsumer(tracesConfig, baseUri),
+                                new HttpClientOptionsConsumer(tracesConfig, baseUri, tlsConfigurationRegistry),
                                 vertx),
                         MeterProvider::noop,
                         exportAsJson));
@@ -193,10 +198,15 @@ public class OTelExporterRecorder {
     static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {
         private final OtlpExporterTracesConfig tracesConfig;
         private final URI baseUri;
+        private final Optional<TlsConfiguration> maybeTlsConfiguration;
+        private final TlsConfigurationRegistry tlsConfigurationRegistry;
 
-        public HttpClientOptionsConsumer(OtlpExporterTracesConfig tracesConfig, URI baseUri) {
+        public HttpClientOptionsConsumer(OtlpExporterTracesConfig tracesConfig, URI baseUri,
+                TlsConfigurationRegistry tlsConfigurationRegistry) {
             this.tracesConfig = tracesConfig;
             this.baseUri = baseUri;
+            this.maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry, tracesConfig.tlsConfigurationName());
+            this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         }
 
         @Override
@@ -208,24 +218,22 @@ public class OTelExporterRecorder {
         }
 
         private void configureTLS(HttpClientOptions options) {
-            // TODO: this can reuse existing stuff when https://github.com/quarkusio/quarkus/pull/33228 is in
-            options.setKeyCertOptions(toPemKeyCertOptions());
-            options.setPemTrustOptions(toPemTrustOptions());
+            configureKeyCertOptions(options);
+            configureTrustOptions(options);
 
             if (OTelExporterUtil.isHttps(baseUri)) {
                 options.setSsl(true);
                 options.setUseAlpn(true);
             }
 
-            boolean globalTrustAll = false;
-            if (Arc.container() != null) {
-                TlsConfigurationRegistry registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
-                if (registry != null) {
-                    globalTrustAll = registry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
-                }
-            }
-
-            if (globalTrustAll) {
+            boolean trustAll = maybeTlsConfiguration.map(TlsConfiguration::isTrustAll).orElseGet(
+                    new Supplier<>() {
+                        @Override
+                        public Boolean get() {
+                            return tlsConfigurationRegistry.getDefault().map(TlsConfiguration::isTrustAll).orElse(false);
+                        }
+                    });
+            if (trustAll) {
                 options.setTrustAll(true);
                 options.setVerifyHost(false);
             }
@@ -279,10 +287,15 @@ public class OTelExporterRecorder {
             }
         }
 
-        private KeyCertOptions toPemKeyCertOptions() {
+        private void configureKeyCertOptions(HttpClientOptions options) {
+            if (maybeTlsConfiguration.isPresent()) {
+                options.setKeyCertOptions(maybeTlsConfiguration.get().getKeyStoreOptions());
+                return;
+            }
+
             OtlpExporterTracesConfig.KeyCert keyCert = tracesConfig.keyCert();
             if (keyCert.certs().isEmpty() && keyCert.keys().isEmpty()) {
-                return null;
+                return;
             }
 
             PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
@@ -296,10 +309,15 @@ public class OTelExporterRecorder {
                     pemKeyCertOptions.addKeyPath(cert);
                 }
             }
-            return pemKeyCertOptions;
+            options.setKeyCertOptions(pemKeyCertOptions);
         }
 
-        private PemTrustOptions toPemTrustOptions() {
+        private void configureTrustOptions(HttpClientOptions options) {
+            if (maybeTlsConfiguration.isPresent()) {
+                options.setTrustOptions(maybeTlsConfiguration.get().getTrustStoreOptions());
+                return;
+            }
+
             OtlpExporterTracesConfig.TrustCert trustCert = tracesConfig.trustCert();
             if (trustCert.certs().isPresent()) {
                 List<String> certs = trustCert.certs().get();
@@ -308,10 +326,9 @@ public class OTelExporterRecorder {
                     for (String cert : trustCert.certs().get()) {
                         pemTrustOptions.addCertPath(cert);
                     }
-                    return pemTrustOptions;
+                    options.setPemTrustOptions(pemTrustOptions);
                 }
             }
-            return null;
         }
     }
 }

@@ -50,6 +50,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
     private boolean enableTLS = false;
     private boolean preventTrustCert = false;
     private boolean enableCompression = false;
+    private String tlsRegistryName = null;
     private Vertx vertx;
 
     private HttpServer server;
@@ -76,6 +77,10 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
 
         if (initArgs.containsKey("protocol")) {
             protocol = initArgs.get("protocol");
+        }
+
+        if (initArgs.containsKey("tlsRegistryName")) {
+            tlsRegistryName = initArgs.get("tlsRegistryName");
         }
     }
 
@@ -130,11 +135,21 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         if (enableTLS) {
             result.put("quarkus.otel.exporter.otlp.traces.endpoint",
                     "https://" + collector.getHost() + ":" + collector.getMappedPort(secureEndpointPort));
-            if (!preventTrustCert) {
-                result.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", serverTls.certificatePath());
+            if (tlsRegistryName != null) {
+                result.put("quarkus.otel.exporter.otlp.traces.tls-configuration-name", tlsRegistryName);
+                if (!preventTrustCert) {
+                    result.put(String.format("quarkus.tls.%s.trust-store.pem.certs", tlsRegistryName),
+                            serverTls.certificatePath());
+                }
+                result.put(String.format("quarkus.tls.%s.key-store.pem.0.cert", tlsRegistryName), clientTlS.certificatePath());
+                result.put(String.format("quarkus.tls.%s.key-store.pem.0.key", tlsRegistryName), clientTlS.privateKeyPath());
+            } else {
+                if (!preventTrustCert) {
+                    result.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", serverTls.certificatePath());
+                }
+                result.put("quarkus.otel.exporter.otlp.traces.key-cert.certs", clientTlS.certificatePath());
+                result.put("quarkus.otel.exporter.otlp.traces.key-cert.keys", clientTlS.privateKeyPath());
             }
-            result.put("quarkus.otel.exporter.otlp.traces.key-cert.certs", clientTlS.certificatePath());
-            result.put("quarkus.otel.exporter.otlp.traces.key-cert.keys", clientTlS.privateKeyPath());
         } else {
             result.put("quarkus.otel.exporter.otlp.traces.endpoint",
                     "http://" + collector.getHost() + ":" + collector.getMappedPort(inSecureEndpointPort));

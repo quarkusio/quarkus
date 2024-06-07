@@ -15,6 +15,17 @@ import io.vertx.core.net.TrustOptions;
  */
 public interface TlsConfiguration {
 
+    static Optional<TlsConfiguration> from(TlsConfigurationRegistry registry, Optional<String> name) {
+        if (name.isPresent()) {
+            Optional<TlsConfiguration> maybeConfiguration = registry.get(name.get());
+            if (maybeConfiguration.isEmpty()) {
+                throw new IllegalStateException("Unable to find the TLS configuration for name " + name + ".");
+            }
+            return maybeConfiguration;
+        }
+        return Optional.empty();
+    }
+
     /**
      * Returns the key store.
      *

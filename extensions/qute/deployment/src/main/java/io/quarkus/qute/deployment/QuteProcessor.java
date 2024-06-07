@@ -1001,7 +1001,7 @@ public class QuteProcessor {
             // Register all param declarations as targets of implicit value resolvers
             for (ParameterDeclaration paramDeclaration : templateAnalysis.parameterDeclarations) {
                 Type type = TypeInfos.resolveTypeFromTypeInfo(paramDeclaration.getTypeInfo());
-                if (type != null) {
+                if (type != null && !implicitClassToMembersUsed.containsKey(type.name())) {
                     implicitClassToMembersUsed.put(type.name(), new HashSet<>());
                 }
             }

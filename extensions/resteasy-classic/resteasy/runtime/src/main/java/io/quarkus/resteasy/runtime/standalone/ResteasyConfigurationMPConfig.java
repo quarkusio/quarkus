@@ -67,6 +67,11 @@ public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
     }
 
     private static Optional<String> getGzipMaxInput(Config config) {
+        if (config.getOptionalValue("resteasy.gzip.max.input", String.class).isPresent()) {
+            // resteasy-specific properties have priority
+            return Optional.empty();
+        }
+
         Optional<MemorySize> rawValue = config.getOptionalValue("quarkus.resteasy.gzip.max-input", MemorySize.class);
 
         if (rawValue.isEmpty()) {

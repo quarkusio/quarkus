@@ -141,6 +141,11 @@ public class DevUIProcessor {
             return;
         }
 
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .orderedRoute(DEVUI + SLASH_ALL, -2 * FilterBuildItem.CORS)
+                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts.orElse(null)))
+                .build());
+
         if (devUIConfig.cors.enabled) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)

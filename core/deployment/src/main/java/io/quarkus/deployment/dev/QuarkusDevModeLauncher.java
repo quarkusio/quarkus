@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -136,6 +138,12 @@ public abstract class QuarkusDevModeLauncher {
         @SuppressWarnings("unchecked")
         public B applicationArgs(String appArgs) {
             QuarkusDevModeLauncher.this.applicationArgs = appArgs;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B buildTimestamp(Instant buildTimestamp) {
+            QuarkusDevModeLauncher.this.buildTimestamp = buildTimestamp;
             return (B) this;
         }
 
@@ -307,6 +315,7 @@ public abstract class QuarkusDevModeLauncher {
     private Map<String, String> buildSystemProperties = new HashMap<>(0);
     private String applicationName;
     private String applicationVersion;
+    private Instant buildTimestamp;
     private String sourceEncoding;
     private Map<String, Set<String>> compilerOptions = new HashMap<>(1);
     private List<String> compilerPluginArtifacts;
@@ -440,6 +449,8 @@ public abstract class QuarkusDevModeLauncher {
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", applicationVersion);
 
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.live-reload.ignore-module-info", "true");
+        devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.build.timestamp",
+                DateTimeFormatter.ISO_INSTANT.format(buildTimestamp));
 
         devModeContext.setSourceEncoding(sourceEncoding);
         devModeContext.setCompilerOptions(compilerOptions);

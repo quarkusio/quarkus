@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -548,6 +550,9 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+        applicationInfo.put("buildTimestamp",
+                config.getOptionalValue("quarkus.build.timestamp", Instant.class).map(DateTimeFormatter.ISO_INSTANT::format)
+                        .orElse(""));
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
 

@@ -108,8 +108,8 @@ public class PicocliNativeImageProcessor {
             }
         });
         foundFields.forEach(fieldInfo -> reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo)));
-        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(type)
+        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                .builder(type)
                 .source(PicocliNativeImageProcessor.class.getSimpleName())
                 .build()));
     }

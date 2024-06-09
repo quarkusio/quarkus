@@ -37,6 +37,13 @@ public interface SpringCloudConfigClientConfig {
     String url();
 
     /**
+     * Name of the application on Spring Cloud Config server.
+     * Could be a list of names to load multiple files (value separated by a comma)
+     */
+    @WithDefault("${quarkus.application.name:}")
+    String name();
+
+    /**
      * The label to be used to pull remote configuration properties.
      * The default is set on the Spring Cloud Config Server
      * (generally "master" when the server uses a Git backend).

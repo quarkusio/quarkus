@@ -171,10 +171,10 @@
         <javaparser.version>3.26.0</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.13.1</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
-        <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
+        <quarkus-spring-api.version>6.1.SP2</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>3.2.SP1</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>6.2</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>3.2</quarkus-spring-boot-api.version>
         <mockito.version>5.12.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.1.0</quarkus-security.version>
@@ -5885,6 +5885,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-beans-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-aop-api</artifactId>
                 <version>${quarkus-spring-api.version}</version>
             </dependency>
             <dependency>

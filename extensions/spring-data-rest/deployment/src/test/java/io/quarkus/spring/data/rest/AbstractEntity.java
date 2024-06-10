@@ -1,4 +1,4 @@
-package io.quarkus.spring.data.rest.paged;
+package io.quarkus.spring.data.rest;
 
 import java.io.Serializable;
 

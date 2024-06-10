@@ -14,6 +14,7 @@ import jakarta.enterprise.inject.Typed;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
 import io.quarkus.websockets.next.CloseReason;
@@ -27,7 +28,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClient;
-import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
 
 @Typed(BasicWebSocketConnector.class)
@@ -54,8 +54,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     private BiConsumer<WebSocketClientConnection, Throwable> errorHandler;
 
     BasicWebSocketConnectorImpl(Vertx vertx, Codecs codecs, ClientConnectionManager connectionManager,
-            WebSocketsClientRuntimeConfig config) {
-        super(vertx, codecs, connectionManager, config);
+            WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry) {
+        super(vertx, codecs, connectionManager, config, tlsConfigurationRegistry);
     }
 
     @Override
@@ -115,18 +115,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         // Currently we create a new client for each connection
         // The client is closed when the connection is closed
         // TODO would it make sense to share clients?
-        WebSocketClientOptions clientOptions = new WebSocketClientOptions();
-        if (config.offerPerMessageCompression()) {
-            clientOptions.setTryUsePerMessageCompression(true);
-            if (config.compressionLevel().isPresent()) {
-                clientOptions.setCompressionLevel(config.compressionLevel().getAsInt());
-            }
-        }
-        if (config.maxMessageSize().isPresent()) {
-            clientOptions.setMaxMessageSize(config.maxMessageSize().getAsInt());
-        }
-
-        WebSocketClient client = vertx.createWebSocketClient();
+        WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
 
         WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
                 .setSsl(baseUri.getScheme().equals("https"))

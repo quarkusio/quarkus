@@ -283,13 +283,23 @@ public class InfinispanDevServiceProcessor {
                 return " -c " + userConfigFile;
             }).collect(Collectors.joining())).orElse("");
 
+            if (config.tracing.isPresent()) {
+                log.warn(
+                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing setting `quarkus.infinispan-client.devservices.tracing.enabled` to true won't work.\n"
+                                +
+                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check xref:infinispan-dev-services.adoc[Infinispan Dev Services guide]");
+                log.warn("infinispan:\n" +
+                        "        cacheContainer:\n" +
+                        "                tracing:\n" +
+                        "                        collector-endpoint: \"http://jaeger:4318\"\n" +
+                        "                        enabled: true\n" +
+                        "                        exporter-protocol: \"OTLP\"\n" +
+                        "                        service-name: \"infinispan-server\"\n" +
+                        "                        security: false");
+            }
+
             if (config.mcastPort.isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort.getAsInt();
-            }
-            if (config.tracing.isPresent()) {
-                command = command + " -Dinfinispan.tracing.enabled=" + config.tracing.get();
-                command = command + " -Dotel.exporter.otlp.endpoint=" + config.exporterOtlpEndpoint.get();
-                command = command + " -Dotel.service.name=infinispan-server-service -Dotel.metrics.exporter=none";
             }
 
             config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));

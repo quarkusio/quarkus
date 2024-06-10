@@ -7,8 +7,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import jakarta.inject.Singleton;
-
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
@@ -24,7 +22,6 @@ import io.quarkus.tls.runtime.keystores.TrustAllOptions;
 import io.vertx.core.Vertx;
 
 @Recorder
-@Singleton
 public class CertificateRecorder implements TlsConfigurationRegistry {
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();

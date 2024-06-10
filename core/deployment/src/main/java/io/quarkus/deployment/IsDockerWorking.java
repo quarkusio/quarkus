@@ -6,6 +6,7 @@ import static io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime.U
 import java.util.List;
 
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 
 public class IsDockerWorking extends IsContainerRuntimeWorking {
     public IsDockerWorking() {
@@ -19,7 +20,8 @@ public class IsDockerWorking extends IsContainerRuntimeWorking {
     private static class DockerBinaryStrategy implements Strategy {
         @Override
         public Result get() {
-            if (ContainerRuntimeUtil.detectContainerRuntime(false) != UNAVAILABLE) {
+            if (ContainerRuntimeUtil.detectContainerRuntime(false,
+                    ContainerRuntime.DOCKER, ContainerRuntime.PODMAN) != UNAVAILABLE) {
                 return Result.AVAILABLE;
             } else {
                 return Result.UNKNOWN;

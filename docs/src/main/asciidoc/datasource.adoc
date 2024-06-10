@@ -535,7 +535,7 @@ would result in an exception similar to this:
 Caused by: java.sql.SQLException: Exception in association of connection to existing transaction
         at io.agroal.narayana.NarayanaTransactionIntegration.associate(NarayanaTransactionIntegration.java:130)
         ...
-Caused by: java.sql.SQLException: Unable to enlist connection to existing transaction
+Caused by: java.sql.SQLException: Failed to enlist. Check if a connection from another datasource is already enlisted to the same transaction
         at io.agroal.narayana.NarayanaTransactionIntegration.associate(NarayanaTransactionIntegration.java:121)
         ...
 ----

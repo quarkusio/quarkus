@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -21,22 +22,25 @@ import io.vertx.ext.web.handler.StaticHandler;
  * {@link StaticHandler} implementation to handle static resources using the Classpath.
  * This is meant to be used on {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT} mode.
  */
-public class DevClasspathStaticHandler implements Handler<RoutingContext> {
+public class DevStaticHandler implements Handler<RoutingContext> {
 
-    private static final Logger LOG = Logger.getLogger(DevClasspathStaticHandler.class);
+    private static final Logger LOG = Logger.getLogger(DevStaticHandler.class);
     private static final int HTTP_STATUS_OK = 200;
     private static final int HTTP_STATUS_NO_CONTENT = 204;
     private static final String ALLOW_HEADER = "Allow";
     private static final String ALLOW_HEADER_VALUE = "HEAD,GET,OPTIONS";
-    private final Set<String> generatedResources;
+    private final Set<String> generatedClasspathResources;
+    private final Map<String, String> generatedFilesResources;
     private final Set<String> compressedMediaTypes;
     private final ClassLoader currentClassLoader;
     private final boolean enableCompression;
     private final String indexPage;
     private final Charset defaultEncoding;
 
-    public DevClasspathStaticHandler(Set<String> generatedResources, DevClasspathStaticHandlerOptions options) {
-        this.generatedResources = generatedResources;
+    public DevStaticHandler(Set<String> generatedClasspathResources, Map<String, String> generatedFilesResources,
+            DevClasspathStaticHandlerOptions options) {
+        this.generatedClasspathResources = generatedClasspathResources;
+        this.generatedFilesResources = generatedFilesResources;
         this.compressedMediaTypes = options.getCompressMediaTypes();
         this.currentClassLoader = Thread.currentThread().getContextClassLoader();
         this.enableCompression = options.isEnableCompression();
@@ -54,7 +58,8 @@ public class DevClasspathStaticHandler implements Handler<RoutingContext> {
             LOG.debugf("Handling request for path '%s'", path);
         }
 
-        boolean containsGeneratedResource = this.generatedResources.contains(path);
+        boolean containsGeneratedResource = this.generatedClasspathResources.contains(path)
+                || this.generatedFilesResources.containsKey(path);
 
         if (!containsGeneratedResource) {
             beforeNextHandler(this.currentClassLoader, context);
@@ -69,6 +74,17 @@ public class DevClasspathStaticHandler implements Handler<RoutingContext> {
 
         compressIfNeeded(context, path);
 
+        if (generatedFilesResources.containsKey(path)) {
+            context.vertx().fileSystem().readFile(generatedFilesResources.get(path), r -> {
+                if (r.succeeded()) {
+                    handleAsyncResultSucceeded(context, r.result(), path);
+                } else {
+                    context.fail(r.cause());
+                }
+            });
+            return;
+        }
+
         context.vertx().executeBlocking(future -> {
             try {
                 byte[] content = getClasspathResourceContent(path);
@@ -79,14 +95,14 @@ public class DevClasspathStaticHandler implements Handler<RoutingContext> {
         }, asyncResult -> {
             if (asyncResult.succeeded()) {
                 byte[] result = (byte[]) asyncResult.result();
-                handleAsyncResultSucceeded(context, result, path);
+                handleAsyncResultSucceeded(context, result == null ? null : Buffer.buffer(result), path);
             } else {
                 context.fail(asyncResult.cause());
             }
         });
     }
 
-    private void handleAsyncResultSucceeded(RoutingContext context, byte[] result, String path) {
+    private void handleAsyncResultSucceeded(RoutingContext context, Buffer result, String path) {
 
         if (result == null) {
             LOG.warnf("The '%s' file does not contain any content. Proceeding to the next handler if it exists", path);
@@ -104,12 +120,12 @@ public class DevClasspathStaticHandler implements Handler<RoutingContext> {
         if (context.request().method().equals(HttpMethod.HEAD)) {
             handleHeadMethod(context, result);
         } else {
-            context.response().send(Buffer.buffer(result));
+            context.response().send(result);
         }
     }
 
-    private void handleHeadMethod(RoutingContext context, byte[] content) {
-        context.response().putHeader(HttpHeaders.CONTENT_LENGTH, Long.toString(content.length));
+    private void handleHeadMethod(RoutingContext context, Buffer content) {
+        context.response().putHeader(HttpHeaders.CONTENT_LENGTH, Long.toString(content.length()));
         context.response().setStatusCode(HTTP_STATUS_OK).end();
     }
 

@@ -1,12 +1,13 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.handlers.DevClasspathStaticHandler;
 import io.quarkus.vertx.http.runtime.handlers.DevClasspathStaticHandlerOptions;
+import io.quarkus.vertx.http.runtime.handlers.DevStaticHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Route;
@@ -26,7 +27,8 @@ public class GeneratedStaticResourcesRecorder {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
-    public Handler<RoutingContext> createHandler(Set<String> generatedResources) {
+    public Handler<RoutingContext> createHandler(Set<String> generatedClasspathResources,
+            Map<String, String> generatedFilesResources) {
 
         if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
             this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
@@ -38,7 +40,8 @@ public class GeneratedStaticResourcesRecorder {
                 .enableCompression(httpBuildTimeConfig.enableCompression)
                 .compressMediaTypes(compressMediaTypes)
                 .defaultEncoding(config.contentEncoding).build();
-        return new DevClasspathStaticHandler(generatedResources,
+        return new DevStaticHandler(generatedClasspathResources,
+                generatedFilesResources,
                 options);
 
     }

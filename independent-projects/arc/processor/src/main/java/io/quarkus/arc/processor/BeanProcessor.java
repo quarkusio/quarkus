@@ -192,6 +192,8 @@ public class BeanProcessor {
             ExecutorService executor)
             throws IOException, InterruptedException, ExecutionException {
 
+        beanDeployment.resourceGenerationStarted();
+
         ReflectionRegistration refReg = reflectionRegistration != null ? reflectionRegistration : this.reflectionRegistration;
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
         boolean optimizeContextsValue = optimizeContexts != null ? optimizeContexts.test(beanDeployment) : false;

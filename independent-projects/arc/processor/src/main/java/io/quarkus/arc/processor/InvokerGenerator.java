@@ -283,7 +283,16 @@ public class InvokerGenerator extends AbstractGenerator {
                 ResultHandle originalArgument = invoker.argumentLookups[i]
                         ? lookup.argumentBeanInstance(i)
                         : invoke.readArrayValue(argumentsArray, i);
+                originalArgument = findAndInvokeTransformer(invoker.argumentTransformers[i], parameterType,
+                        invoker, originalArgument, invoke, finisher);
                 if (parameterType.kind() == Type.Kind.PRIMITIVE) {
+                    // if the transformer returned a primitive type, box it
+                    Type transformedType = transformerReturnType(invoker.argumentTransformers[i], parameterType, invoker);
+                    if (transformedType != null && transformedType.kind() == Type.Kind.PRIMITIVE) {
+                        originalArgument = invoke.checkCast(originalArgument,
+                                PrimitiveType.box(parameterType.asPrimitiveType()).name().toString());
+                    }
+
                     BranchResult ifNotNull = invoke.ifNotNull(originalArgument);
                     AssignableResultHandle variable = invoke.createVariable(parameterType.descriptor());
                     assignWithUnboxingAndWideningConversion(ifNotNull.trueBranch(), originalArgument, variable,
@@ -292,8 +301,7 @@ public class InvokerGenerator extends AbstractGenerator {
                     ifNotNull.falseBranch().throwException(NullPointerException.class,
                             "Argument " + i + " is null, " + parameterType + " expected");
                 }
-                unfoldedArguments[i] = findAndInvokeTransformer(invoker.argumentTransformers[i], parameterType,
-                        invoker, originalArgument, invoke, finisher);
+                unfoldedArguments[i] = originalArgument;
             }
 
             // lookups need to add to the constructor, so we need to finish it here
@@ -343,15 +351,14 @@ public class InvokerGenerator extends AbstractGenerator {
             if (targetMethod.returnType().kind() == Type.Kind.VOID) {
                 result = tryBlock.loadNull();
             }
-            Type returnValueType = targetMethod.returnType();
-            result = findAndInvokeTransformer(invoker.returnValueTransformer, returnValueType,
+            if (lookup != null) {
+                result = lookup.destroyIfNecessary(tryBlock, result);
+            }
+            result = findAndInvokeTransformer(invoker.returnValueTransformer, targetMethod.returnType(),
                     invoker, result, tryBlock, null);
             if (finisher.wasCreated()) {
                 tryBlock.invokeVirtualMethod(MethodDescriptor.ofMethod(InvokerCleanupTasks.class, "finish", void.class),
                         finisher.getOrCreate());
-            }
-            if (lookup != null) {
-                result = lookup.destroyIfNecessary(tryBlock, result);
             }
             tryBlock.returnValue(result);
 
@@ -696,6 +703,16 @@ public class InvokerGenerator extends AbstractGenerator {
                 return bytecode.invokeVirtualMethod(transformerMethodDescriptor, originalValue);
             }
         }
+    }
+
+    private Type transformerReturnType(InvocationTransformer transformer, Type expectedType, InvokerInfo invoker) {
+        if (transformer == null) {
+            return null;
+        }
+
+        CandidateMethods candidates = findCandidates(transformer, expectedType, invoker);
+        CandidateMethod transformerMethod = candidates.resolve();
+        return transformerMethod.method.returnType();
     }
 
     private CandidateMethods findCandidates(InvocationTransformer transformer, Type expectedType, InvokerInfo invoker) {

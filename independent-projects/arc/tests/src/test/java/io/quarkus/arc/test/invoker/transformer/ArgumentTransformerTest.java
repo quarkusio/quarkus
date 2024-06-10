@@ -25,7 +25,8 @@ public class ArgumentTransformerTest {
             .beanRegistrars(new InvokerHelperRegistrar(MyService.class, (bean, factory, invokers) -> {
                 MethodInfo hello = bean.getImplClazz().firstMethod("hello");
                 MethodInfo doSomething = bean.getImplClazz().firstMethod("doSomething");
-                for (MethodInfo method : List.of(hello, doSomething)) {
+                MethodInfo increment = bean.getImplClazz().firstMethod("increment");
+                for (MethodInfo method : List.of(hello, doSomething, increment)) {
                     invokers.put(method.name(), factory.createInvoker(bean, method)
                             .withArgumentTransformer(0, ArgumentTransformer.class, "change")
                             .build());
@@ -41,6 +42,10 @@ public class ArgumentTransformerTest {
         static String change(String argument) {
             return argument.repeat(2);
         }
+
+        static double change(MyClass argument) {
+            return argument.value;
+        }
     }
 
     @Test
@@ -54,6 +59,9 @@ public class ArgumentTransformerTest {
 
         Invoker<MyService, Set<String>> doSomething = helper.getInvoker("doSomething");
         assertEquals(Set.of("__", "quux"), doSomething.invoke(service.get(), new Object[] { "_" }));
+
+        Invoker<MyService, Long> increment = helper.getInvoker("increment");
+        assertEquals(3L, increment.invoke(service.get(), new Object[] { new MyClass(2.0) }));
     }
 
     @Singleton
@@ -64,6 +72,18 @@ public class ArgumentTransformerTest {
 
         public Set<String> doSomething(String param) {
             return Set.of("quux", param);
+        }
+
+        public long increment(double param) {
+            return (long) param + 1;
+        }
+    }
+
+    static class MyClass {
+        double value;
+
+        MyClass(double value) {
+            this.value = value;
         }
     }
 }

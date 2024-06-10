@@ -62,6 +62,8 @@ public class BeanDeployment {
     final String name;
     private final BuildContextImpl buildContext;
 
+    private volatile boolean resourceGenerationStarted;
+
     private final IndexView beanArchiveComputingIndex;
     private final IndexView beanArchiveImmutableIndex;
     private final IndexView applicationIndex;
@@ -141,6 +143,7 @@ public class BeanDeployment {
         this.name = name;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
         this.buildContext = Objects.requireNonNull(buildContext);
+        this.resourceGenerationStarted = false;
         Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new HashMap<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
             for (BeanDefiningAnnotation bda : builder.additionalBeanDefiningAnnotations) {
@@ -519,6 +522,10 @@ public class BeanDeployment {
         return validationContext;
     }
 
+    void resourceGenerationStarted() {
+        resourceGenerationStarted = true;
+    }
+
     public Collection<BeanInfo> getBeans() {
         return Collections.unmodifiableList(beans);
     }
@@ -587,6 +594,13 @@ public class BeanDeployment {
 
     public Collection<InvokerInfo> getInvokers() {
         return Collections.unmodifiableSet(invokers);
+    }
+
+    public InvokerFactory getInvokerFactory() {
+        if (resourceGenerationStarted) {
+            throw new IllegalStateException("Too late to obtain InvokerFactory");
+        }
+        return invokerFactory;
     }
 
     /**

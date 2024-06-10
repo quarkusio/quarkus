@@ -31,7 +31,7 @@ public class Testflow {
     // Depending on the defaults of the compression algorithm,
     // the compressed content length may vary slightly between
     // Vert.x/Netty versions over time.
-    public static final int COMPRESSION_TOLERANCE_BYTES = 2;
+    public static final int COMPRESSION_TOLERANCE_PERCENT = 2;
 
     /**
      * This test logic is shared by both "all" module and "some" module.
@@ -86,10 +86,17 @@ public class Testflow {
             final int receivedLength = parseInt(response.headers().get("content-length"));
             final int expectedLength = parseInt(contentLength);
 
-            assertTrue(receivedLength <= expectedLength + COMPRESSION_TOLERANCE_BYTES,
-                    "Compression apparently failed: receivedLength: " + receivedLength +
-                            " was supposed to be less or equal to expectedLength: " +
-                            expectedLength + COMPRESSION_TOLERANCE_BYTES);
+            if (contentEncoding == null) {
+                assertEquals(expectedLength, receivedLength,
+                        "No compression was expected, so the content-length must match exactly.");
+            } else {
+                final int expectedLengthWithTolerance = expectedLength + (expectedLength / 100 * COMPRESSION_TOLERANCE_PERCENT);
+                assertTrue(receivedLength <= expectedLengthWithTolerance,
+                        "Compression apparently failed: receivedLength: " + receivedLength +
+                                " was supposed to be less or equal to expectedLength: " +
+                                expectedLength + " plus " + COMPRESSION_TOLERANCE_PERCENT + "% tolerance, i.e. "
+                                + expectedLengthWithTolerance + ".");
+            }
 
             final String body;
             if (actualEncoding != null && !"identity".equalsIgnoreCase(actualEncoding)) {

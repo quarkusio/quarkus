@@ -34,4 +34,10 @@ public interface SecurityBuildTimeConfig {
     @WithDefault("false")
     boolean denyUnannotated();
 
+    /**
+     * If set to true, security annotations will be inherited.
+     */
+    @WithName("inherit-security-annotations")
+    @WithDefault("true")
+    boolean inheritSecurityAnnotations();
 }

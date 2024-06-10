@@ -37,7 +37,8 @@ public class DenyAllJaxRsTest {
                             TestIdentityProvider.class, UnsecuredResourceInterface.class,
                             TestIdentityController.class, SpecialResource.class,
                             UnsecuredSubResource.class, HelloResource.class, UnsecuredParentResource.class)
-                    .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
+                    .addAsResource(new StringAsset(
+                            "quarkus.security.jaxrs.deny-unannotated-endpoints = true\nquarkus.security.inherit-security-annotations = false\n"),
                             "application.properties"))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(new BuildStep() {

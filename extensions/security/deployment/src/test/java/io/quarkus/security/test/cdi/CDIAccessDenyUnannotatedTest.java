@@ -19,6 +19,8 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnot
 import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnotationsSubBean;
 import io.quarkus.security.test.cdi.app.denied.unnanotated.PermitAllBean;
 import io.quarkus.security.test.cdi.app.denied.unnanotated.PermitAllSubBean;
+import io.quarkus.security.test.cdi.app.interfaces.BeanImplementingInterfaceWithMethodLevelAnnotations;
+import io.quarkus.security.test.cdi.app.interfaces.InterfaceWithMethodLevelAnnotations;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
@@ -44,10 +46,15 @@ public class CDIAccessDenyUnannotatedTest {
     @Inject
     BeanWithNoSecurityAnnotations noAnnoBean;
 
+    @Inject
+    BeanImplementingInterfaceWithMethodLevelAnnotations beanImplementingInterface;
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class,
+                    .addClasses(InterfaceWithMethodLevelAnnotations.class,
+                            BeanImplementingInterfaceWithMethodLevelAnnotations.class,
+                            BeanWithNoSecurityAnnotations.class,
                             BeanWithSecurityAnnotations.class,
                             BeanWithSecurityAnnotationsSubBean.class,
                             PermitAllBean.class,
@@ -97,4 +104,10 @@ public class CDIAccessDenyUnannotatedTest {
         assertSuccess(() -> permitAllBean.unannotated(), "unannotated", ANONYMOUS, USER, ADMIN);
     }
 
+    @Test
+    public void shouldRestrictAccessToSpecificRoleOnInterface() {
+        assertFailureFor(() -> beanImplementingInterface.securedMethod(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanImplementingInterface.securedMethod(), ForbiddenException.class, USER);
+        assertSuccess(() -> beanImplementingInterface.securedMethod(), "accessibleForAdminOnly", ADMIN);
+    }
 }

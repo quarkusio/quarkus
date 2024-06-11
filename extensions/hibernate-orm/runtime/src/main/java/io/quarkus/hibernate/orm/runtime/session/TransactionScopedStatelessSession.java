@@ -358,7 +358,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     public void fetch(Object o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(o);
+            emr.statelessSession.fetch(o);
         }
     }
 

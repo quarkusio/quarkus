@@ -14,6 +14,7 @@ import java.util.OptionalInt;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -157,9 +158,14 @@ public class DevServicesRedisProcessor {
             return null;
         }
 
-        String configPrefix = getConfigPrefix(name);
+        String hostsProperty = getConfigPrefix(name) + RedisConfig.HOSTS_CONFIG_NAME;
 
-        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
+        boolean needToStart = false;
+        if (!ConfigUtils.isPropertyPresent(hostsProperty)) {
+            needToStart = true;
+        } else if (ConfigProvider.getConfig().getConfigValue(hostsProperty).getValue().isEmpty()) {
+            needToStart = true;
+        }
         if (!needToStart) {
             log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as hosts have been provided");
@@ -184,14 +190,14 @@ public class DevServicesRedisProcessor {
             redisContainer.start();
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new RunningDevService(Feature.REDIS_CLIENT.getName(), redisContainer.getContainerId(),
-                    redisContainer::close, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
+                    redisContainer::close, hostsProperty, redisHost);
         };
 
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
                     return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),
-                            null, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisUrl);
+                            null, hostsProperty, redisUrl);
                 })
                 .orElseGet(defaultRedisServerSupplier);
     }

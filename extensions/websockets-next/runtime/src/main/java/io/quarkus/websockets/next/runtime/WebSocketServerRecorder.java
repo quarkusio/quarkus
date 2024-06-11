@@ -8,8 +8,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.runtime.annotations.Recorder;
@@ -35,8 +33,6 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class WebSocketServerRecorder {
-
-    private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
 
     private final WebSocketsServerRuntimeConfig config;
 
@@ -94,6 +90,7 @@ public class WebSocketServerRecorder {
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
         HttpUpgradeCheck[] httpUpgradeChecks = getHttpUpgradeChecks(endpointId, container);
+        TrafficLogger trafficLogger = TrafficLogger.forServer(config);
         return new Handler<RoutingContext>() {
 
             @Override
@@ -121,14 +118,16 @@ public class WebSocketServerRecorder {
                     Vertx vertx = VertxCoreRecorder.getVertx().get();
 
                     WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
-                            connectionManager, codecs, ctx);
+                            connectionManager, codecs, ctx, trafficLogger);
                     connectionManager.add(generatedEndpointClass, connection);
-                    LOG.debugf("Connection created: %s", connection);
+                    if (trafficLogger != null) {
+                        trafficLogger.connectionOpened(connection);
+                    }
 
                     SecuritySupport securitySupport = initializeSecuritySupport(container, ctx, vertx, connection);
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(),
+                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
                             () -> connectionManager.remove(generatedEndpointClass, connection));
                 });
             }

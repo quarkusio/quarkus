@@ -765,6 +765,29 @@ public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
 
 TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
 
+[[traffic-logging]]
+== Traffic logging 
+
+Quarkus can log the messages sent and received for debugging purposes. 
+To enable traffic logging, set the `quarkus.websockets-next.server.traffic-logging.enabled` configuration property to `true`.
+The payload of text messages is logged as well.
+However, the number of logged characters is limited.
+The default limit is 100, but you can change this limit with the `quarkus.websockets-next.server.traffic-logging.text-payload-limit` configuration property.
+
+TIP: The messages are only logged if the `DEBUG` level is enabled for the logger `io.quarkus.websockets.next.traffic`.
+
+.Example configuration
+[source, properties]
+----
+quarkus.websockets-next.server.traffic-logging.enabled=true <1>
+quarkus.websockets-next.server.traffic-logging.text-payload-limit=50 <2>
+
+quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
+----
+<1> Enables traffic logging.
+<2> Set the number of characters of a text message payload which will be logged.
+<3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
+
 [[websocket-next-configuration-reference]]
 == Configuration reference
 

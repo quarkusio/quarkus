@@ -33,8 +33,8 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
             ConnectionManager connectionManager,
-            Codecs codecs, RoutingContext ctx) {
-        super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx));
+            Codecs codecs, RoutingContext ctx, TrafficLogger trafficLogger) {
+        super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger);
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
         this.webSocket = Objects.requireNonNull(webSocket);
@@ -70,7 +70,7 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     @Override
     public String toString() {
-        return "WebSocket connection [id=" + identifier + ", path=" + webSocket.path() + "]";
+        return "WebSocket connection [endpointId=" + endpointId + ", path=" + webSocket.path() + ", id=" + identifier + "]";
     }
 
     @Override

@@ -42,8 +42,9 @@ public interface HttpUpgradeCheck {
     /**
      * @param httpRequest {@link HttpServerRequest}; the HTTP 1.X request employing the 'Upgrade' header
      * @param securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
+     * @param endpointId {@link WebSocket#endpointId()}
      */
-    record HttpUpgradeContext(HttpServerRequest httpRequest, SecurityIdentity securityIdentity) {
+    record HttpUpgradeContext(HttpServerRequest httpRequest, SecurityIdentity securityIdentity, String endpointId) {
     }
 
     final class CheckResult {
@@ -89,6 +90,10 @@ public interface HttpUpgradeCheck {
 
         public static Uni<CheckResult> rejectUpgrade(Integer httpResponseCode) {
             return rejectUpgrade(httpResponseCode, null);
+        }
+
+        public static CheckResult rejectUpgradeSync(Integer httpResponseCode) {
+            return rejectUpgradeSync(httpResponseCode, null);
         }
 
         public static CheckResult rejectUpgradeSync(Integer httpResponseCode, Map<String, List<String>> responseHeaders) {

@@ -44,4 +44,8 @@ public class SecurityTransformerUtils {
 
         return false;
     }
+
+    public static boolean isStandardSecurityAnnotation(AnnotationInstance annotationInstance) {
+        return SECURITY_ANNOTATIONS.contains(annotationInstance.name());
+    }
 }

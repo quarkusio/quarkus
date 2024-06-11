@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.vertx;
+package io.quarkus.vertx.utils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -13,7 +13,7 @@ import io.netty.util.internal.PlatformDependent;
 import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 /**
- * It is a bounded (direct) buffer container that can keep on accepting data till {@link #capacity} is exhausted.<br>
+ * A bounded (direct) buffer container that can keep on accepting data till {@link #capacity} is exhausted.
  * In order to keep appending on it, it can {@link #clear} and consolidate its content as a {@link ByteBuf}.
  */
 final class AppendBuffer {

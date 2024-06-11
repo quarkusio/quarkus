@@ -1,53 +1,54 @@
-package org.jboss.resteasy.reactive.server.vertx;
+package io.quarkus.vertx.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
-
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.Optional;
 
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.server.core.LazyResponse;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponse;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 
-public class ResteasyReactiveOutputStream extends OutputStream {
+/**
+ * An {@link OutputStream} forwarding the bytes to Vert.x Web {@link HttpResponse}.
+ * Suitable for porting frameworks such as RESTeasy or CXF to Vert.x.
+ */
+public class VertxOutputStream extends OutputStream {
 
     private static final Logger log = Logger.getLogger("org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveOutputStream");
-    private final ResteasyReactiveRequestContext context;
-    protected final HttpServerRequest request;
-    private final AppendBuffer appendBuffer;
-    private boolean committed;
 
+    private final VertxJavaIoContext context;
+    private final HttpServerRequest request;
+    private final AppendBuffer appendBuffer;
+
+    private boolean committed;
     private boolean closed;
-    protected boolean waitingForDrain;
-    protected boolean first = true;
-    protected Throwable throwable;
+    private boolean waitingForDrain;
+    private boolean first = true;
+    private Throwable throwable;
     private ByteArrayOutputStream overflow;
 
-    public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
+    public VertxOutputStream(VertxJavaIoContext context) {
         this.context = context;
-        this.request = context.getContext().request();
+        this.request = context.getRoutingContext().request();
         this.appendBuffer = AppendBuffer.withMinChunks(
-                context.getDeployment().getResteasyReactiveConfig().getMinChunkSize(),
-                context.getDeployment().getResteasyReactiveConfig().getOutputBufferSize());
+                context.getMinChunkSize(),
+                context.getOutputBufferCapacity());
         request.response().exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable event) {
                 throwable = event;
                 log.debugf(event, "IO Exception ");
-                //TODO: do we need this?
-                terminateResponse();
                 request.connection().close();
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
@@ -60,7 +61,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         request.response().drainHandler(handler);
         request.response().closeHandler(handler);
 
-        context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
+        context.getRoutingContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {
                 synchronized (request.connection()) {
@@ -68,20 +69,16 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                         request.connection().notifyAll();
                     }
                 }
-                terminateResponse();
             }
         });
     }
 
-    public void terminateResponse() {
 
+    private Buffer createBuffer(ByteBuf data) {
+        return new NoBoundChecksBuffer(data);
     }
 
-    Buffer createBuffer(ByteBuf data) {
-        return new VertxBufferImpl(data);
-    }
-
-    public void write(ByteBuf data, boolean last) throws IOException {
+    private void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
             request.response().end((Handler<AsyncResult<Void>>) null);
             return;
@@ -190,7 +187,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
     }
 
-    public void writeBlocking(ByteBuf buffer, boolean finished) throws IOException {
+    private void writeBlocking(ByteBuf buffer, boolean finished) throws IOException {
         prepareWrite(buffer, finished);
         write(buffer, finished);
     }
@@ -198,45 +195,25 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     private void prepareWrite(ByteBuf buffer, boolean finished) throws IOException {
         if (!committed) {
             committed = true;
+            final HttpServerResponse response = request.response();
             if (finished) {
-                if (!context.serverResponse().headWritten()) {
+                if (!response.headWritten()) {
                     if (buffer == null) {
-                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
+                        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
                     } else {
-                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(buffer.readableBytes()));
                     }
                 }
             } else {
-                var contentLengthSet = contentLengthSet(request, context.getResponse());
-                if (contentLengthSet == ContentLengthSetResult.NOT_SET) {
-                    request.response().setChunked(true);
-                } else if (contentLengthSet == ContentLengthSetResult.IN_JAX_RS_HEADER) {
-                    // we need to make sure the content-length header is copied to Vert.x headers
-                    // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
-                    Object contentLength = context.getResponse().get().getHeaders().getFirst(HttpHeaders.CONTENT_LENGTH);
-                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, contentLength.toString());
+                final Optional<String> contentLength = context.getContentLength();
+                if (contentLength.isEmpty()) {
+                    response.setChunked(true);
+                } else {
+                    /* Pass the content length value from the framework writing into this stream */
+                    response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentLength.get());
                 }
             }
         }
-    }
-
-    public static ContentLengthSetResult contentLengthSet(HttpServerRequest request, LazyResponse lazyResponse) {
-        if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
-            return ContentLengthSetResult.IN_VERTX_HEADER;
-        }
-        if (!lazyResponse.isCreated()) {
-            return ContentLengthSetResult.NOT_SET;
-        }
-        MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
-        return (responseHeaders != null) && responseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH)
-                ? ContentLengthSetResult.IN_JAX_RS_HEADER
-                : ContentLengthSetResult.NOT_SET;
-    }
-
-    public enum ContentLengthSetResult {
-        NOT_SET,
-        IN_VERTX_HEADER,
-        IN_JAX_RS_HEADER
     }
 
     /**
@@ -272,9 +249,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     }
 
     private static class DrainHandler implements Handler<Void> {
-        private final ResteasyReactiveOutputStream out;
+        private final VertxOutputStream out;
 
-        public DrainHandler(ResteasyReactiveOutputStream out) {
+        public DrainHandler(VertxOutputStream out) {
             this.out = out;
         }
 

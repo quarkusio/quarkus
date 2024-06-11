@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.server.vertx;
+package io.quarkus.vertx.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -9,15 +9,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.impl.Arguments;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-public class VertxBufferImpl implements Buffer {
+/**
+ * A variant of {@link BufferImpl} doing no bound checks for performance reasons.
+ */
+public class NoBoundChecksBuffer implements Buffer {
 
     private ByteBuf buffer;
 
-    public VertxBufferImpl(ByteBuf buffer) {
+    public NoBoundChecksBuffer(ByteBuf buffer) {
         this.buffer = buffer;
     }
 
@@ -151,7 +155,7 @@ public class VertxBufferImpl implements Buffer {
     }
 
     public Buffer getBuffer(int start, int end) {
-        return new VertxBufferImpl(Unpooled.wrappedBuffer(getBytes(start, end)));
+        return new NoBoundChecksBuffer(Unpooled.wrappedBuffer(getBytes(start, end)));
     }
 
     public String getString(int start, int end, String enc) {
@@ -384,7 +388,7 @@ public class VertxBufferImpl implements Buffer {
         return this;
     }
 
-    public VertxBufferImpl setBytes(int pos, ByteBuffer b) {
+    public NoBoundChecksBuffer setBytes(int pos, ByteBuffer b) {
         ensureWritable(pos, b.limit());
         buffer.setBytes(pos, b);
         return this;
@@ -415,15 +419,15 @@ public class VertxBufferImpl implements Buffer {
     }
 
     public Buffer copy() {
-        return new VertxBufferImpl(buffer.copy());
+        return new NoBoundChecksBuffer(buffer.copy());
     }
 
     public Buffer slice() {
-        return new VertxBufferImpl(buffer.slice());
+        return new NoBoundChecksBuffer(buffer.slice());
     }
 
     public Buffer slice(int start, int end) {
-        return new VertxBufferImpl(buffer.slice(start, end - start));
+        return new NoBoundChecksBuffer(buffer.slice(start, end - start));
     }
 
     public ByteBuf getByteBuf() {
@@ -465,7 +469,7 @@ public class VertxBufferImpl implements Buffer {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        VertxBufferImpl buffer1 = (VertxBufferImpl) o;
+        NoBoundChecksBuffer buffer1 = (NoBoundChecksBuffer) o;
         return buffer != null ? buffer.equals(buffer1.buffer) : buffer1.buffer == null;
     }
 

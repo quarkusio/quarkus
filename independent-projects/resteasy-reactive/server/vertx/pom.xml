@@ -28,6 +28,10 @@
             <artifactId>resteasy-reactive</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.vertx.utils</groupId>
+            <artifactId>quarkus-vertx-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>

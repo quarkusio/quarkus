@@ -13,7 +13,6 @@ import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -33,8 +32,6 @@ import io.vertx.core.http.WebSocketConnectOptions;
 @Dependent
 public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSocketConnectorImpl<CLIENT>>
         implements WebSocketConnector<CLIENT> {
-
-    private static final Logger LOG = Logger.getLogger(WebSocketConnectorImpl.class);
 
     // derived properties
 
@@ -97,16 +94,19 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
 
         return UniHelper.toUni(client.connect(connectOptions))
                 .map(ws -> {
+                    TrafficLogger trafficLogger = TrafficLogger.forClient(config);
                     WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
                             codecs,
                             pathParams,
-                            serverEndpointUri, headers);
-                    LOG.debugf("Client connection created: %s", connection);
+                            serverEndpointUri, headers, trafficLogger);
+                    if (trafficLogger != null) {
+                        trafficLogger.connectionOpened(connection);
+                    }
                     connectionManager.add(clientEndpoint.generatedEndpointClass, connection);
 
                     Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
                             clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
-                            config.unhandledFailureStrategy(),
+                            config.unhandledFailureStrategy(), trafficLogger,
                             () -> {
                                 connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                                 client.close();

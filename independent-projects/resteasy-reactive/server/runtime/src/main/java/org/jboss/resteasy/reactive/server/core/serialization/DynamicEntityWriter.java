@@ -41,8 +41,15 @@ public class DynamicEntityWriter implements EntityWriter {
             ServerHttpRequest vertxRequest = context.serverRequest();
             // first check and see if the resource method defined a media type and try to use it
             if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
-                MediaType negotiatedMediaType = context.getTarget().getProduces()
-                        .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
+                MediaType negotiatedMediaType = null;
+                List<String> accepts = context.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
+                for (String accept : accepts) {
+                    negotiatedMediaType = context.getTarget().getProduces().negotiateProduces(accept).getKey();
+                    if (negotiatedMediaType != null) {
+                        break;
+                    }
+                }
+
                 List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), negotiatedMediaType,
                         RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {

@@ -154,10 +154,10 @@ public class QuarkusUpdateCommand {
         command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
                         dryRun ? "dryRun" : "run"));
-        command.add(String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES));
+        command.add(String.format("-Drewrite.plainTextMasks=%s", ADDITIONAL_SOURCE_FILES));
         command.add(String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()));
         command.add(String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV));
-        command.add(String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS));
+        command.add(String.format("-Drewrite.activeRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS));
         command.add("-Drewrite.pomCacheEnabled=false");
         final String mavenSettings = getMavenSettingsArg();
         if (mavenSettings != null) {

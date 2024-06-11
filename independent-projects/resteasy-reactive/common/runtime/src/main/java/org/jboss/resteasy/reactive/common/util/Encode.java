@@ -95,7 +95,9 @@ public class Encode {
                 case '.':
                 case '_':
                 case '~':
+                    continue;
                 case '?':
+                    queryNameValueEncoding[i] = "%3F";
                     continue;
                 case ' ':
                     queryNameValueEncoding[i] = "+";

@@ -16,6 +16,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.compression.BrotliOptions;
+import io.netty.handler.codec.compression.DeflateOptions;
+import io.netty.handler.codec.compression.GzipOptions;
+import io.netty.handler.codec.compression.StandardCompressionOptions;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
@@ -273,6 +277,35 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         httpServerOptions.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
+
+        if (buildTimeConfig.compressors.isPresent()) {
+            // Adding defaults too, because mere addition of .addCompressor(brotli) actually
+            // overrides the default deflate and gzip capability.
+            for (String compressor : buildTimeConfig.compressors.get()) {
+                if ("gzip".equalsIgnoreCase(compressor)) {
+                    // GZip's default compression level is 6 in Netty Codec 4.1, the same
+                    // as the default compression level in Vert.x Core 4.5.7's HttpServerOptions.
+                    final GzipOptions defaultOps = StandardCompressionOptions.gzip();
+                    httpServerOptions.addCompressor(StandardCompressionOptions
+                            .gzip(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
+                } else if ("deflate".equalsIgnoreCase(compressor)) {
+                    // Deflate's default compression level defaults the same as with GZip.
+                    final DeflateOptions defaultOps = StandardCompressionOptions.deflate();
+                    httpServerOptions.addCompressor(StandardCompressionOptions
+                            .deflate(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
+                } else if ("br".equalsIgnoreCase(compressor)) {
+                    final BrotliOptions o = StandardCompressionOptions.brotli();
+                    // The default compression level for brotli as of Netty Codec 4.1 is 4,
+                    // so we don't pick up Vert.x Core 4.5.7's default of 6. User can override:
+                    if (buildTimeConfig.compressionLevel.isPresent()) {
+                        o.parameters().setQuality(buildTimeConfig.compressionLevel.getAsInt());
+                    }
+                    httpServerOptions.addCompressor(o);
+                } else {
+                    Logger.getLogger(HttpServerOptionsUtils.class).errorf("Unknown compressor: %s", compressor);
+                }
+            }
+        }
 
         if (httpConfiguration.http2) {
             var settings = new Http2Settings();

@@ -14,6 +14,12 @@
 
     <name>Quarkus - Integration Tests - Maven tooling</name>
 
+    <properties>
+        <!-- Used in the test projects so let's make sure it's set here -->
+        <maven-resources-plugin.version>${version.resources.plugin}</maven-resources-plugin.version>
+        <dependency-plugin.version>${version.dependency.plugin}</dependency-plugin.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -90,7 +90,7 @@ DIGEST_MD5, PLAIN, EXTERNAL were all tested to work.
 
 Querying is also supported. To be able to do DSL based queries you need to add the infinispan-query-dsl artifact to your
 list of dependencies and then you can use it as normal. A simple example can be seen at
-https://infinispan.org/docs/stable/titles/query/query.html#ickle-query-language
+<https://infinispan.org/docs/stable/titles/query/query.html#ickle-query-language>
 
 ### Counters
 
@@ -111,10 +111,6 @@ must be generated at compile time and protostream, underlying library powering p
 runtime based class generation.
 
 ## Things to still verify work
-
-
-
-
 
 ### Multimap
 

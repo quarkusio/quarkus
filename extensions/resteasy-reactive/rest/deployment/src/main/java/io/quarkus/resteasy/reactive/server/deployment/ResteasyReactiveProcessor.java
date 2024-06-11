@@ -530,8 +530,8 @@ public class ResteasyReactiveProcessor {
                             }
 
                             if (!result.getPossibleSubResources().containsKey(method.returnType().name())) {
-                                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                        .type(method.returnType())
+                                reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                        .builder(method.returnType())
                                         .index(index)
                                         .ignoreTypePredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
@@ -547,8 +547,8 @@ public class ResteasyReactiveProcessor {
                             for (short i = 0; i < method.parametersCount(); i++) {
                                 Type parameterType = method.parameterType(i);
                                 if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
-                                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(parameterType)
+                                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                            .builder(parameterType)
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)

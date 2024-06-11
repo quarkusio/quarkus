@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.spring.data.rest.AbstractEntity;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;

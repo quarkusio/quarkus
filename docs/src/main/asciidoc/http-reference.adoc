@@ -69,9 +69,11 @@ The response body of a static resource is not compressed by default.
 You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
 If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript` and `application/javascript`.
+TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/graphql+json`. It means some other noteworthy media types such as `application/json`, `application/xhtml+xml` are NOT compressed by default.
 
-NOTE: If the client does not support HTTP compression then the response body is not compressed.
+NOTE: If the client does not indicate its support for HTTP compression in a request header, e.g. `Accept-Encoding: deflate, gzip, br`, then the response body is not compressed.
+
+TIP: Brotli compression is not available by default. You can enable it by setting `quarkus.http.compressors=deflate,gzip,br`. In case of building native image, it adds around 1MB to your executable size.
 
 [[static-resources-config]]
 === Other Configurations

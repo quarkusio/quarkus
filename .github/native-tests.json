@@ -92,8 +92,8 @@
         },
         {
             "category": "HTTP",
-            "timeout": 110,
-            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
+            "timeout": 120,
+            "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-http-compressors/all, vertx-http-compressors/some, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth, mutiny-native-jctools",
             "os-name": "ubuntu-latest"
         },
         {
@@ -104,8 +104,8 @@
         },
         {
             "category": "Misc2",
-            "timeout": 70,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales",
+            "timeout": 75,
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales/all, locales/some",
             "os-name": "ubuntu-latest"
         },
         {

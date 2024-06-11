@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -37,7 +37,7 @@ public class CertificatesProcessor {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(TlsConfigurationRegistry.class)
                 .supplier(supplier)
-                .scope(ApplicationScoped.class)
+                .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit();
 

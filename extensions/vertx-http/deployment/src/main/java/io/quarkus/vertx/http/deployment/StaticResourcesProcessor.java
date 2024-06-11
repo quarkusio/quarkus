@@ -43,10 +43,9 @@ public class StaticResourcesProcessor {
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources();
-        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
-            for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
-                paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
-            }
+        // We shouldn't add them in test and dev-mode (as they are handled by the GeneratedStaticResourcesProcessor), but for backward compatibility we keep it for now
+        for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
+            paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
         }
 
         if (!paths.isEmpty()) {

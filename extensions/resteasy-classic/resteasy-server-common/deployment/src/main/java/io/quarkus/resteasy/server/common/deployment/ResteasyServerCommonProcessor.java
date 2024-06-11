@@ -77,8 +77,8 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.resteasy.common.runtime.ResteasyCommonConfig;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
@@ -421,9 +421,9 @@ public class ResteasyServerCommonProcessor {
             deploymentCustomizer.getConsumer().accept(deployment);
         }
 
-        if (commonConfig.gzip.enabled) {
+        if (commonConfig.gzip().enabled()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
-                    Long.toString(commonConfig.gzip.maxInput.asLongValue()));
+                    Long.toString(commonConfig.gzip().maxInput().asLongValue()));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());
@@ -918,8 +918,8 @@ public class ResteasyServerCommonProcessor {
             String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
                     + "]";
 
-            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                    .type(method.returnType())
+            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                    .builder(method.returnType())
                     .index(index)
                     .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                     .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
@@ -930,8 +930,8 @@ public class ResteasyServerCommonProcessor {
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(parameterType)
+                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                            .builder(parameterType)
                             .index(index)
                             .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)

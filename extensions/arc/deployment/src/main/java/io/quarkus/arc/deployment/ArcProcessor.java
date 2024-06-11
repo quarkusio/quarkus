@@ -425,7 +425,8 @@ public class ArcProcessor {
             List<ContextConfiguratorBuildItem> contextConfigurationRegistry,
             BuildProducer<InterceptorResolverBuildItem> interceptorResolver,
             BuildProducer<BeanDiscoveryFinishedBuildItem> beanDiscoveryFinished,
-            BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations) {
+            BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations,
+            BuildProducer<InvokerFactoryBuildItem> invokerFactory) {
 
         for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurationRegistry) {
             for (ContextConfigurator value : contextConfigurator.getValues()) {
@@ -440,6 +441,7 @@ public class ArcProcessor {
         interceptorResolver.produce(new InterceptorResolverBuildItem(beanDeployment));
         beanDiscoveryFinished.produce(new BeanDiscoveryFinishedBuildItem(beanDeployment));
         transformedAnnotations.produce(new TransformedAnnotationsBuildItem(beanDeployment));
+        invokerFactory.produce(new InvokerFactoryBuildItem(beanDeployment));
 
         return new BeanRegistrationPhaseBuildItem(registrationContext, beanProcessor);
     }

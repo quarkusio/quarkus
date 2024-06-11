@@ -187,12 +187,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     @Override
-    public Path getClassesDir() {
-        //TODO: fix all these
-        for (DevModeContext.ModuleInfo i : context.getAllModules()) {
-            return Paths.get(i.getMain().getClassesPath());
+    public List<Path> getClassesDir() {
+        final List<ModuleInfo> allModules = context.getAllModules();
+        final List<Path> paths = new ArrayList<>(allModules.size());
+        for (DevModeContext.ModuleInfo i : allModules) {
+            paths.add(Path.of(i.getMain().getClassesPath()));
         }
-        return null;
+        return paths;
     }
 
     @Override

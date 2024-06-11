@@ -334,8 +334,8 @@ public class JaxrsClientReactiveProcessor {
                         String source = JaxrsClientReactiveProcessor.class.getSimpleName() + " > " + method.declaringClass()
                                 + "[" + method + "]";
 
-                        reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(method.returnType())
+                        reflectiveHierarchyBuildItemBuildProducer.produce(ReflectiveHierarchyBuildItem
+                                .builder(method.returnType())
                                 .index(index)
                                 .ignoreTypePredicate(QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                                 .ignoreFieldPredicate(QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
@@ -351,8 +351,8 @@ public class JaxrsClientReactiveProcessor {
                             for (int i = 0; i < methodParameters.length; i++) {
                                 MethodParameter methodParameter = methodParameters[i];
                                 if (methodParameter.getParameterType() == ParameterType.BODY) {
-                                    reflectiveHierarchyBuildItemBuildProducer.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                            .type(method.parameterType(i))
+                                    reflectiveHierarchyBuildItemBuildProducer.produce(ReflectiveHierarchyBuildItem
+                                            .builder(method.parameterType(i))
                                             .index(index)
                                             .ignoreTypePredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)

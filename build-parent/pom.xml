@@ -19,7 +19,7 @@
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <compiler-plugin.version>3.13.0</compiler-plugin.version>
+        <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
         <kotlin.version>2.0.0</kotlin.version>
         <dokka.version>1.9.20</dokka.version>
         <scala.version>2.13.12</scala.version>
@@ -27,17 +27,12 @@
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
-        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.2.5</version.surefire.plugin>
-        <version.exec.plugin>3.0.0</version.exec.plugin>
-        <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
-
         <!-- Jandex versions -->
         <jandex.version>3.2.0</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.1.0</htmlunit.version>
+        <htmlunit.version>4.2.0</htmlunit.version>
         <javaparser-core.version>3.26.0</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
@@ -127,11 +122,7 @@
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <docker-maven-plugin.version>0.44.0</docker-maven-plugin.version>
-        <formatter-maven-plugin.version>2.24.1</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.10.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.7.0</maven-invoker-plugin.version>
-        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
-        <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
         <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>
 
         <!-- revapi API check -->
@@ -414,7 +405,6 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -438,7 +428,6 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${version.surefire.plugin}</version>
                     <configuration>
                         <properties>
                             <predictiveSelection>
@@ -463,7 +452,6 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${failsafe-plugin.version}</version>
                     <configuration>
                         <properties>
                             <predictiveSelection>
@@ -483,11 +471,6 @@
                         <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>${maven-dependency-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
@@ -567,7 +550,6 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>${formatter-maven-plugin.version}</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -586,7 +568,6 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>${impsort-maven-plugin.version}</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
@@ -598,7 +579,6 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>${maven-resources-plugin.version}</version>
                     <configuration>
                         <nonFilteredFileExtensions>
                             <nonFilteredFileExtension>eot</nonFilteredFileExtension>

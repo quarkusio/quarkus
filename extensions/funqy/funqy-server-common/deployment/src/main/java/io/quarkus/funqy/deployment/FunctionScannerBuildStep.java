@@ -83,8 +83,8 @@ public class FunctionScannerBuildStep {
 
             Type returnType = method.returnType();
             if (returnType.kind() != Type.Kind.VOID) {
-                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                        .type(returnType)
+                reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                        .builder(returnType)
                         .index(index)
                         .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                         .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
@@ -95,8 +95,8 @@ public class FunctionScannerBuildStep {
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(parameterType)
+                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                            .builder(parameterType)
                             .index(index)
                             .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)

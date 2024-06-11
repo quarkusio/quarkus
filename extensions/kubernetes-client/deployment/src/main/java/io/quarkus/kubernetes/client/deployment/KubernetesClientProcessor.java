@@ -146,10 +146,10 @@ public class KubernetesClientProcessor {
                 log.warnv("Unable to lookup class: {0}", className);
             } else {
                 reflectiveHierarchies
-                        .produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(Type.create(watchedClass.name(), Type.Kind.CLASS))
+                        .produce(ReflectiveHierarchyBuildItem
+                                .builder(className)
                                 .ignoreTypePredicate(reflectionIgnorePredicate)
-                                .source(getClass().getSimpleName() + " > " + watchedClass.name())
+                                .source(getClass().getSimpleName() + " > " + className)
                                 .build());
             }
         }

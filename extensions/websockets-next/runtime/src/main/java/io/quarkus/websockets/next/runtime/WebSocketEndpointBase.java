@@ -319,20 +319,16 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return broadcast ? connection.broadcast().sendText(message) : connection.sendText(message);
     }
 
-    public Uni<Void> multiText(Multi<Object> multi, Function<Object, Uni<Void>> action) {
-        multi.onFailure().recoverWithMulti(t -> doOnError(t).toMulti())
+    public Uni<Void> multiText(Multi<Object> multi, Function<? super Object, Uni<?>> action) {
+        multi
+                // Encode and send message
+                .onItem().call(action)
+                .onFailure().recoverWithMulti(t -> {
+                    return doOnError(t).toMulti();
+                })
                 .subscribe().with(
-                        m -> {
-                            // Encode and send message
-                            action.apply(m)
-                                    .onFailure().recoverWithUni(this::doOnError)
-                                    .subscribe()
-                                    .with(v -> LOG.debugf("Multi >> text message: %s", connection),
-                                            t -> LOG.errorf(t, "Unable to send text message from Multi: %s", connection));
-                        },
-                        t -> {
-                            LOG.errorf(t, "Unable to send text message from Multi: %s ", connection);
-                        });
+                        m -> LOG.debugf("Multi >> text message: %s", connection),
+                        t -> LOG.errorf(t, "Unable to send text message from Multi: %s ", connection));
         return Uni.createFrom().voidItem();
     }
 
@@ -340,20 +336,14 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return broadcast ? connection.broadcast().sendBinary(message) : connection.sendBinary(message);
     }
 
-    public Uni<Void> multiBinary(Multi<Object> multi, Function<Object, Uni<Void>> action) {
-        multi.onFailure().recoverWithMulti(t -> doOnError(t).toMulti())
+    public Uni<Void> multiBinary(Multi<Object> multi, Function<? super Object, Uni<?>> action) {
+        multi
+                // Encode and send message
+                .onItem().call(action)
+                .onFailure().recoverWithMulti(t -> doOnError(t).toMulti())
                 .subscribe().with(
-                        m -> {
-                            // Encode and send message
-                            action.apply(m)
-                                    .onFailure().recoverWithUni(this::doOnError)
-                                    .subscribe()
-                                    .with(v -> LOG.debugf("Multi >> binary message: %s", connection),
-                                            t -> LOG.errorf(t, "Unable to send binary message from Multi: %s", connection));
-                        },
-                        t -> {
-                            LOG.errorf(t, "Unable to send text message from Multi: %s ", connection);
-                        });
+                        m -> LOG.debugf("Multi >> binary message: %s", connection),
+                        t -> LOG.errorf(t, "Unable to send binary message from Multi: %s ", connection));
         return Uni.createFrom().voidItem();
     }
 }

@@ -126,7 +126,7 @@
         <mssql-jdbc.version>12.6.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
-        <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
+        <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
@@ -5346,6 +5346,12 @@
                         <artifactId>protobuf-java</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <!-- New artifact in Derby 10.15: https://db.apache.org/derby/releases/release-10.15.1.3.cgi#Note%20for%20DERBY-6945 -->
+                <groupId>org.apache.derby</groupId>
+                <artifactId>derbyshared</artifactId>
+                <version>${derby-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.derby</groupId>

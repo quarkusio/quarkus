@@ -15,35 +15,35 @@ public class DeployerTest {
 
     @Test
     void shouldNotFindDeployer() {
-        Set<String> deployers = Deployer.getProjecDeployers(List.of());
+        Set<String> deployers = Deployer.getProjectDeployers(List.of());
         assertTrue(deployers.isEmpty());
 
-        deployers = Deployer.getProjecDeployers(List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy")));
+        deployers = Deployer.getProjectDeployers(List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy")));
         assertTrue(deployers.isEmpty());
     }
 
     @Test
     void shouldFindDeployer() {
-        Set<String> deployers = Deployer.getProjecDeployers(
+        Set<String> deployers = Deployer.getProjectDeployers(
                 List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy"), newDependency("quarkus-kubernetes")));
         assertEquals(Set.of("kubernetes"), deployers);
 
-        deployers = Deployer.getProjecDeployers(
+        deployers = Deployer.getProjectDeployers(
                 List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy"), newDependency("quarkus-openshift")));
         assertEquals(Set.of("openshift"), deployers);
 
-        deployers = Deployer.getProjecDeployers(
+        deployers = Deployer.getProjectDeployers(
                 List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy"), newDependency("quarkus-kind")));
         assertEquals(Set.of("kind"), deployers);
 
-        deployers = Deployer.getProjecDeployers(
+        deployers = Deployer.getProjectDeployers(
                 List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy"), newDependency("quarkus-minikube")));
         assertEquals(Set.of("minikube"), deployers);
     }
 
     @Test
     void shouldFindMultipleDeployer() {
-        Set<String> deployers = Deployer.getProjecDeployers(
+        Set<String> deployers = Deployer.getProjectDeployers(
                 List.of(newDependency("quarkus-arc"), newDependency("quarkus-resteasy"), newDependency("quarkus-kubernetes"),
                         newDependency("quarkus-openshift")));
         assertEquals(Set.of("kubernetes", "openshift"), deployers);

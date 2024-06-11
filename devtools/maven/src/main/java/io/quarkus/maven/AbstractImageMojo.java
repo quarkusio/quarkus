@@ -36,9 +36,7 @@ public class AbstractImageMojo extends BuildMojo {
             getLog().info("Container image configuration:");
             systemProperties.entrySet().stream()
                     .filter(e -> e.getKey().contains("quarkus.container-image"))
-                    .forEach(e -> {
-                        getLog().info(" - " + e.getKey() + ": " + e.getValue());
-                    });
+                    .forEach(e -> getLog().info(" - " + e.getKey() + ": " + e.getValue()));
         } else {
             super.doExecute();
         }
@@ -47,7 +45,7 @@ public class AbstractImageMojo extends BuildMojo {
     @Override
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
         List<Dependency> dependencies = new ArrayList<>();
-        getBuilder().getExtensionArtifact(mavenProject()).ifPresent(d -> dependencies.add(d));
+        getBuilder().getExtensionArtifact(mavenProject()).ifPresent(dependencies::add);
         return dependencies;
     }
 }

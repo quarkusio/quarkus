@@ -4,6 +4,8 @@
 We try to make it easy, and all contributions, even the smaller ones, are more than welcome. This includes bug reports,
 fixes, documentation, examples... But first, read this page (including the small print at the end).
 
+<!-- toc -->
+
 - [Legal](#legal)
 - [Reporting an issue](#reporting-an-issue)
 - [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
@@ -20,8 +22,8 @@ fixes, documentation, examples... But first, read this page (including the small
     + [Eclipse Setup](#eclipse-setup)
     + [IDEA Setup](#idea-setup)
       - [How to work](#how-to-work)
-      - [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
-      - [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
+      - [`OutOfMemoryError` while importing](#outofmemoryerror-while-importing)
+      - [`package sun.misc does not exist` while building](#package-sunmisc-does-not-exist-while-building)
       - [Formatting](#formatting)
   * [Gitpod](#gitpod)
 - [Build](#build)
@@ -32,11 +34,14 @@ fixes, documentation, examples... But first, read this page (including the small
     + [Running a single test](#running-a-single-test)
       - [Maven Invoker tests](#maven-invoker-tests)
   * [Build with multiple threads](#build-with-multiple-threads)
-  * [Don't build any test modules](#don-t-build-any-test-modules)
+  * [Don't build any test modules](#dont-build-any-test-modules)
     + [Automatic incremental build](#automatic-incremental-build)
-      - [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
+      - [Special case `bom-descriptor-json`](#special-case-bom-descriptor-json)
       - [Usage by CI](#usage-by-ci)
       - [Develocity build cache](#develocity-build-cache)
+        * [Getting set up](#getting-set-up)
+        * [-Dquickly](#-dquickly)
+        * [Benchmarking the build](#benchmarking-the-build)
 - [Release your own version](#release-your-own-version)
 - [Documentation](#documentation)
   * [Building the documentation](#building-the-documentation)
@@ -44,7 +49,7 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Usage](#usage)
     + [With Maven](#with-maven)
     + [With Gradle](#with-gradle)
-  * [MicroProfile TCK's](#microprofile-tck-s)
+  * [MicroProfile TCK's](#microprofile-tcks)
   * [Test Coverage](#test-coverage)
 - [Extensions](#extensions)
   * [Descriptions](#descriptions)
@@ -53,7 +58,8 @@ fixes, documentation, examples... But first, read this page (including the small
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+<!-- tocstop -->
+<small><i><a href='https://github.com/jonschlinkert/markdown-toc'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Legal
 

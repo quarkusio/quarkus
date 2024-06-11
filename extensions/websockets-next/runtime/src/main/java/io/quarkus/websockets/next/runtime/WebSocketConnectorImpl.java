@@ -16,6 +16,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketConnector;
@@ -26,7 +27,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClient;
-import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
 
 @Typed(WebSocketConnector.class)
@@ -41,8 +41,9 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
     private final ClientEndpoint clientEndpoint;
 
     WebSocketConnectorImpl(InjectionPoint injectionPoint, Codecs codecs, Vertx vertx, ClientConnectionManager connectionManager,
-            ClientEndpointsContext endpointsContext, WebSocketsClientRuntimeConfig config) {
-        super(vertx, codecs, connectionManager, config);
+            ClientEndpointsContext endpointsContext, WebSocketsClientRuntimeConfig config,
+            TlsConfigurationRegistry tlsConfigurationRegistry) {
+        super(vertx, codecs, connectionManager, config, tlsConfigurationRegistry);
         this.clientEndpoint = Objects.requireNonNull(endpointsContext.endpoint(getEndpointClass(injectionPoint)));
         setPath(clientEndpoint.path);
     }
@@ -52,18 +53,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
         // Currently we create a new client for each connection
         // The client is closed when the connection is closed
         // TODO would it make sense to share clients?
-        WebSocketClientOptions clientOptions = new WebSocketClientOptions();
-        if (config.offerPerMessageCompression()) {
-            clientOptions.setTryUsePerMessageCompression(true);
-            if (config.compressionLevel().isPresent()) {
-                clientOptions.setCompressionLevel(config.compressionLevel().getAsInt());
-            }
-        }
-        if (config.maxMessageSize().isPresent()) {
-            clientOptions.setMaxMessageSize(config.maxMessageSize().getAsInt());
-        }
-
-        WebSocketClient client = vertx.createWebSocketClient();
+        WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
 
         StringBuilder serverEndpoint = new StringBuilder();
         if (baseUri != null) {

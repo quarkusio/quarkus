@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -51,6 +52,9 @@ public interface BasicWebSocketConnector {
 
     /**
      * Set the path param.
+     * <p>
+     * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build the
+     * target URI.
      *
      * @param name
      * @param value

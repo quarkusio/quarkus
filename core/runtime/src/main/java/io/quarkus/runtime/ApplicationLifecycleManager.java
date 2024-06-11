@@ -183,7 +183,7 @@ public class ApplicationLifecycleManager {
                     } else {
                         for (Integer port : ports) {
                             applicationLogger
-                                    .warnf("Use 'ss -anop | grep %d' or 'netstat -anop | grep %d' to identify the process occupying the port.",
+                                    .warnf("Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
                                             port);
                         }
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");

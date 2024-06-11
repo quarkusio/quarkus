@@ -37,7 +37,7 @@ public interface WebSocketConnection extends Sender, BlockingSender {
     /**
      *
      * @param name
-     * @return the actual value of the path parameter or null
+     * @return the decoded value of the path parameter or {@code null}
      * @see WebSocket#path()
      */
     String pathParam(String name);
@@ -66,6 +66,12 @@ public interface WebSocketConnection extends Sender, BlockingSender {
      * @return {@code true} if the WebSocket is closed
      */
     boolean isClosed();
+
+    /**
+     *
+     * @return the close reason or {@code null} if the connection is not closed
+     */
+    CloseReason closeReason();
 
     /**
      *

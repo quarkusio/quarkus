@@ -119,7 +119,12 @@ public class TenantConfigContext {
             }
             try {
                 if (encSecret == null) {
-                    LOG.warn("Secret key for encrypting tokens in a session cookie is missing, auto-generating it");
+                    LOG.warn(
+                            "Secret key for encrypting OIDC authorization code flow tokens in a session cookie is not configured, auto-generating it."
+                                    + " Note that a new secret will be generated after a restart, thus making it impossible to decrypt the session cookie and requiring a user re-authentication."
+                                    + " Use 'quarkus.oidc.token-state-manager.encryption-secret' to configure an encryption secret."
+                                    + " Alternatively, disable session cookie encryption with 'quarkus.oidc.token-state-manager.encryption-required=false'"
+                                    + " but only if it is considered to be safe in your application's network.");
                     return generateSecretKey();
                 }
                 byte[] secretBytes = encSecret.getBytes(StandardCharsets.UTF_8);

@@ -92,7 +92,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
                 .setPort(serverEndpointUri.getPort());
         StringBuilder uri = new StringBuilder();
         if (serverEndpointUri.getPath() != null) {
-            uri.append(serverEndpointUri.getPath());
+            uri.append(serverEndpointUri.getRawPath());
         }
         if (serverEndpointUri.getQuery() != null) {
             uri.append("?").append(serverEndpointUri.getQuery());
@@ -116,6 +116,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
 
                     Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
                             clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
+                            config.unhandledFailureStrategy(),
                             () -> {
                                 connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                                 client.close();

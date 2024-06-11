@@ -234,7 +234,8 @@ public class ApplicationDeploymentClasspathBuilder {
     private void setUpCompileOnlyConfiguration() {
         if (!project.getConfigurations().getNames().contains(compileOnlyConfigurationName)) {
             project.getConfigurations().register(compileOnlyConfigurationName, config -> {
-                config.extendsFrom(project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
+                config.extendsFrom(project.getConfigurations().getByName(platformConfigurationName),
+                        project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
                 config.shouldResolveConsistentlyWith(getDeploymentConfiguration());
                 config.setCanBeConsumed(false);
             });

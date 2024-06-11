@@ -16,6 +16,8 @@ include::_attributes.adoc[]
 
 include::{includes}/extension-status.adoc[]
 
+The `quarkus-websockets-next` extension provides a modern declarative API to define WebSocket server and client endpoints.
+
 == The WebSocket protocol
 
 The _WebSocket_ protocol, documented in the https://datatracker.ietf.org/doc/html/rfc6455[RFC6455], establishes a standardized method for creating a bidirectional communication channel between a client and a server through a single TCP connection.
@@ -137,13 +139,13 @@ Meanwhile, the `consumeNested` method within the nested class can access both `v
 
 [source, java]
 ----
-@WebSocket("/ws/v{version}")
+@WebSocket(path = "/ws/v{version}")
 public class MyPrimaryWebSocket {
 
     @OnTextMessage
     void consumePrimary(String s)    { ... }
 
-    @WebSocket("/products/{id}")
+    @WebSocket(path = "/products/{id}")
     public static class MyNestedWebSocket {
 
       @OnTextMessage
@@ -161,12 +163,12 @@ However, developers can specify alternative scopes to suit their specific requir
 
 [source,java]
 ----
-@WebSocket("/ws")
+@WebSocket(path = "/ws")
 public class MyWebSocket {
     // Singleton scoped bean
 }
 
-@WebSocket("/ws")
+@WebSocket(path = "/ws")
 @ApplicationScoped
 public class MyRequestScopedWebSocket {
   // Application scoped.
@@ -418,7 +420,7 @@ Methods annotated with `@OnOpen` can utilize server-side streaming by returning 
 
 [source, java]
 ----
-@WebSocket("/foo")
+@WebSocket(path = "/foo")
 @OnOpen
 public Multi<Integer> streaming() {
     return Multi.createFrom().ticks().every(Duration.ofSecond(1))
@@ -456,6 +458,10 @@ However, each method must declare a different error parameter.
 The method that declares a most-specific supertype of the actual exception is selected.
 
 NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` paremeters. Error handlers declared on an endpoint take precedence over the global error handlers.
+
+When an error occurs but no error handler can handle the failure, Quarkus uses the strategy specified by `quarkus.websockets-next.server.unhandled-failure-strategy` and `quarkus.websockets-next.client.unhandled-failure-strategy`, respectively.
+By default, the connection is closed.
+Alternatively, an error message can be logged or no operation performed.
 
 == Access to the WebSocketConnection
 
@@ -634,6 +640,8 @@ quarkus.http.auth.permission.secured.policy=authenticated
 ----
 
 Other options for securing HTTP upgrade requests, such as using the security annotations, will be explored in the future.
+
+NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
 
 [[websocket-next-configuration-reference]]
 == Configuration reference

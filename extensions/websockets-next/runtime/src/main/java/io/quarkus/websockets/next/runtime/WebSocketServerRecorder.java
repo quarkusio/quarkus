@@ -90,8 +90,6 @@ public class WebSocketServerRecorder {
 
             @Override
             public void handle(RoutingContext ctx) {
-                SecuritySupport securitySupport = initializeSecuritySupport(container, ctx);
-
                 Future<ServerWebSocket> future = ctx.request().toWebSocket();
                 future.onSuccess(ws -> {
                     Vertx vertx = VertxCoreRecorder.getVertx().get();
@@ -101,22 +99,25 @@ public class WebSocketServerRecorder {
                     connectionManager.add(generatedEndpointClass, connection);
                     LOG.debugf("Connection created: %s", connection);
 
+                    SecuritySupport securitySupport = initializeSecuritySupport(container, ctx, vertx, connection);
+
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            config.autoPingInterval(), securitySupport,
+                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(),
                             () -> connectionManager.remove(generatedEndpointClass, connection));
                 });
             }
         };
     }
 
-    SecuritySupport initializeSecuritySupport(ArcContainer container, RoutingContext ctx) {
+    SecuritySupport initializeSecuritySupport(ArcContainer container, RoutingContext ctx, Vertx vertx,
+            WebSocketConnectionImpl connection) {
         Instance<CurrentIdentityAssociation> currentIdentityAssociation = container.select(CurrentIdentityAssociation.class);
         if (currentIdentityAssociation.isResolvable()) {
             // Security extension is present
             // Obtain the current security identity from the handshake request
             QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
             if (user != null) {
-                return new SecuritySupport(currentIdentityAssociation, user.getSecurityIdentity());
+                return new SecuritySupport(currentIdentityAssociation, user.getSecurityIdentity(), vertx, connection);
             }
         }
         return SecuritySupport.NOOP;

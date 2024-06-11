@@ -200,11 +200,11 @@ public class InfinispanDevServiceProcessor {
 
         if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn(
-                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working docker instance");
+                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working Docker instance");
             return null;
         }
-        log.infof("Starting Dev Service for connection %s", clientName);
-        log.infof("Apply Dev Services config %s", devServicesConfig);
+        log.infof("Starting Dev Services for connection %s", clientName);
+        log.infof("Applying Dev Services config %s", devServicesConfig);
 
         Supplier<RunningDevService> infinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(clientName, devServicesConfig,
@@ -283,11 +283,11 @@ public class InfinispanDevServiceProcessor {
                 return " -c " + userConfigFile;
             }).collect(Collectors.joining())).orElse("");
 
-            if (config.tracing.isPresent()) {
+            if (config.tracing.orElse(false)) {
                 log.warn(
-                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing setting `quarkus.infinispan-client.devservices.tracing.enabled` to true won't work.\n"
+                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
                                 +
-                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check xref:infinispan-dev-services.adoc[Infinispan Dev Services guide]");
+                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
                 log.warn("infinispan:\n" +
                         "        cacheContainer:\n" +
                         "                tracing:\n" +

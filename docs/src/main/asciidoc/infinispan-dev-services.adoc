@@ -120,7 +120,7 @@ quarkus.infinispan-client.conn-2.devservices.enabled=true
 
 Infinispan supports server tracing using OpenTelemetry. Starting from Infinispan 15.0, you need
 to configure tracing in the server's settings.
-To enable this in Dev Services, you need to add extra settings to the running server using the
+To enable tracing in Dev Services, you need to add extra settings using the
 `quarkus.infinispan-client.devservices.config-files` property.
 
 [source, yaml]
@@ -135,10 +135,10 @@ infinispan:
                         security: false <5>
 ----
 <1> Collector endpoint. Assuming a container service name 'jaeger' is running.
-<2> Enables tracing
+<2> Enables tracing.
 <3> Exporter protocol. OLTP is the OpenTelemetry protocol.
-<4> The service name that will be registered in the tracing collector, Jaeger in this case
-<5> Enables 'security' category tracing
+<4> The service name that will be registered in the tracing collector, Jaeger in this case.
+<5> Enables 'security' category tracing.
 
 See below the equivalent in XML and JSON.
 
@@ -173,7 +173,8 @@ See below the equivalent in XML and JSON.
 }
 ----
 
-You need name the Jaeger service or get the IP running the following command and configure the exporter endpoint.
+You need to name the Jaeger service or get the IP running the following command to configure the exporter endpoint.
+
 [source,bash]
 ----
 docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jaeger

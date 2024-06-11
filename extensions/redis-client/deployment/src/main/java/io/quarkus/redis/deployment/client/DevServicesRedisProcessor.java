@@ -161,9 +161,7 @@ public class DevServicesRedisProcessor {
         String hostsProperty = getConfigPrefix(name) + RedisConfig.HOSTS_CONFIG_NAME;
 
         boolean needToStart = false;
-        if (!ConfigUtils.isPropertyPresent(hostsProperty)) {
-            needToStart = true;
-        } else if (ConfigProvider.getConfig().getConfigValue(hostsProperty).getValue().isEmpty()) {
+        if (!ConfigUtils.isPropertyPresent(hostsProperty) || ConfigProvider.getConfig().getConfigValue(hostsProperty).getValue().isEmpty()) {
             needToStart = true;
         }
         if (!needToStart) {

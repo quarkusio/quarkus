@@ -200,11 +200,11 @@ public class InfinispanDevServiceProcessor {
 
         if (!dockerStatusBuildItem.isDockerAvailable()) {
             log.warn(
-                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working docker instance");
+                    "Please configure 'quarkus.infinispan-client.hosts' or 'quarkus.infinispan-client.uri' or get a working Docker instance");
             return null;
         }
-        log.infof("Starting Dev Service for connection %s", clientName);
-        log.infof("Apply Dev Services config %s", devServicesConfig);
+        log.infof("Starting Dev Services for connection %s", clientName);
+        log.infof("Applying Dev Services config %s", devServicesConfig);
 
         Supplier<RunningDevService> infinispanServerSupplier = () -> {
             QuarkusInfinispanContainer infinispanContainer = new QuarkusInfinispanContainer(clientName, devServicesConfig,
@@ -283,13 +283,23 @@ public class InfinispanDevServiceProcessor {
                 return " -c " + userConfigFile;
             }).collect(Collectors.joining())).orElse("");
 
+            if (config.tracing.orElse(false)) {
+                log.warn(
+                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
+                                +
+                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
+                log.warn("infinispan:\n" +
+                        "        cacheContainer:\n" +
+                        "                tracing:\n" +
+                        "                        collector-endpoint: \"http://jaeger:4318\"\n" +
+                        "                        enabled: true\n" +
+                        "                        exporter-protocol: \"OTLP\"\n" +
+                        "                        service-name: \"infinispan-server\"\n" +
+                        "                        security: false");
+            }
+
             if (config.mcastPort.isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort.getAsInt();
-            }
-            if (config.tracing.isPresent()) {
-                command = command + " -Dinfinispan.tracing.enabled=" + config.tracing.get();
-                command = command + " -Dotel.exporter.otlp.endpoint=" + config.exporterOtlpEndpoint.get();
-                command = command + " -Dotel.service.name=infinispan-server-service -Dotel.metrics.exporter=none";
             }
 
             config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));

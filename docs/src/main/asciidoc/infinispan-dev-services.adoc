@@ -118,11 +118,62 @@ quarkus.infinispan-client.conn-2.devservices.enabled=true
 
 == Tracing with OpenTelemetry
 
-Infinispan supports instrumentation of the server via OpenTelemetry. Enable tracing setting `quarkus.infinispan-client.devservices.tracing.enabled` to true.
-The default otlp exporter endpoint is `http://localhost:4317`.
-If you are running Jaeger in a container as explained in the xref:opentelemetry.adoc[OpenTelemetry guide], since the containers
-are running in the default network, Infinispan container won't have access to localhost.
-You need to get the IP running the following command and configure the `quarkus.infinispan-client.devservices.tracing.exporter.otlp.endpoint` property.
+Infinispan supports server tracing using OpenTelemetry. Starting from Infinispan 15.0, you need
+to configure tracing in the server's settings.
+To enable tracing in Dev Services, you need to add extra settings using the
+`quarkus.infinispan-client.devservices.config-files` property.
+
+[source, yaml]
+----
+infinispan:
+        cacheContainer:
+                tracing:
+                        collector-endpoint: "http://jaeger:4318" <1>
+                        enabled: true <2>
+                        exporter-protocol: "OTLP" <3>
+                        service-name: "infinispan-server" <4>
+                        security: false <5>
+----
+<1> Collector endpoint. Assuming a container service name 'jaeger' is running.
+<2> Enables tracing.
+<3> Exporter protocol. OLTP is the OpenTelemetry protocol.
+<4> The service name that will be registered in the tracing collector, Jaeger in this case.
+<5> Enables 'security' category tracing.
+
+See below the equivalent in XML and JSON.
+
+[source, xml]
+----
+<infinispan>
+  <cache-container statistics="true">
+    <tracing collector-endpoint="http://jaeger:4318"
+             enabled="true"
+             exporter-protocol="OTLP"
+             service-name="infinispan-server"
+             security="false" />
+  </cache-container>
+</infinispan>
+----
+
+[source, json]
+----
+{
+  "infinispan" : {
+    "cache-container" : {
+      "statistics" : true,
+      "tracing" : {
+        "collector-endpoint" : "http://jaeger:4318",
+        "enabled" : true,
+        "exporter-protocol" : "OTLP",
+        "service-name" : "infinispan-server",
+        "security" : false
+      }
+    }
+  }
+}
+----
+
+You need to name the Jaeger service or get the IP running the following command to configure the exporter endpoint.
 
 [source,bash]
 ----

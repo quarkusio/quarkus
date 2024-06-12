@@ -773,5 +773,9 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
+    - id: podman
+      labels: [env/podman]
+      title: "podman"
+      notify: [maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

@@ -42,6 +42,7 @@ public class RestClientConfig {
         EMPTY.keyStorePassword = Optional.empty();
         EMPTY.keyStoreType = Optional.empty();
         EMPTY.hostnameVerifier = Optional.empty();
+        EMPTY.tlsConfigurationName = Optional.empty();
         EMPTY.connectionTTL = Optional.empty();
         EMPTY.connectionPoolSize = Optional.empty();
         EMPTY.keepAliveEnabled = Optional.empty();
@@ -202,6 +203,20 @@ public class RestClientConfig {
     public Optional<String> hostnameVerifier;
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName;
+
+    /**
      * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
      * A timeout of {@code 0} means there is no timeout.
      */
@@ -317,6 +332,7 @@ public class RestClientConfig {
         instance.keyStorePassword = getConfigValue(configKey, "key-store-password", String.class);
         instance.keyStoreType = getConfigValue(configKey, "key-store-type", String.class);
         instance.hostnameVerifier = getConfigValue(configKey, "hostname-verifier", String.class);
+        instance.tlsConfigurationName = getConfigValue(configKey, "tls-configuration-name", String.class);
         instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
         instance.keepAliveEnabled = getConfigValue(configKey, "keep-alive-enabled", Boolean.class);
@@ -358,6 +374,7 @@ public class RestClientConfig {
         instance.keyStorePassword = getConfigValue(interfaceClass, "key-store-password", String.class);
         instance.keyStoreType = getConfigValue(interfaceClass, "key-store-type", String.class);
         instance.hostnameVerifier = getConfigValue(interfaceClass, "hostname-verifier", String.class);
+        instance.tlsConfigurationName = getConfigValue(interfaceClass, "tls-configuration-name", String.class);
         instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
         instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
         instance.keepAliveEnabled = getConfigValue(interfaceClass, "keep-alive-enabled", Boolean.class);

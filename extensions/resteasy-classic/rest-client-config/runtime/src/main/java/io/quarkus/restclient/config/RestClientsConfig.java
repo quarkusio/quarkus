@@ -279,6 +279,20 @@ public class RestClientsConfig {
     public Optional<String> keyStoreType;
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigItem
+    public Optional<String> tlsConfigurationName;
+
+    /**
      * If this is true then HTTP/2 will be enabled.
      */
     @ConfigItem(defaultValue = "false")

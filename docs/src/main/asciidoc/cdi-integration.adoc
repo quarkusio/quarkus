@@ -169,20 +169,20 @@ With an `AnnotationsTransformerBuildItem` it's possible to override the annotati
 NOTE: Keep in mind that annotation transformers must be produced _before_ the bean discovery starts.
 
 For example, you might want to add an interceptor binding to a specific bean class.
-You can use a convenient builder-like API to create a transformer instance:
+You can use a convenient builder API to create a transformation instance:
 
-Builder Example
+.Builder Example
 [source,java]
 ----
 @BuildStep
 AnnotationsTransformerBuildItem transform() {
-   return new AnnotationsTransformerBuildItem(AnnotationsTransformer.appliedToClass() <1>
-        .whenClass(c -> c.name().toString().equals("org.acme.Bar")) <2>
-        .thenTransform(t -> t.add(MyInterceptorBinding.class))); <3>
+    return new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses() // <1>
+        .whenClass(DotName.createSimple("org.acme.Bar")) // <2>
+        .transform(t -> t.add(MyInterceptorBinding.class))); // <3>
 }
 ----
 <1> The transformer is only applied to classes.
-<2> Only apply the transformation if the class name equals to `org.acme.Bar`.
+<2> Only apply the transformation if the class is `org.acme.Bar`.
 <3> Add the `@MyInterceptorBinding` annotation.
 
 The example above can be rewritten with an anonymous class:
@@ -192,22 +192,23 @@ The example above can be rewritten with an anonymous class:
 ----
 @BuildStep
 AnnotationsTransformerBuildItem transform() {
-   return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+    return new AnnotationsTransformerBuildItem(new AnnotationTransformation() {
+        public boolean supports(AnnotationTarget.Kind kind) {
+            return kind == AnnotationTarget.Kind.CLASS; // <1>
+        }
 
-      public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-         return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS; <1>
-      }
-
-      public void transform(TransformationContext context) {
-         if (context.getTarget().asClass().name().toString().equals("org.acme.Bar")) {
-            context.transform().add(MyInterceptorBinding.class).done(); <2>
-         }
-      }
+        public void apply(TransformationContext context) {
+            if (context.declaration().asClass().name().toString().equals("org.acme.Bar")) {
+                context.add(MyInterceptorBinding.class); // <2>
+            }
+        }
     });
 }
 ----
 <1> The transformer is only applied to classes.
-<2> If the class name equals to `org.acme.Bar` then add `@MyInterceptorBinding`. Don't forget to invoke `Transformation#done()`.
+<2> If the class name equals to `org.acme.Bar` then add `@MyInterceptorBinding`.
+
+NOTE: The previous `AnnotationsTransformer` API from ArC is still supported, but the new `AnnotationTransformation` API from Jandex is preferred.
 
 Build steps can query the transformed annotations for a given annotation target via the `TransformedAnnotationsBuildItem`.
 
@@ -215,11 +216,12 @@ Build steps can query the transformed annotations for a given annotation target 
 [source,java]
 ----
 @BuildStep
-void queryAnnotations(TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<MyBuildItem> myBuildItem) {
-   ClassInfo myClazz = ...;
-   if (transformedAnnotations.getAnnotations(myClazz).isEmpty()) { <1>
-     myBuildItem.produce(new MyBuildItem());
-   }
+void queryAnnotations(TransformedAnnotationsBuildItem transformedAnnotations,
+        BuildProducer<MyBuildItem> myBuildItem) {
+    ClassInfo myClazz = ...;
+    if (transformedAnnotations.getAnnotations(myClazz).isEmpty()) { // <1>
+        myBuildItem.produce(new MyBuildItem());
+    }
 }
 ----
 <1> `TransformedAnnotationsBuildItem.getAnnotations()` will return a possibly transformed set of annotations.

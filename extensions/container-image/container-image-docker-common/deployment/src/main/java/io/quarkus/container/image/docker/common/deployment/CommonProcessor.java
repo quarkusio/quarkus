@@ -56,7 +56,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
-            ContainerRuntime containerRuntime) {
+            ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
         var pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
@@ -84,7 +84,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 LOGGER.infof("Starting (local) container image build for jar using %s", getProcessorImplementation());
             }
 
-            var executableName = getExecutableName(config, containerRuntime);
+            var executableName = getExecutableName(config, containerRuntimes);
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImageInfo, out,
                     dockerfilePaths, buildContainerImage, pushContainerImage, packageConfig, executableName);
 
@@ -113,7 +113,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             PackageConfig packageConfig,
             NativeImageBuildItem nativeImage,
-            ContainerRuntime containerRuntime) {
+            ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
         var pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
@@ -134,7 +134,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                 LOGGER.infof("Starting (local) container image build for jar using %s", getProcessorImplementation());
             }
 
-            var executableName = getExecutableName(config, containerRuntime);
+            var executableName = getExecutableName(config, containerRuntimes);
             var dockerfilePaths = getDockerfilePaths(config, true, packageConfig, out);
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImage, out, dockerfilePaths,
                     buildContainerImage, pushContainerImage, packageConfig, executableName);
@@ -257,9 +257,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                                 getProcessorImplementation()));
     }
 
-    private String getExecutableName(C config, ContainerRuntime containerRuntime) {
+    protected String getExecutableName(C config, ContainerRuntime... containerRuntimes) {
         return config.executableName()
-                .orElseGet(() -> detectContainerRuntime(List.of(containerRuntime)).getExecutableName());
+                .orElseGet(() -> detectContainerRuntime(containerRuntimes).getExecutableName());
     }
 
     private DockerfilePaths getDockerfilePaths(C config,

@@ -87,7 +87,8 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .defaultBean(defaultBean)
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
-                    .targetPackageName(targetPackageName);
+                    .targetPackageName(targetPackageName)
+                    .startupPriority(startupPriority);
 
             if (!injectionPoints.isEmpty()) {
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));

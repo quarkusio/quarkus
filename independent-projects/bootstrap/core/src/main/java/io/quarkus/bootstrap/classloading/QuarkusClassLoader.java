@@ -692,29 +692,37 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.debug("Failed to clean up DB drivers");
             }
         }
-        for (ClassPathElement element : elements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
+        closeClassPathElements(elements);
+        closeClassPathElements(bannedElements);
+        closeClassPathElements(parentFirstElements);
+        closeClassPathElements(lesserPriorityElements);
+
+        definedPackages.clear();
+        resettableElement = null;
+        transformedClasses = null;
+        if (state != null) {
+            state.clear();
         }
-        for (ClassPathElement element : bannedElements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
-        }
+        closeTasks.clear();
+        classLoaderEventListeners.clear();
+
         ResourceBundle.clearCache(this);
 
         status = STATUS_CLOSED;
+    }
+
+    private static void closeClassPathElements(List<ClassPathElement> classPathElements) {
+        for (ClassPathElement element : classPathElements) {
+            //note that this is a 'soft' close
+            //all resources are closed, however the CL can still be used
+            //but after close no resources will be held past the scope of an operation
+            try (ClassPathElement ignored = element) {
+                //the close() operation is implied by the try-with syntax
+            } catch (Exception e) {
+                log.error("Failed to close " + element, e);
+            }
+        }
+        classPathElements.clear();
     }
 
     public boolean isClosed() {
@@ -899,6 +907,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.loadableResources = loadableResources;
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
+        }
+
+        void clear() {
+            // when the CL is closed, we make sure the resources are not loadable anymore
+            loadableResources.clear();
         }
     }
 

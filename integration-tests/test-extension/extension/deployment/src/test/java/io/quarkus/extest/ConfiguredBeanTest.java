@@ -349,9 +349,12 @@ public class ConfiguredBeanTest {
         assertNotNull(applicationProperties);
         assertEquals(1000, applicationProperties.getOrdinal());
 
-        assertEquals("1234", defaultValues.getValue("%test.my.prop"));
-        assertNull(defaultValues.getValue("my.prop"));
+        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        assertEquals("9999", applicationProperties.getValue("%test.my.prop"));
+        assertEquals("1234", defaultValues.getValue("my.prop"));
         assertEquals("1234", applicationProperties.getValue("my.prop"));
+
+        assertEquals("9999", config.getRawValue("my.prop"));
     }
 
     @Test
@@ -362,8 +365,9 @@ public class ConfiguredBeanTest {
 
         assertEquals("1234", defaultValues.getValue("%prod.my.prop"));
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
-        assertEquals("1234", defaultValues.getValue("%test.my.prop"));
-        assertEquals("1234", config.getValue("my.prop", String.class));
+        assertEquals("9999", defaultValues.getValue("%test.my.prop"));
+        // this runs with the test profile
+        assertEquals("9999", config.getValue("my.prop", String.class));
 
         // runtime properties coming from env must not be recorded
         assertNull(defaultValues.getValue("should.not.be.recorded"));

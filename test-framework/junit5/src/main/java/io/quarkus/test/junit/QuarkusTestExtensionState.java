@@ -12,23 +12,15 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    protected final Closeable testResourceManager;
-    protected final Closeable resource;
-    private final Thread shutdownHook;
+    protected Closeable testResourceManager;
+    protected Closeable resource;
+    private Thread shutdownHook;
     private Throwable testErrorCause;
 
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource) {
         this.testResourceManager = testResourceManager;
         this.resource = resource;
-        this.shutdownHook = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    QuarkusTestExtensionState.this.close();
-                } catch (IOException ignored) {
-                }
-            }
-        }, "Quarkus Test Cleanup Shutdown task");
+        this.shutdownHook = new ShutdownThread(this);
         Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
@@ -45,6 +37,10 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             } catch (Throwable t) {
                 //won't work if we are already shutting down
+            } finally {
+                shutdownHook = null;
+                testResourceManager = null;
+                resource = null;
             }
         }
     }
@@ -68,5 +64,31 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
 
     protected void doClose() throws IOException {
 
+    }
+
+    private static final class ShutdownThread extends Thread {
+
+        public ShutdownThread(QuarkusTestExtensionState state) {
+            super(new ShutdownHook(state), "Quarkus Test Cleanup Shutdown Thread");
+        }
+    }
+
+    private static final class ShutdownHook implements Runnable {
+
+        private QuarkusTestExtensionState state;
+
+        private ShutdownHook(QuarkusTestExtensionState state) {
+            this.state = state;
+        }
+
+        @Override
+        public void run() {
+            try {
+                state.close();
+            } catch (IOException ignored) {
+            } finally {
+                state = null;
+            }
+        }
     }
 }

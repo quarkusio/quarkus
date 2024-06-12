@@ -32,12 +32,16 @@ public abstract class WebSocketConnectionBase {
 
     protected final Instant creationTime;
 
-    WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest) {
+    protected final TrafficLogger trafficLogger;
+
+    WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest,
+            TrafficLogger trafficLogger) {
         this.identifier = UUID.randomUUID().toString();
         this.pathParams = pathParams;
         this.codecs = codecs;
         this.handshakeRequest = handshakeRequest;
         this.creationTime = Instant.now();
+        this.trafficLogger = trafficLogger;
     }
 
     abstract WebSocketBase webSocket();
@@ -51,11 +55,15 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendText(String message) {
-        return UniHelper.toUni(webSocket().writeTextMessage(message));
+        Uni<Void> uni = UniHelper.toUni(webSocket().writeTextMessage(message));
+        return trafficLogger == null ? uni : uni.invoke(() -> {
+            trafficLogger.textMessageSent(this, message);
+        });
     }
 
     public Uni<Void> sendBinary(Buffer message) {
-        return UniHelper.toUni(webSocket().writeBinaryMessage(message));
+        Uni<Void> uni = UniHelper.toUni(webSocket().writeBinaryMessage(message));
+        return trafficLogger == null ? uni : uni.invoke(() -> trafficLogger.binaryMessageSent(this, message));
     }
 
     public <M> Uni<Void> sendText(M message) {

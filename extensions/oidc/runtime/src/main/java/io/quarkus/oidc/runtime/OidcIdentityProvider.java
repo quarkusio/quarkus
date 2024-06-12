@@ -431,7 +431,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<TokenVerificationResult> verifyCodeFlowAccessTokenUni(Map<String, Object> requestData,
             TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext, UserInfo userInfo) {
-        if (request.getToken() instanceof IdTokenCredential
+        if (isIdToken(request)
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
             final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
@@ -469,7 +469,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return introspectTokenUni(resolvedContext, token, false);
         } else if (resolvedContext.oidcConfig.jwks.resolveEarly) {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
-            final String nonce = (String) requestData.get(OidcConstants.NONCE);
+            final String nonce = tokenCred instanceof IdTokenCredential ? (String) requestData.get(OidcConstants.NONCE) : null;
             try {
                 LOG.debug("Verifying the JWT token with the local JWK keys");
                 return Uni.createFrom()

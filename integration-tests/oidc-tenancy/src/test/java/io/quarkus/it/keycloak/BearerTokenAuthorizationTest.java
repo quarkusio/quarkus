@@ -11,14 +11,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.htmlunit.CookieManager;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.WebClient;
@@ -310,9 +306,8 @@ public class BearerTokenAuthorizationTest {
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "tenant-web-app"));
-            List<Cookie> sessionCookieChunks = getSessionCookies(webClient, "tenant-web-app2");
-            assertNotNull(sessionCookieChunks);
-            assertEquals(2, sessionCookieChunks.size());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-web-app2");
+            assertNotNull(sessionCookie);
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -936,18 +931,5 @@ public class BearerTokenAuthorizationTest {
 
     private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session_rt" + (tenantId == null ? "_Default_test" : "_" + tenantId));
-    }
-
-    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
-        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "" : "_" + tenantId) + "_chunk_";
-        CookieManager cookieManager = webClient.getCookieManager();
-        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
-        for (Cookie cookie : cookieManager.getCookies()) {
-            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
-                sessionCookies.put(cookie.getName(), cookie);
-            }
-        }
-
-        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
     }
 }

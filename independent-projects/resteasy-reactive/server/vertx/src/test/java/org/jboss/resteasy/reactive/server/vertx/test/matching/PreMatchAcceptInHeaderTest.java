@@ -20,6 +20,7 @@ import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
@@ -123,6 +124,37 @@ public class PreMatchAcceptInHeaderTest {
                 .body(equalTo("text"));
     }
 
+    @Test
+    void responseEntityJsonWithoutAcceptToTextInFilter() {
+        given().accept("application/json")
+                .when()
+                .get("test/response")
+                .then()
+                .statusCode(200)
+                .body(containsString("\"text\""));
+    }
+
+    @Test
+    void responseEntityTextWithoutAcceptToTextInFilter() {
+        given().accept("text/plain")
+                .when()
+                .get("test/response")
+                .then()
+                .statusCode(200)
+                .body(equalTo("text"));
+    }
+
+    @Test
+    void responseEntityTextWithAcceptToTextInFilter() {
+        given().accept("application/json")
+                .header("x-set-accept-to-text", "true")
+                .when()
+                .get("test/response")
+                .then()
+                .statusCode(200)
+                .body(equalTo("text"));
+    }
+
     @Path("/test")
     public static class Resource {
 
@@ -151,6 +183,13 @@ public class PreMatchAcceptInHeaderTest {
         @Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
         public Entity entity() {
             return new Entity("text");
+        }
+
+        @GET
+        @Path("response")
+        @Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
+        public Response response() {
+            return Response.ok(new Entity("text")).build();
         }
     }
 

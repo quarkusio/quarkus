@@ -103,7 +103,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final List<ClassLoaderEventListener> classLoaderEventListeners;
 
     /**
-     * The element that holds resettable in-memory classses.
+     * The element that holds resettable in-memory classes.
      * <p>
      * A reset occurs when new transformers and in-memory classes are added to a ClassLoader. It happens after each
      * start in dev mode, however in general the reset resources will be the same. There are some cases where this is
@@ -244,7 +244,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
         }
         //TODO: in theory resources could have been added in dev mode
-        //but I don't thing this really matters for this code path
+        //but I don't think this really matters for this code path
         Set<URL> resources = new LinkedHashSet<>();
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
@@ -642,28 +642,34 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.debug("Failed to clean up DB drivers");
             }
         }
-        for (ClassPathElement element : elements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
-        }
-        for (ClassPathElement element : bannedElements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
-        }
-        ResourceBundle.clearCache(this);
+        closeClassPathElements(elements);
+        closeClassPathElements(bannedElements);
+        closeClassPathElements(parentFirstElements);
+        closeClassPathElements(lesserPriorityElements);
 
+        protectionDomains.clear();
+        definedPackages.clear();
+        resettableElement = null;
+        transformedClasses = null;
+        state = null;
+        closeTasks.clear();
+        classLoaderEventListeners.clear();
+
+        ResourceBundle.clearCache(this);
+    }
+
+    private static void closeClassPathElements(List<ClassPathElement> classPathElements) {
+        for (ClassPathElement element : classPathElements) {
+            //note that this is a 'soft' close
+            //all resources are closed, however the CL can still be used
+            //but after close no resources will be held past the scope of an operation
+            try (ClassPathElement ignored = element) {
+                //the close() operation is implied by the try-with syntax
+            } catch (Exception e) {
+                log.error("Failed to close " + element, e);
+            }
+        }
+        classPathElements.clear();
     }
 
     public boolean isClosed() {

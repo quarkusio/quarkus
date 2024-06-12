@@ -43,6 +43,10 @@ public final class ContainerRuntimeUtil {
      * @return a fully resolved {@link ContainerRuntime} indicating if Docker or Podman is available and in rootless mode or not
      * @throws IllegalStateException if no container runtime was found to build the image
      */
+    public static ContainerRuntime detectContainerRuntime() {
+        return detectContainerRuntime(true);
+    }
+
     public static ContainerRuntime detectContainerRuntime(ContainerRuntime... orderToCheckRuntimes) {
         return detectContainerRuntime(true, orderToCheckRuntimes);
     }

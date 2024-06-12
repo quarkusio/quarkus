@@ -208,7 +208,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     protected class OpenArchivePathTree extends DirectoryPathTree {
 
-        private final FileSystem fs;
+        // we don't make the field final as we want to nullify it on close
+        private volatile FileSystem fs;
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
         protected OpenArchivePathTree(FileSystem fs) {
@@ -336,6 +337,10 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                     throw e;
                 } finally {
                     lock.writeLock().unlock();
+                    // even when we close the fs, everything is kept as is in the fs instance
+                    // and typically the cen, which is quite large
+                    // let's make sure the fs is nullified for it to be garbage collected
+                    fs = null;
                 }
             }
         }

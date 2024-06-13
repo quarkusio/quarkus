@@ -139,7 +139,7 @@ triage:
     - id: hibernate-search
       labels: [area/hibernate-search]
       title: "hibernate.search"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta, yrodiere]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -147,8 +147,8 @@ triage:
         - integration-tests/hibernate-search
     - id: elasticsearch
       labels: [area/elasticsearch]
-      title: "elasticsearch"
-      notify: [gsmet, yrodiere, loicmathieu]
+      title: "(elasticsearch|opensearch)"
+      notify: [gsmet, marko-bekhta, yrodiere, loicmathieu]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -157,7 +157,7 @@ triage:
     - id: hibernate-validator
       labels: [area/hibernate-validator]
       title: "hibernate.validator"
-      notify: [gsmet, yrodiere]
+      notify: [gsmet, marko-bekhta, yrodiere]
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
         - extensions/hibernate-validator

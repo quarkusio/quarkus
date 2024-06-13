@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -81,6 +82,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final boolean defaultBean;
 
+    private final List<MethodInfo> aroundInvokes;
+
     // Following fields are only used by synthetic beans
 
     private final boolean removable;
@@ -95,7 +98,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String targetPackageName;
 
-    private final List<MethodInfo> aroundInvokes;
+    private final Integer startupPriority;
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
@@ -103,7 +106,7 @@ public class BeanInfo implements InjectionTargetInfo {
             Integer priority, Set<Type> unrestrictedTypes) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority, null, unrestrictedTypes);
+                targetPackageName, priority, null, unrestrictedTypes, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -112,7 +115,7 @@ public class BeanInfo implements InjectionTargetInfo {
             List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params, boolean isRemovable,
             boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier,
-            Set<Type> unrestrictedTypes) {
+            Set<Type> unrestrictedTypes, Integer startupPriority) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -152,6 +155,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.lifecycleInterceptors = Collections.emptyMap();
         this.forceApplicationClass = forceApplicationClass;
         this.targetPackageName = targetPackageName;
+        this.startupPriority = startupPriority;
         this.aroundInvokes = isInterceptor() || isDecorator() ? List.of() : Beans.getAroundInvokes(implClazz, beanDeployment);
     }
 
@@ -549,6 +553,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public boolean isDefaultBean() {
         return defaultBean;
+    }
+
+    public OptionalInt getStartupPriority() {
+        return startupPriority != null ? OptionalInt.of(startupPriority) : OptionalInt.empty();
     }
 
     /**
@@ -1076,6 +1084,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private Integer priority;
 
+        private Integer startupPriority;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -1170,6 +1180,11 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder startupPriority(Integer value) {
+            this.startupPriority = value;
+            return this;
+        }
+
         Builder creator(Consumer<MethodCreator> creatorConsumer) {
             this.creatorConsumer = creatorConsumer;
             return this;
@@ -1199,7 +1214,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
-                    identifier, null);
+                    identifier, null, startupPriority);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

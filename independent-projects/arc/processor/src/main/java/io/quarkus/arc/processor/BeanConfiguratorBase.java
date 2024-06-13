@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -54,6 +55,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected String targetPackageName;
     protected Integer priority;
     protected final Set<TypeAndQualifiers> injectionPoints;
+    protected Integer startupPriority;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -94,6 +96,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         priority = base.priority;
         injectionPoints.clear();
         injectionPoints.addAll(base.injectionPoints);
+        startupPriority = base.startupPriority;
         return self();
     }
 
@@ -253,6 +256,26 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
                 requiredQualifiers.length == 0 ? Set.of(AnnotationInstance.builder(Default.class).build())
                         : Set.of(requiredQualifiers)));
         return self();
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     *
+     * @param priority
+     * @return self
+     */
+    public THIS startup(int priority) {
+        this.startupPriority = priority;
+        return self();
+    }
+
+    /**
+     * Initialize the bean eagerly at application startup.
+     *
+     * @return self
+     */
+    public THIS startup() {
+        return startup(ObserverMethod.DEFAULT_PRIORITY);
     }
 
     public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {

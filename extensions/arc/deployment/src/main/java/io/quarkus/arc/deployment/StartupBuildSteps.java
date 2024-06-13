@@ -5,8 +5,8 @@ import static io.quarkus.arc.processor.Annotations.getAnnotations;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.context.spi.Contextual;
@@ -117,54 +117,51 @@ public class StartupBuildSteps {
 
         AnnotationStore annotationStore = observerRegistration.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
-        for (BeanInfo bean : observerRegistration.getContext().beans().withTarget()) {
-            // First check if the target is annotated with @Startup
-            // Class for class-based bean, method for producer method, etc.
-            AnnotationTarget target = bean.getTarget().get();
-            AnnotationInstance startupAnnotation = annotationStore.getAnnotation(target, STARTUP_NAME);
-            if (startupAnnotation != null) {
-                String id;
-                if (target.kind() == Kind.METHOD) {
-                    id = target.asMethod().declaringClass().name() + "#" + target.asMethod().toString();
-                } else if (target.kind() == Kind.FIELD) {
-                    id = target.asField().declaringClass().name() + "#" + target.asField().toString();
-                } else {
-                    id = target.asClass().name().toString();
+        for (BeanInfo bean : observerRegistration.getContext().beans()) {
+            if (bean.isSynthetic()) {
+                OptionalInt startupPriority = bean.getStartupPriority();
+                if (startupPriority.isPresent()) {
+                    registerStartupObserver(observerRegistration, bean, bean.getIdentifier(),
+                            startupPriority.getAsInt(), null);
                 }
-                AnnotationValue priority = startupAnnotation.value();
-                registerStartupObserver(observerRegistration, bean, id,
-                        priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, null);
-            }
-
-            List<MethodInfo> startupMethods = Collections.emptyList();
-            if (target.kind() == Kind.CLASS) {
-                // If the target is a class then collect all non-static non-producer no-args methods annotated with @Startup
-                startupMethods = new ArrayList<>();
-                for (MethodInfo method : target.asClass().methods()) {
-                    if (annotationStore.hasAnnotation(method, STARTUP_NAME)) {
-                        if (!method.isSynthetic()
-                                && !Modifier.isPrivate(method.flags())
-                                && !Modifier.isStatic(method.flags())
-                                && method.parametersCount() == 0
-                                && !annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                            startupMethods.add(method);
-                        } else {
-                            if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                                // Producer methods annotated with @Startup are valid and processed above
-                                LOG.warnf("Ignored an invalid @Startup method declared on %s: %s",
-                                        method.declaringClass().name(),
-                                        method);
+            } else {
+                // First check if the target is annotated with @Startup
+                // Class for class-based bean, method for producer method, etc.
+                AnnotationTarget target = bean.getTarget().get();
+                AnnotationInstance startupAnnotation = annotationStore.getAnnotation(target, STARTUP_NAME);
+                if (startupAnnotation != null) {
+                    AnnotationValue priority = startupAnnotation.value();
+                    registerStartupObserver(observerRegistration, bean, bean.getIdentifier(),
+                            priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, null);
+                }
+                if (target.kind() == Kind.CLASS) {
+                    // If the target is a class then collect all non-static non-producer no-args methods annotated with @Startup
+                    List<MethodInfo> startupMethods = new ArrayList<>();
+                    for (MethodInfo method : target.asClass().methods()) {
+                        if (annotationStore.hasAnnotation(method, STARTUP_NAME)) {
+                            if (!method.isSynthetic()
+                                    && !Modifier.isPrivate(method.flags())
+                                    && !Modifier.isStatic(method.flags())
+                                    && method.parametersCount() == 0
+                                    && !annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                                startupMethods.add(method);
+                            } else {
+                                if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                                    // Producer methods annotated with @Startup are valid and processed above
+                                    LOG.warnf("Ignored an invalid @Startup method declared on %s: %s",
+                                            method.declaringClass().name(),
+                                            method);
+                                }
                             }
                         }
                     }
-                }
-            }
-            if (!startupMethods.isEmpty()) {
-                for (MethodInfo method : startupMethods) {
-                    AnnotationValue priority = annotationStore.getAnnotation(method, STARTUP_NAME).value();
-                    registerStartupObserver(observerRegistration, bean,
-                            method.declaringClass().name() + "#" + method.toString(),
-                            priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, method);
+                    if (!startupMethods.isEmpty()) {
+                        for (MethodInfo method : startupMethods) {
+                            AnnotationValue priority = annotationStore.getAnnotation(method, STARTUP_NAME).value();
+                            registerStartupObserver(observerRegistration, bean, bean.getIdentifier() + method.toString(),
+                                    priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, method);
+                        }
+                    }
                 }
             }
         }

@@ -165,7 +165,7 @@
                                 <artifactItem>
                                     <groupId>org.eclipse.jgit</groupId>
                                     <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
-                                    <version>6.9.0.202403050737-r</version>
+                                    <version>6.10.0.202406032230-r</version>
                                     <type>jar</type>
                                     <destFileName>signed.jar</destFileName>
                                 </artifactItem>

@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.quarkus.runtime.LaunchMode;
@@ -17,13 +16,12 @@ import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
-@ApplicationScoped
-public class TestHttpAuthenticationMechanism implements HttpAuthenticationMechanism {
+abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     @Inject
     TestIdentityAssociation testIdentityAssociation;
 
-    volatile String authMechanism = null;
+    protected volatile String authMechanism = null;
 
     @PostConstruct
     public void check() {
@@ -52,11 +50,6 @@ public class TestHttpAuthenticationMechanism implements HttpAuthenticationMechan
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return authMechanism == null ? Uni.createFrom().nullItem()
                 : Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.TEST_SECURITY, authMechanism));
-    }
-
-    @Override
-    public int getPriority() {
-        return 3000;
     }
 
     void setAuthMechanism(String authMechanism) {

@@ -197,6 +197,15 @@ public class TenantResource {
                 .collect(Collectors.joining(" "));
     }
 
+    @AuthorizationCodeFlow
+    @GET
+    @Path("webapp-local-logout")
+    @RolesAllowed("user")
+    public String localLogout() {
+        oidcSession.logout().await().indefinitely();
+        return securityIdentity.getPrincipal().getName();
+    }
+
     private String getNameWebAppType(String name,
             String idTokenNameClaim,
             String idTokenNameClaimNotExpected) {

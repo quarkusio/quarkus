@@ -22,10 +22,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.*;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
@@ -62,6 +59,14 @@ public class MultipartResource {
 
     @RestClient
     MultipartChunksClient chunkClient;
+
+    @POST
+    @Path("/client/single-part")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Blocking
+    public String singlePart(@FormParam("part") EntityPart part) throws IOException {
+        return new String(part.getContent().readAllBytes());
+    }
 
     @GET
     @Path("/client/octet-stream")

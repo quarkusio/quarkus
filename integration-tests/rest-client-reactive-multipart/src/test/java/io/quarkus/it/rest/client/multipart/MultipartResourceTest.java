@@ -21,6 +21,27 @@ public class MultipartResourceTest {
     private static final String EXPECTED_CONTENT_TYPE_PART = "Content-Type: %s";
 
     @Test
+    public void shouldHandleSingleEntityPart() {
+        // @formatter:off
+        String body = """
+           --ABC
+           Content-Disposition: form-data; name="part"
+
+           Hello, World!
+           --ABC--
+        """.indent(0);
+
+        given()
+                .header("Content-Type", "multipart/form-data; boundary=ABC")
+                .body(body)
+        .when().post("/client/single-entity-part")
+        .then()
+                .statusCode(200)
+                .body(equalTo("Hello, World!"));
+        // @formatter:on
+    }
+
+    @Test
     public void shouldSendByteArrayAsBinaryFile() {
         // @formatter:off
         given()

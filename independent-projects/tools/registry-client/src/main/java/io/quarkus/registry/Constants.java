@@ -20,4 +20,6 @@ public interface Constants {
     String JSON = "json";
 
     String LAST_UPDATED = "last-updated";
+
+    String OFFERINGS = "offerings";
 }

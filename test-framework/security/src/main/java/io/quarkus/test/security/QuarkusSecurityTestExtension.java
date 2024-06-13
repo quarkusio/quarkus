@@ -26,7 +26,9 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         try {
             if (getAnnotationContainer(context).isPresent()) {
                 CDI.current().select(TestAuthController.class).get().setEnabled(true);
-                CDI.current().select(TestHttpAuthenticationMechanism.class).get().setAuthMechanism(null);
+                for (var testMechanism : CDI.current().select(AbstractTestHttpAuthenticationMechanism.class)) {
+                    testMechanism.setAuthMechanism(null);
+                }
                 var testIdentity = CDI.current().select(TestIdentityAssociation.class).get();
                 testIdentity.setTestIdentity(null);
                 testIdentity.setPathBasedIdentity(false);
@@ -66,8 +68,9 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                 SecurityIdentity userIdentity = augment(user.build(), allAnnotations);
                 CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(userIdentity);
                 if (!testSecurity.authMechanism().isEmpty()) {
-                    CDI.current().select(TestHttpAuthenticationMechanism.class).get()
-                            .setAuthMechanism(testSecurity.authMechanism());
+                    for (var testMechanism : CDI.current().select(AbstractTestHttpAuthenticationMechanism.class)) {
+                        testMechanism.setAuthMechanism(testSecurity.authMechanism());
+                    }
                     CDI.current().select(TestIdentityAssociation.class).get().setPathBasedIdentity(true);
                 }
             }

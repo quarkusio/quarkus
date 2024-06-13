@@ -139,6 +139,43 @@ If it becomes necessary to test security features using both `@TestSecurity` and
 mechanism when none is defined), then Basic Auth needs to be enabled explicitly,
 for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.auth.basic=true`.
 
+Similarly, if it becomes necessary to test security features using both `@TestSecurity` and Bearer token authentication,
+you can leverage both like in the example below:
+
+[source, java]
+----
+@Test
+@TestSecurity(user = "Bob")
+public void testSecurityMetaAnnotation {
+    RestAssured.given()
+            .auth().oauth2(getTokenForUser("Alice")) <1>
+            .get("hello")
+            .then()
+            .statusCode(200)
+            .body(Matchers.is("Hello Alice"));
+    RestAssured.given()
+            .get("hello")
+            .then()
+            .statusCode(200)
+            .body(Matchers.is("Hello Bob")); <2>
+}
+
+@Path("hello")
+public static class HelloResource {
+
+  @Inject
+  SecurityIdentity identity;
+
+  @Authenticated
+  @GET
+  public String sayHello() {
+       return "Hello " + identity.getPrincipal().getName();
+  }
+}
+----
+<1> Bearer token authentication mechanism is used, because a Bearer access token is sent with the HTTP request.
+<2> No authorization header is present, therefore the Test Security Extension creates user `Bob`.
+
 === Path-based authentication
 
 `@TestSecurity` can also be used when xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[authentication mechanisms must be combined].

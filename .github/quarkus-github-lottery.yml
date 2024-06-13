@@ -29,12 +29,12 @@ participants:
       maxIssues: 3
     maintenance:
       labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch"]
-      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      days: ["WEDNESDAY"]
       feedback:
         needed:
-          maxIssues: 4
+          maxIssues: 10
         provided:
-          maxIssues: 2
+          maxIssues: 10
       stale:
         maxIssues: 5
   - username: "gsmet"

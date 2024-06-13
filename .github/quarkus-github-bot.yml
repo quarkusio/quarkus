@@ -147,7 +147,7 @@ triage:
         - integration-tests/hibernate-search
     - id: elasticsearch
       labels: [area/elasticsearch]
-      title: "elasticsearch"
+      title: "(elasticsearch|opensearch)"
       notify: [gsmet, yrodiere, loicmathieu]
       notifyInPullRequest: true
       directories:

@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import jakarta.servlet.ServletContainerInitializer;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,6 +17,7 @@ public class ServletContainerInitializerTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(ServletContainerInitializer.class, TestSCI.class)
+                    .addAsResource(new StringAsset("index.html"), "META-INF/resources/index.html")
                     .addClasses(SCIInterface.class, SCIImplementation.class, TestSCI.class, SCIAnnotation.class,
                             AnnotatedSCIClass.class));
 

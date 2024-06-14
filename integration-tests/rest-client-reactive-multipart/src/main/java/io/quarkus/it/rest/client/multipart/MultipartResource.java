@@ -66,6 +66,10 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     public String singlePartDummy(@FormParam("part") EntityPart part) throws IOException {
+        String content = new String(part.getContent().readAllBytes());
+
+        if(!part.getFileName().orElse("").equals("file1.txt")) return "ERROR";
+        if(!"Hello, World!".equals(content)) return "ERROR";
         return "OK";
     }
 
@@ -74,7 +78,16 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     public String multiplePartsDummy(@FormParam("part") List<EntityPart> parts) throws IOException {
-        return "OK:" + parts.size();
+        if(parts.size() != 2) return "ERROR";
+        if(!parts.get(0).getFileName().orElse("").equals("file1.txt")) return "ERROR";
+        if(!parts.get(1).getFileName().orElse("").equals("file2.txt")) return "ERROR";
+
+        String content1 = new String(parts.get(0).getContent().readAllBytes());
+        String content2 = new String(parts.get(1).getContent().readAllBytes());
+        if(!"Hello, World!".equals(content1)) return "ERROR";
+        if(!"Hello, World!".equals(content2)) return "ERROR";
+
+        return "OK";
     }
 
     @GET

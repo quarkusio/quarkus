@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.multipart;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Optional;
 
 import jakarta.ws.rs.WebApplicationException;
@@ -21,7 +21,16 @@ public class EntityPartImpl implements EntityPart {
         this.headers = new UnmodifiableMultivaluedMap(value.getHeaders());
         this.mediaType = MediaType.valueOf(value.getHeaders().getFirst("Content-Type"));
         this.fileName = value.getFileName();
-        this.content = null;
+
+        try {
+            if (value.isFileItem()) {
+                this.content = new FileInputStream(value.getFileItem().getFile().toFile());
+            } else {
+                this.content = new ByteArrayInputStream(value.getValue().getBytes(Charset.defaultCharset()));
+            }
+        } catch (IOException e) {
+            throw new MultipartPartReadingException(e);
+        }
     }
 
     @Override
@@ -36,7 +45,7 @@ public class EntityPartImpl implements EntityPart {
 
     @Override
     public InputStream getContent() {
-        return null;
+        return this.content;
     }
 
     @Override

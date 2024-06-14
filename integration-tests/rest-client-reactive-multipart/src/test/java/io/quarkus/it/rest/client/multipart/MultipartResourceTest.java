@@ -25,7 +25,7 @@ public class MultipartResourceTest {
         // @formatter:off
         given()
                 .header("Content-Type", "multipart/form-data")
-                .multiPart("part", "Hello, World!")
+                .multiPart("part", "file1.txt", "Hello, World!".getBytes())
         .when().post("/client/single-entity-part")
         .then()
                 .statusCode(200)
@@ -38,12 +38,12 @@ public class MultipartResourceTest {
         // @formatter:off
         given()
                 .header("Content-Type", "multipart/form-data")
-                .multiPart("part", "Hello, World!")
-                .multiPart("part", "Hello, World!")
+                .multiPart("part", "file1.txt", "Hello, World!".getBytes())
+                .multiPart("part", "file2.txt", "Hello, World!".getBytes())
         .when().post("/client/multiple-entity-parts")
         .then()
                 .statusCode(200)
-                .body(equalTo("OK:2"));
+                .body(equalTo("OK"));
         // @formatter:on
     }
 

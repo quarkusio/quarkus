@@ -6,7 +6,7 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
-import static io.quarkus.runtime.configuration.PropertiesUtil.filterPropertiesInRoots;
+import static io.quarkus.runtime.configuration.PropertiesUtil.isPropertyInRoots;
 import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.PropertiesConfigSourceProvider.classPathSources;
@@ -79,9 +79,8 @@ import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SecretKeys;
@@ -387,25 +386,21 @@ public final class BuildTimeConfigurationReader {
     public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps,
             Map<String, String> platformProperties) {
         // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
+        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
         if (classLoader != null) {
             builder.forClassLoader(classLoader);
         }
 
-        final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
-        final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
-        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+        DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
+        DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
+        PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
         if (platformProperties.isEmpty()) {
             builder.withSources(ds1, ds2, pcs);
         } else {
-            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                props.findOrAdd(new io.smallrye.config.NameIterator(prop.getKey())).putRootValue(prop.getValue());
-            }
-            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                    Integer.MIN_VALUE + 1000, props);
+            // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+            // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+            DefaultValuesConfigSource platformConfigSource = new DefaultValuesConfigSource(platformProperties,
+                    "Quarkus platform", Integer.MIN_VALUE + 1000);
             builder.withSources(ds1, ds2, platformConfigSource, pcs);
         }
 
@@ -537,7 +532,7 @@ public final class BuildTimeConfigurationReader {
                 }
 
                 NameIterator ni = new NameIterator(propertyName);
-                if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
+                if (ni.hasNext() && PropertiesUtil.isPropertyInRoots(propertyName, registeredRoots)) {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
                     boolean knownProperty = matched != null;
@@ -1058,7 +1053,7 @@ public final class BuildTimeConfigurationReader {
                                 unprofiledProperty = property.substring(profileDot + 1);
                             }
                         }
-                        if (filterPropertiesInRoots(List.of(unprofiledProperty), registeredRoots).iterator().hasNext()) {
+                        if (PropertiesUtil.isPropertyInRoots(unprofiledProperty, registeredRoots)) {
                             sourcesProperties.add(property);
                         }
                     }
@@ -1188,7 +1183,7 @@ public final class BuildTimeConfigurationReader {
                         return config.getConfigValue(propertyName).getValue();
                     }
                     return null;
-                };
+                }
             });
             return builder.build();
         }

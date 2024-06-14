@@ -106,7 +106,7 @@ public class ServerEndpointIndexer
     private static final DotName ENTITY_PART_NAME = DotName.createSimple(EntityPart.class.getName());
 
     private static final Set<DotName> SUPPORTED_MULTIPART_FILE_TYPES = Set.of(FILE_DOT_NAME, PATH_DOT_NAME,
-            FILEUPLOAD_DOT_NAME);
+            FILEUPLOAD_DOT_NAME, ENTITY_PART_NAME);
     protected final EndpointInvokerFactory endpointInvokerFactory;
     protected final List<MethodScanner> methodScanners;
     protected final FieldInjectionIndexerExtension fieldInjectionHandler;
@@ -356,11 +356,6 @@ public class ServerEndpointIndexer
         String declaredType = declaredTypes.getDeclaredType();
 
         if (SUPPORTED_MULTIPART_FILE_TYPES.contains(DotName.createSimple(declaredType))) {
-            fileFormNames.add(name);
-        }
-
-        // this could be added above, but let's not assume all entity parts are files for now.
-        if (ENTITY_PART_NAME.equals(DotName.createSimple(declaredType))) {
             fileFormNames.add(name);
         }
 

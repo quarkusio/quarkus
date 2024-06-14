@@ -123,7 +123,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             final QuarkusCommandOutcome result = invoker.execute();
             if (!result.isSuccess()) {
                 throw new MojoExecutionException(
-                        "Failed to apply the updates.");
+                        "Failed to apply the updates: " + result.getMessage());
             }
         } catch (QuarkusUpdateExitErrorException e) {
             throw new MojoExecutionException(e.getMessage());

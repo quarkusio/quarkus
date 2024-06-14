@@ -488,12 +488,13 @@ public final class TestProcessor {
     }
 
     @BuildStep
-    void recordProperty(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+    void recordPropertyOverrides(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+        // Properties also set in io.quarkus.extest.deployment.BuildTimeCustomConfigBuilder. Ensure that these get overridden.
         runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem("recorded.property", "from-build-step"));
         runTimeConfigurationDefault
-                .produce(new RunTimeConfigurationDefaultBuildItem("recorded.profiled.property", "should-not-be-recorded"));
-        runTimeConfigurationDefault.produce(
-                new RunTimeConfigurationDefaultBuildItem("quarkus.mapping.rt.record-profiled", "should-not-be-recorded"));
+                .produce(new RunTimeConfigurationDefaultBuildItem("recorded.profiled.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("quarkus.mapping.rt.record-profiled", "from-build-step"));
     }
 
     public static final class Never implements BooleanSupplier {

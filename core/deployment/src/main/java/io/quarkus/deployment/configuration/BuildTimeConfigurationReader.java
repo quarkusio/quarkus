@@ -89,7 +89,6 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.AbstractConfigSource;
-import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * A configuration reader.
@@ -616,13 +615,7 @@ public final class BuildTimeConfigurationReader {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
                     if (configValue.getValue() != null) {
-                        String configName = configValue.getNameProfiled();
-                        // record the profile parent in the original form; if recorded in the active profile it may mess the profile ordering
-                        if (configName.equals("quarkus.config.profile.parent")) {
-                            runTimeValues.put(propertyName, configValue.getValue());
-                        } else {
-                            runTimeValues.put(configName, configValue.getValue());
-                        }
+                        runTimeValues.put(propertyName, configValue.getValue());
                     }
 
                     // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
@@ -1095,42 +1088,25 @@ public final class BuildTimeConfigurationReader {
                 properties.add(property);
             }
 
-            // TODO - Add better API to set an empty Profile, or no Profile at all
             // We also need an empty profile Config to record the properties that are not on the active profile
             builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)
                     .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
                     .addDiscoveredCustomizers()
-                    .withSources(sourceProperties)
-                    .withSources(new MapBackedConfigSource(
-                            "Reset Profile",
-                            Map.of("quarkus.profile", "",
-                                    "quarkus.config.profile.parent", "",
-                                    "quarkus.test.profile", "",
-                                    SMALLRYE_CONFIG_PROFILE, "",
-                                    SMALLRYE_CONFIG_PROFILE_PARENT, "",
-                                    Config.PROFILE, ""),
-                            Integer.MAX_VALUE) {
-                        @Override
-                        public Set<String> getPropertyNames() {
-                            return Collections.emptySet();
-                        }
-                    });
+                    .withSources(sourceProperties);
 
             List<String> profiles = config.getProfiles();
             for (String property : builder.build().getPropertyNames()) {
                 String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
                 // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
-                if (activeProperty.equals("quarkus.config.profile.parent")) {
-                    if (!activeProperty.equals(property)) {
-                        properties.remove(activeProperty);
-                        properties.add(property);
-                        continue;
-                    }
+                if (activeProperty.equals("quarkus.config.profile.parent") && !activeProperty.equals(property)) {
+                    properties.remove(activeProperty);
                 }
-                properties.add(activeProperty);
+                properties.add(property);
             }
 
             return properties;
@@ -1147,6 +1123,8 @@ public final class BuildTimeConfigurationReader {
          */
         private SmallRyeConfig getConfigForRuntimeRecording() {
             SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
             builder.getSources().clear();
             builder.getSourceProviders().clear();
             builder.setAddDefaultSources(false)

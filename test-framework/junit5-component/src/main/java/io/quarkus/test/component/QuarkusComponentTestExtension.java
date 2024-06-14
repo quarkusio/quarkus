@@ -1097,18 +1097,25 @@ public class QuarkusComponentTestExtension
             } else {
                 InstanceHandle<?> handle = container.instance(requiredType, qualifiers);
                 if (field.isAnnotationPresent(Inject.class)) {
+                    if (!handle.isAvailable()) {
+                        throw new IllegalStateException(String
+                                .format("The injected field [%s] expects a real component; but no matching component was registered",
+                                        field,
+                                        handle.getBean()));
+                    }
                     if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
                         throw new IllegalStateException(String
-                                .format("The injected field %s expects a real component; but obtained: %s", field,
+                                .format("The injected field [%s] expects a real component; but obtained: %s", field,
                                         handle.getBean()));
                     }
                 } else {
                     if (!handle.isAvailable()) {
                         throw new IllegalStateException(String
-                                .format("The injected field %s expects a mocked bean; but obtained null", field));
-                    } else if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                                .format("The injected field [%s] expects a mocked bean; but obtained null", field));
+                    }
+                    if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
                         throw new IllegalStateException(String
-                                .format("The injected field %s expects a mocked bean; but obtained: %s", field,
+                                .format("The injected field [%s] expects a mocked bean; but obtained: %s", field,
                                         handle.getBean()));
                     }
                 }

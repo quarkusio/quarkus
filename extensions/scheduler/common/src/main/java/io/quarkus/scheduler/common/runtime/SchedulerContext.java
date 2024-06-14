@@ -11,6 +11,8 @@ public interface SchedulerContext {
 
     List<ScheduledMethod> getScheduledMethods();
 
+    boolean forceSchedulerStart();
+
     @SuppressWarnings("unchecked")
     default ScheduledInvoker createInvoker(String invokerClassName) {
         try {

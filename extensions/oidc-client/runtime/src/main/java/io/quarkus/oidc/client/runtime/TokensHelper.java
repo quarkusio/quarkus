@@ -77,7 +77,9 @@ public class TokensHelper {
                     tokenRequestStateUpdater.set(TokensHelper.this, null);
                 }
             }
-        });
+        })
+                // prevent next subscriptions to trigger multiple times the HTTP request before the end of the first one
+                .memoize().indefinitely();
     }
 
     static class TokenRequestState {

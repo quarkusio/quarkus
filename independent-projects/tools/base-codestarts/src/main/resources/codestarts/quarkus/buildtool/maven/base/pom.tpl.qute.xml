@@ -140,7 +140,7 @@
                             <goal>build</goal>
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
-                            {#if generate-native}
+                            {#if generate-native and quarkus.platform.version.compareVersionTo("3.12") >= 0}
                             <goal>native-image-agent</goal>
                             {/if}
                         </goals>

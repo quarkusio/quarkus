@@ -1,5 +1,7 @@
 package io.quarkus.cli.config;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.SUCCESS_ICON;
+
 import java.io.BufferedWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,22 +12,28 @@ import java.util.concurrent.Callable;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "set")
+@Command(name = "set", header = "Sets a configuration in application.properties")
 public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
-    @CommandLine.Option(required = true, names = { "-n", "--name" }, description = "Configuration name")
+    @Parameters(index = "0", arity = "1", paramLabel = "NAME", description = "Configuration name")
     String name;
-    @CommandLine.Option(names = { "-a", "--value" }, description = "Configuration value")
+    @Parameters(index = "1", arity = "0..1", paramLabel = "VALUE", description = "Configuration value")
     String value;
-    @CommandLine.Option(names = { "-k", "--encrypt" }, description = "Encrypt value")
+    @Option(names = { "-k", "--encrypt" }, description = "Encrypt the configuration value")
     boolean encrypt;
 
     @Override
     public Integer call() throws Exception {
         Path properties = projectRoot().resolve("src/main/resources/application.properties");
         if (!properties.toFile().exists()) {
-            System.out.println("Could not find an application.properties file");
-            return 0;
+            output.warn("Could not find an application.properties file, creating one now!");
+            Path resources = projectRoot().resolve("src/main/resources");
+            Files.createDirectories(resources);
+            Files.createFile(resources.resolve("application.properties"));
+            output.info(SUCCESS_ICON + " @|bold application.properties|@ file created in @|bold src/main/resources|@");
         }
 
         List<String> lines = Files.readAllLines(properties);
@@ -37,9 +45,9 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
             if (value == null) {
                 value = findKey(lines, name).getValue();
             }
-            args.add("--secret=" + value);
+            args.add(value);
             if (value == null || value.length() == 0) {
-                System.out.println("Cannot encrypt an empty value");
+                output.error("Cannot encrypt an empty value");
                 return -1;
             }
 
@@ -64,25 +72,13 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
             }
         }
 
-        int nameLineNumber = -1;
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            if (line.startsWith(name + "=")) {
-                nameLineNumber = i;
-                break;
-            }
-        }
-
-        if (nameLineNumber != -1) {
-            if (value != null) {
-                System.out.println("Setting " + name + " to " + value);
-                lines.set(nameLineNumber, name + "=" + value);
-            } else {
-                System.out.println("Removing " + name);
-                lines.remove(nameLineNumber);
-            }
+        ConfigValue configValue = findKey(lines, name);
+        String actualValue = value != null ? value : "empty value";
+        if (configValue.getLineNumber() != -1) {
+            output.info(SUCCESS_ICON + " Setting configuration @|bold " + name + "|@ to value @|bold " + actualValue + "|@");
+            lines.set(configValue.getLineNumber(), name + "=" + (value != null ? value : ""));
         } else {
-            System.out.println("Adding " + name + " with " + value);
+            output.info(SUCCESS_ICON + " Adding configuration @|bold " + name + "|@ with value @|bold " + actualValue + "|@");
             lines.add(name + "=" + (value != null ? value : ""));
         }
 
@@ -93,17 +89,6 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
             }
         }
 
-        return 0;
-    }
-
-    public static ConfigValue findKey(List<String> lines, String name) {
-        ConfigValue configValue = ConfigValue.builder().withName(name).build();
-        for (int i = 0; i < lines.size(); i++) {
-            final String line = lines.get(i);
-            if (line.startsWith(configValue.getName() + "=")) {
-                return configValue.withValue(line.substring(name.length() + 1)).withLineNumber(i);
-            }
-        }
-        return configValue;
+        return CommandLine.ExitCode.OK;
     }
 }

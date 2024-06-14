@@ -6,22 +6,29 @@ import java.nio.file.Path;
 import java.util.Scanner;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.cli.CliDriver;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Parsing the stdout is not working on Github Windows, maybe because of the console formatting. "
+        +
+        "I did try it in a Windows box and it works fine. Regardless, this commands is tested indirectly" +
+        " in SetConfigTest, which is still enabled in Windows ")
 class EncryptTest {
     @TempDir
     Path tempDir;
 
     @Test
     void encrypt() throws Exception {
-        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "--secret=12345678");
+        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678");
         Scanner scanner = new Scanner(result.getStdout());
-        String secret = scanner.nextLine().split(": ")[1];
-        String encryptionKey = scanner.nextLine().split(": ")[1];
+        String[] split = scanner.nextLine().split(" ");
+        String secret = split[split.length - 8];
+        String encryptionKey = split[split.length - 1];
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
@@ -35,10 +42,11 @@ class EncryptTest {
 
     @Test
     void keyPlain() throws Exception {
-        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "--secret=12345678", "-f=plain",
+        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678", "-f=plain",
                 "--key=12345678");
         Scanner scanner = new Scanner(result.getStdout());
-        String secret = scanner.nextLine().split(": ")[1];
+        String[] split = scanner.nextLine().split(" ");
+        String secret = split[split.length - 1];
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()
@@ -62,9 +70,10 @@ class EncryptTest {
 
     @Test
     void keyBase64() throws Exception {
-        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "--secret=12345678", "--key=12345678");
+        CliDriver.Result result = CliDriver.execute(tempDir, "config", "encrypt", "12345678", "--key=12345678");
         Scanner scanner = new Scanner(result.getStdout());
-        String secret = scanner.nextLine().split(": ")[1];
+        String[] split = scanner.nextLine().split(" ");
+        String secret = split[split.length - 1];
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .addDefaultInterceptors()

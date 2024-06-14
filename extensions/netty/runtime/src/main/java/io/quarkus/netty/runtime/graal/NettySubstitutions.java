@@ -14,6 +14,7 @@ import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
@@ -164,7 +165,6 @@ final class Target_io_netty_handler_ssl_OpenSsl {
 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslServerContext")
 final class Target_io_netty_handler_ssl_JdkSslServerContext {
-
     @Alias
     Target_io_netty_handler_ssl_JdkSslServerContext(Provider provider,
             X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
@@ -172,8 +172,7 @@ final class Target_io_netty_handler_ssl_JdkSslServerContext {
             KeyManagerFactory keyManagerFactory, Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
             ApplicationProtocolConfig apn, long sessionCacheSize, long sessionTimeout,
             ClientAuth clientAuth, String[] protocols, boolean startTls,
-            String keyStore)
-            throws SSLException {
+            SecureRandom secureRandom, String keyStore) throws SSLException {
     }
 }
 
@@ -185,9 +184,8 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
             TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key,
             String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
             CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
-            long sessionCacheSize, long sessionTimeout, String keyStoreType)
-            throws SSLException {
-
+            long sessionCacheSize, long sessionTimeout, SecureRandom secureRandom,
+            String keyStoreType) throws SSLException {
     }
 }
 
@@ -229,10 +227,12 @@ final class Target_io_netty_handler_ssl_SslContext {
     @Substitute
     static SslContext newServerContextInternal(SslProvider provider, Provider sslContextProvider,
             X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
-            X509Certificate[] keyCertChain,
-            PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
-            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, long sessionCacheSize, long sessionTimeout,
-            ClientAuth clientAuth, String[] protocols, boolean startTls, boolean enableOcsp, String keyStoreType,
+            X509Certificate[] keyCertChain, PrivateKey key, String keyPassword,
+            KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
+            CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn,
+            long sessionCacheSize, long sessionTimeout, ClientAuth clientAuth,
+            String[] protocols, boolean startTls, boolean enableOcsp,
+            SecureRandom secureRandom, String keyStoreType,
             Map.Entry<SslContextOption<?>, Object>... ctxOptions) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
@@ -240,7 +240,7 @@ final class Target_io_netty_handler_ssl_SslContext {
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslServerContext(sslContextProvider,
                 trustCertCollection, trustManagerFactory, keyCertChain, key, keyPassword,
                 keyManagerFactory, ciphers, cipherFilter, apn, sessionCacheSize, sessionTimeout,
-                clientAuth, protocols, startTls, keyStoreType);
+                clientAuth, protocols, startTls, secureRandom, keyStoreType);
     }
 
     @Substitute
@@ -249,7 +249,7 @@ final class Target_io_netty_handler_ssl_SslContext {
             TrustManagerFactory trustManagerFactory, X509Certificate[] keyCertChain, PrivateKey key, String keyPassword,
             KeyManagerFactory keyManagerFactory, Iterable<String> ciphers, CipherSuiteFilter cipherFilter,
             ApplicationProtocolConfig apn, String[] protocols, long sessionCacheSize, long sessionTimeout,
-            boolean enableOcsp,
+            boolean enableOcsp, SecureRandom secureRandom,
             String keyStoreType, Map.Entry<SslContextOption<?>, Object>... options) throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
@@ -257,7 +257,7 @@ final class Target_io_netty_handler_ssl_SslContext {
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(sslContextProvider,
                 trustCert, trustManagerFactory, keyCertChain, key, keyPassword,
                 keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize,
-                sessionTimeout, keyStoreType);
+                sessionTimeout, secureRandom, keyStoreType);
     }
 
 }
@@ -540,7 +540,8 @@ final class Target_io_netty_handler_codec_http2_DelegatingDecompressorFrameListe
                 return null;
             } else {
                 ZlibWrapper wrapper = this.strict ? ZlibWrapper.ZLIB : ZlibWrapper.ZLIB_OR_NONE;
-                return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(), ctx.channel().config(),
+                return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(),
+                        ctx.channel().config(),
                         new ChannelHandler[] { ZlibCodecFactory.newZlibDecoder(wrapper) });
             }
         } else {

@@ -131,7 +131,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         PLATFORM_CLASS_LOADER = cl;
     }
 
-    private boolean closed;
+    private volatile boolean closing;
+    private volatile boolean closed;
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
@@ -171,6 +172,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * Returns true if the supplied class is a class that would be loaded parent-first
      */
     public boolean isParentFirst(String name) {
+        ensureOpen();
+
         if (name.startsWith(JAVA)) {
             return true;
         }
@@ -198,6 +201,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public void reset(Map<String, byte[]> generatedResources, Map<String, byte[]> transformedClasses) {
+        ensureOpen();
+
         if (resettableElement == null) {
             throw new IllegalStateException("Classloader is not resettable");
         }
@@ -210,10 +215,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
+        ensureOpen();
+
         return getResources(unsanitisedName, false);
     }
 
     public Enumeration<URL> getResources(String unsanitisedName, boolean parentAlreadyFoundResources) throws IOException {
+        ensureOpen();
+
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.enumeratingResourceURLs(unsanitisedName, this.name);
         }
@@ -356,6 +365,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public URL getResource(String unsanitisedName) {
+        ensureOpen();
+
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.gettingURLFromResource(unsanitisedName, this.name);
         }
@@ -404,6 +415,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public InputStream getResourceAsStream(String unsanitisedName) {
+        ensureOpen();
+
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.openResourceStream(unsanitisedName, this.name);
         }
@@ -455,6 +468,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      */
     @Override
     protected Class<?> findClass(String moduleName, String name) {
+        ensureOpen();
+
         try {
             return loadClass(name, false);
         } catch (ClassNotFoundException e) {
@@ -463,21 +478,29 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     protected URL findResource(String name) {
+        ensureOpen();
+
         return getResource(name);
     }
 
     @Override
     protected Enumeration<URL> findResources(String name) throws IOException {
+        ensureOpen();
+
         return getResources(name);
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
+        ensureOpen();
+
         return loadClass(name, false);
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        ensureOpen();
+
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.loadClass(name, this.name);
         }
@@ -574,10 +597,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public List<ClassPathElement> getElementsWithResource(String name) {
+        ensureOpen();
+
         return getElementsWithResource(name, false);
     }
 
     public List<ClassPathElement> getElementsWithResource(String name, boolean localOnly) {
+        ensureOpen();
+
         List<ClassPathElement> ret = new ArrayList<>();
         if (parent instanceof QuarkusClassLoader && !localOnly) {
             ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
@@ -591,6 +618,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public List<String> getLocalClassNames() {
+        ensureOpen();
+
         List<String> ret = new ArrayList<>();
         for (String name : getState().loadableResources.keySet()) {
             if (name.endsWith(".class")) {
@@ -602,10 +631,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
+        ensureOpen();
+
         return super.defineClass(name, b, off, len);
     }
 
     public void addCloseTask(Runnable task) {
+        ensureOpen();
+
         synchronized (closeTasks) {
             closeTasks.add(task);
         }
@@ -614,10 +647,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     @Override
     public void close() {
         synchronized (this) {
-            if (closed) {
+            if (closing) {
                 return;
             }
-            closed = true;
+            closing = true;
         }
         List<Runnable> tasks;
         synchronized (closeTasks) {
@@ -656,6 +689,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         classLoaderEventListeners.clear();
 
         ResourceBundle.clearCache(this);
+
+        closed = true;
     }
 
     private static void closeClassPathElements(List<ClassPathElement> classPathElements) {
@@ -673,7 +708,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public boolean isClosed() {
-        return closed;
+        return closing;
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException("This class loader has been closed");
+        }
     }
 
     @Override

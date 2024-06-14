@@ -129,7 +129,7 @@ public class SimpleScheduler implements Scheduler {
         }
 
         StartMode startMode = schedulerRuntimeConfig.startMode.orElse(StartMode.NORMAL);
-        if (startMode == StartMode.NORMAL && context.getScheduledMethods().isEmpty()) {
+        if (startMode == StartMode.NORMAL && context.getScheduledMethods().isEmpty() && !context.forceSchedulerStart()) {
             this.scheduledExecutor = null;
             LOG.info("No scheduled business methods found - Simple scheduler will not be started");
             return;

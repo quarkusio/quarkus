@@ -53,10 +53,6 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     public static final MethodDescriptor LIST_PAGED = ofMethod(PagingAndSortingRepository.class, "findAll",
             org.springframework.data.domain.Page.class, Pageable.class);
 
-    //ListPagingAndSortingRepository
-    public static final MethodDescriptor LIST_SORTED = ofMethod(ListPagingAndSortingRepository.class, "findAll",
-            List.class, org.springframework.data.domain.Sort.class);
-
     private static final Class<?> PANACHE_PAGE = io.quarkus.panache.common.Page.class;
 
     private static final Class<?> PANACHE_SORT = io.quarkus.panache.common.Sort.class;
@@ -83,7 +79,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     }
 
     //    CrudRepository Iterable<T> findAll();
-    public void implementListIterable(ClassCreator classCreator, String repositoryInterfaceName) {
+    public void implementIterable(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isCrudRepository(repositoryInterfaceName)
                 && !entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)) {
             MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class,
@@ -91,26 +87,29 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
             ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterfaceName);
             ResultHandle result = methodCreator.invokeInterfaceMethod(LIST_ITERABLE, repository);
             methodCreator.returnValue(result);
-            LOGGER.infof("Method code: %s ", methodCreator.getMethodDescriptor().toString());
+            LOGGER.debugf("Method code: %s ", methodCreator.getMethodDescriptor().toString());
             methodCreator.close();
         }
     }
 
     //ListCrudRepository List<T> findAll();
     public void implementList(ClassCreator classCreator, String repositoryInterfaceName) {
-        if (entityClassHelper.isListCrudRepository(repositoryInterfaceName)) {
+        if (entityClassHelper.isListCrudRepository(repositoryInterfaceName)
+                && !entityClassHelper.isListPagingAndSortingRepository(repositoryInterfaceName)) {
             MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class,
                     String.class, Map.class);
             ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterfaceName);
             ResultHandle result = methodCreator.invokeInterfaceMethod(LIST, repository);
             methodCreator.returnValue(result);
-            LOGGER.infof("Method code: %s ", methodCreator.toString());
+            LOGGER.debugf("Method code: %s ", methodCreator.toString());
             methodCreator.close();
         }
     }
 
     // PagingAndSortingRepository Page<T> findAll(Pageable pageable);
-    public void implementListPaged(ClassCreator classCreator, String repositoryInterfaceName) {
+    // PagingAndSortingRepository Iterable<T> findAll(Pageable pageable);
+    // ListPagingAndSortingRepository List<T> findAll(Sort sort);
+    public void implementPagedList(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)) {
             MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class,
                     io.quarkus.panache.common.Sort.class, String.class, Map.class);
@@ -124,26 +123,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
                     ofMethod(org.springframework.data.domain.Page.class, "getContent", List.class), resultPage);
 
             methodCreator.returnValue(result);
-            LOGGER.infof("Method code: %s ", methodCreator.toString());
-            methodCreator.close();
-        }
-    }
-
-    //ListPagingAndSortingRepository List<T> findAll(Sort sort);
-    public void implementListSort(ClassCreator classCreator, String repositoryInterfaceName) {
-        if (entityClassHelper.isListPagingAndSortingRepository(repositoryInterfaceName)) {
-            MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class,
-                    io.quarkus.panache.common.Sort.class, String.class, Map.class);
-            ResultHandle page = methodCreator.getMethodParam(0);
-            ResultHandle sort = methodCreator.getMethodParam(1);
-            ResultHandle pageable = toPageable(methodCreator, page, sort);
-            ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterfaceName);
-            ResultHandle resultPage = methodCreator.invokeInterfaceMethod(LIST_SORTED, repository, pageable);
-            ResultHandle result = methodCreator.invokeInterfaceMethod(
-                    ofMethod(org.springframework.data.domain.Page.class, "getContent", List.class), resultPage);
-
-            methodCreator.returnValue(result);
-            LOGGER.infof("Method code: %s ", methodCreator.toString());
+            LOGGER.debugf("Method code: %s ", methodCreator.toString());
             methodCreator.close();
         }
     }
@@ -163,7 +143,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         } else {
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 
@@ -175,7 +155,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
             ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterfaceName);
             ResultHandle result = methodCreator.invokeInterfaceMethod(LIST_BY_ID, repository, ids);
             methodCreator.returnValue(result);
-            LOGGER.infof("Method code: %s ", methodCreator.toString());
+            LOGGER.debugf("Method code: %s ", methodCreator.toString());
             methodCreator.close();
         }
     }
@@ -191,7 +171,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         } else {
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 
@@ -208,7 +188,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
 
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 
@@ -223,7 +203,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         } else {
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 
@@ -240,7 +220,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         } else {
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 
@@ -261,7 +241,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         } else {
             methodCreator.throwException(RuntimeException.class, "Method not implemented");
         }
-        LOGGER.infof("Method code: %s ", methodCreator.toString());
+        LOGGER.debugf("Method code: %s ", methodCreator.toString());
         methodCreator.close();
     }
 

@@ -23,21 +23,27 @@ public class MultipartResourceTest {
     @Test
     public void shouldHandleSingleEntityPart() {
         // @formatter:off
-        String body = """
-           --ABC
-           Content-Disposition: form-data; name="part"
-
-           Hello, World!
-           --ABC--
-        """.indent(0);
-
         given()
-                .header("Content-Type", "multipart/form-data; boundary=ABC")
-                .body(body)
+                .header("Content-Type", "multipart/form-data")
+                .multiPart("part", "Hello, World!")
         .when().post("/client/single-entity-part")
         .then()
                 .statusCode(200)
-                .body(equalTo("Hello, World!"));
+                .body(equalTo("OK"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldHandleMultipleEntityParts() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "multipart/form-data")
+                .multiPart("part", "Hello, World!")
+                .multiPart("part", "Hello, World!")
+        .when().post("/client/multiple-entity-parts")
+        .then()
+                .statusCode(200)
+                .body(equalTo("OK:2"));
         // @formatter:on
     }
 

@@ -45,6 +45,7 @@ import io.quarkus.it.rest.client.multipart.MultipartClient.WithPathAsTextFile;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 @Path("")
 public class MultipartResource {
@@ -61,11 +62,19 @@ public class MultipartResource {
     MultipartChunksClient chunkClient;
 
     @POST
-    @Path("/client/single-part")
+    @Path("/client/single-entity-part")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
-    public String singlePart(@FormParam("part") EntityPart part) throws IOException {
-        return new String(part.getContent().readAllBytes());
+    public String singlePartDummy(@FormParam("part") EntityPart part) throws IOException {
+        return "OK";
+    }
+
+    @POST
+    @Path("/client/multiple-entity-parts")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Blocking
+    public String multiplePartsDummy(@FormParam("part") List<EntityPart> parts) throws IOException {
+        return "OK:" + parts.size();
     }
 
     @GET

@@ -237,6 +237,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             Map<String, String> properties = (Map<String, String>) testResourceManager.getClass().getMethod("start")
                     .invoke(testResourceManager);
             startupAction.overrideConfig(properties);
+            startupAction.addRuntimeCloseTask(testResourceManager);
             hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
                     .invoke(testResourceManager);
 
@@ -276,7 +277,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
-            Closeable tm = testResourceManager;
             Closeable shutdownTask = new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -292,12 +292,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                                 shutdownTasks.pop().run();
                             }
                         } finally {
-                            try {
-                                tm.close();
-                            } finally {
-                                restorableSystemProperties.close();
-                                shutdownHangDetection();
-                            }
+                            restorableSystemProperties.close();
+                            shutdownHangDetection();
                         }
                         try {
                             TestClassIndexer.removeIndex(requiredTestClass);
@@ -1233,23 +1229,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
             }
             try {
+                // this will close the application, the test resources, the class loader...
                 resource.close();
             } catch (Throwable e) {
                 log.error("Failed to shutdown Quarkus", e);
             } finally {
                 runningQuarkusApplication = null;
                 clonePattern = null;
-                try {
-                    if (QuarkusTestExtension.this.originalCl != null) {
-                        setCCL(QuarkusTestExtension.this.originalCl);
-                    }
-                    testResourceManager.close();
-                } catch (Exception e) {
-                    log.error("Failed to shutdown Quarkus test resources", e);
-                } finally {
-                    Thread.currentThread().setContextClassLoader(old);
-                    ConfigProviderResolver.setInstance(null);
-                }
+                Thread.currentThread().setContextClassLoader(old);
+                ConfigProviderResolver.setInstance(null);
             }
         }
     }

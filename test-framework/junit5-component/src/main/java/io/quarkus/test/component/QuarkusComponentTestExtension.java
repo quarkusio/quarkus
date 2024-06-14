@@ -116,7 +116,6 @@ import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.test.InjectMock;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
@@ -425,8 +424,6 @@ public class QuarkusComponentTestExtension
                     .addDefaultInterceptors()
                     .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
                     .addDefaultSources()
-                    .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
-                    .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
                     .withSources(
                             new QuarkusComponentTestConfigSource(configuration.configProperties,
                                     configuration.configSourceOrdinal));

@@ -51,8 +51,11 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         if (projectJavaVersion.isEmpty()) {
             String instruction = invocation.getQuarkusProject().getBuildTool().isAnyGradle() ? "java>targetCompatibility"
                     : "maven.compiler.release property";
-            invocation.log().error(String.format("Project Java version not detected, set %s to fix the error.", instruction));
-            return QuarkusCommandOutcome.failure();
+            String error = String.format("Project Java version not detected, set %s in your build file to fix the error.",
+                    instruction);
+
+            invocation.log().error(error);
+            return QuarkusCommandOutcome.failure(error);
         } else {
             invocation.log().info("Detected project Java version: %s", projectJavaVersion);
         }
@@ -64,8 +67,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 invocation.getQuarkusProject().getExtensionsCatalog());
         final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
         if (projectQuarkusPlatformBom == null) {
-            invocation.log().error("The project does not import any Quarkus platform BOM");
-            return QuarkusCommandOutcome.failure();
+            String error = "The project does not import any Quarkus platform BOM";
+
+            invocation.log().error(error);
+            return QuarkusCommandOutcome.failure(error);
         }
         if (Objects.equals(projectQuarkusPlatformBom.getVersion(), targetPlatformVersion)) {
             ProjectInfoCommandHandler.logState(currentState, perModule, true, invocation.getQuarkusProject().log());

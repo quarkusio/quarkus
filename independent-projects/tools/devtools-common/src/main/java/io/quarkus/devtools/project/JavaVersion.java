@@ -19,7 +19,11 @@ public final class JavaVersion {
     }
 
     public JavaVersion(String version) {
-        this.version = version;
+        if (version != null && version.startsWith("1.")) {
+            this.version = version.substring(2);
+        } else {
+            this.version = version;
+        }
     }
 
     public boolean isEmpty() {

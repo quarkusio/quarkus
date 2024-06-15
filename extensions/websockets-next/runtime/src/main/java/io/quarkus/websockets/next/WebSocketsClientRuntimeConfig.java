@@ -58,4 +58,9 @@ public interface WebSocketsClientRuntimeConfig {
      */
     Optional<String> tlsConfigurationName();
 
+    /**
+     * Traffic logging config.
+     */
+    TrafficLoggingConfig trafficLogging();
+
 }

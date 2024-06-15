@@ -59,6 +59,11 @@ public interface WebSocketsServerRuntimeConfig {
      */
     Security security();
 
+    /**
+     * Traffic logging config.
+     */
+    TrafficLoggingConfig trafficLogging();
+
     interface Security {
 
         /**

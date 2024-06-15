@@ -523,18 +523,18 @@ For example, `OpenConnections#findByEndpointId(String)` makes it easy to find co
 
 === CDI events
 
-Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.ConnectionOpen` asynchronously when a new connection is opened.
-Moreover, a CDI event of type `WebSocketConnection` with qualifier `@io.quarkus.websockets.next.ConnectionClosed` is fired asynchronously when a connection is closed.
+Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Open` asynchronously when a new connection is opened.
+Moreover, a CDI event of type `WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Closed` is fired asynchronously when a connection is closed.
 
 [source, java]
 ----
 import jakarta.enterprise.event.ObservesAsync;
-import io.quarkus.websockets.next.ConnectionOpen;
+import io.quarkus.websockets.next.Open;
 import io.quarkus.websockets.next.WebSocketConnection;
 
 class MyBean {
 
-  void connectionOpened(@ObservesAsync @ConnectionOpen WebSocketConnection connection) { <1>
+  void connectionOpened(@ObservesAsync @Open WebSocketConnection connection) { <1>
      // This observer method is called when a connection is opened...
   }
 }
@@ -764,6 +764,29 @@ public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
 <2> Reject the HTTP upgrade. Initial HTTP handshake ends with the 400 Bad Request response status code.
 
 TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
+
+[[traffic-logging]]
+== Traffic logging 
+
+Quarkus can log the messages sent and received for debugging purposes. 
+To enable traffic logging, set the `quarkus.websockets-next.server.traffic-logging.enabled` configuration property to `true`.
+The payload of text messages is logged as well.
+However, the number of logged characters is limited.
+The default limit is 100, but you can change this limit with the `quarkus.websockets-next.server.traffic-logging.text-payload-limit` configuration property.
+
+TIP: The messages are only logged if the `DEBUG` level is enabled for the logger `io.quarkus.websockets.next.traffic`.
+
+.Example configuration
+[source, properties]
+----
+quarkus.websockets-next.server.traffic-logging.enabled=true <1>
+quarkus.websockets-next.server.traffic-logging.text-payload-limit=50 <2>
+
+quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
+----
+<1> Enables traffic logging.
+<2> Set the number of characters of a text message payload which will be logged.
+<3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
 
 [[websocket-next-configuration-reference]]
 == Configuration reference

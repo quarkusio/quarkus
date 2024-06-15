@@ -147,12 +147,15 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         return UniHelper.toUni(client.connect(connectOptions))
                 .map(ws -> {
                     String clientId = BasicWebSocketConnector.class.getName();
+                    TrafficLogger trafficLogger = TrafficLogger.forClient(config);
                     WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws,
                             codecs,
                             pathParams,
                             serverEndpointUri,
-                            headers);
-                    LOG.debugf("Client connection created: %s", connection);
+                            headers, trafficLogger);
+                    if (trafficLogger != null) {
+                        trafficLogger.connectionOpened(connection);
+                    }
                     connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
 
                     if (openHandler != null) {
@@ -162,8 +165,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                     if (textMessageHandler != null) {
                         ws.textMessageHandler(new Handler<String>() {
                             @Override
-                            public void handle(String event) {
-                                doExecute(connection, event, textMessageHandler);
+                            public void handle(String message) {
+                                if (trafficLogger != null) {
+                                    trafficLogger.textMessageReceived(connection, message);
+                                }
+                                doExecute(connection, message, textMessageHandler);
                             }
                         });
                     }
@@ -172,8 +178,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         ws.binaryMessageHandler(new Handler<Buffer>() {
 
                             @Override
-                            public void handle(Buffer event) {
-                                doExecute(connection, event, binaryMessageHandler);
+                            public void handle(Buffer message) {
+                                if (trafficLogger != null) {
+                                    trafficLogger.binaryMessageReceived(connection, message);
+                                }
+                                doExecute(connection, message, binaryMessageHandler);
                             }
                         });
                     }
@@ -202,6 +211,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
                         @Override
                         public void handle(Void event) {
+                            if (trafficLogger != null) {
+                                trafficLogger.connectionClosed(connection);
+                            }
                             if (closeHandler != null) {
                                 doExecute(connection, new CloseReason(ws.closeStatusCode(), ws.closeReason()), closeHandler);
                             }

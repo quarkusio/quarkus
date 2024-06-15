@@ -905,7 +905,7 @@ public class BearerTokenAuthorizationTest {
         return object.getString("access_token");
     }
 
-    private WebClient createWebClient() {
+    static WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         return webClient;
@@ -921,7 +921,7 @@ public class BearerTokenAuthorizationTest {
         return null;
     }
 
-    private Cookie getSessionCookie(WebClient webClient, String tenantId) {
+    static Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 

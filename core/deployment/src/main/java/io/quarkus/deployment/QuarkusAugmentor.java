@@ -1,6 +1,5 @@
 package io.quarkus.deployment;
 
-import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -181,9 +180,6 @@ public class QuarkusAugmentor {
                         .releaseConfig(deploymentClassLoader);
             } catch (Exception ignore) {
 
-            }
-            if (deploymentClassLoader instanceof Closeable) {
-                ((Closeable) deploymentClassLoader).close();
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             buildCloseables.close();

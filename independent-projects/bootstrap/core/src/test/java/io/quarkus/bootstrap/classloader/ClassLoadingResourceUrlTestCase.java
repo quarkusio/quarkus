@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.util.IoUtils;
 
 //see https://github.com/quarkusio/quarkus/issues/10943
@@ -41,7 +42,8 @@ public class ClassLoadingResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
-            ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
@@ -79,7 +81,8 @@ public class ClassLoadingResourceUrlTestCase {
         final Path tmpDir = Files.createTempDirectory(testPath);
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
-            final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            final ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
@@ -107,7 +110,8 @@ public class ClassLoadingResourceUrlTestCase {
         try {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
-            ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");
@@ -134,7 +138,8 @@ public class ClassLoadingResourceUrlTestCase {
         long start = System.currentTimeMillis();
         Thread.sleep(2);
 
-        ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+        ClassLoader cl = QuarkusClassLoader
+                .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                 .addElement(
                         new MemoryClassPathElement(Collections.singletonMap("a.txt", "hello".getBytes(StandardCharsets.UTF_8)),
                                 true))

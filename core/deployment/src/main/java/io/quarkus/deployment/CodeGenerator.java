@@ -25,6 +25,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
@@ -338,7 +339,7 @@ public class CodeGenerator {
 
             // we don't want to load config services from the current module because they haven't been compiled yet
             final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
-                    deploymentClassLoader, false);
+                    QuarkusClassLoaderType.DEPLOYMENT, deploymentClassLoader, false);
             if (!allowedConfigServices.isEmpty()) {
                 configClBuilder.addElement(new MemoryClassPathElement(allowedConfigServices, true));
             }

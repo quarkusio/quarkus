@@ -31,6 +31,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.QuarkusBootstrap.Mode;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.CompilationProvider;
@@ -220,6 +221,7 @@ public class TestSupport implements TestController {
                                 if (clBuilder == null) {
                                     clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First"
                                             + curatedApplication.getClassLoaderNameSuffix(),
+                                            QuarkusClassLoaderType.BOOTSTRAP,
                                             getClass().getClassLoader().getParent(), false);
                                 }
                                 clBuilder.addElement(ClassPathElement.fromDependency(d));

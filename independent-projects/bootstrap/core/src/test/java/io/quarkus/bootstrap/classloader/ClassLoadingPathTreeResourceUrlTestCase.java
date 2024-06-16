@@ -19,6 +19,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class ClassLoadingPathTreeResourceUrlTestCase {
@@ -36,7 +37,8 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
-            ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             URL res = cl.getResource("a.txt");
@@ -74,7 +76,8 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
         final Path tmpDir = Files.createTempDirectory(testPath);
         try {
             jar.as(ExplodedExporter.class).exportExploded(tmpDir.toFile(), "tmpcltest");
-            final ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            final ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(tmpDir.resolve("tmpcltest"), true))
                     .build();
 
@@ -102,7 +105,8 @@ public class ClassLoadingPathTreeResourceUrlTestCase {
         try {
             jar.as(ZipExporter.class).exportTo(path.toFile(), true);
 
-            ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            ClassLoader cl = QuarkusClassLoader
+                    .builder("test", QuarkusClassLoaderType.BOOTSTRAP, getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(path, true))
                     .build();
             URL res = cl.getResource("a.txt");

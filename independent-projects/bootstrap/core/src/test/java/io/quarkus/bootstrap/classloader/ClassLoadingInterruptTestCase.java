@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class ClassLoadingInterruptTestCase {
@@ -23,7 +24,8 @@ public class ClassLoadingInterruptTestCase {
         try {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
-            ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+            ClassLoader cl = QuarkusClassLoader.builder("test", QuarkusClassLoaderType.BOOTSTRAP,
+                    getClass().getClassLoader(), false)
                     .addElement(ClassPathElement.fromPath(path.resolve("tmp"), true))
                     .build();
             Class<?> c = cl.loadClass(InterruptClass.class.getName());

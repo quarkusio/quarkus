@@ -58,6 +58,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -638,6 +639,7 @@ public class QuarkusUnitTest
                 if (!allowTestClassOutsideDeployment) {
                     quarkusUnitTestClassLoader = QuarkusClassLoader
                             .builder("QuarkusUnitTest ClassLoader for " + extensionContext.getDisplayName(),
+                                    QuarkusClassLoaderType.BOOTSTRAP,
                                     getClass().getClassLoader(), false)
                             .addClassLoaderEventListeners(this.classLoadListeners)
                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();

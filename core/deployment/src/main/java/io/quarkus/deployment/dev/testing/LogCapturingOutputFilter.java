@@ -10,21 +10,19 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 
 public class LogCapturingOutputFilter implements BiPredicate<String, Boolean> {
     private static final Logger log = Logger.getLogger(LogCapturingOutputFilter.class);
 
-    private final CuratedApplication application;
     private final List<String> logOutput = new ArrayList<>();
     private final List<String> errorOutput = new ArrayList<>();
     private final boolean mergeErrorStream;
     private final boolean convertToHtml;
     private final Supplier<Boolean> finalPredicate;
 
-    public LogCapturingOutputFilter(CuratedApplication application, boolean mergeErrorStream, boolean convertToHtml,
+    public LogCapturingOutputFilter(boolean mergeErrorStream, boolean convertToHtml,
             Supplier<Boolean> finalPredicate) {
-        this.application = application;
         this.mergeErrorStream = mergeErrorStream;
         this.convertToHtml = convertToHtml;
         this.finalPredicate = finalPredicate;
@@ -50,8 +48,8 @@ public class LogCapturingOutputFilter implements BiPredicate<String, Boolean> {
             return true;
         }
         while (cl.getParent() != null) {
-            if (cl == application.getAugmentClassLoader()
-                    || cl == application.getBaseRuntimeClassLoader()) {
+            if (cl instanceof QuarkusClassLoader
+                    && (((QuarkusClassLoader) cl).isAugmentation() || ((QuarkusClassLoader) cl).isBaseRuntime())) {
                 //TODO: for convenience we save the log records as HTML rather than ANSI here
                 synchronized (logOutput) {
                     if (convertToHtml) {

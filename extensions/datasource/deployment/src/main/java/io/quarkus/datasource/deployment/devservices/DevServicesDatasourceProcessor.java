@@ -6,9 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -48,13 +46,9 @@ public class DevServicesDatasourceProcessor {
     private static final Logger log = Logger.getLogger(DevServicesDatasourceProcessor.class);
     private static final int DOCKER_PS_ID_LENGTH = 12;
 
-    // list of devservices properties we should not check for restart
-    // see issue #30390
-    private static final Set<String> EXCLUDED_PROPERTIES = Set.of("quarkus.datasource.devservices.enabled");
-
     static volatile List<RunningDevService> databases;
 
-    static volatile Map<String, String> cachedProperties;
+    static volatile Map<String, Object> cachedProperties;
 
     static volatile boolean first = true;
 
@@ -77,24 +71,9 @@ public class DevServicesDatasourceProcessor {
         //if not and the DB's have already started we just return
         if (databases != null) {
             boolean restartRequired = false;
-            if (!restartRequired) {
-                for (Map.Entry<String, String> entry : cachedProperties.entrySet()) {
-                    if (!Objects.equals(entry.getValue(),
-                            trim(ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null)))) {
-                        restartRequired = true;
-                        break;
-                    }
-                }
-            }
-            if (!restartRequired) {
-                //devservices properties may have been added
-                for (var name : ConfigProvider.getConfig().getPropertyNames()) {
-                    if (name.startsWith("quarkus.datasource.") && name.contains(".devservices.")
-                            && !cachedProperties.containsKey(name) && !EXCLUDED_PROPERTIES.contains(name)) {
-                        restartRequired = true;
-                        break;
-                    }
-                }
+            Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
+            if (!newDatasourceConfigs.equals(cachedProperties)) {
+                restartRequired = true;
             }
             if (!restartRequired) {
                 for (RunningDevService database : databases) {
@@ -172,18 +151,44 @@ public class DevServicesDatasourceProcessor {
             closeBuildItem.addCloseTask(closeTask, true);
         }
         databases = runningDevServices;
-        cachedProperties = propertiesMap;
+        cachedProperties = buildMapFromBuildConfig(dataSourcesBuildTimeConfig);
         for (RunningDevService database : databases) {
             devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
         }
         return new DevServicesDatasourceResultBuildItem(results);
     }
 
-    private String trim(String optional) {
-        if (optional == null) {
-            return null;
+    /**
+     * Returns a map of properties that can trigger a datasource dev service restart if modified.
+     * It builds this map from the datasource build time config.
+     */
+    private static Map<String, Object> buildMapFromBuildConfig(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
+        Map<String, Object> res = new HashMap<>();
+        for (var datasource : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
+            String name = datasource.getKey();
+            DataSourceBuildTimeConfig config = datasource.getValue();
+            res.put(name + ".db-kind", config.dbKind());
+            res.put(name + ".db-version", config.dbVersion());
+            res.put(name + ".devservices.command", config.devservices().command());
+            res.put(name + ".devservices.container-env", config.devservices().containerEnv());
+            res.put(name + ".devservices.container-properties.", config.devservices().containerProperties());
+            res.put(name + ".devservices.db-name", config.devservices().dbName());
+            res.put(name + ".devservices.image-name", config.devservices().imageName());
+            res.put(name + ".devservices.init-script-path", config.devservices().initScriptPath());
+            res.put(name + ".devservices.password", config.devservices().password());
+            res.put(name + ".devservices.port", config.devservices().port());
+            res.put(name + ".devservices.properties", config.devservices().properties());
+            res.put(name + ".devservices.reuse", config.devservices().reuse());
+            res.put(name + ".devservices.username", config.devservices().username());
+            res.put(name + ".devservices.volumes", config.devservices().volumes());
+            Optional<String> username = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(name, "username"), String.class);
+            res.put(name + ".username", username);
+            Optional<String> password = ConfigUtils.getFirstOptionalValue(
+                    DataSourceUtil.dataSourcePropertyKeys(name, "password"), String.class);
+            res.put(name + ".password", password);
         }
-        return optional.trim();
+        return res;
     }
 
     private RunningDevService startDevDb(

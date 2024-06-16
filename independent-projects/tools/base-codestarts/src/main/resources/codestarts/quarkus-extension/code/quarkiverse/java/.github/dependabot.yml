@@ -9,3 +9,6 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    ignore:
+      # don't update Quarkus as we want the extension to depend on the minimum working version, thus allowing for inclusion of the extension in tooling for older Quarkus versions
+      - dependency-name: io.quarkus:*

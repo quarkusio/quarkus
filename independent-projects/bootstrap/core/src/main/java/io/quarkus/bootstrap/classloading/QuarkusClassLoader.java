@@ -35,6 +35,8 @@ import org.jboss.logging.Logger;
  */
 public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private static final Logger log = Logger.getLogger(QuarkusClassLoader.class);
+    private static final Logger lifecycleLog = Logger.getLogger(QuarkusClassLoader.class.getName() + ".lifecycle");
+
     protected static final String META_INF_SERVICES = "META-INF/services/";
     protected static final String JAVA = "java.";
 
@@ -152,6 +154,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
                 : builder.classLoaderEventListeners;
         setDefaultAssertionStatus(builder.assertionsEnabled);
+
+        lifecycleLog.infof(new RuntimeException("Created to log a stacktrace"), "Creating class loader %s", name);
     }
 
     public static Builder builder(String name, ClassLoader parent, boolean parentFirst) {
@@ -652,6 +656,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
             closing = true;
         }
+
+        lifecycleLog.infof(new RuntimeException("Created to log a stacktrace"), "Closing class loader %s", name);
+
         List<Runnable> tasks;
         synchronized (closeTasks) {
             tasks = new ArrayList<>(closeTasks);
@@ -713,7 +720,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     private void ensureOpen() {
         if (closed) {
-            throw new IllegalStateException("This class loader has been closed");
+            throw new IllegalStateException("Class loader " + name + " has been closed and may not be accessed anymore");
         }
     }
 

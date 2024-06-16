@@ -86,7 +86,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     private LaunchResult doLaunch(ExtensionContext context, Class<? extends QuarkusTestProfile> selectedProfile,
             String[] arguments) throws Exception {
         ensurePrepared(context, selectedProfile);
-        LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication, false, false,
+        LogCapturingOutputFilter filter = new LogCapturingOutputFilter(false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
         try {

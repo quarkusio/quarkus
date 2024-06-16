@@ -136,7 +136,7 @@ public class JunitTestRunner {
             long start = System.currentTimeMillis();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             QuarkusClassLoader tcl = testApplication.createDeploymentClassLoader();
-            LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
+            LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(true, true,
                     TestSupport.instance().get()::isDisplayTestOutput);
             Thread.currentThread().setContextClassLoader(tcl);
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())

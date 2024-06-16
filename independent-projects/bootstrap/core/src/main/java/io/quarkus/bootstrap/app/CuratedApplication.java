@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.classloading.ClassPathResource;
 import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -194,6 +195,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Augmentation Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
+                    QuarkusClassLoaderType.AUGMENTATION,
                     quarkusBootstrap.getBaseClassLoader(), !quarkusBootstrap.isIsolateDeployment())
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
@@ -239,6 +241,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         if (baseRuntimeClassLoader == null) {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
+                    QuarkusClassLoaderType.BASE_RUNTIME,
                     quarkusBootstrap.getBaseClassLoader(), false)
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
@@ -317,6 +320,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         //first run, we need to build all the class loaders
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
                 .builder("Deployment Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
+                        QuarkusClassLoaderType.DEPLOYMENT,
                         getAugmentClassLoader(), false)
                 .addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners())
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
@@ -366,6 +370,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 + getClassLoaderNameSuffix()
                                 + " restart no:"
                                 + runtimeClassLoaderCount.getAndIncrement(),
+                        QuarkusClassLoaderType.RUNTIME,
                         getBaseRuntimeClassLoader(), false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);

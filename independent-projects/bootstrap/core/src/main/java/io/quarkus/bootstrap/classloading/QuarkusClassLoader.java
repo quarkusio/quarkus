@@ -30,6 +30,8 @@ import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
+
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
  */
@@ -88,6 +90,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private final String name;
+    private final QuarkusClassLoaderType type;
     private final List<ClassPathElement> elements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Package> definedPackages = new ConcurrentHashMap<>();
@@ -139,6 +142,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         // stacktraces become very ugly if we do that.
         super(builder.parent);
         this.name = builder.name;
+        this.type = builder.type;
         this.elements = builder.elements;
         this.bannedElements = builder.bannedElements;
         this.parentFirstElements = builder.parentFirstElements;
@@ -153,8 +157,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         setDefaultAssertionStatus(builder.assertionsEnabled);
     }
 
-    public static Builder builder(String name, ClassLoader parent, boolean parentFirst) {
-        return new Builder(name, parent, parentFirst);
+    public static Builder builder(String name, QuarkusClassLoaderType type, ClassLoader parent, boolean parentFirst) {
+        return new Builder(name, type, parent, parentFirst);
     }
 
     private String sanitizeName(String name) {
@@ -670,13 +674,34 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return closed;
     }
 
+    public boolean isBootstrap() {
+        return type == QuarkusClassLoaderType.BOOTSTRAP;
+    }
+
+    public boolean isAugmentation() {
+        return type == QuarkusClassLoaderType.AUGMENTATION;
+    }
+
+    public boolean isDeployment() {
+        return type == QuarkusClassLoaderType.DEPLOYMENT;
+    }
+
+    public boolean isBaseRuntime() {
+        return type == QuarkusClassLoaderType.BASE_RUNTIME;
+    }
+
+    public boolean isRuntime() {
+        return type == QuarkusClassLoaderType.RUNTIME;
+    }
+
     @Override
     public String toString() {
-        return "QuarkusClassLoader:" + name + "@" + Integer.toHexString(hashCode());
+        return "QuarkusClassLoader[type=" + type + ", name=" + name + ", id=" + Integer.toHexString(hashCode()) + "]";
     }
 
     public static class Builder {
         final String name;
+        final QuarkusClassLoaderType type;
         final ClassLoader parent;
         final List<ClassPathElement> elements = new ArrayList<>();
         final List<ClassPathElement> bannedElements = new ArrayList<>();
@@ -689,8 +714,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         boolean assertionsEnabled;
         private final ArrayList<ClassLoaderEventListener> classLoaderEventListeners = new ArrayList<>(5);
 
-        public Builder(String name, ClassLoader parent, boolean parentFirst) {
+        public Builder(String name, QuarkusClassLoaderType type, ClassLoader parent, boolean parentFirst) {
             this.name = name;
+            this.type = type;
             this.parent = parent;
             this.parentFirst = parentFirst;
         }
@@ -841,6 +867,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
         }
+    }
+
+    public enum QuarkusClassLoaderType {
+
+        BOOTSTRAP,
+        AUGMENTATION,
+        DEPLOYMENT,
+        BASE_RUNTIME,
+        RUNTIME;
     }
 
     @Override

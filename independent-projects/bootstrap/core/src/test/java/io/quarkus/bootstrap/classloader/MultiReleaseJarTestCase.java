@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader.QuarkusClassLoaderType;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class MultiReleaseJarTestCase {
@@ -51,7 +52,8 @@ public class MultiReleaseJarTestCase {
 
     @Test
     public void shouldLoadMultiReleaseJarOnJDK9Plus() throws IOException {
-        try (QuarkusClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
+        try (QuarkusClassLoader cl = QuarkusClassLoader.builder("test", QuarkusClassLoaderType.BOOTSTRAP,
+                getClass().getClassLoader(), false)
                 .addElement(ClassPathElement.fromPath(jarPath, true))
                 .build()) {
             URL resource = cl.getResource("foo.txt");

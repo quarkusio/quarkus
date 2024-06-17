@@ -16,7 +16,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
@@ -135,8 +137,26 @@ public class SimpleScheduler implements Scheduler {
             return;
         }
 
+        ThreadFactory tf = new ThreadFactory() {
+
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+            @Override
+            public Thread newThread(Runnable runnable) {
+                Thread t = new Thread(Thread.currentThread().getThreadGroup(), runnable,
+                        "quarkus-scheduler-trigger-check-" + threadNumber.getAndIncrement(),
+                        0);
+                if (t.isDaemon()) {
+                    t.setDaemon(false);
+                }
+                if (t.getPriority() != Thread.NORM_PRIORITY) {
+                    t.setPriority(Thread.NORM_PRIORITY);
+                }
+                return t;
+            }
+        };
         // This executor is used to check all registered triggers every second
-        this.scheduledExecutor = new JBossScheduledThreadPoolExecutor(1, new Runnable() {
+        this.scheduledExecutor = new JBossScheduledThreadPoolExecutor(1, tf, new Runnable() {
             @Override
             public void run() {
                 // noop
@@ -589,7 +609,7 @@ public class SimpleScheduler implements Scheduler {
             if (lastExecution.isPresent()) {
                 ZonedDateTime lastTruncated = lastExecution.get().truncatedTo(ChronoUnit.SECONDS);
                 if (zonedNow.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
-                    LOG.tracef("%s fired, last=", this, lastTruncated);
+                    LOG.tracef("%s fired, last=%s", this, lastTruncated);
                     lastFireTime = zonedNow;
                     return lastTruncated;
                 }

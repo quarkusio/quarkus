@@ -183,6 +183,15 @@ Finally, the `quarkus.http.auth.permission.authenticated` permission is set to t
 In this case, all paths are protected by a policy that ensures only `authenticated` users can access them.
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
 
+[NOTE]
+====
+When you do not configure a client secret with `quarkus.oidc.credentials.secret`,  it is recommended to configure `quarkus.oidc.token-state-manager.encryption-secret`.
+
+The `quarkus.oidc.token-state-manager.encryption-secret` enables the default token state manager to encrypt the user tokens in a browser cookie. If this key is not defined, and the `quarkus.oidc.credentials.secret` fallback is not configured, Quarkus uses a random key. A random key causes existing logins to be invalidated either on application restart or in environment with multiple instances of your application. Alternatively, encryption can also be disabled by setting `quarkus.oidc.token-state-manager.encryption-required` to `false`. However, you should disable secret encryption in development environments only.
+
+The encryption secret is recommended to be 32 chars long. For example, `quarkus.oidc.token-state-manager.encryption-secret=AyM1SysPpbyDfgZld3umj1qzKObwVMk`
+====
+
 == Start and configure the Keycloak server
 
 To start a Keycloak server, use Docker and run the following command:

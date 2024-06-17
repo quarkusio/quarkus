@@ -613,6 +613,14 @@ final class Target_SslContext {
     }
 }
 
+@TargetClass(className = "io.netty.util.internal.shaded.org.jctools.util.UnsafeLongArrayAccess")
+final class Target_io_netty_util_internal_shaded_org_jctools_util_UnsafeRefArrayAccess {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.ArrayIndexShift, declClass = Object[].class)
+    public static int LONG_ELEMENT_SHIFT;
+}
+
 class IsBouncyNotThere implements BooleanSupplier {
 
     @Override

@@ -146,7 +146,7 @@ public class PulsarDevServicesProcessor {
         }
 
         // Check if pulsar.serviceUrl is set
-        if (ConfigUtils.isPropertyPresent(PULSAR_CLIENT_SERVICE_URL)) {
+        if (ConfigUtils.isPropertyNonEmpty(PULSAR_CLIENT_SERVICE_URL)) {
             log.debug("Not starting Dev Services for Pulsar, the pulsar.serviceUrl is configured.");
             return null;
         }
@@ -216,7 +216,7 @@ public class PulsarDevServicesProcessor {
             if ((isIncoming || isOutgoing) && isConnector) {
                 String connectorValue = config.getValue(name, String.class);
                 boolean isPulsar = connectorValue.equalsIgnoreCase("smallrye-pulsar");
-                boolean hasServiceUrl = ConfigUtils.isPropertyPresent(name.replace(".connector", ".serviceUrl"));
+                boolean hasServiceUrl = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".serviceUrl"));
                 isConfigured = isPulsar && hasServiceUrl;
             }
 

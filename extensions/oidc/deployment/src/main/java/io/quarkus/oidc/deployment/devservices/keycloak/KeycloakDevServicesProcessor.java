@@ -336,11 +336,11 @@ public class KeycloakDevServicesProcessor {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
             return null;
         }
-        if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
+        if (ConfigUtils.isPropertyNonEmpty(AUTH_SERVER_URL_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
             return null;
         }
-        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+        if (ConfigUtils.isPropertyNonEmpty(PROVIDER_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }

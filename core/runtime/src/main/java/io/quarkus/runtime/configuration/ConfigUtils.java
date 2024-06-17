@@ -13,6 +13,7 @@ import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.runtime.LaunchMode;
@@ -109,6 +110,19 @@ public final class ConfigUtils {
      */
     public static boolean isPropertyPresent(String propertyName) {
         return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).isPropertyPresent(propertyName);
+    }
+
+    /**
+     * Checks if a property has non-empty value in the current Configuration.
+     * <p>
+     * This method is similar to {@link #isPropertyPresent(String)}, but does not ignore expression expansion.
+     *
+     * @param propertyName the property name.
+     * @return true if the property is present or false otherwise.
+     */
+    public static boolean isPropertyNonEmpty(String propertyName) {
+        ConfigValue configValue = ConfigProvider.getConfig().getConfigValue(propertyName);
+        return configValue.getValue() != null && !configValue.getValue().isEmpty();
     }
 
     /**

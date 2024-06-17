@@ -159,7 +159,7 @@ public class DevServicesRedisProcessor {
 
         String configPrefix = getConfigPrefix(name);
 
-        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + RedisConfig.HOSTS_CONFIG_NAME);
         if (!needToStart) {
             log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as hosts have been provided");

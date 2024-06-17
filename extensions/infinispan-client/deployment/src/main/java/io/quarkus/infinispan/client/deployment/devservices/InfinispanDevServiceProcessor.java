@@ -190,8 +190,8 @@ public class InfinispanDevServiceProcessor {
 
         String configPrefix = getConfigPrefix(clientName);
 
-        boolean needToStart = !ConfigUtils.isPropertyPresent(configPrefix + "hosts")
-                && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
+        boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts")
+                && !ConfigUtils.isPropertyNonEmpty(configPrefix + "server-list");
 
         if (!needToStart) {
             log.debug("Not starting Dev Services for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");

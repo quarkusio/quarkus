@@ -202,7 +202,7 @@ public class DevServicesKafkaProcessor {
         }
 
         // Check if kafka.bootstrap.servers is set
-        if (ConfigUtils.isPropertyPresent(KAFKA_BOOTSTRAP_SERVERS)) {
+        if (ConfigUtils.isPropertyNonEmpty(KAFKA_BOOTSTRAP_SERVERS)) {
             log.debug("Not starting dev services for Kafka, the kafka.bootstrap.servers is configured.");
             return null;
         }
@@ -295,7 +295,7 @@ public class DevServicesKafkaProcessor {
                     && "smallrye-kafka".equals(config.getOptionalValue(name, String.class).orElse("ignored"));
             boolean isConfigured = false;
             if ((isIncoming || isOutgoing) && isKafka) {
-                isConfigured = ConfigUtils.isPropertyPresent(name.replace(".connector", ".bootstrap.servers"));
+                isConfigured = ConfigUtils.isPropertyNonEmpty(name.replace(".connector", ".bootstrap.servers"));
             }
             if (!isConfigured) {
                 return true;

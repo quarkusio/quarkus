@@ -111,7 +111,6 @@ class SpringDataRestProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             ResourceMethodsImplementor methodsImplementor,
             IndexView index,
-            //            ResourcePropertiesProvider propertiesProvider,
             List<ClassInfo> repositoriesToImplement) {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
         ResourceImplementor resourceImplementor = new ResourceImplementor(methodsImplementor);

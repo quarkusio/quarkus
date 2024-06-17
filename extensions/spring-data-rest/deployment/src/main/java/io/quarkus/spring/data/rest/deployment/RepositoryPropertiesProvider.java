@@ -6,7 +6,6 @@ import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplemento
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST_ITERABLE;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST_PAGED;
-import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST_SORTED;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.SAVE_LIST;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.UPDATE;
 
@@ -34,8 +33,6 @@ public class RepositoryPropertiesProvider extends ResourcePropertiesProvider {
         methodPredicates.put("listPaged", methodInfo -> methodInfo.name().equals(LIST_PAGED.getName())
                 && methodInfo.parametersCount() == 1
                 && methodInfo.parameterType(0).name().equals(PAGEABLE));
-        methodPredicates.put("listSorted",
-                methodInfo -> methodInfo.name().equals(LIST_SORTED.getName()) && methodInfo.parameterTypes().isEmpty());
         methodPredicates.put("addAll", methodInfo -> methodInfo.name().equals(SAVE_LIST.getName()));
         methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.getName()));
         methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.getName()));

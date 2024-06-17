@@ -296,6 +296,10 @@ public class OidcCommonUtils {
         return clientSecretMethod(creds) == Secret.Method.POST_JWT && isClientJwtAuthRequired(creds);
     }
 
+    public static boolean isJwtAssertion(Credentials creds) {
+        return creds.getJwt().isAssertion();
+    }
+
     public static String clientSecret(Credentials creds) {
         return creds.secret.orElse(creds.clientSecret.value.orElseGet(fromCredentialsProvider(creds.clientSecret.provider)));
     }

@@ -361,6 +361,15 @@ public class OidcCommonConfig {
             @ConfigItem(defaultValue = "10")
             public int lifespan = 10;
 
+            /**
+             * If true then the client authentication token is a JWT bearer grant assertion. Instead of producing
+             * 'client_assertion'
+             * and 'client_assertion_type' form properties, only 'assertion' is produced.
+             * This option is only supported by the OIDC client extension.
+             */
+            @ConfigItem(defaultValue = "false")
+            public boolean assertion = false;
+
             public Optional<String> getSecret() {
                 return secret;
             }
@@ -439,6 +448,14 @@ public class OidcCommonConfig {
 
             public void setSource(Source source) {
                 this.source = source;
+            }
+
+            public boolean isAssertion() {
+                return assertion;
+            }
+
+            public void setAssertion(boolean assertion) {
+                this.assertion = assertion;
             }
 
         }

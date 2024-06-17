@@ -145,6 +145,7 @@ public class OidcClientImpl implements OidcClient {
                 request.putHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
+
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
         } else if (jwtBearerAuthentication) {
@@ -164,6 +165,16 @@ public class OidcClientImpl implements OidcClient {
             if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
                 body.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
                 body.add(OidcConstants.CLIENT_SECRET, jwt);
+            } else if (OidcCommonUtils.isJwtAssertion(oidcConfig.credentials)) {
+                if (!OidcConstants.JWT_BEARER_GRANT_TYPE.equals(body.get(OidcConstants.GRANT_TYPE))) {
+                    String errorMessage = String.format(
+                            "%s OidcClient wants to use JWT bearer grant assertion but has a wrong grant type %s configured."
+                                    + " You must set 'quarkus.oidc-client.grant.type' property to 'jwt'.",
+                            oidcConfig.getId().get(), body.get(OidcConstants.GRANT_TYPE));
+                    LOG.error(errorMessage);
+                    throw new OidcClientException(errorMessage);
+                }
+                body.add(OidcConstants.JWT_BEARER_GRANT_ASSERTION, jwt);
             } else {
                 body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
                 body.add(OidcConstants.CLIENT_ASSERTION, jwt);

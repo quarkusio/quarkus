@@ -610,12 +610,28 @@ Item find(Item item) {
 1. Specify the codec to use for both the deserialization of the incoming message
 2. Specify the codec to use for the serialization of the outgoing message
 
-== Handle Pong message
+== Ping/pong messages
 
-The `@OnPongMessage` annotation is used to consume pong messages.
-A websocket endpoint must declare at most one method annotated with `@OnPongMessage`.
+A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.2[ping message] may serve as a keepalive or to verify the remote endpoint.
+A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.3[pong message] is sent in response to a ping message and it must have an identical payload.
 
-The method must accept a single parameter of type `Buffer`:
+The server automatically responds to a ping message sent from the client.
+In other words, there is no need for `@OnPingMessage` callback declared on an endpoint.
+
+The server can send ping messages to a connected client.
+The `WebSocketConnection` declares methods to send ping messages; there is a non-blocking variant: `WebSocketConnection#sendPing(Buffer)` and a blocking variant: `WebSocketConnection#sendPingAndAwait(Buffer)`.
+By default, the ping messages are not sent automatically.
+However, the configuration property `quarkus.websockets-next.server.auto-ping-interval` can be used to set the interval after which, the server sends a ping message to a connected client automatically. 
+
+[source,properties]
+----
+quarkus.websockets-next.server.auto-ping-interval=2 <1>
+----
+<1> Sends a ping message to a connected client every 2 seconds.
+
+The `@OnPongMessage` annotation is used to define a callback that consumes pong messages sent from the client.
+An endpoint must declare at most one method annotated with `@OnPongMessage`.
+The callback method must return either `void` or `Uni<Void>`, and it must accept a single parameter of type `Buffer`.
 
 [source,java]
 ----
@@ -624,6 +640,8 @@ void pong(Buffer data) {
     // ....
 }
 ----
+
+NOTE: The server can also send unsolicited pong messages that may serve as a unidirectional heartbeat. There is a non-blocking variant: `WebSocketConnection#sendPong(Buffer)` and also a blocking variant: `WebSocketConnection#sendPongAndAwait(Buffer)`.
 
 [[websocket-next-security]]
 == Security

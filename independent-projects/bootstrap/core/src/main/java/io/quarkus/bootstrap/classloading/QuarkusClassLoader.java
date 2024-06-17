@@ -159,7 +159,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 : builder.classLoaderEventListeners;
         setDefaultAssertionStatus(builder.assertionsEnabled);
 
-        lifecycleLog.infof(new RuntimeException("Created to log a stacktrace"), "Creating class loader %s", name);
+        lifecycleLog.debugf(new RuntimeException("Created to log a stacktrace"), "Creating class loader %s", this);
     }
 
     public static Builder builder(String name, QuarkusClassLoaderType type, ClassLoader parent, boolean parentFirst) {
@@ -661,7 +661,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             closing = true;
         }
 
-        lifecycleLog.infof(new RuntimeException("Created to log a stacktrace"), "Closing class loader %s", name);
+        lifecycleLog.debugf(new RuntimeException("Created to log a stacktrace"), "Closing class loader %s", this);
 
         List<Runnable> tasks;
         synchronized (closeTasks) {
@@ -724,7 +724,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     private void ensureOpen() {
         if (closed) {
-            throw new IllegalStateException("Class loader " + name + " has been closed and may not be accessed anymore");
+            lifecycleLog.errorf(new RuntimeException("Created to log a stacktrace"),
+                    "Class loader %s has been closed and may not be accessed anymore", this);
         }
     }
 

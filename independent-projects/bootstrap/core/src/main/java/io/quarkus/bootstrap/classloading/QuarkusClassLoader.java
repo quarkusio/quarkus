@@ -695,7 +695,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         definedPackages.clear();
         resettableElement = null;
         transformedClasses = null;
-        state = null;
+        state.clear();
         closeTasks.clear();
         classLoaderEventListeners.clear();
 
@@ -921,6 +921,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.loadableResources = loadableResources;
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
+        }
+
+        void clear() {
+            // when the CL is closed, we make sure the resources are not loadable anymore
+            loadableResources.clear();
         }
     }
 

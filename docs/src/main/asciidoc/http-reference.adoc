@@ -421,6 +421,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |First line of the request                                                    | `%r`     | `%{REQUEST_LINE}`
 |HTTP status code of the response                                             | `%s`     | `%{RESPONSE_CODE}`
 |Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
+|Date and time as defined by a DateTimeFormatter compliant string             |          | `%{time,date_fime_formatter_string}`
 |Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
 |Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
 |Request relative path                                                        | `%R`     | `%{REQUEST_PATH}`

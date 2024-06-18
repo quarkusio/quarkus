@@ -1,8 +1,6 @@
 package io.quarkus.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
@@ -32,6 +30,7 @@ public class RecorderRuntimeConfigTest {
 
     @Test
     void runtimeConfig() {
+        // Make sure we get the recorded property with the highest priority (the profile property with test)
         assertEquals("from-application", config.getRawValue("recorded.property"));
         assertEquals("from-application", config.getRawValue("recorded.profiled.property"));
         assertEquals("from-application", config.getRawValue("quarkus.mapping.rt.record-profiled"));
@@ -42,9 +41,9 @@ public class RecorderRuntimeConfigTest {
         Optional<ConfigSource> configSource = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(configSource.isPresent());
         DefaultValuesConfigSource defaultValuesConfigSource = (DefaultValuesConfigSource) configSource.get();
-        assertNotNull(defaultValuesConfigSource.getValue("%test.recorded.profiled.property"));
-        assertNull(defaultValuesConfigSource.getValue("recorded.profiled.property"));
-        assertNotNull(defaultValuesConfigSource.getValue("%test.quarkus.mapping.rt.record-profiled"));
-        assertNull(defaultValuesConfigSource.getValue("quarkus.mapping.rt.record-profiled"));
+        assertEquals("from-application", defaultValuesConfigSource.getValue("%test.recorded.profiled.property"));
+        assertEquals("recorded", defaultValuesConfigSource.getValue("recorded.profiled.property"));
+        assertEquals("from-application", defaultValuesConfigSource.getValue("%test.quarkus.mapping.rt.record-profiled"));
+        assertEquals("recorded", defaultValuesConfigSource.getValue("quarkus.mapping.rt.record-profiled"));
     }
 }

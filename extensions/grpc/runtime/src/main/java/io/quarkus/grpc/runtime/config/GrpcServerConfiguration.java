@@ -58,7 +58,8 @@ public class GrpcServerConfiguration {
     /**
      * The max inbound message size in bytes.
      */
-    public @ConfigItem OptionalInt maxInboundMessageSize;
+    @ConfigItem
+    public OptionalInt maxInboundMessageSize;
 
     /**
      * The max inbound metadata size in bytes

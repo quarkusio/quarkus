@@ -30,7 +30,7 @@ public class PemWithoutKeyTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .add(new StringAsset(configuration), "application.properties"))
-            .assertException(t -> assertThat(t.getCause().getMessage()).contains("quarkus.tls.key-store.pem.0.key"));
+            .assertException(t -> assertThat(t.getMessage()).contains("quarkus.tls.key-store.pem.0.key"));
 
     @Test
     void test() throws KeyStoreException, CertificateParsingException {

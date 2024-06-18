@@ -198,7 +198,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
-        } else if (!forceStart && context.getScheduledMethods().isEmpty()) {
+        } else if (!forceStart && context.getScheduledMethods().isEmpty() && !context.forceSchedulerStart()) {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {

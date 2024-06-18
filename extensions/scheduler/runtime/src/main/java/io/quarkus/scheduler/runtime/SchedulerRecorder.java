@@ -16,7 +16,7 @@ import io.quarkus.scheduler.common.runtime.SchedulerContext;
 public class SchedulerRecorder {
 
     public Supplier<Object> createContext(SchedulerConfig config,
-            List<MutableScheduledMethod> scheduledMethods) {
+            List<MutableScheduledMethod> scheduledMethods, boolean forceSchedulerStart) {
         // Defensive design - make an immutable copy of the scheduled method metadata
         List<ScheduledMethod> metadata = immutableCopy(scheduledMethods);
         return new Supplier<Object>() {
@@ -32,6 +32,11 @@ public class SchedulerRecorder {
                     @Override
                     public List<ScheduledMethod> getScheduledMethods() {
                         return metadata;
+                    }
+
+                    @Override
+                    public boolean forceSchedulerStart() {
+                        return forceSchedulerStart;
                     }
                 };
             }

@@ -206,12 +206,12 @@ public class SpringDataJPAProcessor {
                     case SPRING_DATASOURCE_DATA:
                         notSupportedProperties = notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT
                                 + " could be used to load data instead of " + SPRING_DATASOURCE_DATA
-                                + " but it does not support either comma separated list of resources or resources with ant-style patterns as "
+                                + " but it does not support ant-style patterns as "
                                 + SPRING_DATASOURCE_DATA
-                                + " does, it accepts the name of the file containing the SQL statements to execute when when Hibernate ORM starts.\n";
+                                + " does, it accepts the name of files containing the SQL statements to execute when Hibernate ORM starts.\n";
                         break;
                     default:
-                        notSupportedProperties = notSupportedProperties + "\t- " + sp + "\n";
+                        notSupportedProperties = notSupportedProperties + "\t- " + sp + " does not have a Quarkus equivalent\n";
                         break;
                 }
             }

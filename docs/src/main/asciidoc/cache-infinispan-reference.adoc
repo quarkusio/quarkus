@@ -83,10 +83,84 @@ quarkus.cache.infinispan.client-name=another
 
 == Marshalling
 
-When interacting with Infinispan in Quarkus, you can easily marshal and unmarshal
-Java simple types when writing to or reading from the cache. However, when dealing
-with Plain Old Java Objects (POJOs), users of Infinispan need to provide the marshalling
-schema.
+When interacting with Infinispan in Quarkus, you can easily serialize and deserialize Java primitive types when storing or retrieving data from the cache. No additional marshalling configuration is required for Infinispan.
+
+[source, java]
+----
+@CacheResult(cacheName = "weather-cache") //<1>
+public String getDailyForecast(String dayOfWeek, int dayOfMonth, String city) { //<2>
+    return dayOfWeek + " will be " + getDailyResult(dayOfMonth % 4) + " in " + city;
+}
+----
+<1> Ask this method execution to be cached in the 'weather-cache'
+<2> The key combines `String` dayOfWeek, `int` dayOfMonth and `String` city. The associated value is of type `String`.
+
+Quarkus uses Protobuf for data serialization in Infinispan by default. Infinispan recommends using Protobuf as the preferred
+way to structure data. Therefore, when working with Plain Old Java Objects (POJOs), users need
+to supply the schema for marshalling in Infinispan.
+
+=== Marshalling Java types
+
+Let's say we want a composite Key using `java.time.LocalDate`.
+
+[source, java]
+----
+@CacheResult(cacheName = "weather-cache") //<1>
+public String getDailyForecast(LocalDate date, String city) { //<2>
+    return date.getDayOfWeek() + " will be " + getDailyResult(date.getDayOfMonth() % 4) + " in " + city;
+}
+----
+<1> Request that the response of this method execution be cached in 'weather-cache'
+<2> The key combines a `java.util.LocalDate` date and a `String` city. The associated value is of type 'String'.
+
+Since Infinispan serializes data by default using Protobuf in Quarkus, executing the code will result in the following error:
+
+[source, bash]
+----
+java.lang.IllegalArgumentException:
+No marshaller registered for object of Java type java.time.LocalDate
+----
+
+Protobuf does not inherently know how to marshal `java.time.LocalDate`. Fortunately, Protostream provides a straightforward solution to this problem using `@ProtoAdapter` and `@ProtoSchema`.
+
+[source, java]
+----
+@ProtoAdapter(LocalDate.class)
+public class LocalDateAdapter {
+    @ProtoFactory
+    LocalDate create(String localDate) {
+        return LocalDate.parse(localDate);
+    }
+
+    @ProtoField(1)
+    String getLocalDate(LocalDate localDate) {
+        return localDate.toString();
+    }
+}
+
+@ProtoSchema(includeClasses = LocalDateAdapter.class, schemaPackageName = "quarkus")
+public interface Schema extends GeneratedSchema {
+}
+----
+
+
+=== Marshalling your POJOs
+
+Just like with Java types, when using your POJOs as keys or values, you can follow this approach:
+
+[source, java]
+----
+@CacheResult(cacheName = "my-cache") //<1>
+public ExpensiveResponse requestApi(String id) { //<2>
+    // very expensive call
+
+    return new ExpensiveResponse(...);
+}
+----
+<1> Request that the response of this method execution be cached in 'my-cache'
+<2> The key is a `String`. The associated value is of type `org.acme.ExpensiveResponse`.
+
+In this case, you'll need to define the schema for your Java type using `@Proto` and `@ProtoSchema`. This schema can encompass all types and adapters used in your Quarkus application.
 
 [source, java]
 ----

@@ -27,7 +27,8 @@ We'll do that using a single Quarkus annotation.
 [NOTE]
 ====
 In this guide, we use the default Quarkus Cache backend (Caffeine).
-You can use Redis instead.
+You can use Infinispan or Redis instead.
+Refer to the xref:cache-infinispan-reference.adoc[Infinispan cache backend reference] to configure the Infinispan backend.
 Refer to the xref:cache-redis-reference.adoc[Redis cache backend reference] to configure the Redis backend.
 ====
 

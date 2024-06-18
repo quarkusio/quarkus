@@ -467,11 +467,21 @@ public class OidcCommonConfig {
         public static class Provider {
 
             /**
-             * The CredentialsProvider name, which should only be set if more than one CredentialsProvider is
+             * The CredentialsProvider bean name, which should only be set if more than one CredentialsProvider is
              * registered
              */
             @ConfigItem
             public Optional<String> name = Optional.empty();
+
+            /**
+             * The CredentialsProvider keyring name.
+             * The keyring name is only required when the CredentialsProvider being
+             * used requires the keyring name to look up the secret, which is often the case when a CredentialsProvider is
+             * shared by multiple extensions to retrieve credentials from a more dynamic source like a vault instance or secret
+             * manager
+             */
+            @ConfigItem
+            public Optional<String> keyringName = Optional.empty();
 
             /**
              * The CredentialsProvider client secret key
@@ -485,6 +495,14 @@ public class OidcCommonConfig {
 
             public void setName(String name) {
                 this.name = Optional.of(name);
+            }
+
+            public Optional<String> getKeyringName() {
+                return keyringName;
+            }
+
+            public void setKeyringName(String keyringName) {
+                this.keyringName = Optional.of(keyringName);
             }
 
             public Optional<String> getKey() {

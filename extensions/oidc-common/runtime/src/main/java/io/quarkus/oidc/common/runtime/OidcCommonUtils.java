@@ -319,10 +319,9 @@ public class OidcCommonUtils {
             public String get() {
                 if (provider.key.isPresent()) {
                     String providerName = provider.name.orElse(null);
+                    String keyringName = provider.keyringName.orElse(null);
                     CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(providerName);
-                    if (credentialsProvider != null) {
-                        return credentialsProvider.getCredentials(providerName).get(provider.key.get());
-                    }
+                    return credentialsProvider.getCredentials(keyringName).get(provider.key.get());
                 }
                 return null;
             }

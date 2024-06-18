@@ -1,32 +1,24 @@
 package io.quarkus.smallrye.openapi.deployment;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
 import org.jboss.jandex.Index;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mockito;
-
-import io.smallrye.openapi.runtime.scanner.spi.AnnotationScanner;
 
 class CustomPathExtensionTest {
-
-    AnnotationScanner scanner;
-
-    @BeforeEach
-    void setup() {
-        scanner = Mockito.mock(AnnotationScanner.class);
-    }
 
     @Test
     void testContextPathNotInvokedForEmptyPaths() {
         CustomPathExtension ext = new CustomPathExtension("/", "");
-        ext.processScannerApplications(scanner, Collections.emptyList());
-        Mockito.verify(scanner, Mockito.never()).setContextRoot(Mockito.anyString());
+        String contextRoot = ext.resolveContextRoot(Collections.emptyList());
+        assertNull(contextRoot);
     }
 
     @ParameterizedTest
@@ -38,8 +30,8 @@ class CustomPathExtensionTest {
     })
     void testContextPathGenerationWithoutApplicationPathAnnotation(String rootPath, String appPath, String expected) {
         CustomPathExtension ext = new CustomPathExtension(rootPath, appPath);
-        ext.processScannerApplications(scanner, Collections.emptyList());
-        Mockito.verify(scanner).setContextRoot(expected);
+        String contextRoot = ext.resolveContextRoot(Collections.emptyList());
+        assertEquals(expected, contextRoot);
     }
 
     @ParameterizedTest
@@ -56,8 +48,8 @@ class CustomPathExtensionTest {
         }
 
         CustomPathExtension ext = new CustomPathExtension(rootPath, appPath);
-        ext.processScannerApplications(scanner, List.of(Index.of(TestApp.class).getClassByName(TestApp.class)));
-        Mockito.verify(scanner, Mockito.times(times)).setContextRoot(times > 0 ? expected : Mockito.anyString());
+        String contextRoot = ext.resolveContextRoot(List.of(Index.of(TestApp.class).getClassByName(TestApp.class)));
+        assertEquals(expected, contextRoot);
     }
 
 }

@@ -32,6 +32,7 @@ import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.common.config.ContainerConfigUtil;
 import io.quarkus.observability.common.config.ModulesConfiguration;
+import io.quarkus.observability.deployment.devui.ObservabilityDevServicesConfigBuildItem;
 import io.quarkus.observability.devresource.Container;
 import io.quarkus.observability.devresource.DevResourceLifecycleManager;
 import io.quarkus.observability.devresource.DevResources;
@@ -74,7 +75,8 @@ class ObservabilityDevServiceProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig,
-            BuildProducer<DevServicesResultBuildItem> services) {
+            BuildProducer<DevServicesResultBuildItem> services,
+            BuildProducer<ObservabilityDevServicesConfigBuildItem> configBuildProducer) {
 
         if (!configuration.enabled()) {
             log.infof("Observability dev services are disabled in config");
@@ -146,6 +148,7 @@ class ObservabilityDevServiceProcessor {
 
                 devService = newDevService;
                 devServices.put(devId, newDevService);
+                configBuildProducer.produce(new ObservabilityDevServicesConfigBuildItem(newDevService.getConfig()));
             } catch (Throwable t) {
                 compressor.closeAndDumpCaptured();
                 throw new RuntimeException(t);

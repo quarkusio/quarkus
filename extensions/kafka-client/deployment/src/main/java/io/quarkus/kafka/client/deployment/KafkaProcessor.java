@@ -222,6 +222,7 @@ public class KafkaProcessor {
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         final Set<DotName> toRegister = new HashSet<>();
 
+        nativeLibs.produce(new NativeImageResourceBuildItem("kafka/kafka-version.properties"));
         collectImplementors(toRegister, indexBuildItem, Serializer.class);
         collectImplementors(toRegister, indexBuildItem, Deserializer.class);
         collectImplementors(toRegister, indexBuildItem, Partitioner.class);

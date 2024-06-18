@@ -2,11 +2,7 @@ package io.quarkus.it.rest.client.multipart;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +41,6 @@ import io.quarkus.it.rest.client.multipart.MultipartClient.WithPathAsTextFile;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
-import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 @Path("")
 public class MultipartResource {
@@ -62,33 +57,100 @@ public class MultipartResource {
     MultipartChunksClient chunkClient;
 
     @POST
-    @Path("/client/single-entity-part")
+    @Path("/client/single-entity-part-form-param")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     public String singlePartDummy(@FormParam("part") EntityPart part) throws IOException {
         String content = new String(part.getContent().readAllBytes());
 
-        if(!part.getFileName().orElse("").equals("file1.txt")) return "ERROR";
-        if(!"Hello, World!".equals(content)) return "ERROR";
+        if (!part.getFileName().orElse("").equals("file1.txt"))
+            return "ERROR";
+        if (!"Hello, World!".equals(content))
+            return "ERROR";
         return "OK";
     }
 
     @POST
-    @Path("/client/multiple-entity-parts")
+    @Path("/client/multiple-entity-parts-form-param")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     public String multiplePartsDummy(@FormParam("part") List<EntityPart> parts) throws IOException {
-        if(parts.size() != 2) return "ERROR";
-        if(!parts.get(0).getFileName().orElse("").equals("file1.txt")) return "ERROR";
-        if(!parts.get(1).getFileName().orElse("").equals("file2.txt")) return "ERROR";
+        if (parts.size() != 2)
+            return "ERROR";
+        if (!parts.get(0).getFileName().orElse("").equals("file1.txt"))
+            return "ERROR";
+        if (!parts.get(1).getFileName().orElse("").equals("file2.txt"))
+            return "ERROR";
 
         String content1 = new String(parts.get(0).getContent().readAllBytes());
         String content2 = new String(parts.get(1).getContent().readAllBytes());
-        if(!"Hello, World!".equals(content1)) return "ERROR";
-        if(!"Hello, World!".equals(content2)) return "ERROR";
+        if (!"Hello, World!".equals(content1))
+            return "ERROR";
+        if (!"Hello, World!".equals(content2))
+            return "ERROR";
 
         return "OK";
     }
+
+    @POST
+    @Path("/client/entity-part-message-body-reader")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Blocking
+    public String entityPartMessage(@FormParam("partA") EntityPart partA, @FormParam("partB") EntityPart partB)
+            throws IOException {
+        TestObject o1 = partA.getContent(TestObject.class);
+        TestObject o2 = partB.getContent(new GenericType<>(TestObject.class));
+        if (o1 == null || o2 == null)
+            return "ERROR";
+
+        if (!o1.text.equals("hello") || !o2.text.equals("world"))
+            return "ERROR";
+
+        return "OK";
+    }
+
+    public static class TestObject implements Serializable {
+        public String text;
+
+        public TestObject() {
+        }
+
+        public TestObject(String text) {
+            this.text = text;
+        }
+    }
+
+    /*
+     * This doesn't currently work but should be supported 'properly'.
+     *
+     * @POST
+     *
+     * @Path("/client/entity-parts-body-param")
+     *
+     * @Consumes(MediaType.MULTIPART_FORM_DATA)
+     *
+     * @Blocking
+     * public String entityPartsBodyParam(List<EntityPart> parts) throws IOException {
+     * if (parts.size() != 2)
+     * return "ERROR";
+     * EntityPart part1 = parts.get(0);
+     * EntityPart part2 = parts.get(1);
+     *
+     * if (!part1.getName().equals("partA"))
+     * return "ERROR";
+     * if (!part2.getName().equals("partB"))
+     * return "ERROR";
+     *
+     * String content1 = new String(part1.getContent().readAllBytes());
+     * String content2 = new String(part2.getContent().readAllBytes());
+     * if (!"Hello, World!".equals(content1))
+     * return "ERROR";
+     * if (!"Hello, World!".equals(content2))
+     * return "ERROR";
+     *
+     * return "OK";
+     * }
+     */
 
     @GET
     @Path("/client/octet-stream")

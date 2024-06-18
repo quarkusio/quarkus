@@ -365,8 +365,7 @@ public final class MultipartSupport {
             Collection<FormValue> partsForName = formData.get(formName);
             if (partsForName != null) {
                 for (FormValue partValue : partsForName) {
-                    // FIXME: use a real implementation of EntityPart.
-                    EntityPart part = new EntityPartImpl(partValue, formName);
+                    EntityPart part = new EntityPartImpl(context, partValue, formName);
                     result.add(part);
                 }
             }

@@ -47,10 +47,10 @@ public interface HibernateOrmConfigPersistenceUnit {
 
     // @formatter:off
     /**
-     * Path to a file containing the SQL statements to execute when Hibernate ORM starts.
+     * Paths to files containing the SQL statements to execute when Hibernate ORM starts.
      *
-     * The file is retrieved from the classpath resources,
-     * so it must be located in the resources directory (e.g. `src/main/resources`).
+     * The files are retrieved from the classpath resources,
+     * so they must be located in the resources directory (e.g. `src/main/resources`).
      *
      * The default value for this setting differs depending on the Quarkus launch mode:
      *
@@ -82,7 +82,7 @@ public interface HibernateOrmConfigPersistenceUnit {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigDocDefault("import.sql in DEV, TEST ; no-file otherwise")
+    @ConfigDocDefault("import.sql in dev and test modes ; no-file otherwise")
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**

@@ -280,12 +280,12 @@ public class ParserTest {
 
     @Test
     public void testTextNodeCollapse() {
-        TemplateImpl template = (TemplateImpl) Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
-        List<TemplateNode> rootNodes = template.root.blocks.get(0).nodes;
+        Template template = Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
+        List<TemplateNode> rootNodes = template.getNodes();
         assertEquals(3, rootNodes.size());
-        assertEquals("Hello\nworld!", ((TextNode) rootNodes.get(0)).getValue());
-        assertEquals(1, ((ExpressionNode) rootNodes.get(1)).getExpressions().size());
-        assertEquals("next", ((TextNode) rootNodes.get(2)).getValue());
+        assertEquals("Hello\nworld!", rootNodes.get(0).asText().getValue());
+        assertTrue(rootNodes.get(1).isExpression());
+        assertEquals("next", rootNodes.get(2).asText().getValue());
     }
 
     @Test

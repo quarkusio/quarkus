@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ public class FragmentTest {
         assertEquals(template.getFragment("another").getGeneratedId(), another.getGeneratedId());
         assertEquals("fragments.html", template.getFragment("another").getOriginalTemplate().getId());
         assertEquals(Set.of("foo_and_bar", "another"), template.getFragmentIds());
+        List<TemplateNode> anotherNodes = another.getNodes();
+        assertEquals(1, anotherNodes.size());
+        assertTrue(anotherNodes.get(0).isExpression());
     }
 
     @Test

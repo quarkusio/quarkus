@@ -753,17 +753,15 @@ public class QuteProcessor {
                     }
                 }
 
-                analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
-                        template.getParameterDeclarations(), path.getPath(), template.getFragmentIds()));
+                analysis.add(new TemplateAnalysis(null, template, path.getPath()));
             }
         }
 
         // Message bundle templates
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
-            analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(), template.getParameterDeclarations(), messageBundleMethod.getPathForAnalysis(),
-                    template.getFragmentIds()));
+            analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template,
+                    messageBundleMethod.getPathForAnalysis()));
         }
 
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
@@ -1500,7 +1498,8 @@ public class QuteProcessor {
             // However, this might result in confusing behavior when type-safe templates are used together with type-safe expressions.
             // But this should not be a common use case.
             ParameterDeclaration paramDeclaration = null;
-            for (ParameterDeclaration pd : templateAnalysis.getSortedParameterDeclarations()) {
+            for (ParameterDeclaration pd : TemplateAnalysis
+                    .getSortedParameterDeclarations(templateAnalysis.parameterDeclarations)) {
                 if (pd.getKey().equals(firstPartName)) {
                     paramDeclaration = pd;
                     break;

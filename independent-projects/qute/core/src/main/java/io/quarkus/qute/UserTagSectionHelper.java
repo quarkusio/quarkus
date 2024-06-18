@@ -49,6 +49,18 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         }
     }
 
+    public boolean isNestedContentNeeded() {
+        return isNestedContentNeeded;
+    }
+
+    public HtmlEscaper getHtmlEscaper() {
+        return htmlEscaper;
+    }
+
+    public String getItKey() {
+        return itKey;
+    }
+
     private boolean isNestedContent(Expression expr) {
         return expr.getParts().size() == 1 && expr.getParts().get(0).getName().equals(NESTED_CONTENT);
     }

@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -117,14 +118,12 @@ public interface Template {
     }
 
     /**
-     * If invoked upon a fragment instance then delegate to the defining template.
      *
      * @return an immutable list of expressions used in the template
      */
     List<Expression> getExpressions();
 
     /**
-     * If invoked upon a fragment instance then delegate to the defining template.
      *
      * @param predicate
      * @return the first expression matching the given predicate or {@code null} if no such expression is used in the template
@@ -191,6 +190,21 @@ public interface Template {
     default boolean isFragment() {
         return false;
     }
+
+    /**
+     * Returns the child nodes of the root node.
+     *
+     * @return the child nodes of the root node
+     */
+    List<TemplateNode> getNodes();
+
+    /**
+     * Returns all nodes of this template that match the given predicate.
+     *
+     * @param predicate
+     * @return the collection of nodes that match the given predicate
+     */
+    Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate);
 
     /**
      * A fragment represents a part of the template that can be treated as a separate template.

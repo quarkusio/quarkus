@@ -23,8 +23,14 @@ public class TextNode extends ResultNode implements TemplateNode {
         return result;
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
+    }
+
+    @Override
+    public Kind kind() {
+        return Kind.TEXT;
     }
 
     @Override
@@ -39,6 +45,11 @@ public class TextNode extends ResultNode implements TemplateNode {
     @Override
     public void process(Consumer<String> consumer) {
         consumer.accept(value);
+    }
+
+    @Override
+    public TextNode asText() {
+        return this;
     }
 
     @Override

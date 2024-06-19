@@ -420,6 +420,7 @@ public abstract class QuarkusDev extends QuarkusTask {
                 .debug(System.getProperty("debug"))
                 .debugHost(System.getProperty("debugHost"))
                 .debugPort(System.getProperty("debugPort"))
+                .applicationArgs(System.getProperty("quarkus.args"))
                 .suspend(System.getProperty("suspend"));
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
             builder.jvmArgs("-Dquarkus.console.basic=true")

@@ -55,7 +55,7 @@ public class WebDependencyLocatorProcessor {
                 .resolve(config.webRoot);
 
         if (Files.exists(web)) {
-            hotDeploymentWatchedProducer.produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + STAR));
+            hotDeploymentWatchedProducer.produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + STAR + STAR));
             // Find all css and js (under /app)
             Path app = web
                     .resolve(config.appRoot);
@@ -65,7 +65,8 @@ public class WebDependencyLocatorProcessor {
 
             if (Files.exists(app)) {
                 hotDeploymentWatchedProducer
-                        .produce(new HotDeploymentWatchedFileBuildItem(config.webRoot + SLASH + config.appRoot + SLASH + STAR));
+                        .produce(new HotDeploymentWatchedFileBuildItem(
+                                config.webRoot + SLASH + config.appRoot + SLASH + STAR + STAR));
                 try (Stream<Path> appstream = Files.walk(app)) {
                     appstream.forEach(path -> {
                         if (Files.isRegularFile(path) && path.toString().endsWith(DOT_CSS)) {
@@ -144,15 +145,16 @@ public class WebDependencyLocatorProcessor {
             try (StringWriter sw = new StringWriter()) {
                 if (!cssFiles.isEmpty()) {
                     for (Path css : cssFiles) {
-                        sw.write(TAB2 + "<link href='" + css.toString() + "' rel='stylesheet'>" + NL);
+                        sw.write(TAB2 + "<link href='" + css.toString().replace("\\", "/") + "' rel='stylesheet'>"
+                                + System.lineSeparator());
                     }
                 }
                 sw.write(TAB2 + IMPORTMAP_REPLACEMENT);
                 if (!jsFiles.isEmpty()) {
-                    sw.write(NL);
-                    sw.write(TAB2 + "<script type='module'>" + NL);
+                    sw.write(System.lineSeparator());
+                    sw.write(TAB2 + "<script type='module'>" + System.lineSeparator());
                     for (Path js : jsFiles) {
-                        sw.write(TAB2 + TAB + "import '" + js.toString() + "';" + NL);
+                        sw.write(TAB2 + TAB + "import '" + js.toString().replace("\\", "/") + "';" + System.lineSeparator());
                     }
                     sw.write(TAB2 + "</script>");
                 }
@@ -321,6 +323,4 @@ public class WebDependencyLocatorProcessor {
     private static final String DOT_HTML = ".html";
     private static final String DOT_CSS = ".css";
     private static final String DOT_JS = ".js";
-
-    private static final String NL = "\n";
 }

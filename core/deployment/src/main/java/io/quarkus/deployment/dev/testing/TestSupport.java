@@ -1,5 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -512,6 +513,35 @@ public class TestSupport implements TestController {
      * We manually check for application.properties changes and apply them.
      */
     private void handleApplicationPropertiesChange() {
+        String includeTags = null;
+        String excludeTags = null;
+        String includePattern = null;
+        String excludePattern = null;
+        String includeEngines = null;
+        String excludeEngines = null;
+        String testType = null;
+
+        // Interpreting .env file relatively naively
+        Path dotEnvPath = Path.of(System.getProperty("user.dir"), ".env");
+
+        if (Files.isReadable(dotEnvPath)) {
+            Properties dotEnvProperties = new Properties();
+            try (BufferedReader reader = Files.newBufferedReader(dotEnvPath)) {
+                dotEnvProperties.load(reader);
+                includeTags = dotEnvProperties.getProperty("QUARKUS_TEST_INCLUDE_TAGS");
+                excludeTags = dotEnvProperties.getProperty("QUARKUS_TEST_EXCLUDE_TAGS");
+                includePattern = dotEnvProperties.getProperty("QUARKUS_TEST_INCLUDE_PATTERN");
+                excludePattern = dotEnvProperties.getProperty("QUARKUS_TEST_EXCLUDE_PATTERN");
+                includeEngines = dotEnvProperties.getProperty("QUARKUS_TEST_INCLUDE_ENGINES");
+                excludeEngines = dotEnvProperties.getProperty("QUARKUS_TEST_EXCLUDE_ENGINES");
+                testType = dotEnvProperties.getProperty("QUARKUS_TEST_TYPE");
+            } catch (IOException e) {
+                log.warnf(e, "Unable to parse .env file %s, ignoring", dotEnvPath);
+            }
+        }
+
+        // Looking for an application.properties, note that we don't handle application.yml here
+        // so at some point, we will need to find a better solution
         for (Path rootPath : curatedApplication.getQuarkusBootstrap().getApplicationRoot()) {
             Path appProps = rootPath.resolve("application.properties");
             if (Files.exists(appProps)) {
@@ -521,78 +551,93 @@ public class TestSupport implements TestController {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                String includeTags = p.getProperty("quarkus.test.include-tags");
-                String excludeTags = p.getProperty("quarkus.test.exclude-tags");
-                String includePattern = p.getProperty("quarkus.test.include-pattern");
-                String excludePattern = p.getProperty("quarkus.test.exclude-pattern");
-                String includeEngines = p.getProperty("quarkus.test.include-engines");
-                String excludeEngines = p.getProperty("quarkus.test.exclude-engines");
-                String testType = p.getProperty("quarkus.test.type");
-                if (!firstRun) {
-                    if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
-                        if (includeTags == null) {
-                            this.includeTags = Collections.emptyList();
-                        } else {
-                            this.includeTags = Arrays.stream(includeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
-                        if (excludeTags == null) {
-                            this.excludeTags = Collections.emptyList();
-                        } else {
-                            this.excludeTags = Arrays.stream(excludeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
-                        if (includePattern == null) {
-                            include = null;
-                        } else {
-                            include = Pattern.compile(includePattern);
-                        }
-                    }
-                    if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
-                        if (excludePattern == null) {
-                            exclude = null;
-                        } else {
-                            exclude = Pattern.compile(excludePattern);
-                        }
-                    }
-                    if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
-                        if (includeEngines == null) {
-                            this.includeEngines = Collections.emptyList();
-                        } else {
-                            this.includeEngines = Arrays.stream(includeEngines.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
-                        if (excludeEngines == null) {
-                            this.excludeEngines = Collections.emptyList();
-                        } else {
-                            this.excludeEngines = Arrays.stream(excludeEngines.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(testType, appPropertiesTestType)) {
-                        if (testType == null) {
-                            this.testType = TestType.ALL;
-                        } else {
-                            this.testType = Converters.getImplicitConverter(TestType.class).convert(testType);
-                        }
-                    }
+                if (includeTags == null) {
+                    includeTags = p.getProperty("quarkus.test.include-tags");
                 }
-                appPropertiesIncludeTags = includeTags;
-                appPropertiesExcludeTags = excludeTags;
-                appPropertiesIncludePattern = includePattern;
-                appPropertiesExcludePattern = excludePattern;
-                appPropertiesIncludeEngines = includeEngines;
-                appPropertiesExcludeEngines = excludeEngines;
-                appPropertiesTestType = testType;
+                if (excludeTags == null) {
+                    excludeTags = p.getProperty("quarkus.test.exclude-tags");
+                }
+                if (includePattern == null) {
+                    includePattern = p.getProperty("quarkus.test.include-pattern");
+                }
+                if (excludePattern == null) {
+                    excludePattern = p.getProperty("quarkus.test.exclude-pattern");
+                }
+                if (includeEngines == null) {
+                    includeEngines = p.getProperty("quarkus.test.include-engines");
+                }
+                if (excludeEngines == null) {
+                    excludeEngines = p.getProperty("quarkus.test.exclude-engines");
+                }
+                if (testType == null) {
+                    testType = p.getProperty("quarkus.test.type");
+                }
                 break;
             }
         }
+
+        if (!firstRun) {
+            if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
+                if (includeTags == null) {
+                    this.includeTags = Collections.emptyList();
+                } else {
+                    this.includeTags = Arrays.stream(includeTags.split(",")).map(String::trim)
+                            .collect(Collectors.toList());
+                }
+            }
+            if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
+                if (excludeTags == null) {
+                    this.excludeTags = Collections.emptyList();
+                } else {
+                    this.excludeTags = Arrays.stream(excludeTags.split(",")).map(String::trim)
+                            .collect(Collectors.toList());
+                }
+            }
+            if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
+                if (includePattern == null) {
+                    include = null;
+                } else {
+                    include = Pattern.compile(includePattern);
+                }
+            }
+            if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
+                if (excludePattern == null) {
+                    exclude = null;
+                } else {
+                    exclude = Pattern.compile(excludePattern);
+                }
+            }
+            if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
+                if (includeEngines == null) {
+                    this.includeEngines = Collections.emptyList();
+                } else {
+                    this.includeEngines = Arrays.stream(includeEngines.split(",")).map(String::trim)
+                            .collect(Collectors.toList());
+                }
+            }
+            if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
+                if (excludeEngines == null) {
+                    this.excludeEngines = Collections.emptyList();
+                } else {
+                    this.excludeEngines = Arrays.stream(excludeEngines.split(",")).map(String::trim)
+                            .collect(Collectors.toList());
+                }
+            }
+            if (!Objects.equals(testType, appPropertiesTestType)) {
+                if (testType == null) {
+                    this.testType = TestType.ALL;
+                } else {
+                    this.testType = Converters.getImplicitConverter(TestType.class).convert(testType);
+                }
+            }
+        }
+        appPropertiesIncludeTags = includeTags;
+        appPropertiesExcludeTags = excludeTags;
+        appPropertiesIncludePattern = includePattern;
+        appPropertiesExcludePattern = excludePattern;
+        appPropertiesIncludeEngines = includeEngines;
+        appPropertiesExcludeEngines = excludeEngines;
+        appPropertiesTestType = testType;
     }
 
     public boolean isStarted() {

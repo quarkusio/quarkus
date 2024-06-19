@@ -15,15 +15,13 @@ public interface ResourceMethodsImplementor {
 
     void implementList(ClassCreator classCreator, String repositoryInterface);
 
-    void implementListIterable(ClassCreator classCreator, String repositoryInterface);
+    void implementIterable(ClassCreator classCreator, String repositoryInterface);
 
-    void implementListPaged(ClassCreator classCreator, String repositoryInterface);
+    void implementPagedList(ClassCreator classCreator, String repositoryInterface);
 
     void implementListPageCount(ClassCreator classCreator, String repositoryInterface);
 
     void implementListById(ClassCreator classCreator, String repositoryInterface);
-
-    public void implementListSort(ClassCreator classCreator, String repositoryInterface);
 
     void implementGet(ClassCreator classCreator, String repositoryInterface);
 

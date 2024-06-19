@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
+import io.quarkus.tls.TlsConfiguration;
 import io.vertx.core.http.HttpClientOptions;
 
 /**
@@ -113,6 +114,11 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @throws IllegalArgumentException if the value of timeout is negative.
      */
     QuarkusRestClientBuilder readTimeout(long timeout, TimeUnit unit);
+
+    /**
+     * Set the transport layer security configuration configured by Quarkus
+     */
+    QuarkusRestClientBuilder tlsConfiguration(TlsConfiguration tlsConfiguration);
 
     /**
      * Specifies the SSL context to use when creating secured transport connections to server endpoints from web targets

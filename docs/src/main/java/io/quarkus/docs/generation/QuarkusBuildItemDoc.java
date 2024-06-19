@@ -88,7 +88,7 @@ public class QuarkusBuildItemDoc {
         if (!source.hasJavaDoc()) {
             return "<i>No Javadoc found</i>";
         }
-        return source.getJavaDoc().getText();
+        return source.getJavaDoc().getFullText();
     }
 
     private Multimap<String, Pair<Path, JavaClassSource>> collect() throws IOException {
@@ -173,9 +173,9 @@ public class QuarkusBuildItemDoc {
 
     private void printTableHeader(String title) {
         out.println("== " + title);
-        out.println("[%header,cols=2*]");
+        out.println("[.configuration-reference,cols=2*]");
         out.println("|===");
-        out.println("|Class Name |Attributes ");
+        out.println("h|Class Name\nh|Attributes \n\n");
     }
 
     private void printTableRow(Pair<Path, JavaClassSource> pair) {
@@ -187,9 +187,12 @@ public class QuarkusBuildItemDoc {
         String attributes = buildAttributes(source);
         String description = getJavaDoc(source);
 
-        out.println("a| " + link + "[`" + className + "`, window=\"_blank\"] :: +++" +
-                javadocToHTML(description) + "+++");
-        out.println("a| " + attributes);
+        String linkToClass = String.format("%s[`%s`, window=\"_blank\"]", link, className);
+
+        out.println(String.format("\n\na|%s\n[.description]\n--\n%s\n-- a|%s",
+                linkToClass,
+                javadocToAsciidoc(description),
+                attributes));
     }
 
     private String buildAttributes(JavaClassSource source) {
@@ -198,10 +201,10 @@ public class QuarkusBuildItemDoc {
             if (field.isStatic()) {
                 continue;
             }
-            sb.append("`").append(field.getType().getQualifiedNameWithGenerics()).append(" ").append(field.getName())
-                    .append("` :: ");
-            sb.append("+++").append(javadocToHTML(getJavaDoc(field))).append("+++");
-            sb.append("\n");
+            sb.append(String.format("`%s %s` \n\n%s\n\n",
+                    field.getType().getQualifiedNameWithGenerics(),
+                    field.getName(),
+                    javadocToAsciidoc(getJavaDoc(field))));
         }
         return sb.length() == 0 ? "None" : sb.toString();
     }
@@ -210,23 +213,21 @@ public class QuarkusBuildItemDoc {
         out.println("|===");
     }
 
-    private String javadocToHTML(String content) {
-        return content
-                .replaceAll("\\{?@see ", "<pre>")
-                .replaceAll("\\{?@code ", "<pre>")
-                .replaceAll("\\{?@link ", "<pre>")
-                .replaceAll(" ?}", "</pre>");
-    }
-
     private String javadocToAsciidoc(String content) {
         return content
-                .replaceAll("<p>", "\n")
-                .replaceAll("</p>", "\n")
-                .replaceAll("\\{?@see ", "```")
-                .replaceAll("\\{?@code ", "```")
-                .replaceAll("\\{?@link ", "```")
+                .replaceAll("<p> *", "\n")
+                .replaceAll("</p> *", "\n")
+                .replaceAll("<br> *", "\n")
+                .replaceAll("\\{?@(link|see|code) ([^}]*)}", "`$2`")
                 .replaceAll("<pre>", "```\n")
                 .replaceAll("</pre>", "\n```")
-                .replaceAll(" ?}", "```");
+                .replaceAll("<h2>", "\n[discrete]\n== ")
+                .replaceAll("</h2> *", "\n\n")
+                .replaceAll("</?i>", "_")
+                .replaceAll("</?ul> *", "\n")
+                .replaceAll("<li>", "\n* ")
+                .replaceAll("</li> *", "\n\n")
+                .replaceAll("</?tt>", "`")
+                .replaceAll("<a href=\"([^\"]*)\">([^<]*)</a>", "$1[$2,window=_blank]");
     }
 }

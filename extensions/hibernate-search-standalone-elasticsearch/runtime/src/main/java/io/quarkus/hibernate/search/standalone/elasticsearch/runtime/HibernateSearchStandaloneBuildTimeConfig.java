@@ -269,7 +269,7 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
          * Associations between entities must be bi-directional:
          * specifying the inverse side of associations through `@AssociationInverseSide` *is required*,
          * unless reindexing is disabled for that association through `@IndexingDependency(reindexOnUpdate = ...)`.
-         * `tree`::
+         * `document`::
          * Entities indexed through Hibernate Search are the root of a document,
          * i.e. an indexed entity "owns" other entities it references through associations,
          * which *cannot* be updated independently of the indexed entity.

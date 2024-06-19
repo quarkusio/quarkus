@@ -725,6 +725,8 @@ quarkus.oidc-client.client-id=quarkus-app
 
 # This key is used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc-client.credentials.client-secret.provider.key=mysecret-key
+# This is the keyring provided to the CredentialsProvider when looking up the secret, set only if required by the CredentialsProvider implementation
+quarkus.oidc.credentials.client-secret.provider.keyring-name=oidc
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc-client.credentials.client-secret.provider.name=oidc-credentials-provider
 ----
@@ -757,6 +759,8 @@ quarkus.oidc-client.client-id=quarkus-app
 
 # This is a key that will be used to retrieve a secret from the map of credentials returned from CredentialsProvider
 quarkus.oidc-client.credentials.jwt.secret-provider.key=mysecret-key
+# This is the keyring provided to the CredentialsProvider when looking up the secret, set only if required by the CredentialsProvider implementation
+quarkus.oidc.credentials.client-secret.provider.keyring-name=oidc
 # Set it only if more than one CredentialsProvider can be registered
 quarkus.oidc-client.credentials.jwt.secret-provider.name=oidc-credentials-provider
 ----

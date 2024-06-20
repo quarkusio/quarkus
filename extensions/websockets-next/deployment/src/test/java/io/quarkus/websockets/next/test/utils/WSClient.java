@@ -17,16 +17,26 @@ import io.vertx.core.http.WebSocketConnectOptions;
 
 public class WSClient implements AutoCloseable {
 
+    public static WSClient create(Vertx vertx) {
+        return new WSClient(vertx);
+    }
+
+    public static WSClient create(Vertx vertx, ReceiverMode mode) {
+        return new WSClient(vertx, mode);
+    }
+
     private final WebSocketClient client;
     private AtomicReference<WebSocket> socket = new AtomicReference<>();
     private List<Buffer> messages = new CopyOnWriteArrayList<>();
+    private final ReceiverMode mode;
 
-    public WSClient(Vertx vertx) {
+    public WSClient(Vertx vertx, ReceiverMode mode) {
         this.client = vertx.createWebSocketClient();
+        this.mode = mode;
     }
 
-    public static WSClient create(Vertx vertx) {
-        return new WSClient(vertx);
+    public WSClient(Vertx vertx) {
+        this(vertx, ReceiverMode.ALL);
     }
 
     public static URI toWS(URI uri, String path) {
@@ -52,7 +62,19 @@ public class WSClient implements AutoCloseable {
             uri.append("?").append(url.getQuery());
         }
         ClientWebSocket webSocket = client.webSocket();
-        webSocket.handler(b -> messages.add(b));
+        switch (mode) {
+            case ALL:
+                webSocket.handler(b -> messages.add(b));
+                break;
+            case BINARY:
+                webSocket.binaryMessageHandler(b -> messages.add(b));
+                break;
+            case TEXT:
+                webSocket.textMessageHandler(b -> messages.add(Buffer.buffer(b)));
+                break;
+            default:
+                throw new IllegalStateException();
+        }
         await(webSocket.connect(options.setPort(url.getPort()).setHost(url.getHost()).setURI(uri.toString())));
         var prev = socket.getAndSet(webSocket);
         if (prev != null) {
@@ -133,6 +155,12 @@ public class WSClient implements AutoCloseable {
     @Override
     public void close() {
         disconnect();
+    }
+
+    public enum ReceiverMode {
+        BINARY,
+        TEXT,
+        ALL
     }
 
 }

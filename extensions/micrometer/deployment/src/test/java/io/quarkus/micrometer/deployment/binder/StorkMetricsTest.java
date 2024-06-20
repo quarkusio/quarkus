@@ -60,13 +60,12 @@ public class StorkMetricsTest {
     }
 
     private void assertStorkMetricsInMicrometerRegistry(String serviceName) {
+
         Counter instanceCounter = registry.counter("stork.service-discovery.instances.count", "service-name", serviceName);
         Timer serviceDiscoveryDuration = registry.timer("stork.service-discovery.duration", "service-name", serviceName);
         Timer serviceSelectionDuration = registry.timer("stork.service-selection.duration", "service-name", serviceName);
-        Counter serviceDiscoveryFailures = registry.get("stork.service-discovery.failures")
-                .tags("service-name", serviceName).counter();
-        Counter loadBalancerFailures = registry.get("stork.service-selection.failures").tags("service-name", serviceName)
-                .counter();
+        Counter serviceDiscoveryFailures = registry.counter("stork.service-discovery.failures", "service-name", serviceName);
+        Counter loadBalancerFailures = registry.counter("stork.service-selection.failures", "service-name", serviceName);
 
         Util.assertTags(Tag.of("service-name", serviceName), instanceCounter, serviceDiscoveryDuration,
                 serviceSelectionDuration);
@@ -80,7 +79,8 @@ public class StorkMetricsTest {
 
     public static void assertStorkMetrics(String serviceName) {
         StorkObservation metrics = StorkObservationCollectorBean.STORK_METRICS
-                .get(serviceName + StorkObservationCollectorBean.METRICS_SUFIX);
+                .get(serviceName + StorkObservationCollectorBean.METRICS_SUFFIX);
+
         Assertions.assertThat(metrics.getDiscoveredInstancesCount()).isEqualTo(1);
         Assertions.assertThat(metrics.getServiceName()).isEqualTo(serviceName);
         Assertions.assertThat(metrics.isDone()).isTrue();

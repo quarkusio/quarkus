@@ -74,10 +74,6 @@ public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
 
         Optional<MemorySize> rawValue = config.getOptionalValue("quarkus.resteasy.gzip.max-input", MemorySize.class);
 
-        if (rawValue.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(Long.toString(rawValue.get().asLongValue()));
+        return rawValue.map(memorySize -> memorySize.toString(MemorySize.Scale.B));
     }
 }

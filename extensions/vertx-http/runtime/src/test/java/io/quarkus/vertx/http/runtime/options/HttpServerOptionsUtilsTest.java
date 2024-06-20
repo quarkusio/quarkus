@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -338,11 +337,11 @@ class HttpServerOptionsUtilsTest {
         when(config.handle100ContinueAutomatically()).thenReturn(false);
 
         ServerLimitsConfig limits = mock(ServerLimitsConfig.class);
-        when(limits.maxHeaderSize()).thenReturn(new MemorySize(BigInteger.valueOf(20480)));
-        when(limits.maxChunkSize()).thenReturn(new MemorySize(BigInteger.valueOf(8192)));
-        when(limits.maxFormAttributeSize()).thenReturn(new MemorySize(BigInteger.valueOf(2048)));
+        when(limits.maxHeaderSize()).thenReturn(MemorySize.of("20k"));
+        when(limits.maxChunkSize()).thenReturn(MemorySize.of("8k"));
+        when(limits.maxFormAttributeSize()).thenReturn(MemorySize.of("2k"));
         when(limits.maxFormFields()).thenReturn(256);
-        when(limits.maxFormBufferedBytes()).thenReturn(new MemorySize(BigInteger.valueOf(1024)));
+        when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
         when(limits.maxInitialLineLength()).thenReturn(4096);
         when(limits.headerTableSize()).thenReturn(OptionalLong.empty());
         when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.empty());

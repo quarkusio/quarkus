@@ -116,7 +116,6 @@ import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.test.InjectMock;
-import io.smallrye.common.annotation.Experimental;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.SmallRyeConfig;
@@ -162,7 +161,6 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  * @see InjectMock
  * @see TestConfigProperty
  */
-@Experimental("This feature is experimental and the API may change in the future")
 public class QuarkusComponentTestExtension
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
         ParameterResolver {

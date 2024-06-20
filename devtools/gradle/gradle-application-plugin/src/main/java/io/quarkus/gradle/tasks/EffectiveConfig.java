@@ -88,7 +88,19 @@ public final class EffectiveConfig {
         configSources.add(new PropertiesConfigSource(Map.of("platform.quarkus.native.builder-image", "<<ignored>>"),
                 "NativeConfig#builderImage", 0));
 
-        this.config = buildConfig(builder.profile, configSources);
+        this.config = ConfigUtils.emptyConfigBuilder()
+                .setAddDiscoveredSecretKeysHandlers(false)
+                // We add our own sources for environment, system-properties and microprofile-config
+                // .properties,
+                // no need to include those twice.
+                .setAddDefaultSources(false)
+                .withDefaultValues(builder.defaultProperties)
+                .withSources(configSources)
+                .withProfile(builder.profile)
+                .withMapping(PackageConfig.class)
+                .withMapping(NativeConfig.class)
+                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
+                .build();
         this.values = generateFullConfigMap(config);
     }
 
@@ -127,30 +139,16 @@ public final class EffectiveConfig {
         });
     }
 
-    @VisibleForTesting
-    static SmallRyeConfig buildConfig(String profile, List<ConfigSource> configSources) {
-        return ConfigUtils.emptyConfigBuilder()
-                .setAddDiscoveredSecretKeysHandlers(false)
-                // We add our own sources for environment, system-properties and microprofile-config.properties,
-                // no need to include those twice.
-                .setAddDefaultSources(false)
-                .withSources(configSources)
-                .withProfile(profile)
-                .withMapping(PackageConfig.class)
-                .withMapping(NativeConfig.class)
-                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
-                .build();
-    }
-
     static Builder builder() {
         return new Builder();
     }
 
     static final class Builder {
+        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, ?> taskProperties = emptyMap();
         private Map<String, String> buildProperties = emptyMap();
         private Map<String, ?> projectProperties = emptyMap();
-        private Map<String, ?> taskProperties = emptyMap();
-        private Map<String, String> forcedProperties = emptyMap();
+        private Map<String, String> defaultProperties = emptyMap();
         private Set<File> sourceDirectories = emptySet();
         private String profile = "prod";
 
@@ -175,6 +173,11 @@ public final class EffectiveConfig {
 
         Builder withProjectProperties(Map<String, ?> projectProperties) {
             this.projectProperties = projectProperties;
+            return this;
+        }
+
+        Builder withDefaultProperties(Map<String, String> defaultProperties) {
+            this.defaultProperties = defaultProperties;
             return this;
         }
 

@@ -7,6 +7,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -306,6 +308,7 @@ public class QuarkusBootstrapProvider implements Closeable {
 
             effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
+            effectiveProperties.putIfAbsent("quarkus.build.timestamp", DateTimeFormatter.ISO_INSTANT.format(Instant.now()));
 
             for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
                 if (attribute.getValue() == null) {

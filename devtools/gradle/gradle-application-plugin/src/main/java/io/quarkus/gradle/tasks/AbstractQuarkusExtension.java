@@ -8,6 +8,8 @@ import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 import static java.util.Collections.emptyList;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,6 +113,7 @@ public abstract class AbstractQuarkusExtension {
         }
         properties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         properties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+        properties.putIfAbsent("quarkus.build.timestamp", DateTimeFormatter.ISO_INSTANT.format(Instant.now()));
 
         return buildEffectiveConfiguration(properties);
     }
@@ -148,6 +151,7 @@ public abstract class AbstractQuarkusExtension {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+        buildSystemProperties.putIfAbsent("quarkus.build.timestamp", DateTimeFormatter.ISO_INSTANT.format(Instant.now()));
 
         for (Map.Entry<String, String> entry : forcedPropertiesProperty.get().entrySet()) {
             if (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus.")) {

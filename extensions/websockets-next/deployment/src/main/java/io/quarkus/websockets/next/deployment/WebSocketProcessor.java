@@ -1065,7 +1065,8 @@ public class WebSocketProcessor {
     private static ResultHandle encodeMessage(ResultHandle endpointThis, BytecodeCreator method, Callback callback,
             GlobalErrorHandlersBuildItem globalErrorHandlers, WebSocketEndpointBuildItem endpoint,
             ResultHandle value) {
-        if (callback.acceptsBinaryMessage()) {
+        if (callback.acceptsBinaryMessage()
+                || isOnOpenWithBinaryReturnType(callback)) {
             // ----------------------
             // === Binary message ===
             // ----------------------
@@ -1119,7 +1120,7 @@ public class WebSocketProcessor {
                         value,
                         fun.getInstance());
             } else {
-                // return sendBinary(buffer,broadcast);
+                // return sendBinary(encodeBuffer(b),broadcast);
                 ResultHandle buffer = encodeBuffer(method, callback.returnType(), value, endpointThis, callback);
                 return method.invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "sendBinary", Uni.class, Buffer.class, boolean.class), endpointThis, buffer,
@@ -1406,5 +1407,17 @@ public class WebSocketProcessor {
 
     static String methodToString(MethodInfo method) {
         return method.declaringClass().name() + "#" + method.name() + "()";
+    }
+
+    private static boolean isOnOpenWithBinaryReturnType(Callback callback) {
+        if (callback.isOnOpen()) {
+            Type returnType = callback.returnType();
+            if (callback.isReturnTypeUni() || callback.isReturnTypeMulti()) {
+                returnType = callback.returnType().asParameterizedType().arguments().get(0);
+            }
+            return WebSocketDotNames.BUFFER.equals(returnType.name())
+                    || (returnType.kind() == Kind.ARRAY && PrimitiveType.BYTE.equals(returnType.asArrayType().constituent()));
+        }
+        return false;
     }
 }

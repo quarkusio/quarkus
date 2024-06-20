@@ -168,11 +168,20 @@ public class ConditionalDependenciesEnabler {
     }
 
     private Configuration createConditionalDependenciesConfiguration(Project project, Dependency conditionalDep) {
-        Configuration conditionalDepConfiguration = project.getConfigurations()
-                .detachedConfiguration()
-                .extendsFrom(enforcedPlatforms);
-        conditionalDepConfiguration.getDependencies().add(conditionalDep);
-        return conditionalDepConfiguration;
+        // previously we used a detached configuration here but apparently extendsFrom(enforcedPlatforms)
+        // wouldn't actually enforce platforms on a detached configuration
+        final String name = conditionalDep.getGroup() + ":" + conditionalDep.getName() + ":" + conditionalDep.getVersion()
+                + "Configuration";
+        var config = project.getConfigurations().findByName(name);
+        if (config == null) {
+            project.getConfigurations().register(name, configuration -> {
+                configuration.setCanBeConsumed(false);
+                configuration.extendsFrom(enforcedPlatforms);
+                configuration.getDependencies().add(conditionalDep);
+            });
+            config = project.getConfigurations().getByName(name);
+        }
+        return config;
     }
 
     private void enableConditionalDependency(ModuleVersionIdentifier dependency) {

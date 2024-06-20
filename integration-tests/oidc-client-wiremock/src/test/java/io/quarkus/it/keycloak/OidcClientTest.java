@@ -63,7 +63,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_1"));
 
         // Wait until the access_token_1 has expired
-        waitUntillAccessTokenHasExpired();
+        waitUntillAccessTokenHasExpired(5000);
 
         // access_token_1 has expired, refresh_token_1 is assumed to be valid and used to acquire access_token_2 and refresh_token_2.
         // access_token_2 expires in 4 seconds, but refresh_token_2 - in 1 sec - it will expire by the time access_token_2 has expired
@@ -74,7 +74,7 @@ public class OidcClientTest {
                 .body(equalTo("access_token_2"));
 
         // Wait until the access_token_2 has expired
-        waitUntillAccessTokenHasExpired();
+        waitUntillAccessTokenHasExpired(5000);
 
         // Both access_token_2 and refresh_token_2 have now expired therefore a password grant request is repeated,
         // as opposed to using a refresh token grant.
@@ -88,8 +88,8 @@ public class OidcClientTest {
         checkLog();
     }
 
-    private static void waitUntillAccessTokenHasExpired() {
-        long expiredTokenTime = System.currentTimeMillis() + 5000;
+    private static void waitUntillAccessTokenHasExpired(int expirationMs) {
+        long expiredTokenTime = System.currentTimeMillis() + expirationMs;
         await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(Duration.ofSeconds(3))
                 .until(new Callable<Boolean>() {
@@ -120,14 +120,16 @@ public class OidcClientTest {
 
         server.resetRequests(); // reset request counters
 
-        // Given : after 1s, the token expires
+        // Given : the token access_token_1 expires
+        waitUntillAccessTokenHasExpired(2000);
+
         // When : 2 concurrents requests until the refresh was made (access_token_2 comes from the refresh)
-        await().atMost(2000, TimeUnit.MILLISECONDS).untilAsserted(() -> IntStream.range(0, 2).parallel().forEach(i -> {
+        IntStream.range(0, 2).parallel().forEach(i -> {
             RestAssured.when().get("/frontend/crashTest")
                     .then()
                     .statusCode(200)
                     .body(equalTo("access_token_2"));
-        }));
+        });
         // Then: only one token retrieval should be made
         server.verify(1, WireMock.postRequestedFor(urlEqualTo("/tokens-with-delay")));
     }

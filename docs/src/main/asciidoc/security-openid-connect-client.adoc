@@ -380,7 +380,7 @@ public class FrontendResource {
     TokensHelper tokenHelper = new TokensHelper(); <5>
     @Inject
     @RestClient
-    RestClientWithHeaderTokenParam restClientWithHeaderTokenParam; <3>
+    RestClientWithTokenHeaderParam restClientWithTokenHeaderParam; <3>
 
     @GET
     @Path("user-name-with-oidc-client-token")
@@ -446,7 +446,7 @@ public class FrontendResource {
 ----
 <1> `FrontendResource` uses the injected `RestClientWithOidcClientFilter` REST client with the OIDC client filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
 <2> `FrontendResource` uses the injected `RestClientWithTokenPropagationFilter` REST client with the OIDC token propagation filter to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
-<3> `FrontendResource` uses the programmatically created OIDC client to get and propagate an access token to `ProtectedResource` by passing it directly to the injected `RestClientWithHeaderTokenParam` REST client's method as an HTTP `Authorization` header value, when either `/frontend/user-name-with-oidc-client-token-header-param` or `/frontend/admin-name-with-oidc-client-token-header-param` is called.
+<3> `FrontendResource` uses the programmatically created OIDC client to get and propagate an access token to `ProtectedResource` by passing it directly to the injected `RestClientWithTokenHeaderParam` REST client's method as an HTTP `Authorization` header value, when either `/frontend/user-name-with-oidc-client-token-header-param` or `/frontend/admin-name-with-oidc-client-token-header-param` is called.
 <4> Sometimes, one may have to acquire tokens in a blocking manner before propagating them with the REST client. This example shows how to acquire the tokens in such cases.
 <5> `io.quarkus.oidc.client.runtime.TokensHelper` is a useful tool when OIDC client is used directly, without the OIDC client filter. To use `TokensHelper`, pass OIDC Client to it to get the tokens and `TokensHelper` acquires the tokens and refreshes them if necessary in a thread-safe way.
 

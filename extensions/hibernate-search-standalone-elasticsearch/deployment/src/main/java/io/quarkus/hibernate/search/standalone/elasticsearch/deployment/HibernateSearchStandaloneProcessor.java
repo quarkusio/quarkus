@@ -277,7 +277,7 @@ class HibernateSearchStandaloneProcessor {
                 .setRuntimeInit()
                 .createWith(recorder.createSearchMappingFunction(runtimeConfig,
                         enabled.get().getBackendAndIndexNamesForSearchExtensions()))
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
                 .done());
     }
 

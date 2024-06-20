@@ -50,6 +50,7 @@ updates:
       # Kafka
       - dependency-name: org.apache.kafka:*
       - dependency-name: io.strimzi:kafka-oauth-client
+      - dependency-name: io.strimzi:strimzi-test-container
       - dependency-name: com.nimbusds:nimbus-jose-jwt
       - dependency-name: io.apicurio:*
       # Scala

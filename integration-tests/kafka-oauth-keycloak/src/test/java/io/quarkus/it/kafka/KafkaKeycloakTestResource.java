@@ -57,22 +57,22 @@ public class KafkaKeycloakTestResource implements QuarkusTestResourceLifecycleMa
     }
 
     private String getPlainSaslJaasConfig(String keycloakInternalUrl, String keycloakServerUrl) {
-        return "'org.apache.kafka.common.security.plain.PlainLoginModule required " +
+        return "org.apache.kafka.common.security.plain.PlainLoginModule required " +
                 "oauth.jwks.endpoint.uri=\"" + keycloakInternalUrl + "/realms/kafka-authz/protocol/openid-connect/certs\" " +
                 "oauth.valid.issuer.uri=\"" + keycloakServerUrl + "/realms/kafka-authz\" " +
                 "oauth.token.endpoint.uri=\"" + keycloakInternalUrl + "/realms/kafka-authz/protocol/openid-connect/token\" " +
                 "oauth.client.id=\"kafka\" " +
                 "oauth.client.secret=\"kafka-secret\" " +
-                "unsecuredLoginStringClaim_sub=\"admin\";'";
+                "unsecuredLoginStringClaim_sub=\"admin\";";
     }
 
     private String getOauthSaslJaasConfig(String keycloakInternalUrl, String keycloakServerUrl) {
-        return "'org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required " +
+        return "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required " +
                 "oauth.jwks.endpoint.uri=\"" + keycloakInternalUrl + "/realms/kafka-authz/protocol/openid-connect/certs\" " +
                 "oauth.valid.issuer.uri=\"" + keycloakServerUrl + "/realms/kafka-authz\" " +
                 "oauth.token.endpoint.uri=\"" + keycloakInternalUrl + "/realms/kafka-authz/protocol/openid-connect/token\" " +
                 "oauth.client.id=\"kafka\" " +
-                "oauth.client.secret=\"kafka-secret\";'";
+                "oauth.client.secret=\"kafka-secret\";";
     }
 
     @Override

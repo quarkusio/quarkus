@@ -216,6 +216,8 @@ updates:
       # Only use dependabot for micros (patch versions).
       - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: org.apache.kafka:*
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

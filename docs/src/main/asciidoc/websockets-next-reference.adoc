@@ -9,6 +9,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
+:sectnumlevels: 4
 :categories: web
 :topics: web,websockets
 :extensions: io.quarkus:quarkus-websockets-next
@@ -56,10 +57,9 @@ Additionally, it's tailored to integrate with Quarkus' reactive architecture and
 The annotations utilized by the Quarkus WebSockets next extension differ from those in JSR 356 despite, sometimes, sharing the same name.
 The JSR annotations carry a semantic that the Quarkus WebSockets Next extension does not follow.
 
-== Use the WebSockets Next extension
+== Project setup
 
-To use the `websockets-next` extension, you need to add the `io.quarkus.quarkus-websockets-next` extension to your project.
-In your `pom.xml` file, add:
+To use the `websockets-next` extension, you need to add the `io.quarkus:quarkus-websockets-next` depencency to your project.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -76,21 +76,21 @@ In your `pom.xml` file, add:
 implementation("io.quarkus:quarkus-websockets-next")
 ----
 
+== Endpoints
 
-== Configure the WebSocket server
+Both the server and client APIs allow you to define _endpoints_ that are used to consume and send messages.
+The endpoints are implemented as CDI beans and support injection.
+Endpoints declare <<callback-methods,_callback methods_>> annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnPong`, `@OnOpen`, `@OnClose` and `@OnError`.
+These methods are used to handle various WebSocket events.
+Typically, a method annotated with `@OnTextMessage` is called when the connected client sends a message to the server and vice versa.
 
-The WebSocket handling reuses the _main_ HTTP server.
+NOTE: The client API also includes <<client-connectors,connectors>> that are used to configure and create new WebSocket connections.
 
-Thus, the configuration of the WebSocket server is done in the `quarkus.http.` configuration section.
+[[server-endpoints]]
+=== Server endpoints
 
-WebSocket paths configured within the application are concatenated with the root path defined by `quarkus.http.root` (which defaults to /).
-This concatenation ensures that WebSocket endpoints are appropriately positioned within the application's URL structure.
-
-Refer to the xref:http-reference.adoc[HTTP guide] for more details.
-
-== Declare WebSocket endpoints
-
-To declare web socket endpoints, you need to create a class annotated with `@io.quarkus.websockets.next.WebSocket` and define the path of the WebSocket endpoint:
+Server endpoints are classes annotated with `@io.quarkus.websockets.next.WebSocket`.
+The value of `WebSocket#path()` is used to define the path of the endpoint.
 
 [source,java]
 ----
@@ -99,7 +99,7 @@ package org.acme.websockets;
 import io.quarkus.websockets.next.WebSocket;
 import jakarta.inject.Inject;
 
-@WebSocket(path = "/chat/{username}")
+@WebSocket(path = "/chat/{username}") <1>
 public class ChatWebSocket {
 
 }
@@ -108,95 +108,90 @@ public class ChatWebSocket {
 Thus, client can connect to this web socket endpoint using `ws://localhost:8080/chat/your-name`.
 If TLS is used, the URL is `wss://localhost:8443/chat/your-name`.
 
-=== Path parameters
+[[client-endpoints]]
+=== Client endpoints
 
-The path of the WebSocket endpoint can contain path parameters.
-The syntax is the same as for JAX-RS resources: `{parameterName}`.
-
-Access to the path parameter values is done through the `io.quarkus.websockets.next.WebSocketConnection` _session_ object:
+Client endpoints are classes annotated with `@io.quarkus.websockets.next.WebSocketClient`.
+The value of `WebSocketClient#path()` is used to define the path of the endpoint this client will be connected to.
 
 [source,java]
 ----
-@Inject io.quarkus.websockets.next.WebSocketConnection session;
+package org.acme.websockets;
+
+import io.quarkus.websockets.next.WebSocketClient;
+import jakarta.inject.Inject;
+
+@WebSocketClient(path = "/chat/{username}") <1>
+public class ChatWebSocket {
+
+}
+----
+
+NOTE: Client endpoints are used to consume and send messages. You'll need the <<client-connectors,connectors API>> to configure and open new WebSocket connections.
+
+=== Path parameters
+
+The path of a WebSocket endpoint can contain path parameters.
+The syntax is the same as for JAX-RS resources: `{parameterName}`.
+
+You can access the path parameter values using the `io.quarkus.websockets.next.WebSocketConnection#pathParam(String)` method, or `io.quarkus.websockets.next.WebSocketClientConnection#pathParam(String)` respectively.
+Alternatively, an endpoint callback method parameter annotated with `@io.quarkus.websockets.next.PathParam` is injected automatically.
+
+.`WebSocketConnection#pathParam(String)` example
+[source,java]
+----
+@Inject io.quarkus.websockets.next.WebSocketConnection connection;
 // ...
-String value = session.pathParam("parameterName");
+String value = connection.pathParam("parameterName");
 ----
 
 Path parameter values are always strings.
-If the path parameter is not present in the path, the `pathParam` method returns `null`.
+If the path parameter is not present in the path, the `WebSocketConnection#pathParam(String)`/`WebSocketClientConnection#pathParam(String)` method returns `null`.
+If there is an endpoint callback method parameter annotated with `@PathParam` and the parameter name is not defined in the endpoint path, then the build fails.
 
-NOTE: Query parameters are not supported. However, you can access the query using `session.handshakeRequest().query()`
+NOTE: Query parameters are not supported. However, you can access the query using `WebSocketConnection#handshakeRequest().query()`
 
-=== Sub-websockets endpoints
+=== CDI scopes
 
-A class annotated with `@WebSocket` can encapsulate static nested classes, which are also annotated with `@WebSocket` and represent _sub-web_ sockets.
-The resulting path of these sub-web sockets concatenates the path from the enclosing class and the nested class.
-The resulting path is normalized, following the HTTP URL rules.
+Endpoints are managed as CDI beans.
+By default, the `@Singleton` scope is used.
+However, developers can specify alternative scopes to fit their specific requirements.
 
-Sub-web sockets inherit access to the path parameters declared in the `@WebSocket` annotation of both the enclosing and nested classes.
-The `consumePrimary` method within the enclosing class can access the `version` parameter in the following example.
-Meanwhile, the `consumeNested` method within the nested class can access both `version` and `id` parameters:
-
-[source, java]
-----
-@WebSocket(path = "/ws/v{version}")
-public class MyPrimaryWebSocket {
-
-    @OnTextMessage
-    void consumePrimary(String s)    { ... }
-
-    @WebSocket(path = "/products/{id}")
-    public static class MyNestedWebSocket {
-
-      @OnTextMessage
-      void consumeNested(String s)    { ... }
-
-    }
-
-}
-----
-
-=== CDI Scopes for WebSocket Endpoints
-Classes annotated with `@WebSocket` are managed as CDI beans, allowing for flexible scope management within the application.
-By default, WebSocket endpoints are considered in the singleton pseudo-scope.
-However, developers can specify alternative scopes to suit their specific requirements:
+`@Singleton` and `@ApplicationScoped` endpoints are shared accross all WebSocket connections.
+Therefore, implementations should be either stateless or thread-safe.
 
 [source,java]
 ----
-@WebSocket(path = "/ws")
-public class MyWebSocket {
-    // Singleton scoped bean
-}
+import jakarta.enterprise.context.SessionScoped;
 
 @WebSocket(path = "/ws")
-@ApplicationScoped
-public class MyRequestScopedWebSocket {
-  // Application scoped.
+@SessionScoped <1>
+public class MyWebSocket {
+
 }
 ----
+<1> This server endpoint is not shared and is scoped to the session.
 
-Furthermore, each WebSocket connection is associated with its own _session_ scope.
-When the `@OnOpen` method is invoked, a session scope corresponding to the WebSocket connection is established.
-Subsequent calls to `@On[Text|Binary]Message` or `@OnClose` methods utilize this same session scope.
-The session scope remains active until the `@OnClose` method completes execution, at which point it is terminated.
+Each WebSocket connection is associated with its own _session_ context.
+When the `@OnOpen` method is invoked, a session context corresponding to the WebSocket connection is created.
+Subsequent calls to `@On[Text|Binary]Message` or `@OnClose` methods utilize this same session context.
+The session context remains active until the `@OnClose` method completes execution, at which point it is terminated.
 
-The `WebSocketConnection` object, which represents the connection itself, is also a session-scoped bean, allowing developers to access and manage WebSocket-specific data within the context of the session.
-
-In cases where a WebSocket endpoint does not declare an `@OnOpen` method, the session scope is still created.
+In cases where a WebSocket endpoint does not declare an `@OnOpen` method, the session context is still created.
 It remains active until the connection terminates, regardless of the presence of an `@OnClose` method.
 
 Methods annotated with `@OnTextMessage,` `@OnBinaryMessage,` `@OnOpen`, and `@OnClose` also have the request scoped activated for the duration of the method execution (until it produced its result).
 
+[[callback-methods]]
+=== Callback methods
 
-=== WebSocket endpoint methods
+A WebSocket endpoint may declare:
 
-A WebSocket endpoint comprises the following components:
-
-* Path: This is the URL path where the WebSocket connection is established (e.g., ws://localhost:8080/).
-* At most one `@OnTextMessage` method: Handles the connected client's text messages.
-* At most one `@OnBinaryMessage` method: Handles the binary messages the connected client sends.
-* At most one `@OnOpen` method: Invoked when a client connects to the WebSocket.
-* At most one `@OnClose` method: Executed upon the client disconnecting from the WebSocket.
+* At most one `@OnTextMessage` method: Handles the text messages from the connected client/server.
+* At most one `@OnBinaryMessage` method: Handles the binary messages from the connected client/server.
+* At most one `@OnPongMessage` method: Handles the pong messages from the connected client/server.
+* At most one `@OnOpen` method: Invoked when a connection is opened.
+* At most one `@OnClose` method: Executed when the connection is closed.
 * Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure. 
 
 Only some endpoints need to include all methods.
@@ -207,14 +202,14 @@ The static nested classes representing sub-websockets adhere to the same guideli
 
 IMPORTANT: Any methods annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@OnOpen`, and `@OnClose` outside a WebSocket endpoint are considered erroneous and will result in the build failing with an appropriate error message.
 
-== Processing messages
+=== Processing messages
 
 Method receiving messages from the client are annotated with `@OnTextMessage` or `@OnBinaryMessage`.
 
 `OnTextMessage` are invoked for every _text_ message received from the client.
 `OnBinaryMessage` are invoked for every _binary_ message the client receives.
 
-=== Invocation Rules
+==== Invocation rules
 
 When invoking these annotated methods, the _session_ scope linked to the WebSocket connection remains active.
 In addition, the request scope is active until the completion of the method (or until it produces its result for async and reactive methods).
@@ -230,7 +225,7 @@ Here are the rules governing execution:
 * Methods returning `CompletionStage`, `Uni` and `Multi` are considered non-blocking.
 * Methods returning `void` or plain objects are considered blocking.
 
-=== Method Parameters
+==== Method parameters
 
 The method must accept exactly one message parameter:
 
@@ -239,7 +234,7 @@ The method must accept exactly one message parameter:
 
 However, it may also accept the following parameters:
 
- * `WebSocketConnection`
+ * `WebSocketConnection`/`WebSocketClientConnection`
  * `HandshakeRequest`
  * `String` parameters annotated with `@PathParam`
  
@@ -248,7 +243,7 @@ The message object represents the data sent and can be accessed as either raw co
 When receiving a `Multi`, the method is invoked once per connection, and the provided `Multi` receives the items transmitted by this connection.
 The method must subscribe to the `Multi` to receive these items (or return a Multi).
 
-=== Allowed Returned Types
+==== Supported return types
 
 Methods annotated with `@OnTextMessage` or `@OnBinaryMessage` can return various types to handle WebSocket communication efficiently:
 
@@ -298,7 +293,7 @@ Multi<ResponseMessage> stream(Message m) {
 
 When returning a Multi, Quarkus subscribes to the returned Multi automatically and writes the emitted items until completion, failure, or cancellation. Failure or cancellation terminates the connection.
 
-=== Streams
+==== Streams
 
 In addition to individual messages, WebSocket endpoints can handle streams of messages.
 In this case, the method receives a `Multi<X>` as a parameter.
@@ -327,31 +322,17 @@ public void stream(Multi<ChatMessage> incoming) {
 }
 ----
 
-=== Skipping reply
+==== Skipping reply
+
 When a method is intended to produce a message written to the client, it can emit `null`.
 Emitting `null` signifies no response to be sent to the client, allowing for skipping a response when needed.
 
-=== JsonObject and JsonArray
+==== JsonObject and JsonArray
+
 Vert.x `JsonObject` and `JsonArray` instances bypass the serialization and deserialization mechanisms.
 Messages are sent as text messages.
 
-=== Broadcasting
-By default, responses produced by `@On[Text|Binary]Message` methods are sent back to the connected client.
-However, using the `broadcast` parameter, responses can be broadcasted to all connected clients.
-
-[source, java]
-----
-@OnTextMessage(broadcast=true)
-String emitToAll(String message) {
-    // Send the response to all connected clients.
-}
-----
-
-The same principle applies to methods returning instances of `Multi` or `Uni`.
-
-NOTE: If you need to select the connected clients that should receive the message, you can use `WebSocketConnection.broadcast().filter().sendText()`.
-
-== OnOpen and OnClose methods
+==== OnOpen and OnClose methods
 
 The WebSocket endpoint can also be notified when a client connects or disconnects.
 
@@ -377,17 +358,17 @@ public void onClose() {
 
 These methods have access to the _session-scoped_ `WebSocketConnection` bean.
 
-=== Parameters
+==== Parameters
 
 Methods annotated with `@OnOpen` and `@OnClose` may accept the following parameters:
 
- * `WebSocketConnection`
+ * `WebSocketConnection`/`WebSocketClientConnection`
  * `HandshakeRequest`
  * `String` parameters annotated with `@PathParam`
  
 An endpoint method annotated with `@OnClose` may also accept the `io.quarkus.websockets.next.CloseReason` parameter that may indicate a reason for closing a connection.
 
-=== Allowed Returned Types
+==== Supported return types
 
 `@OnOpen` and `@OnClose` methods support different returned types.
 
@@ -401,55 +382,30 @@ The supported return types for `@OnOpen` methods are:
 * `Uni<X>`: Specifies a non-blocking method where the item emitted by the non-null `Uni` is sent to the client.
 * `Multi<X>`: Indicates a non-blocking method where the items emitted by the non-null `Multi` are sequentially sent to the client until completion or cancellation.
 
-Items sent to the client are serialized except for the `String`, `JsonObject`, `JsonArray`, `Buffer`, and `byte[]` types.
+Items sent to the client are <<serialization,serialized>> except for the `String`, `io.vertx.core.json.JsonObject`, `io.vertx.core.json.JsonArray`, `io.vertx.core.buffer.Buffer`, and `byte[]` types.
 In the case of `Multi`, Quarkus subscribes to the returned `Multi` and writes the items to the `WebSocket` as they are emitted.
 `String`, `JsonObject` and `JsonArray` are sent as text messages.
 `Buffers` and byte arrays are sent as binary messages.
 
-For `@OnClose` methods, the allowed return types are:
+For `@OnClose` methods, the supported return types include:
 
 * `void`: The method is considered blocking.
 * `Uni<Void>`: The method is considered non-blocking.
 
-`@OnClose` methods cannot send items to the connection client by returning objects.
-They can only send messages to the other client by using the `WebSocketConnection` object.
+NOTE: `@OnClose` methods declared on a server endpoint cannot send items to the connected client by returning objects.
+They can only send messages to the other clients by using the `WebSocketConnection` object.
 
-=== Server-side Streaming
+[[error-handling]]
+=== Error handling
 
-Methods annotated with `@OnOpen` can utilize server-side streaming by returning a `Multi<X>`:
-
-[source, java]
-----
-@WebSocket(path = "/foo")
-@OnOpen
-public Multi<Integer> streaming() {
-    return Multi.createFrom().ticks().every(Duration.ofSecond(1))
-        .onOverflow().ignore();
-}
-----
-
-=== Broadcasting with @OnOpen
-
-Similar to `@On[Text|Binary]Message`, items sent to the client from a method annotated with `@OnOpen` can be broadcasted to all clients instead of just the connecting client:
-
-[source, java]
-----
-@OnOpen(broadcast=true)
-String onOpen() {
-    return "We have a new member!";
-}
-----
-
-== Error Handling
-
-The WebSocket endpoint can also be notified when an error occurs.
+WebSocket endpoints can also be notified when an error occurs.
 A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion errors occurs, 
 or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
 
-The method must accept exactly one "error" parameter, i.e. a parameter that is assignable from `java.lang.Throwable`.
+The method must accept exactly one _error_ parameter, i.e. a parameter that is assignable from `java.lang.Throwable`.
 The method may also accept the following parameters:
 
-* `WebSocketConnection`
+* `WebSocketConnection`/`WebSocketClientConnection`
 * `HandshakeRequest`
 * `String` parameters annotated with `@PathParam`
 
@@ -459,133 +415,55 @@ The method that declares a most-specific supertype of the actual exception is se
 
 NOTE: The `@io.quarkus.websockets.next.OnError` annotation can be also used to declare a global error handler, i.e. a method that is not declared on a WebSocket endpoint. Such a method may not accept `@PathParam` paremeters. Error handlers declared on an endpoint take precedence over the global error handlers.
 
-When an error occurs but no error handler can handle the failure, Quarkus uses the strategy specified by `quarkus.websockets-next.server.unhandled-failure-strategy` and `quarkus.websockets-next.client.unhandled-failure-strategy`, respectively.
+When an error occurs but no error handler can handle the failure, Quarkus uses the strategy specified by `quarkus.websockets-next.server.unhandled-failure-strategy`.
 By default, the connection is closed.
 Alternatively, an error message can be logged or no operation performed.
 
-== Access to the WebSocketConnection
-
-The `io.quarkus.websockets.next.WebSocketConnection` object represents the WebSocket connection.
-It's _session-scoped_  and is valid for the whole duration of the connection.
-
-Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@OnClose` can access the `WebSocketConnection` object:
-
-[source,java]
-----
-@Inject WebSocketConnection connection;
-----
-
-Note that outside of these methos, the `WebSocketConnection` object is not available.
-
-The connection can be used to send messages to the client, access the path parameters, and broadcast messages to all connected clients.
-
-[source, java]
-----
-// Send a message:
-connection.sendTextAndAwait("Hello!");
-
-// Broadcast messages:
-connection.broadcast().sendTextAndAwait(departure);
-
-// Access path parameters:
-String param = connection.pathParam("foo");
-----
-
-The `WebSocketConnection` provides both a blocking and a non-blocking method to send messages:
-
-- `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
-- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
-
-=== List open connections
-
-It is also possible to list all open connections.
-Quarkus provides a CDI bean of type `io.quarkus.websockets.next.OpenConnections` that declares convenient methods to access the connections.
-
-[source, java]
-----
-import io.quarkus.logging.Log;
-import io.quarkus.websockets.next.OpenConnections;
-
-class MyBean {
-
-  @Inject
-  OpenConnections connections;
-
-  void logAllOpenConnections() {
-     Log.infof("Open connections: %s", connections.listAll()); <1>
-  }
-}
-----
-<1> `OpenConnections#listAll()` returns an immutable snapshot of all open connections at the given time.
-
-There are also other convenient methods.
-For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
-
-=== CDI events
-
-Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Open` asynchronously when a new connection is opened.
-Moreover, a CDI event of type `WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Closed` is fired asynchronously when a connection is closed.
-
-[source, java]
-----
-import jakarta.enterprise.event.ObservesAsync;
-import io.quarkus.websockets.next.Open;
-import io.quarkus.websockets.next.WebSocketConnection;
-
-class MyBean {
-
-  void connectionOpened(@ObservesAsync @Open WebSocketConnection connection) { <1>
-     // This observer method is called when a connection is opened...
-  }
-}
-----
-<1> An asynchronous observer method is executed using the default blocking executor service.
-
-== Serialization and Deserialization
+[[serialization]]
+=== Serialization and deserialization
 
 The WebSocket Next extension supports automatic serialization and deserialization of messages.
 
-
 Objects of type `String`, `JsonObject`, `JsonArray`, `Buffer`, and `byte[]` are sent as-is and by-pass the serialization and deserialization.
-When no codec is provided, the serialization and deserialization uses JSON (Jackson) automatically.
+When no codec is provided, the serialization and deserialization convert the message from/to JSON automatically.
 
 When you need to customize the serialization and deserialization, you can provide a custom codec.
 
-=== Custom codec
+==== Custom codec
 
-To implement a custom codec, you must provides a CDI bean implementing:
+To implement a custom codec, you must provide a CDI bean implementing:
 
-- `io.quarkus.websockets.next.BinaryMessageCodec`  for binary messages
-- `io.quarkus.websockets.next.TextMessageCodec`  for text messages
+- `io.quarkus.websockets.next.BinaryMessageCodec` for binary messages
+- `io.quarkus.websockets.next.TextMessageCodec` for text messages
 
 The following example shows how to implement a custom codec for a `Item` class:
 
 [source, java]
 ----
 @Singleton
-    public static class ItemBinaryMessageCodec implements BinaryMessageCodec<Item> {
+public class ItemBinaryMessageCodec implements BinaryMessageCodec<Item> {
 
-        @Override
-        public boolean supports(Type type) {
-            // Allows selecting the right codec for the right type
-            return type.equals(Item.class);
-        }
-
-        @Override
-        public Buffer encode(Item value) {
-            // Serialization
-            return Buffer.buffer(value.toString());
-        }
-
-        @Override
-        public Item decode(Type type, Buffer value) {
-            return new Item(value.toString());
-        }
-
+    @Override
+    public boolean supports(Type type) {
+        // Allows selecting the right codec for the right type
+        return type.equals(Item.class);
     }
+
+    @Override
+    public Buffer encode(Item value) {
+        // Serialization
+        return Buffer.buffer(value.toString());
+    }
+
+    @Override
+    public Item decode(Type type, Buffer value) {
+        // Deserialization
+        return new Item(value.toString());
+    }
+}
 ----
 
-`OnTextMessage` and `OnBinaryMessage` methods can also specify which codec need to be used explicitly:
+`OnTextMessage` and `OnBinaryMessage` methods can also specify which codec should be used explicitly:
 
 [source, java]
 ----
@@ -610,26 +488,26 @@ Item find(Item item) {
 1. Specify the codec to use for both the deserialization of the incoming message
 2. Specify the codec to use for the serialization of the outgoing message
 
-== Ping/pong messages
+=== Ping/pong messages
 
 A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.2[ping message] may serve as a keepalive or to verify the remote endpoint.
 A https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.3[pong message] is sent in response to a ping message and it must have an identical payload.
 
-The server automatically responds to a ping message sent from the client.
+Server/client endpoints automatically respond to a ping message sent from the client/server.
 In other words, there is no need for `@OnPingMessage` callback declared on an endpoint.
 
 The server can send ping messages to a connected client.
-The `WebSocketConnection` declares methods to send ping messages; there is a non-blocking variant: `WebSocketConnection#sendPing(Buffer)` and a blocking variant: `WebSocketConnection#sendPingAndAwait(Buffer)`.
+`WebSocketConnection`/`WebSocketClientConnection` declare methods to send ping messages; there is a non-blocking variant: `sendPing(Buffer)` and a blocking variant: `sendPingAndAwait(Buffer)`.
 By default, the ping messages are not sent automatically.
-However, the configuration property `quarkus.websockets-next.server.auto-ping-interval` can be used to set the interval after which, the server sends a ping message to a connected client automatically. 
+However, the configuration properties `quarkus.websockets-next.server.auto-ping-interval` and `quarkus.websockets-next.client.auto-ping-interval` can be used to set the interval after which, the server/client sends a ping message to a connected client/server automatically. 
 
 [source,properties]
 ----
 quarkus.websockets-next.server.auto-ping-interval=2 <1>
 ----
-<1> Sends a ping message to a connected client every 2 seconds.
+<1> Sends a ping message from the server to a connected client every 2 seconds.
 
-The `@OnPongMessage` annotation is used to define a callback that consumes pong messages sent from the client.
+The `@OnPongMessage` annotation is used to define a callback that consumes pong messages sent from the client/server.
 An endpoint must declare at most one method annotated with `@OnPongMessage`.
 The callback method must return either `void` or `Uni<Void>`, and it must accept a single parameter of type `Buffer`.
 
@@ -641,10 +519,132 @@ void pong(Buffer data) {
 }
 ----
 
-NOTE: The server can also send unsolicited pong messages that may serve as a unidirectional heartbeat. There is a non-blocking variant: `WebSocketConnection#sendPong(Buffer)` and also a blocking variant: `WebSocketConnection#sendPongAndAwait(Buffer)`.
+NOTE: The server/client can also send unsolicited pong messages that may serve as a unidirectional heartbeat. There is a non-blocking variant: `WebSocketConnection#sendPong(Buffer)` and also a blocking variant: `WebSocketConnection#sendPongAndAwait(Buffer)`.
+
+
+== Server API
+
+=== HTTP server configuration
+
+This extension reuses the _main_ HTTP server.
+
+Thus, the configuration of the WebSocket server is done in the `quarkus.http.` configuration section.
+
+WebSocket paths configured within the application are concatenated with the root path defined by `quarkus.http.root` (which defaults to /).
+This concatenation ensures that WebSocket endpoints are appropriately positioned within the application's URL structure.
+
+Refer to the xref:http-reference.adoc[HTTP guide] for more details.
+
+=== Sub-websockets endpoints
+
+A `@WebSocket` endpoint can encapsulate static nested classes, which are also annotated with /`@WebSocket` and represent _sub-websockets_.
+The resulting path of these sub-web sockets concatenates the path from the enclosing class and the nested class.
+The resulting path is normalized, following the HTTP URL rules.
+
+Sub-web sockets inherit access to the path parameters declared in the `@WebSocket` annotation of both the enclosing and nested classes.
+The `consumePrimary` method within the enclosing class can access the `version` parameter in the following example.
+Meanwhile, the `consumeNested` method within the nested class can access both `version` and `id` parameters:
+
+[source, java]
+----
+@WebSocket(path = "/ws/v{version}")
+public class MyPrimaryWebSocket {
+
+    @OnTextMessage
+    void consumePrimary(String s)    { ... }
+
+    @WebSocket(path = "/products/{id}")
+    public static class MyNestedWebSocket {
+
+      @OnTextMessage
+      void consumeNested(String s)    { ... }
+
+    }
+}
+----
+
+[[ws-connection]]
+=== WebSocket connection
+
+The `io.quarkus.websockets.next.WebSocketConnection` object represents the WebSocket connection.
+Quarkus provides a `@SessionScoped` CDI bean that implements this interface and can be injected in a `WebSocket` endpoint and used to interact with the connected client.
+
+Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@OnClose` can access the injected `WebSocketConnection` object:
+
+[source,java]
+----
+@Inject WebSocketConnection connection;
+----
+
+NOTE: Note that outside of these methos, the `WebSocketConnection` object is not available. However, it is possible to <<list-open-connections,list all open connections>>. 
+
+The connection can be used to send messages to the client, access the path parameters, broadcast messages to all connected clients, etc.
+
+[source, java]
+----
+// Send a message:
+connection.sendTextAndAwait("Hello!");
+
+// Broadcast messages:
+connection.broadcast().sendTextAndAwait(departure);
+
+// Access path parameters:
+String param = connection.pathParam("foo");
+----
+
+The `WebSocketConnection` provides both a blocking and a non-blocking method variants to send messages:
+
+- `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
+- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
+
+[[list-open-connections]]
+==== List open connections
+
+It is also possible to list all open connections.
+Quarkus provides a CDI bean of type `io.quarkus.websockets.next.OpenConnections` that declares convenient methods to access the connections.
+
+[source, java]
+----
+import io.quarkus.logging.Log;
+import io.quarkus.websockets.next.OpenConnections;
+
+class MyBean {
+
+  @Inject
+  OpenConnections connections;
+
+  void logAllOpenConnections() {
+     Log.infof("Open connections: %s", connections.listAll()); <1>
+  }
+}
+----
+<1> `OpenConnections#listAll()` returns an immutable snapshot of all open connections at the given time.
+
+There are also other convenient methods.
+For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
+
+==== CDI events
+
+Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Open` asynchronously when a new connection is opened.
+Moreover, a CDI event of type `WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Closed` is fired asynchronously when a connection is closed.
+
+[source, java]
+----
+import jakarta.enterprise.event.ObservesAsync;
+import io.quarkus.websockets.next.Open;
+import io.quarkus.websockets.next.WebSocketConnection;
+
+class MyBean {
+
+  void connectionOpened(@ObservesAsync @Open WebSocketConnection connection) { <1>
+     // This observer method is called when a connection is opened...
+  }
+}
+----
+<1> An asynchronous observer method is executed using the default blocking executor service.
 
 [[websocket-next-security]]
-== Security
+=== Security
 
 WebSocket endpoint callback methods can be secured with security annotations such as `io.quarkus.security.Authenticated`,
 `jakarta.annotation.security.RolesAllowed` and other annotations listed in the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Supported security annotations] documentation.
@@ -695,7 +695,7 @@ public class Endpoint {
 
 NOTE: When OpenID Connect extension is used and token expires, Quarkus automatically closes connection.
 
-== Secure HTTP upgrade
+=== Secure HTTP upgrade
 
 An HTTP upgrade is secured when standard security annotation is placed on an endpoint class or an HTTP Security policy is defined.
 The advantage of securing HTTP upgrade is less processing, the authorization is performed early and only once.
@@ -746,7 +746,7 @@ quarkus.http.auth.permission.http-upgrade.paths=/end
 quarkus.http.auth.permission.http-upgrade.policy=authenticated
 ----
 
-== Inspect and/or reject HTTP upgrade
+=== Inspect and/or reject HTTP upgrade
 
 To inspect an HTTP upgrade, you must provide a CDI bean implementing the `io.quarkus.websockets.next.HttpUpgradeCheck` interface.
 Quarkus calls the `HttpUpgradeCheck#perform` method on every HTTP request that should be upgraded to a WebSocket connection.
@@ -783,18 +783,170 @@ public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
 
 TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
 
+== Client API
+
+[[client-connectors]]
+=== Client connectors
+
+The `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` is used to configure and create new connections for client endpoints.
+A CDI bean that implements this interface is provided and can be injected in other beans. 
+The actual type argument is used to determine the client endpoint.
+The type is validated during build - if it does not represent a client endpoint the build fails.
+
+Let’s consider the following client endpoint:
+
+.Client endpoint
+[source, java]
+----
+@WebSocketClient(path = "/endpoint/{name}")
+public static class ClientEndpoint {
+
+    @OnTextMessage
+    void onMessage(@PathParam String name, String message, WebSocketClientConnection connection) {
+        // ...
+    }
+}
+----
+
+The connector for this client endpoint is used as follows:
+
+.Connector
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @ConfigProperty(name = "enpoint.uri")
+    URI myUri;
+
+    @Inject
+    WebSocketConnector<ClientEndpoint> connector; <1>
+
+    void openAndSendMessage() {
+        WebSocketClientConnection connection = connector
+            .baseUri(uri) <2>
+            .pathParam("name", "Roxanne") <3>
+            .connectAndAwait();
+        connection.sendTextAndAwait("Hi!"); <4>
+    }
+}
+----
+<1> Inject the connector for `ClientEndpoint`.
+<2> If the base `URI` is not supplied we attempt to obtain the value from the config. The key consists of the client id and the `.base-uri` suffix.
+<3> Set the path param value. Throws `IllegalArgumentException` if the client endpoint path does not contain a parameter with the given name.
+<4> Use the connection to send messages, if needed.
+
+NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
+
+==== Basic connector
+
+In the case where the application developer does not need the combination of the client endpoint and the connector, a _basic connector_ can be used.
+The basic connector is a simple way to create a connection and consume/send messages without defining a client endpoint.
+
+.Basic connector
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    BasicWebSocketConnector connector; <1>
+
+    void openAndConsume() {
+        WebSocketClientConnection connection = connector
+            .baseUri(uri) <2>
+            .path("/ws") <3>
+            .executionModel(ExecutionModel.NON_BLOCKING) <4>
+            .onTextMessage((c, m) -> { <5>
+               // ...
+            })
+            .connectAndAwait();
+    }
+}
+----
+<1> Inject the connector.
+<2> The base URI must be always set.
+<3> The additional path that should be appended to the base URI.
+<4> Set the execution model for callback handlers. By default, the callback may block the current thread. However in this case, the callback is executed on the event loop and may not block the current thread.
+<5> The lambda will be called for every text message sent from the server.
+
+The basic connector is closed to a low-level API and is reserved for advanced users.
+However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
+It also provides a way to configure the execution model of the callbacks, ensuring the optimal integration with the rest of Quarkus.
+
+[[ws-client-connection]]
+=== WebSocket client connection
+
+The `io.quarkus.websockets.next.WebSocketClientConnection` object represents the WebSocket connection.
+Quarkus provides a `@SessionScoped` CDI bean that implements this interface and can be injected in a `WebSocketClient` endpoint and used to interact with the connected server.
+
+Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@OnClose` can access the injected `WebSocketClientConnection` object:
+
+[source,java]
+----
+@Inject WebSocketClientConnection connection;
+----
+
+NOTE: Note that outside of these methos, the `WebSocketClientConnection` object is not available. However, it is possible to <<list-open-client-connections,list all open client connections>>. 
+
+The connection can be used to send messages to the client, access the path parameters, etc.
+
+[source, java]
+----
+// Send a message:
+connection.sendTextAndAwait("Hello!");
+
+// Broadcast messages:
+connection.broadcast().sendTextAndAwait(departure);
+
+// Access path parameters:
+String param = connection.pathParam("foo");
+----
+
+The `WebSocketClientConnection` provides both a blocking and a non-blocking method variants to send messages:
+
+- `sendTextAndAwait(String message)`: Sends a text message to the client and waits for the message to be sent. It's blocking and should only be called from an executor thread.
+- `sendText(String message)`: Sends a text message to the client. It returns a `Uni`. It's non-blocking, but you must subscribe to it.
+
+[[list-open-client-connections]]
+==== List open client connections
+
+It is also possible to list all open connections.
+Quarkus provides a CDI bean of type `io.quarkus.websockets.next.OpenClientConnections` that declares convenient methods to access the connections.
+
+[source, java]
+----
+import io.quarkus.logging.Log;
+import io.quarkus.websockets.next.OpenClientConnections;
+
+class MyBean {
+
+  @Inject
+  OpenClientConnections connections;
+
+  void logAllOpenClinetConnections() {
+     Log.infof("Open client connections: %s", connections.listAll()); <1>
+  }
+}
+----
+<1> `OpenClientConnections#listAll()` returns an immutable snapshot of all open connections at the given time.
+
+There are also other convenient methods.
+For example, `OpenClientConnections#findByClientId(String)` makes it easy to find connections for a specific endpoint.
+
 [[traffic-logging]]
 == Traffic logging 
 
 Quarkus can log the messages sent and received for debugging purposes. 
-To enable traffic logging, set the `quarkus.websockets-next.server.traffic-logging.enabled` configuration property to `true`.
+To enable traffic logging for the server, set the `quarkus.websockets-next.server.traffic-logging.enabled` configuration property to `true`.
+To enable traffic logging for the client, set the `quarkus.websockets-next.client.traffic-logging.enabled` configuration property to `true`.
 The payload of text messages is logged as well.
 However, the number of logged characters is limited.
-The default limit is 100, but you can change this limit with the `quarkus.websockets-next.server.traffic-logging.text-payload-limit` configuration property.
+The default limit is 100, but you can change this limit with the `quarkus.websockets-next.server.traffic-logging.text-payload-limit` and `quarkus.websockets-next.client.traffic-logging.text-payload-limit` configuration property, respectively.
 
 TIP: The messages are only logged if the `DEBUG` level is enabled for the logger `io.quarkus.websockets.next.traffic`.
 
-.Example configuration
+.Example server configuration
 [source, properties]
 ----
 quarkus.websockets-next.server.traffic-logging.enabled=true <1>
@@ -805,6 +957,7 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 <1> Enables traffic logging.
 <2> Set the number of characters of a text message payload which will be logged.
 <3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
+
 
 [[websocket-next-configuration-reference]]
 == Configuration reference

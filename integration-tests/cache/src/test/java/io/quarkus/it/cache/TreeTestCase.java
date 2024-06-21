@@ -7,12 +7,12 @@ import static org.hamcrest.core.IsNot.not;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(H2DatabaseTestResource.class)
+@WithTestResource(value = H2DatabaseTestResource.class, restrictToAnnotatedClass = false)
 @DisplayName("Tests the integration between panache and the cache extension")
 public class TreeTestCase {
 

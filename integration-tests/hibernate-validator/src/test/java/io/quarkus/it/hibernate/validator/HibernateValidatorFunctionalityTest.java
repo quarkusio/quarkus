@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionImpl;
 import io.quarkus.test.LogCollectingTestResource;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -26,8 +26,8 @@ import io.restassured.response.ValidatableResponse;
  * Test various Bean Validation operations running in Quarkus
  */
 @QuarkusTest
-@QuarkusTestResource(H2DatabaseTestResource.class)
-@QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
+@WithTestResource(value = H2DatabaseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = LogCollectingTestResource.class, initArgs = {
         @ResourceArg(name = LogCollectingTestResource.LOGGER, value = "io.quarkus"),
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING")
 })

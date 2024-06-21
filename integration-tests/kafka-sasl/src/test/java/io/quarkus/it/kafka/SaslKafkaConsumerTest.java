@@ -13,12 +13,12 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaSASLTestResource.class)
+@WithTestResource(value = KafkaSASLTestResource.class, restrictToAnnotatedClass = false)
 public class SaslKafkaConsumerTest {
 
     public Producer<Integer, String> createProducer() {

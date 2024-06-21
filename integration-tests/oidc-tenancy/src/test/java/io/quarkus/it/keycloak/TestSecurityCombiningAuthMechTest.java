@@ -14,7 +14,7 @@ import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -22,7 +22,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@WithTestResource(value = KeycloakRealmResourceManager.class, restrictToAnnotatedClass = false)
 public class TestSecurityCombiningAuthMechTest {
 
     @TestHTTPEndpoint(MultipleAuthMechResource.class)

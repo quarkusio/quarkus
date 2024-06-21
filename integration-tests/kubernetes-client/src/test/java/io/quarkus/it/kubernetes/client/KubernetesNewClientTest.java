@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.KubernetesTestServer;
 import io.restassured.RestAssured;
@@ -17,7 +17,7 @@ import io.restassured.RestAssured;
  * KubernetesClientTest.TestResource contains the entire process of setting up the Mock Kubernetes API Server
  * It has to live there otherwise the Kubernetes client in native mode won't be able to locate the mock API Server
  */
-@QuarkusTestResource(value = CustomKubernetesTestServerTestResource.class, restrictToAnnotatedClass = true)
+@WithTestResource(CustomKubernetesTestServerTestResource.class)
 @QuarkusTest
 class KubernetesNewClientTest {
 

@@ -26,12 +26,12 @@ import io.quarkus.mongodb.panache.common.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
+@WithTestResource(value = MongoReplicaSetTestResource.class, restrictToAnnotatedClass = false)
 @DisabledOnOs(OS.WINDOWS)
 public class MongoDatabaseResolverTest {
 

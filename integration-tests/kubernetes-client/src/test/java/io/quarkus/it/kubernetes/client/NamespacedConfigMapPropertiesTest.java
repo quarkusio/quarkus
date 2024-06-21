@@ -5,12 +5,12 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
-@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
+@WithTestResource(CustomKubernetesMockServerTestResource.class)
 @TestProfile(NamespacedConfigMapPropertiesTest.MyProfile.class)
 @QuarkusTest
 public class NamespacedConfigMapPropertiesTest {

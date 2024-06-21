@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit5.virtual.ShouldNotPin;
 import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
@@ -15,7 +15,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(MailHogResource.class)
+@WithTestResource(value = MailHogResource.class, restrictToAnnotatedClass = false)
 @VirtualThreadUnit
 @ShouldNotPin
 class RunOnVirtualThreadTest {

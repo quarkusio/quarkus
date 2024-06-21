@@ -34,7 +34,7 @@ public class LogCollectingTestResource implements QuarkusTestResourceLifecycleMa
     public static LogCollectingTestResource current() {
         if (current == null) {
             throw new IllegalStateException(
-                    LogCollectingTestResource.class.getName() + " must be registered with @QuarkusTestResource");
+                    LogCollectingTestResource.class.getName() + " must be registered with @WithTestResource");
         }
         return current;
     }

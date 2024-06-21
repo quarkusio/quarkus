@@ -42,6 +42,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
+import io.quarkus.test.common.WithTestResource;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
 
@@ -275,6 +276,12 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     public static boolean hasPerTestResources(Class<?> requiredTestClass) {
         while (requiredTestClass != Object.class) {
+            for (WithTestResource testResource : requiredTestClass.getAnnotationsByType(WithTestResource.class)) {
+                if (testResource.restrictToAnnotatedClass()) {
+                    return true;
+                }
+            }
+
             for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
                 if (testResource.restrictToAnnotatedClass()) {
                     return true;
@@ -283,9 +290,12 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             // scan for meta-annotations
             for (Annotation annotation : requiredTestClass.getAnnotations()) {
                 // skip TestResource annotations
-                if (annotation.annotationType() != QuarkusTestResource.class) {
+                var annotationType = annotation.annotationType();
+
+                if ((annotationType != WithTestResource.class) && (annotationType != QuarkusTestResource.class)) {
                     // look for a TestResource on the annotation itself
-                    if (annotation.annotationType().getAnnotationsByType(QuarkusTestResource.class).length > 0) {
+                    if ((annotationType.getAnnotationsByType(WithTestResource.class).length > 0)
+                            || (annotationType.getAnnotationsByType(QuarkusTestResource.class).length > 0)) {
                         // meta-annotations are per-test scoped for now
                         return true;
                     }

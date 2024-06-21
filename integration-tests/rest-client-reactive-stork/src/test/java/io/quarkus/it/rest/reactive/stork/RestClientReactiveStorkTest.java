@@ -12,15 +12,15 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.client.reactive.stork.MyServiceDiscoveryProvider;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
 import io.vertx.core.Vertx;
 
 @QuarkusTest
-@QuarkusTestResource(SlowWiremockServer.class)
-@QuarkusTestResource(FastWiremockServer.class)
+@WithTestResource(value = SlowWiremockServer.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = FastWiremockServer.class, restrictToAnnotatedClass = false)
 public class RestClientReactiveStorkTest {
 
     @Test

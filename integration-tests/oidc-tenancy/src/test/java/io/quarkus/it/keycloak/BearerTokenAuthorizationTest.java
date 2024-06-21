@@ -26,7 +26,7 @@ import org.htmlunit.util.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
@@ -40,7 +40,7 @@ import io.vertx.mutiny.core.http.HttpClient;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@WithTestResource(value = KeycloakRealmResourceManager.class, restrictToAnnotatedClass = false)
 public class BearerTokenAuthorizationTest {
 
     private KeycloakTestClient client = new KeycloakTestClient();

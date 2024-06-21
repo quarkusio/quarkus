@@ -4,22 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.quarkus.it.mongodb.panache.BookDTO
-import io.quarkus.it.mongodb.panache.book.BookDetail
-import io.quarkus.it.mongodb.panache.person.Person
-import io.quarkus.test.common.QuarkusTestResource
-import io.quarkus.test.junit.QuarkusTest
-import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
 import io.restassured.RestAssured.get
 import io.restassured.common.mapper.TypeRef
 import io.restassured.config.ObjectMapperConfig
 import io.restassured.parsing.Parser
 import io.restassured.response.Response
-import jakarta.ws.rs.client.Client
-import jakarta.ws.rs.client.ClientBuilder
-import jakarta.ws.rs.client.WebTarget
-import jakarta.ws.rs.sse.SseEventSource
 import java.io.IOException
 import java.time.Duration
 import java.util.Calendar
@@ -27,6 +17,16 @@ import java.util.Collections
 import java.util.Date
 import java.util.GregorianCalendar
 import java.util.concurrent.atomic.LongAdder
+import jakarta.ws.rs.client.Client
+import jakarta.ws.rs.client.ClientBuilder
+import jakarta.ws.rs.client.WebTarget
+import jakarta.ws.rs.sse.SseEventSource
+import io.quarkus.it.mongodb.panache.BookDTO
+import io.quarkus.it.mongodb.panache.book.BookDetail
+import io.quarkus.it.mongodb.panache.person.Person
+import io.quarkus.test.common.WithTestResource
+import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.mongodb.MongoTestResource
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource::class)
+@WithTestResource(MongoTestResource::class, restrictToAnnotatedClass = false)
 internal open class ReactiveMongodbPanacheResourceTest {
     companion object {
         private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> =

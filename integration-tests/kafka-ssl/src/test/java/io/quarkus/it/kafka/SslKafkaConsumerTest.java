@@ -16,7 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import io.quarkus.it.kafka.ssl.CertificateFormat;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import me.escoffier.certs.Format;
@@ -28,7 +28,7 @@ import me.escoffier.certs.junit5.Certificates;
                 Format.PEM }, password = "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L")
 }, baseDir = "target/certs")
 @QuarkusTest
-@QuarkusTestResource(KafkaSSLTestResource.class)
+@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
 public class SslKafkaConsumerTest {
 
     public static Producer<Integer, String> createProducer(CertificateFormat format) {

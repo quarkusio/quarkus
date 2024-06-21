@@ -12,6 +12,7 @@ import org.junit.jupiter.api.ClassOrdererContext;
 import org.junit.jupiter.api.Nested;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -20,11 +21,13 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
 /**
  * A {@link ClassOrderer} that orders {@link QuarkusTest}, {@link QuarkusIntegrationTest} and {@link QuarkusMainTest} classes
  * for minimum Quarkus
- * restarts by grouping them by their {@link TestProfile} and {@link QuarkusTestResource} annotation(s).
+ * restarts by grouping them by their {@link TestProfile}, {@link WithTestResource}, and {@link QuarkusTestResource}
+ * annotation(s).
  * <p/>
  * By default, Quarkus*Tests not using any profile come first, then classes using a profile (in groups) and then all other
  * non-Quarkus tests (e.g. plain unit tests).<br/>
- * Quarkus*Tests with {@linkplain QuarkusTestResource#restrictToAnnotatedClass() restricted} {@code QuarkusTestResource} come
+ * Quarkus*Tests with {@linkplain WithTestResource#restrictToAnnotatedClass()} or
+ * {@linkplain QuarkusTestResource#restrictToAnnotatedClass() restricted} {@code QuarkusTestResource} come
  * after tests with profiles and Quarkus*Tests with only unrestricted resources are handled like tests without a profile (come
  * first).
  * <p/>
@@ -136,13 +139,22 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     }
 
     private boolean hasRestrictedResource(ClassDescriptor classDescriptor) {
-        return classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class).stream()
-                .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor));
+        return classDescriptor.findRepeatableAnnotations(WithTestResource.class).stream()
+                .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor)) ||
+                classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class).stream()
+                        .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor));
     }
 
+    @Deprecated(forRemoval = true)
     private boolean isMetaTestResource(QuarkusTestResource resource, ClassDescriptor classDescriptor) {
         return Arrays.stream(classDescriptor.getTestClass().getAnnotationsByType(QuarkusTestResource.class))
                 .map(QuarkusTestResource::value)
+                .noneMatch(resource.value()::equals);
+    }
+
+    private boolean isMetaTestResource(WithTestResource resource, ClassDescriptor classDescriptor) {
+        return Arrays.stream(classDescriptor.getTestClass().getAnnotationsByType(WithTestResource.class))
+                .map(WithTestResource::value)
                 .noneMatch(resource.value()::equals);
     }
 

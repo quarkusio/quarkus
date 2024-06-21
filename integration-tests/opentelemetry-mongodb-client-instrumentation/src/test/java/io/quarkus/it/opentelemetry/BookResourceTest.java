@@ -14,14 +14,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.VERSION, value = "V6_0"))
+@WithTestResource(value = MongoTestResource.class, restrictToAnnotatedClass = false, initArgs = @ResourceArg(name = MongoTestResource.VERSION, value = "V6_0"))
 class BookResourceTest {
 
     private final TypeRef<List<Book>> bookListType = new TypeRef<>() {

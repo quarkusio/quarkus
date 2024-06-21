@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -23,7 +23,7 @@ import io.smallrye.jwt.build.Jwt;
 
 @QuarkusTest
 @TestProfile(AnnotationBasedTenantTest.NoProactiveAuthTestProfile.class)
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@WithTestResource(value = OidcWiremockTestResource.class, restrictToAnnotatedClass = false)
 public class AnnotationBasedTenantTest {
     public static class NoProactiveAuthTestProfile implements QuarkusTestProfile {
         public Map<String, String> getConfigOverrides() {

@@ -51,7 +51,7 @@ public interface QuarkusTestProfile {
      * specific test profile.
      *
      * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the
-     * {@link io.quarkus.test.common.QuarkusTestResource} class
+     * {@link io.quarkus.test.common.WithTestResource} class
      * annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at
      * all).
      */

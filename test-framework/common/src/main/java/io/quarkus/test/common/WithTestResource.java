@@ -8,27 +8,31 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Map;
 
-import io.quarkus.test.common.QuarkusTestResource.List;
+import io.quarkus.test.common.WithTestResource.List;
 
 /**
  * Used to define a test resource.
  *
- * <b>All</b> {@code QuarkusTestResource} annotations in the test module
+ * <b>All</b> {@code WithTestResource} annotations in the test module
  * are discovered (regardless of the test which contains the annotation)
  * and their corresponding {@code QuarkusTestResourceLifecycleManager}
  * started <b>before</b> <b>any</b> test is run.
  *
  * Note that test resources are never restarted when running {@code @Nested} test classes.
- *
- * @deprecated Use the new {@link WithTestResource} instead. It will be a long while before this is removed, but better to move
- *             to the replacement sooner than later.
+ * <p>
+ * This replaces {@link QuarkusTestResource}. The only difference is that the default value for
+ * {@link #restrictToAnnotatedClass()} {@code == true}.
+ * </p>
+ * <p>
+ * This means that any resources managed by {@link #value()} apply to an individual test class or test profile, unlike with
+ * {@link QuarkusTestResource} where a resource applies to all test classes.
+ * </p>
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Repeatable(List.class)
-@Deprecated(forRemoval = true)
-public @interface QuarkusTestResource {
+public @interface WithTestResource {
 
     /**
      * @return The class managing the lifecycle of the test resource.
@@ -52,13 +56,12 @@ public @interface QuarkusTestResource {
      * Note that this defaults to true for meta-annotations since meta-annotations are only considered
      * for the current test class or test profile.
      */
-    boolean restrictToAnnotatedClass() default false;
+    boolean restrictToAnnotatedClass() default true;
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @Documented
-    @Deprecated(forRemoval = true)
     @interface List {
-        QuarkusTestResource[] value();
+        WithTestResource[] value();
     }
 }

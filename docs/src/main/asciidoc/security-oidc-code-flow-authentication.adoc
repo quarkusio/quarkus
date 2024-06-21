@@ -1754,12 +1754,12 @@ import org.htmlunit.WebClient;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@WithTestResource(OidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
 
     @Test
@@ -1822,7 +1822,7 @@ quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
 Finally, write a test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
-The only difference is that `@QuarkusTestResource` is no longer needed:
+The only difference is that `@WithTestResource` is no longer needed:
 
 [source, java]
 ----
@@ -1878,14 +1878,14 @@ Then, configure the Maven Surefire plugin as follows (and similarly the Maven Fa
 ----
 
 Now, set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
-The only difference is the name of `QuarkusTestResource`:
+The only difference is the name of `WithTestResource`:
 
 [source, java]
 ----
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowAuthorizationTest {
 }
 ----

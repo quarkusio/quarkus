@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.LogCollectingTestResource;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -19,7 +19,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * hence the lack of a corresponding native mode test.
  */
 @QuarkusTest
-@QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
+@WithTestResource(value = LogCollectingTestResource.class, initArgs = {
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
         @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
         // Ignore logs about schema management:

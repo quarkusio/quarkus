@@ -16,9 +16,9 @@ import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 
-@QuarkusTestResource(RedisTestResource.class)
+@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
 public class DataSourceInjectionTest {
 
     @RegisterExtension

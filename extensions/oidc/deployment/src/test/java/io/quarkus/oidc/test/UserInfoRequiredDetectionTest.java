@@ -16,13 +16,13 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class UserInfoRequiredDetectionTest {
 
     @RegisterExtension

@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -28,7 +28,7 @@ import io.quarkus.test.junit.QuarkusTest;
  */
 @QuarkusTest
 @Tag("nested")
-@QuarkusTestResource(value = QuarkusTestNestedWithResourcesTestCase.DummyTestResource.class, restrictToAnnotatedClass = true)
+@WithTestResource(QuarkusTestNestedWithResourcesTestCase.DummyTestResource.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class QuarkusTestNestedWithResourcesTestCase {
 

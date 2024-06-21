@@ -6,7 +6,7 @@ import java.net.URL;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -14,7 +14,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * See `GraphQLClientTester` for the actual testing code that uses GraphQL clients.
  */
 @QuarkusTest
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@WithTestResource(value = KeycloakRealmResourceManager.class, restrictToAnnotatedClass = false)
 public class GraphQLAuthExpiryTest {
 
     @TestHTTPResource

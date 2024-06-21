@@ -8,15 +8,15 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
 @QuarkusMainTest
-@QuarkusTestResource(PicocliTest.TestResource.class)
+@WithTestResource(value = PicocliTest.TestResource.class, restrictToAnnotatedClass = false)
 public class PicocliTest {
 
     private String value;

@@ -783,6 +783,10 @@ public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
 
 TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
 
+=== TLS
+
+As a direct consequence of the fact this extension reuses the _main_ HTTP server, all the relevant server configurations apply. See Refer to the xref:http-reference.adoc#ssl[HTTP guide] for more details.
+
 == Client API
 
 [[client-connectors]]
@@ -933,6 +937,23 @@ class MyBean {
 
 There are also other convenient methods.
 For example, `OpenClientConnections#findByClientId(String)` makes it easy to find connections for a specific endpoint.
+
+=== Configuring SSL/TLS
+
+To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:
+
+[source, properties]
+----
+quarkus.tls.my-ws-client.trust-store.p12.path=server-truststore.p12
+quarkus.tls.my-ws-client.trust-store.p12.password=secret
+
+quarkus.websockets-next.client.tls-configuration-name=my-ws-client # Reference the named configuration
+----
+
+WARNING: When using the WebSocket client, using a _named_ configuration is required to avoid conflicts with other TLS configurations.
+The client will not use the default TLS configuration.
+
+When you configure a _named_ TLS configuration, TLS is enabled by default.
 
 [[traffic-logging]]
 == Traffic logging 

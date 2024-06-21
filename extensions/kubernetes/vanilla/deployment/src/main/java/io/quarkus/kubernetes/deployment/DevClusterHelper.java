@@ -108,6 +108,7 @@ public class DevClusterHelper {
                                     .withSecret(e.getSecret())
                                     .withConfigmap(e.getConfigMap())
                                     .withField(e.getField())
+                                    .withPrefix(e.getPrefix())
                                     .build())));
                 });
 

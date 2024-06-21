@@ -38,7 +38,7 @@ public final class RestClientBuilderHelper {
         // avoid instantiation
     }
 
-    public static RestClientBuilder createRestClientBuilder(ElasticsearchConfig config) {
+    public static RestClientBuilder createRestClientBuilder(ElasticsearchClientRuntimeConfig config) {
         List<HttpHost> hosts = new ArrayList<>(config.hosts().size());
         for (InetSocketAddress host : config.hosts()) {
             hosts.add(new HttpHost(host.getHostString(), host.getPort(), config.protocol()));
@@ -93,7 +93,7 @@ public final class RestClientBuilderHelper {
         return builder;
     }
 
-    public static Sniffer createSniffer(RestClient client, ElasticsearchConfig config) {
+    public static Sniffer createSniffer(RestClient client, ElasticsearchClientRuntimeConfig config) {
         SnifferBuilder builder = Sniffer.builder(client)
                 .setSniffIntervalMillis((int) config.discovery().refreshInterval().toMillis());
 

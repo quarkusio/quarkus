@@ -25,7 +25,7 @@ public class ElasticsearchClientConfigTest {
                                     "application.properties"));
 
     @Inject
-    ElasticsearchConfig config;
+    ElasticsearchClientsRuntimeConfig config;
 
     @Test
     public void testRestClientBuilderHelperWithElasticsearchClientConfig() {

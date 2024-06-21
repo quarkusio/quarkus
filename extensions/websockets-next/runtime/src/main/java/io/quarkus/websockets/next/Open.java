@@ -16,7 +16,10 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * A CDI event of type {@link WebSocketConnection} with this qualifier is fired asynchronously when a new connection is opened.
+ * This qualifier is used for CDI events fired asynchronously when a new WebSocket connection is opened.
+ * <p>
+ * The payload is {@link WebSocketConnection} for server connections and {@link WebSocketClientConnection} for client
+ * connections.
  *
  * @see ObservesAsync
  * @see Event#fireAsync(Object)

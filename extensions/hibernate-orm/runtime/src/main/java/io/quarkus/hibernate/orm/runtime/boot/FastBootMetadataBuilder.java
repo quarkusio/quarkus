@@ -452,6 +452,7 @@ public class FastBootMetadataBuilder {
                 fullMeta.getEntityBindingMap(),
                 fullMeta.getComposites(),
                 fullMeta.getGenericComponentsMap(),
+                fullMeta.getEmbeddableDiscriminatorTypesMap(),
                 fullMeta.getMappedSuperclassMap(),
                 fullMeta.getCollectionBindingMap(),
                 fullMeta.getTypeDefinitionMap(),

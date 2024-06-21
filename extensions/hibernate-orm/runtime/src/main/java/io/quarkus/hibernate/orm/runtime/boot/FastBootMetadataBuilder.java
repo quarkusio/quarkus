@@ -43,14 +43,12 @@ import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
-import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -60,7 +58,6 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.TypeContributorList;
 import org.hibernate.jpa.internal.util.LogHelper;
 import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
-import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
@@ -80,7 +77,6 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactory;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
@@ -144,7 +140,6 @@ public class FastBootMetadataBuilder {
         ssrBuilder.applySettings(buildTimeSettings.getAllSettings());
 
         this.standardServiceRegistry = ssrBuilder.build();
-        registerIdentifierGenerators(standardServiceRegistry);
 
         this.providedServices = ssrBuilder.getProvidedServices();
 
@@ -611,32 +606,6 @@ public class FastBootMetadataBuilder {
             } else if (transactionType == PersistenceUnitTransactionType.RESOURCE_LOCAL) {
                 configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY,
                         JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
-            }
-        }
-    }
-
-    private void registerIdentifierGenerators(StandardServiceRegistry ssr) {
-        final StrategySelector strategySelector = ssr.getService(StrategySelector.class);
-
-        // apply id generators
-        final Object idGeneratorStrategyProviderSetting = buildTimeSettings
-                .get(AvailableSettings.IDENTIFIER_GENERATOR_STRATEGY_PROVIDER);
-        if (idGeneratorStrategyProviderSetting != null) {
-            final IdentifierGeneratorStrategyProvider idGeneratorStrategyProvider = strategySelector
-                    .resolveStrategy(IdentifierGeneratorStrategyProvider.class, idGeneratorStrategyProviderSetting);
-            final IdentifierGeneratorFactory identifierGeneratorFactory = ssr
-                    .getService(IdentifierGeneratorFactory.class);
-            if (identifierGeneratorFactory == null) {
-                throw persistenceException("Application requested custom identifier generator strategies, "
-                        + "but the MutableIdentifierGeneratorFactory could not be found");
-            }
-            if (!(identifierGeneratorFactory instanceof QuarkusMutableIdentifierGeneratorFactory)) {
-                throw persistenceException(
-                        "Unexpected implementation of IdentifierGeneratorFactory: do not override core components");
-            }
-            final QuarkusMutableIdentifierGeneratorFactory qIdGenerator = (QuarkusMutableIdentifierGeneratorFactory) identifierGeneratorFactory;
-            for (Map.Entry<String, Class<?>> entry : idGeneratorStrategyProvider.getStrategies().entrySet()) {
-                qIdGenerator.register(entry.getKey(), entry.getValue());
             }
         }
     }

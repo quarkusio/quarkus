@@ -82,8 +82,8 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
-        // Custom one! Also, this one has state so can't use the singleton.
-        serviceInitiators.add(new QuarkusMutableIdentifierGeneratorFactoryInitiator());// MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
+        // Custom one!
+        serviceInitiators.add(new QuarkusIdentifierGeneratorFactoryInitiator());
 
         serviceInitiators.add(QuarkusJtaPlatformInitiator.INSTANCE);
 

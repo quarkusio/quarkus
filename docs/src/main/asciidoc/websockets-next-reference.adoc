@@ -623,6 +623,7 @@ class MyBean {
 There are also other convenient methods.
 For example, `OpenConnections#findByEndpointId(String)` makes it easy to find connections for a specific endpoint.
 
+[[server-cdi-events]]
 ==== CDI events
 
 Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketConnection` with qualifier `@io.quarkus.websockets.next.Open` asynchronously when a new connection is opened.
@@ -937,6 +938,27 @@ class MyBean {
 
 There are also other convenient methods.
 For example, `OpenClientConnections#findByClientId(String)` makes it easy to find connections for a specific endpoint.
+
+[[client-cdi-events]]
+==== CDI events
+
+Quarkus fires a CDI event of type `io.quarkus.websockets.next.WebSocketClientConnection` with qualifier `@io.quarkus.websockets.next.Open` asynchronously when a new connection is opened.
+Moreover, a CDI event of type `WebSocketClientConnection` with qualifier `@io.quarkus.websockets.next.Closed` is fired asynchronously when a connection is closed.
+
+[source, java]
+----
+import jakarta.enterprise.event.ObservesAsync;
+import io.quarkus.websockets.next.Open;
+import io.quarkus.websockets.next.WebSocketClientConnection;
+
+class MyBean {
+
+  void connectionOpened(@ObservesAsync @Open WebSocketClientConnection connection) { <1>
+     // This observer method is called when a connection is opened...
+  }
+}
+----
+<1> An asynchronous observer method is executed using the default blocking executor service.
 
 === Configuring SSL/TLS
 

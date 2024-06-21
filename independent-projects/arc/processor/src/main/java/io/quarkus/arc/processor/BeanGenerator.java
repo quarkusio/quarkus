@@ -41,6 +41,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -1100,7 +1101,8 @@ public class BeanGenerator extends AbstractGenerator {
                 TryBlock tryBlock = doCreate.tryBlock();
                 ResultHandle requiredType;
                 try {
-                    requiredType = Types.getTypeHandle(tryBlock, injectionPoint.getType(), tccl);
+                    IndexView index = bean.getDeployment().getBeanArchiveIndex();
+                    requiredType = Types.getTypeHandle(tryBlock, injectionPoint.getType(), tccl, index);
                 } catch (IllegalArgumentException e) {
                     throw new IllegalStateException(
                             "Unable to construct the type handle for " + injectionPoint.getType() + ": " + e.getMessage());

@@ -137,6 +137,24 @@ thread (A non-command mode application is essentially just running an applicatio
 If you want to shut down a running application and you are not in the main thread, then you should call `Quarkus.asyncExit`
 in order to unblock the main thread and initiate the shutdown process.
 
+=== Running the application 
+
+To run the command mode application on the JVM, first build it using `mvnw package` or equivalent. 
+
+Then launch it:
+
+[source,shell]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+You can also build a native application with `mvnw package -Dnative`, and launch it with something like:
+
+[source,shell]
+----
+./target/getting-started-command-mode-1.0-SNAPSHOT-runner
+----
+
 === Development Mode
 
 Also, for command mode applications, the dev mode is supported.

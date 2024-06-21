@@ -94,6 +94,29 @@ public final class JandexUtil {
         return result;
     }
 
+    private static DotName getRawTypeName(AnnotationTarget target) {
+        switch (target.kind()) {
+            case CLASS:
+                return target.asClass().name();
+            case FIELD:
+                return target.asField().type().name();
+            case METHOD:
+                break;
+            case METHOD_PARAMETER:
+                break;
+            case TYPE:
+                break;
+            case RECORD_COMPONENT:
+                break;
+        }
+        for (Type type : typeArgumentsFromSupertype) {
+            if (containsTypeParameters(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Creates a type for a ClassInfo
      */

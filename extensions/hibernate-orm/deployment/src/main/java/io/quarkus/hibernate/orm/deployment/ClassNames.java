@@ -244,6 +244,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.CompositeType"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistrations"),
+            createConstant("org.hibernate.annotations.ConcreteProxy"),
             createConstant("org.hibernate.annotations.ConverterRegistration"),
             createConstant("org.hibernate.annotations.ConverterRegistrations"),
             createConstant("org.hibernate.annotations.CreationTimestamp"),

@@ -365,6 +365,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Object getIdentifier(Object entity) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getIdentifier(entity);
+        }
+    }
+
+    @Override
     public <T> T get(Class<T> entityType, Object id) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {

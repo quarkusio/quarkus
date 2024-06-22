@@ -979,7 +979,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             if (executionMetadata.taskClass() != null) {
                 jobBuilder.usingJobData(EXECUTION_METADATA_TASK_CLASS, executionMetadata.taskClass().getName());
             } else if (executionMetadata.asyncTaskClass() != null) {
-                jobBuilder.usingJobData(EXECUTION_METADATA_TASK_CLASS, executionMetadata.asyncTaskClass().getName());
+                jobBuilder.usingJobData(EXECUTION_METADATA_ASYNC_TASK_CLASS, executionMetadata.asyncTaskClass().getName());
             }
             if (executionMetadata.skipPredicateClass() != null) {
                 jobBuilder.usingJobData(EXECUTION_METADATA_SKIP_PREDICATE_CLASS,

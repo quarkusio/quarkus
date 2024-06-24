@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +37,7 @@ import io.quarkus.qute.ResultsCollectingTemplateInstance;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
+import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.runtime.LaunchMode;
@@ -237,6 +239,22 @@ public class TemplateProducer {
             throw ambiguousTemplates("getFragmentIds()");
         }
 
+        @Override
+        public List<TemplateNode> getNodes() {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().getNodes();
+            }
+            throw ambiguousTemplates("getNodes()");
+        }
+
+        @Override
+        public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+            if (unambiguousTemplate != null) {
+                return unambiguousTemplate.get().findNodes(predicate);
+            }
+            throw ambiguousTemplates("findNodes()");
+        }
+
         private UnsupportedOperationException ambiguousTemplates(String method) {
             return new UnsupportedOperationException("Ambiguous injected templates do not support " + method);
         }
@@ -297,6 +315,16 @@ public class TemplateProducer {
             @Override
             public Set<String> getFragmentIds() {
                 return InjectableTemplate.this.getFragmentIds();
+            }
+
+            @Override
+            public List<TemplateNode> getNodes() {
+                return InjectableTemplate.this.getNodes();
+            }
+
+            @Override
+            public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+                return InjectableTemplate.this.findNodes(predicate);
             }
 
             @Override

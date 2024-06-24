@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import static io.quarkus.qute.Namespaces.DATA_NAMESPACE;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -102,6 +103,16 @@ class TemplateImpl implements Template {
     @Override
     public Set<String> getFragmentIds() {
         return fragments != null ? Set.copyOf(fragments.get().keySet()) : Set.of();
+    }
+
+    @Override
+    public List<TemplateNode> getNodes() {
+        return root.blocks.get(0).nodes;
+    }
+
+    @Override
+    public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+        return root.findNodes(predicate);
     }
 
     private LazyValue<Map<String, Fragment>> initFragments(SectionNode section) {
@@ -271,7 +282,7 @@ class TemplateImpl implements Template {
 
     class FragmentImpl extends TemplateImpl implements Fragment {
 
-        public FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
+        FragmentImpl(EngineImpl engine, SectionNode root, String fragmentId, String generatedId,
                 Optional<Variant> variant) {
             super(engine, root, fragmentId, generatedId, variant);
         }

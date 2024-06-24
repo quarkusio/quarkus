@@ -13,7 +13,8 @@ import java.lang.annotation.Target;
  *
  * Enables registration of additional components to the preconfigured {@link Engine}.
  * <p>
- * A top-level or static nested class that implements one of the <b>supported component interface</b> and is annotated with this
+ * A top-level or static nested class that implements one of the <b>supported component interfaces</b> and is annotated with
+ * this
  * annotation:
  * <ul>
  * <li>can be used during validation of templates at build time,</li>

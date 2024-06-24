@@ -1307,6 +1307,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
 
         @Override
+        public Kind kind() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Origin getOrigin() {
             throw new IllegalStateException();
         }
@@ -1318,6 +1323,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
         @Override
         public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Kind kind() {
             throw new UnsupportedOperationException();
         }
 

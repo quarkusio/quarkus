@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
@@ -141,6 +143,24 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
     @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(Set<DotName> typeNames) {
         return new UnremovableBeanBuildItem(new BeanTypesExclusion(typeNames));
+    }
+
+    /**
+     * Match beans whose bean types include one of the specified type names,
+     * be it raw or parameterized.
+     *
+     * @param rawTypeNames The raw types whose implementors should not be removed.
+     * @param indexView A Jandex index view allowing to list all implementors of the given raw types.
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanTypesIncludingParameterized(Set<DotName> rawTypeNames, IndexView indexView) {
+        Set<DotName> fullTypeHierarchies = new HashSet<>(rawTypeNames);
+        for (DotName rawTypeName : rawTypeNames) {
+            for (ClassInfo valueExtractorType : indexView.getAllKnownImplementors(rawTypeName)) {
+                fullTypeHierarchies.add(valueExtractorType.name());
+            }
+        }
+        return beanTypes(fullTypeHierarchies);
     }
 
     /**

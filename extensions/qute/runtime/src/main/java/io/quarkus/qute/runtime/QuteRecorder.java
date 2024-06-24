@@ -12,7 +12,7 @@ public class QuteRecorder {
 
     public Supplier<Object> createContext(List<String> resolverClasses,
             List<String> templatePaths, List<String> tags, Map<String, List<String>> variants,
-            List<String> templateGlobalProviderClasses, Set<String> templateRoots) {
+            List<String> templateGlobalProviderClasses, Set<String> templateRoots, Map<String, String> templateContents) {
         return new Supplier<Object>() {
 
             @Override
@@ -48,6 +48,11 @@ public class QuteRecorder {
                     public Set<String> getTemplateRoots() {
                         return templateRoots;
                     }
+
+                    @Override
+                    public Map<String, String> getTemplateContents() {
+                        return templateContents;
+                    }
                 };
             }
         };
@@ -66,6 +71,8 @@ public class QuteRecorder {
         List<String> getTemplateGlobalProviderClasses();
 
         Set<String> getTemplateRoots();
+
+        Map<String, String> getTemplateContents();
 
     }
 

@@ -3,6 +3,7 @@ package io.quarkus.qute.runtime;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -78,6 +79,7 @@ public class EngineProducer {
     private final List<String> tags;
     private final List<String> suffixes;
     private final Set<String> templateRoots;
+    private final Map<String, String> templateContents;
     private final Pattern templatePathExclude;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
@@ -91,6 +93,7 @@ public class EngineProducer {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.templateRoots = context.getTemplateRoots();
+        this.templateContents = Map.copyOf(context.getTemplateContents());
         this.tags = context.getTags();
         this.templatePathExclude = config.templatePathExclude;
         this.defaultLocale = locales.defaultLocale;
@@ -334,10 +337,11 @@ public class EngineProducer {
         if (templatePathExclude.matcher(path).matches()) {
             return Optional.empty();
         }
+        // First try to locate file-based templates
         for (String templateRoot : templateRoots) {
             URL resource = null;
             String templatePath = templateRoot + path;
-            LOGGER.debugf("Locate template for %s", templatePath);
+            LOGGER.debugf("Locate template file for %s", templatePath);
             resource = locatePath(templatePath);
             if (resource == null) {
                 // Try path with suffixes
@@ -356,6 +360,25 @@ public class EngineProducer {
             if (resource != null) {
                 return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
             }
+        }
+        // Then try the template contents
+        LOGGER.debugf("Locate template contents for %s", path);
+        String content = templateContents.get(path);
+        if (path == null) {
+            // Try path with suffixes
+            for (String suffix : suffixes) {
+                String pathWithSuffix = path + "." + suffix;
+                if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                    continue;
+                }
+                content = templateContents.get(pathWithSuffix);
+                if (content != null) {
+                    break;
+                }
+            }
+        }
+        if (content != null) {
+            return Optional.of(new ContentTemplateLocation(content, createVariant(path)));
         }
         return Optional.empty();
     }
@@ -439,7 +462,7 @@ public class EngineProducer {
         private final URL resource;
         private final Optional<Variant> variant;
 
-        public ResourceTemplateLocation(URL resource, Variant variant) {
+        ResourceTemplateLocation(URL resource, Variant variant) {
             this.resource = resource;
             this.variant = Optional.ofNullable(variant);
         }
@@ -458,6 +481,28 @@ public class EngineProducer {
             } catch (IOException e) {
                 return null;
             }
+        }
+
+        @Override
+        public Optional<Variant> getVariant() {
+            return variant;
+        }
+
+    }
+
+    static class ContentTemplateLocation implements TemplateLocation {
+
+        private final String content;
+        private final Optional<Variant> variant;
+
+        ContentTemplateLocation(String content, Variant variant) {
+            this.content = content;
+            this.variant = Optional.ofNullable(variant);
+        }
+
+        @Override
+        public Reader read() {
+            return new StringReader(content);
         }
 
         @Override

@@ -265,16 +265,14 @@ class VertxHttpProcessor {
         List<RouteBuildItem> redirectRoutes = new ArrayList<>();
         boolean frameworkRouterCreated = false;
         boolean mainRouterCreated = false;
-        boolean managementRouterCreated = false;
 
         boolean isManagementInterfaceEnabled = managementBuildTimeConfig.enabled;
+        if (isManagementInterfaceEnabled) {
+            managementRouter = recorder.initializeRouter(vertx.getVertx());
+        }
 
         for (RouteBuildItem route : routes) {
             if (route.isManagement() && isManagementInterfaceEnabled) {
-                if (!managementRouterCreated) {
-                    managementRouter = recorder.initializeRouter(vertx.getVertx());
-                    managementRouterCreated = true;
-                }
                 recorder.addRoute(managementRouter, route.getRouteFunction(), route.getHandler(), route.getType());
             } else if (nonApplicationRootPath.isDedicatedRouterRequired() && route.isRouterFramework()) {
                 // Non-application endpoints on a separate path

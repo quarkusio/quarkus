@@ -526,6 +526,7 @@ public class VertxHttpRecorder {
         if (managementRouter != null && managementRouter.getValue() != null) {
             // Add body handler and cors handler
             var mr = managementRouter.getValue();
+            boolean hasManagementRoutes = !mr.getRoutes().isEmpty();
 
             addHotReplacementHandlerIfNeeded(mr);
 
@@ -548,16 +549,25 @@ public class VertxHttpRecorder {
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr);
             handler = HttpServerCommonHandlers.applyProxy(managementConfiguration.getValue().proxy, handler, vertx);
 
-            event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(managementRouter.getValue()));
+            int routesBeforeMiEvent = mr.getRoutes().size();
+            event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));
 
-            VertxHttpRecorder.managementRouterDelegate = handler;
-            if (VertxHttpRecorder.managementRouter == null) {
-                VertxHttpRecorder.managementRouter = new Handler<HttpServerRequest>() {
-                    @Override
-                    public void handle(HttpServerRequest event) {
-                        VertxHttpRecorder.managementRouterDelegate.handle(event);
-                    }
-                };
+            // It may be that no build steps produced any management routes.
+            // But we still want to give a chance to the "ManagementInterface event" to collect any
+            // routes that users may have provided through observing this event.
+            //
+            // Hence, we only initialize the `managementRouter` router when we either had some routes from extensions (`hasManagementRoutes`)
+            // or if the event collected some routes (`routesBeforeMiEvent < routesAfterMiEvent`)
+            if (hasManagementRoutes || routesBeforeMiEvent < mr.getRoutes().size()) {
+                VertxHttpRecorder.managementRouterDelegate = handler;
+                if (VertxHttpRecorder.managementRouter == null) {
+                    VertxHttpRecorder.managementRouter = new Handler<HttpServerRequest>() {
+                        @Override
+                        public void handle(HttpServerRequest event) {
+                            VertxHttpRecorder.managementRouterDelegate.handle(event);
+                        }
+                    };
+                }
             }
         }
     }
@@ -1577,7 +1587,7 @@ public class VertxHttpRecorder {
 
         @Override
         public void handle(RoutingContext event) {
-            Thread.currentThread().setContextClassLoader( currentCl );
+            Thread.currentThread().setContextClassLoader(currentCl);
             hotReplacementHandler.handle(event);
         }
     }

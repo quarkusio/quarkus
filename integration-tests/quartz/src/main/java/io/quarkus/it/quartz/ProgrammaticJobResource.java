@@ -11,6 +11,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerKey;
 
@@ -20,6 +22,7 @@ import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
 import io.quarkus.scheduler.Trigger;
+import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.smallrye.mutiny.Uni;
 
 @Path("/scheduler/programmatic")
@@ -33,7 +36,8 @@ public class ProgrammaticJobResource {
 
     @POST
     @Path("register")
-    public void register() {
+    @Produces(MediaType.TEXT_PLAIN)
+    public String register() throws SchedulerException {
         JobDefinition syncJob = scheduler.newJob("sync").setInterval("1s");
         try {
             syncJob.setTask(se -> {
@@ -53,6 +57,21 @@ public class ProgrammaticJobResource {
         } catch (IllegalStateException expected) {
         }
         syncJob.setTask(SyncJob.class).schedule();
+        // Verify the serialized metadata
+        // JobKey is always built using the identity and "io.quarkus.scheduler.Scheduler" as the group name
+        JobDetail syncJobDetail = scheduler.getScheduler().getJobDetail(new JobKey("sync", Scheduler.class.getName()));
+        if (syncJobDetail == null) {
+            return "Syn job detail not found";
+        }
+        SyntheticScheduled syncMetadata = SyntheticScheduled
+                .fromJson(syncJobDetail.getJobDataMap().get("scheduled_metadata").toString());
+        if (!syncMetadata.every().equals("1s")) {
+            return "Sync interval not set";
+        }
+        if (!SyncJob.class.getName()
+                .equals(syncJobDetail.getJobDataMap().getOrDefault("execution_metadata_task_class", "").toString())) {
+            return "execution_metadata_task_class not set";
+        }
 
         JobDefinition asyncJob = scheduler.newJob("async").setInterval("1s");
         try {
@@ -61,6 +80,23 @@ public class ProgrammaticJobResource {
         } catch (IllegalStateException expected) {
         }
         asyncJob.setAsyncTask(AsyncJob.class).schedule();
+
+        // Verify the serialized metadata
+        // JobKey is always built using the identity and "io.quarkus.scheduler.Scheduler" as the group name
+        JobDetail asynJobDetail = scheduler.getScheduler().getJobDetail(new JobKey("async", Scheduler.class.getName()));
+        if (asynJobDetail == null) {
+            return "Job detail not found";
+        }
+        SyntheticScheduled asyncMetadata = SyntheticScheduled
+                .fromJson(asynJobDetail.getJobDataMap().get("scheduled_metadata").toString());
+        if (!asyncMetadata.every().equals("1s")) {
+            return "Interval not set";
+        }
+        if (!AsyncJob.class.getName()
+                .equals(asynJobDetail.getJobDataMap().getOrDefault("execution_metadata_async_task_class", "").toString())) {
+            return "execution_metadata_async_task_class not set";
+        }
+        return "OK";
     }
 
     @GET

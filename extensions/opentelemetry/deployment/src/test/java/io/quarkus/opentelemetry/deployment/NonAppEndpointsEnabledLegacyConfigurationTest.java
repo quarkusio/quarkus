@@ -24,7 +24,7 @@ public class NonAppEndpointsEnabledLegacyConfigurationTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("application-default.properties")
-            .overrideConfigKey("quarkus.opentelemetry.tracer.suppress-non-application-uris", "false");
+            .overrideConfigKey("quarkus.otel.traces.suppress-non-application-uris", "false");
 
     @Inject
     TestSpanExporter testSpanExporter;

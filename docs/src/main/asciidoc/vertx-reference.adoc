@@ -1214,7 +1214,13 @@ In environments with read only file systems you may receive errors of the form:
 java.lang.IllegalStateException: Failed to create cache dir
 ----
 
-Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in Kubernetes by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`, or setting the `quarkus.vertx.cache-directory` property in `application.properties`:
+
+[source, properties]
+----
+quarkus.vertx.cache-directory=/tmp/vertx
+----
+
 
 [[customizing-the-vert-x-configuration]]
 == Customize the Vert.x configuration

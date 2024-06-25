@@ -521,6 +521,15 @@ void pong(Buffer data) {
 
 NOTE: The server/client can also send unsolicited pong messages that may serve as a unidirectional heartbeat. There is a non-blocking variant: `WebSocketConnection#sendPong(Buffer)` and also a blocking variant: `WebSocketConnection#sendPongAndAwait(Buffer)`.
 
+[[inbound-processing-mode]]
+=== Inbound processing mode
+
+WebSocket endpoints can define the mode used to process incoming events for a specific connection using the `@WebSocket#inboundProcessingMode()`, and `@WebSocketClient.inboundProcessingMode()` respectively. 
+An incoming event can represent a message (text, binary, pong), opening connection and closing connection.
+By default, events are processed serially and ordering is guaranteed.
+This means that if an endpoint receives events `A` and `B` (in this particular order) then callback for event `B` will be invoked after the callback for event `A` completed.
+However, in some situations it is preferable to process events concurrently, i.e. with no ordering guarantees but also with no concurrency limits.
+For this cases, the `InboundProcessingMode#CONCURRENT` should be used.
 
 == Server API
 

@@ -5,7 +5,7 @@ metadata:
   keywords:
   - "info"
   categories:
-  - "miscellaneous"
-  status: "experimental"
+  - "observability"
+  status: "stable"
   config:
   - "quarkus.info."

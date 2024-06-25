@@ -52,7 +52,7 @@ public class VariableProducesHandler implements ServerRestHandler {
                 break;
             }
         }
-        if (res == null) { // fallback for some tests
+        if (res == null) { // fallback to ensure that MessageBodyWriter is passed the proper media type
             res = mediaTypeList.negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT))
                     .getKey();
         }

@@ -22,7 +22,8 @@ import org.jboss.logging.Logger;
 
 public abstract class PathTreeWithManifest implements PathTree {
 
-    private static final String META_INF_VERSIONS = "META-INF/versions/";
+    private static final String META_INF = "META-INF/";
+    private static final String META_INF_VERSIONS = META_INF + "versions/";
     public static final int JAVA_VERSION;
 
     static {
@@ -136,6 +137,10 @@ public abstract class PathTreeWithManifest implements PathTree {
     }
 
     protected String toMultiReleaseRelativePath(String relativePath) {
+        if (relativePath.startsWith(META_INF)) {
+            return relativePath;
+        }
+
         return getMultiReleaseMapping().getOrDefault(relativePath, relativePath);
     }
 

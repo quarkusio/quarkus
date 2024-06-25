@@ -494,7 +494,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<TokenVerificationResult> verifySelfSignedTokenUni(TenantConfigContext resolvedContext, String token) {
         try {
-            return Uni.createFrom().item(resolvedContext.provider.verifySelfSignedJwtToken(token));
+            return Uni.createFrom().item(
+                    resolvedContext.provider.verifySelfSignedJwtToken(token, resolvedContext.getInternalIdTokenSecretKey()));
         } catch (Throwable t) {
             return Uni.createFrom().failure(t);
         }

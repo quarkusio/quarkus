@@ -1,7 +1,6 @@
 package io.quarkus.liquibase.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static java.util.function.Predicate.not;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -254,11 +253,7 @@ class LiquibaseProcessor {
     }
 
     private static Predicate<String> commandStepPredicate(Capabilities capabilities) {
-        if (capabilities.isPresent("io.quarkus.jdbc.h2")) {
-            return (s) -> true;
-        } else {
-            return not("liquibase.command.core.StartH2CommandStep"::equals);
-        }
+        return (s) -> true;
     }
 
     private void consumeService(Class<?> serviceClass, BiConsumer<Class<?>, Collection<String>> consumer) {

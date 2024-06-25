@@ -21,6 +21,9 @@ import io.quarkus.paths.OpenPathTree;
 
 public class MemoryClassPathElement extends AbstractClassPathElement {
 
+    private static final ProtectionDomain NULL_PROTECTION_DOMAIN = new ProtectionDomain(
+            new CodeSource(null, (Certificate[]) null), null);
+
     private volatile Map<String, byte[]> resources;
     private volatile long lastModified = System.currentTimeMillis();
     private final boolean runtime;
@@ -112,14 +115,10 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
     @Override
     public ProtectionDomain getProtectionDomain() {
-        URL url = null;
-        try {
-            url = new URL(null, "quarkus:/", new MemoryUrlStreamHandler("quarkus:/"));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException("Unable to create protection domain for memory element", e);
-        }
-        CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        return new ProtectionDomain(codesource, null);
+        // we used to include the class bytes in the ProtectionDomain
+        // but it is not a good idea
+        // see https://github.com/quarkusio/quarkus/issues/41417 for more details about the problem
+        return NULL_PROTECTION_DOMAIN;
     }
 
     @Override

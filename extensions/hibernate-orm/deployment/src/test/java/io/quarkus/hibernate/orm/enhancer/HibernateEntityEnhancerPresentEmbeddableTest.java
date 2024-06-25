@@ -229,7 +229,6 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
     }
 
     @Embeddable
-    @MappedSuperclass
     public static class EmbeddableWithAnnotation {
         private String text;
 
@@ -283,8 +282,29 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
         }
     }
 
+    @MappedSuperclass
+    public static abstract class MappedSuperclassForEmbeddable {
+        private String text;
+
+        protected MappedSuperclassForEmbeddable() {
+            // For Hibernate ORM only - it will change the property value through reflection
+        }
+
+        public MappedSuperclassForEmbeddable(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+    }
+
     @Embeddable
-    public static class ExtendedEmbeddableWithAnnotation extends EmbeddableWithAnnotation {
+    public static class ExtendedEmbeddableWithAnnotation extends MappedSuperclassForEmbeddable {
         private Integer integer;
 
         protected ExtendedEmbeddableWithAnnotation() {

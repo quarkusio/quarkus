@@ -32,7 +32,6 @@ export class QwcWebSocketNextEndpoints extends LitElement {
           cursor: pointer;
         }
         .top-bar {
-          display: flex;
           align-items: baseline;
           gap: 20px;
           padding-left: 20px;
@@ -62,7 +61,8 @@ export class QwcWebSocketNextEndpoints extends LitElement {
         _selectedEndpoint: {state: true},
         _selectedConnection: {state: true},
         _endpointsAndConnections: {state: true},
-        _textMessages: {state: true}
+        _textMessages: {state: true},
+        _connectionMessagesLimit: {state: false}
     };
 
     constructor() {
@@ -83,6 +83,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                     e.connections = jsonResponse.result[e.generatedClazz];
                     return e;
                 });
+                this._connectionMessagesLimit = jsonResponse.result.connectionMessageLimit;
             })
             .then(() => {
                 this._conntectionStatusStream = this.jsonRpc.connectionStatus().onNext(jsonResponse => {
@@ -219,7 +220,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                             <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
                             Back
                         </vaadin-button>
-                        <h4>${this._selectedEndpoint.clazz} · Open Connections</h4>
+                        <h4>Open connections for endpoint: <code>${this._selectedEndpoint.clazz}</code></h4>
                     </div>`;
     }
     
@@ -234,11 +235,15 @@ export class QwcWebSocketNextEndpoints extends LitElement {
                             <vaadin-icon icon="font-awesome-solid:xmark" slot="prefix"></vaadin-icon>
                             Close connection
                         </vaadin-button>
+                        <vaadin-button disabled>
+                            Connection messages limit: ${this._connectionMessagesLimit}
+                        </vaadin-button>
                         <vaadin-button @click="${this._clearMessages}">
                             <vaadin-icon icon="font-awesome-solid:trash" slot="prefix"></vaadin-icon>
                             Clear messages
                         </vaadin-button>
-                        <h4>${this._selectedEndpoint.clazz} · Dev UI Connection · <code>${this._selectedConnection.handshakePath}</code></h4>
+                        <h4>Connection: <code>${this._selectedConnection.id}</code></h4>
+                        <h3>Endpoint: <code>${this._selectedEndpoint.clazz}</code> &nbsp;|&nbsp; Handshake path: <code>${this._selectedConnection.handshakePath}</code></h3>
                     </div>`;
     }
      
@@ -286,7 +291,7 @@ export class QwcWebSocketNextEndpoints extends LitElement {
 
     _renderClazz(endpoint) {
         return html`
-            <strong>${endpoint.clazz}</strong>
+            <strong><code>${endpoint.clazz}</code></strong>
         `;
     }
     

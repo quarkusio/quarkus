@@ -261,6 +261,9 @@ class Endpoints {
     }
 
     private static void closeConnection(Throwable cause, WebSocketConnectionBase connection) {
+        if (connection.isClosed()) {
+            return;
+        }
         connection.close(CloseReason.INTERNAL_SERVER_ERROR).subscribe().with(
                 v -> LOG.debugf("Connection closed due to unhandled failure %s: %s", cause, connection),
                 t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(), cause,

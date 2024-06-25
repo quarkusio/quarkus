@@ -44,6 +44,7 @@ final class VertxHttpExporter implements SpanExporter {
     private static final int MAX_ATTEMPTS = 3;
 
     private final HttpExporter<TraceRequestMarshaler> delegate;
+    private final AtomicBoolean isShutdown = new AtomicBoolean();
 
     VertxHttpExporter(HttpExporter<TraceRequestMarshaler> delegate) {
         this.delegate = delegate;
@@ -51,6 +52,10 @@ final class VertxHttpExporter implements SpanExporter {
 
     @Override
     public CompletableResultCode export(Collection<SpanData> spans) {
+        if (isShutdown.get()) {
+            return CompletableResultCode.ofFailure();
+        }
+
         TraceRequestMarshaler exportRequest = TraceRequestMarshaler.create(spans);
         return delegate.export(exportRequest, spans.size());
     }
@@ -62,6 +67,10 @@ final class VertxHttpExporter implements SpanExporter {
 
     @Override
     public CompletableResultCode shutdown() {
+        if (!isShutdown.compareAndSet(false, true)) {
+            logger.log(Level.FINE, "Calling shutdown() multiple times.");
+            return CompletableResultCode.ofSuccess();
+        }
         return delegate.shutdown();
     }
 
@@ -95,7 +104,6 @@ final class VertxHttpExporter implements SpanExporter {
             this.client = vertx.createHttpClient(httpClientOptions);
         }
 
-        private final AtomicBoolean isShutdown = new AtomicBoolean();
         private final CompletableResultCode shutdownResult = new CompletableResultCode();
 
         private static String determineBasePath(URI baseUri) {
@@ -148,11 +156,6 @@ final class VertxHttpExporter implements SpanExporter {
 
         @Override
         public CompletableResultCode shutdown() {
-            if (!isShutdown.compareAndSet(false, true)) {
-                logger.log(Level.FINE, "Calling shutdown() multiple times.");
-                return shutdownResult;
-            }
-
             client.close()
                     .onSuccess(
                             new Handler<>() {

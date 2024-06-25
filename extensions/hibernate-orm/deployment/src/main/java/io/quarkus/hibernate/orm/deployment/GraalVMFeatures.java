@@ -33,7 +33,7 @@ public class GraalVMFeatures {
     @BuildStep
     ReflectiveClassBuildItem registerJdbcArrayTypesForReflection() {
         return ReflectiveClassBuildItem
-                .builder(HibernateOrmTypes.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .builder(ClassNames.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
                 .build();
     }
 

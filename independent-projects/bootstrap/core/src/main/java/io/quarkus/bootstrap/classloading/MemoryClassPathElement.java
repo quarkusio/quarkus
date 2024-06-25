@@ -88,7 +88,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             public URL getUrl() {
                 String path = "quarkus:" + name;
                 try {
-                    URL url = new URL(null, path, new MemoryUrlStreamHandler(name));
+                    URL url = new URL(null, path, new MemoryUrlStreamHandler(resources.get(name), lastModified));
 
                     return url;
                 } catch (MalformedURLException e) {
@@ -126,11 +126,13 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
     }
 
-    private class MemoryUrlStreamHandler extends URLStreamHandler {
-        private final String name;
+    private static class MemoryUrlStreamHandler extends URLStreamHandler {
+        private final byte[] bytes;
+        private long lastModified;
 
-        public MemoryUrlStreamHandler(String name) {
-            this.name = name;
+        public MemoryUrlStreamHandler(byte[] bytes, long lastModified) {
+            this.bytes = bytes;
+            this.lastModified = lastModified;
         }
 
         @Override
@@ -142,7 +144,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
                 @Override
                 public InputStream getInputStream() throws IOException {
-                    return new ByteArrayInputStream(resources.get(name));
+                    return new ByteArrayInputStream(bytes);
                 }
 
                 @Override
@@ -152,12 +154,12 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
 
                 @Override
                 public int getContentLength() {
-                    return resources.get(name).length;
+                    return bytes.length;
                 }
 
                 @Override
                 public long getContentLengthLong() {
-                    return resources.get(name).length;
+                    return bytes.length;
                 }
             };
         }

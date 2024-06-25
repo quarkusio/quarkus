@@ -60,6 +60,11 @@ public interface WebSocketsServerRuntimeConfig {
     Security security();
 
     /**
+     * Dev mode configuration.
+     */
+    DevMode devMode();
+
+    /**
      * Traffic logging config.
      */
     TrafficLoggingConfig trafficLogging();
@@ -72,6 +77,17 @@ public interface WebSocketsServerRuntimeConfig {
          * For example, the HTTP upgrade is secured if an endpoint class is annotated with the `@RolesAllowed` annotation.
          */
         Optional<String> authFailureRedirectUrl();
+
+    }
+
+    interface DevMode {
+
+        /**
+         * The limit of messages kept for a Dev UI connection. If less than zero then no messages are stored and sent to the Dev
+         * UI view.
+         */
+        @WithDefault("1000")
+        long connectionMessagesLimit();
 
     }
 

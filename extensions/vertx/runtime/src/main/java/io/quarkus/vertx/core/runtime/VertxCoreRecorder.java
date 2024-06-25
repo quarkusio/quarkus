@@ -166,9 +166,16 @@ public class VertxCoreRecorder {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         synchronized (devModeThreads) {
             currentDevModeNewThreadCreationClassLoader = cl;
+            // Collect terminated threads to remove them from the set. It will avoid iterating over them in the future.
+            List<Thread> terminated = new ArrayList<>();
             for (var t : devModeThreads) {
-                t.setContextClassLoader(cl);
+                if (t.getState() == Thread.State.TERMINATED) {
+                    terminated.add(t);
+                } else {
+                    t.setContextClassLoader(cl);
+                }
             }
+            terminated.forEach(devModeThreads::remove);
         }
     }
 

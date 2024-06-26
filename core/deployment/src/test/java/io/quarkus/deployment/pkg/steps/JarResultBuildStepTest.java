@@ -90,7 +90,6 @@ class JarResultBuildStepTest {
         calendar.setTime(startDate);
         calendar.add(Calendar.YEAR, 1);
         Date endDate = calendar.getTime();
-
         String signatureAlgorithm = "SHA256WithRSA";
 
         ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());

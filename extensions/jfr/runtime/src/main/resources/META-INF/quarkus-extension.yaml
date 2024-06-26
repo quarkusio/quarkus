@@ -1,9 +1,11 @@
-name: Jfr
-#description: Do something useful.
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Java Flight Recorder (JFR)"
 metadata:
-#  keywords:
-#    - jfr
-#  guide: ... # To create and publish this guide, see https://github.com/quarkiverse/quarkiverse/wiki#documenting-your-extension
-#  categories:
-#    - "miscellaneous"
-#  status: "preview"
+  keywords:
+  - "jfr"
+  - "java flight recorder"
+  guide: "https://quarkus.io/guides/jfr"
+  status: "preview"
+  categories:
+  - "observability"

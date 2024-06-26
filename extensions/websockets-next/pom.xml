@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-websockets-next-parent</artifactId>
     <name>Quarkus - WebSockets Next</name>
+    <description>A new implementation of the WebSocket API that is more efficient and easier to use. It is also designed to work efficiently with Quarkus' reactive programming model and the Quarkus' networking layer.</description>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

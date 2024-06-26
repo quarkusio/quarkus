@@ -10,6 +10,7 @@ metadata:
   - "http"
   categories:
   - "web"
+  guide: https://quarkus.io/guides/websockets-next-reference
   status: "experimental"
   config:
   - "quarkus.websockets.next"

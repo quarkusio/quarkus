@@ -9,21 +9,17 @@ import java.lang.annotation.Target;
 
 /**
  * Used to indicate the type of the <em>repeatable annotation
- * type</em> annotated with a {@code QuarkusTestResource} annotations.
+ * type</em> annotated with a {@link WithTestResource} annotations.
  *
  * <p>
- *
- * @deprecated Use {@link WithTestResourceRepeatable} instead
- *             </p>
  */
 @Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Deprecated(forRemoval = true)
-public @interface QuarkusTestResourceRepeatable {
+public @interface WithTestResourceRepeatable {
 
     /**
-     * @return The class annotated with a {@code QuarkusTestResource} annotations.
+     * @return The class annotated with a {@link WithTestResource} annotations.
      */
     Class<? extends Annotation> value();
 }

@@ -17,7 +17,7 @@ import org.htmlunit.util.Cookie;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
@@ -29,7 +29,7 @@ import io.vertx.ext.web.client.WebClient;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
-@QuarkusTestResource(KeycloakLifecycleManager.class)
+@WithTestResource(value = KeycloakLifecycleManager.class, restrictToAnnotatedClass = false)
 public class PolicyEnforcerTest {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 

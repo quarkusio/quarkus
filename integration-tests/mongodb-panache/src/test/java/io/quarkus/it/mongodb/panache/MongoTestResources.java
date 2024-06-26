@@ -1,9 +1,9 @@
 package io.quarkus.it.mongodb.panache;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
+@WithTestResource(value = MongoReplicaSetTestResource.class, restrictToAnnotatedClass = false)
 public class MongoTestResources {
 
 }

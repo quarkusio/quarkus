@@ -5,14 +5,14 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
  * This test verifies that log levels are promoted to min-level when set below.
  */
 @QuarkusTest
-@QuarkusTestResource(SetRuntimeLogLevels.class)
+@WithTestResource(value = SetRuntimeLogLevels.class, restrictToAnnotatedClass = false)
 public class LoggingMinLevelPromoteTest {
 
     @Test

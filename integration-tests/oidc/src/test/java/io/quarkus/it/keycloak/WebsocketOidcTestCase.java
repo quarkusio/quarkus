@@ -15,13 +15,13 @@ import jakarta.websocket.Session;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.websockets.BearerTokenClientEndpointConfigurator;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakXTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakXTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class WebsocketOidcTestCase {
 
     @TestHTTPResource("secured-hello")

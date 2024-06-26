@@ -9,7 +9,7 @@ import java.util.function.Predicate;
  * Manage the lifecycle of a test resource, for instance a H2 test server.
  * <p>
  * These resources are started before the first test is run, and are closed
- * at the end of the test suite. They are configured via the {@link QuarkusTestResource}
+ * at the end of the test suite. They are configured via the {@link WithTestResource}
  * annotation, which can be placed on any class in the test suite.
  *
  * These can also be loaded via a service loader mechanism, however if a service
@@ -55,7 +55,7 @@ public interface QuarkusTestResourceLifecycleManager {
      *
      * The {@code args} is never null
      *
-     * @see QuarkusTestResource#initArgs()
+     * @see WithTestResource#initArgs()
      */
     default void init(Map<String, String> initArgs) {
 

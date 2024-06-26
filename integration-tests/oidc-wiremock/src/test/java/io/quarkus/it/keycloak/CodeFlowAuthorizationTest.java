@@ -41,7 +41,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcUtils;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
@@ -51,7 +51,7 @@ import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
-@QuarkusTestResource(OidcWiremockTestResource.class)
+@WithTestResource(value = OidcWiremockTestResource.class, restrictToAnnotatedClass = false)
 public class CodeFlowAuthorizationTest {
 
     @OidcWireMock

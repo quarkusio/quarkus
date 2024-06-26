@@ -8,12 +8,12 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaKeycloakTestResource.class)
+@WithTestResource(value = KafkaKeycloakTestResource.class, restrictToAnnotatedClass = false)
 public class KafkaOauthTest {
 
     protected static final TypeRef<List<String>> TYPE_REF = new TypeRef<List<String>>() {

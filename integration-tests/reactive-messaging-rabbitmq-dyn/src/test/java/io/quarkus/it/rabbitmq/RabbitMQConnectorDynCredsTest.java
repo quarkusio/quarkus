@@ -15,13 +15,13 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.it.rabbitmq.RabbitMQConnectorDynCredsTest.RabbitMQResource;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(RabbitMQResource.class)
+@WithTestResource(value = RabbitMQResource.class, restrictToAnnotatedClass = false)
 public class RabbitMQConnectorDynCredsTest {
 
     public static class RabbitMQResource implements QuarkusTestResourceLifecycleManager {

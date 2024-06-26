@@ -5,7 +5,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -16,7 +16,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * it will be automatically promoted to DEBUG.
  */
 @QuarkusTest
-@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
+@WithTestResource(value = SetCategoryRuntimeLogLevels.class, restrictToAnnotatedClass = false)
 public class LoggingMinLevelPromoteTest {
 
     @Test

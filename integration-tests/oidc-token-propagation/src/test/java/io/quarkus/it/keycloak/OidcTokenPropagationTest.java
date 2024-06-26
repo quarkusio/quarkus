@@ -5,13 +5,13 @@ import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@WithTestResource(value = KeycloakRealmResourceManager.class, restrictToAnnotatedClass = false)
 public class OidcTokenPropagationTest {
 
     final KeycloakTestClient client = new KeycloakTestClient();
@@ -44,7 +44,7 @@ public class OidcTokenPropagationTest {
         // Note this test does pass if Keycloak is started manually,
         // 'quarkus' realm, 'quarkus-app' and 'quarkus-app-exchange' clients, and 'alice' user is created
         // and the token-exchange permission is added to the clients as per the Keycloak docs.
-        // It can be confirmed by commenting @QuarkusTestResource above
+        // It can be confirmed by commenting @WithTestResource above
         // and running the tests as 'mvn clean install -Dtest-containers'
 
         RestAssured.given().auth().oauth2(getAccessToken("alice"))

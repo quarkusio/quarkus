@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
-@QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
+@WithTestResource(value = KeycloakRealmUserPasswordManager.class, restrictToAnnotatedClass = false)
 public class OidcClientUserPasswordTestCase {
 
     private static Class<?>[] testClasses = {

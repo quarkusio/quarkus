@@ -17,11 +17,11 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.redis.client.RedisOptions;
 
-@QuarkusTestResource(RedisTestResource.class)
+@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
 public class CustomizerTest {
 
     @RegisterExtension

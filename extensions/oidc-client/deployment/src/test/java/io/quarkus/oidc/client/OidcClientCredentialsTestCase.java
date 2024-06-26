@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakRealmClientCredentialsManager.class)
+@WithTestResource(value = KeycloakRealmClientCredentialsManager.class, restrictToAnnotatedClass = false)
 public class OidcClientCredentialsTestCase {
 
     private static Class<?>[] testClasses = {

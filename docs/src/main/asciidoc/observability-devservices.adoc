@@ -20,7 +20,7 @@ NOTE: Each Dev Resource implementation is an `@QuarkusTestResourceLifecycleManag
 
 * explicitly disable Dev Services and enable Dev Resources and use less-heavy concept of starting and stopping Dev Resources
 
-* explicitly disable both Dev Services and Dev Resources, and use Quarkus' `@QuarkusTestResource` testing concept (see Note)
+* explicitly disable both Dev Services and Dev Resources, and use Quarkus' `@WithTestResource` testing concept (see Note)
 
 You can either add Observability extension dependency along with needed Dev Resources dependencies, or you use existing `sinks` - pom.xml files which add Observability extension dependency along with other required dependencies for certain technology stacks; e.g. `victoriametrics` sink would have `quarkus-observability-devresource-victoriametrics` and `quarkus-victoriametrics-client` dependencies already included in the `pom.xml`.
 

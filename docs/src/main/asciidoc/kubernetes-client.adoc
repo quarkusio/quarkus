@@ -260,7 +260,7 @@ public class MyTest {
 }
 ----
 
-Alternately, you can create an extension of the `KubernetesServerTestResource` class to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup via the `QuarkusTestResource` annotation:
+Alternately, you can create an extension of the `KubernetesServerTestResource` class to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup via the `WithTestResource` annotation:
 
 [source%nowrap,java]
 ----
@@ -278,7 +278,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesServerTest
 and use this in your other test classes as follows:
 [source%nowrap,java]
 ----
-@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
+@WithTestResource(CustomKubernetesMockServerTestResource.class)
 @QuarkusTest
 public class KubernetesClientTest {
 
@@ -478,7 +478,7 @@ Mock support is also provided in a similar fashion:
 
 [source, java]
 ----
-@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@WithTestResource(OpenShiftMockServerTestResource.class)
 @QuarkusTest
 public class OpenShiftClientTest {
 

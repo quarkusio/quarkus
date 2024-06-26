@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.it.mailer.mailpit.MailPitClient;
 import io.quarkus.it.mailer.mailpit.Message;
 import io.quarkus.it.mailer.mailpit.Recipient;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.vertx.core.json.JsonObject;
@@ -27,8 +27,8 @@ import io.vertx.core.json.JsonObject;
  */
 @DisabledOnOs({ OS.WINDOWS })
 @QuarkusTest
-@QuarkusTestResource(MailpitTestResource.class)
-@QuarkusTestResource(MailpitFullTlsTestResource.class)
+@WithTestResource(value = MailpitTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = MailpitFullTlsTestResource.class, restrictToAnnotatedClass = false)
 public class MailerTest {
     private MailPitClient client;
     private MailPitClient clientTls;

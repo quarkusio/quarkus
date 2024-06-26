@@ -14,10 +14,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(RedisTestResource.class)
+@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
 public class RedisClientDevModeTestCase {
 
     @RegisterExtension

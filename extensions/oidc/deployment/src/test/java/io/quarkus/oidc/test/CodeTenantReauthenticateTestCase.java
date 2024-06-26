@@ -16,11 +16,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class CodeTenantReauthenticateTestCase {
     private static Class<?>[] testClasses = {
             TenantReauthentication.class,

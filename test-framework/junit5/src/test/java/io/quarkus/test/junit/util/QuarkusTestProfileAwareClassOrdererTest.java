@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,7 @@ import org.mockito.quality.Strictness;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -52,26 +54,38 @@ class QuarkusTestProfileAwareClassOrdererTest {
     @Test
     void allVariants() {
         ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
-        ClassDescriptor quarkusTestWithUnrestrictedResourceDesc = quarkusDescriptorMock(Test02.class, Manager3.class, false);
+        ClassDescriptor quarkusTestWithUnrestrictedResourceDesc = quarkusDescriptorMock(Test02.class, Manager3.class, false,
+                WithTestResource.class);
+        ClassDescriptor quarkusTestWithUnrestrictedQuarkusTestResourceDesc = quarkusDescriptorMock(Test02a.class,
+                Manager3.class, false, QuarkusTestResource.class);
         ClassDescriptor quarkusTest2Desc = quarkusDescriptorMock(Test03.class, null);
         ClassDescriptor quarkusTestWithProfile1Desc = quarkusDescriptorMock(Test04.class, Profile1.class);
         ClassDescriptor quarkusTestWithProfile2Test4Desc = quarkusDescriptorMock(Test05.class, Profile2.class);
         ClassDescriptor quarkusTestWithProfile2Test5Desc = quarkusDescriptorMock(Test06.class, Profile2.class);
-        ClassDescriptor quarkusTestWithRestrictedResourceDesc = quarkusDescriptorMock(Test07.class, Manager2.class, true);
-        ClassDescriptor quarkusTestWithMetaResourceDesc = quarkusDescriptorMock(Test08.class, Manager1.class, false);
+        ClassDescriptor quarkusTestWithRestrictedResourceDesc = quarkusDescriptorMock(Test07.class, Manager2.class, true,
+                WithTestResource.class);
+        ClassDescriptor quarkusTestWithRestrictedResourceDesc2 = quarkusDescriptorMock(Test07.class, Manager2.class, true,
+                QuarkusTestResource.class);
+        ClassDescriptor quarkusTestWithMetaResourceDesc = quarkusDescriptorMock(Test08.class, Manager1.class, false,
+                WithTestResource.class);
+        ClassDescriptor quarkusTestWithMetaResourceDesc2 = quarkusDescriptorMock(Test08.class, Manager1.class, false,
+                QuarkusTestResource.class);
         ClassDescriptor nonQuarkusTest1Desc = descriptorMock(Test09.class);
         ClassDescriptor nonQuarkusTest2Desc = descriptorMock(Test10.class);
         List<ClassDescriptor> input = Arrays.asList(
                 quarkusTestWithRestrictedResourceDesc,
                 nonQuarkusTest2Desc,
+                quarkusTestWithRestrictedResourceDesc2,
                 quarkusTestWithProfile2Test5Desc,
                 quarkusTest2Desc,
                 nonQuarkusTest1Desc,
                 quarkusTestWithMetaResourceDesc,
                 quarkusTest1Desc,
                 quarkusTestWithProfile2Test4Desc,
+                quarkusTestWithMetaResourceDesc2,
                 quarkusTestWithUnrestrictedResourceDesc,
-                quarkusTestWithProfile1Desc);
+                quarkusTestWithProfile1Desc,
+                quarkusTestWithUnrestrictedQuarkusTestResourceDesc);
         doReturn(input).when(contextMock).getClassDescriptors();
 
         underTest.orderClasses(contextMock);
@@ -79,12 +93,15 @@ class QuarkusTestProfileAwareClassOrdererTest {
         assertThat(input).containsExactly(
                 quarkusTest1Desc,
                 quarkusTestWithUnrestrictedResourceDesc,
+                quarkusTestWithUnrestrictedQuarkusTestResourceDesc,
                 quarkusTest2Desc,
                 quarkusTestWithProfile1Desc,
                 quarkusTestWithProfile2Test4Desc,
                 quarkusTestWithProfile2Test5Desc,
                 quarkusTestWithRestrictedResourceDesc,
+                quarkusTestWithRestrictedResourceDesc2,
                 quarkusTestWithMetaResourceDesc,
+                quarkusTestWithMetaResourceDesc2,
                 nonQuarkusTest1Desc,
                 nonQuarkusTest2Desc);
     }
@@ -169,16 +186,36 @@ class QuarkusTestProfileAwareClassOrdererTest {
         return mock;
     }
 
-    private ClassDescriptor quarkusDescriptorMock(Class<?> testClass,
-            Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass) {
+    private <A extends Annotation> ClassDescriptor quarkusDescriptorMock(Class<?> testClass,
+            Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass,
+            Class<A> testResourceClass) {
         ClassDescriptor mock = descriptorMock(testClass);
         when(mock.isAnnotated(QuarkusTest.class)).thenReturn(true);
-        QuarkusTestResource resourceMock = Mockito.mock(QuarkusTestResource.class,
-                withSettings().strictness(Strictness.LENIENT));
-        doReturn(managerClass).when(resourceMock).value();
-        when(resourceMock.restrictToAnnotatedClass()).thenReturn(restrictToAnnotatedClass);
-        when(mock.findRepeatableAnnotations(QuarkusTestResource.class)).thenReturn(List.of(resourceMock));
+
+        if (WithTestResource.class.isAssignableFrom(testResourceClass)) {
+            quarkusWithTestResourceMock(mock, managerClass, restrictToAnnotatedClass);
+        } else if (QuarkusTestResource.class.isAssignableFrom(testResourceClass)) {
+            quarkusTestResourceMock(mock, managerClass, restrictToAnnotatedClass);
+        }
+
         return mock;
+    }
+
+    private void quarkusWithTestResourceMock(ClassDescriptor mock,
+            Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass) {
+        WithTestResource withResourceMock = Mockito.mock(WithTestResource.class, withSettings().strictness(Strictness.LENIENT));
+        doReturn(managerClass).when(withResourceMock).value();
+        when(withResourceMock.restrictToAnnotatedClass()).thenReturn(restrictToAnnotatedClass);
+        when(mock.findRepeatableAnnotations(WithTestResource.class)).thenReturn(List.of(withResourceMock));
+    }
+
+    private void quarkusTestResourceMock(ClassDescriptor mock,
+            Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass) {
+        QuarkusTestResource testResourceMock = Mockito.mock(QuarkusTestResource.class,
+                withSettings().strictness(Strictness.LENIENT));
+        doReturn(managerClass).when(testResourceMock).value();
+        when(testResourceMock.restrictToAnnotatedClass()).thenReturn(restrictToAnnotatedClass);
+        when(mock.findRepeatableAnnotations(QuarkusTestResource.class)).thenReturn(List.of(testResourceMock));
     }
 
     private static class Test01 {
@@ -186,8 +223,13 @@ class QuarkusTestProfileAwareClassOrdererTest {
 
     // this single made-up test class needs an actual annotation since the orderer will have to do the meta-check directly
     // because ClassDescriptor does not offer any details whether an annotation is directly annotated or meta-annotated
-    @QuarkusTestResource(Manager3.class)
+    @WithTestResource(value = Manager3.class, restrictToAnnotatedClass = false)
     private static class Test02 {
+    }
+
+    @QuarkusTestResource(Manager3.class)
+    private static class Test02a {
+
     }
 
     private static class Test03 {

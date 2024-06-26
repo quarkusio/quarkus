@@ -619,6 +619,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return configuredInstrumentationEnabled;
     }
 
+    public RuntimeUpdatesProcessor setLiveReloadEnabled(boolean liveReloadEnabled) {
+        this.liveReloadEnabled = liveReloadEnabled;
+        return this;
+    }
+
     public RuntimeUpdatesProcessor setConfiguredInstrumentationEnabled(boolean configuredInstrumentationEnabled) {
         this.configuredInstrumentationEnabled = configuredInstrumentationEnabled;
         return this;

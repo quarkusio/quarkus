@@ -12,6 +12,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LiveReloadConfig {
 
     /**
+     * Whether the live-reload feature should be enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean enabled;
+
+    /**
      * Whether Quarkus should enable its ability to not do a full restart
      * when changes to classes are compatible with JVM instrumentation.
      *

@@ -208,7 +208,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     protected class OpenArchivePathTree extends DirectoryPathTree {
 
-        private final FileSystem fs;
+        // we don't make the field final as we want to nullify it on close
+        private volatile FileSystem fs;
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
         protected OpenArchivePathTree(FileSystem fs) {
@@ -251,7 +252,12 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         @Override
         public boolean isOpen() {
-            return fs.isOpen();
+            lock.readLock().lock();
+            try {
+                return fs != null && fs.isOpen();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
@@ -309,8 +315,12 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             }
         }
 
+        /**
+         * Make sure you use this method inside a lock.
+         */
         private void ensureOpen() {
-            if (isOpen()) {
+            // let's not use isOpen() as ensureOpen() is always used inside a read lock
+            if (fs != null && fs.isOpen()) {
                 return;
             }
             throw new RuntimeException("Failed to access " + ArchivePathTree.this.getRoots()
@@ -335,6 +345,10 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                     }
                     throw e;
                 } finally {
+                    // even when we close the fs, everything is kept as is in the fs instance
+                    // and typically the cen, which is quite large
+                    // let's make sure the fs is nullified for it to be garbage collected
+                    fs = null;
                     lock.writeLock().unlock();
                 }
             }

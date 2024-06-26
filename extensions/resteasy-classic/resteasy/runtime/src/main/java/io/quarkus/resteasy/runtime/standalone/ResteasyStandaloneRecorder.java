@@ -40,7 +40,7 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
@@ -107,7 +107,7 @@ public class ResteasyStandaloneRecorder {
             if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
                 // For Not Found Screen
                 Registry registry = deployment.getRegistry();
-                ResourceNotFoundHandler.runtimeRoutes = fromBoundResourceInvokers(registry, nonJaxRsClassNameToMethodPaths);
+                ResourceNotFoundData.setRuntimeRoutes(fromBoundResourceInvokers(registry, nonJaxRsClassNameToMethodPaths));
             }
 
             return handler;

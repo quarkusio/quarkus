@@ -240,7 +240,7 @@ public class TemplateHtmlBuilder {
     }
 
     public TemplateHtmlBuilder servletMapping(String title) {
-        return resourcePath(title, false, false, null);
+        return resourcePath(title, false, true, null);
     }
 
     private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor, String description) {

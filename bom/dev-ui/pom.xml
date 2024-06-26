@@ -33,7 +33,7 @@
         <codeblock.version>1.0.16</codeblock.version>
         <qomponent.version>1.0.0</qomponent.version>
     
-        <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
+        <hpcc-js-wasm.version>2.17.1</hpcc-js-wasm.version>
         <yargs.version>17.7.2</yargs.version>
         <cliui.version>8.0.1</cliui.version>
         <escalade.version>3.1.2</escalade.version>

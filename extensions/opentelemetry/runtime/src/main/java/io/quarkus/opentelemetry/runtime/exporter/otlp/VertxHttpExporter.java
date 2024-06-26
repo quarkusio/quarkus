@@ -18,6 +18,7 @@ import java.util.zip.GZIPOutputStream;
 
 import io.opentelemetry.exporter.internal.http.HttpExporter;
 import io.opentelemetry.exporter.internal.http.HttpSender;
+import io.opentelemetry.exporter.internal.marshal.Marshaler;
 import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
@@ -121,7 +122,7 @@ final class VertxHttpExporter implements SpanExporter {
         }
 
         @Override
-        public void send(Consumer<OutputStream> marshaler,
+        public void send(Marshaler marshaler,
                 int contentLength,
                 Consumer<Response> onHttpResponseRead,
                 Consumer<Throwable> onError) {
@@ -182,7 +183,7 @@ final class VertxHttpExporter implements SpanExporter {
             private final int contentLength;
             private final Consumer<Response> onHttpResponseRead;
             private final Consumer<Throwable> onError;
-            private final Consumer<OutputStream> marshaler;
+            private final Marshaler marshaler;
 
             private final int attemptNumber;
 
@@ -193,7 +194,7 @@ final class VertxHttpExporter implements SpanExporter {
                     int contentLength,
                     Consumer<Response> onHttpResponseRead,
                     Consumer<Throwable> onError,
-                    Consumer<OutputStream> marshaler,
+                    Marshaler marshaler,
                     int attemptNumber) {
                 this.client = client;
                 this.requestURI = requestURI;
@@ -278,12 +279,16 @@ final class VertxHttpExporter implements SpanExporter {
                 if (compressionEnabled) {
                     clientRequest.putHeader("Content-Encoding", "gzip");
                     try (var gzos = new GZIPOutputStream(os)) {
-                        marshaler.accept(gzos);
+                        marshaler.writeBinaryTo(gzos);
                     } catch (IOException e) {
                         throw new IllegalStateException(e);
                     }
                 } else {
-                    marshaler.accept(os);
+                    try {
+                        marshaler.writeBinaryTo(os);
+                    } catch (IOException e) {
+                        throw new IllegalStateException(e);
+                    }
                 }
 
                 if (!headers.isEmpty()) {

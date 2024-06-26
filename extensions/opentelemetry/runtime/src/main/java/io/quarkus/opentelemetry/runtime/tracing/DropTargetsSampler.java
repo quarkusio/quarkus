@@ -9,19 +9,15 @@ import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
 import io.opentelemetry.semconv.SemanticAttributes;
-import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
 
 public class DropTargetsSampler implements Sampler {
     private final Sampler sampler;
     private final List<String> dropTargets;
-    private final SemconvStabilityType semconvStabilityOptin;
 
     public DropTargetsSampler(final Sampler sampler,
-            final List<String> dropTargets,
-            final SemconvStabilityType semconvStabilityOptin) {
+            final List<String> dropTargets) {
         this.sampler = sampler;
         this.dropTargets = dropTargets;
-        this.semconvStabilityOptin = semconvStabilityOptin;
     }
 
     @Override
@@ -29,16 +25,11 @@ public class DropTargetsSampler implements Sampler {
             Attributes attributes, List<LinkData> parentLinks) {
 
         if (spanKind.equals(SpanKind.SERVER)) {
-            String target;
-            if (SemconvStabilityType.HTTP.equals(semconvStabilityOptin) ||
-                    SemconvStabilityType.HTTP_DUP.equals(semconvStabilityOptin)) {
-                // HTTP_TARGET was split into url.path and url.query
-                String path = attributes.get(SemanticAttributes.URL_PATH);
-                String query = attributes.get(SemanticAttributes.URL_QUERY);
-                target = path + (query == null ? "" : "?" + query);
-            } else {
-                target = attributes.get(SemanticAttributes.HTTP_TARGET);
-            }
+            // HTTP_TARGET was split into url.path and url.query
+            String path = attributes.get(SemanticAttributes.URL_PATH);
+            String query = attributes.get(SemanticAttributes.URL_QUERY);
+            String target = path + (query == null ? "" : "?" + query);
+
             if (shouldDrop(target)) {
                 return SamplingResult.drop();
             }

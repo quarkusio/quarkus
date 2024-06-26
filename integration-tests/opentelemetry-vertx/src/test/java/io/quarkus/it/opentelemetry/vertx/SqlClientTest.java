@@ -1,11 +1,11 @@
 package io.quarkus.it.opentelemetry.vertx;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
 import static io.opentelemetry.semconv.SemanticAttributes.DB_CONNECTION_STRING;
 import static io.opentelemetry.semconv.SemanticAttributes.DB_OPERATION;
 import static io.opentelemetry.semconv.SemanticAttributes.DB_STATEMENT;
 import static io.opentelemetry.semconv.SemanticAttributes.DB_USER;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.awaitility.Awaitility.await;
@@ -77,7 +77,7 @@ public class SqlClientTest {
         assertEquals(httpSpan.getSpanId(), querySpan.getParentSpanId());
 
         assertEquals("GET /sqlClient", httpSpan.getName());
-        assertEquals(HTTP_OK, httpSpan.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HTTP_OK, httpSpan.getAttributes().get(HTTP_RESPONSE_STATUS_CODE));
 
         assertEquals("SELECT USERS", querySpan.getName());
         assertEquals(CLIENT, querySpan.getKind());

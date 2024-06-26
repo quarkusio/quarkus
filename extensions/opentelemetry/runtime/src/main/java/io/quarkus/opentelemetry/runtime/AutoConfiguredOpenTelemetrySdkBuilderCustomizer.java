@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.getSemconvStabilityOptin;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -135,10 +134,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
                         // make sure dropped targets are not sampled
                         if (!dropTargets.isEmpty()) {
-                            return new DropTargetsSampler(effectiveSampler,
-                                    dropTargets,
-                                    getSemconvStabilityOptin(
-                                            configProperties.getString(OTEL_SEMCONV_STABILITY_OPT_IN)));
+                            return new DropTargetsSampler(effectiveSampler, dropTargets);
                         } else {
                             return effectiveSampler;
                         }

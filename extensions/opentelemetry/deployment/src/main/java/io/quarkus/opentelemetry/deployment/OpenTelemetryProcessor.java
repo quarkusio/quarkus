@@ -285,10 +285,7 @@ public class OpenTelemetryProcessor {
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
-                redisClientAvailable,
-                ConfigProvider.getConfig()
-                        .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
-                        .getValue());
+                redisClientAvailable);
     }
 
     @BuildStep

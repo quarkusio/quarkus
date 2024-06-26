@@ -3,11 +3,11 @@ package io.quarkus.it.opentelemetry.vertx;
 import static io.opentelemetry.api.trace.SpanKind.CONSUMER;
 import static io.opentelemetry.api.trace.SpanKind.PRODUCER;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_METHOD;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_ROUTE;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+import static io.opentelemetry.semconv.SemanticAttributes.HTTP_REQUEST_BODY_SIZE;
+import static io.opentelemetry.semconv.SemanticAttributes.HTTP_RESPONSE_BODY_SIZE;
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_DESTINATION_NAME;
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_OPERATION;
 import static io.opentelemetry.semconv.SemanticAttributes.MESSAGING_SYSTEM;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
+import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
@@ -59,8 +59,9 @@ class HelloRouterTest {
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
         assertEquals("GET /hello", spans.get(0).get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.GET.toString(),
+                ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_REQUEST_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
     }
 
@@ -78,8 +79,9 @@ class HelloRouterTest {
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
         assertEquals("GET /hello/:name", spans.get(0).get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.GET.toString(),
+                ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_REQUEST_METHOD.toString()));
         assertEquals("/hello/:name", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
     }
 
@@ -99,11 +101,12 @@ class HelloRouterTest {
 
         assertEquals(SERVER.toString(), spans.get(0).get("kind"));
         assertEquals("POST /hello", spans.get(0).get("name"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.POST.toString(), ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.POST.toString(),
+                ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_REQUEST_METHOD.toString()));
         assertEquals("/hello", ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_ROUTE.toString()));
-        assertEquals(6, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_REQUEST_CONTENT_LENGTH.toString()));
-        assertEquals(12, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_RESPONSE_CONTENT_LENGTH.toString()));
+        assertEquals(6, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_REQUEST_BODY_SIZE.toString()));
+        assertEquals(12, ((Map<?, ?>) spans.get(0).get("attributes")).get(HTTP_RESPONSE_BODY_SIZE.toString()));
     }
 
     @Test
@@ -127,8 +130,8 @@ class HelloRouterTest {
 
         Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals(SERVER.toString(), server.get("kind"));
-        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_STATUS_CODE.toString()));
-        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) server.get("attributes")).get(HTTP_METHOD.toString()));
+        assertEquals(HTTP_OK, ((Map<?, ?>) server.get("attributes")).get(HTTP_RESPONSE_STATUS_CODE.toString()));
+        assertEquals(HttpMethod.GET.toString(), ((Map<?, ?>) server.get("attributes")).get(HTTP_REQUEST_METHOD.toString()));
         assertEquals("/bus", ((Map<?, ?>) server.get("attributes")).get(HTTP_ROUTE.toString()));
 
         Map<String, Object> producer = getSpanByKindAndParentId(spans, PRODUCER, server.get("spanId"));

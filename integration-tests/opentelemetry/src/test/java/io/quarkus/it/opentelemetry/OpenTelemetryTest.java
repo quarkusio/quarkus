@@ -96,13 +96,13 @@ public class OpenTelemetryTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
@@ -130,14 +130,14 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/nopath", server.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/nopath", server.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
         assertEquals("/nopath", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
@@ -148,9 +148,9 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.method"));
-        assertEquals("http://localhost:8081", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("GET", client.get("attr_http.request.method"));
+        assertEquals("http://localhost:8081", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
@@ -161,14 +161,14 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) clientServer.get("ended"));
         assertTrue((Boolean) clientServer.get("parent_valid"));
         assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.method"));
-        assertEquals("/", clientServer.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("GET", clientServer.get("attr_http.request.method"));
+        assertEquals("/", clientServer.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", clientServer.get("attr_url.scheme"));
         assertEquals("/", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.status_code"));
-        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertEquals("200", clientServer.get("attr_http.response.status_code"));
+        assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
         assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
@@ -197,14 +197,14 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/slashpath", server.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/slashpath", server.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
         assertEquals("/slashpath", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
@@ -214,9 +214,9 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.method"));
-        assertEquals("http://localhost:8081/", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("GET", client.get("attr_http.request.method"));
+        assertEquals("http://localhost:8081/", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
@@ -227,14 +227,14 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) clientServer.get("ended"));
         assertTrue((Boolean) clientServer.get("parent_valid"));
         assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.method"));
-        assertEquals("/", clientServer.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("GET", clientServer.get("attr_http.request.method"));
+        assertEquals("/", clientServer.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", clientServer.get("attr_url.scheme"));
         assertEquals("/", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.status_code"));
-        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertEquals("200", clientServer.get("attr_http.response.status_code"));
+        assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
         assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
@@ -265,8 +265,8 @@ public class OpenTelemetryTest {
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
         assertEquals(CLIENT.toString(), client.get("kind"));
         assertEquals("GET /from-baggage", client.get("name"));
-        assertEquals("http://localhost:8081/from-baggage", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("http://localhost:8081/from-baggage", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
@@ -300,13 +300,13 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/chained", server.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/chained", server.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         // CDI call
@@ -355,13 +355,13 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) spanData.get("parent_remote"));
         assertTrue((Boolean) spanData.get("parent_valid"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
@@ -390,13 +390,13 @@ public class OpenTelemetryTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/deep/path", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/deep/path", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
@@ -425,14 +425,14 @@ public class OpenTelemetryTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/param/12345", spanData.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/param/12345", spanData.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
         assertEquals("/param/{paramId}", spanData.get("attr_http.route"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 
@@ -459,14 +459,14 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/client/ping/one", server.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/client/ping/one", server.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
         assertEquals("/client/ping/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
@@ -475,9 +475,9 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("GET", client.get("attr_http.request.method"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
         assertEquals(SERVER.toString(), clientServer.get("kind"));
@@ -487,14 +487,14 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) clientServer.get("ended"));
         assertTrue((Boolean) clientServer.get("parent_valid"));
         assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("GET", clientServer.get("attr_http.request.method"));
+        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", clientServer.get("attr_url.scheme"));
         assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.status_code"));
-        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertEquals("200", clientServer.get("attr_http.response.status_code"));
+        assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
         assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
@@ -522,14 +522,14 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/client/async-ping/one", server.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/client/async-ping/one", server.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
         assertEquals("/client/async-ping/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
@@ -538,9 +538,9 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("GET", client.get("attr_http.request.method"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
         assertEquals(SERVER.toString(), clientServer.get("kind"));
@@ -550,14 +550,14 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) clientServer.get("ended"));
         assertTrue((Boolean) clientServer.get("parent_valid"));
         assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("GET", clientServer.get("attr_http.request.method"));
+        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", clientServer.get("attr_url.scheme"));
         assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.status_code"));
-        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertEquals("200", clientServer.get("attr_http.response.status_code"));
+        assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
     }
 
@@ -584,14 +584,14 @@ public class OpenTelemetryTest {
         assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
         assertFalse((Boolean) server.get("parent_valid"));
         assertFalse((Boolean) server.get("parent_remote"));
-        assertEquals("GET", server.get("attr_http.method"));
-        assertEquals("/client/pong-intercept/one", server.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("GET", server.get("attr_http.request.method"));
+        assertEquals("/client/pong-intercept/one", server.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", server.get("attr_url.scheme"));
         assertEquals("/client/pong-intercept/{message}", server.get("attr_http.route"));
-        assertEquals("200", server.get("attr_http.status_code"));
-        assertNotNull(server.get("attr_http.client_ip"));
+        assertEquals("200", server.get("attr_http.response.status_code"));
+        assertNotNull(server.get("attr_client.address"));
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
@@ -600,8 +600,8 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) fromInterceptor.get("ended"));
         assertTrue((Boolean) fromInterceptor.get("parent_valid"));
         assertFalse((Boolean) fromInterceptor.get("parent_remote"));
-        assertNull(fromInterceptor.get("attr_http.method"));
-        assertNull(fromInterceptor.get("attr_http.status_code"));
+        assertNull(fromInterceptor.get("attr_http.request.method"));
+        assertNull(fromInterceptor.get("attr_http.response.status_code"));
         assertEquals("one", fromInterceptor.get("attr_message"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
@@ -610,9 +610,9 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
-        assertEquals("GET", client.get("attr_http.method"));
-        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_http.url"));
-        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals("GET", client.get("attr_http.request.method"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+        assertEquals("200", client.get("attr_http.response.status_code"));
 
         Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
         assertEquals(SERVER.toString(), clientServer.get("kind"));
@@ -622,14 +622,14 @@ public class OpenTelemetryTest {
         assertTrue((Boolean) clientServer.get("ended"));
         assertTrue((Boolean) clientServer.get("parent_valid"));
         assertTrue((Boolean) clientServer.get("parent_remote"));
-        assertEquals("GET", clientServer.get("attr_http.method"));
-        assertEquals("/client/pong/one", clientServer.get("attr_http.target"));
-        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
-        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
-        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("GET", clientServer.get("attr_http.request.method"));
+        assertEquals("/client/pong/one", clientServer.get("attr_url.path"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_server.address"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_server.port")));
+        assertEquals("http", clientServer.get("attr_url.scheme"));
         assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
-        assertEquals("200", clientServer.get("attr_http.status_code"));
-        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertEquals("200", clientServer.get("attr_http.response.status_code"));
+        assertNotNull(clientServer.get("attr_client.address"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
         assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
@@ -659,13 +659,13 @@ public class OpenTelemetryTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/template/path/something", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/template/path/something", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 

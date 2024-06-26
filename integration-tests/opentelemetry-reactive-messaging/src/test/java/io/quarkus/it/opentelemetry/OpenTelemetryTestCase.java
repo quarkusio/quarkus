@@ -119,13 +119,13 @@ public class OpenTelemetryTestCase {
         Assertions.assertTrue((Boolean) spanData.get("ended"));
         Assertions.assertFalse((Boolean) spanData.get("parent_remote"));
 
-        Assertions.assertEquals("GET", spanData.get("attr_http.method"));
-        Assertions.assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(url.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        Assertions.assertEquals("http", spanData.get("attr_http.scheme"));
-        Assertions.assertEquals("200", spanData.get("attr_http.status_code"));
-        Assertions.assertNotNull(spanData.get("attr_http.client_ip"));
+        Assertions.assertEquals("GET", spanData.get("attr_http.request.method"));
+        Assertions.assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(url.getHost(), spanData.get("attr_server.address"));
+        assertEquals(url.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        Assertions.assertEquals("http", spanData.get("attr_url.scheme"));
+        Assertions.assertEquals("200", spanData.get("attr_http.response.status_code"));
+        Assertions.assertNotNull(spanData.get("attr_client.address"));
         Assertions.assertNotNull(spanData.get("attr_user_agent.original"));
     }
 

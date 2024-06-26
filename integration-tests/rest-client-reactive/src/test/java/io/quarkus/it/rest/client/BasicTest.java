@@ -170,11 +170,11 @@ public class BasicTest {
         Assertions.assertFalse((Boolean) initialServerSpan.get("parent_valid"));
         Assertions.assertFalse((Boolean) initialServerSpan.get("parent_remote"));
 
-        Assertions.assertEquals("POST", initialServerSpan.get("attr_http.method"));
-        Assertions.assertEquals("/call-hello-client-trace", initialServerSpan.get("attr_http.target"));
-        Assertions.assertEquals("http", initialServerSpan.get("attr_http.scheme"));
-        Assertions.assertEquals("200", initialServerSpan.get("attr_http.status_code"));
-        Assertions.assertNotNull(initialServerSpan.get("attr_http.client_ip"));
+        Assertions.assertEquals("POST", initialServerSpan.get("attr_http.request.method"));
+        Assertions.assertEquals("/call-hello-client-trace", initialServerSpan.get("attr_url.path"));
+        Assertions.assertEquals("http", initialServerSpan.get("attr_url.scheme"));
+        Assertions.assertEquals("200", initialServerSpan.get("attr_http.response.status_code"));
+        Assertions.assertNotNull(initialServerSpan.get("attr_client.address"));
         Assertions.assertNotNull(initialServerSpan.get("attr_user_agent.original"));
 
         spans = getClientSpans("POST", "http://localhost:8081/hello?count=3");
@@ -199,9 +199,9 @@ public class BasicTest {
         Assertions.assertTrue((Boolean) clientSpan.get("parent_valid"));
         Assertions.assertFalse((Boolean) clientSpan.get("parent_remote"));
 
-        Assertions.assertEquals("POST", clientSpan.get("attr_http.method"));
-        Assertions.assertEquals("http://localhost:8081/hello?count=3", clientSpan.get("attr_http.url"));
-        Assertions.assertEquals("200", clientSpan.get("attr_http.status_code"));
+        Assertions.assertEquals("POST", clientSpan.get("attr_http.request.method"));
+        Assertions.assertEquals("http://localhost:8081/hello?count=3", clientSpan.get("attr_url.full"));
+        Assertions.assertEquals("200", clientSpan.get("attr_http.response.status_code"));
 
         clientSpanId = (String) clientSpan.get("spanId");
 
@@ -226,11 +226,12 @@ public class BasicTest {
         Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_valid"));
         Assertions.assertTrue((Boolean) serverSpanClientSide.get("parent_remote"));
 
-        Assertions.assertEquals("POST", serverSpanClientSide.get("attr_http.method"));
-        Assertions.assertEquals("/hello?count=3", serverSpanClientSide.get("attr_http.target"));
-        Assertions.assertEquals("http", serverSpanClientSide.get("attr_http.scheme"));
-        Assertions.assertEquals("200", serverSpanClientSide.get("attr_http.status_code"));
-        Assertions.assertNotNull(serverSpanClientSide.get("attr_http.client_ip"));
+        Assertions.assertEquals("POST", serverSpanClientSide.get("attr_http.request.method"));
+        Assertions.assertEquals("/hello", serverSpanClientSide.get("attr_url.path"));
+        Assertions.assertEquals("count=3", serverSpanClientSide.get("attr_url.query"));
+        Assertions.assertEquals("http", serverSpanClientSide.get("attr_url.scheme"));
+        Assertions.assertEquals("200", serverSpanClientSide.get("attr_http.response.status_code"));
+        Assertions.assertNotNull(serverSpanClientSide.get("attr_client.address"));
     }
 
     @Test
@@ -246,7 +247,7 @@ public class BasicTest {
         }).stream()
                 .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
                         "SERVER".equals(stringObjectMap.get("kind")) &&
-                        ((String) stringObjectMap.get("attr_http.target")).startsWith(httpTarget))
+                        ((String) stringObjectMap.get("attr_url.path")).startsWith(httpTarget))
                 .collect(Collectors.toList());
     }
 
@@ -255,7 +256,7 @@ public class BasicTest {
         }).stream()
                 .filter(stringObjectMap -> spanName.equals(stringObjectMap.get("name")) &&
                         "CLIENT".equals(stringObjectMap.get("kind")) &&
-                        ((String) stringObjectMap.get("attr_http.url")).startsWith(httpUrl))
+                        ((String) stringObjectMap.get("attr_url.full")).startsWith(httpUrl))
                 .collect(Collectors.toList());
     }
 }

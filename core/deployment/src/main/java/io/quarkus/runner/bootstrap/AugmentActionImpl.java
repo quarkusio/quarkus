@@ -138,29 +138,30 @@ public class AugmentActionImpl implements AugmentAction {
 
     @Override
     public void performCustomBuild(String resultHandler, Object context, String... finalOutputs) {
-        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        Class<? extends BuildItem>[] targets = Arrays.stream(finalOutputs)
-                .map(new Function<String, Class<? extends BuildItem>>() {
-                    @Override
-                    public Class<? extends BuildItem> apply(String s) {
-                        try {
-                            return (Class<? extends BuildItem>) Class.forName(s, false, classLoader);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
+        try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
+            Class<? extends BuildItem>[] targets = Arrays.stream(finalOutputs)
+                    .map(new Function<String, Class<? extends BuildItem>>() {
+                        @Override
+                        public Class<? extends BuildItem> apply(String s) {
+                            try {
+                                return (Class<? extends BuildItem>) Class.forName(s, false, classLoader);
+                            } catch (ClassNotFoundException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    }
-                }).toArray(Class[]::new);
-        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, targets);
+                    }).toArray(Class[]::new);
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, targets);
 
-        writeDebugSourceFile(result);
-        try {
-            BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
-                    .forName(resultHandler, false, classLoader)
-                    .getConstructor().newInstance();
-            consumer.accept(context, result);
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException
-                | InvocationTargetException e) {
-            throw new RuntimeException(e);
+            writeDebugSourceFile(result);
+            try {
+                BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
+                        .forName(resultHandler, false, classLoader)
+                        .getConstructor().newInstance();
+                consumer.accept(context, result);
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException
+                    | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -169,31 +170,32 @@ public class AugmentActionImpl implements AugmentAction {
         if (launchMode != LaunchMode.NORMAL) {
             throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
         }
-        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
-                DeploymentResultBuildItem.class);
+        try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
+                    DeploymentResultBuildItem.class);
 
-        writeDebugSourceFile(result);
+            writeDebugSourceFile(result);
 
-        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
-        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
-        List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
-        BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
+            JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
+            NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
+            List<ArtifactResultBuildItem> artifactResultBuildItems = result.consumeMulti(ArtifactResultBuildItem.class);
+            BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
 
-        // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
-        // we want to write result of the final artifact created
-        if (artifactResultBuildItems.isEmpty()) {
-            throw new IllegalStateException("No artifact results were produced");
+            // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
+            // we want to write result of the final artifact created
+            if (artifactResultBuildItems.isEmpty()) {
+                throw new IllegalStateException("No artifact results were produced");
+            }
+            ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
+            writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
+
+            return new AugmentResult(artifactResultBuildItems.stream()
+                    .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
+                    .collect(Collectors.toList()),
+                    jarBuildItem != null ? jarBuildItem.toJarResult() : null,
+                    nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null,
+                    nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Collections.emptyMap());
         }
-        ArtifactResultBuildItem lastResult = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
-        writeArtifactResultMetadataFile(buildSystemTargetBuildItem, lastResult);
-
-        return new AugmentResult(artifactResultBuildItems.stream()
-                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
-                .collect(Collectors.toList()),
-                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
-                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null,
-                nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Collections.emptyMap());
     }
 
     private void writeDebugSourceFile(BuildResult result) {
@@ -247,10 +249,11 @@ public class AugmentActionImpl implements AugmentAction {
         if (launchMode == LaunchMode.NORMAL) {
             throw new IllegalStateException("Cannot launch a runtime application with NORMAL launch mode");
         }
-        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        @SuppressWarnings("unchecked")
-        BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, NON_NORMAL_MODE_OUTPUTS);
-        return new StartupActionImpl(curatedApplication, result);
+        try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
+            @SuppressWarnings("unchecked")
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, NON_NORMAL_MODE_OUTPUTS);
+            return new StartupActionImpl(curatedApplication, result);
+        }
     }
 
     @Override
@@ -259,13 +262,14 @@ public class AugmentActionImpl implements AugmentAction {
         if (launchMode != LaunchMode.DEVELOPMENT) {
             throw new IllegalStateException("Only application with launch mode DEVELOPMENT can restart");
         }
-        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
 
-        @SuppressWarnings("unchecked")
-        BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader,
-                NON_NORMAL_MODE_OUTPUTS);
+        try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
+            @SuppressWarnings("unchecked")
+            BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader,
+                    NON_NORMAL_MODE_OUTPUTS);
 
-        return new StartupActionImpl(curatedApplication, result);
+            return new StartupActionImpl(curatedApplication, result);
+        }
     }
 
     private BuildResult runAugment(boolean firstRun, Set<String> changedResources,

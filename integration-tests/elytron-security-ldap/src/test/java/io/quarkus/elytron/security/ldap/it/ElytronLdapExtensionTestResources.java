@@ -1,8 +1,8 @@
 package io.quarkus.elytron.security.ldap.it;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.ldap.LdapServerTestResource;
 
-@QuarkusTestResource(LdapServerTestResource.class)
+@WithTestResource(value = LdapServerTestResource.class, restrictToAnnotatedClass = false)
 public class ElytronLdapExtensionTestResources {
 }

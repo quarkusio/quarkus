@@ -17,14 +17,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
+@WithTestResource(value = MongoTestResource.class, restrictToAnnotatedClass = false, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;

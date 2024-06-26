@@ -139,6 +139,10 @@ final class VertxGrpcExporter implements SpanExporter {
 
     @Override
     public CompletableResultCode export(Collection<SpanData> spans) {
+        if (isShutdown.get()) {
+            return CompletableResultCode.ofFailure();
+        }
+
         TraceRequestMarshaler request = TraceRequestMarshaler.create(spans);
 
         return export(request, spans.size());

@@ -12,11 +12,11 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
 
-@QuarkusTestResource(RedisTestResource.class)
+@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
 public class ClientInjectionTest {
 
     @RegisterExtension

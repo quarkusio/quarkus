@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.it.kafka.fruit.Fruit;
 import io.quarkus.it.kafka.people.PeopleState;
 import io.quarkus.it.kafka.people.Person;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
@@ -26,7 +26,7 @@ import io.restassured.http.ContentType;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaCompanionResource.class)
+@WithTestResource(value = KafkaCompanionResource.class, restrictToAnnotatedClass = false)
 public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Fruit>> TYPE_REF = new TypeRef<List<Fruit>>() {

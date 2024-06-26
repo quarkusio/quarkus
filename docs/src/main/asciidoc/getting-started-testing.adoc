@@ -550,7 +550,7 @@ public class MockGreetingProfile implements QuarkusTestProfile { <1>
      * Additional {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
      * specific test profile.
      *
-     * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the {@link io.quarkus.test.common.QuarkusTestResource} class
+     * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the {@link io.quarkus.test.common.WithTestResource} class
      * annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at all).
      */
     @Override
@@ -1086,13 +1086,12 @@ If you are using Quarkus Security, check out the xref:security-testing.adoc[Test
 [[quarkus-test-resource]]
 == Starting services before the Quarkus application starts
 
-A very common need is to start some services on which your Quarkus application depends, before the Quarkus application starts for testing. To address this need, Quarkus provides `@io.quarkus.test.common.QuarkusTestResource` and `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
+A very common need is to start some services on which your Quarkus application depends, before the Quarkus application starts for testing. To address this need, Quarkus provides `@io.quarkus.test.common.WithTestResource` and `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
 
-By simply annotating any test in the test suite with `@QuarkusTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
-A test suite is also free to utilize multiple `@QuarkusTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@QuarkusTestResource(parallel = true)`.
+By simply annotating any test in the test suite with `@WithTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
+A test suite is also free to utilize multiple `@WithTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@WithTestResource(parallel = true)`.
 
-NOTE: Test resources are global, even if they are defined on a test class or custom profile, which means they will all be activated for all tests, even though we do
-remove duplicates. If you want to only enable a test resource on a single test class or test profile, you can use `@QuarkusTestResource(restrictToAnnotatedClass = true)`.
+NOTE: Test resources are applied for a given test class or custom profile. To activate for all tests you can use `@WithTestResource(restrictToAnnotatedClass = false)`.
 
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.
@@ -1109,7 +1108,7 @@ If for example you have a test like the following:
 [source,java]
 ----
 @QuarkusTest
-@QuarkusTestResource(MyWireMockResource.class)
+@WithTestResource(MyWireMockResource.class)
 public class MyTest {
 
     @InjectWireMock // this a custom annotation you are defining in your own application
@@ -1160,7 +1159,7 @@ any necessary injections into the test class.
 
 === Annotation-based test resources
 
-It is possible to write test resources that are enabled and configured using annotations. This is enabled by placing the `@QuarkusTestResource`
+It is possible to write test resources that are enabled and configured using annotations. This is enabled by placing the `@WithTestResource`
 on an annotation which will be used to enable and configure the test resource.
 
 For example, this defines the `@WithKubernetesTestServer` annotation, which you can use on your tests to activate the `KubernetesServerTestResource`,
@@ -1168,7 +1167,7 @@ but only for the annotated test class. You can also place them on your `QuarkusT
 
 [source,java]
 ----
-@QuarkusTestResource(KubernetesServerTestResource.class)
+@WithTestResource(KubernetesServerTestResource.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithKubernetesTestServer {
@@ -1212,12 +1211,12 @@ public class KubernetesServerTestResource
 }
 ----
 
-If you want to make the annotation repeatable, the containing annotation type must be annotated with `@QuarkusTestResourceRepeatable`.
+If you want to make the annotation repeatable, the containing annotation type must be annotated with `@WithTestResourceRepeatable`.
 For example, this would define a repeatable `@WithRepeatableTestResource` annotation.
 
 [source,java]
 ----
-@QuarkusTestResource(KubernetesServerTestResource.class)
+@WithTestResource(KubernetesServerTestResource.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Repeatable(WithRepeatableTestResource.List.class)
@@ -1227,7 +1226,7 @@ public @interface WithRepeatableTestResource {
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
-    @QuarkusTestResourceRepeatable(WithRepeatableTestResource.class)
+    @WithTestResourceRepeatable(WithRepeatableTestResource.class)
     @interface List {
         WithRepeatableTestResource[] value();
     }
@@ -1412,7 +1411,7 @@ public class CustomResource implements QuarkusTestResourceLifecycleManager, DevS
 }
 ----
 
-`CustomResource` would be activated on a `@QuarkusIntegrationTest` using `@QuarkusTestResource` as is described in the corresponding section of this doc.
+`CustomResource` would be activated on a `@QuarkusIntegrationTest` using `@WithTestResource` as is described in the corresponding section of this doc.
 
 === Executing against a running application
 

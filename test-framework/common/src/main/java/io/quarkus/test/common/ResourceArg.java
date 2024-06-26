@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Uses to define arguments of for {@code QuarkusTestResource}
  *
- * see {@link QuarkusTestResource#initArgs()}
+ * see {@link WithTestResource#initArgs()}
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)

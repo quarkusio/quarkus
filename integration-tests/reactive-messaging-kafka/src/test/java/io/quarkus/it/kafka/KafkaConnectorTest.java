@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
@@ -25,7 +25,7 @@ import io.restassured.response.Response;
 import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaCompanionResource.class)
+@WithTestResource(value = KafkaCompanionResource.class, restrictToAnnotatedClass = false)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class KafkaConnectorTest {
 

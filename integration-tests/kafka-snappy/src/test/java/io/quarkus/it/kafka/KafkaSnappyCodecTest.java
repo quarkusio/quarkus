@@ -5,13 +5,13 @@ import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.config.ObjectMapperConfig;
 import io.restassured.mapper.ObjectMapperType;
 
-@QuarkusTestResource(KafkaTestResource.class)
+@WithTestResource(value = KafkaTestResource.class, restrictToAnnotatedClass = false)
 @QuarkusTest
 public class KafkaSnappyCodecTest {
 

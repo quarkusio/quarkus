@@ -9,7 +9,7 @@ import io.quarkus.elytron.security.ldap.rest.RolesEndpointClassLevel;
 import io.quarkus.elytron.security.ldap.rest.SingleRoleSecuredServlet;
 import io.quarkus.elytron.security.ldap.rest.SubjectExposingResource;
 import io.quarkus.elytron.security.ldap.rest.TestApplication;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.ldap.LdapServerTestResource;
 import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
@@ -18,7 +18,7 @@ import io.restassured.specification.RequestSpecification;
  * Tests of BASIC authentication mechanism with the minimal config required
  */
 
-@QuarkusTestResource(LdapServerTestResource.class)
+@WithTestResource(value = LdapServerTestResource.class, restrictToAnnotatedClass = false)
 public abstract class LdapSecurityRealmTest {
 
     protected static Class[] testClasses = {

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.quarkus.it.mongodb.panache.book.BookDetail
 import io.quarkus.it.mongodb.panache.person.Person
-import io.quarkus.test.common.QuarkusTestResource
+import io.quarkus.test.common.WithTestResource
 import io.quarkus.test.junit.QuarkusTest
 import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource::class)
+@WithTestResource(MongoTestResource::class, restrictToAnnotatedClass = false)
 open class MongodbPanacheResourceTest {
     @Test
     fun testBookEntity() {

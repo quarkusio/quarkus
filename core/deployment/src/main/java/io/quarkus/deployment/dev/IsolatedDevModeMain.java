@@ -113,8 +113,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
 
                 runner = start.runMainClass(context.getArgs());
-                RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
-                        runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
+                RuntimeUpdatesProcessor.INSTANCE
+                        .setConfiguredInstrumentationEnabled(
+                                runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false))
+                        .setLiveReloadEnabled(
+                                runner.getConfigValue("quarkus.live-reload.enabled", Boolean.class).orElse(false));
                 firstStartCompleted = true;
                 notifyListenersAfterStart();
 

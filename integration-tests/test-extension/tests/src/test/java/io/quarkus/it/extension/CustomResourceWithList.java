@@ -7,12 +7,12 @@ import java.lang.annotation.Target;
 
 import jakarta.enterprise.inject.Stereotype;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@QuarkusTestResource.List({
-        @QuarkusTestResource(LifecycleManager.class)
+@WithTestResource.List({
+        @WithTestResource(value = LifecycleManager.class, restrictToAnnotatedClass = false)
 })
 @Stereotype
 public @interface CustomResourceWithList {

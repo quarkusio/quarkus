@@ -1,10 +1,10 @@
 package io.quarkus.it.mailer;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(MailpitTestResource.class)
+@WithTestResource(value = MailpitTestResource.class, restrictToAnnotatedClass = false)
 public class MailerIT extends MailerTest {
 
 }

@@ -12,12 +12,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTestExtension;
 
 @ExtendWith({ GetExceptionsInTestResourceTestCase.IgnoreCustomExceptions.class, QuarkusTestExtension.class })
-@QuarkusTestResource(restrictToAnnotatedClass = true, value = GetExceptionsInTestResourceTestCase.KeepContextTestResource.class)
+@WithTestResource(GetExceptionsInTestResourceTestCase.KeepContextTestResource.class)
 public class GetExceptionsInTestResourceTestCase {
 
     public static final AtomicReference<QuarkusTestResourceLifecycleManager.Context> CONTEXT = new AtomicReference<>();

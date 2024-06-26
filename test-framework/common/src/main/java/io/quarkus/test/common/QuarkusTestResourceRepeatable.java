@@ -11,10 +11,15 @@ import java.lang.annotation.Target;
  * Used to indicate the type of the <em>repeatable annotation
  * type</em> annotated with a {@code QuarkusTestResource} annotations.
  *
+ * <p>
+ *
+ * @deprecated Use {@link WithTestResourceRepeatable} instead
+ *             </p>
  */
 @Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Deprecated(forRemoval = true)
 public @interface QuarkusTestResourceRepeatable {
 
     /**

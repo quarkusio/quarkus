@@ -10,13 +10,13 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.client.NamespacedOpenShiftClient;
 import io.fabric8.openshift.client.server.mock.OpenShiftMockServer;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.MockServer;
 import io.quarkus.test.kubernetes.client.OpenShiftMockServerTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(OpenShiftMockServerTestResource.class)
+@WithTestResource(value = OpenShiftMockServerTestResource.class, restrictToAnnotatedClass = false)
 @QuarkusTest
 public class OpenShiftClientTest {
 

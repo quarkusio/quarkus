@@ -5,12 +5,12 @@ import org.junit.jupiter.api.BeforeAll;
 import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.apicurio.rest.client.VertxHttpClientProvider;
 import io.quarkus.it.kafka.jsonschema.JsonSchemaKafkaCreator;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.vertx.core.Vertx;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(value = KafkaResource.class, restrictToAnnotatedClass = true)
+@WithTestResource(KafkaResource.class)
 public class KafkaJsonSchemaIT extends KafkaJsonSchemaTestBase {
 
     JsonSchemaKafkaCreator creator;

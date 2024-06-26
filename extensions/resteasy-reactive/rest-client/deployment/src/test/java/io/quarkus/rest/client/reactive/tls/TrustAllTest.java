@@ -41,8 +41,8 @@ public class TrustAllTest {
     }
 
     @AfterEach
-    public void cleanUp() {
-        server.shutdown();
+    public void stop() {
+        server.stop();
     }
 
     @Test

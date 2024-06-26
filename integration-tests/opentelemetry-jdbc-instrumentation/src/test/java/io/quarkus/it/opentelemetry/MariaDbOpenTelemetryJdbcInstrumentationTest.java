@@ -2,11 +2,11 @@ package io.quarkus.it.opentelemetry;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(value = MariaDbLifecycleManager.class, restrictToAnnotatedClass = true)
+@WithTestResource(MariaDbLifecycleManager.class)
 public class MariaDbOpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJdbcInstrumentationTest {
 
     @Test

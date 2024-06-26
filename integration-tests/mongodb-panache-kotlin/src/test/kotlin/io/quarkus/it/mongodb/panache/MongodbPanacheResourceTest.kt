@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import io.quarkus.it.mongodb.panache.book.BookDetail
+import io.quarkus.it.mongodb.panache.person.Person
+import io.quarkus.test.common.WithTestResource
+import io.quarkus.test.junit.QuarkusTest
+import io.quarkus.test.mongodb.MongoTestResource
 import io.restassured.RestAssured
 import io.restassured.RestAssured.get
 import io.restassured.common.mapper.TypeRef
@@ -14,11 +19,6 @@ import java.util.Calendar
 import java.util.Collections
 import java.util.Date
 import java.util.GregorianCalendar
-import io.quarkus.it.mongodb.panache.book.BookDetail
-import io.quarkus.it.mongodb.panache.person.Person
-import io.quarkus.test.common.WithTestResource
-import io.quarkus.test.junit.QuarkusTest
-import io.quarkus.test.mongodb.MongoTestResource
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

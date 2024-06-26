@@ -334,7 +334,12 @@ public class VertxCoreRecorder {
                 .setClassPathResolvingEnabled(conf.classpathResolving());
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        if (fileCacheDir != null) {
+            fileCacheDir = conf.cacheDirectory().orElse(null);
+        }
+
         if (fileCacheDir == null) {
+            // If not set, make sure we can create a directory in the temp directory.
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
             boolean cacheDirRequired = conf.caching() || conf.classpathResolving();
             if (!tmp.isDirectory() && cacheDirRequired) {
@@ -367,6 +372,8 @@ public class VertxCoreRecorder {
                     });
                 }
             }
+        } else {
+            fileSystemOptions.setFileCacheDir(fileCacheDir);
         }
 
         options.setFileSystemOptions(fileSystemOptions);
@@ -510,6 +517,27 @@ public class VertxCoreRecorder {
         opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive());
         opts.setMaxQueries(ar.maxQueries());
         opts.setQueryTimeout(ar.queryTimeout().toMillis());
+        opts.setHostsRefreshPeriod(ar.hostRefreshPeriod());
+        opts.setOptResourceEnabled(ar.optResourceEnabled());
+        opts.setRdFlag(ar.rdFlag());
+        opts.setNdots(ar.ndots());
+        opts.setRoundRobinInetAddress(ar.roundRobinInetAddress());
+
+        if (ar.hostsPath().isPresent()) {
+            opts.setHostsPath(ar.hostsPath().get());
+        }
+
+        if (ar.servers().isPresent()) {
+            opts.setServers(ar.servers().get());
+        }
+
+        if (ar.searchDomains().isPresent()) {
+            opts.setSearchDomains(ar.searchDomains().get());
+        }
+
+        if (ar.rotateServers().isPresent()) {
+            opts.setRotateServers(ar.rotateServers().get());
+        }
 
         options.setAddressResolverOptions(opts);
     }

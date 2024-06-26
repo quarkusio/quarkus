@@ -3,14 +3,14 @@ package io.quarkus.opentelemetry.deployment.instrumentation;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_CLIENT_IP;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_METHOD;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_ROUTE;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_SCHEME;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.SemanticAttributes.NET_HOST_NAME;
-import static io.opentelemetry.semconv.SemanticAttributes.NET_HOST_PORT;
-import static io.opentelemetry.semconv.SemanticAttributes.USER_AGENT_ORIGINAL;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_ADDRESS;
+import static io.opentelemetry.semconv.ServerAttributes.SERVER_PORT;
+import static io.opentelemetry.semconv.UrlAttributes.URL_SCHEME;
+import static io.opentelemetry.semconv.UserAgentAttributes.USER_AGENT_ORIGINAL;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertTarget;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
@@ -89,12 +89,12 @@ public class VertxOpenTelemetryTest {
         Sampler sampler = TestUtil.getSampler(openTelemetry);
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
         assertTarget(server, "/tracer", null);
-        assertSemanticAttribute(server, "http", HTTP_SCHEME);
-        assertSemanticAttribute(server, "localhost", NET_HOST_NAME);
-        assertSemanticAttribute(server, 8081L, NET_HOST_PORT);
-        assertSemanticAttribute(server, "127.0.0.1", HTTP_CLIENT_IP);
+        assertSemanticAttribute(server, "http", URL_SCHEME);
+        assertSemanticAttribute(server, "localhost", SERVER_ADDRESS);
+        assertSemanticAttribute(server, 8081L, SERVER_PORT);
+        assertSemanticAttribute(server, "127.0.0.1", CLIENT_ADDRESS);
         assertThat(textMapPropagators, arrayContainingInAnyOrder(W3CTraceContextPropagator.getInstance(),
                 W3CBaggagePropagator.getInstance()));
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));
@@ -116,12 +116,12 @@ public class VertxOpenTelemetryTest {
 
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
         assertEquals("GET /tracer", server.getName());
-        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
         assertTarget(server, "/tracer", "id=1");
-        assertSemanticAttribute(server, "http", HTTP_SCHEME);
-        assertSemanticAttribute(server, "localhost", NET_HOST_NAME);
-        assertSemanticAttribute(server, 8081L, NET_HOST_PORT);
-        assertSemanticAttribute(server, "127.0.0.1", HTTP_CLIENT_IP);
+        assertSemanticAttribute(server, "http", URL_SCHEME);
+        assertSemanticAttribute(server, "localhost", SERVER_ADDRESS);
+        assertSemanticAttribute(server, 8081L, SERVER_PORT);
+        assertSemanticAttribute(server, "127.0.0.1", CLIENT_ADDRESS);
         assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
 
         SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
@@ -142,8 +142,8 @@ public class VertxOpenTelemetryTest {
         assertEquals(1, spans.size());
 
         assertEquals("GET /hello/:name", spans.get(0).getName());
-        assertSemanticAttribute(spans.get(0), (long) HTTP_OK, HTTP_STATUS_CODE);
-        assertSemanticAttribute(spans.get(0), GET.toString(), HTTP_METHOD);
+        assertSemanticAttribute(spans.get(0), (long) HTTP_OK, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(spans.get(0), GET.toString(), HTTP_REQUEST_METHOD);
         assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));
     }
 
@@ -156,7 +156,7 @@ public class VertxOpenTelemetryTest {
 
         assertEquals("GET /*", spans.get(0).getName());
         assertEquals("/*", spans.get(0).getAttributes().get(HTTP_ROUTE));
-        assertSemanticAttribute(spans.get(0), (long) HTTP_NOT_FOUND, HTTP_STATUS_CODE);
+        assertSemanticAttribute(spans.get(0), (long) HTTP_NOT_FOUND, HTTP_RESPONSE_STATUS_CODE);
     }
 
     @Test
@@ -170,8 +170,8 @@ public class VertxOpenTelemetryTest {
         assertEquals(1, spans.size());
 
         assertEquals("GET /hello/:name", spans.get(0).getName());
-        assertSemanticAttribute(spans.get(0), (long) HTTP_NOT_FOUND, HTTP_STATUS_CODE);
-        assertSemanticAttribute(spans.get(0), GET.toString(), HTTP_METHOD);
+        assertSemanticAttribute(spans.get(0), (long) HTTP_NOT_FOUND, HTTP_RESPONSE_STATUS_CODE);
+        assertSemanticAttribute(spans.get(0), GET.toString(), HTTP_REQUEST_METHOD);
         assertEquals("/hello/:name", spans.get(0).getAttributes().get(HTTP_ROUTE));
     }
 }

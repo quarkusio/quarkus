@@ -6,7 +6,6 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -17,7 +16,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -44,7 +42,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -81,8 +78,6 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
 
-    private static final DotName LEGACY_WITH_SPAN = DotName.createSimple(
-            io.opentelemetry.extension.annotations.WithSpan.class.getName());
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES = DotName.createSimple(AddingSpanAttributes.class.getName());
     private static final Predicate<AnnotationInstance> isAddSpanAttribute = new Predicate<>() {
@@ -95,8 +90,6 @@ public class OpenTelemetryProcessor {
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
-    private static final String QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN = "quarkus.otel.semconv-stability.opt-in";
-    private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
@@ -114,15 +107,6 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig) {
-
-        final String semconvStability = ConfigProvider.getConfig()
-                .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
-                .getValue();
-        if (semconvStability != null && !semconvStability.isEmpty()) {
-            // yes, they ignore config supplier on this.
-            System.setProperty(OTEL_SEMCONV_STABILITY_OPT_IN, semconvStability);
-        }
-
         return SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
@@ -229,35 +213,6 @@ public class OpenTelemetryProcessor {
     @BuildStep
     void transformWithSpan(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
-        // Transform deprecated annotation into new one
-        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == AnnotationTarget.Kind.METHOD;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                final AnnotationTarget target = context.getTarget();
-
-                List<AnnotationInstance> legacyWithSpans = context.getAnnotations().stream()
-                        .filter(annotationInstance -> annotationInstance.name().equals(LEGACY_WITH_SPAN))
-                        .collect(toList());
-
-                for (AnnotationInstance legacyAnnotation : legacyWithSpans) {
-                    AnnotationValue value = Optional.ofNullable(legacyAnnotation.value("value"))
-                            .orElse(AnnotationValue.createStringValue("value", ""));
-                    AnnotationValue kind = Optional.ofNullable(legacyAnnotation.value("kind"))
-                            .orElse(AnnotationValue.createEnumValue("kind", SPAN_KIND, SpanKind.INTERNAL.name()));
-                    AnnotationInstance annotation = AnnotationInstance.create(
-                            WITH_SPAN,
-                            target,
-                            List.of(value, kind));
-                    context.transform().add(annotation).done();
-                }
-            }
-        }));
-
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
             AnnotationTarget target = transformationContext.getTarget();
             Transformation transform = transformationContext.transform();
@@ -306,10 +261,7 @@ public class OpenTelemetryProcessor {
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
-                redisClientAvailable,
-                ConfigProvider.getConfig()
-                        .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
-                        .getValue());
+                redisClientAvailable);
     }
 
     @BuildStep

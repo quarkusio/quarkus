@@ -22,11 +22,11 @@ import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttributesExtractor;
 import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttributeNamesExtractor;
+import io.opentelemetry.instrumentation.api.incubator.semconv.util.SpanNames;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.util.SpanNames;
 import io.quarkus.arc.ArcInvocationContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -210,19 +210,12 @@ public class WithSpanInterceptor {
         }
 
         private static String attributeName(Parameter parameter) {
-            String value;
+            String value = null;
             SpanAttribute spanAttribute = parameter.getDeclaredAnnotation(SpanAttribute.class);
-            if (spanAttribute == null) {
-                // Needed because SpanAttribute cannot be transformed
-                io.opentelemetry.extension.annotations.SpanAttribute legacySpanAttribute = parameter.getDeclaredAnnotation(
-                        io.opentelemetry.extension.annotations.SpanAttribute.class);
-                if (legacySpanAttribute == null) {
-                    return null;
-                } else {
-                    value = legacySpanAttribute.value();
-                }
-            } else {
+            if (spanAttribute != null) {
                 value = spanAttribute.value();
+            } else {
+                return null;
             }
 
             if (!value.isEmpty()) {

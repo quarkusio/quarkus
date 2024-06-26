@@ -1,16 +1,16 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
+import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
+import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.RECEIVE;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesGetter;
+import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
 
@@ -100,7 +100,17 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
 
         @Override
+        public String getDestinationTemplate(Message message) {
+            return "";
+        }
+
+        @Override
         public boolean isTemporaryDestination(final Message message) {
+            return false;
+        }
+
+        @Override
+        public boolean isAnonymousDestination(Message message) {
             return false;
         }
 
@@ -110,18 +120,28 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
 
         @Override
-        public Long getMessagePayloadSize(final Message message) {
-            return null;
+        public Long getMessageBodySize(Message message) {
+            return 0L;
         }
 
         @Override
-        public Long getMessagePayloadCompressedSize(final Message message) {
-            return null;
+        public Long getMessageEnvelopeSize(Message message) {
+            return 0L;
         }
 
         @Override
         public String getMessageId(final Message message, final Message message2) {
             return null;
+        }
+
+        @Override
+        public String getClientId(Message message) {
+            return "";
+        }
+
+        @Override
+        public Long getBatchMessageCount(Message message, Message message2) {
+            return 0L;
         }
     }
 }

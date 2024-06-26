@@ -376,11 +376,6 @@
                 <artifactId>opensearch-testcontainers</artifactId>
                 <version>${opensearch-testcontainers.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.jctools</groupId>
-                <artifactId>jctools-core</artifactId>
-                <version>${jctools-core.version}</version>
-            </dependency>
             <!-- OpenTelemetry components, imported as a BOM -->
             <dependency>
                 <groupId>io.opentelemetry</groupId>

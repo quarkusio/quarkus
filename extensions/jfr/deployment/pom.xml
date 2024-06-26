@@ -9,7 +9,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-jfr-deployment</artifactId>
-    <name>Quarkus - Jfr - Deployment</name>
+    <name>Quarkus - JFR - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

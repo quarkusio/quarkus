@@ -54,7 +54,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
-import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -278,7 +278,7 @@ public class UndertowDeploymentRecorder {
         if (sv != null) {
             sv.addMapping(mapping);
             if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-                ResourceNotFoundHandler.addServlet(mapping);
+                ResourceNotFoundData.addServlet(mapping);
             }
         }
     }
@@ -463,19 +463,26 @@ public class UndertowDeploymentRecorder {
         if (info.getValue().getExceptionHandler() == null) {
             //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
             //log. If this is not production we also include the stack trace
-            boolean alreadyMapped = false;
+            boolean alreadyMapped500 = false;
+            boolean alreadyMapped404 = false;
             for (ErrorPage i : info.getValue().getErrorPages()) {
                 if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.INTERNAL_SERVER_ERROR) {
-                    alreadyMapped = true;
-                    break;
+                    alreadyMapped500 = true;
+                } else if (i.getErrorCode() != null && i.getErrorCode() == StatusCodes.NOT_FOUND) {
+                    alreadyMapped404 = true;
                 }
             }
-            if (!alreadyMapped || launchMode.isDevOrTest()) {
+            if (!alreadyMapped500 || launchMode.isDevOrTest()) {
                 info.getValue().setExceptionHandler(new QuarkusExceptionHandler());
                 info.getValue().addErrorPage(new ErrorPage("/@QuarkusError", StatusCodes.INTERNAL_SERVER_ERROR));
                 info.getValue().addServlet(new ServletInfo("@QuarkusError", QuarkusErrorServlet.class)
                         .addMapping("/@QuarkusError").setAsyncSupported(true)
                         .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest())));
+            }
+            if (!alreadyMapped404 && launchMode.equals(LaunchMode.DEVELOPMENT)) {
+                info.getValue().addErrorPage(new ErrorPage("/@QuarkusNotFound", StatusCodes.NOT_FOUND));
+                info.getValue().addServlet(new ServletInfo("@QuarkusNotFound", QuarkusNotFoundServlet.class)
+                        .addMapping("/@QuarkusNotFound").setAsyncSupported(true));
             }
         }
         setupRequestScope(info.getValue(), beanContainer);

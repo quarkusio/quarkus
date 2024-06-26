@@ -34,6 +34,7 @@ import jakarta.ws.rs.core.UriBuilder;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.handlers.AdvancedRedirectHandler;
 import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -191,12 +192,18 @@ public class ClientImpl implements Client {
             options.setShared(true);
         }
 
-        httpClient = this.vertx.createHttpClient(options);
-
-        RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
-        if (redirectHandler != null) {
-            httpClient.redirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+        var httpClientBuilder = this.vertx.httpClientBuilder().with(options);
+        AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);
+        if (advancedRedirectHandler != null) {
+            httpClientBuilder.withRedirectHandler(new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler));
+        } else {
+            RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
+            if (redirectHandler != null) {
+                httpClientBuilder.withRedirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+            }
         }
+
+        httpClient = httpClientBuilder.build();
 
         if (loggingScope != LoggingScope.NONE) {
             Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();

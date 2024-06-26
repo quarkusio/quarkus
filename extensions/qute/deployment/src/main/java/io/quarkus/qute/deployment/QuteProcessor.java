@@ -2433,6 +2433,7 @@ public class QuteProcessor {
 
         List<String> templates = new ArrayList<>();
         List<String> tags = new ArrayList<>();
+        Map<String, String> templateContents = new HashMap<>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
             if (templatePath.isTag()) {
                 // tags/myTag.html -> myTag.html
@@ -2440,6 +2441,9 @@ public class QuteProcessor {
                 tags.add(tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length()));
             } else {
                 templates.add(templatePath.getPath());
+            }
+            if (!templatePath.isFileBased()) {
+                templateContents.put(templatePath.getPath(), templatePath.getContent());
             }
         }
         Map<String, List<String>> variants;
@@ -2454,7 +2458,7 @@ public class QuteProcessor {
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
                         tags, variants, templateInitializers.stream()
                                 .map(TemplateGlobalProviderBuildItem::getClassName).collect(Collectors.toList()),
-                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet())))
+                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()), templateContents))
                 .done());
     }
 
@@ -3423,8 +3427,10 @@ public class QuteProcessor {
         if (!duplicates.isEmpty()) {
             StringBuilder builder = new StringBuilder("Duplicate templates found:");
             for (Entry<String, List<TemplatePathBuildItem>> e : duplicates.entrySet()) {
-                builder.append("\n\t- ").append(e.getKey()).append(": ")
-                        .append(e.getValue().stream().map(TemplatePathBuildItem::getFullPath).collect(Collectors.toList()));
+                builder.append("\n\t- ")
+                        .append(e.getKey())
+                        .append(": ")
+                        .append(e.getValue().stream().map(TemplatePathBuildItem::getSourceInfo).collect(Collectors.toList()));
             }
             throw new IllegalStateException(builder.toString());
         }

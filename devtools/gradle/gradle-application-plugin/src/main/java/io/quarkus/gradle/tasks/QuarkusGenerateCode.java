@@ -3,9 +3,11 @@ package io.quarkus.gradle.tasks;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -76,7 +78,8 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
         // an input to the cache key. We need to declare these properties as inputs, because those influence the
         // execution.
         // Documented here: https://docs.gradle.org/current/userguide/build_cache.html#sec:task_output_caching_inputs
-        return Map.of("launchMode", launchMode.name(), "inputSourceSetName", inputSourceSetName);
+        return Collections.unmodifiableMap(
+                new TreeMap<>(Map.of("launchMode", launchMode.name(), "inputSourceSetName", inputSourceSetName)));
     }
 
     @InputFiles

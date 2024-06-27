@@ -11,7 +11,6 @@ import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketConnection.BroadcastSender;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.WebSocketBase;
@@ -55,14 +54,14 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendText(String message) {
-        Uni<Void> uni = UniHelper.toUni(webSocket().writeTextMessage(message));
+        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
         return trafficLogger == null ? uni : uni.invoke(() -> {
             trafficLogger.textMessageSent(this, message);
         });
     }
 
     public Uni<Void> sendBinary(Buffer message) {
-        Uni<Void> uni = UniHelper.toUni(webSocket().writeBinaryMessage(message));
+        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
         return trafficLogger == null ? uni : uni.invoke(() -> trafficLogger.binaryMessageSent(this, message));
     }
 
@@ -81,7 +80,7 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendPing(Buffer data) {
-        return UniHelper.toUni(webSocket().writePing(data));
+        return Uni.createFrom().completionStage(() -> webSocket().writePing(data).toCompletionStage());
     }
 
     void sendAutoPing() {
@@ -93,7 +92,7 @@ public abstract class WebSocketConnectionBase {
     }
 
     public Uni<Void> sendPong(Buffer data) {
-        return UniHelper.toUni(webSocket().writePong(data));
+        return Uni.createFrom().completionStage(() -> webSocket().writePong(data).toCompletionStage());
     }
 
     public Uni<Void> close() {
@@ -105,7 +104,8 @@ public abstract class WebSocketConnectionBase {
             LOG.warnf("Connection already closed: %s", this);
             return Uni.createFrom().voidItem();
         }
-        return UniHelper.toUni(webSocket().close((short) reason.getCode(), reason.getMessage()));
+        return Uni.createFrom()
+                .completionStage(() -> webSocket().close((short) reason.getCode(), reason.getMessage()).toCompletionStage());
     }
 
     public boolean isSecure() {

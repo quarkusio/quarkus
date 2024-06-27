@@ -38,7 +38,7 @@ public class UnhandledMessageFailureLogStrategyTest {
                 .connectAndAwait();
         connection.sendTextAndAwait("foo");
         assertFalse(connection.isClosed());
-        connection.sendText("bar");
+        connection.sendTextAndAwait("bar");
         assertTrue(ClientMessageErrorEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
         assertEquals("bar", ClientMessageErrorEndpoint.MESSAGES.get(0));
     }

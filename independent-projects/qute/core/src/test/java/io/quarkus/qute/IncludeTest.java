@@ -251,4 +251,100 @@ public class IncludeTest {
         assertEquals("NOT_FOUND", engine.parse("{#include foo _isolated /}").data("name", "Dorka").render());
     }
 
+    @Test
+    public void testNestedMainBlocks() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .build();
+
+        engine.putTemplate("root", engine.parse("""
+                <html>
+                   <body>{#insert /}</body>
+                </html>
+                                """));
+        engine.putTemplate("auth", engine.parse("""
+                {#include root}
+                <div>
+                   {#insert /}
+                </div>
+                {/include}
+                                """));
+        assertEquals("<html><body><div><form>LoginForm</form></div></body>"
+                + "</html>", engine.parse("""
+                        {#include auth}
+                           <form>Login Form</form>
+                        {/include}
+                                    """).render().replaceAll("\\s+", ""));
+
+        engine.putTemplate("next", engine.parse("""
+                {#include auth}
+                <foo>
+                   {#insert /}
+                </foo>
+                {/include}
+                                """));
+
+        // 1. top -> push child rc#1 with extending block $default$
+        // 2. next -> push child rc#2 with extending block $default$
+        // 3. auth -> push child rc#3 with extending block $default$
+        // 4. root -> eval {#insert}, looks up $default$ in rc#3
+        // 5. auth -> eval {#insert}, looks up $default$ in rc#2
+        // 6. next -> eval {#insert}, looks up $default$ in rc#1
+        assertEquals("<html><body><div><foo><form>LoginForm</form></foo></div></body>"
+                + "</html>", engine.parse("""
+                        {#include next}
+                           <form>Login Form</form>
+                        {/include}
+                                    """).render().replaceAll("\\s+", ""));
+    }
+
+    @Test
+    public void testNestedBlocksWithSameName() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .build();
+
+        engine.putTemplate("root", engine.parse("""
+                <html>
+                   <body>{#insert foo /}</body>
+                </html>
+                                """));
+        engine.putTemplate("auth", engine.parse("""
+                {#include root}
+                {#foo}
+                <div>
+                   {#insert foo /}
+                </div>
+                {/foo}
+                {/include}
+                                """));
+        assertEquals("<html><body><div><form>LoginForm</form></div></body>"
+                + "</html>", engine.parse("""
+                        {#include auth}
+                           {#foo}
+                           <form>Login Form</form>
+                           {/foo}
+                        {/include}
+                                    """).render().replaceAll("\\s+", ""));
+
+        engine.putTemplate("next", engine.parse("""
+                {#include auth}
+                {#foo}
+                <foo>
+                   {#insert foo /}
+                </foo>
+                {/foo}
+                {/include}
+                                """));
+
+        assertEquals("<html><body><div><foo><form>LoginForm</form></foo></div></body>"
+                + "</html>", engine.parse("""
+                        {#include next}
+                           {#foo}
+                           <form>Login Form</form>
+                           {/foo}
+                        {/include}
+                                    """).render().replaceAll("\\s+", ""));
+    }
+
 }

@@ -1204,11 +1204,32 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     // Then process glob patterns
                     for (Entry<String, Boolean> e : watchedFilePaths.entrySet()) {
                         String watchedFilePath = e.getKey();
-                        Path path = Paths.get(watchedFilePath);
-                        if (!path.isAbsolute() && !watchedRootPaths.contains(e.getKey()) && maybeGlobPattern(watchedFilePath)) {
-                            Path resolvedPath = root.resolve(watchedFilePath);
-                            for (WatchedPath extra : expandGlobPattern(root, resolvedPath, watchedFilePath, e.getValue())) {
-                                timestamps.watchedPaths.put(extra.filePath, extra);
+                        Path path = Paths.get(sanitizedPattern(watchedFilePath));
+                        if (!path.isAbsolute() && !watchedRootPaths.contains(e.getKey())
+                                && maybeGlobPattern(watchedFilePath)) {
+                            try {
+                                final PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + watchedFilePath);
+                                Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+                                    @Override
+                                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                                        Path relativePath = root.relativize(file);
+                                        if (matcher.matches(relativePath)) {
+                                            log.debugf("Glob pattern [%s] matched %s from %s", watchedFilePath, relativePath,
+                                                    root);
+                                            WatchedPath extra = new WatchedPath(file, relativePath, e.getValue(),
+                                                    attrs.lastModifiedTime().toMillis());
+                                            timestamps.watchedPaths.put(extra.filePath, extra);
+                                        }
+                                        return FileVisitResult.CONTINUE;
+                                    }
+
+                                    @Override
+                                    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                                        return FileVisitResult.CONTINUE;
+                                    }
+                                });
+                            } catch (IOException ex) {
+                                throw new UncheckedIOException(ex);
                             }
                         }
                     }
@@ -1219,8 +1240,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         // Finally process watched absolute paths
         for (Entry<String, Boolean> e : watchedFilePaths.entrySet()) {
             String watchedFilePath = e.getKey();
-            Path path = Paths.get(watchedFilePath);
+            Path path = Paths.get(sanitizedPattern(watchedFilePath));
             if (path.isAbsolute()) {
+                path = Paths.get(watchedFilePath);
                 log.debugf("Watch %s", path);
                 if (Files.exists(path)) {
                     putLastModifiedTime(path, path, e.getValue(), timestamps);
@@ -1233,6 +1255,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         log.debugf("Watched paths: %s", timestamps.watchedPaths.values());
         return this;
+    }
+
+    private String sanitizedPattern(String pattern) {
+        return pattern.replaceAll("[*?]", "");
     }
 
     private boolean maybeGlobPattern(String path) {
@@ -1280,32 +1306,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         if (testClassChangeTimer != null) {
             testClassChangeTimer.cancel();
         }
-    }
-
-    private List<WatchedPath> expandGlobPattern(Path root, Path path, String pattern, boolean restart) {
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + path.toString());
-        List<WatchedPath> files = new ArrayList<>();
-        try {
-            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (pathMatcher.matches(file)) {
-                        Path relativePath = root.relativize(file);
-                        log.debugf("Glob pattern [%s] matched %s from %s", pattern, relativePath, root);
-                        files.add(new WatchedPath(file, relativePath, restart, attrs.lastModifiedTime().toMillis()));
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return files;
     }
 
     public boolean toggleInstrumentation() {

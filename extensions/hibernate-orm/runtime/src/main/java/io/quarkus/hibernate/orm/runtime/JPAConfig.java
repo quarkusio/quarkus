@@ -18,7 +18,7 @@ import jakarta.persistence.Persistence;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 
 public class JPAConfig {
 
@@ -29,7 +29,7 @@ public class JPAConfig {
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        for (RuntimePersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+        for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
             var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getConfigurationName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {

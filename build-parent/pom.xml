@@ -33,7 +33,7 @@
 
         <asciidoctorj.version>2.5.13</asciidoctorj.version>
         <htmlunit.version>4.2.0</htmlunit.version>
-        <javaparser-core.version>3.26.0</javaparser-core.version>
+        <javaparser-core.version>3.26.1</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
@@ -57,7 +57,7 @@
         <supported-maven-versions>[${maven.min.version},)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.7</proposed-maven-version>
+        <proposed-maven-version>3.9.8</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
         <gradle-wrapper.version>8.8</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
@@ -65,14 +65,6 @@
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
 
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
-
-        <!-- Panache needs to run the hibernate-jpamodelgen annotation processor,
-             and unfortunately annotation processors are not covered by dependency management
-             in kotlin-maven-plugin; see https://github.com/quarkusio/quarkus/issues/37477#issuecomment-1923662964
-         -->
-        <hibernate-orm.version>6.5.2.Final</hibernate-orm.version>
-        <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
-        <antlr.version>4.13.0</antlr.version>
 
         <!-- SELinux access label, used when mounting local volumes into containers in tests -->
         <volume.access.modifier>:Z</volume.access.modifier>

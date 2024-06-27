@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-observability-devservices</artifactId>
-    <name>Quarkus - Observability Dev Services - Runtime</name>
+    <name>Quarkus - Observability Dev Services</name>
     <description>Serve and consume Observability Dev Services</description>
     <dependencies>
         <dependency>

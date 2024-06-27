@@ -37,7 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.7</proposed-maven-version>
+        <proposed-maven-version>3.9.8</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
         <gradle-wrapper.version>8.8</gradle-wrapper.version>
 
@@ -56,7 +56,7 @@
         <jboss-logging.version>3.6.0.Final</jboss-logging.version>
         <mockito.version>5.12.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
-        <maven-model-helper.version>36</maven-model-helper.version>
+        <maven-model-helper.version>37</maven-model-helper.version>
         <jandex.version>3.2.0</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.2.1</awaitility.version>

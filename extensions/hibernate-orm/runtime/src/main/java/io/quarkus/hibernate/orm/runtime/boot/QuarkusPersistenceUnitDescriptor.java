@@ -16,9 +16,12 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
-public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDescriptor {
+public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDescriptor {
 
     private final String name;
+    // The default PU in Hibernate Reactive is named "default-reactive" instead of "<default>",
+    // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
+    // use the name "<default>", so we need to convert between those.
     private final String configurationName;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
@@ -28,6 +31,21 @@ public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDe
     private final List<String> managedClassNames;
     private final Properties properties;
 
+    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+            PersistenceUnitTransactionType transactionType,
+            List<String> managedClassNames,
+            Properties properties) {
+        this.name = name;
+        this.configurationName = configurationName;
+        this.providerClassName = null;
+        this.useQuotedIdentifiers = false;
+        this.transactionType = transactionType;
+        this.validationMode = null;
+        this.sharedCacheMode = null;
+        this.managedClassNames = managedClassNames;
+        this.properties = properties;
+    }
+
     /**
      * @deprecated Do not use directly: this should be considered an internal constructor,
      *             as we're trusting all parameters.
@@ -35,7 +53,7 @@ public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDe
      */
     @Deprecated
     @RecordableConstructor
-    public RuntimePersistenceUnitDescriptor(String name, String configurationName,
+    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
             String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType transactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
@@ -56,16 +74,17 @@ public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDe
      * several options that Quarkus does not support are not set.
      *
      * @param toClone the descriptor to clone
-     * @param configurationName the name of this PU in Quarkus configuration
      * @return a new instance of LightPersistenceXmlDescriptor
      * @throws UnsupportedOperationException on unsupported configurations
      */
     @SuppressWarnings("deprecated")
-    public static RuntimePersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone,
-            String configurationName) {
+    public static QuarkusPersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone) {
+        if (toClone instanceof QuarkusPersistenceUnitDescriptor) {
+            return (QuarkusPersistenceUnitDescriptor) toClone;
+        }
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new RuntimePersistenceUnitDescriptor(toClone.getName(), configurationName, toClone.getProviderClassName(),
+        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties());

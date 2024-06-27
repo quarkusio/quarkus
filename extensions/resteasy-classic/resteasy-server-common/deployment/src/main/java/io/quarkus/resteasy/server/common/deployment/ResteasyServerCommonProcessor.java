@@ -240,7 +240,9 @@ public class ResteasyServerCommonProcessor {
             jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
                     jaxrsProvidersToRegisterBuildItem, allowedClasses, excludedClasses);
 
-            Collection<ClassInfo> knownApplications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION);
+            Collection<ClassInfo> knownApplications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION).stream()
+                    .filter(ci -> !ci.isAbstract()).collect(
+                            Collectors.toSet());
             // getAllowedClasses throws an Exception if multiple Applications are found, so we should only get 1
             if (knownApplications.size() == 1) {
                 appClass = knownApplications.iterator().next().name().toString();

@@ -979,7 +979,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             if (executionMetadata.taskClass() != null) {
                 jobBuilder.usingJobData(EXECUTION_METADATA_TASK_CLASS, executionMetadata.taskClass().getName());
             } else if (executionMetadata.asyncTaskClass() != null) {
-                jobBuilder.usingJobData(EXECUTION_METADATA_TASK_CLASS, executionMetadata.asyncTaskClass().getName());
+                jobBuilder.usingJobData(EXECUTION_METADATA_ASYNC_TASK_CLASS, executionMetadata.asyncTaskClass().getName());
             }
             if (executionMetadata.skipPredicateClass() != null) {
                 jobBuilder.usingJobData(EXECUTION_METADATA_SKIP_PREDICATE_CLASS,
@@ -1128,12 +1128,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
     static class QuartzTrigger implements Trigger {
 
-        final org.quartz.TriggerKey triggerKey;
-        final Function<TriggerKey, org.quartz.Trigger> triggerFunction;
-        final ScheduledInvoker invoker;
-        final Duration gracePeriod;
-        final boolean isProgrammatic;
-        final String methodDescription;
+        private final org.quartz.TriggerKey triggerKey;
+        private final Function<TriggerKey, org.quartz.Trigger> triggerFunction;
+        private final ScheduledInvoker invoker;
+        private final Duration gracePeriod;
+        private final boolean isProgrammatic;
+        private final String methodDescription;
 
         final boolean runBlockingMethodOnQuartzThread;
 
@@ -1151,13 +1151,13 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
         @Override
         public Instant getNextFireTime() {
-            Date nextFireTime = getTrigger().getNextFireTime();
+            Date nextFireTime = trigger().getNextFireTime();
             return nextFireTime != null ? nextFireTime.toInstant() : null;
         }
 
         @Override
         public Instant getPreviousFireTime() {
-            Date previousFireTime = getTrigger().getPreviousFireTime();
+            Date previousFireTime = trigger().getPreviousFireTime();
             return previousFireTime != null ? previousFireTime.toInstant() : null;
         }
 
@@ -1173,16 +1173,16 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
         @Override
         public String getId() {
-            return getTrigger().getKey().getName();
-        }
-
-        private org.quartz.Trigger getTrigger() {
-            return triggerFunction.apply(triggerKey);
+            return trigger().getKey().getName();
         }
 
         @Override
         public String getMethodDescription() {
             return methodDescription;
+        }
+
+        private org.quartz.Trigger trigger() {
+            return triggerFunction.apply(triggerKey);
         }
 
     }

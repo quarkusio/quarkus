@@ -580,3 +580,116 @@ quarkus.tls.http.key-store.pem.0.key=tls.key
 
 Remember that the impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
 This is automatically done for the Quarkus HTTP server (including the management interface if enabled).
+
+== Using Kubernetes secrets or cert-manager
+
+When running in Kubernetes, you can use Kubernetes secrets to store the key stores and trust stores.
+
+=== Using Kubernetes secrets
+
+To use Kubernetes secrets, you need to create a secret with the key stores and trust stores.
+Let's take the following secret as an example:
+
+[source, yaml]
+----
+apiVersion: v1
+data:
+  tls.crt: ...
+  tls.key: ...
+kind: Secret
+metadata:
+  name: my-certs
+type: kubernetes.io/tls
+----
+
+The easiest way to uses these certificates is to mount the secret as a volume in the pod:
+
+[source, yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: demo
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.kubernetes.io/managed-by: quarkus
+  name: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo
+      app.kubernetes.io/version: 1.0.0-SNAPSHOT
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/managed-by: quarkus
+        app.kubernetes.io/name: demo
+        app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    spec:
+      containers:
+        - env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          image: ...
+          imagePullPolicy: IfNotPresent
+          name: demo
+          ports:
+            - containerPort: 8443 # Configure the port to be HTTPS
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /certs
+              name: my-volume
+      volumes:
+        - name: my-volume
+          secret:
+            defaultMode: 0666 # Set the permissions, otherwise the pod may not be able to read the files
+            optional: false
+            secretName: my-certs # Reference the secret
+----
+
+Then, you can configure the TLS registry to use the certificates:
+
+[source, properties]
+----
+# ...
+# TLS Registry configuration
+%prod.quarkus.tls.http.key-store.pem.0.cert=/certs/tls.crt
+%prod.quarkus.tls.http.key-store.pem.0.key=/certs/tls.key
+
+# HTTP server configuration:
+%prod.quarkus.http.tls-configuration-name=http
+%prod.quarkus.http.insecure-requests=disabled
+----
+
+You can combine this with the periodic reloading to automatically reload the certificates when they change.
+
+=== Using cert-manager
+
+When running in Kubernetes, you can use cert-manager to automatically generate and renew certificates.
+Cert-manager will produce a secret with the key stores and trust stores.
+So, configuring the TLS registry is the same as when using Kubernetes secrets.
+The generated secret uses the following files:
+
+- `tls.crt` for the certificate
+- `tls.key` for the private key
+- `ca.crt` for the CA certificate (if needed)
+
+To handle the renewal, you can use the periodic reloading mechanism:
+
+[source, properties]
+----
+# ...
+# TLS Registry configuration
+%prod.quarkus.tls.http.key-store.pem.0.cert=/certs/tls.crt
+%prod.quarkus.tls.http.key-store.pem.0.key=/certs/tls.key
+%prod.quarkus.tls.http.reload-period=24h
+
+# HTTP server configuration:
+%prod.quarkus.http.tls-configuration-name=http
+%prod.quarkus.http.insecure-requests=disabled
+----
+

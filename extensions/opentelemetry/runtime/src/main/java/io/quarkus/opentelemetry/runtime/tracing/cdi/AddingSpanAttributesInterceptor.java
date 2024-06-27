@@ -60,19 +60,12 @@ public class AddingSpanAttributesInterceptor {
         }
 
         private static String attributeName(Parameter parameter) {
-            String value;
+            String value = null;
             SpanAttribute spanAttribute = parameter.getDeclaredAnnotation(SpanAttribute.class);
-            if (spanAttribute == null) {
-                // Needed because SpanAttribute cannot be transformed
-                io.opentelemetry.extension.annotations.SpanAttribute legacySpanAttribute = parameter.getDeclaredAnnotation(
-                        io.opentelemetry.extension.annotations.SpanAttribute.class);
-                if (legacySpanAttribute == null) {
-                    return null;
-                } else {
-                    value = legacySpanAttribute.value();
-                }
-            } else {
+            if (spanAttribute != null) {
                 value = spanAttribute.value();
+            } else {
+                return null;
             }
 
             if (!value.isEmpty()) {

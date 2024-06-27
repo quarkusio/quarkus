@@ -100,7 +100,17 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
 
         @Override
+        public String getDestinationTemplate(Message message) {
+            return "";
+        }
+
+        @Override
         public boolean isTemporaryDestination(final Message message) {
+            return false;
+        }
+
+        @Override
+        public boolean isAnonymousDestination(Message message) {
             return false;
         }
 
@@ -110,18 +120,28 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         }
 
         @Override
-        public Long getMessagePayloadSize(final Message message) {
-            return null;
+        public Long getMessageBodySize(Message message) {
+            return 0L;
         }
 
         @Override
-        public Long getMessagePayloadCompressedSize(final Message message) {
-            return null;
+        public Long getMessageEnvelopeSize(Message message) {
+            return 0L;
         }
 
         @Override
         public String getMessageId(final Message message, final Message message2) {
             return null;
+        }
+
+        @Override
+        public String getClientId(Message message) {
+            return "";
+        }
+
+        @Override
+        public Long getBatchMessageCount(Message message, Message message2) {
+            return 0L;
         }
     }
 }

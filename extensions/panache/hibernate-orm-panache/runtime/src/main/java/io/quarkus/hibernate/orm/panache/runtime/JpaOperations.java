@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.panache.runtime;
 import java.util.List;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
@@ -14,9 +14,9 @@ public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
     public static final JpaOperations INSTANCE = new JpaOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(EntityManager em, String query, String originalQuery, String orderBy,
+    protected PanacheQueryImpl<?> createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(em, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     @Override

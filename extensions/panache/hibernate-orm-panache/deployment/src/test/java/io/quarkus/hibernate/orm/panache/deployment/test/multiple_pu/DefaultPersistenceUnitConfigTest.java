@@ -40,4 +40,11 @@ public class DefaultPersistenceUnitConfigTest {
 
         assertNotNull(SecondEntity.getEntityManager());
     }
+
+    @Test
+    void sessionShouldExist() {
+        assertNotNull(FirstEntity.getSession());
+
+        assertNotNull(SecondEntity.getSession());
+    }
 }

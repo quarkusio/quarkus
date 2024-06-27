@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -803,5 +804,13 @@ public final class OidcUtils {
         }
         context.response().addCookie(cookie);
         return cookie;
+    }
+
+    public static SecretKey createSecretKeyFromDigest(byte[] secretBytes) {
+        try {
+            return new SecretKeySpec(getSha256Digest(secretBytes), "AES");
+        } catch (Exception ex) {
+            throw new OIDCException(ex);
+        }
     }
 }

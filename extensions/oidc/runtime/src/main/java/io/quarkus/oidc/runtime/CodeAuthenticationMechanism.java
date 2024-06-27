@@ -5,6 +5,7 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_R
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -49,6 +50,7 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
+import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
@@ -812,7 +814,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, null,
+                                tokens.setIdToken(generateInternalIdToken(configContext, null, null,
                                         tokens.getAccessTokenExpiresIn()));
                                 internalIdToken = true;
                             }
@@ -839,7 +841,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     public Uni<Void> apply(SecurityIdentity identity) {
                                         if (internalIdToken
                                                 && OidcUtils.cacheUserInfoInIdToken(resolver, configContext.oidcConfig)) {
-                                            tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig,
+                                            tokens.setIdToken(generateInternalIdToken(configContext,
                                                     identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE), null,
                                                     tokens.getAccessTokenExpiresIn()));
                                         }
@@ -955,7 +957,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
-    private String generateInternalIdToken(OidcTenantConfig oidcConfig, UserInfo userInfo, String currentIdToken,
+    private String generateInternalIdToken(TenantConfigContext context, UserInfo userInfo, String currentIdToken,
             Long accessTokenExpiresInSecs) {
         JwtClaimsBuilder builder = Jwt.claims();
         if (currentIdToken != null) {
@@ -972,14 +974,26 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (userInfo != null) {
             builder.claim(OidcUtils.USER_INFO_ATTRIBUTE, userInfo.getJsonObject());
         }
-        if (oidcConfig.authentication.internalIdTokenLifespan.isPresent()) {
-            builder.expiresIn(oidcConfig.authentication.internalIdTokenLifespan.get().getSeconds());
+        if (context.oidcConfig.authentication.internalIdTokenLifespan.isPresent()) {
+            builder.expiresIn(context.oidcConfig.authentication.internalIdTokenLifespan.get().getSeconds());
         } else if (accessTokenExpiresInSecs != null) {
             builder.expiresIn(accessTokenExpiresInSecs);
         }
-        builder.audience(oidcConfig.getClientId().get());
-        return builder.jws().header(INTERNAL_IDTOKEN_HEADER, true)
-                .sign(KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials)));
+        builder.audience(context.oidcConfig.getClientId().get());
+
+        JwtSignatureBuilder sigBuilder = builder.jws().header(INTERNAL_IDTOKEN_HEADER, true);
+        String clientOrJwtSecret = OidcCommonUtils.getClientOrJwtSecret(context.oidcConfig.credentials);
+        if (clientOrJwtSecret != null) {
+            LOG.debug("Signing internal ID token with a configured client secret");
+            return sigBuilder.sign(KeyUtils.createSecretKeyFromSecret(clientOrJwtSecret));
+        } else if (context.provider.client.getClientJwtKey() instanceof PrivateKey) {
+            LOG.debug("Signing internal ID token with a configured JWT private key");
+            return sigBuilder.sign(OidcUtils.createSecretKeyFromDigest(((PrivateKey) context.provider.client.getClientJwtKey())
+                    .getEncoded()));
+        } else {
+            LOG.debug("Signing internal ID token with a generated secret key");
+            return sigBuilder.sign(context.getInternalIdTokenSecretKey());
+        }
     }
 
     private Uni<Void> processSuccessfulAuthentication(RoutingContext context,
@@ -1315,7 +1329,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     tokens.setIdToken(currentIdToken);
                                 }
                             } else {
-                                tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, currentIdToken,
+                                tokens.setIdToken(generateInternalIdToken(configContext, null, currentIdToken,
                                         tokens.getAccessTokenExpiresIn()));
                             }
                         }

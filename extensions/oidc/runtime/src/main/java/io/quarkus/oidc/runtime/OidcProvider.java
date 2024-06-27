@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.io.Closeable;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.PrivateKey;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -158,8 +159,10 @@ public class OidcProvider implements Closeable {
         return oidcConfig != null ? oidcConfig.token.requiredClaims : null;
     }
 
-    public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(),
+    public TokenVerificationResult verifySelfSignedJwtToken(String token, Key generatedInternalSignatureKey)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS,
+                new InternalSignatureKeyResolver(generatedInternalSignatureKey),
                 true, oidcConfig.token.isIssuedAtRequired());
     }
 
@@ -564,11 +567,31 @@ public class OidcProvider implements Closeable {
 
     }
 
-    private class SymmetricKeyResolver implements VerificationKeyResolver {
+    private class InternalSignatureKeyResolver implements VerificationKeyResolver {
+        final Key internalSignatureKey;
+
+        public InternalSignatureKeyResolver(Key generatedInternalSignatureKey) {
+            this.internalSignatureKey = initKey(generatedInternalSignatureKey);
+        }
+
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
-            return KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            return internalSignatureKey;
+        }
+
+        private Key initKey(Key generatedInternalSignatureKey) {
+            String clientSecret = OidcCommonUtils.getClientOrJwtSecret(oidcConfig.credentials);
+            if (clientSecret != null) {
+                LOG.debug("Verifying internal ID token with a configured client secret");
+                return KeyUtils.createSecretKeyFromSecret(clientSecret);
+            } else if (client.getClientJwtKey() instanceof PrivateKey) {
+                LOG.debug("Verifying internal ID token with a configured JWT private key");
+                return OidcUtils.createSecretKeyFromDigest(((PrivateKey) client.getClientJwtKey()).getEncoded());
+            } else {
+                LOG.debug("Verifying internal ID token with a generated secret key");
+                return generatedInternalSignatureKey;
+            }
         }
     }
 

@@ -3,20 +3,20 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using JDK Flight Recorder
+[id="jfr"]
+= Using Java Flight Recorder
 include::_attributes.adoc[]
 :categories: observability
-:summary: This guide explains how JDK Flight Recorder can be extended to provide insight into your Quarkus application.
+:summary: This guide explains how Java Flight Recorder (JFR) can be extended to provide additional insight into your Quarkus application.
 :topics: observability,jfr
 :extensions: io.quarkus:quarkus-jfr
 
-This guide explains how https://openjdk.org/jeps/328[JDK Flight Recorder] (JFR) can be extended to provide insight into your Quarkus application.
-insight into itself.
+This guide explains how https://openjdk.org/jeps/328[Java Flight Recorder] (JFR) can be extended to provide additional insight into your Quarkus application.
 JFR records various information from the Java standard API and JVM as events.
-By adding this extension, you can add custom Quarkus events to JFR. This will help you solve problems in your application.
+By adding the Quarkus JFR extension, you can add custom Quarkus events to JFR. This will help you solve potential problems in your application.
 
 JFR can be preconfigured to dump a file, and when the application exits, JFR will output the file.
-The file will contain the contents of the JFR event stream to which Quarkus custom events have also been added.
+The file will contain the content of the JFR event stream to which Quarkus custom events have also been added.
 You can, of course, get this file at any time you want, even if your application exits unexpectedly.
 
 == Prerequisites
@@ -26,7 +26,7 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this guide, we create a straightforward REST application to demonstrate JFR.
+In this guide, we create a straightforward REST application to demonstrate JFR usage.
 
 == Creating the Maven project
 
@@ -36,10 +36,10 @@ First, we need a new project. Create a new project with the following command:
 :create-app-extensions: quarkus-rest,quarkus-jfr
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates the Maven project and imports the `quarkus-jfr` extension,
+This command generates the Maven project and imports the Quarkus JFR extension,
 which includes the default JFR support.
 
-If you already have your Quarkus project configured, you can add the `quarkus-jfr` extension
+If you already have your Quarkus project configured, you can add the JFR extension
 to your project by running the following command in your project base directory:
 
 :add-extension-extensions: quarkus-jfr
@@ -97,7 +97,7 @@ We can launch the application with JFR configured to be enabled from the startup
 :dev-additional-parameters: -Djvm.args="-XX:StartFlightRecording=name=quarkus,dumponexit=true,filename=myrecording.jfr"
 include::{includes}/devtools/dev.adoc[]
 
-With the JDK Flight Recorder and the application running, we can make a request to the provided endpoint:
+With the Java Flight Recorder and the application running, we can make a request to the provided endpoint:
 
 [source,shell]
 ----
@@ -105,43 +105,48 @@ $ curl http://localhost:8080/hello
 hello
 ----
 
-This is all that was needed to write the information to the JFR.
+This is all that is needed to write the information to JFR.
 
-=== Save the JFR to a file
-As mentioned above,　the Quarkus application was configured to also start JFR at startup and dump it to a `myrecording.jfr` when it terminates.
+=== Save the JFR events to a file
+
+As mentioned above, the Quarkus application was configured to also start JFR at startup and dump it to a `myrecording.jfr` when it terminates.
 So we can get the file when we hit `CTRL+C` or type `q` to stop the application.
 
-Or, we can also dump with the jcmd command.
+Or, we can also dump it with the `jcmd` command.
 
+[source,shell]
 ----
 jcmd <PID> JFR.dump name=quarkus filename=myrecording.jfr
 ----
 
 [NOTE]
 ====
-Running jcmd command give us a list of running Java processes and the PID of each process.
+Running the `jcmd` command give us a list of running Java processes and the PID of each process.
 ====
 
 == Open JFR dump file
 
-We can open a JFR dump using two tools: Jfr CLI and JDK Mission Control (JMC).
-It is also possible to read them using JFR APIs, but we won't go into that here.
+We can open a JFR dump using two tools: the `jfr` CLI and JDK Mission Control (JMC).
+It is also possible to read them using JFR APIs, but we won't go into that in this guide.
 
 === jfr CLI
 
-The jfr CLI is a tool included in OpenJDK. The executable file is `$JAVA_HOME/bin/jfr`.
-We can use the jfr CLI to see a list of events limited to those related to Quarkus in the dump file by doing the following.
+The `jfr` CLI is a tool included in OpenJDK. The executable file is `$JAVA_HOME/bin/jfr`.
+We can use the jfr CLI to see a list of events limited to those related to Quarkus in the dump file by running the following command:
 
+[source,shell]
 ----
 jfr print --categories quarkus myrecording.jfr
 ----
 
 === JDK Mission Control
 
-JMC is essentially a GUI viewer for JFR.
-Some distributions include JMC in OpenJDK binary, but if not, we need to download it manually.
-To see a list of events using the JMC, first we load the JFR file in the JMC as follows.
+JMC is essentially a GUI for JFR.
+Some Java distributions include JMC, but if not, you need to download it manually.
 
+To see a list of events using JMC, first we load the JFR file in JMC as follows.
+
+[source,shell]
 ----
 jmc -open myrecording.jfr
 ----
@@ -149,11 +154,11 @@ jmc -open myrecording.jfr
 After opening the JFR file, we have two options.
 One is to view the events as a tabular list, and the other is to view the events on the threads in which they occurred, in chronological order.
 
-To view Quarkus events in tabular style, select the Event Browser on the left side of the JMC, then open the Quarkus event type tree on the right side of the JMC.
+To view Quarkus events in tabular style, select the Event Browser on the left side of JMC, then open the Quarkus event type tree on the right side of JMC.
 
 image::jfr-event-browser.png[alt=JDK Mission Control Event Browser view,role="center"]
 
-To see Quarkus events in chronological order on a thread, select the `Java application` and `Threads` on the left side of the JMC.
+To see Quarkus events in chronological order on a thread, select the `Java application` and `Threads` on the left side of JMC.
 
 image::jfr-java-ap-thread.png[alt=JDK Mission Control thread view,role="center"]
 
@@ -172,16 +177,18 @@ image::jfr-thread.png[alt=JDK Mission Control thread view,role="center"]
 
 [NOTE]
 ====
-Non-blocking is where multiple processes are processed apparently simultaneously in a single thread.
-Therefore, this extension records multiple JFR events concurrently, and a number of events might overlap on the JMC.
+This extension is able to records multiple JFR events concurrently (emitted by different threads or from the same thread in the case of the reactive execution model).
+Thus, events might overlap in JMC.
 This could make it difficult for you to see the events you want to see.
-To avoid this, we recommend to use xref:#identifying-requests[Request ID] to filter events so that you only see the information about the requests you want to see.
+To avoid this, we recommend to use <<identifying-requests,Request IDs>> to filter events so that you only see the information about the requests you want to see.
 ====
 
 == Events
 
+[[identifying-requests]]
 === Identifying Requests
-This extension works with the OpenTelemetry extension.
+
+This extension collaborates with the OpenTelemetry extension.
 The events recorded by this extension have a trace ID and a span ID. These are recorded with the OpenTelemetry IDs respectively.
 
 This means that after we identify the trace and span IDs of interest from the UI provided by the OpenTelemetry implementation, we can immediately jump to the details in JFR using those IDs.
@@ -189,9 +196,10 @@ This means that after we identify the trace and span IDs of interest from the UI
 If we have not enabled the OpenTelemetry extension, this extension creates an ID for each request and links it to JFR events as a traceId.
 In this case, the span ID will be null.
 
-For now, Quarkus only has REST events, but we plan to use this ID to link each event to each other as we add more events in the future.
+For now, Quarkus only records REST events, but we plan to use this ID to link each event to each other as we add more events in the future.
 
 === Event Implementation Policy
+
 When JFR starts recording an event, the event does not record to JFR yet, but when it commits that event, the event is recorded.
 Therefore, events that have started recording at dump time but have not yet been committed are not dumped.
 This is unavoidable due to the design of JFR.
@@ -200,21 +208,24 @@ Therefore, you will not be aware of prolonged processing.
 
 To solve this problem, Quarkus can also record start and end events at the beginning and end of processing.
 These events are disabled by default.
-However, we can enable these events on JFR.(described below)
+However, we can enable these events in JFR, as described below.
 
 === REST API Event
-This event is recorded when either `quarkus-rest` or `resteasy-classic` extension is enabled.
+
+This event is recorded when either the Quarkus REST or RESTEasy extension is enabled.
 The following three JFR events are recorded as soon as REST server processing is complete.
 
-- REST
-- REST Start
-- REST End
+REST::
 
-REST Event records the time period from the start of the REST process to the end of the REST server process.
+  Records the time period from the start of the REST server process to the end of the REST server process.
 
-REST Start Event records the start of the REST server process.
+RestStart::
 
-REST End Event records the end of the REST server process.
+  Records the start of the REST server process.
+
+RestEnd::
+
+  Records the end of the REST server process.
 
 These events have the following information.
 
@@ -239,68 +250,82 @@ We can check if the Resource Method was executed as expected by the HTTP Method 
 Client records information about the accessing client.
 
 === Native Image
-Native image supports JDK Flight Recorder.
-This extension also supports native images.
-To enable JFR on Native image, it is usually built with `--enable-monitoring`.
-However, we can enable JFR in Quarkus Native images by adding `jfr` to the configuration `quarkus.native.monitoring`.
-There are two ways to set up this configuration: by including it in `application.properties` or by specifying it at build time.
+
+Native executables supports Java Flight Recorder.
+This extension also supports native executables.
+
+To enable JFR on native executables, it is usually built with `--enable-monitoring`.
+However, we can enable JFR in Quarkus native executables by adding `jfr` to the configuration property `quarkus.native.monitoring`.
+There are two ways to set up this configuration: by including it in the `application.properties` or by specifying it at build time.
 
 The first method is to first configure settings in `application.properties`.
 
-application.properties
-```
+[source,properties]
+----
 quarkus.native.monitoring=jfr
-```
-Next, simply build as `./mvnw package -Dnative`.
+----
 
-The second way is to give `-Dquarkus.native.monitoring=jfr` at build time and build as `./mvnw package -Dnative -Dquarkus.native.monitoring=jfr`.
+Then build your native executable as usual:
 
-Once we have finished building the Native image, we can run the native application with JFR as follows
+include::{includes}/devtools/build-native.adoc[]
 
-```
+The second way is to pass `-Dquarkus.native.monitoring=jfr` at build time:
+
+:build-additional-parameters: -Dquarkus.native.monitoring=jfr
+include::{includes}/devtools/build-native.adoc[]
+:build-additional-parameters:
+
+Once you have finished building the native executable, you can run the native application with JFR as follows:
+
+[source,shell]
+----
 target/your-application-runner -XX:StartFlightRecording=name=quarkus,dumponexit=true,filename=myrecording.jfr
-```
+----
 
 [NOTE]
 ====
-Note that at this time, GraalVM is not possible to record JFR on Windows native images.
+Note that at this time, Mandrel and GraalVM cannot record JFR for Windows native executables.
 ====
 
 == JFR configuration
 
 We can use the JFR CLI to configure the events that JFR will record.
-The configuration file, JFC file, is in XML format, so we can modify with a text editor.
-However, we should use `jfr configure`, which is included in OpenJDK by default.
+The configuration file, JFC file, is in XML format, so we can modify it with a text editor.
+However, it is recommended to use `jfr configure`, which is included in OpenJDK by default.
 
-Here we create a configuration file in which RestStart and RestEnd events are recorded, which are not recorded by default.
+Here we create a configuration file in which REST Start and REST End events are recorded (they are not recorded by default):
+
+[source,shell]
 ----
 jfr configure --input default.jfc +quarkus.RestStart#enabled=true +quarkus.RestEnd#enabled=true --output custom-rest.jfc
 ----
-This creates `custom-rest.jfc` as a configuration file with RestStart and RestEnd enabled.
 
-Now we are ready to run our application with new settings. We launch the application with JFR configured to be enabled from the startup of the Java Virtual Machine.
+This creates `custom-rest.jfc` as a configuration file with recording for RestStart and RestEnd enabled.
+
+Now we are ready to run our application with the new settings.
+We launch the application with JFR configured so that it is enabled from the startup of the Java Virtual Machine.
 
 :dev-additional-parameters: -Djvm.args="-XX:StartFlightRecording=name=quarkus,settings=./custom-rest.jfc,dumponexit=true,filename=myrecording.jfr"
 include::{includes}/devtools/dev.adoc[]
+:dev-additional-parameters:
 
+== Adding new events
 
-== Developing new events into quarkus-jfr extension.
-
-This section is for those who would like to add new events with this extension.
+This section is for those who would like to add new events to this extension.
 
 We recommend that new events be associated with existing events.
 Associations are useful when looking at the details of a process that is taking a long time.
-For example, a general REST application retrieves the data needed for processing from a data store.
+For example, a general REST application retrieves the data needed for processing from a datastore.
 If REST events are not associated with datastore events, it is impossible to know which datastore events were processed in each REST request.
 When the two events are associated, we know immediately which datastore event was processed in each REST request.
 
 [NOTE]
 ====
-Data store events are not implemented yet.
+Datastore events are not implemented yet.
 ====
 
-The quarkus-jfr extension provides a Request ID for event association.
-See Identifying Requests for more information on Request IDs.
+The Quarkus JFR extension provides a Request ID for event association.
+See <<identifying-requests>> for more information on Request IDs.
 
 In specific code, the following two steps are required.
 First, implement `traceId` and `spanId` on the new event as follows
@@ -331,7 +356,7 @@ public class NewEvent extends Event {
 }
 ----
 
-Then you get the information to store in them from the `IdProducer` object's `getTraceId()` and `getSpanId()`.
+Then you get the information to store in the event from the `IdProducer` object's `getTraceId()` and `getSpanId()`.
 
 [source,java]
 ----
@@ -359,6 +384,6 @@ public class NewInterceptor {
 }
 ----
 
-== quarkus-jfr Configuration Reference
+== Configuration Reference
 
 include::{generated-dir}/config/quarkus-jfr.adoc[leveloffset=+1, opts=optional]

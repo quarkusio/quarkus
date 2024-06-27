@@ -99,8 +99,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     @Singleton
     final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
-        private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
-
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;

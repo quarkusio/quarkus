@@ -24,7 +24,7 @@ public class DefaultMismatchedInputException
 
                 for (JsonMappingException.Reference pathReference : path) {
                     if (pathReference.getFieldName() != null) {
-                        if (attributeNameBuilder.length() > 0) {
+                        if (!attributeNameBuilder.isEmpty()) {
                             attributeNameBuilder.append(".");
                         }
 
@@ -38,15 +38,14 @@ public class DefaultMismatchedInputException
                     }
                 }
 
-                if (attributeNameBuilder.length() > 0) {
+                if (!attributeNameBuilder.isEmpty()) {
                     errorBuilder.setAttributeName(attributeNameBuilder.toString());
                 }
 
                 if (exception.getLocation() != null) {
                     errorBuilder.setLine(exception.getLocation().getLineNr());
                     errorBuilder.setColumn(exception.getLocation().getColumnNr());
-                    if (exception instanceof InvalidFormatException) {
-                        InvalidFormatException ife = (InvalidFormatException) exception;
+                    if (exception instanceof InvalidFormatException ife) {
                         if (ife.getValue() != null) {
                             errorBuilder.setValue(ife.getValue());
                         }

@@ -273,7 +273,7 @@ public class CommonPanacheQueryImpl<Entity> {
         if (count == null) {
             // FIXME: question about caching the result here
             count = em.flatMap(session -> {
-                Mutiny.Query<Long> countQuery = session.createQuery(countQuery(selectQuery));
+                Mutiny.SelectionQuery<Long> countQuery = session.createSelectionQuery(countQuery(selectQuery), Long.class);
                 if (paramsArrayOrMap instanceof Map)
                     AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
                 else
@@ -294,8 +294,8 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends Entity> Uni<List<T>> list() {
         return em.flatMap(session -> {
-            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session);
-            return (Uni) applyFilters(session, () -> jpaQuery.getResultList());
+            Mutiny.SelectionQuery<?> hibernateQuery = createQuery(session);
+            return (Uni) applyFilters(session, () -> hibernateQuery.getResultList());
         });
     }
 
@@ -375,26 +375,26 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     private Mutiny.SelectionQuery<?> createBaseQuery(Mutiny.Session em) {
-        Mutiny.SelectionQuery<?> jpaQuery;
+        Mutiny.SelectionQuery<?> hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            jpaQuery = em.createNamedQuery(namedQuery, projectionType);
+            hibernateQuery = em.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
-                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query, projectionType);
-            } catch (IllegalArgumentException x) {
+                hibernateQuery = em.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
+            } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }
         }
 
         if (paramsArrayOrMap instanceof Map) {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
         } else {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
         }
 
         if (this.lockModeType != null) {
-            jpaQuery.setLockMode(lockModeType);
+            hibernateQuery.setLockMode(lockModeType);
         }
 
         if (hints != null) {
@@ -403,7 +403,7 @@ public class CommonPanacheQueryImpl<Entity> {
             //                jpaQuery.setHint(hint.getKey(), hint.getValue());
             //            }
         }
-        return jpaQuery;
+        return hibernateQuery;
     }
 
     private <T> Uni<T> applyFilters(Mutiny.Session em, Supplier<Uni<T>> uni) {

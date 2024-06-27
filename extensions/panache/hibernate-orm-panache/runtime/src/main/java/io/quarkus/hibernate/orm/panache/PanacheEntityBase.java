@@ -12,6 +12,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.Transient;
 
+import org.hibernate.Session;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
@@ -38,6 +40,16 @@ public abstract class PanacheEntityBase {
      */
     @GenerateBridge
     public static EntityManager getEntityManager() {
+        throw implementationInjectionMissing();
+    }
+
+    /**
+     * Returns the {@link Session} for this entity class for extra operations (eg. CriteriaQueries)
+     *
+     * @return the {@link Session} for this entity class
+     */
+    @GenerateBridge
+    public static Session getSession() {
         throw implementationInjectionMissing();
     }
 

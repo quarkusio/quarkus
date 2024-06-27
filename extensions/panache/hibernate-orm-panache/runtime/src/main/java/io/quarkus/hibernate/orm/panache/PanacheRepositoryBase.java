@@ -11,6 +11,8 @@ import java.util.stream.Stream;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 
+import org.hibernate.Session;
+
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -38,6 +40,16 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     @GenerateBridge
     default EntityManager getEntityManager() {
+        throw implementationInjectionMissing();
+    }
+
+    /**
+     * Returns the {@link Session} for the <Entity> entity class for extra operations (eg. CriteriaQueries)
+     *
+     * @return the {@link Session} for the <Entity> entity class
+     */
+    @GenerateBridge
+    default Session getSession() {
         throw implementationInjectionMissing();
     }
 
@@ -99,7 +111,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * Flushes all pending changes to the database using the EntityManager for the <Entity> entity class.
      */
     default void flush() {
-        getEntityManager().flush();
+        getSession().flush();
     }
 
     // Queries

@@ -46,19 +46,20 @@ import jdk.security.jarsigner.JarSigner;
 class JarResultBuildStepTest {
 
     @Test
-    void should_unsign_jar_when_filtered(@TempDir Path tmp) throws Exception {
+    void should_unsign_jar_when_filtered(@TempDir Path tempDir) throws Exception {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar")
                 .addClasses(Integer.class);
-        Path unsignedJarPath = tmp.resolve("unsigned-jar.jar");
-        Path signedJarPath = tmp.resolve("signed-jar.jar");
+        Path unsignedJarPath = tempDir.resolve("unsigned-jar.jar");
+        Path signedJarPath = tempDir.resolve("signed-jar.jar");
+        Path unsignedJarToTestPath = tempDir.resolve("unsigned.jar");
         archive.as(ZipExporter.class).exportTo(new File(unsignedJarPath.toUri()), true);
         JarSigner signer = new JarSigner.Builder(createPrivateKeyEntry()).build();
         try (ZipFile in = new ZipFile(unsignedJarPath.toFile());
                 FileOutputStream out = new FileOutputStream(signedJarPath.toFile())) {
             signer.sign(in, out);
         }
-        JarResultBuildStep.filterJarFile(signedJarPath, unsignedJarPath, Set.of("java/lang/Integer.class"));
-        try (JarFile jarFile = new JarFile(unsignedJarPath.toFile())) {
+        JarResultBuildStep.filterJarFile(signedJarPath, unsignedJarToTestPath, Set.of("java/lang/Integer.class"));
+        try (JarFile jarFile = new JarFile(unsignedJarToTestPath.toFile())) {
             assertThat(jarFile.stream().map(JarEntry::getName)).doesNotContain("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF");
             // Check that the manifest is still present
             Manifest manifest = jarFile.getManifest();
@@ -82,18 +83,16 @@ class JarResultBuildStepTest {
         Provider bcProvider = new BouncyCastleProvider();
         Security.addProvider(bcProvider);
         long now = System.currentTimeMillis();
-        Date startDate = new Date(now);
         X500Name dnName = new X500Name(subjectDN);
         BigInteger certSerialNumber = new BigInteger(Long.toString(now));
         Calendar calendar = Calendar.getInstance();
-        calendar.setTime(startDate);
         calendar.add(Calendar.YEAR, 1);
         Date endDate = calendar.getTime();
         String signatureAlgorithm = "SHA256WithRSA";
 
         ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
 
-        JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, startDate, endDate,
+        JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, new Date(now), endDate,
                 dnName, keyPair.getPublic());
 
         BasicConstraints basicConstraints = new BasicConstraints(true);

@@ -18,7 +18,6 @@ import io.quarkus.websockets.next.InboundProcessingMode;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -256,7 +255,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                 }
             }
         });
-        return UniHelper.toUni(promise.future());
+        return Uni.createFrom().completionStage(() -> promise.future().toCompletionStage());
     }
 
     public Object beanInstance() {

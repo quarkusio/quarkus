@@ -69,7 +69,7 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
@@ -158,7 +158,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             // For Not Found Screen
-            ResourceNotFoundHandler.runtimeRoutes = fromClassMappers(deployment.getClassMappers());
+            ResourceNotFoundData.setRuntimeRoutes(fromClassMappers(deployment.getClassMappers()));
             // For Dev UI Screen
             RuntimeResourceVisitor.visitRuntimeResources(deployment.getClassMappers(), ScoreSystem.ScoreVisitor);
         }

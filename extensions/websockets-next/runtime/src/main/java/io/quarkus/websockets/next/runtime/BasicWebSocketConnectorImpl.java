@@ -22,7 +22,6 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -144,7 +143,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             throw new WebSocketClientException(e);
         }
 
-        return UniHelper.toUni(client.connect(connectOptions))
+        return Uni.createFrom().completionStage(() -> client.connect(connectOptions).toCompletionStage())
                 .map(ws -> {
                     String clientId = BasicWebSocketConnector.class.getName();
                     TrafficLogger trafficLogger = TrafficLogger.forClient(config);

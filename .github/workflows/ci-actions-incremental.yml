@@ -20,6 +20,7 @@ on:
       - '.github/*.conf'
       - '.github/workflows/doc-build.yml'
       - '.github/workflows/preview.yml'
+      - '.sdkmanrc'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
@@ -37,6 +38,7 @@ on:
       - '.github/*.conf'
       - '.github/workflows/doc-build.yml'
       - '.github/workflows/preview.yml'
+      - '.sdkmanrc'
   workflow_dispatch:
 
 concurrency:

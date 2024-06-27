@@ -23,7 +23,6 @@ import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpointsContext;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -92,7 +91,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
         }
         subprotocols.forEach(connectOptions::addSubProtocol);
 
-        return UniHelper.toUni(client.connect(connectOptions))
+        return Uni.createFrom().completionStage(() -> client.connect(connectOptions).toCompletionStage())
                 .map(ws -> {
                     TrafficLogger trafficLogger = TrafficLogger.forClient(config);
                     WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,

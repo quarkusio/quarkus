@@ -23,7 +23,6 @@ import io.quarkus.websockets.next.runtime.ConnectionManager.ConnectionListener;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
@@ -110,12 +109,13 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
         }
         WebSocketClient client = vertx.createWebSocketClient();
         String connectionKey = UUID.randomUUID().toString();
-        Uni<WebSocket> uni = UniHelper.toUni(client
+        Uni<WebSocket> uni = Uni.createFrom().completionStage(() -> client
                 .connect(new WebSocketConnectOptions()
                         .setPort(httpConfig.port)
                         .setHost(httpConfig.host)
                         .setURI(path)
-                        .addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey)));
+                        .addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey))
+                .toCompletionStage());
         return uni.onItem().transform(s -> {
             LOG.debugf("Opened Dev UI connection with key %s to %s", connectionKey, path);
             List<TextMessage> messages = new ArrayList<>();
@@ -181,7 +181,7 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     public Uni<JsonObject> closeDevConnection(String connectionKey) {
         DevWebSocket socket = sockets.remove(connectionKey);
         if (socket != null) {
-            Uni<Void> uni = UniHelper.toUni(socket.socket.close());
+            Uni<Void> uni = Uni.createFrom().completionStage(() -> socket.socket.close().toCompletionStage());
             return uni.onItem().transform(v -> {
                 LOG.debugf("Closed Dev UI connection with key %s", connectionKey);
                 return new JsonObject().put("success", true);
@@ -196,7 +196,7 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     public Uni<JsonObject> sendTextMessage(String connectionKey, String message) {
         DevWebSocket socket = sockets.get(connectionKey);
         if (socket != null) {
-            Uni<Void> uni = UniHelper.toUni(socket.socket.writeTextMessage(message));
+            Uni<Void> uni = Uni.createFrom().completionStage(() -> socket.socket.writeTextMessage(message).toCompletionStage());
             return uni.onItem().transform(v -> {
                 List<TextMessage> messages = socket.messages;
                 synchronized (messages) {

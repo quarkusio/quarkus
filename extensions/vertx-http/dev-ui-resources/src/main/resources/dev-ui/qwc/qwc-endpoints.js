@@ -1,14 +1,15 @@
 import { LitElement, html, css} from 'lit';
-import { basepath } from 'devui-data';
 import '@vaadin/progress-bar';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
+import { JsonRpc } from 'jsonrpc';
 
 /**
  * This component show all available endpoints
  */
 export class QwcEndpoints extends LitElement {
+    jsonRpc = new JsonRpc(this);
     
     static styles = css`
         .infogrid {
@@ -44,25 +45,15 @@ export class QwcEndpoints extends LitElement {
         this._info = null;
     }
 
-    async connectedCallback() {
+    connectedCallback() {
         super.connectedCallback();
-        await this.load();
+        this.jsonRpc.getJsonContent().then(jsonRpcResponse => {
+            this._info = jsonRpcResponse.result;
+        });
     }
-        
-    async load() {
-        const response = await fetch("/quarkus404", {
-		method: 'GET',
-		headers: {
-			'Accept': 'application/json'
-		}
-	});
-        const data = await response.json();
-        this._info = data;
-    }
-
+    
     render() {
         if (this._info) {
-            
             const typeTemplates = [];
             for (const [type, list] of Object.entries(this._info)) {
                 typeTemplates.push(html`${this._renderType(type,list)}`);

@@ -59,7 +59,6 @@ class JarResultBuildStepTest {
         }
         JarResultBuildStep.filterJarFile(signedJarPath, unsignedJarPath, Set.of("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(unsignedJarPath.toFile())) {
-            jarFile.stream().map(JarEntry::getName).forEach(System.out::println);
             assertThat(jarFile.stream().map(JarEntry::getName)).doesNotContain("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF");
             // Check that the manifest is still present
             Manifest manifest = jarFile.getManifest();

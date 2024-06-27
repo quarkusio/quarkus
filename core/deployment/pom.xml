@@ -150,10 +150,12 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shrinkwrap</groupId>
             <artifactId>shrinkwrap-depchain</artifactId>
+            <scope>test</scope>
             <type>pom</type>
         </dependency>
     </dependencies>

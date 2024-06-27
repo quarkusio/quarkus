@@ -57,6 +57,10 @@ public interface TemplateNode {
         return false;
     }
 
+    default SectionNode asSection() {
+        throw new IllegalStateException();
+    }
+
     /**
      * Represents an origin of a template node.
      */

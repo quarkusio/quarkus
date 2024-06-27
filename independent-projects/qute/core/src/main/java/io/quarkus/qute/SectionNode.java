@@ -67,6 +67,11 @@ class SectionNode implements TemplateNode {
         return true;
     }
 
+    @Override
+    public SectionNode asSection() {
+        return this;
+    }
+
     void optimizeNodes(Set<TemplateNode> nodes) {
         for (SectionBlock block : blocks) {
             block.optimizeNodes(nodes);

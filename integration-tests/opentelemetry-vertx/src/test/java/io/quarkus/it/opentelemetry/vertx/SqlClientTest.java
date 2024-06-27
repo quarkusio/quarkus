@@ -66,7 +66,7 @@ public class SqlClientTest {
 
         // We cannot rely on the order, we must identify the spans.
         SpanData tableCreation = inMemorySpanExporter.getFinishedSpanItems().stream()
-                .filter(sd -> sd.getName().contains("DB Query")).findFirst().orElseThrow();
+                .filter(sd -> sd.getName().contains("CREATE TABLE USERS")).findFirst().orElseThrow();
         SpanData httpSpan = inMemorySpanExporter.getFinishedSpanItems().stream()
                 .filter(sd -> sd.getName().contains("GET /sqlClient")).findFirst().orElseThrow();
         SpanData querySpan = inMemorySpanExporter.getFinishedSpanItems().stream()

@@ -50,7 +50,7 @@ export class QwcEndpoints extends LitElement {
     }
         
     async load() {
-        const response = await fetch("/quarkus404", {
+        const response = await fetch("/q/quarkus404", {
 		method: 'GET',
 		headers: {
 			'Accept': 'application/json'

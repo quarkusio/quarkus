@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -25,6 +26,7 @@ import io.vertx.core.Vertx;
 public class CertificateRecorder implements TlsConfigurationRegistry {
 
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
+    private volatile TlsCertificateUpdater reloader;
 
     /**
      * Validate the certificate configuration.
@@ -35,7 +37,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      * @param config the configuration
      * @param vertx the Vert.x instance
      */
-    public void validateCertificates(TlsConfig config, RuntimeValue<Vertx> vertx) {
+    public void validateCertificates(TlsConfig config, RuntimeValue<Vertx> vertx, ShutdownContext shutdownContext) {
         // Verify the default config
         if (config.defaultCertificateConfig().isPresent()) {
             verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx.getValue(), TlsConfig.DEFAULT_NAME);
@@ -45,6 +47,15 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         for (String name : config.namedCertificateConfig().keySet()) {
             verifyCertificateConfig(config.namedCertificateConfig().get(name), vertx.getValue(), name);
         }
+
+        shutdownContext.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                if (reloader != null) {
+                    reloader.close();
+                }
+            }
+        });
     }
 
     public void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
@@ -55,7 +66,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
             KeyStoreConfig keyStoreConfig = config.keyStore().get();
             ks = verifyKeyStore(keyStoreConfig, vertx, name);
             sni = keyStoreConfig.sni();
-            if (sni) {
+            if (sni && ks != null) {
                 try {
                     if (Collections.list(ks.keyStore.aliases()).size() <= 1) {
                         throw new IllegalStateException(
@@ -81,6 +92,14 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         }
 
         certificates.put(name, new VertxCertificateHolder(vertx, name, config, ks, ts));
+
+        // Handle reloading if needed
+        if (config.reloadPeriod().isPresent()) {
+            if (reloader == null) {
+                reloader = new TlsCertificateUpdater(vertx);
+            }
+            reloader.add(name, certificates.get(name), config.reloadPeriod().get());
+        }
     }
 
     public static KeyStoreAndKeyCertOptions verifyKeyStore(KeyStoreConfig config, Vertx vertx, String name) {

@@ -519,3 +519,64 @@ When the application starts, the TLS registry performs some checks to ensure the
 - the CRLs are valid
 
 If any of these checks fail, the application will fail to start.
+
+== Reloading Certificates
+
+The `TlsConfiguration` obtained from the `TLSConfigurationRegistry` includes a mechanism for reloading certificates.
+The `reload` method refreshes the key stores and trust stores, typically by reloading them from the file system.
+
+NOTE: The reload operation is not automatic and must be triggered manually. Additionally, the `TlsConfiguration` implementation must support reloading (which is the case for the configured certificate).
+
+The `reload` method returns a `boolean` indicating whether the reload was successful.
+A value of `true` means the reload operation was successful, not necessarily that there were updates to the certificates.
+
+After a `TlsConfiguration` has been reloaded, servers and clients using this configuration may need to perform specific actions to apply the new certificates.
+The recommended approach is to fire a CDI event (`CertificateReloadedEvent`) that servers and clients can listen to and make the necessary changes:
+
+[source, java]
+----
+@Inject
+TlsConfigurationRegistry registry;
+
+public void reload() {
+    TlsConfiguration config = registry.get("name").orElseThrow();
+    if (config.reload()) {
+        event.fire(new CertificateReloadedEvent("name", config));
+    }
+}
+
+// In the server or client code
+public void onReload(@Observes CertificateReloadedEvent event) {
+    if ("name".equals(event.getName())) {
+        server.updateSSLOptions(event.tlsConfiguration().getSSLOptions());
+        // Or update the SSLContext.
+    }
+}
+----
+
+These APIs provide a way to implement custom certificate reloading.
+
+=== Periodic reloading
+
+The TLS registry does include a built-in mechanism for periodically checking the file system for changes and reloading the certificates.
+You can configure periodic reloading of certificates using properties.
+The `reload-period` property specifies the interval at which certificates are reloaded, and it will emit a `CertificateReloadedEvent`.
+
+[source, properties]
+----
+quarkus.tls.reload-period=1h
+quarkus.tls.key-store.pem.0.cert=tls.crt
+quarkus.tls.key-store.pem.0.key=tls.key
+----
+
+For each named configuration, you can set a specific reload period:
+
+[source, properties]
+----
+quarkus.tls.http.reload-period=30min
+quarkus.tls.http.key-store.pem.0.cert=tls.crt
+quarkus.tls.http.key-store.pem.0.key=tls.key
+----
+
+Remember that the impacted server and client may need to listen to the `CertificateReloadedEvent` to apply the new certificates.
+This is automatically done for the Quarkus HTTP server (including the management interface if enabled).

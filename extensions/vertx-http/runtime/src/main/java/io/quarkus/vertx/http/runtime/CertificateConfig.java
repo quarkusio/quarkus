@@ -220,6 +220,9 @@ public class CertificateConfig {
      * Also, the update can also occur when the TLS certificate is configured using paths (and not in-memory).
      * <p>
      * The reload period must be equal or greater than 30 seconds. If not set, the certificate will not be reloaded.
+     * <p>
+     * IMPORTANT: It's recommended to use the TLS registry to handle the certificate reloading.
+     * </p>
      */
     @ConfigItem
     public Optional<Duration> reloadPeriod;

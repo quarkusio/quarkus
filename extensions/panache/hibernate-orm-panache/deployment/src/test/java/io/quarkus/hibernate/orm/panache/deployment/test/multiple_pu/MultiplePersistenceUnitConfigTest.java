@@ -48,12 +48,10 @@ public class MultiplePersistenceUnitConfigTest {
 
     @Test
     void entityManagerShouldExist() {
-        FirstEntity firstEntity = new FirstEntity();
-        assertNotNull(firstEntity.getEntityManager());
-        assertEquals(firstEntity.getEntityManager(), defaultEntityManager);
+        assertNotNull(FirstEntity.getEntityManager());
+        assertEquals(FirstEntity.getEntityManager(), defaultEntityManager);
 
-        SecondEntity secondEntity = new SecondEntity();
-        assertNotNull(secondEntity.getEntityManager());
-        assertEquals(secondEntity.getEntityManager(), secondEntityManager);
+        assertNotNull(SecondEntity.getEntityManager());
+        assertEquals(SecondEntity.getEntityManager(), secondEntityManager);
     }
 }

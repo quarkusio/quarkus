@@ -424,6 +424,11 @@ public class BeanDeployment {
                         removable = false;
                         break;
                     }
+                    if (bean.getInterceptionProxy() != null && bean.getInterceptionProxy().getPseudoBean()
+                            .getBoundInterceptors().contains(interceptor)) {
+                        removable = false;
+                        break;
+                    }
                 }
             }
             if (removable) {

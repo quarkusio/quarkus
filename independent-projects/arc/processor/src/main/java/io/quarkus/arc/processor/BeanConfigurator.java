@@ -9,6 +9,10 @@ import java.util.function.Consumer;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+
+import io.quarkus.arc.InterceptionProxy;
 
 /**
  * Synthetic bean configurator. An alternative to {@link jakarta.enterprise.inject.spi.configurator.BeanConfigurator}.
@@ -69,6 +73,18 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                 priority = Beans.initStereotypeAlternativePriority(stereotypes, implClass, beanDeployment);
             }
 
+            InterceptionProxyInfo interceptionProxy = this.interceptionProxy;
+            if (interceptionProxy != null) {
+                Type providerType = this.providerType;
+                if (providerType == null) {
+                    providerType = BeanInfo.initProviderType(null, implClass);
+                }
+                interceptionProxy = new InterceptionProxyInfo(providerType.name(), interceptionProxy.getBindingsSourceClass());
+                addInjectionPoint(ParameterizedType.builder(InterceptionProxy.class)
+                        .addArgument(providerType)
+                        .build());
+            }
+
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
                     .identifier(identifier)
@@ -88,7 +104,8 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .removable(removable)
                     .forceApplicationClass(forceApplicationClass)
                     .targetPackageName(targetPackageName)
-                    .startupPriority(startupPriority);
+                    .startupPriority(startupPriority)
+                    .interceptionProxy(interceptionProxy);
 
             if (!injectionPoints.isEmpty()) {
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));

@@ -1069,6 +1069,35 @@ public class NoopAsyncObserverExceptionHandler implements AsyncObserverException
 }
 ----
 
+=== Intercepted self-invocation
+
+Quarkus supports what is known as intercepted self-invocation or just self-interception - a scenario where CDI bean invokes its own intercepted method from within another method while triggering any associated interceptors.
+This is a non-standard feature as CDI specification doesn't define whether self-interception should work or not.
+
+Suppose we have a CDI bean with two methods, one of which has the `@Transactional` interceptor binding associated with it:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyService {
+
+  @Transactional <1>
+  void doSomething() {
+    // some application logic
+  }
+
+  void doSomethingElse() {
+    doSomething();<2>
+  }
+
+}
+----
+<1> One or more interceptor bindings; `@Transactional` is just an example.
+<2> Non-intercepted method invoking another method from the same bean that has associated binding(s); this will trigger interception.
+
+In the above example, any code calling the `doSomething()` method triggers interception - in this case, the method becomes transactional.
+This is regardless of whether the invocation originated directly from the `MyService` bean (such as `MyService#doSomethingElse`) or from some other bean.
+
 [[reactive_pitfalls]]
 == Pitfalls with Reactive Programming
 

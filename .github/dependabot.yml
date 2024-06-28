@@ -177,6 +177,7 @@ updates:
       - dependency-name: com.github.javaparser:javaparser-core
       - dependency-name: com.h2database:h2
       - dependency-name: io.github.crac:org-crac
+      - dependency-name: com.dajudge.kindcontainer:kindcontainer
       - dependency-name: jakarta.*:*
       - dependency-name: org.eclipse.*:*
       - dependency-name: org.glassfish.*:*

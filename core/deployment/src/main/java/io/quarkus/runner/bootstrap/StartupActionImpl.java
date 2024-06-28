@@ -64,7 +64,7 @@ public class StartupActionImpl implements StartupAction {
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
-        QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
+        QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.

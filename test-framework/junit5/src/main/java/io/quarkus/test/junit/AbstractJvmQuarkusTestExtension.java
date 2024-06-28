@@ -201,7 +201,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
         TestClassIndexer.writeIndex(testClassesIndex, testClassLocation, requiredTestClass);
 
-        Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader(),
+        Timing.staticInitStarted(curatedApplication.getOrCreateBaseRuntimeClassLoader(),
                 curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication());
         final Map<String, Object> props = new HashMap<>();
         props.put(TEST_LOCATION, testClassLocation);

@@ -277,7 +277,7 @@ public class AugmentActionImpl implements AugmentAction {
             Class<? extends BuildItem>... finalOutputs) {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
-            QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
+            QuarkusClassLoader classLoader = curatedApplication.getOrCreateAugmentClassLoader();
             Thread.currentThread().setContextClassLoader(classLoader);
             LaunchMode.set(launchMode);
 

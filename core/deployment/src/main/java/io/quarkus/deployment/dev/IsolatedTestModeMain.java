@@ -71,7 +71,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                     }, testSupport);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
-                    curatedApplication.getBaseRuntimeClassLoader())) {
+                    curatedApplication.getOrCreateBaseRuntimeClassLoader())) {
                 hotReplacementSetups.add(service);
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
@@ -107,7 +107,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
     public void accept(CuratedApplication o, Map<String, Object> params) {
         System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
                 "io.quarkus.dev.io.NioThreadPoolThreadFactory");
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
+        Timing.staticInitStarted(o.getOrCreateBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;
             Object potentialContext = params.get(DevModeContext.class.getName());

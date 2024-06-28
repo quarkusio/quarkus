@@ -92,6 +92,7 @@ endif::no-quarkus-oidc-token-propagation[]
 
 This command adds the following extensions to your build file:
 
+ifndef::no-quarkus-oidc-token-propagation[]
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
@@ -103,27 +104,45 @@ This command adds the following extensions to your build file:
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
 </dependency>
-ifndef::no-quarkus-oidc-token-propagation[]
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
 </dependency>
-endif::no-quarkus-oidc-token-propagation[]
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-reactive</artifactId>
 </dependency>
 ----
+endif::no-quarkus-oidc-token-propagation[]
+ifdef::no-quarkus-oidc-token-propagation[]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive</artifactId>
+</dependency>
+----
+endif::no-quarkus-oidc-token-propagation[]
 
-.build.gradle
 ifndef::no-quarkus-oidc-token-propagation[]
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
 implementation("io.quarkus:quarkus-oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive")
 ----
 endif::no-quarkus-oidc-token-propagation[]
 ifdef::no-quarkus-oidc-token-propagation[]
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
 implementation("io.quarkus:quarkus-oidc,rest-client-oidc-filter,rest")
 ----

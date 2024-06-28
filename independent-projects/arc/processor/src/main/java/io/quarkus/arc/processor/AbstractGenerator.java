@@ -52,7 +52,7 @@ abstract class AbstractGenerator {
         }
     }
 
-    protected String getBaseName(BeanInfo bean, String beanClassName) {
+    protected String getBaseName(String beanClassName) {
         String name = Types.getSimpleName(beanClassName);
         return name.substring(0, name.lastIndexOf(BeanGenerator.BEAN_SUFFIX));
     }

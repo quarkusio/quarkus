@@ -99,7 +99,7 @@
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
-        <narayana.version>7.0.1.Final</narayana.version>
+        <narayana.version>7.0.2.Final</narayana.version>
         <agroal.version>2.4</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.14.1</elasticsearch-opensource-components.version>

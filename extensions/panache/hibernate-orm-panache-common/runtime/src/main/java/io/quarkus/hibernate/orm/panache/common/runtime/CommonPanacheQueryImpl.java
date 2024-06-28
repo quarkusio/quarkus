@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.NonUniqueResultException;
 
 import org.hibernate.Filter;
 import org.hibernate.Session;
@@ -336,14 +335,9 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Optional<T> singleResultOptional() {
-        SelectionQuery hibernateQuery = createQuery(2);
+        SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            List<T> list = hibernateQuery.getResultList();
-            if (list.size() > 1) {
-                throw new NonUniqueResultException();
-            }
-
-            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+            return hibernateQuery.uniqueResultOptional();
         }
     }
 

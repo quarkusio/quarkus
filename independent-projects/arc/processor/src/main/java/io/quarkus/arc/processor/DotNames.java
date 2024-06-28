@@ -59,10 +59,12 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.BindingsSource;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.NoClassInterceptors;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
@@ -141,6 +143,8 @@ public final class DotNames {
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);
+    public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
+    public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
 
     /**
      * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6

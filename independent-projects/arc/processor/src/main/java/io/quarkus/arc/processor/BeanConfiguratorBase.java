@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -25,6 +26,7 @@ import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InterceptionProxy;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -56,6 +58,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected Integer priority;
     protected final Set<TypeAndQualifiers> injectionPoints;
     protected Integer startupPriority;
+    protected InterceptionProxyInfo interceptionProxy;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -97,6 +100,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.clear();
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
+        interceptionProxy = base.interceptionProxy;
         return self();
     }
 
@@ -276,6 +280,67 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS startup() {
         return startup(ObserverMethod.DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * The class of the provider type is scanned for interceptor binding annotations.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @return self
+     */
+    public THIS injectInterceptionProxy() {
+        return injectInterceptionProxy((DotName) null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(Class<?> bindingsSource) {
+        return injectInterceptionProxy(bindingsSource != null ? DotName.createSimple(bindingsSource) : null);
+    }
+
+    /**
+     * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
+     * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
+     * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
+     * in the {@linkplain BeanCreator creator} of this synthetic bean.
+     * <p>
+     * If the {@code bindingsSource} is not {@code null}, interceptor bindings on the class
+     * of the provider type are ignored; instead, the {@code bindingsSource} class is scanned
+     * for interceptor binding annotations as defined in {@link io.quarkus.arc.BindingsSource}.
+     * <p>
+     * This method may only be called once. If called multiple times, the last call wins and
+     * the previous calls are lost.
+     *
+     * @param bindingsSource the bindings source class, may be {@code null}
+     * @return self
+     */
+    public THIS injectInterceptionProxy(DotName bindingsSource) {
+        if (interceptionProxy != null) {
+            throw new DefinitionException("Calling injectInterceptionProxy() more than once is invalid");
+        }
+        interceptionProxy = new InterceptionProxyInfo(bindingsSource);
+        return self();
     }
 
     public <U extends T> THIS creator(Class<? extends BeanCreator<U>> creatorClazz) {

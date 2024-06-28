@@ -726,6 +726,7 @@ class Producers {
 }
 ----
 
+[[interception_of_static_methods]]
 === Interception of Static Methods
 
 The Interceptors specification is clear that _around-invoke_ methods must not be declared static.
@@ -1097,6 +1098,190 @@ public class MyService {
 
 In the above example, any code calling the `doSomething()` method triggers interception - in this case, the method becomes transactional.
 This is regardless of whether the invocation originated directly from the `MyService` bean (such as `MyService#doSomethingElse`) or from some other bean.
+
+=== Intercepting Producer Methods and Synthetic Beans
+
+By default, interception is only supported for managed beans (also known as class-based beans).
+To support interception of producer methods and synthetic beans, the CDI specification includes an `InterceptionFactory`, which is a runtime oriented concept and therefore cannot be supported in Quarkus.
+
+Instead, Quarkus has its own API: `InterceptionProxy` and `@BindingsSource`.
+The `InterceptionProxy` is very similar to `InterceptionFactory`: it creates a proxy that applies `@AroundInvoke` interceptors before forwarding the method call to the target instance.
+The `@BindingsSource` annotation allows setting interceptor bindings in case the intercepted class is external and cannot be changed.
+
+[source,java]
+----
+import io.quarkus.arc.InterceptionProxy;
+
+@ApplicationScoped
+class MyProducer {
+    @Produces
+    MyClass produce(InterceptionProxy<MyClass> proxy) { // <1>
+        return proxy.create(new MyClass()); // <2>
+    }
+}
+----
+
+<1> Declares an injection point of type `InterceptionProxy<MyClass>`.
+    This means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
+    Note that the type argument must be identical to the return type of the producer method.
+<2> Creates an instance of the interception proxy for the given instance of `MyClass`.
+    The method calls will be forwarded to this target instance after all interceptors run.
+
+In this example, interceptor bindings are read from the `MyClass` class.
+
+IMPORTANT: Note that `InterceptionProxy` only supports `@AroundInvoke` interceptors declared on interceptor classes.
+Other kinds of interception, as well as `@AroundInvoke` interceptors declared on the target class and its superclasses, are not supported.
+
+The intercepted class should be https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#unproxyable[proxyable] and therefore should not be `final`, should not have non-private `final` methods, and should have a non-private zero-parameter constructor.
+If it isn't, a bytecode transformation will attempt to fix it if <<unproxyable_classes_transformation,enabled>>, but note that adding a zero-parameter constructor is not always possible.
+
+It is often the case that the produced classes come from external libraries and don't contain interceptor binding annotations at all.
+To support such cases, the `@BindingsSource` annotation may be declared on the `InterceptionProxy` parameter:
+
+[source,java]
+----
+import io.quarkus.arc.BindingsSource;
+import io.quarkus.arc.InterceptionProxy;
+
+abstract class MyClassBindings { // <1>
+    @MyInterceptorBinding
+    abstract String doSomething();
+}
+
+@ApplicationScoped
+class MyProducer {
+    @Produces
+    MyClass produce(@BindingsSource(MyClassBindings.class) InterceptionProxy<MyClass> proxy) { // <2>
+        return proxy.create(new MyClass());
+    }
+}
+----
+
+<1> A class that mirrors the `MyClass` structure and contains interceptor bindings.
+<2> The `@BindingsSource` annotation says that interceptor bindings for `MyClass` should be read from `MyClassBindings`.
+
+The concept of _bindings source_ is a build-time friendly equivalent of `InterceptionFactory.configure()`.
+
+NOTE: Producer method interception and synthetic bean interception only works for instance methods.
+<<interception_of_static_methods>> is not supported for producer methods and synthetic beans.
+
+==== Declaring `@BindingsSource`
+
+The `@BindingsSource` annotation specifies a class that mirrors the structure of the intercepted class.
+Interceptor bindings are then read from that class and treated as if they were declared on the intercepted class.
+
+Specifically: class-level interceptor bindings declared on the bindings source class are treated as class-level bindings of the intercepted class.
+Method-level interceptor bindings declared on the bindings source class are treated as method-level bindings of a method with the same name, return type, parameter types and `static` flag of the intercepted class.
+
+It is common to make the bindings source class and methods `abstract` so that you don't have to write method bodies:
+
+[source,java]
+----
+abstract class MyClassBindings {
+    @MyInterceptorBinding
+    abstract String doSomething();
+}
+----
+
+Since this class is never instantiated and its method are never invoked, this is okay, but it's also possible to create a non-`abstract` class:
+
+[source,java]
+----
+class MyClassBindings {
+    @MyInterceptorBinding
+    String doSomething() {
+        return null; // <1>
+    }
+}
+----
+
+<1> The method body does not matter.
+
+Note that for generic classes, the type variable names must also be identical.
+For example, for the following class:
+
+[source,java]
+----
+class MyClass<T> {
+    T doSomething() {
+        ...
+    }
+
+    void doSomethingElse(T param) {
+        ...
+    }
+}
+----
+
+the bindings source class must also use `T` as the name of the type variable:
+
+[source,java]
+----
+abstract class MyClassBindings<T> {
+    @MyInterceptorBinding
+    abstract T doSomething();
+}
+----
+
+You don't need to declare methods that are not annotated simply because they exist on the intercepted class.
+If you want to add method-level bindings to a subset of methods, you only have to declare the methods that are supposed to have an interceptor binding.
+If you only want to add class-level bindings, you don't have to declare any methods at all.
+
+These annotations can be present on a bindings source class:
+
+* _interceptor bindings_: on the class and on the methods
+* _stereotypes_: on the class
+* `@NoClassInterceptors`: on the methods
+
+Any other annotation present on a bindings source class is ignored.
+
+==== Synthetic Beans
+
+Using `InterceptionProxy` in synthetic beans is similar.
+
+First, you have to declare that your synthetic bean injects the `InterceptionProxy`:
+
+[source,java]
+----
+public void register(RegistrationContext context) {
+    context.configure(MyClass.class)
+            .types(MyClass.class)
+            .injectInterceptionProxy() // <1>
+            .creator(MyClassCreator.class)
+            .done();
+}
+----
+
+<1> Once again, this means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
+
+Second, you have to obtain the `InterceptionProxy` from the `SyntheticCreationalContext` in the `BeanCreator` and use it:
+
+[source,java]
+----
+public MyClass create(SyntheticCreationalContext<MyClass> context) {
+    InterceptionProxy<MyClass> proxy = context.getInterceptionProxy(); // <1>
+    return proxy.create(new MyClass());
+}
+----
+
+<1> Obtains the `InterceptionProxy` for `MyClass`, as declared above.
+    It would also be possible to use the `getInjectedReference()` method, passing a `TypeLiteral`, but `getInterceptionProxy()` is easier.
+
+There's also an equivalent of `@BindingsSource`.
+The `injectInterceptionProxy()` method has an overload with a parameter:
+
+[source,java]
+----
+public void register(RegistrationContext context) {
+    context.configure(MyClass.class)
+            .types(MyClass.class)
+            .injectInterceptionProxy(MyClassBindings.class) // <1>
+            .creator(MyClassCreator.class)
+            .done();
+}
+----
+
+<1> The argument is the bindings source class.
 
 [[reactive_pitfalls]]
 == Pitfalls with Reactive Programming

@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.tls.runtime.CertificateRecorder;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -22,10 +23,11 @@ public class CertificatesProcessor {
     public TlsRegistryBuildItem initializeCertificate(
             TlsConfig config, Optional<VertxBuildItem> vertx, CertificateRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            List<TlsCertificateBuildItem> otherCertificates) {
+            List<TlsCertificateBuildItem> otherCertificates,
+            ShutdownContextBuildItem shutdown) {
 
         if (vertx.isPresent()) {
-            recorder.validateCertificates(config, vertx.get().getVertx());
+            recorder.validateCertificates(config, vertx.get().getVertx(), shutdown);
         }
 
         for (TlsCertificateBuildItem certificate : otherCertificates) {

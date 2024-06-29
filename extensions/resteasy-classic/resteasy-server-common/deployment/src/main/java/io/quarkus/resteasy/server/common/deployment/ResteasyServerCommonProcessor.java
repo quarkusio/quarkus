@@ -336,6 +336,10 @@ public class ResteasyServerCommonProcessor {
         for (final DotName iface : pathInterfaces) {
             final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
             for (final ClassInfo implementor : implementors) {
+                if (implementor.isAbstract()) {
+                    continue;
+                }
+
                 String className = implementor.name().toString();
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
                 scannedResources.putIfAbsent(implementor.name(), implementor);
@@ -576,18 +580,58 @@ public class ResteasyServerCommonProcessor {
                 }
             }
         }
-        if (!pathInterfaceImplementors.isEmpty()) {
+        makeResourcesAdditionalBeans(pathInterfaceImplementors, scopes, unremovableBeans, additionalBeans);
+    }
+
+    @BuildStep
+    void processPathAbstractClassSubclasses(CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            CustomScopeAnnotationsBuildItem scopes) {
+        // bean defining annotation doesn't work when resource class with @Path is abstract
+        // therefore its inheritors are not beans, which means that CDI interceptors are not applied
+        // which can be problem for example when subresource locators are defined on there
+        // e.g. @Path("sub") SubResource subResource() { new SubResource(); }
+        // because the RESTEasy doesn't call post match filters on them, and we need to rely on security CDI interceptors
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Set<DotName> abstractClassWithPath = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.PATH)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS
+                    && Modifier.isAbstract(annotation.target().asClass().flags())) {
+                abstractClassWithPath.add(annotation.target().asClass().name());
+            }
+        }
+        if (abstractClassWithPath.isEmpty()) {
+            return;
+        }
+        Map<DotName, ClassInfo> classNameToSubclass = new HashMap<>();
+        for (DotName abstractClass : abstractClassWithPath) {
+            for (ClassInfo inheritor : index.getAllKnownSubclasses(abstractClass)) {
+                if (!classNameToSubclass.containsKey(inheritor.name()) && !inheritor.isAbstract()
+                        && !inheritor.hasDeclaredAnnotation(ResteasyDotNames.PATH)) {
+                    classNameToSubclass.put(inheritor.name(), inheritor);
+                }
+            }
+        }
+        makeResourcesAdditionalBeans(classNameToSubclass, scopes, unremovableBeans, additionalBeans);
+    }
+
+    private void makeResourcesAdditionalBeans(Map<DotName, ClassInfo> additionalClassWithPath,
+            CustomScopeAnnotationsBuildItem scopes, BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (!additionalClassWithPath.isEmpty()) {
             AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
                     .setUnremovable();
-            for (Map.Entry<DotName, ClassInfo> implementor : pathInterfaceImplementors.entrySet()) {
-                if (scopes.isScopeDeclaredOn(implementor.getValue())) {
+            for (Map.Entry<DotName, ClassInfo> classWithPath : additionalClassWithPath.entrySet()) {
+                if (scopes.isScopeDeclaredOn(classWithPath.getValue())) {
                     // It has a scope defined - just mark it as unremovable
                     unremovableBeans
-                            .produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(implementor.getKey().toString())));
+                            .produce(new UnremovableBeanBuildItem(
+                                    new BeanClassNameExclusion(classWithPath.getKey().toString())));
                 } else {
                     // No built-in scope found - add as additional bean
-                    builder.addBeanClass(implementor.getKey().toString());
+                    builder.addBeanClass(classWithPath.getKey().toString());
                 }
             }
             additionalBeans.produce(builder.build());

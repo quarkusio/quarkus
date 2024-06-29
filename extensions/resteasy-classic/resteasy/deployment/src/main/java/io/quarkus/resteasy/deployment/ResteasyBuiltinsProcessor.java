@@ -1,10 +1,20 @@
 package io.quarkus.resteasy.deployment;
 
+import java.lang.reflect.Modifier;
+
+import org.jboss.resteasy.core.ResourceMethodInvoker;
+import org.jboss.resteasy.spi.ResourceFactory;
+import org.objectweb.asm.Opcodes;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
@@ -43,6 +53,7 @@ public class ResteasyBuiltinsProcessor {
      */
     @BuildStep
     void setUpSecurity(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(UnauthorizedExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
@@ -55,6 +66,7 @@ public class ResteasyBuiltinsProcessor {
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
             providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
+            transformEagerSecurityNativeMethod(bytecodeTransformerProducer);
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPermissionChecker.class));
             additionalBeanBuildItem.produce(
                     AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
@@ -74,5 +86,50 @@ public class ResteasyBuiltinsProcessor {
         providers.produce(new ResteasyJaxrsProviderBuildItem(JsonArrayWriter.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectReader.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(JsonObjectWriter.class.getName()));
+    }
+
+    private static void transformEagerSecurityNativeMethod(
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
+
+        // 1. add getResourceFactory() to ResourceMethodInvoker
+        bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(ResourceMethodInvoker.class.getName(),
+                (cls, classVisitor) -> {
+                    var classTransformer = new ClassTransformer(cls);
+                    try (var getResourceFactory = classTransformer.addMethod("getResourceFactory", ResourceFactory.class)) {
+                        getResourceFactory.setModifiers(Modifier.PUBLIC);
+                        var resourceFieldDesc = FieldDescriptor.of(ResourceMethodInvoker.class, "resource",
+                                ResourceFactory.class);
+                        var resourceField = getResourceFactory.readInstanceField(resourceFieldDesc,
+                                getResourceFactory.getThis());
+                        getResourceFactory.returnValue(resourceField);
+                    }
+                    return classTransformer.applyTo(classVisitor);
+                }));
+
+        // 2. Create method that returns the field
+        bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(EagerSecurityFilter.class.getName(),
+                (cls, classVisitor) -> {
+                    var classTransformer = new ClassTransformer(cls);
+                    var methodDescriptor = MethodDescriptor.ofMethod(EagerSecurityFilter.class, "getResourceFactory",
+                            ResourceFactory.class, ResourceMethodInvoker.class);
+
+                    classTransformer.removeMethod(methodDescriptor);
+                    // we know that 'native' method ^ is deleted first as methods are creates in 'visitEnd'
+                    // while the method is deleted by simply being ignored in 'visitMethod'
+
+                    // now create:
+                    // static ResourceFactory getResourceFactory(ResourceMethodInvoker invoker) {
+                    //      return invoker.getResourceFactory();
+                    // }
+                    try (var methodCreator = classTransformer.addMethod(methodDescriptor)) {
+                        methodCreator.setModifiers(Opcodes.ACC_STATIC);
+                        var invoker = methodCreator.getMethodParam(0);
+                        var getResourceFactoryDescriptor = MethodDescriptor.ofMethod(ResourceMethodInvoker.class,
+                                "getResourceFactory", ResourceFactory.class);
+                        var resource = methodCreator.invokeVirtualMethod(getResourceFactoryDescriptor, invoker);
+                        methodCreator.returnValue(resource);
+                    }
+                    return classTransformer.applyTo(classVisitor);
+                }));
     }
 }

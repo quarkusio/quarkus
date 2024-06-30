@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 
+import org.hibernate.Session;
 import org.hibernate.query.spi.AbstractQuery;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
@@ -11,9 +11,9 @@ import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
-    public CustomCountPanacheQuery(EntityManager em, Query jpaQuery, String customCountQuery,
+    public CustomCountPanacheQuery(Session session, Query jpaQuery, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(session, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
             {
                 this.countQuery = customCountQuery;
             }

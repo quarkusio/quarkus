@@ -6,7 +6,7 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.persistence.EntityManager;
+import org.hibernate.Session;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -98,15 +98,15 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Implements <code>JpaOperations.getEntityManager().merge(entity)</code>
+     * Implements <code>JpaOperations.getSession().merge(entity)</code>
      */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        MethodDescriptor getEntityManager = ofMethod(PanacheRepositoryBase.class, "getEntityManager",
-                EntityManager.class);
-        ResultHandle entityManager = creator.invokeInterfaceMethod(getEntityManager, getRepositoryInstance(creator));
+        MethodDescriptor getSession = ofMethod(PanacheRepositoryBase.class, "getSession",
+                Session.class);
+        ResultHandle session = creator.invokeInterfaceMethod(getSession, getRepositoryInstance(creator));
         return creator.invokeInterfaceMethod(
-                ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
+                ofMethod(Session.class, "merge", Object.class, Object.class), session, entity);
     }
 
     /**

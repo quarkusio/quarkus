@@ -34,6 +34,7 @@ import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
 import org.jboss.logging.Logger;
@@ -65,6 +66,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
@@ -682,6 +684,13 @@ public class VertxHttpRecorder {
                                 }
                             }
 
+                            if (httpManagementServerOptions.isSsl()) {
+                                CDI.current().select(HttpCertificateUpdateEventListener.class).get()
+                                        .register(ar.result(),
+                                                managementConfig.tlsConfigurationName.orElse(TlsConfig.DEFAULT_NAME),
+                                                "management interface");
+                            }
+
                             actualManagementPort = ar.result().actualPort();
                             if (actualManagementPort != httpManagementServerOptions.getPort()) {
                                 var managementPortSystemProperties = new PortSystemProperties();
@@ -1292,6 +1301,12 @@ public class VertxHttpRecorder {
                             if (l != -1) {
                                 reloadingTasks.add(l);
                             }
+                        }
+
+                        if (https) {
+                            CDI.current().select(HttpCertificateUpdateEventListener.class).get()
+                                    .register(event.result(), quarkusConfig.tlsConfigurationName.orElse(TlsConfig.DEFAULT_NAME),
+                                            "http server");
                         }
 
                         if (remainingCount.decrementAndGet() == 0) {

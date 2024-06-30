@@ -17,12 +17,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.util.Date;
 import java.util.Set;
 import java.util.StringTokenizer;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.hamcrest.Matchers;
 import org.htmlunit.SilentCssErrorHandler;
@@ -48,6 +48,8 @@ import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -436,10 +438,33 @@ public class CodeFlowAuthorizationTest {
         Cookie sessionCookie = getSessionCookie(webClient, tenantId);
         assertNotNull(sessionCookie);
 
-        SecretKey key = new SecretKeySpec(OidcUtils
-                .getSha256Digest("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
-                        .getBytes(StandardCharsets.UTF_8)),
-                "AES");
+        SecretKey key = null;
+        if ("code-flow-user-info-github".equals(tenantId)) {
+            PrivateKey privateKey = KeyUtils.tryAsPemSigningPrivateKey(
+                    "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyXwKqKL/"
+                            + "hQWDkurdHyRn/9aZqmrgpCfiT5+gQ7KZ9RvDjgTqkJT6IIrRFvIpeBMwS"
+                            + "sw3dkUPGmgN1J4QOhLaR2VEXhc20UbxFbr6HXAskZGPuCL1tzRWDkLNMZaEO8jqhPbcq1Ro4GMhaSdm0sBHmcQnu8wAOrdAowdzGh"
+                            + "/HUaaYBDY0OZVAm9N8zzBXTahna9frJCMHq3e9szIiv6HYZTy1672/+hR/0D1HY+bqpQtJnzSrKjkFeXDAbYPgewYLEJ2Dk+oo6L"
+                            + "1I6S+UTrl4FRHw1fHAd2i75JD+vL/8w/AtKkej0CCBUSZJiV+KDJWjnDUVRWjq5hQb9pu4qEJKhAgMBAAECggEAJvBs4X7B3MfsAi"
+                            + "LszgQN4/3ZlZ4vI+5kUM2osMEo22J4RgI5Lgpfa1LALhUp07qSXmauWTdUJ3AJ3zKANrcsMAzUEiGItZu+UR4LA/vJBunPkvBfgi/"
+                            + "qSW12ZvAsx9mDiR2y9evNrH9khalnmHVzgu4ccAimc43oSm1/5+tXlLoZ1QK/FohxBxAshtuDHGs8yKUL0jpv7dOrjhCj2ibmPYe6A"
+                            + "Uk9F61sVWO0/i0Q8UAOcYT3L5nCS5WnLhdCdYpIJJ7xl2PrVE/BAD+JEG5uCOYfVeYh+iCZVfpX17ryfNNUaBtyxKEGVtHbje3mO86"
+                            + "mYN3noaS0w/zpUjBPgV+KEQKBgQDsp6VTmDIqHFTp2cC2yrDMxRznif92EGv7ccJDZtbTC37mAuf2J7x5b6AiE1EfxEXyGYzSk99sC"
+                            + "ns+GbL1EHABUt5pimDCl33b6XvuccQNpnJ0MfM5eRX9Ogyt/OKdDRnQsvrTPNCWOyJjvG01HQM4mfxaBBnxnvl5meH2pyG/ZQKBgQD"
+                            + "A87DnyqEFhTDLX5c1TtwHSRj2xeTPGKG0GyxOJXcxR8nhtY9ee0kyLZ14RytnOxKarCFgYXeG4IoGEc/I42WbA4sq88tZcbe4IJkdX"
+                            + "0WLMqOTdMrdx9hMU1ytKVUglUJZBVm7FaTQjA+ArMwqkXAA5HBMtArUsfJKUt3l0hMIjQKBgQDS1vmAZJQs2Fj+jzYWpLaneOWrk1K"
+                            + "5yR+rQUql6jVyiUdhfS1ULUrJlh3Avh0EhEUc0I6Z/YyMITpztUmu9BoV09K7jMFwHK/RAU+cvFbDIovN4cKkbbCdjt5FFIyBB278d"
+                            + "LjrAb+EWOLmoLVbIKICB47AU+8ZSV1SbTrYGUcD0QKBgQCAliZv4na6sg9ZiUPAr+QsKserNSiN5zFkULOPBKLRQbFFbPS1l12pRgL"
+                            + "qNCu1qQV19H5tt6arSRpSfy5FB14gFxV4s23yFrnDyF2h2GsFH+MpEq1bbaI1A10AvUnQ5AeKQemRpxPmM2DldMK/H5tPzO0WAOoy4"
+                            + "r/ATkc4sG4kxQKBgBL9neT0TmJtxlYGzjNcjdJXs3Q91+nZt3DRMGT9s0917SuP77+FdJYocDiH1rVa9sGG8rkh1jTdqliAxDXwIm5I"
+                            + "GS/0OBnkaN1nnGDk5yTiYxOutC5NSj7ecI5Erud8swW6iGqgz2ioFpGxxIYqRlgTv/6mVt41KALfKrYIkVLw",
+                    SignatureAlgorithm.RS256);
+            key = OidcUtils.createSecretKeyFromDigest(privateKey.getEncoded());
+        } else {
+            key = OidcUtils.createSecretKeyFromDigest(
+                    "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                            .getBytes(StandardCharsets.UTF_8));
+        }
 
         String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
 
@@ -462,6 +487,22 @@ public class CodeFlowAuthorizationTest {
                                 "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow")
                         .withRequestBody(containing("extra-param=extra-param-value"))
                         .withRequestBody(containing("authorization_code"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\","
+                                        + "  \"refresh_token\": \"refresh1234\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                        .withHeader("X-Custom", equalTo("XCustomHeaderValue"))
+                        .withRequestBody(containing("extra-param=extra-param-value"))
+                        .withRequestBody(containing("authorization_code"))
+                        .withRequestBody(
+                                containing(
+                                        "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+                        .withRequestBody(containing("client_assertion=ey"))
                         .willReturn(WireMock.aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

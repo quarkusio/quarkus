@@ -16,9 +16,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -240,13 +240,13 @@ public class StockMethodsAdder {
     private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator,
             FieldDescriptor entityClassFieldDescriptor) {
         ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor, bytecodeCreator.getThis());
-        ResultHandle entityManager = bytecodeCreator.invokeVirtualMethod(
-                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class, Class.class),
+        ResultHandle session = bytecodeCreator.invokeVirtualMethod(
+                ofMethod(AbstractJpaOperations.class, "getSession", Session.class, Class.class),
                 bytecodeCreator.readStaticField(operationsField),
                 entityClass);
         entity = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(EntityManager.class, "merge", Object.class, Object.class),
-                entityManager, entity);
+                MethodDescriptor.ofMethod(Session.class, "merge", Object.class, Object.class),
+                session, entity);
         bytecodeCreator.returnValue(entity);
     }
 

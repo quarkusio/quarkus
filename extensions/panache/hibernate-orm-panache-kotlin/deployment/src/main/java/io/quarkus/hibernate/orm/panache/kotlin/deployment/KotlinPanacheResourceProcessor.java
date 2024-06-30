@@ -15,9 +15,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -56,7 +56,7 @@ import io.quarkus.panache.common.deployment.TypeBundle;
 public final class KotlinPanacheResourceProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
-    private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(EntityManager.class.getName()));
+    private static final Set<DotName> UNREMOVABLE_BEANS = singleton(createSimple(Session.class.getName()));
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

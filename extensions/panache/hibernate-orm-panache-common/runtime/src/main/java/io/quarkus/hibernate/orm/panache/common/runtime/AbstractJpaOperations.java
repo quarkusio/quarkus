@@ -35,7 +35,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         entityToPersistenceUnit = Collections.unmodifiableMap(map);
     }
 
-    protected abstract PanacheQueryType createPanacheQuery(EntityManager em, String query, String originalQuery, String orderBy,
+    protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap);
 
     public abstract List<?> list(PanacheQueryType query);
@@ -48,17 +48,26 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
      * @return {@link EntityManager}
      */
     public EntityManager getEntityManager(Class<?> clazz) {
-        String clazzName = clazz.getName();
-        String persistentUnitName = entityToPersistenceUnit.get(clazzName);
-        return getEntityManager(persistentUnitName);
+        return getSession(clazz);
     }
 
-    public EntityManager getEntityManager(String persistentUnitName) {
+    /**
+     * Returns the {@link Session} for the given {@link Class<?> entity}
+     *
+     * @return {@link Session}
+     */
+    public Session getSession(Class<?> clazz) {
+        String clazzName = clazz.getName();
+        String persistentUnitName = entityToPersistenceUnit.get(clazzName);
+        return getSession(persistentUnitName);
+    }
+
+    public Session getSession(String persistentUnitName) {
         ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
-            InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class);
-            if (emHandle.isAvailable()) {
-                return emHandle.get();
+            InstanceHandle<Session> sessionHandle = arcContainer.instance(Session.class);
+            if (sessionHandle.isAvailable()) {
+                return sessionHandle.get();
             }
             if (!arcContainer.instance(AgroalDataSource.class).isAvailable()) {
                 throw new IllegalStateException(
@@ -68,10 +77,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                     "No entities were found. Did you forget to annotate your Panache Entity classes with '@Entity'?");
         }
 
-        InstanceHandle<EntityManager> emHandle = arcContainer.instance(EntityManager.class,
+        InstanceHandle<Session> sessionHandle = arcContainer.instance(Session.class,
                 new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName));
-        if (emHandle.isAvailable()) {
-            return emHandle.get();
+        if (sessionHandle.isAvailable()) {
+            return sessionHandle.get();
         }
         if (!arcContainer.instance(AgroalDataSource.class,
                 new DataSource.DataSourceLiteral(persistentUnitName)).isAvailable()) {
@@ -85,26 +94,26 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                         + persistentUnitName + "\".packages' property?");
     }
 
-    public EntityManager getEntityManager() {
-        return getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME);
+    public Session getSession() {
+        return getSession(DEFAULT_PERSISTENCE_UNIT_NAME);
     }
     //
     // Instance methods
 
     public void persist(Object entity) {
-        EntityManager em = getEntityManager(entity.getClass());
-        persist(em, entity);
+        Session session = getSession(entity.getClass());
+        persist(session, entity);
     }
 
-    public void persist(EntityManager em, Object entity) {
-        if (!em.contains(entity)) {
-            em.persist(entity);
+    public void persist(Session session, Object entity) {
+        if (!session.contains(entity)) {
+            session.persist(entity);
         }
     }
 
     public void persist(Iterable<?> entities) {
         for (Object entity : entities) {
-            persist(getEntityManager(entity.getClass()), entity);
+            persist(getSession(entity.getClass()), entity);
         }
     }
 
@@ -120,24 +129,24 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public void delete(Object entity) {
-        EntityManager em = getEntityManager(entity.getClass());
-        em.remove(em.contains(entity) ? entity : em.unwrap(Session.class).getReference(entity));
+        Session session = getSession(entity.getClass());
+        session.remove(session.contains(entity) ? entity : session.getReference(entity));
     }
 
     public boolean isPersistent(Object entity) {
-        return getEntityManager(entity.getClass()).contains(entity);
+        return getSession(entity.getClass()).contains(entity);
     }
 
     public void flush() {
-        getEntityManager().flush();
+        getSession().flush();
     }
 
     public void flush(Object entity) {
-        getEntityManager(entity.getClass()).flush();
+        getSession(entity.getClass()).flush();
     }
 
     public void flush(Class<?> clazz) {
-        getEntityManager(clazz).flush();
+        getSession(clazz).flush();
     }
     //
     // Private stuff
@@ -176,11 +185,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     // Queries
 
     public Object findById(Class<?> entityClass, Object id) {
-        return getEntityManager(entityClass).find(entityClass, id);
+        return getSession(entityClass).find(entityClass, id);
     }
 
     public Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
-        return getEntityManager(entityClass).find(entityClass, id, lockModeType);
+        return getSession(entityClass).find(entityClass, id, lockModeType);
     }
 
     public Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
@@ -196,7 +205,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Object... params) {
-        EntityManager em = getEntityManager(entityClass);
+        Session session = getSession(entityClass);
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
@@ -205,11 +214,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, panacheQuery, panacheQuery, null, params);
+            return createPanacheQuery(session, panacheQuery, panacheQuery, null, params);
         }
 
         String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(em, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
@@ -217,7 +226,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Map<String, Object> params) {
-        EntityManager em = getEntityManager(entityClass);
+        Session session = getSession(entityClass);
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
@@ -226,11 +235,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                                 + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, panacheQuery, panacheQuery, null, params);
+            return createPanacheQuery(session, panacheQuery, panacheQuery, null, params);
         }
 
         String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
-        return createPanacheQuery(em, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
+        return createPanacheQuery(session, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Parameters params) {
@@ -291,14 +300,14 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
-        EntityManager em = getEntityManager(entityClass);
-        return createPanacheQuery(em, query, null, null, null);
+        Session session = getSession(entityClass);
+        return createPanacheQuery(session, query, null, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
-        EntityManager em = getEntityManager(entityClass);
-        return createPanacheQuery(em, query, null, PanacheJpaUtil.toOrderBy(sort), null);
+        Session session = getSession(entityClass);
+        return createPanacheQuery(session, query, null, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
     public List<?> listAll(Class<?> entityClass) {
@@ -318,7 +327,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long count(Class<?> entityClass) {
-        return (long) getEntityManager(entityClass)
+        return (long) getSession(entityClass)
                 .createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
                 .getSingleResult();
     }
@@ -331,7 +340,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             return (long) bindParameters(
-                    getEntityManager(entityClass)
+                    getSession(entityClass)
                             .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
                     params).getSingleResult();
         } catch (IllegalArgumentException x) {
@@ -347,7 +356,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             return (long) bindParameters(
-                    getEntityManager(entityClass)
+                    getSession(entityClass)
                             .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
                     params).getSingleResult();
         } catch (IllegalArgumentException x) {
@@ -366,7 +375,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         String namedQueryName = query.substring(1);
         NamedQueryUtil.checkNamedQuery(entityClass, namedQueryName);
-        return getEntityManager(entityClass).createNamedQuery(namedQueryName);
+        return getSession(entityClass).createNamedQuery(namedQueryName);
     }
 
     public boolean exists(Class<?> entityClass) {
@@ -386,7 +395,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long deleteAll(Class<?> entityClass) {
-        return getEntityManager(entityClass).createQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass))
+        return getSession(entityClass).createQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass))
                 .executeUpdate();
     }
 
@@ -397,7 +406,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         if (entity == null) {
             return false;
         }
-        getEntityManager(entityClass).remove(entity);
+        getSession(entityClass).remove(entity);
         return true;
     }
 
@@ -409,7 +418,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             return bindParameters(
-                    getEntityManager(entityClass)
+                    getSession(entityClass)
                             .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
                     params)
                     .executeUpdate();
@@ -426,7 +435,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             return bindParameters(
-                    getEntityManager(entityClass)
+                    getSession(entityClass)
                             .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
                     params)
                     .executeUpdate();
@@ -448,7 +457,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
      * Execute update on default persistence unit
      */
     public int executeUpdate(String query, Object... params) {
-        Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
+        Query jpaQuery = getSession(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
@@ -457,7 +466,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
      * Execute update on default persistence unit
      */
     public int executeUpdate(String query, Map<String, Object> params) {
-        Query jpaQuery = getEntityManager(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
+        Query jpaQuery = getSession(DEFAULT_PERSISTENCE_UNIT_NAME).createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
@@ -470,7 +479,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
-            Query jpaQuery = getEntityManager(entityClass).createQuery(updateQuery);
+            Query jpaQuery = getSession(entityClass).createQuery(updateQuery);
             bindParameters(jpaQuery, params);
             return jpaQuery.executeUpdate();
         } catch (IllegalArgumentException x) {
@@ -486,7 +495,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
-            Query jpaQuery = getEntityManager(entityClass).createQuery(updateQuery);
+            Query jpaQuery = getSession(entityClass).createQuery(updateQuery);
             bindParameters(jpaQuery, params);
             return jpaQuery.executeUpdate();
         } catch (IllegalArgumentException x) {

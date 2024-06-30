@@ -9,12 +9,12 @@ import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import javax.net.ssl.SSLHandshakeException;
 
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -28,9 +28,10 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.tls.CertificateUpdatedEvent;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.options.TlsCertificateReloader;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -55,7 +56,6 @@ public class ManagementHttpServerTlsCertificateReloadWithTlsRegistryTest {
 
     private static final String APP_PROPS = """
             quarkus.management.enabled=true
-            quarkus.management.ssl.certificate.reload-period=30s
             quarkus.tls.key-store.pem.0.cert=%s
             quarkus.tls.key-store.pem.0.key=%s
             loc=%s
@@ -118,6 +118,12 @@ public class ManagementHttpServerTlsCertificateReloadWithTlsRegistryTest {
     @ConfigProperty(name = "loc")
     File certs;
 
+    @Inject
+    TlsConfigurationRegistry registry;
+
+    @Inject
+    Event<CertificateUpdatedEvent> event;
+
     @Test
     void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         var options = new HttpClientOptions()
@@ -140,7 +146,8 @@ public class ManagementHttpServerTlsCertificateReloadWithTlsRegistryTest {
                 new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
-        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
+        registry.getDefault().orElseThrow().reload();
+        event.fire(new CertificateUpdatedEvent("<default>", registry.getDefault().orElseThrow()));
 
         // The client truststore is not updated, thus it should fail.
         assertThatThrownBy(() -> vertx.createHttpClient(options)

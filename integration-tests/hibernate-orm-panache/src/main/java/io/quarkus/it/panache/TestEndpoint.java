@@ -622,6 +622,7 @@ public class TestEndpoint {
     public String testModelDao() {
         personDao.flush();
         Assertions.assertNotNull(personDao.getEntityManager());
+        Assertions.assertNotNull(personDao.getSession());
 
         List<Person> persons = personDao.findAll().list();
         Assertions.assertEquals(0, persons.size());

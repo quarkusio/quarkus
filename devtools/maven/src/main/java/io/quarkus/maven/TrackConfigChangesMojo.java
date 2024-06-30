@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
 import org.apache.maven.plugin.MojoExecutionException;
@@ -148,24 +147,19 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             }
 
             if (dumpDependencies) {
-                final List<String> deps = new ArrayList<>();
+                final List<Path> deps = new ArrayList<>();
                 for (var d : curatedApplication.getApplicationModel().getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
-                    StringBuilder entry = new StringBuilder(d.toGACTVString());
-                    if (d.isSnapshot()) {
-                        var adler32 = new Adler32();
-                        updateChecksum(adler32, d.getResolvedPaths());
-                        entry.append(" ").append(adler32.getValue());
+                    for (Path resolvedPath : d.getResolvedPaths()) {
+                        deps.add(resolvedPath.toAbsolutePath());
                     }
-
-                    deps.add(entry.toString());
                 }
                 Collections.sort(deps);
                 final Path targetFile = getOutputFile(dependenciesFile, launchMode.getDefaultProfile(),
-                        "-dependency-checksums.txt");
+                        "-dependencies.txt");
                 Files.createDirectories(targetFile.getParent());
                 try (BufferedWriter writer = Files.newBufferedWriter(targetFile)) {
-                    for (var s : deps) {
-                        writer.write(s);
+                    for (var dep : deps) {
+                        writer.write(dep.toString());
                         writer.newLine();
                     }
                 }

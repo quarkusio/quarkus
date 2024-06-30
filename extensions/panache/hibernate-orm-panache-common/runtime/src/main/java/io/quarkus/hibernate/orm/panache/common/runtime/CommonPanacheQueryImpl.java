@@ -9,13 +9,12 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NonUniqueResultException;
-import jakarta.persistence.Query;
 
 import org.hibernate.Filter;
 import org.hibernate.Session;
+import org.hibernate.query.Query;
 
 import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
@@ -48,7 +47,7 @@ public class CommonPanacheQueryImpl<Entity> {
     private String originalQuery;
     protected String countQuery;
     private String orderBy;
-    private EntityManager em;
+    private Session session;
 
     private Page page;
     private Long count;
@@ -61,9 +60,9 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Map<String, Object>> filters;
     private Class<?> projectionType;
 
-    public CommonPanacheQueryImpl(EntityManager em, String query, String originalQuery, String orderBy,
+    public CommonPanacheQueryImpl(Session session, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
-        this.em = em;
+        this.session = session;
         this.query = query;
         this.originalQuery = originalQuery;
         this.orderBy = orderBy;
@@ -72,7 +71,7 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery,
             Class<?> projectionType) {
-        this.em = previousQuery.em;
+        this.session = previousQuery.session;
         this.query = newQueryString;
         this.countQuery = countQuery;
         this.orderBy = previousQuery.orderBy;
@@ -91,7 +90,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
+            Query q = session.createNamedQuery(query.substring(1));
             selectQuery = q.getQueryString();
         }
 
@@ -269,11 +268,11 @@ public class CommonPanacheQueryImpl<Entity> {
         if (count == null) {
             String selectQuery = query;
             if (PanacheJpaUtil.isNamedQuery(query)) {
-                org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
+                Query q = session.createNamedQuery(query.substring(1));
                 selectQuery = q.getQueryString();
             }
 
-            Query countQuery = em.createQuery(countQuery(selectQuery));
+            Query countQuery = session.createQuery(countQuery(selectQuery));
             if (paramsArrayOrMap instanceof Map)
                 AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
@@ -380,10 +379,10 @@ public class CommonPanacheQueryImpl<Entity> {
         Query jpaQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            jpaQuery = em.createNamedQuery(namedQuery, projectionType);
+            jpaQuery = session.createNamedQuery(namedQuery, projectionType);
         } else {
             try {
-                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query, projectionType);
+                jpaQuery = session.createQuery(orderBy != null ? query + orderBy : query, projectionType);
             } catch (IllegalArgumentException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }
@@ -410,7 +409,6 @@ public class CommonPanacheQueryImpl<Entity> {
     private NonThrowingCloseable applyFilters() {
         if (filters == null)
             return NO_FILTERS;
-        Session session = em.unwrap(Session.class);
         for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
             Filter filter = session.enableFilter(entry.getKey());
             for (Entry<String, Object> paramEntry : entry.getValue().entrySet()) {

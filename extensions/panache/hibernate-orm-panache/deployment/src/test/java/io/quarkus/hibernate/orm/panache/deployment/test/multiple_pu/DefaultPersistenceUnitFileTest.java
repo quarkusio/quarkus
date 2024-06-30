@@ -41,10 +41,15 @@ public class DefaultPersistenceUnitFileTest {
 
     @Test
     void entityManagerShouldExist() {
-        FirstEntity firstEntity = new FirstEntity();
-        assertNotNull(firstEntity.getEntityManager());
+        assertNotNull(FirstEntity.getEntityManager());
 
-        SecondEntity secondEntity = new SecondEntity();
-        assertNotNull(secondEntity.getEntityManager());
+        assertNotNull(SecondEntity.getEntityManager());
+    }
+
+    @Test
+    void sessionShouldExist() {
+        assertNotNull(FirstEntity.getSession());
+
+        assertNotNull(SecondEntity.getSession());
     }
 }

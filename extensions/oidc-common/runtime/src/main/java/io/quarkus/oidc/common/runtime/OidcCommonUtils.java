@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import org.jboss.logging.Logger;
@@ -306,6 +307,23 @@ public class OidcCommonUtils {
 
     public static String jwtSecret(Credentials creds) {
         return creds.jwt.secret.orElseGet(fromCredentialsProvider(creds.jwt.secretProvider));
+    }
+
+    public static String getClientOrJwtSecret(Credentials creds) {
+        LOG.debug("Trying to get the configured client secret");
+        String encSecret = clientSecret(creds);
+        if (encSecret == null) {
+            LOG.debug("Client secret is not configured, "
+                    + "trying to get the configured 'client_jwt_secret' secret");
+            encSecret = jwtSecret(creds);
+        }
+        return encSecret;
+    }
+
+    public static SecretKey generateSecretKey() throws Exception {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(256);
+        return keyGenerator.generateKey();
     }
 
     public static Secret.Method clientSecretMethod(Credentials creds) {

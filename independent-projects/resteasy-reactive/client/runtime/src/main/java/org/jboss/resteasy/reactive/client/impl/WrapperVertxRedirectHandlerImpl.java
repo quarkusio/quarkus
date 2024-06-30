@@ -11,22 +11,19 @@ import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.RequestOptions;
 
-public class WrapperVertxRedirectHandlerImpl implements Function<HttpClientResponse, Future<RequestOptions>> {
+class WrapperVertxRedirectHandlerImpl implements Function<HttpClientResponse, Future<RequestOptions>> {
 
-    private final RedirectHandler actualHandler;
+    private final RedirectHandler redirectHandler;
 
-    public WrapperVertxRedirectHandlerImpl(RedirectHandler actualHandler) {
-        this.actualHandler = actualHandler;
+    WrapperVertxRedirectHandlerImpl(RedirectHandler redirectHandler) {
+        this.redirectHandler = redirectHandler;
     }
 
     @Override
     public Future<RequestOptions> apply(HttpClientResponse httpClientResponse) {
-        Response.ResponseBuilder response = Response.status(httpClientResponse.statusCode());
-        for (String headerName : httpClientResponse.headers().names()) {
-            response.header(headerName, httpClientResponse.headers().get(headerName));
-        }
+        Response jaxRsResponse = RedirectUtil.toResponse(httpClientResponse);
 
-        URI newLocation = actualHandler.handle(response.build());
+        URI newLocation = redirectHandler.handle(jaxRsResponse);
         if (newLocation != null) {
             RequestOptions options = new RequestOptions();
             options.setAbsoluteURI(newLocation.toString());

@@ -680,6 +680,12 @@ public final class Beans {
                     //as this is called in a tight loop we only do it if necessary
                     values = new ArrayList<>();
                     Set<String> nonBindingFields = beanDeployment.getQualifierNonbindingMembers(requiredQualifier.name());
+                    if (requiredClazz == null) {
+                        throw new IllegalStateException("Failed to find bean qualifier class with name "
+                                + requiredQualifier.name() + " in application index. Make sure the class is part of "
+                                + "the Jandex index. Classes that are not subject to discovery can be registered via "
+                                + "AdditionalBeanBuildItem and non-qualifier annotations can use QualifierRegistrarBuildItem");
+                    }
                     for (AnnotationValue val : requiredQualifier.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
                         if (!requiredClazz.method(val.name()).hasAnnotation(DotNames.NONBINDING)
                                 && !nonBindingFields.contains(val.name())) {

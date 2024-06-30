@@ -11,9 +11,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.Id;
 
+import org.hibernate.Session;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -52,7 +52,7 @@ public final class PanacheHibernateResourceProcessor {
     static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
 
-    private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
+    private static final DotName DOTNAME_SESSION = DotName.createSimple(Session.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
@@ -70,7 +70,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_ENTITY_MANAGER));
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_SESSION));
     }
 
     @BuildStep

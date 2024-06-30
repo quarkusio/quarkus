@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.tls.CertificateUpdatedEvent;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -105,5 +106,20 @@ public interface TlsBucketConfig {
      * Nevertheless, it is recommended to set it to "HTTPS" or "LDAPS".
      */
     Optional<String> hostnameVerificationAlgorithm();
+
+    /**
+     * When configured, the server will reload the certificates (from the file system for example) and fires a
+     * {@link CertificateUpdatedEvent} if the reload is successful
+     * <p>
+     * This property configures the period to reload the certificates. IF not set, the certificates won't be reloaded
+     * automatically.
+     * However, the application can still trigger the reload manually using the {@link io.quarkus.tls.TlsConfiguration#reload()}
+     * method,
+     * and then fire the {@link CertificateUpdatedEvent} manually.
+     * <p>
+     * The fired event is used to notify the application that the certificates have been updated, and thus proceed with the
+     * actual switch of certificates.
+     */
+    Optional<Duration> reloadPeriod();
 
 }

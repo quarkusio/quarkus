@@ -744,8 +744,9 @@ It will log the changed options and save the current values of each of the optio
 
 ==== Dump Quarkus application dependencies
 
-In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies, along with their checksums (Adler32). This file could be used to check whether Quarkus build classpath has changed since the previous run.
-By default, the dependency checksums will be stored under `target/quarkus-prod-dependency-checksums.txt` file. A different location could be configured using plugin parameters.
+In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies.
+This file could be used to check whether Quarkus build classpath has changed since the previous run, for instance together with Develocity's ability to checksum a classpath.
+By default, the list of dependencies will be stored under `target/quarkus-prod-dependencies.txt` file. A different location could be configured using plugin parameters.
 
 ==== Dump current build configuration when the recorded configuration isn't found
 

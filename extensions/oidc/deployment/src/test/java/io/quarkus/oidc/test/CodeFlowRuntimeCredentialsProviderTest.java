@@ -1,14 +1,17 @@
-package io.quarkus.oidc.client;
+package io.quarkus.oidc.test;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.WebClient;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,61 +25,41 @@ import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.WithTestResource;
-import io.restassured.RestAssured;
+import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
-@WithTestResource(value = KeycloakRealmClientCredentialsJwtSecretManager.class, restrictToAnnotatedClass = false)
-public class OidcClientCredentialsJwtSecretTestCase {
+@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
+public class CodeFlowRuntimeCredentialsProviderTest {
 
-    private static Class<?>[] testClasses = {
-            OidcClientsResource.class,
+    private static final Class<?>[] TEST_CLASSES = {
             ProtectedResource.class,
             RuntimeSecretProvider.class,
-            TestRecorder.class,
-            OidcClientCredentialsJwtSecretTestCase.class
+            CodeFlowRuntimeCredentialsProviderTest.class,
+            TestRecorder.class
     };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-oidc-client-credentials-jwt-secret.properties", "application.properties"))
+                    .addClasses(TEST_CLASSES)
+                    .addAsResource("application-runtime-cred-provider.properties", "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());
 
     @Test
-    public void testGetTokenJwtClient() {
-        String token = RestAssured.when().get("/clients/token/jwt").body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
-                .body(equalTo("service-account-quarkus-app"));
-    }
+    public void testRuntimeCredentials() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/protected");
 
-    @Test
-    public void testGetTokensJwtClient() {
-        String[] tokens = RestAssured.when().get("/clients/tokens/jwt").body().asString().split(" ");
-        assertTokensNotNull(tokens);
+            assertEquals("Sign in to quarkus", page.getTitleText());
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
-                .body(equalTo("service-account-quarkus-app"));
-    }
+            HtmlForm loginForm = page.getForms().get(0);
 
-    private static void assertTokensNotNull(String[] tokens) {
-        assertEquals(2, tokens.length);
-        assertNotNull(tokens[0]);
-        assertEquals("null", tokens[1]);
-    }
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
 
-    @Recorder
-    public static class TestRecorder {
+            page = loginForm.getInputByName("login").click();
 
-        public RuntimeSecretProvider createRuntimeSecretProvider() {
-            return new RuntimeSecretProvider();
+            assertEquals("alice", page.getBody().asNormalizedText());
         }
-
     }
 
     private static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -103,6 +86,7 @@ public class OidcClientCredentialsJwtSecretTestCase {
                                     .configure(RuntimeSecretProvider.class)
                                     .types(CredentialsProvider.class)
                                     .scope(ApplicationScoped.class)
+                                    .named("runtime-vault-secret-provider")
                                     .setRuntimeInit()
                                     .unremovable()
                                     .runtimeProxy(proxy1)
@@ -115,5 +99,20 @@ public class OidcClientCredentialsJwtSecretTestCase {
                 }).produces(MainBytecodeRecorderBuildItem.class).produces(SyntheticBeanBuildItem.class).build();
             }
         };
+    }
+
+    private static WebClient createWebClient() {
+        WebClient webClient = new WebClient();
+        webClient.setCssErrorHandler(new SilentCssErrorHandler());
+        return webClient;
+    }
+
+    @Recorder
+    public static class TestRecorder {
+
+        public RuntimeSecretProvider createRuntimeSecretProvider() {
+            return new RuntimeSecretProvider();
+        }
+
     }
 }

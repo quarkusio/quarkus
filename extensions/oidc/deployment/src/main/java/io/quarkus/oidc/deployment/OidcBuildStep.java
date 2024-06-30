@@ -31,6 +31,7 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -42,6 +43,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -73,7 +75,6 @@ import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
-import io.quarkus.smallrye.context.deployment.ContextPropagationInitializedBuildItem;
 import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
@@ -274,16 +275,21 @@ public class OidcBuildStep {
             OidcConfig config,
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem,
-            // this is required for setup ordering: we need CP set up
-            ContextPropagationInitializedBuildItem cpInitializedBuildItem) {
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
-                .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        detectUserInfoRequired(beanRegistration)))
+                .supplier(recorder.createTenantConfigBean(config, vertxBuildItem.getVertx(),
+                        tlsRegistryBuildItem.registry(), detectUserInfoRequired(beanRegistration)))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
                 .done();
+    }
+
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void initTenantConfigBean(OidcRecorder recorder) {
+        recorder.initTenantConfigBean();
     }
 
     @BuildStep

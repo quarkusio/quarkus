@@ -98,9 +98,9 @@ public class JibProcessor {
     private static final String OPENJDK_PREFIX = "openjdk";
     private static final String RUNTIME_SUFFIX = "runtime";
 
-    private static final String JAVA_21_BASE_IMAGE = String.format("%s/%s-21-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
+    private static final String JAVA_21_BASE_IMAGE = String.format("%s/%s-21-%s:1.19", UBI8_PREFIX, OPENJDK_PREFIX,
             RUNTIME_SUFFIX);
-    private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
+    private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.19", UBI8_PREFIX, OPENJDK_PREFIX,
             RUNTIME_SUFFIX);
 
     // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi8/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh

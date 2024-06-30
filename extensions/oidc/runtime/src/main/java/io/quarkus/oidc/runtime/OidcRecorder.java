@@ -80,13 +80,30 @@ public class OidcRecorder {
         };
     }
 
-    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx,
+    public Supplier<TenantConfigBean> createTenantConfigBean(OidcConfig config, Supplier<Vertx> vertx,
             Supplier<TlsConfigurationRegistry> registrySupplier,
             boolean userInfoInjectionPointDetected) {
-        OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
-        final Vertx vertxValue = vertx.get();
+        return new Supplier<TenantConfigBean>() {
+            @Override
+            public TenantConfigBean get() {
+                var defaultTlsConfiguration = registrySupplier.get().getDefault().orElse(null);
+                return setup(config, vertx.get(), defaultTlsConfiguration, userInfoInjectionPointDetected);
+            }
+        };
+    }
 
-        var defaultTlsConfiguration = registrySupplier.get().getDefault().orElse(null);
+    public void initTenantConfigBean() {
+        // makes sure that config of static tenants is validated during app startup and create static tenant contexts
+
+        var tenantConfigBean = Arc.container().instance(TenantConfigBean.class).get();
+        // do something -> make sure bean is initialized in case the bean is a normal scoped bean in the future
+        tenantConfigBean.getStaticTenantsConfig();
+    }
+
+    public TenantConfigBean setup(OidcConfig config, Vertx vertxValue, TlsConfiguration defaultTlsConfiguration,
+            boolean userInfoInjectionPointDetected) {
+        OidcRecorder.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
+
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
         TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant,
                 !config.namedTenants.isEmpty(), defaultTenantId, defaultTlsConfiguration);
@@ -98,19 +115,14 @@ public class OidcRecorder {
                     createStaticTenantContext(vertxValue, tenant.getValue(), false, tenant.getKey(), defaultTlsConfiguration));
         }
 
-        return new Supplier<TenantConfigBean>() {
-            @Override
-            public TenantConfigBean get() {
-                return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
-                        new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
-                            @Override
-                            public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
-                                return createDynamicTenantContext(vertxValue, config, config.getTenantId().get(),
-                                        defaultTlsConfiguration);
-                            }
-                        });
-            }
-        };
+        return new TenantConfigBean(staticTenantsConfig, dynamicTenantsConfig, defaultTenantContext,
+                new Function<OidcTenantConfig, Uni<TenantConfigContext>>() {
+                    @Override
+                    public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
+                        return createDynamicTenantContext(vertxValue, config, config.getTenantId().get(),
+                                defaultTlsConfiguration);
+                    }
+                });
     }
 
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,

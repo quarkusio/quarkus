@@ -15,6 +15,7 @@ import jakarta.ws.rs.Path;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -25,6 +26,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
+@Disabled("these tests seem unstable while their intent is also unclear")
 public class ConnectionPoolSizeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

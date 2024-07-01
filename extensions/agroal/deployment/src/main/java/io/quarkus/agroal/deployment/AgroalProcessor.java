@@ -2,10 +2,7 @@ package io.quarkus.agroal.deployment;
 
 import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
 
-import java.sql.Connection;
 import java.sql.Driver;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +60,6 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.narayana.jta.deployment.NarayanaInitBuildItem;
@@ -424,16 +420,5 @@ class AgroalProcessor {
         reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
                 "com.sun.rowset.providers.RIOptimisticProvider",
                 "com.sun.rowset.providers.RIXMLProvider").build());
-    }
-
-    /**
-     * Required with GraalVM for JDK 23 and up
-     */
-    @BuildStep()
-    List<ReflectiveMethodBuildItem> registerIsClosedMethod() {
-        return List.of(
-                new ReflectiveMethodBuildItem(Statement.class.getName(), "isClosed", new Class[0]),
-                new ReflectiveMethodBuildItem(Connection.class.getName(), "isClosed", new Class[0]),
-                new ReflectiveMethodBuildItem(ResultSet.class.getName(), "isClosed", new Class[0]));
     }
 }

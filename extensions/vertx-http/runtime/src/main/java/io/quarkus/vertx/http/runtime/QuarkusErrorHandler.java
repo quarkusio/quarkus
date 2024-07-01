@@ -129,6 +129,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             exception.addSuppressed(e);
         }
         if (showStack && exception != null) {
+            exception = new DecoratedAssertionError(exception);
             details = generateHeaderMessage(exception, uuid);
             stack = generateStackTrace(exception);
         } else {

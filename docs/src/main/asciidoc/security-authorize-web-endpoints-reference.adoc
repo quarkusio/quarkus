@@ -617,6 +617,66 @@ It is possible to use multiple expressions in the role definition.
 In development mode, it allows any authenticated user.
 <5> Property expression `all-roles` will be treated as a collection type `List`, therefore, the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
 
+=== Endpoint security annotations and Jakarta REST inheritance
+
+Quarkus supports security annotations placed on the endpoint implementation or its class like in the example below:
+
+[source,java]
+----
+@Path("hello")
+public interface HelloInterface {
+
+    @GET
+    String hello();
+
+}
+
+@DenyAll <1>
+public class HelloInterfaceImpl implements HelloInterface {
+
+    @RolesAllowed("admin") <2>
+    @Override
+    public String hello() {
+        return "Hello";
+    }
+}
+----
+<1> Class-level security annotation must be placed on the class where the endpoint implementation is declared.
+<2> Method-level security annotation must be placed on the endpoint implementation.
+
+[IMPORTANT]
+====
+The xref:resteasy.adoc[RESTEasy] subresource locators declared as default interface methods cannot be secured
+by standard security annotations.
+Secured subresource locators must be implemented and secured on the interface implementors like in the example below:
+
+[source,java]
+----
+@Path("hello")
+public interface HelloInterface {
+
+    @RolesAllowed("admin")
+    @Path("sub")
+    default HelloSubResource wrongWay() {
+        // not supported
+    }
+
+    @Path("sub")
+    HelloSubResource rightWay();
+
+}
+
+public class HelloInterfaceImpl implements HelloInterface {
+
+    @RolesAllowed("admin")
+    @Override
+    public HelloSubResource rightWay() {
+        return new HelloSubResource();
+    }
+}
+----
+====
+
 [[permission-annotation]]
 === Permission annotation
 

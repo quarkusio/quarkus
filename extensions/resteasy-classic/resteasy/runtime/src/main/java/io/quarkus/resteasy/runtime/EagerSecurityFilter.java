@@ -12,6 +12,10 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
 
+import org.jboss.resteasy.core.ResourceMethodInvoker;
+import org.jboss.resteasy.core.interception.jaxrs.PostMatchContainerRequestContext;
+import org.jboss.resteasy.spi.ResourceFactory;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -59,19 +63,27 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         if (authorizationController.isAuthorizationEnabled()) {
-            var description = MethodDescription.ofMethod(resourceInfo.getResourceMethod());
+            var description = createResourceMethodDescription(requestContext, resourceInfo);
+
             if (interceptorStorage != null) {
                 applyEagerSecurityInterceptors(description);
             }
             if (jaxRsPermissionChecker.shouldRunPermissionChecks()) {
                 jaxRsPermissionChecker.applyPermissionChecks();
             }
+
             applySecurityChecks(description);
         }
     }
 
-    private void applySecurityChecks(MethodDescription description) {
+    private void applySecurityChecks(ResourceMethodDescription resourceMethodDescription) {
+        var description = resourceMethodDescription.invokedMethodDesc();
         SecurityCheck check = securityCheckStorage.getSecurityCheck(description);
+        if (check == null && resourceMethodDescription.fallbackMethodDesc() != null) {
+            description = resourceMethodDescription.fallbackMethodDesc();
+            check = securityCheckStorage.getSecurityCheck(description);
+        }
+
         if (check == null && securityCheckStorage.getDefaultSecurityCheck() != null
                 && routingContext().get(EagerSecurityFilter.class.getName()) == null
                 && routingContext().get(SKIP_DEFAULT_CHECK) == null) {
@@ -137,10 +149,54 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
         return currentVertxRequest.getCurrent();
     }
 
-    private void applyEagerSecurityInterceptors(MethodDescription description) {
-        var interceptor = interceptorStorage.getInterceptor(description);
+    private void applyEagerSecurityInterceptors(ResourceMethodDescription description) {
+        var interceptor = interceptorStorage.getInterceptor(description.invokedMethodDesc());
+        if (description.fallbackMethodDesc() != null && interceptor == null) {
+            interceptor = interceptorStorage.getInterceptor(description.fallbackMethodDesc());
+        }
         if (interceptor != null) {
             interceptor.accept(routingContext());
         }
+    }
+
+    private static Class<?> getScannableClass(ResourceMethodInvoker invoker) {
+        var resourceFactory = getResourceFactory(invoker);
+        return resourceFactory == null ? null : resourceFactory.getScannableClass();
+    }
+
+    private static ResourceMethodDescription createResourceMethodDescription(ContainerRequestContext requestContext,
+            ResourceInfo resourceInfo) {
+        var resourceMethod = resourceInfo.getResourceMethod();
+        var resourceInfoDesc = MethodDescription.ofMethod(resourceMethod);
+
+        // declaring class in ResourceInfo method commonly matches class with @Path rather than actually invoked class
+        // until RESTEasy introduces new method like 'getInvokedMethod' we need to infer method that is actually invoked
+        if (requestContext instanceof PostMatchContainerRequestContext postMatchRequestContext) {
+            var scannableClass = getScannableClass(postMatchRequestContext.getResourceMethod());
+            if (scannableClass != null && !resourceMethod.getDeclaringClass().equals(scannableClass)) {
+                try {
+                    var method = scannableClass.getMethod(resourceMethod.getName(), resourceMethod.getParameterTypes());
+                    var scannableClassDesc = MethodDescription.ofMethod(method);
+
+                    if (!scannableClassDesc.equals(resourceInfoDesc)) {
+                        return new ResourceMethodDescription(scannableClassDesc, resourceInfoDesc);
+                    }
+                } catch (NoSuchMethodException e) {
+                    // do nothing
+                }
+            }
+        }
+
+        return new ResourceMethodDescription(resourceInfoDesc, null);
+    }
+
+    static native ResourceFactory getResourceFactory(ResourceMethodInvoker invoker);
+
+    /**
+     * @param invokedMethodDesc description of actually invoked method (method on which CDI interceptors are applied)
+     * @param fallbackMethodDesc description that we used in the past; not null when different to {@code invokedMethodDesc}
+     */
+    private record ResourceMethodDescription(MethodDescription invokedMethodDesc, MethodDescription fallbackMethodDesc) {
+
     }
 }

@@ -94,7 +94,7 @@ public class VertxRedisClientFactory {
         config.replicas().ifPresent(options::setUseReplicas);
 
         options.setNetClientOptions(toNetClientOptions(config));
-        configureTLS(name, config, tlsRegistry, options.getNetClientOptions());
+        configureTLS(name, config, tlsRegistry, options.getNetClientOptions(), hosts);
 
         options.setPoolName(name);
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with redis.
@@ -180,9 +180,17 @@ public class VertxRedisClientFactory {
     }
 
     private static void configureTLS(String name, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry,
-            NetClientOptions net) {
+            NetClientOptions net, List<URI> hosts) {
         TlsConfiguration configuration = null;
         boolean defaultTrustAll = false;
+
+        boolean tlsFromHosts = false;
+        for (URI uri : hosts) {
+            if ("rediss".equals(uri.getScheme())) {
+                tlsFromHosts = true;
+                break;
+            }
+        }
 
         // Check if we have a named TLS configuration or a default configuration:
         if (config.tlsConfigurationName().isPresent()) {
@@ -200,10 +208,15 @@ public class VertxRedisClientFactory {
             }
         }
 
+        if (configuration != null && !tlsFromHosts) {
+            LOGGER.warnf("The Redis client %s is configured with a named TLS configuration but the hosts are not " +
+                    "using the `rediss://` scheme - Disabling TLS", name);
+        }
+
         // Apply the configuration
         if (configuration != null) {
             // This part is often the same (or close) for every Vert.x client:
-            net.setSsl(true);
+            net.setSsl(tlsFromHosts);
 
             if (configuration.getTrustStoreOptions() != null) {
                 net.setTrustOptions(configuration.getTrustStoreOptions());
@@ -244,7 +257,7 @@ public class VertxRedisClientFactory {
             } else {
                 net.setHostnameVerificationAlgorithm(verificationAlgorithm);
             }
-            net.setSsl(config.tls().enabled() || defaultTrustAll);
+            net.setSsl(config.tls().enabled() || tlsFromHosts);
             net.setTrustAll(config.tls().trustAll() || defaultTrustAll);
 
             configurePemTrustOptions(net, config.tls().trustCertificatePem());

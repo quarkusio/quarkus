@@ -66,7 +66,7 @@ For more information about how you can secure your Quarkus applications by using
 
 == Role-based access control
 
-{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints and CDI beans.
+{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
 
 == References

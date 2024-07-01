@@ -361,7 +361,7 @@ For more information, see link:https://quarkus.io/blog/path-resolution-in-quarku
 === Map `SecurityIdentity` roles
 
 Winning role-based policy can map the `SecurityIdentity` roles to the deployment-specific roles.
-These roles are then applicable for endpoint authorization by using the @RolesAllowed annotation.
+These roles are then applicable for endpoint authorization by using the `@RolesAllowed` annotation.
 
 [source,properties]
 ----

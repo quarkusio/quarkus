@@ -252,7 +252,7 @@ public class TokenSecuredResource {
 ----
 <1> Here we inject `JsonWebToken`
 <2> This new endpoint will be located at /secured/roles-allowed
-<3> @RolesAllowed is a Jakarta common security annotation that indicates that the given endpoint is accessible by a caller if
+<3> `@RolesAllowed` is a Jakarta common security annotation that indicates that the given endpoint is accessible by a caller if
 they have either a "User" or "Admin" role assigned.
 <4> Here we build the reply the same way as in the `hello` method but also add a value of the JWT `birthdate` claim by directly calling the injected `JsonWebToken`.
 

@@ -78,6 +78,8 @@ public class StartupContext implements Closeable {
     public void close() {
         runAllAndClear(shutdownTasks);
         runAllAndClear(lastShutdownTasks);
+        values.clear();
+        lastValue = null;
     }
 
     private void runAllAndClear(Deque<Runnable> tasks) {

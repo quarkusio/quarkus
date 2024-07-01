@@ -90,7 +90,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     public Object runInAugmentClassLoader(String consumerName, Map<String, Object> params) {
-        return runInCl(consumerName, params, getAugmentClassLoader());
+        return runInCl(consumerName, params, getOrCreateAugmentClassLoader());
     }
 
     public CurationResult getCurationResult() {
@@ -99,7 +99,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public AugmentAction createAugmentor() {
         try {
-            Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
+            Class<?> augmentor = getOrCreateAugmentClassLoader().loadClass(AUGMENTOR);
             return (AugmentAction) augmentor.getConstructor(CuratedApplication.class).newInstance(this);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -115,8 +115,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     public AugmentAction createAugmentor(String functionName, Map<String, Object> props) {
         try {
-            Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
-            Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader()
+            Class<?> augmentor = getOrCreateAugmentClassLoader().loadClass(AUGMENTOR);
+            Function<Object, List<?>> function = (Function<Object, List<?>>) getOrCreateAugmentClassLoader()
                     .loadClass(functionName)
                     .getDeclaredConstructor()
                     .newInstance();
@@ -189,7 +189,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         builder.addElement(element);
     }
 
-    public synchronized QuarkusClassLoader getAugmentClassLoader() {
+    public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
         if (augmentClassLoader == null) {
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
@@ -227,6 +227,14 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     /**
+     * In most cases {@link #getOrCreateAugmentClassLoader()} should be used but this can be useful if you want to be able to
+     * get this instance without creating it (and so potentially get null if it doesn't exist).
+     */
+    public QuarkusClassLoader getAugmentClassLoader() {
+        return augmentClassLoader;
+    }
+
+    /**
      * creates the base runtime class loader.
      *
      * This does not have any generated resources or transformers, these are added by the startup action.
@@ -235,7 +243,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      * as each startup can generate new resources.
      *
      */
-    public synchronized QuarkusClassLoader getBaseRuntimeClassLoader() {
+    public synchronized QuarkusClassLoader getOrCreateBaseRuntimeClassLoader() {
         if (baseRuntimeClassLoader == null) {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
@@ -304,6 +312,14 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return baseRuntimeClassLoader;
     }
 
+    /**
+     * In most cases {@link #getOrCreateBaseRuntimeClassLoader()} should be used but this can be useful if you want to be able
+     * to get this instance without creating it (and so potentially get null if it doesn't exist).
+     */
+    public QuarkusClassLoader getBaseRuntimeClassLoader() {
+        return baseRuntimeClassLoader;
+    }
+
     private static boolean isHotReloadable(ResolvedDependency a, Set<Path> hotReloadPaths) {
         for (Path p : a.getContentTree().getRoots()) {
             if (hotReloadPaths.contains(p)) {
@@ -317,7 +333,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         //first run, we need to build all the class loaders
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
                 .builder("Deployment Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
-                        getAugmentClassLoader(), false)
+                        getOrCreateAugmentClassLoader(), false)
                 .addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners())
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);
@@ -355,7 +371,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     public QuarkusClassLoader createRuntimeClassLoader(Map<String, byte[]> resources, Map<String, byte[]> transformedClasses) {
-        return createRuntimeClassLoader(getBaseRuntimeClassLoader(), resources, transformedClasses);
+        return createRuntimeClassLoader(getOrCreateBaseRuntimeClassLoader(), resources, transformedClasses);
     }
 
     public QuarkusClassLoader createRuntimeClassLoader(ClassLoader base, Map<String, byte[]> resources,
@@ -366,7 +382,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 + getClassLoaderNameSuffix()
                                 + " restart no:"
                                 + runtimeClassLoaderCount.getAndIncrement(),
-                        getBaseRuntimeClassLoader(), false)
+                        getOrCreateBaseRuntimeClassLoader(), false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);

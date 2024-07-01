@@ -306,7 +306,7 @@ public final class IntegrationTestUtil {
             // obtain the ID of the shared network - this needs to be done after the augmentation has been run
             // or else we run into various ClassLoader problems
             try {
-                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                Class<?> networkClass = curatedApplication.getOrCreateAugmentClassLoader()
                         .loadClass("org.testcontainers.containers.Network");
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);

@@ -40,7 +40,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
     @Override
     public void accept(CuratedApplication curatedApplication, Map<String, Object> resultMap) {
 
-        QuarkusClassLoader classLoader = curatedApplication.getAugmentClassLoader();
+        QuarkusClassLoader classLoader = curatedApplication.getOrCreateAugmentClassLoader();
 
         try (QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader()) {
             QuarkusBootstrap quarkusBootstrap = curatedApplication.getQuarkusBootstrap();

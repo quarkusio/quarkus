@@ -68,7 +68,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     static RemoteDevClient createClient(CuratedApplication curatedApplication) {
         ServiceLoader<RemoteDevClientProvider> providers = ServiceLoader.load(RemoteDevClientProvider.class,
-                curatedApplication.getAugmentClassLoader());
+                curatedApplication.getOrCreateAugmentClassLoader());
         RemoteDevClient client = null;
         for (RemoteDevClientProvider provider : providers) {
             Optional<RemoteDevClient> opt = provider.getClient();
@@ -140,19 +140,19 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                     }, null);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
-                    curatedApplication.getBaseRuntimeClassLoader())) {
+                    curatedApplication.getOrCreateBaseRuntimeClassLoader())) {
                 hotReplacementSetups.add(service);
                 service.setupHotDeployment(processor);
                 processor.addHotReplacementSetup(service);
             }
             for (DeploymentFailedStartHandler service : ServiceLoader.load(DeploymentFailedStartHandler.class,
-                    curatedApplication.getAugmentClassLoader())) {
+                    curatedApplication.getOrCreateAugmentClassLoader())) {
                 processor.addDeploymentFailedStartHandler(new Runnable() {
                     @Override
                     public void run() {
                         ClassLoader old = Thread.currentThread().getContextClassLoader();
                         try {
-                            Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                            Thread.currentThread().setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
                             service.handleFailedInitialStart();
                         } finally {
                             Thread.currentThread().setContextClassLoader(old);
@@ -198,7 +198,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     @Override
     public void accept(CuratedApplication o, Map<String, Object> o2) {
         LoggingSetupRecorder.handleFailedStart(); //we are not going to actually run an app
-        Timing.staticInitStarted(o.getBaseRuntimeClassLoader(), false);
+        Timing.staticInitStarted(o.getOrCreateBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;
             Object potentialContext = o2.get(DevModeContext.class.getName());

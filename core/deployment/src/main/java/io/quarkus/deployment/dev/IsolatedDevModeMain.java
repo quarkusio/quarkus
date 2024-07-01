@@ -311,6 +311,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         restarting = true;
         if (codeGenWatcher != null) {
             codeGenWatcher.shutdown();
+            codeGenWatcher = null;
         }
 
         for (int i = listeners.size() - 1; i >= 0; i--) {
@@ -320,6 +321,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 log.warn("Unable to invoke 'beforeShutdown' of " + listeners.get(i).getClass(), e);
             }
         }
+        listeners.clear();
 
         try {
             stop();
@@ -341,10 +343,13 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 for (HotReplacementSetup i : hotReplacementSetups) {
                     i.close();
                 }
+                hotReplacementSetups.clear();
             } finally {
                 try {
                     DevConsoleManager.close();
                     curatedApplication.close();
+                    curatedApplication = null;
+                    augmentAction = null;
                 } finally {
                     if (shutdownThread != null) {
                         try {
@@ -401,29 +406,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication,
-                    List.of(new Consumer<BuildChainBuilder>() {
-                        @Override
-                        public void accept(BuildChainBuilder buildChainBuilder) {
-                            buildChainBuilder.addBuildStep(new BuildStep() {
-                                @Override
-                                public void execute(BuildContext context) {
-                                    //we need to make sure all hot reloadable classes are application classes
-                                    context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
-                                        @Override
-                                        public boolean test(String s) {
-                                            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                                    .getContextClassLoader();
-                                            String resourceName = ClassloadHelper.fromClassNameToResourceName(s);
-                                            //if the class file is present in this (and not the parent) CL then it is an application class
-                                            List<ClassPathElement> res = cl
-                                                    .getElementsWithResource(resourceName, true);
-                                            return !res.isEmpty();
-                                        }
-                                    }));
-                                }
-                            }).produces(ApplicationClassPredicateBuildItem.class).build();
-                        }
-                    }),
+                    List.of(new AddApplicationClassPredicateBuildStep()),
                     List.of());
 
             // code generators should be initialized before the runtime compilation is setup to properly configure the sources directories
@@ -473,6 +456,31 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 toThrow.addSuppressed(x);
             }
             throw toThrow;
+        }
+    }
+
+    private static class AddApplicationClassPredicateBuildStep implements Consumer<BuildChainBuilder> {
+
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
+                @Override
+                public void execute(BuildContext context) {
+                    //we need to make sure all hot reloadable classes are application classes
+                    context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
+                        @Override
+                        public boolean test(String s) {
+                            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
+                                    .getContextClassLoader();
+                            String resourceName = ClassloadHelper.fromClassNameToResourceName(s);
+                            //if the class file is present in this (and not the parent) CL then it is an application class
+                            List<ClassPathElement> res = cl
+                                    .getElementsWithResource(resourceName, true);
+                            return !res.isEmpty();
+                        }
+                    }));
+                }
+            }).produces(ApplicationClassPredicateBuildItem.class).build();
         }
     }
 }

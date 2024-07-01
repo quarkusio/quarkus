@@ -149,8 +149,8 @@ class DefaultCrudResourceTest {
     void shouldCreateAndUpdate() {
         Response createResponse = given().accept("application/json")
                 .and().contentType("application/json")
-                .and().body("{\"id\": \"101\", \"name\": \"test-update-create\"}")
-                .when().put("/default-records/101")
+                .and().body("{\"name\": \"test-update-create\"}")
+                .when().post("/default-records/")
                 .thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
@@ -177,8 +177,8 @@ class DefaultCrudResourceTest {
     void shouldCreateAndUpdateHal() {
         Response createResponse = given().accept("application/hal+json")
                 .and().contentType("application/json")
-                .and().body("{\"id\": \"102\", \"name\": \"test-update-create-hal\"}")
-                .when().put("/default-records/102")
+                .and().body("{\"name\": \"test-update-create-hal\"}")
+                .when().post("/default-records/")
                 .thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 

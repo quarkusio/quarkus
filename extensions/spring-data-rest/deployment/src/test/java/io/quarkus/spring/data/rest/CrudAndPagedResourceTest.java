@@ -342,8 +342,8 @@ class CrudAndPagedResourceTest {
     void shouldCreateAndUpdate() {
         Response createResponse = given().accept("application/json")
                 .and().contentType("application/json")
-                .and().body("{\"id\": \"101\", \"name\": \"test-update-create\"}")
-                .when().put("/crud-and-paged-records/101")
+                .and().body("{\"name\": \"test-update-create\"}")
+                .when().post("/crud-and-paged-records/")
                 .thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
@@ -370,8 +370,8 @@ class CrudAndPagedResourceTest {
     void shouldCreateAndUpdateHal() {
         Response createResponse = given().accept("application/hal+json")
                 .and().contentType("application/json")
-                .and().body("{\"id\": \"102\", \"name\": \"test-update-create-hal\"}")
-                .when().put("/crud-and-paged-records/102")
+                .and().body("{\"name\": \"test-update-create-hal\"}")
+                .when().post("/crud-and-paged-records/")
                 .thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 

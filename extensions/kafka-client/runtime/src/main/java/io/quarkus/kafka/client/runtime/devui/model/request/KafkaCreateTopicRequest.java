@@ -1,17 +1,22 @@
 package io.quarkus.kafka.client.runtime.devui.model.request;
 
+import java.util.Map;
+
 public class KafkaCreateTopicRequest {
     private String topicName;
     private Integer partitions;
     private Short replications;
+    private Map<String, String> configs;
 
     public KafkaCreateTopicRequest() {
     }
 
-    public KafkaCreateTopicRequest(String topicName, Integer partitions, Short replications) {
+    public KafkaCreateTopicRequest(final String topicName, final Integer partitions, final Short replications,
+            final Map<String, String> configs) {
         this.topicName = topicName;
         this.partitions = partitions;
         this.replications = replications;
+        this.configs = configs;
     }
 
     public String getTopicName() {
@@ -25,4 +30,9 @@ public class KafkaCreateTopicRequest {
     public Short getReplications() {
         return replications;
     }
+
+    public Map<String, String> getConfigs() {
+        return configs;
+    }
+
 }

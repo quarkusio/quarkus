@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import static io.quarkus.hibernate.orm.deployment.ClassNames.EXTRA_EVENT_LISTENERS;
 import static io.quarkus.hibernate.orm.deployment.ClassNames.GENERATORS;
 
 import org.jboss.jandex.DotName;
@@ -19,6 +20,14 @@ public class GraalVMFeatures {
     @BuildStep
     NativeImageFeatureBuildItem staticNativeImageFeature() {
         return new NativeImageFeatureBuildItem("org.hibernate.graalvm.internal.GraalVMStaticFeature");
+    }
+
+    // Workaround for https://hibernate.atlassian.net/browse/HHH-18284
+    @BuildStep
+    ReflectiveClassBuildItem registerMissingListenerClassesForReflections() {
+        return ReflectiveClassBuildItem
+                .builder(EXTRA_EVENT_LISTENERS.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .build();
     }
 
     // Workaround for https://hibernate.atlassian.net/browse/HHH-16439

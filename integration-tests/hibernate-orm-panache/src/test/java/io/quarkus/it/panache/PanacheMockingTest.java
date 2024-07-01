@@ -8,7 +8,7 @@ import jakarta.persistence.LockModeType;
 import jakarta.ws.rs.WebApplicationException;
 
 import org.hibernate.Session;
-import org.hibernate.query.Query;
+import org.hibernate.query.SelectionQuery;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -28,9 +28,9 @@ public class PanacheMockingTest {
 
     @BeforeEach
     public void setup() {
-        Query mockQuery = Mockito.mock(Query.class);
+        SelectionQuery mockQuery = Mockito.mock(SelectionQuery.class);
         Mockito.doNothing().when(session).persist(Mockito.any());
-        Mockito.when(session.createQuery(Mockito.anyString())).thenReturn(mockQuery);
+        Mockito.when(session.createSelectionQuery(Mockito.anyString(), Mockito.any())).thenReturn(mockQuery);
         Mockito.when(mockQuery.getSingleResult()).thenReturn(0l);
     }
 

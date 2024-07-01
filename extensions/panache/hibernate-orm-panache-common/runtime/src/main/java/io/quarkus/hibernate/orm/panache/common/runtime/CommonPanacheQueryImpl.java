@@ -4,17 +4,21 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.NonUniqueResultException;
 
 import org.hibernate.Filter;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
+import org.hibernate.query.SelectionQuery;
+import org.hibernate.query.spi.SqmQuery;
 
 import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
@@ -90,8 +94,8 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            Query q = session.createNamedQuery(query.substring(1));
-            selectQuery = q.getQueryString();
+            SelectionQuery q = session.createNamedSelectionQuery(query.substring(1));
+            selectQuery = getQueryString(q);
         }
 
         String lowerCasedTrimmedQuery = PanacheJpaUtil.trimForAnalysis(selectQuery);
@@ -268,11 +272,11 @@ public class CommonPanacheQueryImpl<Entity> {
         if (count == null) {
             String selectQuery = query;
             if (PanacheJpaUtil.isNamedQuery(query)) {
-                Query q = session.createNamedQuery(query.substring(1));
-                selectQuery = q.getQueryString();
+                SelectionQuery q = session.createNamedSelectionQuery(query.substring(1));
+                selectQuery = getQueryString(q);
             }
 
-            Query countQuery = session.createQuery(countQuery(selectQuery));
+            SelectionQuery countQuery = session.createSelectionQuery(countQuery(selectQuery));
             if (paramsArrayOrMap instanceof Map)
                 AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
@@ -294,25 +298,25 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
-        Query jpaQuery = createQuery();
+        SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return jpaQuery.getResultList();
+            return hibernateQuery.getResultList();
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Stream<T> stream() {
-        Query jpaQuery = createQuery();
+        SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return jpaQuery.getResultStream();
+            return hibernateQuery.getResultStream();
         }
     }
 
     public <T extends Entity> T firstResult() {
-        Query jpaQuery = createQuery(1);
+        SelectionQuery hibernateQuery = createQuery(1);
         try (NonThrowingCloseable c = applyFilters()) {
             @SuppressWarnings("unchecked")
-            List<T> list = jpaQuery.getResultList();
+            List<T> list = hibernateQuery.getResultList();
             return list.isEmpty() ? null : list.get(0);
         }
     }
@@ -323,87 +327,82 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
-        Query jpaQuery = createQuery();
+        SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return (T) jpaQuery.getSingleResult();
+            return (T) hibernateQuery.getSingleResult();
         }
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Optional<T> singleResultOptional() {
-        Query jpaQuery = createQuery(2);
+        SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            List<T> list = jpaQuery.getResultList();
-            if (list.size() > 1) {
-                throw new NonUniqueResultException();
-            }
-
-            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+            return hibernateQuery.uniqueResultOptional();
         }
     }
 
-    private Query createQuery() {
-        Query jpaQuery = createBaseQuery();
+    private SelectionQuery createQuery() {
+        SelectionQuery hibernateQuery = createBaseQuery();
 
         if (range != null) {
-            jpaQuery.setFirstResult(range.getStartIndex());
+            hibernateQuery.setFirstResult(range.getStartIndex());
             // range is 0 based, so we add 1
-            jpaQuery.setMaxResults(range.getLastIndex() - range.getStartIndex() + 1);
+            hibernateQuery.setMaxResults(range.getLastIndex() - range.getStartIndex() + 1);
         } else if (page != null) {
-            jpaQuery.setFirstResult(page.index * page.size);
-            jpaQuery.setMaxResults(page.size);
+            hibernateQuery.setFirstResult(page.index * page.size);
+            hibernateQuery.setMaxResults(page.size);
         } else {
             //no-op
         }
 
-        return jpaQuery;
+        return hibernateQuery;
     }
 
-    private Query createQuery(int maxResults) {
-        Query jpaQuery = createBaseQuery();
+    private SelectionQuery createQuery(int maxResults) {
+        SelectionQuery hibernateQuery = createBaseQuery();
 
         if (range != null) {
-            jpaQuery.setFirstResult(range.getStartIndex());
+            hibernateQuery.setFirstResult(range.getStartIndex());
         } else if (page != null) {
-            jpaQuery.setFirstResult(page.index * page.size);
+            hibernateQuery.setFirstResult(page.index * page.size);
         } else {
             //no-op
         }
-        jpaQuery.setMaxResults(maxResults);
+        hibernateQuery.setMaxResults(maxResults);
 
-        return jpaQuery;
+        return hibernateQuery;
     }
 
     @SuppressWarnings("unchecked")
-    private Query createBaseQuery() {
-        Query jpaQuery;
+    private SelectionQuery createBaseQuery() {
+        SelectionQuery hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            jpaQuery = session.createNamedQuery(namedQuery, projectionType);
+            hibernateQuery = session.createNamedSelectionQuery(namedQuery, projectionType);
         } else {
             try {
-                jpaQuery = session.createQuery(orderBy != null ? query + orderBy : query, projectionType);
-            } catch (IllegalArgumentException x) {
+                hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
+            } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }
         }
 
         if (paramsArrayOrMap instanceof Map) {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
         } else {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
         }
 
         if (this.lockModeType != null) {
-            jpaQuery.setLockMode(lockModeType);
+            hibernateQuery.setLockMode(lockModeType);
         }
 
         if (hints != null) {
             for (Map.Entry<String, Object> hint : hints.entrySet()) {
-                jpaQuery.setHint(hint.getKey(), hint.getValue());
+                hibernateQuery.setHint(hint.getKey(), hint.getValue());
             }
         }
-        return jpaQuery;
+        return hibernateQuery;
     }
 
     private NonThrowingCloseable applyFilters() {
@@ -430,5 +429,19 @@ public class CommonPanacheQueryImpl<Entity> {
                 }
             }
         };
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static String getQueryString(SelectionQuery hibernateQuery) {
+        if (hibernateQuery instanceof SqmQuery) {
+            return ((SqmQuery) hibernateQuery).getQueryString();
+        } else if (hibernateQuery instanceof org.hibernate.query.Query) {
+            // In theory we never use a Query, but who knows.
+            return ((org.hibernate.query.Query) hibernateQuery).getQueryString();
+        } else {
+            throw new IllegalArgumentException("Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
+                    + SqmQuery.class.getName() + "' or '"
+                    + org.hibernate.query.Query.class + "' is expected.");
+        }
     }
 }

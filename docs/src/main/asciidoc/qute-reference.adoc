@@ -2650,7 +2650,7 @@ class DetailResource {
 WARNING: Unlike with `@Inject` the templates obtained via `RestTemplate` are not validated, i.e. the build does not fail if a template does not exist.
 
 [[vertx_integration]]
-=== Vertx Integration
+=== Vert.x Integration
 
 If you want to use `io.vertx.core.json.JsonObject` as data in your templates, then you will need to add the `quarkus-vertx` extension to your `pom.xml` file (most applications use this extension by default).
 

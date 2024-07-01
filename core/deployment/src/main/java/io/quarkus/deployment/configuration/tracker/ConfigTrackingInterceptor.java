@@ -62,7 +62,7 @@ public class ConfigTrackingInterceptor implements ConfigSourceInterceptor {
      * @param config configuration instance
      */
     public void configure(Config config) {
-        enabled = config.getValue("quarkus.config-tracking.enabled", boolean.class);
+        enabled = config.getOptionalValue("quarkus.config-tracking.enabled", boolean.class).orElse(false);
         if (enabled) {
             readOptions = new ConcurrentHashMap<>();
         }

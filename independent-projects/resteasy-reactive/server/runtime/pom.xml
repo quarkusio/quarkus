@@ -48,6 +48,28 @@
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+		    <groupId>org.eclipse.microprofile.openapi</groupId>
+		    <artifactId>microprofile-openapi-api</artifactId>
+		    <version>${microprofile.version}</version>
+		    <scope>test</scope>
+		</dependency>
+		<dependency>
+		    <groupId>commons-logging</groupId>
+		    <artifactId>commons-logging</artifactId>
+		    <version>${apache.commons.logging.version}</version>
+		    <scope>test</scope>
+		</dependency>
     </dependencies>
 
     <build>

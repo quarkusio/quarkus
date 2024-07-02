@@ -50,7 +50,7 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
     @SuppressWarnings("OctalInteger")
     protected void addFileToContainer(byte[] content, String pathInContainer) {
         logger().info("Content [{}]: \n{}", pathInContainer, new String(content, StandardCharsets.UTF_8));
-        copyFileToContainer(Transferable.of(content, 0777), pathInContainer);
+        withCopyToContainer(Transferable.of(content, 0777), pathInContainer);
     }
 
     @Override

@@ -262,6 +262,23 @@ public class ResteasyReactiveScanner {
             }
         }
 
+        // handle abstract classes
+        Set<ClassInfo> abstractScannedResources = scannedResources.values().stream().filter(ClassInfo::isAbstract)
+                .collect(Collectors.toSet());
+        for (ClassInfo abstractScannedResource : abstractScannedResources) {
+            Collection<ClassInfo> allSubclasses = index.getAllKnownSubclasses(abstractScannedResource.name());
+            if (allSubclasses.size() != 1) {
+                continue; // don't do anything with this case as it's not evident how it's supposed to be handled
+            }
+            ClassInfo subclass = allSubclasses.iterator().next();
+            if (!scannedResources.containsKey(subclass.name())) {
+                scannedResources.put(subclass.name(), subclass);
+                scannedResources.remove(abstractScannedResource.name());
+                scannedResourcePaths.put(subclass.name(), scannedResourcePaths.get(abstractScannedResource.name()));
+                scannedResourcePaths.remove(abstractScannedResource.name());
+            }
+        }
+
         Map<DotName, String> clientInterfaces = new HashMap<>(pathInterfaces);
         // for clients it is enough to have @PATH annotations on methods only
         for (DotName interfaceName : interfacesWithPathOnMethods) {

@@ -211,8 +211,6 @@ The `client-name` is the name set in the `@GrpcClient` or derived from the injec
 The following examples uses _hello_ as the client name.
 Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
 
-IMPORTANT: When you enable `quarkus.grpc.clients."client-name".use-quarkus-grpc-client`, you are then using the new Vert.x gRPC channel implementation, so not all configuration properties can still be applied. And currently there is no Stork support yet.
-
 IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
 
 === Enabling TLS

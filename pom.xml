@@ -80,9 +80,9 @@
         <hibernate-search.version>7.1.1.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.64.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
-        <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
-        <protoc.version>3.25.0</protoc.version>
+        <grpc.version>1.65.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
+        <protoc.version>3.25.3</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <proto-google-common-protos.version>2.41.0</proto-google-common-protos.version>
 

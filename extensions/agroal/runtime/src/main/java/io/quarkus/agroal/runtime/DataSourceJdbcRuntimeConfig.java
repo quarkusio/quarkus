@@ -116,7 +116,9 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<String> validationQuerySql();
 
     /**
-     * Enable connection validation on borrow.
+     * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
+     *
+     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation instead, and to leave this to `false`.
      */
     @WithDefault("false")
     boolean validateOnBorrow();

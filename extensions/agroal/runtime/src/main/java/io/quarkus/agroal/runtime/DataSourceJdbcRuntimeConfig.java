@@ -115,6 +115,9 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     Optional<String> validationQuerySql();
 
+    /**
+     * Enable connection validation on borrow.
+     */
     @WithDefault("false")
     boolean validateOnBorrow();
 

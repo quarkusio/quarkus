@@ -52,6 +52,15 @@ public class OidcCommonConfig {
     public Optional<String> clientId = Optional.empty();
 
     /**
+     * The client name of the application. It is meant to represent a human readable description of the application which you
+     * may provide when an application (client) is registered in an OpenId Connect provider's dashboard.
+     * For example, you can set this property to have more informative log messages which record an activity of the given
+     * client.
+     */
+    @ConfigItem
+    public Optional<String> clientName = Optional.empty();
+
+    /**
      * The duration to attempt the initial connection to an OIDC server.
      * For example, setting the duration to `20S` allows 10 retries, each 2 seconds apart.
      * This property is only effective when the initial OIDC connection is created.
@@ -734,6 +743,14 @@ public class OidcCommonConfig {
 
     public void setClientId(String clientId) {
         this.clientId = Optional.of(clientId);
+    }
+
+    public Optional<String> getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = Optional.of(clientName);
     }
 
     public Credentials getCredentials() {

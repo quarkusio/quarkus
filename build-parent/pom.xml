@@ -369,8 +369,13 @@
             <dependency>
                 <groupId>me.escoffier.certs</groupId>
                 <artifactId>certificate-generator-junit5</artifactId>
-                <version>0.5.0</version>
+                <version>0.7.1</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>me.escoffier.certs</groupId>
+                <artifactId>certificate-generator</artifactId>
+                <version>0.7.1</version>
             </dependency>
 
         </dependencies>

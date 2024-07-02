@@ -1408,7 +1408,7 @@ public class MessageBundleProcessor {
         AnnotationValue localeValue = bundleAnnotation.value(BUNDLE_LOCALE);
         String defaultLocale;
         if (localeValue == null || localeValue.asString().equals(MessageBundle.DEFAULT_LOCALE)) {
-            defaultLocale = locales.defaultLocale.toLanguageTag();
+            defaultLocale = locales.defaultLocale().toLanguageTag();
         } else {
             defaultLocale = localeValue.asString();
         }

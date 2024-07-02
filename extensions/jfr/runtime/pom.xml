@@ -9,7 +9,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-jfr</artifactId>
-    <name>Quarkus - Jfr - Runtime</name>
+    <name>Quarkus - JFR - Runtime</name>
+    <description>Monitor your applications with Java Flight Recorder</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,7 +34,6 @@
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
             <artifactId>jakarta.ws.rs-api</artifactId>
-            <version>3.1.0</version>
         </dependency>
     </dependencies>
     <build>

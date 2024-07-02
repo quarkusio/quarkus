@@ -77,6 +77,7 @@ public class CacheConstructorsFeature implements Feature {
         return new String[] {
                 "com.github.benmanes.caffeine.cache.PDMS",
                 "com.github.benmanes.caffeine.cache.PSA",
+                "com.github.benmanes.caffeine.cache.PSAW",
                 "com.github.benmanes.caffeine.cache.PSMS",
                 "com.github.benmanes.caffeine.cache.PSW",
                 "com.github.benmanes.caffeine.cache.PSMW",
@@ -86,6 +87,7 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.PSWMW",
                 "com.github.benmanes.caffeine.cache.SILMS",
                 "com.github.benmanes.caffeine.cache.SSA",
+                "com.github.benmanes.caffeine.cache.SSAW",
                 "com.github.benmanes.caffeine.cache.SSLA",
                 "com.github.benmanes.caffeine.cache.SSLMS",
                 "com.github.benmanes.caffeine.cache.SSMS",
@@ -106,7 +108,8 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSSMSA",
                 "com.github.benmanes.caffeine.cache.SSSMSW",
                 "com.github.benmanes.caffeine.cache.SSSMSAW",
-                "com.github.benmanes.caffeine.cache.SSSW"
+                "com.github.benmanes.caffeine.cache.SSSW",
+                "com.github.benmanes.caffeine.cache.SSSAW"
         };
     }
 }

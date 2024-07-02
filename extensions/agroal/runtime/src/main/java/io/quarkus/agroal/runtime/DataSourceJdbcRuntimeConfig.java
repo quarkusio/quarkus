@@ -115,6 +115,9 @@ public interface DataSourceJdbcRuntimeConfig {
      */
     Optional<String> validationQuerySql();
 
+    @WithDefault("false")
+    boolean validateOnBorrow();
+
     /**
      * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.

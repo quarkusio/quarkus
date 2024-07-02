@@ -410,6 +410,7 @@ public class DataSources {
                 }
             });
         }
+        poolConfiguration.validateOnBorrow(dataSourceRuntimeConfig.validateOnBorrow);
         poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval());
         if (dataSourceJdbcRuntimeConfig.leakDetectionInterval().isPresent()) {
             poolConfiguration.leakTimeout(dataSourceJdbcRuntimeConfig.leakDetectionInterval().get());

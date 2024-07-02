@@ -220,7 +220,7 @@ public class OidcClientImpl implements OidcClient {
                     json.getValue(oidcConfig.grant.refreshExpiresInProperty));
 
             return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew.orElse(null), refreshToken,
-                    refreshTokenExpiresAt, json);
+                    refreshTokenExpiresAt, json, oidcConfig.clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
         } else {
             String errorMessage = resp.bodyAsString();
             LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",

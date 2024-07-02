@@ -258,7 +258,10 @@ public class OidcProvider implements Closeable {
                 detail = details.get(0).getErrorMessage();
             }
             if (oidcConfig.clientId.isPresent()) {
-                LOG.debugf("Verification of the token issued to client %s has failed: %s", oidcConfig.clientId.get(), detail);
+                LOG.debugf("Verification of the token issued to client %s has failed: %s.", oidcConfig.clientId.get(), detail);
+                if (oidcConfig.clientName.isPresent()) {
+                    LOG.debugf(" Client name: %s", oidcConfig.clientName.get());
+                }
             } else {
                 LOG.debugf("Token verification has failed: %s", detail);
             }

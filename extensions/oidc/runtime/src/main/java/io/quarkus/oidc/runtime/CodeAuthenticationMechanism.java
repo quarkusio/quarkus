@@ -611,7 +611,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<ChallengeData> getChallengeInternal(RoutingContext context, TenantConfigContext configContext) {
-        LOG.debugf("Starting an authentication challenge for tenant %s", configContext.oidcConfig.tenantId.get());
+        LOG.debugf("Starting an authentication challenge for tenant %s.", configContext.oidcConfig.tenantId.get());
+        if (configContext.oidcConfig.clientName.isPresent()) {
+            LOG.debugf(" Client name: %s", configContext.oidcConfig.clientName.get());
+        }
 
         OidcTenantConfig sessionCookieConfig = configContext.oidcConfig;
         String sessionTenantIdSetByCookie = context.get(OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE);

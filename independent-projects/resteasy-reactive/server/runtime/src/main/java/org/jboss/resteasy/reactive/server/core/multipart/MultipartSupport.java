@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
@@ -30,10 +31,7 @@ import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
-import org.jboss.resteasy.reactive.server.multipart.FileItem;
-import org.jboss.resteasy.reactive.server.multipart.FormValue;
-import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
-import org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException;
+import org.jboss.resteasy.reactive.server.multipart.*;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 
 /**
@@ -346,6 +344,29 @@ public final class MultipartSupport {
                     if (fileUpload.isFileItem()) {
                         result.add(new DefaultFileUpload(formName, fileUpload));
                     }
+                }
+            }
+        }
+        return result;
+    }
+
+    public static EntityPart getEntityPart(String formName, ResteasyReactiveRequestContext context) {
+        List<EntityPart> parts = getEntityParts(formName, context);
+        if (!parts.isEmpty()) {
+            return parts.get(0);
+        }
+        return null;
+    }
+
+    public static List<EntityPart> getEntityParts(String formName, ResteasyReactiveRequestContext context) {
+        List<EntityPart> result = new ArrayList<>();
+        FormData formData = context.getFormData();
+        if (formData != null) {
+            Collection<FormValue> partsForName = formData.get(formName);
+            if (partsForName != null) {
+                for (FormValue partValue : partsForName) {
+                    EntityPart part = new EntityPartImpl(context, partValue, formName);
+                    result.add(part);
                 }
             }
         }

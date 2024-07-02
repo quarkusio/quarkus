@@ -639,7 +639,7 @@ List<Person> firstPage = livingPersons.list();
 List<Person> secondPage = livingPersons.nextPage().list();
 
 // get page 7
-List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
+List<Person> page7 = livingPersons.page(Page.of(6, 25)).list();
 
 // get the number of pages
 int numberOfPages = livingPersons.pageCount();

@@ -26,9 +26,10 @@ jobs:
       # There is a weird issue with download-artifact@v4
       # keeping the external action for now
       - name: Download PR Artifact
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow: ${{ github.event.workflow_run.workflow_id }}
+          run_id: ${{ github.event.workflow_run.id }}
           workflow_conclusion: success
           name: documentation
           path: documentation-temp

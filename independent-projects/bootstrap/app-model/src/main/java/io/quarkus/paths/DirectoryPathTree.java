@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -81,12 +81,25 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
 
     @Override
     public Collection<Path> getRoots() {
-        return Collections.singletonList(dir);
+        return List.of(dir);
     }
 
     @Override
     public void walk(PathVisitor visitor) {
-        PathTreeVisit.walk(dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+        PathTreeVisit.walk(dir, dir, dir, pathFilter, getMultiReleaseMapping(), visitor);
+    }
+
+    @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        ensureResourcePath(relativePath);
+        if (!PathFilter.isVisible(pathFilter, relativePath)) {
+            return;
+        }
+        final Path walkDir = dir.resolve(manifestEnabled ? toMultiReleaseRelativePath(relativePath) : relativePath);
+        if (!Files.exists(walkDir)) {
+            return;
+        }
+        PathTreeVisit.walk(dir, dir, walkDir, pathFilter, getMultiReleaseMapping(), visitor);
     }
 
     private void ensureResourcePath(String path) {
@@ -189,5 +202,4 @@ public class DirectoryPathTree extends PathTreeWithManifest implements OpenPathT
         return Objects.equals(dir, other.dir) && Objects.equals(pathFilter, other.pathFilter)
                 && manifestEnabled == other.manifestEnabled;
     }
-
 }

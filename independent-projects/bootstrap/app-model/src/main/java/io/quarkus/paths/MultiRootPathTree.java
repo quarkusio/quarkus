@@ -53,6 +53,16 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        if (trees.length == 0) {
+            return;
+        }
+        for (PathTree t : trees) {
+            t.walkIfContains(relativePath, visitor);
+        }
+    }
+
+    @Override
     public <T> T apply(String relativePath, Function<PathVisit, T> func) {
         for (PathTree tree : trees) {
             T result = tree.apply(relativePath, func);

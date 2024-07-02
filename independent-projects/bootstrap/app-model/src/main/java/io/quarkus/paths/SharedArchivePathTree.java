@@ -154,6 +154,11 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
+        public void walkIfContains(String relativePath, PathVisitor visitor) {
+            delegate.walkIfContains(relativePath, visitor);
+        }
+
+        @Override
         public <T> T apply(String relativePath, Function<PathVisit, T> func) {
             return delegate.apply(relativePath, func);
         }

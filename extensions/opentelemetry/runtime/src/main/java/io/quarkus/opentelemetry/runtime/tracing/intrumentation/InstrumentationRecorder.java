@@ -1,7 +1,5 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.getSemconvStabilityOptin;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -45,11 +43,11 @@ public class InstrumentationRecorder {
     /* RUNTIME INIT */
     @RuntimeInit
     public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
-            boolean redisClientAvailable, final String semconvStability) {
+            boolean redisClientAvailable) {
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
         List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
         if (config.getValue().instrument().vertxHttp()) {
-            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, getSemconvStabilityOptin(semconvStability)));
+            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry));
         }
         if (config.getValue().instrument().vertxEventBus()) {
             tracers.add(new EventBusInstrumenterVertxTracer(openTelemetry));

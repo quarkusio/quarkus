@@ -23,11 +23,10 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanNameExtractor;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
@@ -158,11 +157,6 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
                 return UriBuilder.fromUri(uri).userInfo(null).build().toString();
             }
             return uri.toString();
-        }
-
-        @Override
-        public String getTransport(ClientRequestContext clientRequestContext, ClientResponseContext clientResponseContext) {
-            return SemanticAttributes.NetTransportValues.IP_TCP;
         }
 
         @Override

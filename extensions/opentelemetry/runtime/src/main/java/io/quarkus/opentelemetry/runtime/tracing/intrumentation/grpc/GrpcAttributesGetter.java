@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc;
 
-import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcAttributesGetter;
+import io.opentelemetry.instrumentation.api.incubator.semconv.rpc.RpcAttributesGetter;
 
 enum GrpcAttributesGetter implements RpcAttributesGetter<GrpcRequest> {
     INSTANCE;

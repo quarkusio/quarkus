@@ -330,9 +330,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } else {
             this.throwable = unwrapException(t);
             if (t instanceof WebApplicationException) {
-                logWebApplicationExceptions.debug("Restarting handler chain for exception exception", this.throwable);
+                logWebApplicationExceptions.trace("Restarting handler chain for exception exception", this.throwable);
             } else {
-                log.debug("Restarting handler chain for exception exception", this.throwable);
+                log.trace("Restarting handler chain for exception exception", this.throwable);
             }
             abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);

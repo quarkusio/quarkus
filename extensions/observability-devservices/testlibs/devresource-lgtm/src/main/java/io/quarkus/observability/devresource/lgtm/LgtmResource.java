@@ -12,6 +12,12 @@ import io.quarkus.observability.testcontainers.LgtmContainer;
 
 public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
+    private static final String OTLP_TRACES_PROTOCOL = "quarkus.otel.exporter.otlp.traces.protocol";
+    private static final String HTTP_PROTOBUF = "http/protobuf";
+    private static final String OTLP_TRACES_ENDPOINT = "quarkus.otel.exporter.otlp.traces.endpoint";
+    private static final String OTLP_TRACES_ENDPOINT_CONVERTER = "http://%s:%s";
+    private static final String GRAFANA_URL = "quarkus.grafana.url";
+
     @Override
     public LgtmConfig config(ModulesConfiguration configuration) {
         return configuration.lgtm();
@@ -26,10 +32,11 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     public Map<String, String> config(int privatePort, String host, int publicPort) {
         switch (privatePort) {
             case ContainerConstants.GRAFANA_PORT:
-                return Map.of("quarkus.grafana.url", String.format("%s:%s", host, publicPort));
+                return Map.of(GRAFANA_URL, String.format("%s:%s", host, publicPort));
             case ContainerConstants.OTEL_GRPC_EXPORTER_PORT:
             case ContainerConstants.OTEL_HTTP_EXPORTER_PORT:
-                return Map.of("quarkus.otel-collector.url", String.format("%s:%s", host, publicPort));
+                return Map.of(OTLP_TRACES_ENDPOINT, OTLP_TRACES_ENDPOINT_CONVERTER.formatted(host, publicPort),
+                        OTLP_TRACES_PROTOCOL, HTTP_PROTOBUF);
         }
         return Map.of();
     }
@@ -43,8 +50,9 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     public Map<String, String> doStart() {
         String host = container.getHost();
         return Map.of(
-                "quarkus.grafana.url", String.format("%s:%s", host, container.getGrafanaPort()),
-                "quarkus.otel-collector.url", String.format("%s:%s", host, container.getOtlpPort()));
+                GRAFANA_URL, String.format("%s:%s", host, container.getGrafanaPort()),
+                OTLP_TRACES_ENDPOINT, OTLP_TRACES_ENDPOINT_CONVERTER.formatted(host, container.getOtlpPort()),
+                OTLP_TRACES_PROTOCOL, HTTP_PROTOBUF);
     }
 
     @Override

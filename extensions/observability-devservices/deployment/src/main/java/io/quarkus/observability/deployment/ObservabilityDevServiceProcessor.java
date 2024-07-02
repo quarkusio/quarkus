@@ -1,6 +1,7 @@
 package io.quarkus.observability.deployment;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Feature;
@@ -37,12 +39,17 @@ import io.quarkus.observability.devresource.DevResourceLifecycleManager;
 import io.quarkus.observability.devresource.DevResources;
 import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.SmallRyeConfig;
 
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class,
         ObservabilityDevServiceProcessor.IsEnabled.class })
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);
 
+    private static final String OTEL_COLLECTOR_URL = "quarkus.otel-collector.url";
+    private static final String OTEL_COLLECTOR_URL_EXPRESSION = "http://${%s}".formatted(OTEL_COLLECTOR_URL);
+    private static final String OTLP_TRACES_ENDPOINT = "quarkus.otel.exporter.otlp.traces.endpoint";
     private static final Map<String, DevServicesResultBuildItem.RunningDevService> devServices = new ConcurrentHashMap<>();
     private static final Map<String, ContainerConfig> capturedDevServicesConfigurations = new ConcurrentHashMap<>();
     private static final Map<String, Boolean> firstStart = new ConcurrentHashMap<>();
@@ -75,6 +82,14 @@ class ObservabilityDevServiceProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig,
             BuildProducer<DevServicesResultBuildItem> services) {
+
+        // To keep backwards compatibility we want to allow "http://${quarkus.otel-collector.url}" expression as a value
+        if (ConfigUtils.isPropertyPresent(OTLP_TRACES_ENDPOINT) &&
+                !ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigValue(OTLP_TRACES_ENDPOINT).getRawValue()
+                        .equals(OTEL_COLLECTOR_URL_EXPRESSION)) {
+            log.infof("Observability dev services won't start due to property [%s] being defined", OTLP_TRACES_ENDPOINT);
+            return;
+        }
 
         if (!configuration.enabled()) {
             log.infof("Observability dev services are disabled in config");
@@ -193,7 +208,8 @@ class ObservabilityDevServiceProcessor {
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultContainerSupplier = () -> {
             Container<?> container = dev.container(capturedDevServicesConfiguration, root);
             timeout.ifPresent(container::withStartupTimeout);
-            Map<String, String> config = dev.start();
+            Map<String, String> config = new HashMap<>(dev.start());
+            addCollectorUrlProperty(config);
             log.infof("Dev Service %s started, config: %s", devId, config);
             return new DevServicesResultBuildItem.RunningDevService(
                     Feature.OBSERVABILITY.getName(), container.getContainerId(),
@@ -205,12 +221,31 @@ class ObservabilityDevServiceProcessor {
         return containerLocator
                 .locateContainer(
                         capturedDevServicesConfiguration.serviceName(), capturedDevServicesConfiguration.shared(),
-                        LaunchMode.current(), (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort())))
+                        LaunchMode.current(), (p, ca) -> {
+                            config.putAll(dev.config(p, ca.getHost(), ca.getPort()));
+                            addCollectorUrlProperty(config);
+                        })
                 .map(cid -> {
                     log.infof("Dev Service %s re-used, config: %s", devId, config);
                     return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid,
                             null, config);
                 })
                 .orElseGet(defaultContainerSupplier);
+    }
+
+    /**
+     * Adds property {@code OTEL_COLLECTOR_URL} to keep backwards compatibility if {@code OTLP_TRACES_ENDPOINT} is defined
+     * i.e. previously this was possible "quarkus.otel.exporter.otlp.traces.endpoint=http://${quarkus.otel-collector.url}"
+     * and now we set {@code OTLP_TRACES_ENDPOINT} directly and we set {@code OTEL_COLLECTOR_URL} in case this is still
+     * referenced.
+     *
+     * @param config
+     * @return
+     */
+    private static void addCollectorUrlProperty(Map<String, String> config) {
+        //  Remove leading http:// from the variable
+        if (config.containsKey(OTLP_TRACES_ENDPOINT)) {
+            config.put(OTEL_COLLECTOR_URL, config.get(OTLP_TRACES_ENDPOINT).substring("http://".length()));
+        }
     }
 }

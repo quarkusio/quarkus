@@ -1235,9 +1235,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 public void handle(MethodContext context, MethodCreator method,
                                         DeferredArrayStoreParameter out) {
                                     //get the collection
-                                    ResultHandle prop = method.invokeVirtualMethod(
-                                            MethodDescriptor.ofMethod(i.getReadMethod()),
-                                            context.loadDeferred(out));
+                                    ResultHandle prop;
+                                    if (i.getReadMethod().isDefault()) {
+                                        prop = method.invokeInterfaceMethod(
+                                                MethodDescriptor.ofMethod(i.getReadMethod()),
+                                                context.loadDeferred(out));
+                                    } else {
+                                        prop = method.invokeVirtualMethod(
+                                                MethodDescriptor.ofMethod(i.getReadMethod()),
+                                                context.loadDeferred(out));
+                                    }
                                     for (DeferredParameter i : params) {
                                         //add the parameter
                                         //TODO: this is not guarded against large collections, probably not an issue in practice

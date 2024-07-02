@@ -33,7 +33,8 @@ import io.vertx.grpc.server.GrpcServer;
 
 public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String COLLECTOR_IMAGE = "ghcr.io/open-telemetry/opentelemetry-java/otel-collector";
+    private static final String COLLECTOR_IMAGE = "ghcr.io/open-telemetry/opentelemetry-java/" +
+            "otel-collector@sha256:0d928e02b0ef5abbba775da205eb102f58b29aa75ea623465ec42445dfc5c443";
     private static final Integer COLLECTOR_OTLP_GRPC_PORT = 4317;
     private static final Integer COLLECTOR_OTLP_HTTP_PORT = 4318;
     private static final Integer COLLECTOR_OTLP_GRPC_MTLS_PORT = 5317;

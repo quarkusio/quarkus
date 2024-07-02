@@ -32,9 +32,9 @@ exporters:
 service:
   extensions: [health_check]
   pipelines:
-#    metrics:
-#      receivers: [otlp, otlp/mtls]
-#      exporters: [logging, otlp]
+    metrics:
+      receivers: [otlp, otlp/mtls]
+      exporters: [logging, otlp]
     traces:
       receivers: [otlp, otlp/mtls]
       exporters: [logging, otlp]

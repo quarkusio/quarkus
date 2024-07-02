@@ -259,6 +259,12 @@ public class BeanProcessor {
                 injectionPointAnnotationsPredicate);
         Collection<InvokerInfo> invokers = beanDeployment.getInvokers();
 
+        // this is different to `SubclassGenerator` in that it generates support classes
+        // for interception of producer methods and synthetic beans and only supports
+        // limited form of interception (and no decoration)
+        InterceptionProxyGenerator interceptionGenerator = new InterceptionProxyGenerator(generateSources,
+                applicationClassPredicate, annotationLiterals, reflectionRegistration);
+
         List<Resource> resources = new ArrayList<>();
 
         if (executor != null) {
@@ -348,6 +354,23 @@ public class BeanProcessor {
                                                 }
                                             }
                                             return subclassResources;
+                                        }
+                                    }));
+                                }
+
+                                if (bean.getInterceptionProxy() != null) {
+                                    secondaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                                        @Override
+                                        public Collection<Resource> call() throws Exception {
+                                            Collection<Resource> interceptionResources = interceptionGenerator.generate(bean);
+                                            for (Resource r : interceptionResources) {
+                                                if (r.getSpecialType() == SpecialType.SUBCLASS) {
+                                                    refReg.registerSubclass(bean.getInterceptionProxy().getTargetClass(),
+                                                            r.getFullyQualifiedName());
+                                                    break;
+                                                }
+                                            }
+                                            return interceptionResources;
                                         }
                                     }));
                                 }
@@ -451,6 +474,17 @@ public class BeanProcessor {
                                 }
                             }
                             resources.addAll(subclassResources);
+                        }
+                        if (bean.getInterceptionProxy() != null) {
+                            Collection<Resource> interceptionResources = interceptionGenerator.generate(bean);
+                            for (Resource r : interceptionResources) {
+                                if (r.getSpecialType() == SpecialType.SUBCLASS) {
+                                    refReg.registerSubclass(bean.getInterceptionProxy().getTargetClass(),
+                                            r.getFullyQualifiedName());
+                                    break;
+                                }
+                            }
+                            resources.addAll(interceptionResources);
                         }
                     }
                 }

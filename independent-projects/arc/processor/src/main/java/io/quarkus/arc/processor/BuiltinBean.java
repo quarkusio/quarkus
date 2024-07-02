@@ -66,6 +66,9 @@ public enum BuiltinBean {
     LIST(BuiltinBean::generateListBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.LIST) && ip.getRequiredQualifier(DotNames.ALL) != null,
             BuiltinBean::validateList, DotNames.LIST),
+    INTERCEPTION_PROXY(BuiltinBean::generateInterceptionProxyBytecode,
+            BuiltinBean::cdiAndRawTypeMatches, BuiltinBean::validateInterceptionProxy,
+            DotNames.INTERCEPTION_PROXY),
             ;
 
     private final DotName[] rawTypeDotNames;
@@ -430,6 +433,16 @@ public enum BuiltinBean {
                 ctx.constructor.getThis(), listProviderSupplier);
     }
 
+    private static void generateInterceptionProxyBytecode(GeneratorContext ctx) {
+        BeanInfo bean = ctx.targetInfo.asBean();
+        String name = InterceptionProxyGenerator.interceptionProxyProviderName(bean);
+
+        ResultHandle supplier = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(name));
+        ctx.constructor.writeInstanceField(
+                FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName, Supplier.class.getName()),
+                ctx.constructor.getThis(), supplier);
+    }
+
     private static ResultHandle loadInvokerTargetBean(InvokerInfo invoker, BytecodeCreator bytecode) {
         ResultHandle arc = bytecode.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
         return bytecode.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, arc,
@@ -516,6 +529,30 @@ public enum BuiltinBean {
         if (injectionTarget.kind() != TargetKind.OBSERVER) {
             errors.accept(new DefinitionException("EventMetadata can be only injected into an observer method: "
                     + injectionPoint.getTargetInfo()));
+        }
+    }
+
+    private static void validateInterceptionProxy(InjectionTargetInfo injectionTarget,
+            InjectionPointInfo injectionPoint, Consumer<Throwable> errors) {
+        if (injectionTarget.kind() != TargetKind.BEAN
+                || (!injectionTarget.asBean().isProducerMethod() && !injectionTarget.asBean().isSynthetic())
+                || injectionTarget.asBean().getInterceptionProxy() == null) {
+            errors.accept(new DefinitionException(
+                    "InterceptionProxy can only be injected into a producer method or a synthetic bean"));
+        }
+        if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            errors.accept(new DefinitionException("InterceptionProxy must be a parameterized type"));
+        }
+        Type interceptionProxyType = injectionPoint.getType().asParameterizedType().arguments().get(0);
+        if (interceptionProxyType.kind() != Kind.CLASS && interceptionProxyType.kind() != Kind.PARAMETERIZED_TYPE) {
+            errors.accept(new DefinitionException(
+                    "Type argument of InterceptionProxy may only be a class or parameterized type"));
+        }
+        if (!injectionTarget.asBean().getProviderType().equals(interceptionProxyType)) {
+            String msg = injectionTarget.asBean().isProducerMethod()
+                    ? "Type argument of InterceptionProxy must be equal to the return type of the producer method"
+                    : "Type argument of InterceptionProxy must be equal to the bean provider type";
+            errors.accept(new DefinitionException(msg));
         }
     }
 

@@ -52,7 +52,7 @@ public class JacocoConfig {
     /**
      * Name of the root node HTML report pages.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.application.name}")
     public Optional<String> title;
 
     /**

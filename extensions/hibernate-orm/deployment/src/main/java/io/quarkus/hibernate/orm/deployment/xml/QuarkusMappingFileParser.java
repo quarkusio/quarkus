@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import org.hibernate.boot.archive.internal.ArchiveHelper;
 import org.hibernate.boot.jaxb.spi.Binding;
+import org.hibernate.boot.jaxb.spi.JaxbBindableMappingDescriptor;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
@@ -62,7 +63,7 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
         }
 
         try (InputStream stream = url.openStream()) {
-            Binding<?> binding = (Binding<?>) binderAccess.bind(stream);
+            Binding<? extends JaxbBindableMappingDescriptor> binding = binderAccess.bind(stream);
             return Optional.of(RecordableXmlMapping.create(binding));
         } catch (RuntimeException | IOException e) {
             throw new IllegalStateException(

@@ -46,8 +46,8 @@ import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierR
 
 public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
 
+    protected final QuarkusPersistenceUnitDescriptor puDescriptor;
     protected final PrevalidatedQuarkusMetadata metadata;
-    protected final String persistenceUnitName;
     protected final StandardServiceRegistry standardServiceRegistry;
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
@@ -56,11 +56,12 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     protected final MultiTenancyStrategy multiTenancyStrategy;
 
     public FastBootEntityManagerFactoryBuilder(
-            PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
+            QuarkusPersistenceUnitDescriptor puDescriptor,
+            PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy) {
+        this.puDescriptor = puDescriptor;
         this.metadata = metadata;
-        this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
@@ -82,7 +83,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
+            populate(puDescriptor.getName(), optionsBuilder, standardServiceRegistry);
             return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
                     metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
@@ -130,7 +131,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     }
 
     private String getExceptionHeader() {
-        return "[PersistenceUnit: " + persistenceUnitName + "] ";
+        return "[PersistenceUnit: " + puDescriptor.getName() + "] ";
     }
 
     protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {

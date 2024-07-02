@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.TypedQueryReference;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
@@ -139,6 +140,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public Object getIdentifier(Object entity) {
+        return delegate.get().getIdentifier(entity);
+    }
+
+    @Override
     public String getTenantIdentifier() {
         return delegate.get().getTenantIdentifier();
     }
@@ -269,6 +275,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Deprecated(since = "6.0")
     public Query createQuery(CriteriaDelete deleteQuery) {
         return delegate.get().createQuery(deleteQuery);
+    }
+
+    @Override
+    public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+        return delegate.get().createQuery(typedQueryReference);
     }
 
     @Override

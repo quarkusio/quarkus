@@ -28,6 +28,10 @@
             <artifactId>jakarta.inject-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.dmlloyd</groupId>
+            <artifactId>loomania</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-os</artifactId>
         </dependency>

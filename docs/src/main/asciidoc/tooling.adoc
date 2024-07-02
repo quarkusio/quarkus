@@ -3,34 +3,241 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using our Tooling
+= How to use Quarkus tooling
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Explore the Quarkus developer toolchain which makes Quarkus development so fast and enjoyable.
 :topics: tooling
 
-Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
+Quarkus comes with a toolchain that enables developers to create, live reload, and deploy a Quarkus application. You can use https://pt.quarkus.io/guides/cli-tooling[Quarkus CLI] for all development stages. Additionally, there are plugins and extensions for all major IDEs.
 
-In this guide, we will explore:
+This guide shows you how to get started with Quarkus tooling. In this guide, we will explore:
 
-* how to use xref:maven-tooling.adoc[Maven] as a build tool
-* how to use xref:gradle-tooling.adoc[Gradle] as a build tool
-* how to use the xref:cli-tooling.adoc[CLI] for your toolchain
-* how to create and scaffold a new project
-* how to deal with extensions
-* how to enable live reload
-* how to develop your application in your IDE
-* how to compile your application natively
-* how to set up Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ IDEA]
+* How to create and scaffold your application;
+* How to deal with Quarkus extensions;
+* How to enable live reload;
+* How to compile your application natively;
+* How to develop your application in your IDE;
+* How to set up Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ IDEA]
 
 [[build-tool]]
 == Choosing your build tool
 
-Quarkus comes with a toolchain to help you at all development stages.
+Quarkus supports Gradle and Maven as build tools, and the Quarkus CLI is smart enough to identify and support all features for both build tools.
+
 You can use Maven or Gradle as build tool.
-And we offer a CLI that is convenient to use.
 
 * xref:maven-tooling.adoc[Maven]
 * xref:gradle-tooling.adoc[Gradle]
-* xref:cli-tooling.adoc[CLI]
-* xref:ide-tooling.adoc[IDE]
+
+[[prerequisites]]
+== 1. Prerequisites
+* Roughly 15 minutes
+* xref:cli-tooling.adoc[Quarkus CLI]
+* JDK 17+ installed with `JAVA_HOME` configured appropriately
+* An IDE
+* Apache Maven {maven-version} if you want to use it
+* Gradle {gradle-version} if you want to use it
+
+[[creating-a-new-project]]
+== 2. Creating a new project
+
+You can scaffold a new Quarkus project with Maven or Quarkus CLI, in this guide we will use Quarkus CLI for creating and scaffolding an application.
+
+To scaffold a Quarkus project with Quarkus CLI:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven project
+****
+[source,bash,subs=attributes+]
+----
+quarkus create app org.acme:code-with-quarkus-tooling --extension='resteasy-reactive'
+----
+
+NOTE: It is possible to create a Quarkus project using the Quarkus Maven Plugin as well. For detailed instructions on using the Quarkus Maven Plugin, please refer to the official guide xref:maven-tooling.adoc[here].
+****
+
+[role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle project
+****
+[source,bash,subs=attributes+]
+----
+quarkus create app org.acme:code-with-quarkus-tooling --gradle --extension='resteasy-reactive'
+----
+To create a Gradle project with Kotlin DSL use `--gradle-kotlin-dsl` instead `--gradle`.
+****
+
+This command generates a Quarkus project, that uses `resteasy-reactive` extension as dependency. Some Quarkus extension provides a https://pt.quarkus.io/blog/extension-codestarts-a-new-way-to-learn-and-discover-quarkus/[Codestart] to get a quickstart code for the extension. Refer to get a detailed 
+
+[[adding-extension]]
+== 3. Dealing with extensions
+
+Quarkus offers extensions for all types and tastes. With Quarkus tooling, you can list, create, and add extensions to solve your day-to-day tasks.
+
+=== 3.1 - List extensions
+Go to the application folder:
+
+[source,bash,subs=attributes+]
+----
+cd code-with-quarkus-tooling
+----
+
+Execute the following command to add an extension:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Quarkus CLI
+****
+[source,bash,subs=attributes+]
+----
+quarkus extension
+----
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+****
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:list-extensions
+----
+****
+
+[role="tertiary asciidoc-tabs-sync-gradle"]
+.Gradle
+****
+[source,bash,subs=attributes+]
+----
+./gradlew listExtensions
+----
+****
+
+TIP: If you would like to view all available extensions in a user-friendly manner, check out the extension page list link:https://quarkus.io/extensions/[here].
+
+
+=== 3.2 Add extension
+
+In this step, we will add a new extension to our project.
+
+Execute the following command too add extension:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Quarkus CLI
+****
+[source,bash,subs=attributes+]
+----
+quarkus ext add io.quarkus:quarkus-resteasy-reactive-jackson
+----
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+****
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-resteasy-reactive-jackson"
+----
+****
+
+[role="tertiary asciidoc-tabs-sync-gradle"]
+.Gradle
+****
+[source,bash,subs=attributes+]
+----
+./gradlew addExtension --extensions="io.quarkus:quarkus-resteasy-reactive-jackson"
+----
+****
+
+NOTE: Refer to detailed documentation about adding an extension link:https://quarkus.io/guides/cli-tooling#project-creation[here].
+
+== 4. Live reloading
+
+The live reloading feature enables you the supersonic way in the development mode.
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Quarkus CLI
+****
+[source,bash,subs=attributes+]
+----
+quarkus dev
+----
+****
+
+[role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+****
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:dev
+----
+****
+
+[role="tertiary asciidoc-tabs-sync-gradle"]
+.Gradle
+****
+[source,bash,subs=attributes+]
+----
+./gradlew --console=plain quarkusDev
+----
+****
+
+The output should looks something like this:
+
+[source,bash]
+----
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2024-03-19 09:25:05,872 INFO  [io.quarkus] (Quarkus Main Thread) quarkiwin 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.8.2) started in 5.169s. Listening on: http://localhost:8080
+
+2024-03-19 09:25:05,876 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+2024-03-19 09:25:05,877 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, resteasy-reactive, smallrye-context-propagation, vertx]
+
+--
+Tests paused
+Press [e] to edit command line args (currently ''), [r] to resume testing, [o] Toggle test output, [:] for the terminal, [h] for more options>
+----
+
+When you modify your project (Java code, properties, etc.), Quarkus automatically will update your project without the need to stop and start your application like other frameworks.
+
+You can some options to help your development.
+
+- `[e]` Allows you to edit the command line arguments;
+- `[r]` Allows you to work looking for the test suite, it is a great feature when you are working with a TDD (Test Driven Development) approach;
+- `[o]` Allows you to toggle the test output;
+- `[:]` Give you access in your terminal;
+- `[h]` Shows a list of options available on Quarkus Dev Mode;
+
+Below, you can see all options available when you type `h` for help:
+[source,bash]
+----
+== Continuous Testing
+
+[r] - Resume testing
+[o] - Toggle test output (enabled)
+
+== Dev Services
+
+[c] - Show Dev Services containers
+[g] - Follow Dev Services logs in the console (disabled)
+
+== Exceptions
+
+[x] - Open last exception (or project) in IDE (none)
+
+== HTTP
+
+[w] - Open the application in a browser
+[d] - Open the Dev UI in a browser
+
+== System
+
+[s] - Force restart
+[e] - Edits the command line parameters and restarts ()
+[i] - Toggle instrumentation based reload (disabled)
+[l] - Toggle live reload (enabled)
+[j] - Toggle log levels (INFO)
+[h] - Show this help
+[:] - Enter terminal mode
+[q] - Quit the application
+----

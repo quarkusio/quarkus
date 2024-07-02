@@ -496,7 +496,13 @@ public class AeshConsole extends QuarkusConsole {
         setPromptMessage("");
         connection.setAttributes(attributes);
         doingReadline = true;
+    }
 
+    @Override
+    public void doReadLineWithPrompt(String initialPrompt) {
+        setPromptMessage(initialPrompt);
+        connection.setAttributes(attributes);
+        doingReadline = true;
     }
 
     void rebalance() {

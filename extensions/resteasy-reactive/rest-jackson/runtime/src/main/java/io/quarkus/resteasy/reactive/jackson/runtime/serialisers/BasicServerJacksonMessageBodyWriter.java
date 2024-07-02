@@ -6,6 +6,7 @@ import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWrite
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
@@ -19,6 +20,10 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
+import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 
 public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
@@ -26,7 +31,24 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
 
     @Inject
     public BasicServerJacksonMessageBodyWriter(ObjectMapper mapper) {
+        registerGenerateSerializers(mapper);
         this.defaultWriter = createDefaultWriter(mapper);
+    }
+
+    private static void registerGenerateSerializers(ObjectMapper mapper) {
+        if (ResteasyReactiveServerJacksonRecorder.getGeneratedSerializer().isEmpty()) {
+            return;
+        }
+        SimpleModule module = new SimpleModule();
+        for (Class<? extends StdSerializer> serClass : ResteasyReactiveServerJacksonRecorder.getGeneratedSerializer()) {
+            try {
+                StdSerializer serializer = serClass.getConstructor().newInstance();
+                module.addSerializer(serializer.handledType(), serializer);
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        mapper.registerModule(module);
     }
 
     @Override

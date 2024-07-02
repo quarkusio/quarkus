@@ -83,6 +83,10 @@ public final class ClassNames {
             createConstant("org.hibernate.tuple.UpdateTimestampGeneration"),
             createConstant("org.hibernate.tuple.VmValueGeneration"));
 
+    public static final List<DotName> EXTRA_EVENT_LISTENERS = List.of(
+            createConstant("org.hibernate.event.spi.PreUpsertEventListener"),
+            createConstant("org.hibernate.event.spi.PostUpsertEventListener"));
+
     public static final List<DotName> PACKAGE_ANNOTATIONS = List.of(
             createConstant("org.hibernate.annotations.CollectionTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistration"),
@@ -244,6 +248,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.CompositeType"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistration"),
             createConstant("org.hibernate.annotations.CompositeTypeRegistrations"),
+            createConstant("org.hibernate.annotations.ConcreteProxy"),
             createConstant("org.hibernate.annotations.ConverterRegistration"),
             createConstant("org.hibernate.annotations.ConverterRegistrations"),
             createConstant("org.hibernate.annotations.CreationTimestamp"),

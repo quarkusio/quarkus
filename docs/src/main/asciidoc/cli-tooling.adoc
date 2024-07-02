@@ -3,6 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="-tooling"]
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
 include::_attributes.adoc[]
 :categories: tooling
@@ -64,7 +65,7 @@ If you want to use a specific version, you can directly target a version:
 [source,bash]
 ----
 # Create an alias in order to use a specific version
-jbang app install --name qs3.5.0 https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/3.5.0/quarkus-cli-3.5.0-runner.jar
+jbang app install --name qs3.8.5 https://repo1.maven.org/maven2/io/quarkus/quarkus-cli/3.8.5/quarkus-cli-3.8.5-runner.jar
 ----
 
 If you have built Quarkus locally, you can use that version:

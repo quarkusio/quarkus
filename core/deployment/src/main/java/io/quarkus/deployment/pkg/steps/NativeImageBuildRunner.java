@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
@@ -132,22 +133,28 @@ public abstract class NativeImageBuildRunner {
         log.info(String.join(" ", command).replace("$", "\\$"));
         Process process = null;
         try {
-            final ProcessBuilder processBuilder = new ProcessBuilder(command);
+            final ProcessBuilder processBuilder = new ProcessBuilder(command)
+                    .redirectErrorStream(true);
             if (workingDirectory != null) {
                 processBuilder.directory(workingDirectory);
             }
             process = processBuilder.start();
             final int exitCode = process.waitFor();
             if (exitCode != 0) {
+                final String out;
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    out = reader.lines().collect(Collectors.joining("\n"));
+                }
                 if (errorMsg != null) {
-                    log.error(errorMsg);
+                    log.error(errorMsg + " Output: " + out);
                 } else {
-                    log.debugf("Command: " + String.join(" ", command) + " failed with exit code " + exitCode);
+                    log.debugf(
+                            "Command: " + String.join(" ", command) + " failed with exit code " + exitCode + " Output: " + out);
                 }
             }
         } catch (IOException | InterruptedException e) {
             if (errorMsg != null) {
-                log.error(errorMsg);
+                log.errorf(e, errorMsg);
             } else {
                 log.debugf(e, "Command: " + String.join(" ", command) + " failed.");
             }
@@ -156,6 +163,16 @@ public abstract class NativeImageBuildRunner {
                 process.destroy();
             }
         }
+    }
+
+    /**
+     * Run {@code command} and log error if {@code errorMsg} is not null.
+     *
+     * @param command
+     * @param errorMsg
+     */
+    static void runCommand(String[] command, String errorMsg) {
+        runCommand(command, errorMsg, null);
     }
 
     static class Result {

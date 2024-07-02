@@ -145,9 +145,9 @@
             "os-name": "ubuntu-latest"
         },
         {
-            "category": "AWT, ImageIO and Java2D",
-            "timeout": 30,
-            "test-modules": "awt, no-awt",
+            "category": "AWT, ImageIO and Java2D, Packaging .so files",
+            "timeout": 40,
+            "test-modules": "awt, no-awt, awt-packaging",
             "os-name": "ubuntu-latest"
         }
     ]

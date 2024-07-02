@@ -815,6 +815,11 @@ public class NativeImageBuildStep {
                             "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
+                // only available in GraalVM 23.0+, we want a file with the list of built artifacts
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
+                    addExperimentalVMOption(nativeImageArgs, "-H:+GenerateBuildArtifactsFile");
+                }
+
                 // only available in GraalVM 23.1.0+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
                     if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {

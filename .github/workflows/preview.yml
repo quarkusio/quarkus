@@ -13,13 +13,16 @@ defaults:
 jobs:
   preview:
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
+    #permissions:
+    #  actions: read
       # this should be enough to maintain comments as commenting on pull requests is done through an issues API
-      issues: write
-      pull-requests: read
+    #  issues: write
+    #  pull-requests: read
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        with:
+          config: ${{ vars.PERMISSIONS_CONFIG }}
       - uses: actions/checkout@v4
         with:
           repository: quarkusio/quarkusio.github.io

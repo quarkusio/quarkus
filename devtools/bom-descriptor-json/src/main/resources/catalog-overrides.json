@@ -88,6 +88,16 @@
       }
     },
     {
+      "name": "Artificial Intelligence (AI)",
+      "id": "ai",
+      "description": "Help making Artificial Intgelligence (AI)-infused applications using Large Language Models and more",
+      "metadata": {
+        "pinned": [
+          "io.quarkiverse:quarkus-langchain4j"
+        ]
+      }
+    },
+    {
       "name": "Cloud",
       "id": "cloud",
       "description": "Useful for Cloud Native deployments platforms like Kubernetes and cloud providers",

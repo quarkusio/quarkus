@@ -1,4 +1,4 @@
-package io.quarkus.grpc.runtime.reflection;
+package io.quarkus.grpc.reflection.service;
 
 import static com.google.protobuf.Descriptors.FileDescriptor;
 

@@ -59,17 +59,18 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private Boolean rewriteDryRun;
 
     /**
-     * The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a
-     * project.
+     * Use custom io.quarkus:quarkus-update-recipes:LATEST coords (GAV) or just provide the version. This artifact should
+     * contain the
+     * base Quarkus update recipes to update a project.
      */
-    @Parameter(property = "updateRecipesVersion", required = false)
-    private String rewriteUpdateRecipesVersion;
+    @Parameter(property = "quarkusUpdateRecipes", required = false)
+    private String rewriteQuarkusUpdateRecipes;
 
     /**
-     * The list of artifacts containing rewrite recipes
+     * Specify a list of additional artifacts (GAV) containing rewrite recipes
      */
-    @Parameter(property = "additionalUpdateRecipeCoords", required = false)
-    private String rewriteAdditionalUpdateRecipeCoords;
+    @Parameter(property = "additionalUpdateRecipes", required = false)
+    private String rewriteAdditionalUpdateRecipes;
 
     /**
      * Target stream (e.g: 2.0)
@@ -119,11 +120,11 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);
         }
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteQuarkusUpdateRecipes != null) {
+            invoker.rewriteQuarkusUpdateRecipes(rewriteQuarkusUpdateRecipes);
         }
-        if (rewriteAdditionalUpdateRecipeCoords != null) {
-            invoker.rewriteAdditionalUpdateRecipeCoords(rewriteAdditionalUpdateRecipeCoords);
+        if (rewriteAdditionalUpdateRecipes != null) {
+            invoker.rewriteAdditionalUpdateRecipes(rewriteAdditionalUpdateRecipes);
         }
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);

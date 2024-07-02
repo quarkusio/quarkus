@@ -24,8 +24,8 @@ public class UpdateProject {
     public static final String NO_REWRITE = "quarkus.update-project.rewrite.disabled";
     public static final String TARGET_PLATFORM_VERSION = "quarkus.update-project.target-platform-version";
     public static final String REWRITE_PLUGIN_VERSION = "quarkus.update-project.rewrite.plugin-version";
-    public static final String REWRITE_UPDATE_RECIPES_VERSION = "quarkus.update-project.rewrite.update-recipes-version";
-    public static final String REWRITE_ADDITIONAL_UPDATE_RECIPE_COORDS = "quarkus.update-project.rewrite.additional-update-recipe-coords";
+    public static final String REWRITE_QUARKUS_UPDATE_RECIPES = "quarkus.update-project.rewrite.quarkus-update-recipes";
+    public static final String REWRITE_ADDITIONAL_UPDATE_RECIPES = "quarkus.update-project.rewrite.additional-update-recipes";
     public static final String REWRITE_DRY_RUN = "quarkus.update-project.rewrite.dry-run";
 
     private final QuarkusCommandInvocation invocation;
@@ -59,14 +59,14 @@ public class UpdateProject {
         return this;
     }
 
-    public UpdateProject rewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
-        invocation.setValue(REWRITE_UPDATE_RECIPES_VERSION,
-                requireNonNull(rewriteUpdateRecipesVersion, "rewriteUpdateRecipesVersion is required"));
+    public UpdateProject rewriteQuarkusUpdateRecipes(String rewriteQuarkusUpdateRecipes) {
+        invocation.setValue(REWRITE_QUARKUS_UPDATE_RECIPES,
+                requireNonNull(rewriteQuarkusUpdateRecipes, "rewriteQuarkusUpdateRecipes is required"));
         return this;
     }
 
-    public UpdateProject rewriteAdditionalUpdateRecipeCoords(String rewriteAdditionalUpdateRecipeCoords) {
-        invocation.setValue(REWRITE_ADDITIONAL_UPDATE_RECIPE_COORDS, rewriteAdditionalUpdateRecipeCoords);
+    public UpdateProject rewriteAdditionalUpdateRecipes(String rewriteAdditionalUpdateRecipes) {
+        invocation.setValue(REWRITE_ADDITIONAL_UPDATE_RECIPES, rewriteAdditionalUpdateRecipes);
         return this;
     }
 

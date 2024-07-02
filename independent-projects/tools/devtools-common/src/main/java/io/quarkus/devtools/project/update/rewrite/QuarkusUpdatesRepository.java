@@ -4,15 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,7 +25,7 @@ public final class QuarkusUpdatesRepository {
     private QuarkusUpdatesRepository() {
     }
 
-    private static final String QUARKUS_RECIPE_GA = "io.quarkus:quarkus-update-recipes";
+    private static final String QUARKUS_UPDATE_RECIPES_GA = "io.quarkus:quarkus-update-recipes";
     public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
     public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.46.0";
@@ -42,14 +34,15 @@ public final class QuarkusUpdatesRepository {
     public static final String PROP_REWRITE_GRADLE_PLUGIN_VERSION = "rewrite-gradle-plugin-version";
 
     public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver,
-            BuildTool buildTool,
-            String recipeVersion, String additionalUpdateRecipeCoords, String currentVersion,
+            BuildTool buildTool, String quarkusUpdateRecipes, String additionalUpdateRecipes, String currentVersion,
             String targetVersion, List<ExtensionUpdateInfo> topExtensionDependency) {
 
         List<String> gavs = new ArrayList<>();
-        gavs.add(QUARKUS_RECIPE_GA + ":" + recipeVersion);
-        if (additionalUpdateRecipeCoords != null) {
-            gavs.addAll(Arrays.stream(additionalUpdateRecipeCoords.split(",")).map(String::strip).toList());
+
+        gavs.add(quarkusUpdateRecipes.contains(":") ? quarkusUpdateRecipes
+                : QUARKUS_UPDATE_RECIPES_GA + ":" + quarkusUpdateRecipes);
+        if (additionalUpdateRecipes != null) {
+            gavs.addAll(Arrays.stream(additionalUpdateRecipes.split(",")).map(String::strip).toList());
         }
 
         List<String> artifacts = new ArrayList<>();

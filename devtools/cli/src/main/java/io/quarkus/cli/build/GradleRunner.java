@@ -170,11 +170,11 @@ public class GradleRunner implements BuildSystemRunner {
         if (rewrite.pluginVersion != null) {
             args.add("--rewritePluginVersion=" + rewrite.pluginVersion);
         }
-        if (rewrite.updateRecipesVersion != null) {
-            args.add("--updateRecipesVersion=" + rewrite.updateRecipesVersion);
+        if (rewrite.quarkusUpdateRecipes != null) {
+            args.add("--quarkusUpdateRecipes=" + rewrite.quarkusUpdateRecipes);
         }
-        if (rewrite.additionalUpdateRecipeCoords != null) {
-            args.add("--additionalUpdateRecipeCoords=" + rewrite.additionalUpdateRecipeCoords);
+        if (rewrite.additionalUpdateRecipes != null) {
+            args.add("--additionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
         if (rewrite.noRewrite) {
             args.add("--noRewrite");

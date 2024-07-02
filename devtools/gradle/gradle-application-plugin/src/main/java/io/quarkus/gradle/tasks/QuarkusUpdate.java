@@ -28,8 +28,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private String rewritePluginVersion = null;
 
-    private String rewriteUpdateRecipesVersion = null;
-    private String rewriteAdditionalUpdateRecipeCoords = null;
+    private String rewriteQuarkusUpdateRecipes = null;
+    private String rewriteAdditionalUpdateRecipes = null;
 
     @Input
     @Optional
@@ -78,25 +78,25 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     @Input
     @Optional
-    public String getRewriteUpdateRecipesVersion() {
-        return rewriteUpdateRecipesVersion;
+    public String getRewriteQuarkusUpdateRecipes() {
+        return rewriteQuarkusUpdateRecipes;
     }
 
-    @Option(description = " The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a project.", option = "updateRecipesVersion")
-    public QuarkusUpdate setRewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
-        this.rewriteUpdateRecipesVersion = rewriteUpdateRecipesVersion;
+    @Option(description = "Use a custom io.quarkus:quarkus-update-recipes:LATEST artifact (GAV) or just provide the version. This artifact should contain the base Quarkus update recipes to update a project.", option = "quarkusUpdateRecipes")
+    public QuarkusUpdate setRewriteQuarkusUpdateRecipes(String rewriteQuarkusUpdateRecipes) {
+        this.rewriteQuarkusUpdateRecipes = rewriteQuarkusUpdateRecipes;
         return this;
     }
 
     @Input
     @Optional
-    public String getRewriteAdditionalUpdateRecipeCoords() {
-        return rewriteAdditionalUpdateRecipeCoords;
+    public String getRewriteAdditionalUpdateRecipes() {
+        return rewriteAdditionalUpdateRecipes;
     }
 
-    @Option(description = " The additional artifacts to retrieve recipes from.", option = "additionalUpdateRecipeCoords")
-    public QuarkusUpdate setRewriteAdditionalUpdateRecipeCoords(String rewriteAdditionalUpdateRecipeCoords) {
-        this.rewriteAdditionalUpdateRecipeCoords = rewriteAdditionalUpdateRecipeCoords;
+    @Option(description = "Specify a list of additional artifacts (GAV) containing rewrite recipes.", option = "additionalUpdateRecipes")
+    public QuarkusUpdate setRewriteAdditionalUpdateRecipes(String rewriteAdditionalUpdateRecipes) {
+        this.rewriteAdditionalUpdateRecipes = rewriteAdditionalUpdateRecipes;
         return this;
     }
 
@@ -153,11 +153,11 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteQuarkusUpdateRecipes != null) {
+            invoker.rewriteQuarkusUpdateRecipes(rewriteQuarkusUpdateRecipes);
         }
-        if (rewriteAdditionalUpdateRecipeCoords != null) {
-            invoker.rewriteAdditionalUpdateRecipeCoords(rewriteAdditionalUpdateRecipeCoords);
+        if (rewriteAdditionalUpdateRecipes != null) {
+            invoker.rewriteAdditionalUpdateRecipes(rewriteAdditionalUpdateRecipes);
         }
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);

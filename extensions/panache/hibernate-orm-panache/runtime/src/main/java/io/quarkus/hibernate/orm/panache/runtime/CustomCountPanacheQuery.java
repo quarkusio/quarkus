@@ -14,7 +14,7 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
         super(new CommonPanacheQueryImpl<>(session, CommonPanacheQueryImpl.getQueryString(hibernateQuery),
                 null, null, paramsArrayOrMap) {
             {
-                this.countQuery = customCountQuery;
+                this.customCountQueryForSpring = customCountQuery;
             }
         });
     }

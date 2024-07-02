@@ -47,6 +47,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.panache.common.deployment.TypeBundle;
 import io.quarkus.spring.data.deployment.DotNames;
@@ -554,7 +555,7 @@ public class StockMethodsAdder {
                 try (MethodCreator findById = classCreator.getMethodCreator(getReferenceByIdDescriptor)) {
 
                     ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, actualMethodName,
-                            Object.class, AbstractJpaOperations.class, Class.class, Object.class),
+                            Object.class, AbstractManagedJpaOperations.class, Class.class, Object.class),
                             findById.readStaticField(operationsField),
                             findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()),
                             findById.getMethodParam(0));
@@ -755,7 +756,7 @@ public class StockMethodsAdder {
                             (DotNames.LONG.equals(idField.type().name()) || DotNames.INTEGER.equals(idField.type().name())
                                     || DotNames.STRING.equals(idField.type().name()))) {
                         MethodDescriptor method = ofMethod(RepositorySupport.class, "findByIds",
-                                List.class, AbstractJpaOperations.class, Class.class, String.class,
+                                List.class, AbstractManagedJpaOperations.class, Class.class, String.class,
                                 Iterable.class);
                         list = findAllById.invokeStaticMethod(method,
                                 findAllById.readStaticField(operationsField),
@@ -764,7 +765,7 @@ public class StockMethodsAdder {
                     } else {
                         list = findAllById.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds",
-                                        List.class, AbstractJpaOperations.class, Class.class, Iterable.class),
+                                        List.class, AbstractManagedJpaOperations.class, Class.class, Iterable.class),
                                 findAllById.readStaticField(operationsField),
                                 entityClass,
                                 findAllById.getMethodParam(0));
@@ -965,7 +966,7 @@ public class StockMethodsAdder {
                     ResultHandle entities = deleteAll.getMethodParam(0);
                     deleteAll.invokeStaticMethod(
                             MethodDescriptor.ofMethod(RepositorySupport.class, "deleteAll",
-                                    void.class, AbstractJpaOperations.class, Iterable.class),
+                                    void.class, AbstractManagedJpaOperations.class, Iterable.class),
                             deleteAll.readStaticField(operationsField),
                             entities);
                     deleteAll.returnValue(null);

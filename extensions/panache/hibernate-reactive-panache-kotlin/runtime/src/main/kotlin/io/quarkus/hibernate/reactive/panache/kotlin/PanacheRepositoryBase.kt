@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.kotlin
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.reactive.panache.common.runtime.SessionOperations
 import io.quarkus.hibernate.reactive.panache.kotlin.runtime.KotlinJpaOperations.Companion.INSTANCE
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
@@ -27,7 +27,7 @@ interface PanacheRepositoryBase<Entity : Any, Id : Any> {
      *
      * @return the current [Mutiny.Session]
      */
-    fun getSession(): Uni<Mutiny.Session> = AbstractJpaOperations.getSession()
+    fun getSession(): Uni<Mutiny.Session> = SessionOperations.getSession()
 
     @CheckReturnValue
     fun persist(entity: Entity): Uni<Entity> = INSTANCE.persist(entity).map { entity }

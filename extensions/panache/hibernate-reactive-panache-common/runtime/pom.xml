@@ -43,6 +43,20 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <!-- This is only for hibernate-panache to auto-include this extension if the HR extension is present -->
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <dependencyCondition>
+                                <artifact>io.quarkus:quarkus-hibernate-reactive</artifact>
+                            </dependencyCondition>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

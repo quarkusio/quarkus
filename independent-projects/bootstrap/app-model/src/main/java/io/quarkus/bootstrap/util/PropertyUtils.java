@@ -61,12 +61,13 @@ public class PropertyUtils {
      * {@link Properties#store(Writer, String)} format but skipping the timestamp and comments.
      *
      * @param properties properties to store
+     * @param leadingComment a leading comment, it will be prepended by an hash
      * @param file target file
      * @throws IOException in case of a failure
      */
-    public static void store(Properties properties, Path file) throws IOException {
+    public static void store(Properties properties, Path file, String leadingComment) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
-            store(properties, writer);
+            store(properties, writer, leadingComment);
         }
     }
 
@@ -75,11 +76,19 @@ public class PropertyUtils {
      * {@link Properties#store(Writer, String)} format but skipping the timestamp and comments.
      *
      * @param properties properties to store
+     * @param leadingComment a leading comment, it will be prepended by an hash
      * @param writer target writer
      * @throws IOException in case of a failure
      */
-    public static void store(Properties properties, Writer writer) throws IOException {
+    public static void store(Properties properties, Writer writer, String leadingComment) throws IOException {
         final List<String> names = new ArrayList<>(properties.size());
+
+        if (leadingComment != null && !leadingComment.isBlank()) {
+            writer.write("# ");
+            writer.write(leadingComment);
+            writer.write(System.lineSeparator());
+        }
+
         for (var name : properties.keySet()) {
             names.add(name == null ? null : name.toString());
         }
@@ -97,14 +106,56 @@ public class PropertyUtils {
      * @param file target file
      * @throws IOException in case of a failure
      */
-    public static void store(Map<String, String> properties, Path file) throws IOException {
+    public static void store(Map<String, String> properties, Path file, String leadingComment) throws IOException {
         final List<String> names = new ArrayList<>(properties.keySet());
         Collections.sort(names);
         try (BufferedWriter writer = Files.newBufferedWriter(file)) {
+            if (leadingComment != null && !leadingComment.isBlank()) {
+                writer.write("# ");
+                writer.write(leadingComment);
+                writer.write(System.lineSeparator());
+            }
+
             for (String name : names) {
                 store(writer, name, properties.get(name));
             }
         }
+    }
+
+    /**
+     * Stores properties into a file sorting the keys alphabetically and following
+     * {@link Properties#store(Writer, String)} format but skipping the timestamp and comments.
+     *
+     * @param properties properties to store
+     * @param file target file
+     * @throws IOException in case of a failure
+     */
+    public static void store(Properties properties, Path file) throws IOException {
+        store(properties, file, null);
+    }
+
+    /**
+     * Stores properties into a file sorting the keys alphabetically and following
+     * {@link Properties#store(Writer, String)} format but skipping the timestamp and comments.
+     *
+     * @param properties properties to store
+     * @param writer target writer
+     * @throws IOException in case of a failure
+     */
+    public static void store(Properties properties, Writer writer) throws IOException {
+        store(properties, writer, null);
+    }
+
+    /**
+     * Stores a map of strings into a file sorting the keys alphabetically and following
+     * {@link Properties#store(Writer, String)} format but skipping the timestamp and comments.
+     *
+     * @param properties properties to store
+     * @param file target file
+     * @throws IOException in case of a failure
+     */
+    public static void store(Map<String, String> properties, Path file) throws IOException {
+        store(properties, file, null);
     }
 
     /**

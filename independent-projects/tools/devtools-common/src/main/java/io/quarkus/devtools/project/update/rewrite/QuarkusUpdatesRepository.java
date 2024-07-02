@@ -41,9 +41,10 @@ public final class QuarkusUpdatesRepository {
 
     public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver,
             BuildTool buildTool,
-            String recipeVersion, String currentVersion,
+            String recipeCoords, String currentVersion,
             String targetVersion, List<ExtensionUpdateInfo> topExtensionDependency) {
-        final String gav = QUARKUS_RECIPE_GA + ":" + recipeVersion;
+
+        final String gav = recipeCoords.contains(":") ? recipeCoords : QUARKUS_RECIPE_GA + ":" + recipeCoords;
 
         Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
         recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });

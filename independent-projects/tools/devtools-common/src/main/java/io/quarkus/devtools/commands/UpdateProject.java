@@ -24,7 +24,7 @@ public class UpdateProject {
     public static final String NO_REWRITE = "quarkus.update-project.rewrite.disabled";
     public static final String TARGET_PLATFORM_VERSION = "quarkus.update-project.target-platform-version";
     public static final String REWRITE_PLUGIN_VERSION = "quarkus.update-project.rewrite.plugin-version";
-    public static final String REWRITE_UPDATE_RECIPES_VERSION = "quarkus.update-project.rewrite.update-recipes-version";
+    public static final String REWRITE_UPDATE_RECIPES_COORDS = "quarkus.update-project.rewrite.update-recipes-coords";
     public static final String REWRITE_DRY_RUN = "quarkus.update-project.rewrite.dry-run";
 
     private final QuarkusCommandInvocation invocation;
@@ -58,9 +58,9 @@ public class UpdateProject {
         return this;
     }
 
-    public UpdateProject rewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
-        invocation.setValue(REWRITE_UPDATE_RECIPES_VERSION,
-                requireNonNull(rewriteUpdateRecipesVersion, "rewriteUpdateRecipesVersion is required"));
+    public UpdateProject rewriteUpdateRecipesCoords(String rewriteUpdateRecipesCoords) {
+        invocation.setValue(REWRITE_UPDATE_RECIPES_COORDS,
+                requireNonNull(rewriteUpdateRecipesCoords, "rewriteUpdateRecipesCoords is required"));
         return this;
     }
 

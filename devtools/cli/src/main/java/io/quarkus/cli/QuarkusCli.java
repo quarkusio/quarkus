@@ -185,6 +185,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             return Optional.empty();
         } catch (UnmatchedArgumentException e) {
             return Optional.of(args[0]);
+        } catch (Exception e) {
+            // For any other exceptions (e.g. MissingParameterException), we should just ignore.
+            // The problem is not that the command is missing but that the options might not be adequate.
+            // This will be handled by Picocli at a later step.
+            return Optional.empty();
         }
     }
 

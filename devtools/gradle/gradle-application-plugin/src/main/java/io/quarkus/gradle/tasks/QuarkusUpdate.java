@@ -28,7 +28,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     private String rewritePluginVersion = null;
 
-    private String rewriteUpdateRecipesVersion = null;
+    private String rewriteUpdateRecipesCoords = null;
 
     @Input
     @Optional
@@ -77,13 +77,13 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     @Input
     @Optional
-    public String getRewriteUpdateRecipesVersion() {
-        return rewriteUpdateRecipesVersion;
+    public String getRewriteUpdateRecipesCoords() {
+        return rewriteUpdateRecipesCoords;
     }
 
-    @Option(description = " The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a project.", option = "updateRecipesVersion")
-    public QuarkusUpdate setRewriteUpdateRecipesVersion(String rewriteUpdateRecipesVersion) {
-        this.rewriteUpdateRecipesVersion = rewriteUpdateRecipesVersion;
+    @Option(description = "Use a custom quarkus-update-recipes coords (GAV) or just version. This artifact contains the base recipes used by this tool to update a project.", option = "updateRecipesCoords")
+    public QuarkusUpdate setRewriteUpdateRecipesCoords(String rewriteUpdateRecipesCoords) {
+        this.rewriteUpdateRecipesCoords = rewriteUpdateRecipesCoords;
         return this;
     }
 
@@ -140,8 +140,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteUpdateRecipesCoords != null) {
+            invoker.rewriteUpdateRecipesCoords(rewriteUpdateRecipesCoords);
         }
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);

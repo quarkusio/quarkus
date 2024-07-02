@@ -13,8 +13,8 @@ public class RewriteGroup {
     public boolean dryRun = false;
 
     @CommandLine.Option(order = 2, names = {
-            "--update-recipes-version" }, description = "Use a custom io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a project.")
-    public String updateRecipesVersion;
+            "--update-recipes-coords" }, description = "Use a custom quarkus-update-recipes coords (GAV) or just version. This artifact should contains the base recipes used by this tool to update a project.")
+    public String updateRecipesCoords;
 
     @CommandLine.Option(order = 3, names = {
             "--rewrite-plugin-version" }, description = "Use a custom OpenRewrite plugin version.")

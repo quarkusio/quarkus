@@ -59,11 +59,11 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private Boolean rewriteDryRun;
 
     /**
-     * The io.quarkus:quarkus-update-recipes version. This artifact contains the base recipes used by this tool to update a
-     * project.
+     * Use a custom quarkus-update-recipes coords (GAV) or just version. This artifact contains the base recipes used by this
+     * tool to update a project.
      */
-    @Parameter(property = "updateRecipesVersion", required = false)
-    private String rewriteUpdateRecipesVersion;
+    @Parameter(property = "updateRecipesCoords", required = false)
+    private String rewriteUpdateRecipesCoords;
 
     /**
      * Target stream (e.g: 2.0)
@@ -113,8 +113,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);
         }
-        if (rewriteUpdateRecipesVersion != null) {
-            invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        if (rewriteUpdateRecipesCoords != null) {
+            invoker.rewriteUpdateRecipesCoords(rewriteUpdateRecipesCoords);
         }
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);

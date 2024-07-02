@@ -1135,15 +1135,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         parameterTypes[count++], relaxedValidation);
             }
-            if (nonDefaultConstructorHolder.constructor.getParameterCount() > 0) {
-                Parameter[] parameters = nonDefaultConstructorHolder.constructor.getParameters();
-                for (int i = 0; i < parameters.length; ++i) {
-                    if (parameters[i].isNamePresent()) {
-                        String name = parameters[i].getName();
-                        constructorParamNameMap.put(name, i);
-                    }
-                }
-            }
+            extractConstructorParameterNames(nonDefaultConstructorHolder.constructor, constructorParamNameMap);
         } else if (classesToUseRecordableConstructor.contains(param.getClass())) {
             Constructor<?> current = null;
             int count = 0;
@@ -1151,24 +1143,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 if (current == null || current.getParameterCount() < c.getParameterCount()) {
                     current = c;
                     count = 0;
-                } else if (current != null && current.getParameterCount() == c.getParameterCount()) {
+                } else if (current.getParameterCount() == c.getParameterCount()) {
                     count++;
                 }
             }
             if (current == null || count > 0) {
                 throw new RuntimeException("Unable to determine the recordable constructor to use for " + param.getClass());
             }
+
             nonDefaultConstructorHolder = new NonDefaultConstructorHolder(current, null);
             nonDefaultConstructorHandles = new DeferredParameter[current.getParameterCount()];
-            if (current.getParameterCount() > 0) {
-                Parameter[] parameters = current.getParameters();
-                for (int i = 0; i < parameters.length; ++i) {
-                    if (parameters[i].isNamePresent()) {
-                        String name = parameters[i].getName();
-                        constructorParamNameMap.put(name, i);
-                    }
-                }
-            }
+            extractConstructorParameterNames(current, constructorParamNameMap);
         } else {
             Constructor<?>[] ctors = param.getClass().getConstructors();
             Constructor<?> selectedCtor = null;
@@ -1184,16 +1169,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
             if (selectedCtor != null) {
                 nonDefaultConstructorHolder = new NonDefaultConstructorHolder(selectedCtor, null);
-                nonDefaultConstructorHandles = new DeferredParameter[selectedCtor.getParameterCount()];
+                final var parameterCount = selectedCtor.getParameterCount();
+                nonDefaultConstructorHandles = new DeferredParameter[parameterCount];
+                extractConstructorParameterNames(selectedCtor, constructorParamNameMap);
 
-                if (selectedCtor.getParameterCount() > 0) {
-                    Parameter[] ctorParameters = selectedCtor.getParameters();
-                    for (int i = 0; i < ctorParameters.length; ++i) {
-                        if (ctorParameters[i].isNamePresent()) {
-                            String name = ctorParameters[i].getName();
-                            constructorParamNameMap.put(name, i);
-                        }
-                    }
+                if (constructorParamNameMap.size() != parameterCount) {
+                    throw new IllegalArgumentException("Couldn't extract all parameters information for constructor "
+                            + selectedCtor + " for type " + expectedType);
                 }
             }
         }
@@ -1358,8 +1340,15 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             }
                         }
                     }
-                    DeferredParameter val = loadObjectInstance(propertyValue, existing,
-                            i.getPropertyType(), relaxedValidation);
+                    DeferredParameter val;
+                    try {
+                        val = loadObjectInstance(propertyValue, existing,
+                                i.getPropertyType(), relaxedValidation);
+                    } catch (Exception e) {
+                        throw new RuntimeException(
+                                "Couldn't load object of type " + i.propertyType.getName() + " for property '" + i.getName()
+                                        + "' on object '" + param + "'.");
+                    }
                     if (ctorParamIndex != null) {
                         nonDefaultConstructorHandles[ctorParamIndex] = val;
                         ctorSetupSteps.add(new SerializationStep() {
@@ -1458,7 +1447,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         NonDefaultConstructorHolder finalNonDefaultConstructorHolder = nonDefaultConstructorHolder;
         DeferredParameter[] finalCtorHandles = nonDefaultConstructorHandles;
 
-        //create a deferred value to represet the object itself. This allows the creation to be split
+        //create a deferred value to represent the object itself. This allows the creation to be split
         //over multiple methods, which is important if this is a large object
         DeferredArrayStoreParameter objectValue = new DeferredArrayStoreParameter(param, expectedType) {
             @Override
@@ -1538,6 +1527,24 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return context.loadDeferred(objectValue);
             }
         };
+    }
+
+    private static List<Parameter> extractConstructorParameterNames(Constructor<?> selectedCtor,
+            Map<String, Integer> constructorParamNameMap) {
+        List<Parameter> unnamed = Collections.emptyList();
+        if (selectedCtor.getParameterCount() > 0) {
+            Parameter[] ctorParameters = selectedCtor.getParameters();
+            unnamed = new ArrayList<>(ctorParameters.length);
+            for (int i = 0; i < ctorParameters.length; ++i) {
+                if (ctorParameters[i].isNamePresent()) {
+                    String name = ctorParameters[i].getName();
+                    constructorParamNameMap.put(name, i);
+                } else {
+                    unnamed.add(ctorParameters[i]);
+                }
+            }
+        }
+        return unnamed;
     }
 
     /**

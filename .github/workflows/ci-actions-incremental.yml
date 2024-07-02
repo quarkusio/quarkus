@@ -106,7 +106,9 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
-      m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
+      quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
+      quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
     steps:
       - name: Gradle Enterprise environment
         run: |
@@ -125,17 +127,20 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Generate .m2 cache key
-        id: m2-cache-key
+      - name: Generate cache key
+        id: cache-key
         run: |
-          echo "key=m2-cache-$(/bin/date -u "+%Y-%U")" >> $GITHUB_OUTPUT
+          CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
+          echo "m2-cache-key=m2-cache-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
+          echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
       - name: Cache Maven Repository
         id: cache-maven
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
-          key: ${{ steps.m2-cache-key.outputs.key }}
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -1105,7 +1110,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
-          key: ${{ runner.os }}-quarkus-metadata
+          key: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key }}
+          # The key is restored from default branch if not found, but still branch specific to override the default after first run
+          restore-keys: ${{ needs.build-jdk17.outputs.quarkus-metadata-cache-key-default }}
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}

@@ -769,7 +769,7 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
-            ClearCache.clearAnnotationCache();
+            ClearCache.clearCaches();
             TestConfigUtil.cleanUp();
         }
         if (records != null) {

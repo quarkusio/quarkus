@@ -38,7 +38,7 @@ public class AccessTokenAnnotationTest {
                     .addAsResource(
                             new StringAsset(
                                     """
-                                            quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+                                            quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test}/realms/quarkus
                                             quarkus.oidc.client-id=quarkus-app
                                             quarkus.oidc.credentials.secret=secret
 

@@ -2,6 +2,7 @@ package io.quarkus.oidc.token.propagation.reactive;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -39,7 +41,7 @@ public class AccessTokenAnnotationTest {
                     .addAsResource(
                             new StringAsset(
                                     """
-                                            quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+                                            quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test}/realms/quarkus
                                             quarkus.oidc.client-id=quarkus-app
                                             quarkus.oidc.credentials.secret=secret
 
@@ -143,6 +145,22 @@ public class AccessTokenAnnotationTest {
 
         @Inject
         JsonWebToken jwt;
+
+        @ConfigProperty(name = "quarkus.oidc.auth-server-url")
+        String authServerUrl;
+
+        @ConfigProperty(name = "quarkus.oidc-client.auth-server-url")
+        String clientAuthServerUrl;
+
+        @ConfigProperty(name = "keycloak.url")
+        String keycloakUrl;
+
+        @PostConstruct
+        void init() {
+            System.out.println("keycloakUrl: " + keycloakUrl);
+            System.out.println("authServerUrl: " + authServerUrl);
+            System.out.println("clientAuthServerUrl: " + clientAuthServerUrl);
+        }
 
         @GET
         @Path("token-propagation")

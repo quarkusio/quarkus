@@ -169,7 +169,7 @@ public class DevServicesElasticsearchProcessor {
 
         for (String hostsConfigProperty : buildItemConfig.hostsConfigProperties) {
             // Check if elasticsearch hosts property is set
-            if (ConfigUtils.isPropertyPresent(hostsConfigProperty)) {
+            if (ConfigUtils.isPropertyNonEmpty(hostsConfigProperty)) {
                 log.debugf("Not starting Dev Services for Elasticsearch, the %s property is configured.", hostsConfigProperty);
                 return null;
             }

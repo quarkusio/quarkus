@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.arc.properties.UnlessBuildProperty;
 import jakarta.enterprise.inject.Instance;
 
 /**
@@ -53,6 +55,9 @@ import jakarta.enterprise.inject.Instance;
  * </pre>
  *
  * @see Instance
+ * @see LookupIfProperty
+ * @see IfBuildProperty
+ * @see UnlessBuildProperty
  */
 @Repeatable(LookupUnlessProperty.List.class)
 @Retention(RetentionPolicy.RUNTIME)

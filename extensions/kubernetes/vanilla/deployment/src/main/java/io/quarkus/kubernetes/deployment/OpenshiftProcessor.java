@@ -263,6 +263,11 @@ public class OpenshiftProcessor {
                 result.add(new DecoratorBuildItem(OPENSHIFT,
                         new AddAnnotationDecorator(name, annotation.getKey(), annotation.getValue(), ROUTE)));
             }
+
+            for (Map.Entry<String, String> label : config.route.labels.entrySet()) {
+                result.add(new DecoratorBuildItem(OPENSHIFT,
+                        new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE)));
+            }
         }
 
         if (config.getReplicas() != 1) {

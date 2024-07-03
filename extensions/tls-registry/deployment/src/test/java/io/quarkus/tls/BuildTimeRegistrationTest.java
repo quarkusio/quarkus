@@ -18,9 +18,9 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-registration", password = "password", formats = Format.PKCS12)

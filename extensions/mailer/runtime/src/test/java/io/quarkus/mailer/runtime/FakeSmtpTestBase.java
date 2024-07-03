@@ -14,10 +14,10 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 import io.vertx.mutiny.core.Vertx;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "mailer-certs", formats = Format.PKCS12, password = "password") })

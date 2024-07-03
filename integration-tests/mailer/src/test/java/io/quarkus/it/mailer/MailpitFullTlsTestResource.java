@@ -13,9 +13,9 @@ import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.restassured.RestAssured;
-import me.escoffier.certs.CertificateGenerator;
-import me.escoffier.certs.CertificateRequest;
-import me.escoffier.certs.Format;
+import io.smallrye.certs.CertificateGenerator;
+import io.smallrye.certs.CertificateRequest;
+import io.smallrye.certs.Format;
 
 public class MailpitFullTlsTestResource implements QuarkusTestResourceLifecycleManager {
 

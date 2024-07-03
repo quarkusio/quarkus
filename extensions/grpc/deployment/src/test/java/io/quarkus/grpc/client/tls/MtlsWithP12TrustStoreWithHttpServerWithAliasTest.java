@@ -13,10 +13,10 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Alias;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "grpc-alias", password = "password", formats = { Format.JKS, Format.PEM,

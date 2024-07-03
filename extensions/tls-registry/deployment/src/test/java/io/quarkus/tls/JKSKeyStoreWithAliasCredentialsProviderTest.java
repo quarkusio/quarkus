@@ -18,10 +18,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Alias;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-credentials-provider-alias", password = "secret123!", formats = { Format.JKS,

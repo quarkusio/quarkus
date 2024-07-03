@@ -13,14 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-alias-p12", password = "password", formats = { Format.PKCS12 }, aliases = {
-                @me.escoffier.certs.junit5.Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
-                @me.escoffier.certs.junit5.Alias(name = "alias2", password = "alias-password-2", subjectAlternativeNames = "dns:example.com") })
+                @Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
+                @Alias(name = "alias2", password = "alias-password-2", subjectAlternativeNames = "dns:example.com") })
 })
 public class P12KeyStoreWithWrongAliasPasswordTest {
 

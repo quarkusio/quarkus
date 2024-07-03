@@ -249,13 +249,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             periodicTestCompile();
                         }
                     };
+                    // monitor .env as it can impact test execution
+                    testClassChangeWatcher.watchFiles(Path.of(context.getApplicationRoot().getProjectDirectory()),
+                            List.of(Path.of(".env")),
+                            callback);
                     Set<Path> nonExistent = new HashSet<>();
                     for (DevModeContext.ModuleInfo module : context.getAllModules()) {
                         for (Path path : module.getMain().getSourcePaths()) {
-                            testClassChangeWatcher.watchPath(path.toFile(), callback);
+                            testClassChangeWatcher.watchDirectoryRecursively(path, callback);
                         }
                         for (Path path : module.getMain().getResourcePaths()) {
-                            testClassChangeWatcher.watchPath(path.toFile(), callback);
+                            testClassChangeWatcher.watchDirectoryRecursively(path, callback);
                         }
                     }
                     for (DevModeContext.ModuleInfo module : context.getAllModules()) {
@@ -264,14 +268,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 if (!Files.isDirectory(path)) {
                                     nonExistent.add(path);
                                 } else {
-                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                    testClassChangeWatcher.watchDirectoryRecursively(path, callback);
                                 }
                             }
                             for (Path path : module.getTest().get().getResourcePaths()) {
                                 if (!Files.isDirectory(path)) {
                                     nonExistent.add(path);
                                 } else {
-                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                    testClassChangeWatcher.watchDirectoryRecursively(path, callback);
                                 }
                             }
                         }
@@ -287,7 +291,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                         Path i = iterator.next();
                                         if (Files.isDirectory(i)) {
                                             iterator.remove();
-                                            testClassChangeWatcher.watchPath(i.toFile(), callback);
+                                            testClassChangeWatcher.watchDirectoryRecursively(i, callback);
                                             added = true;
                                         }
 

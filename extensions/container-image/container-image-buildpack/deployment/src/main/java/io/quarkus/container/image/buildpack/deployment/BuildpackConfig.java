@@ -14,13 +14,13 @@ public class BuildpackConfig {
     /**
      * The buildpacks builder image to use when building the project in jvm mode.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "paketocommunity/builder-ubi-base")
     public Optional<String> jvmBuilderImage;
 
     /**
      * The buildpacks builder image to use when building the project in jvm mode.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "paketocommunity/builder-ubi-base")
     public Optional<String> nativeBuilderImage;
 
     /**
@@ -43,6 +43,12 @@ public class BuildpackConfig {
      */
     @ConfigItem(defaultValue = "300")
     public Integer pullTimeoutSeconds;
+
+    /**
+     * Max pull timeout for builder/run images, in seconds
+     */
+    @ConfigItem(defaultValue = "15")
+    public Integer pullTimeoutIncreaseSeconds;
 
     /**
      * DOCKER_HOST value to use.

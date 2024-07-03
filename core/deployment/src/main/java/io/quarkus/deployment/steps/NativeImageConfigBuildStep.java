@@ -102,6 +102,7 @@ class NativeImageConfigBuildStep {
         // so we reinitialize this to re-compute the field (and other related fields) during native application's
         // runtime
         runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("org.wildfly.common.net.HostName"));
+        runtimeReInitClass.produce(new RuntimeReinitializedClassBuildItem("io.smallrye.common.net.HostName"));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

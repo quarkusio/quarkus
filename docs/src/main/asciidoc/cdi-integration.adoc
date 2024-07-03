@@ -76,7 +76,7 @@ IMPORTANT: It is not possible to conditionally enable/disable additional beans v
 ----
 @BuildStep
 AdditionalBeanBuildItem additionalBeans() {
-     return new AdditionalBeanBuildItem(SmallRyeHealthReporter.class, HealthServlet.class)); <1>
+     return new AdditionalBeanBuildItem(SmallRyeHealthReporter.class, HealthServlet.class); <1>
 }
 ----
 <1> `AdditionalBeanBuildItem.Builder` can be used for more complex use cases.

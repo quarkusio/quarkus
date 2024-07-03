@@ -66,6 +66,12 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private String rewriteUpdateRecipesVersion;
 
     /**
+     * The list of artifacts containing rewrite recipes
+     */
+    @Parameter(property = "additionalUpdateRecipeCoords", required = false)
+    private String rewriteAdditionalUpdateRecipeCoords;
+
+    /**
      * Target stream (e.g: 2.0)
      */
     @Parameter(property = "stream", required = false)
@@ -115,6 +121,9 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         }
         if (rewriteUpdateRecipesVersion != null) {
             invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        }
+        if (rewriteAdditionalUpdateRecipeCoords != null) {
+            invoker.rewriteAdditionalUpdateRecipeCoords(rewriteAdditionalUpdateRecipeCoords);
         }
         invoker.rewriteDryRun(rewriteDryRun);
         invoker.noRewrite(noRewrite);

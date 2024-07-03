@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,50 +43,75 @@ public final class QuarkusUpdatesRepository {
 
     public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver,
             BuildTool buildTool,
-            String recipeVersion, String currentVersion,
+            String recipeVersion, String additionalUpdateRecipeCoords, String currentVersion,
             String targetVersion, List<ExtensionUpdateInfo> topExtensionDependency) {
-        final String gav = QUARKUS_RECIPE_GA + ":" + recipeVersion;
 
-        Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
-        recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });
-        for (ExtensionUpdateInfo dep : topExtensionDependency) {
-            recipeDirectoryNames.put(
-                    toKey(dep),
-                    new String[] { dep.getCurrentDep().getVersion(), dep.getRecommendedDependency().getVersion() });
+        List<String> gavs = new ArrayList<>();
+        gavs.add(QUARKUS_RECIPE_GA + ":" + recipeVersion);
+        if (additionalUpdateRecipeCoords != null) {
+            gavs.addAll(Arrays.stream(additionalUpdateRecipeCoords.split(",")).map(String::strip).toList());
         }
 
-        try {
-            final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
-            final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
-                    artifact.getFile());
-            final Map<String, String> recipes = fetchUpdateRecipes(resourceLoader, "quarkus-updates", recipeDirectoryNames);
-            final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
-                final Properties properties = new Properties();
-                final Path propPath = p.resolve("recipes.properties");
-                if (Files.isRegularFile(propPath)) {
-                    try (final InputStream inStream = Files.newInputStream(propPath)) {
-                        properties.load(inStream);
+        List<String> artifacts = new ArrayList<>();
+        Map<String, String> recipes = new HashMap<>();
+        String propRewritePluginVersion = null;
+
+        for (String gav : gavs) {
+
+            Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
+            recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });
+            for (ExtensionUpdateInfo dep : topExtensionDependency) {
+                recipeDirectoryNames.put(
+                        toKey(dep),
+                        new String[] { dep.getCurrentDep().getVersion(), dep.getRecommendedDependency().getVersion() });
+            }
+
+            try {
+                final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
+                String resolvedGAV = artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
+                artifacts.add(resolvedGAV);
+                final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
+                        artifact.getFile());
+                Map<String, String> newRecipes = fetchUpdateRecipes(resourceLoader, "quarkus-updates", recipeDirectoryNames);
+                recipes.putAll(newRecipes);
+                final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
+                    final Properties properties = new Properties();
+                    final Path propPath = p.resolve("recipes.properties");
+                    if (Files.isRegularFile(propPath)) {
+                        try (final InputStream inStream = Files.newInputStream(propPath)) {
+                            properties.load(inStream);
+                        }
                     }
-                }
-                return properties;
-            });
-            final String propRewritePluginVersion = getPropRewritePluginVersion(props, buildTool);
+                    return properties;
+                });
 
-            log.info(String.format(
-                    "Resolved io.quarkus:quarkus-updates-recipes:%s with %s recipe(s) to update from %s to %s (initially made for OpenRewrite %s plugin version: %s) ",
-                    artifact.getVersion(),
-                    recipes.size(),
-                    currentVersion,
-                    targetVersion,
-                    buildTool,
-                    propRewritePluginVersion));
-            return new FetchResult(artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion(),
-                    new ArrayList<>(recipes.values()), propRewritePluginVersion);
-        } catch (BootstrapMavenException e) {
-            throw new RuntimeException("Failed to resolve artifact: " + gav, e);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load recipes in artifact: " + gav, e);
+                final String pluginVersion = getPropRewritePluginVersion(props, buildTool);
+                if (propRewritePluginVersion == null) {
+                    propRewritePluginVersion = pluginVersion;
+                } else if (!propRewritePluginVersion.equals(pluginVersion)) {
+                    throw new RuntimeException(
+                            "quarkus update artifacts require multiple rewrite plugin versions: " + propRewritePluginVersion
+                                    + " and " + pluginVersion);
+                }
+
+                log.info(String.format(
+                        "Resolved %s with %s recipe(s) to update from %s to %s (initially made for OpenRewrite %s plugin version: %s) ",
+                        gav,
+                        recipes.size(),
+                        currentVersion,
+                        targetVersion,
+                        buildTool,
+                        propRewritePluginVersion));
+
+            } catch (BootstrapMavenException e) {
+                throw new RuntimeException("Failed to resolve artifact: " + gav, e);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to load recipes in artifact: " + gav, e);
+            }
         }
+
+        return new FetchResult(String.join(",", artifacts),
+                new ArrayList<>(recipes.values()), propRewritePluginVersion);
     }
 
     private static String getPropRewritePluginVersion(Properties props, BuildTool buildTool) {

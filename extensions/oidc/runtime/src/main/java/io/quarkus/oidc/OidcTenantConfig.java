@@ -94,8 +94,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * The paths which must be secured by this tenant. Tenant with the most specific path wins.
-     * Please see the xref:security-openid-connect-multitenancy.adoc#configuration-based-tenant-resolver[Resolve with
-     * configuration]
+     * Please see the xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[Configure tenant paths]
      * section of the OIDC multitenancy guide for explanation of allowed path patterns.
      *
      * @asciidoclet

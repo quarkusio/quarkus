@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 import org.jboss.marshalling.cloner.ClassCloner;
 import org.jboss.marshalling.cloner.ClonerConfiguration;
@@ -20,7 +19,6 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
  */
 public final class NewSerializingDeepClone implements DeepClone {
     private final ObjectCloner cloner;
-    private static Pattern clonePattern;
     private RunningQuarkusApplication runningQuarkusApplication;
 
     public NewSerializingDeepClone(final ClassLoader sourceLoader, final ClassLoader targetLoader) {
@@ -51,46 +49,42 @@ public final class NewSerializingDeepClone implements DeepClone {
                         theClassWeCareAbout = theClassWeCareAbout.getComponentType();
                     }
 
-                    // Short-circuit the checks if we've been configured to clone this
-                    if (!clonePattern.matcher(theClassWeCareAbout.getName()).matches()) {
-
-                        if (theClassWeCareAbout.isPrimitive()) {
-                            // avoid copying things that do not need to be copied
+                    if (theClassWeCareAbout.isPrimitive()) {
+                        // avoid copying things that do not need to be copied
+                        return original;
+                    } else if (isUncloneable(theClassWeCareAbout)) {
+                        if (original instanceof Supplier<?> s) {
+                            // sneaky
+                            return (Supplier<?>) () -> clone(s.get());
+                        } else {
                             return original;
-                        } else if (isUncloneable(theClassWeCareAbout)) {
+                        }
+                    } else if (original instanceof TestInfo info) {
+                        // copy the test info correctly
+                        return new TestInfoImpl(info.getDisplayName(), info.getTags(),
+                                info.getTestClass()
+                                        .map(this::cloneClass),
+                                info.getTestMethod()
+                                        .map(this::cloneMethod));
+                    } else {
+                        try {
+                            if (runningQuarkusApplication != null && runningQuarkusApplication.getClassLoader()
+                                    .loadClass(theClassWeCareAbout.getName()) == theClassWeCareAbout) {
+                                // Don't clone things which are already loaded by the quarkus application's classloader side of the tree
+                                return original;
+                            }
+                        } catch (ClassNotFoundException e) {
+
                             if (original instanceof Supplier<?> s) {
                                 // sneaky
                                 return (Supplier<?>) () -> clone(s.get());
                             } else {
-                                return original;
+                                throw e;
                             }
-                        } else if (original instanceof TestInfo info) {
-                            // copy the test info correctly
-                            return new TestInfoImpl(info.getDisplayName(), info.getTags(),
-                                    info.getTestClass()
-                                            .map(this::cloneClass),
-                                    info.getTestMethod()
-                                            .map(this::cloneMethod));
-                        } else {
-                            try {
-                                if (runningQuarkusApplication != null && runningQuarkusApplication.getClassLoader()
-                                        .loadClass(theClassWeCareAbout.getName()) == theClassWeCareAbout) {
-                                    // Don't clone things which are already loaded by the quarkus application's classloader side of the tree
-                                    return original;
-                                }
-                            } catch (ClassNotFoundException e) {
+                        }
 
-                                if (original instanceof Supplier<?> s) {
-                                    // sneaky
-                                    return (Supplier<?>) () -> clone(s.get());
-                                } else {
-                                    throw e;
-                                }
-                            }
-
-                            if (original == sourceLoader) {
-                                return targetLoader;
-                            }
+                        if (original == sourceLoader) {
+                            return targetLoader;
                         }
                     }
 
@@ -136,9 +130,6 @@ public final class NewSerializingDeepClone implements DeepClone {
     @Override
     public void setRunningQuarkusApplication(RunningQuarkusApplication runningQuarkusApplication) {
         this.runningQuarkusApplication = runningQuarkusApplication;
-        String patternString = runningQuarkusApplication.getConfigValue("quarkus.test.class-clone-pattern", String.class)
-                .orElse("java\\..*");
-        clonePattern = Pattern.compile(patternString);
     }
 
 }

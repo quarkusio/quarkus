@@ -226,6 +226,7 @@ public class TestConfig {
      * most parent first classes it will just cause problems.
      */
     @ConfigItem(defaultValue = "java\\..*")
+    @Deprecated(forRemoval = true)
     String classClonePattern;
 
     /**

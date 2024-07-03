@@ -55,6 +55,7 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
+import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -167,29 +168,37 @@ public class OidcRecorder {
 
         Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, checkNamedTenants, tenantId,
                 defaultTlsConfiguration);
-        return uniContext.onFailure()
-                .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
-                    @Override
-                    public TenantConfigContext apply(Throwable t) {
-                        if (t instanceof OIDCException) {
-                            LOG.warnf("Tenant '%s': '%s'."
-                                    + " OIDC server is not available yet, an attempt to connect will be made during the first request."
-                                    + " Access to resources protected by this tenant may fail"
-                                    + " if OIDC server will not become available",
-                                    tenantId, t.getMessage());
-                            return new TenantConfigContext(null, oidcConfig, false);
+        try {
+            return uniContext.onFailure()
+                    .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
+                        @Override
+                        public TenantConfigContext apply(Throwable t) {
+                            if (t instanceof OIDCException) {
+                                LOG.warnf("Tenant '%s': '%s'."
+                                        + " OIDC server is not available yet, an attempt to connect will be made during the first request."
+                                        + " Access to resources protected by this tenant may fail"
+                                        + " if OIDC server will not become available",
+                                        tenantId, t.getMessage());
+                                return new TenantConfigContext(null, oidcConfig, false);
+                            }
+                            logTenantConfigContextFailure(t, tenantId);
+                            if (t instanceof ConfigurationException
+                                    && !oidcConfig.authServerUrl.isPresent()
+                                    && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
+                                // Let it start if it is a DEV mode and auth-server-url has not been configured yet
+                                return new TenantConfigContext(null, oidcConfig, false);
+                            }
+                            // fail in all other cases
+                            throw new OIDCException(t);
                         }
-                        logTenantConfigContextFailure(t, tenantId);
-                        if (t instanceof ConfigurationException
-                                && !oidcConfig.authServerUrl.isPresent() && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
-                            // Let it start if it is a DEV mode and auth-server-url has not been configured yet
-                            return new TenantConfigContext(null, oidcConfig, false);
-                        }
-                        // fail in all other cases
-                        throw new OIDCException(t);
-                    }
-                })
-                .await().atMost(oidcConfig.getConnectionTimeout());
+                    })
+                    .await().atMost(oidcConfig.getConnectionTimeout());
+        } catch (TimeoutException t2) {
+            LOG.warnf("Tenant '%s': OIDC server is not available after a %d seconds timeout, an attempt to connect will be made"
+                    + " during the first request. Access to resources protected by this tenant may fail if OIDC server"
+                    + " will not become available", tenantId, oidcConfig.getConnectionTimeout().getSeconds());
+            return new TenantConfigContext(null, oidcConfig, false);
+        }
     }
 
     private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {

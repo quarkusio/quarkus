@@ -4,11 +4,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.Tokens;
 import io.smallrye.mutiny.Uni;
 
 public class TokensHelper {
+    private static final Logger LOG = Logger.getLogger(TokensHelper.class);
 
     @SuppressWarnings("unused")
     private volatile TokenRequestState tokenRequestState;
@@ -47,11 +50,26 @@ public class TokensHelper {
                 //rerun the CAS loop
             } else if (currentState.tokenUni != null) {
                 return currentState.tokenUni;
+            } else if (forceNewTokens) {
+                LOG.debugf("Forcing acquisition of new tokens for client %s", currentState.tokens.getClientId());
+
+                newState = new TokenRequestState(prepareUni(oidcClient.getTokens(additionalParameters)));
+                if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
+                    return newState.tokenUni;
+                }
+                //rerun the CAS loop
             } else {
                 Tokens tokens = currentState.tokens;
-                if (forceNewTokens || tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
+
+                if (tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
+                    LOG.debugf("Starting refreshing the tokens for client %s", tokens.getClientId());
+                    final boolean refreshTokenValid = tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired();
+                    if (!refreshTokenValid) {
+                        LOG.debugf("Refresh token is not available or has expired, "
+                                + "acquiring new tokens instead for client %s", tokens.getClientId());
+                    }
                     newState = new TokenRequestState(
-                            prepareUni((!forceNewTokens && tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired())
+                            prepareUni(refreshTokenValid
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
                                     : oidcClient.getTokens(additionalParameters)));
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {

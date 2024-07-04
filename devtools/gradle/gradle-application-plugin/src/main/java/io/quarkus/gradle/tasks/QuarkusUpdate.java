@@ -29,6 +29,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
     private String rewritePluginVersion = null;
 
     private String rewriteUpdateRecipesVersion = null;
+    private String rewriteAdditionalUpdateRecipeCoords = null;
 
     @Input
     @Optional
@@ -89,6 +90,18 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
 
     @Input
     @Optional
+    public String getRewriteAdditionalUpdateRecipeCoords() {
+        return rewriteAdditionalUpdateRecipeCoords;
+    }
+
+    @Option(description = " The additional artifacts to retrieve recipes from.", option = "additionalUpdateRecipeCoords")
+    public QuarkusUpdate setRewriteAdditionalUpdateRecipeCoords(String rewriteAdditionalUpdateRecipeCoords) {
+        this.rewriteAdditionalUpdateRecipeCoords = rewriteAdditionalUpdateRecipeCoords;
+        return this;
+    }
+
+    @Input
+    @Optional
     public String getTargetStreamId() {
         return targetStreamId;
     }
@@ -142,6 +155,9 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         invoker.targetCatalog(targetCatalog);
         if (rewriteUpdateRecipesVersion != null) {
             invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
+        }
+        if (rewriteAdditionalUpdateRecipeCoords != null) {
+            invoker.rewriteAdditionalUpdateRecipeCoords(rewriteAdditionalUpdateRecipeCoords);
         }
         if (rewritePluginVersion != null) {
             invoker.rewritePluginVersion(rewritePluginVersion);

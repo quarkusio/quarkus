@@ -65,7 +65,9 @@ public class QuarkusUpdateCommand {
         executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
 
         // format the sources
-        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
+        if (!dryRun) {
+            executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
+        }
     }
 
     private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,

@@ -20,4 +20,8 @@ public class RewriteGroup {
             "--rewrite-plugin-version" }, description = "Use a custom OpenRewrite plugin version.")
     public String pluginVersion;
 
+    @CommandLine.Option(order = 4, names = {
+            "--additional-update-recipe-coords" }, description = "Specify an additional list of artifacts to retrieve recipes from.")
+    public String additionalUpdateRecipeCoords;
+
 }

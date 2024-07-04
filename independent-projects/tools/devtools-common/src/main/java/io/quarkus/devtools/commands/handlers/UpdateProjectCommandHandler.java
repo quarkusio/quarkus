@@ -117,9 +117,13 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     final String updateRecipesVersion = invocation.getValue(
                             UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
                             QuarkusUpdatesRepository.DEFAULT_UPDATE_RECIPES_VERSION);
+                    final String additionalUpdateRecipeCoords = invocation.getValue(
+                            UpdateProject.REWRITE_ADDITIONAL_UPDATE_RECIPE_COORDS,
+                            null);
                     final FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(),
                             recipe,
-                            QuarkusProjectHelper.artifactResolver(), buildTool, updateRecipesVersion, request);
+                            QuarkusProjectHelper.artifactResolver(), buildTool, updateRecipesVersion,
+                            additionalUpdateRecipeCoords, request);
                     invocation.log().info("OpenRewrite recipe generated: %s", recipe);
 
                     String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,

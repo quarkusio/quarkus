@@ -591,8 +591,11 @@ public class QuteProcessor {
 
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
-            TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
-            List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config,
+            TemplateFilePathsBuildItem filePaths,
+            List<CheckedTemplateBuildItem> checkedTemplates,
+            List<MessageBundleMethodBuildItem> messageBundleMethods,
+            List<TemplateGlobalBuildItem> globals, QuteConfig config,
+            List<ValidationParserHookBuildItem> validationParserHooks,
             Optional<EngineConfigurationsBuildItem> engineConfigurations,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<CheckedFragmentValidationBuildItem> checkedFragmentValidations) {
@@ -718,6 +721,10 @@ public class QuteProcessor {
                     if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
                         parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
                                 UserTagSectionHelper.Arguments.class.getName());
+                    }
+
+                    for (ValidationParserHookBuildItem hook : validationParserHooks) {
+                        hook.accept(parserHelper);
                     }
                 }
 

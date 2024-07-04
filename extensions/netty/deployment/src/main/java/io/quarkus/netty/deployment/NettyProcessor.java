@@ -80,6 +80,11 @@ class NettyProcessor {
     }
 
     @BuildStep
+    public SystemPropertyBuildItem disableFinalizers() {
+        return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+    }
+
+    @BuildStep
     NativeImageConfigBuildItem build(
             NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

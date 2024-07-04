@@ -77,20 +77,20 @@ public class LoopSectionHelper implements SectionHelper {
     private static int extractSize(Object it) {
         // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
         // See https://github.com/RedHatPerf/type-pollution-agent for more information
-        if (it instanceof AbstractCollection) {
-            return ((AbstractCollection<?>) it).size();
-        } else if (it instanceof AbstractMap) {
-            return ((AbstractMap<?, ?>) it).size();
+        if (it instanceof AbstractCollection<?> collection) {
+            return collection.size();
+        } else if (it instanceof AbstractMap<?, ?> map) {
+            return map.size();
         } else if (it.getClass().isArray()) {
             return Array.getLength(it);
-        } else if (it instanceof Integer) {
-            return ((Integer) it);
-        } else if (it instanceof Long) {
-            return (((Long) it).intValue());
-        } else if (it instanceof Collection) {
-            return ((Collection<?>) it).size();
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).size();
+        } else if (it instanceof Integer integer) {
+            return integer;
+        } else if (it instanceof Long longValue) {
+            return longValue.intValue();
+        } else if (it instanceof Collection<?> collection) {
+            return collection.size();
+        } else if (it instanceof Map<?, ?> map) {
+            return map.size();
         }
         return 10;
     }
@@ -98,14 +98,14 @@ public class LoopSectionHelper implements SectionHelper {
     private Iterator<?> extractIterator(Object it) {
         // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
         // See https://github.com/RedHatPerf/type-pollution-agent for more information
-        if (it instanceof AbstractCollection) {
-            return ((AbstractCollection<?>) it).iterator();
-        } else if (it instanceof AbstractMap) {
-            return ((AbstractMap<?, ?>) it).entrySet().iterator();
-        } else if (it instanceof Integer) {
-            return IntStream.rangeClosed(1, (Integer) it).iterator();
-        } else if (it instanceof Long) {
-            return LongStream.rangeClosed(1, (Long) it).iterator();
+        if (it instanceof AbstractCollection<?> col) {
+            return col.iterator();
+        } else if (it instanceof AbstractMap<?, ?> map) {
+            return map.entrySet().iterator();
+        } else if (it instanceof Integer integer) {
+            return IntStream.rangeClosed(1, integer).iterator();
+        } else if (it instanceof Long longValue) {
+            return LongStream.rangeClosed(1, longValue).iterator();
         } else if (it.getClass().isArray()) {
             int length = Array.getLength(it);
             List<Object> elements = new ArrayList<>(length);
@@ -114,14 +114,14 @@ public class LoopSectionHelper implements SectionHelper {
                 elements.add(Array.get(it, i));
             }
             return elements.iterator();
-        } else if (it instanceof Iterable) {
-            return ((Iterable<?>) it).iterator();
-        } else if (it instanceof Iterator) {
-            return (Iterator<?>) it;
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).entrySet().iterator();
-        } else if (it instanceof Stream) {
-            return ((Stream<?>) it).sequential().iterator();
+        } else if (it instanceof Iterable<?> iterable) {
+            return iterable.iterator();
+        } else if (it instanceof Iterator<?> iterator) {
+            return iterator;
+        } else if (it instanceof Map<?, ?> map) {
+            return map.entrySet().iterator();
+        } else if (it instanceof Stream<?> stream) {
+            return stream.sequential().iterator();
         } else {
             TemplateException.Builder builder;
             if (Results.isNotFound(it)) {
@@ -299,28 +299,17 @@ public class LoopSectionHelper implements SectionHelper {
             }
             // Iteration metadata
             final int count = index + 1;
-            switch (key) {
-                case "count":
-                    return CompletedStage.of(count);
-                case "index":
-                    return CompletedStage.of(index);
-                case "indexParity":
-                    return count % 2 == 0 ? EVEN : ODD;
-                case "hasNext":
-                    return hasNext ? Results.TRUE : Results.FALSE;
-                case "isLast":
-                    return hasNext ? Results.FALSE : Results.TRUE;
-                case "isFirst":
-                    return index == 0 ? Results.TRUE : Results.FALSE;
-                case "isOdd":
-                case "odd":
-                    return count % 2 != 0 ? Results.TRUE : Results.FALSE;
-                case "isEven":
-                case "even":
-                    return count % 2 == 0 ? Results.TRUE : Results.FALSE;
-                default:
-                    return Results.notFound(key);
-            }
+            return switch (key) {
+                case "count" -> CompletedStage.of(count);
+                case "index" -> CompletedStage.of(index);
+                case "indexParity" -> count % 2 == 0 ? EVEN : ODD;
+                case "hasNext" -> hasNext ? Results.TRUE : Results.FALSE;
+                case "isLast" -> hasNext ? Results.FALSE : Results.TRUE;
+                case "isFirst" -> index == 0 ? Results.TRUE : Results.FALSE;
+                case "isOdd", "odd" -> count % 2 != 0 ? Results.TRUE : Results.FALSE;
+                case "isEven", "even" -> count % 2 == 0 ? Results.TRUE : Results.FALSE;
+                default -> Results.notFound(key);
+            };
         }
 
         @Override

@@ -91,7 +91,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
-        String baseName = getBaseName(bean, beanClassName);
+        String baseName = getBaseName(beanClassName);
         String targetPackage = bean.getClientProxyPackageName();
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
         if (existingClasses.contains(generatedName)) {

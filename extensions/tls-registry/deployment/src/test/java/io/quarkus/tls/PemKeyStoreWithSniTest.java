@@ -1,6 +1,6 @@
 package io.quarkus.tls;
 
-import static me.escoffier.certs.Format.PEM;
+import static io.smallrye.certs.Format.PEM;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
@@ -12,11 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import me.escoffier.certs.junit5.Alias;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.junit5.Alias;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @me.escoffier.certs.junit5.Certificate(name = "test-sni-pem", formats = { PEM }, aliases = {
+        @Certificate(name = "test-sni-pem", formats = { PEM }, aliases = {
                 @Alias(name = "sni-1", cn = "acme.org"),
                 @Alias(name = "sni-2", cn = "example.com"),
         })

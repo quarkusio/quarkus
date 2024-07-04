@@ -19,9 +19,9 @@ import io.quarkus.it.kafka.ssl.CertificateFormat;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import me.escoffier.certs.Format;
-import me.escoffier.certs.junit5.Certificate;
-import me.escoffier.certs.junit5.Certificates;
+import io.smallrye.certs.Format;
+import io.smallrye.certs.junit5.Certificate;
+import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(certificates = {
         @Certificate(name = "kafka", formats = { Format.PKCS12, Format.JKS,

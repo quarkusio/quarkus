@@ -153,6 +153,8 @@
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
+        <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>
+
         <!-- Quarkus Analytics -->
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
@@ -367,9 +369,9 @@
             </dependency>
 
             <dependency>
-                <groupId>me.escoffier.certs</groupId>
-                <artifactId>certificate-generator-junit5</artifactId>
-                <version>0.5.0</version>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-junit5</artifactId>
+                <version>${smallrye-certificate-generator.version}</version>
                 <scope>test</scope>
             </dependency>
 

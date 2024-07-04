@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
@@ -84,6 +85,8 @@ public class LoopSectionHelper implements SectionHelper {
             return Array.getLength(it);
         } else if (it instanceof Integer) {
             return ((Integer) it);
+        } else if (it instanceof Long) {
+            return (((Long) it).intValue());
         } else if (it instanceof Collection) {
             return ((Collection<?>) it).size();
         } else if (it instanceof Map) {
@@ -101,6 +104,8 @@ public class LoopSectionHelper implements SectionHelper {
             return ((AbstractMap<?, ?>) it).entrySet().iterator();
         } else if (it instanceof Integer) {
             return IntStream.rangeClosed(1, (Integer) it).iterator();
+        } else if (it instanceof Long) {
+            return LongStream.rangeClosed(1, (Long) it).iterator();
         } else if (it.getClass().isArray()) {
             int length = Array.getLength(it);
             List<Object> elements = new ArrayList<>(length);

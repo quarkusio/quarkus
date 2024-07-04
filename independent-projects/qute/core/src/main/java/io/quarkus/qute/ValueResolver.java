@@ -7,6 +7,8 @@ package io.quarkus.qute;
  * to resolve the data. If {@link Results#isNotFound(Object)} is returned the next available resolver is tried.
  *
  * @see EvalContext
+ * @see EngineBuilder#addValueResolver(ValueResolver)
+ * @see EngineConfiguration
  */
 public interface ValueResolver extends Resolver, WithPriority {
 

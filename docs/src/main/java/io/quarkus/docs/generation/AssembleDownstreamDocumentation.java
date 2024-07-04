@@ -426,7 +426,7 @@ public class AssembleDownstreamDocumentation {
                 addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
                 title = "~~ unknown title ~~";
             }
-            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
+            return "xref:" + trimReference(mr.group(1)) + "[" + escapeXrefTitleForReplaceAll(title) + "]";
         });
 
         content = ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
@@ -436,11 +436,11 @@ public class AssembleDownstreamDocumentation {
                 addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
                 title = "~~ unknown title ~~";
             }
-            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
+            return "xref:" + trimReference(mr.group(1)) + "[" + escapeXrefTitleForReplaceAll(title) + "]";
         });
 
         content = ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
-            return "xref:" + trimReference(mr.group(1)) + "[" + mr.group(2).trim() + "]";
+            return "xref:" + trimReference(mr.group(1)) + "[" + escapeXrefTitleForReplaceAll(mr.group(2)) + "]";
         });
 
         content = XREF_GUIDE_PATTERN.matcher(content).replaceAll(mr -> {
@@ -464,6 +464,10 @@ public class AssembleDownstreamDocumentation {
         });
 
         return content;
+    }
+
+    private static String escapeXrefTitleForReplaceAll(String title) {
+        return title.trim().replace("]", "\\\\]");
     }
 
     private static String trimReference(String reference) {

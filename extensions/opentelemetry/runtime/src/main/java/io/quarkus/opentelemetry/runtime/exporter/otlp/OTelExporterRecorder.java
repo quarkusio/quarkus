@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import static io.opentelemetry.sdk.metrics.Aggregation.explicitBucketHistogram;
 import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.OTLP_VALUE;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
@@ -67,13 +66,12 @@ public class OTelExporterRecorder {
 
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
-    public static final String EXPLICIT_BUCKET_AGGREGATION_NAME = AggregationUtil.aggregationName(explicitBucketHistogram());
 
     public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
-        URI baseUri = getBaseUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
+        URI baseUri = getTracesUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
             public LateBoundBatchSpanProcessor apply(
@@ -180,7 +178,7 @@ public class OTelExporterRecorder {
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
 
-        final URI baseUri = getBaseUri(exporterRuntimeConfig);
+        final URI baseUri = getMetricsUri(exporterRuntimeConfig);
 
         return new Function<>() {
             @Override
@@ -311,22 +309,37 @@ public class OTelExporterRecorder {
         return headersMap;
     }
 
-    private URI getBaseUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveEndpoint(exporterRuntimeConfig).trim(); // FIXME must be signal independent
+    private URI getTracesUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
         if (endpoint.isEmpty()) {
             return null;
         }
         return ExporterBuilderUtil.validateEndpoint(endpoint);
     }
 
-    static String resolveEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
-        String endpoint = runtimeConfig.traces().legacyEndpoint()
+    private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
+        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        if (endpoint.isEmpty()) {
+            return null;
+        }
+        return ExporterBuilderUtil.validateEndpoint(endpoint);
+    }
+
+    static String resolveTraceEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.traces().endpoint()
                 .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                .orElse(runtimeConfig.traces().endpoint()
+                .orElse(runtimeConfig.endpoint()
                         .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(runtimeConfig.endpoint()
-                                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                                .orElse(DEFAULT_GRPC_BASE_URI)));
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.metrics().endpoint()
+                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
         return endpoint.trim();
     }
 

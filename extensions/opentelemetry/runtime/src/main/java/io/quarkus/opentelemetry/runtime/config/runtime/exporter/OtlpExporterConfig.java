@@ -1,16 +1,12 @@
 package io.quarkus.opentelemetry.runtime.config.runtime.exporter;
 
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface OtlpExporterConfig {
@@ -18,10 +14,7 @@ public interface OtlpExporterConfig {
     /**
      * OTLP Exporter specific. Will override <code>otel.exporter.otlp.endpoint</code>, if set.
      * <p>
-     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.exporter.otlp.endpoint<</code> or
-     * defaults to {@value OtlpExporterRuntimeConfig#DEFAULT_GRPC_BASE_URI}.
      */
-    @WithDefault(DEFAULT_GRPC_BASE_URI)
     Optional<String> endpoint();
 
     /**
@@ -41,7 +34,6 @@ public interface OtlpExporterConfig {
      * Sets the maximum time to wait for the collector to process an exported batch of spans. If
      * unset, defaults to {@value OtlpExporterRuntimeConfig#DEFAULT_TIMEOUT_SECS}s.
      */
-    @WithDefault("10s")
     Duration timeout();
 
     /**
@@ -50,19 +42,16 @@ public interface OtlpExporterConfig {
      * <p>
      * Currently, only {@code grpc} and {@code http/protobuf} are allowed.
      */
-    @WithDefault(Protocol.GRPC)
     Optional<String> protocol();
 
     /**
      * Key/cert configuration in the PEM format.
      */
-    @WithName("key-cert")
     KeyCert keyCert();
 
     /**
      * Trust configuration in the PEM format.
      */
-    @WithName("trust-cert")
     TrustCert trustCert();
 
     /**
@@ -99,7 +88,6 @@ public interface OtlpExporterConfig {
         /**
          * Set proxy port.
          */
-        @ConfigDocDefault("3128")
         OptionalInt port();
 
         /**

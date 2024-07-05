@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -104,7 +103,7 @@ public class OpenTelemetryProcessor {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClasses(
-                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracingResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,

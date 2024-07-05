@@ -15,7 +15,7 @@ public class OtlpExporterBadEndpointTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
-            .overrideConfigKey("quarkus.otel.exporter.otlp.traces.legacy-endpoint", "httz://nada:zero")
+            .overrideConfigKey("quarkus.otel.exporter.otlp.endpoint", "httz://nada:zero")
             .setExpectedException(IllegalArgumentException.class);
 
     @Inject

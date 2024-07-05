@@ -22,12 +22,15 @@ public final class QuarkusUpdates {
     }
 
     public static FetchResult createRecipe(MessageWriter log, Path target, MavenArtifactResolver artifactResolver,
-            BuildTool buildTool, String updateRecipesVersion, String additionalUpdateRecipeCoords,
+            BuildTool buildTool, String quarkusUpdateRecipes, String additionalUpdateRecipes,
             ProjectUpdateRequest request)
             throws IOException {
-        final FetchResult result = QuarkusUpdatesRepository.fetchRecipes(log, artifactResolver, buildTool,
-                updateRecipesVersion,
-                additionalUpdateRecipeCoords,
+        final FetchResult result = QuarkusUpdatesRepository.fetchRecipes(
+                log,
+                artifactResolver,
+                buildTool,
+                quarkusUpdateRecipes,
+                additionalUpdateRecipes,
                 request.currentVersion,
                 request.targetVersion,
                 request.projectExtensionsUpdateInfo

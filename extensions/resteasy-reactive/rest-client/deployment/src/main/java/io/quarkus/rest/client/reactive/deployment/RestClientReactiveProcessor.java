@@ -311,6 +311,10 @@ class RestClientReactiveProcessor {
                                     int.class),
                             constructor.getThis(), constructor.loadClassFromTCCL(providerDotName.toString()),
                             constructor.load(priority));
+
+                    // when the server is not included, providers are not automatically registered for reflection,
+                    // so we need to always do it for the client to be on the safe side
+                    reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(providerDotName.toString()).build());
                 }
             }
 

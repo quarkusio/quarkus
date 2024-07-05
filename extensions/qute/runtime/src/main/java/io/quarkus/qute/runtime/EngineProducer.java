@@ -41,6 +41,7 @@ import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.HtmlEscaper;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.Qute;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
@@ -89,7 +90,7 @@ public class EngineProducer {
             Event<EngineBuilder> builderReady, Event<Engine> engineReady, ContentTypes contentTypes,
             LaunchMode launchMode, LocalesBuildTimeConfig locales, @All List<TemplateLocator> locators,
             @All List<SectionHelperFactory<?>> sectionHelperFactories, @All List<ValueResolver> valueResolvers,
-            @All List<NamespaceResolver> namespaceResolvers) {
+            @All List<NamespaceResolver> namespaceResolvers, @All List<ParserHook> parserHooks) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
         this.templateRoots = context.getTemplateRoots();
@@ -205,6 +206,10 @@ public class EngineProducer {
         builder.addLocator(this::locate);
         registerCustomLocators(builder, locators);
 
+        // Add parser hooks
+        for (ParserHook parserHook : parserHooks) {
+            builder.addParserHook(parserHook);
+        }
         // Add a special parser hook for Qute.fmt() methods
         builder.addParserHook(new Qute.IndexedArgumentsParserHook());
 

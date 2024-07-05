@@ -14,6 +14,7 @@ import io.quarkus.qute.TemplateNode.Origin;
  * Factory to create a new {@link SectionHelper} based on the {@link SectionInitContextImpl}.
  *
  * @see EngineBuilder#addSectionHelper(SectionHelperFactory)
+ * @see EngineConfiguration
  */
 public interface SectionHelperFactory<T extends SectionHelper> {
 

@@ -591,8 +591,11 @@ public class QuteProcessor {
 
     @BuildStep
     TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
-            TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
-            List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config,
+            TemplateFilePathsBuildItem filePaths,
+            List<CheckedTemplateBuildItem> checkedTemplates,
+            List<MessageBundleMethodBuildItem> messageBundleMethods,
+            List<TemplateGlobalBuildItem> globals, QuteConfig config,
+            List<ValidationParserHookBuildItem> validationParserHooks,
             Optional<EngineConfigurationsBuildItem> engineConfigurations,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<CheckedFragmentValidationBuildItem> checkedFragmentValidations) {
@@ -618,22 +621,32 @@ public class QuteProcessor {
             }
         }
 
-        // Register additional section factories
+        // Register additional section factories and parser hooks
         if (engineConfigurations.isPresent()) {
-            Collection<ClassInfo> sectionFactories = engineConfigurations.get().getConfigurations().stream()
-                    .filter(c -> Types.isImplementorOf(c, Names.SECTION_HELPER_FACTORY, beanArchiveIndex.getIndex()))
-                    .collect(Collectors.toList());
             // Use the deployment class loader - it can load application classes; it's non-persistent and isolated
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-            for (ClassInfo factoryClass : sectionFactories) {
-                try {
-                    Class<?> sectionHelperFactoryClass = tccl.loadClass(factoryClass.toString());
-                    SectionHelperFactory<?> factory = (SectionHelperFactory<?>) sectionHelperFactoryClass
-                            .getDeclaredConstructor().newInstance();
-                    builder.addSectionHelper(factory);
-                    LOGGER.debugf("SectionHelperFactory registered during template analysis: " + factoryClass);
-                } catch (Exception e) {
-                    throw new IllegalStateException("Unable to instantiate SectionHelperFactory: " + factoryClass, e);
+            IndexView index = beanArchiveIndex.getIndex();
+
+            for (ClassInfo engineConfigClass : engineConfigurations.get().getConfigurations()) {
+                if (Types.isImplementorOf(engineConfigClass, Names.SECTION_HELPER_FACTORY, index)) {
+                    try {
+                        Class<?> sectionHelperFactoryClass = tccl.loadClass(engineConfigClass.toString());
+                        SectionHelperFactory<?> factory = (SectionHelperFactory<?>) sectionHelperFactoryClass
+                                .getDeclaredConstructor().newInstance();
+                        builder.addSectionHelper(factory);
+                        LOGGER.debugf("SectionHelperFactory registered during template analysis: %s", engineConfigClass);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Unable to instantiate SectionHelperFactory: " + engineConfigClass, e);
+                    }
+                } else if (Types.isImplementorOf(engineConfigClass, Names.PARSER_HOOK, index)) {
+                    try {
+                        Class<?> parserHookClass = tccl.loadClass(engineConfigClass.toString());
+                        ParserHook parserHook = (ParserHook) parserHookClass.getDeclaredConstructor().newInstance();
+                        builder.addParserHook(parserHook);
+                        LOGGER.debugf("ParserHook registered during template analysis: %s", engineConfigClass);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Unable to instantiate ParserHook: " + engineConfigClass, e);
+                    }
                 }
             }
         }
@@ -708,6 +721,10 @@ public class QuteProcessor {
                     if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
                         parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
                                 UserTagSectionHelper.Arguments.class.getName());
+                    }
+
+                    for (ValidationParserHookBuildItem hook : validationParserHooks) {
+                        hook.accept(parserHelper);
                     }
                 }
 
@@ -2281,28 +2298,32 @@ public class QuteProcessor {
         for (AnnotationInstance annotation : engineConfigAnnotations) {
             AnnotationTarget target = annotation.target();
             if (target.kind() == Kind.CLASS) {
-                ClassInfo targetClass = target.asClass();
+                ClassInfo clazz = target.asClass();
 
-                if (targetClass.nestingType() != NestingType.TOP_LEVEL
-                        && (targetClass.nestingType() != NestingType.INNER || !Modifier.isStatic(targetClass.flags()))) {
+                if (clazz.isAbstract()
+                        || clazz.isInterface()
+                        || (clazz.nestingType() != NestingType.TOP_LEVEL
+                                && (clazz.nestingType() != NestingType.INNER || !Modifier.isStatic(clazz.flags())))) {
                     validationErrors.produce(
                             new ValidationErrorBuildItem(
                                     new TemplateException(String.format(
-                                            "Only top-level and static nested classes may be annotated with @%s: %s",
-                                            EngineConfiguration.class.getSimpleName(), targetClass.name()))));
-                } else if (Types.isImplementorOf(targetClass, Names.SECTION_HELPER_FACTORY, index)) {
-                    if (targetClass.hasNoArgsConstructor()) {
-                        engineConfigClasses.add(targetClass);
+                                            "Only non-abstract, top-level or static nested classes may be annotated with @%s: %s",
+                                            EngineConfiguration.class.getSimpleName(), clazz.name()))));
+                } else if (Types.isImplementorOf(clazz, Names.SECTION_HELPER_FACTORY, index)
+                        || Types.isImplementorOf(clazz, Names.PARSER_HOOK, index)) {
+                    if (clazz.hasNoArgsConstructor()
+                            && Modifier.isPublic(clazz.flags())) {
+                        engineConfigClasses.add(clazz);
                     } else {
                         validationErrors.produce(
                                 new ValidationErrorBuildItem(
                                         new TemplateException(String.format(
-                                                "A class annotated with @%s that also implements io.quarkus.qute.SectionHelperFactory must declare a no-args constructor: %s",
-                                                EngineConfiguration.class.getSimpleName(), targetClass.name()))));
+                                                "A class annotated with @%s that also implements SectionHelperFactory or ParserHelper must be public and declare a no-args constructor: %s",
+                                                EngineConfiguration.class.getSimpleName(), clazz.name()))));
                     }
-                } else if (Types.isImplementorOf(targetClass, Names.VALUE_RESOLVER, index)
-                        || Types.isImplementorOf(targetClass, Names.NAMESPACE_RESOLVER, index)) {
-                    engineConfigClasses.add(targetClass);
+                } else if (Types.isImplementorOf(clazz, Names.VALUE_RESOLVER, index)
+                        || Types.isImplementorOf(clazz, Names.NAMESPACE_RESOLVER, index)) {
+                    engineConfigClasses.add(clazz);
                 } else {
                     validationErrors.produce(
                             new ValidationErrorBuildItem(
@@ -2312,7 +2333,7 @@ public class QuteProcessor {
                                                     new String[] { SectionHelperFactory.class.getName(),
                                                             ValueResolver.class.getName(),
                                                             NamespaceResolver.class.getName() }),
-                                            targetClass.name()))));
+                                            clazz.name()))));
                 }
             }
         }

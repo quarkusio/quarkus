@@ -1626,7 +1626,7 @@ public class CustomSectionFactory implements SectionHelperFactory<CustomSectionF
 <3> Validate that `foo` parameter is always present; e.g. `{#custom foo='bar' /}` is ok but `{#custom /}` results in a build failure.
 <4> Use the injected `Service` during rendering.
 
-The `@EngineConfiguration` annotation can be also used to register ``ValueResolver``s and ``NamespaceResolver``s.
+TIP: The `@EngineConfiguration` annotation can be also used to register `ValueResolver`, `NamespaceResolver` and `ParserHook` components.
 
 [[template-locator-registration]]
 ==== Template Locator Registration

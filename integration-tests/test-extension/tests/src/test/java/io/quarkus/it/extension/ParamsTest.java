@@ -19,9 +19,6 @@ import io.quarkus.test.junit.QuarkusTest;
 /**
  * Exercise {@link ParameterizedTest @ParameterizedTest}s.
  *
- * <p>
- * This test will run into <a href="https://github.com/x-stream/xstream/issues/253">x-stream/xstream#253</a> on Java 16 and
- * newer if the custom XStream converters are not used
  */
 @QuarkusTest
 public class ParamsTest {

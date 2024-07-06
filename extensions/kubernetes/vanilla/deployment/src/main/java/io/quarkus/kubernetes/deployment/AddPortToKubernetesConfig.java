@@ -29,7 +29,7 @@ public class AddPortToKubernetesConfig extends Configurator<KubernetesConfigFlue
      */
     private boolean hasPort(KubernetesConfigFluent<?> config) {
         for (Port p : config.buildPorts()) {
-            if (p.getContainerPort() == port.getContainerPort()) {
+            if (port.getContainerPort().equals(p.getContainerPort())) {
                 return true;
             }
         }

@@ -692,6 +692,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.debug("Failed to clean up DB drivers");
             }
         }
+
+        status = STATUS_CLOSED;
+
         closeClassPathElements(elements);
         closeClassPathElements(bannedElements);
         closeClassPathElements(parentFirstElements);
@@ -707,8 +710,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         classLoaderEventListeners.clear();
 
         ResourceBundle.clearCache(this);
-
-        status = STATUS_CLOSED;
     }
 
     private static void closeClassPathElements(List<ClassPathElement> classPathElements) {
@@ -730,11 +731,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private void ensureOpen() {
-        if (LOG_ACCESS_TO_CLOSED_CLASS_LOADERS && status == STATUS_CLOSED) {
+        if (status != STATUS_CLOSED) {
+            return;
+        }
+
+        if (LOG_ACCESS_TO_CLOSED_CLASS_LOADERS) {
             // we do not use a logger as it might require some class loading
             System.out.println("Class loader " + this + " has been closed and may not be accessed anymore");
             Thread.dumpStack();
         }
+
+        throw new IllegalStateException("Class loader " + this + " has been closed and may not be accessed anymore");
     }
 
     @Override

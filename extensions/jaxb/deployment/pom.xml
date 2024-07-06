@@ -11,6 +11,9 @@
 
     <artifactId>quarkus-jaxb-deployment</artifactId>
     <name>Quarkus - JAXB - Deployment</name>
+    <properties>
+        <surefire.argLine.additional>-Duser.language=en</surefire.argLine.additional>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -50,13 +53,6 @@
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>-Duser.language=en</argLine>
                 </configuration>
             </plugin>
         </plugins>

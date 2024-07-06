@@ -451,6 +451,7 @@ public class VertxCoreRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
+            VertxMDC.INSTANCE.clear();
             LateBoundMDCProvider.setMDCProviderDelegate(null);
             vertx = null;
         }

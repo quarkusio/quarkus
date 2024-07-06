@@ -288,6 +288,12 @@
                 <version>${brotli4j.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator</artifactId>
+                <version>${smallrye-certificate-generator.version}</version>
+            </dependency>
+
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -6268,6 +6274,7 @@
                 <artifactId>picocli-codegen</artifactId>
                 <version>${picocli.version}</version>
             </dependency>
+
 
             <!-- Micrometer -->
             <dependency>

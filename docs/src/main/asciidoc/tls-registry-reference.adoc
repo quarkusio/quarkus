@@ -693,3 +693,193 @@ To handle the renewal, you can use the periodic reloading mechanism:
 %prod.quarkus.http.insecure-requests=disabled
 ----
 
+== Quarkus CLI commands and development CA (Certificate Authority)
+
+The TLS registry provides CLI commands to generate a development CA and trusted certificates.
+This avoids having to use self-signed certificates locally.
+
+[source, shell]
+----
+> quarkus tls
+Install and Manage TLS development certificates
+Usage: tls [COMMAND]
+Commands:
+  generate-quarkus-ca   Generate Quarkus Dev CA certificate and private key.
+  generate-certificate  Generate a TLS certificate with the Quarkus Dev CA if
+                          available.
+----
+
+In most cases, you generate the Quarkus Development CA once, and then generate certificates signed by this CA.
+The Quarkus Development CA is a Certificate Authority that can be used to sign certificates locally.
+It is only valid for development purposes and only trusted on the local machine.
+The generated CA is located in `$HOME/.quarkus/quarkus-dev-root-ca.pem`, and installed in the system trust store.
+
+=== CA, signed vs. self-signed certificates
+
+When developing with TLS, you can use two types of certificates:
+
+ - a self-signed certificate: the certificate is signed by the same entity that uses it. It is not trusted by default. It's generally what we use when we don't have a CA, or don't want to dig too much into TLS. This is not a production setup, and may be used only for development.
+- a signed certificate: the certificate is signed by a Certificate Authority (CA). The CA is a trusted entity that signs the certificate. The certificate is trusted by default. This is what we use in production.
+
+We could use self-signed certificate when running application locally, but it's not always convenient.
+Typically, browsers will not trust the certificate, and you will have to import it manually.
+`curl`, `wget`, `httpie` and other tools will also not trust the certificate.
+
+To avoid this, we can use a development CA to sign the certificates, and install it into the system trust store.
+Thus, every certificate signed by this CA will be trusted by the system.
+
+Quarkus makes it easy to generate a development CA and certificates signed by this CA.
+
+=== Generate a development CA
+
+The development CA is a Certificate Authority that can be used to sign certificates locally.
+Note that the generated CA is only valid for development purposes, and only trusted on the local machine.
+
+To generate a development CA, use the following command:
+
+[source, shell]
+----
+quarkus tls generate-ca-certificate --install --renew --truststore
+----
+
+`--install` installs the CA in the system trust store.
+Windows, Mac and Linux (Fedora and Ubuntu) are supported.
+However, depending on your browser, you may need to import the generated CA manually.
+Refer to the browser documentation for more information.
+The generated CA is located in `$HOME/.quarkus/quarkus-dev-root-ca.pem`.
+
+WARNING: When installing the certificate, your system may ask for your password to install the certificate in the system trust store, or ask for confirmation in a dialog (on Windows).
+
+IMPORTANT: On Windows, makes sure you run from an elevated terminal (run as administrator) to install the CA in the system trust store.
+
+`--renew` renews the CA if it already exists.
+When this option is used, you need to re-generate the certificates that were signed by the CA, as the private key is changed.
+Note that if the CA expires, it will automatically be renewed (without passing `--renew`).
+
+`--truststore` also generates a PKCS12 trust store containing the CA certificate.
+
+=== Generate a trusted (signed) certificate
+
+Once you have installed the Quarkus Development CA, you can generate a trusted certificate.
+It will be signed by the Quarkus Development CA, and so trusted by your system.
+
+[source, shell]
+----
+quarkus tls generate-certificate --name my-cert
+----
+
+This generates a certificate signed by the Quarkus Development CA, and so if properly installed / imported, will be trusted by your system.
+
+The certificate is stored in `./.certs/`.
+Two files are generated:
+
+- `$NAME-keystore.p12` - contains the private key and the certificate. It's password protected.
+- `$NAME-truststore.p12` - contains the CA certificate, that you can used as trust store (for test, for instance).
+
+More options are available:
+
+[source, shell]
+----
+Usage: tls generate-certificate [-hrV] [-c=<cn>] [-d=<directory>]
+       -n=<name> [-p=<password>]
+Generate a TLS certificate with the Quarkus Dev CA if available.
+  -c, --cn=<cn>       The common name of the certificate. Default is 'localhost'
+  -d, --directory=<directory>
+                      The directory in which the certificates will be created.
+                        Default is `.certs`
+  -n, --name=<name>   Name of the certificate. It will be used as file name and
+                        alias in the keystore
+  -p, --password=<password>
+                      The password of the keystore. Default is 'password'
+  -r, --renew         Whether existing certificates will need to be replaced
+----
+
+When generating the certificate, a `.env` file is also generated making the Quarkus dev mode aware of these certificates.
+So, then, if you run your application in dev mode, it will use these certificates:
+
+[source, shell]
+----
+./mvnw quarkus:dev
+...
+INFO  [io.quarkus] (Quarkus Main Thread) demo 1.0.0-SNAPSHOT on JVM (powered by Quarkus 999-SNAPSHOT) started in 1.286s. Listening on: http://localhost:8080 and https://localhost:8443
+----
+
+Now, you can open the Dev UI using HTTPS: `https://localhost:8443/q/dev`, or issue a request using `curl`:
+
+[source, shell]
+----
+curl https://localhost:8443/hello
+Hello from Quarkus REST%
+----
+
+IMPORTANT: If the Quarkus Development CA is not installed, a self-signed certificate is generated.
+
+
+=== Generating a self-signed certificate
+
+Even if the Quarkus Development CA is installed, you can generate a self-signed certificate:
+
+[source, shell]
+----
+quarkus tls generate-certificate --name my-cert --self-signed
+----
+
+This generates a self-signed certificate, not signed by the Quarkus Development CA.
+
+=== Uninstalling the Quarkus Development CA
+
+Uninstalling the Quarkus Development CA from your system depends on your OS.
+
+==== Deleting the CA certificate on Windows
+
+To delete the CA certificate on Windows, use the following commands from a Powershell terminal with administrator rights:
+
+[source, shell]
+----
+# First, we need to identify the serial number of the CA certificate
+> certutil -store -user Root
+root "Trusted Root Certification Authorities"
+================ Certificate 0 ================
+Serial Number: 019036d564c8
+Issuer: O=Quarkus, CN=quarkus-dev-root-ca # <-That's the CA, copy the Serial Number (the line above)
+NotBefore: 6/19/2024 11:07 AM
+NotAfter: 6/20/2025 11:07 AM
+Subject: C=Cloud, S=world, L=home, OU=Quarkus Dev, O=Quarkus Dev, CN=quarkus-dev-root-ca
+Signature matches Public Key
+Non-root Certificate uses same Public Key as Issuer
+Cert Hash(sha1): 3679bc95b613a2112a3d3256fe8321b6eccce720
+No key provider information
+Cannot find the certificate and private key for decryption.
+CertUtil: -store command completed successfully.
+
+> certutil -delstore -user -v Root $Serial_Number
+----
+
+Replace `$Serial_Number` with the serial number of the CA certificate.
+
+==== Deleting the CA certificate on Linux
+
+On Fedora, you can use the following command:
+
+[source, shell]
+----
+sudo rm /etc/pki/ca-trust/source/anchors/quarkus-dev-root-ca.pem
+sudo update-ca-trust
+----
+
+On Ubuntu, you can use the following command:
+
+[source, shell]
+----
+sudo rm /usr/local/share/ca-certificates/quarkus-dev-root-ca.pem
+sudo update-ca-certificates
+----
+
+==== Deleting the CA certificate on Mac
+
+On Mac, you can use the following command:
+
+[source, shell]
+----
+sudo security -v remove-trusted-cert -d /Users/clement/.quarkus/quarkus-dev-root-ca.pem
+----

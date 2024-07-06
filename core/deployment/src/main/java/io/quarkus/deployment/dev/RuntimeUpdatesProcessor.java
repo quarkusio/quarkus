@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -91,6 +92,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     volatile Throwable compileProblem;
     volatile Throwable testCompileProblem;
     volatile Throwable hotReloadProblem;
+    private final AtomicReference<Throwable> deploymentProblem;
 
     private volatile Predicate<ClassInfo> disableInstrumentationForClassPredicate = new AlwaysFalsePredicate<>();
     private volatile Predicate<Index> disableInstrumentationForIndexPredicate = new AlwaysFalsePredicate<>();
@@ -141,7 +143,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification,
             BiFunction<String, byte[], byte[]> classTransformers,
-            TestSupport testSupport) {
+            TestSupport testSupport, AtomicReference<Throwable> deploymentProblem) {
         this.applicationRoot = applicationRoot;
         this.context = context;
         this.compiler = compiler;
@@ -180,6 +182,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             });
         }
+        this.deploymentProblem = deploymentProblem;
     }
 
     public TestSupport getTestSupport() {
@@ -392,7 +395,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     public Throwable getDeploymentProblem() {
         //we differentiate between these internally, however for the error reporting they are the same
         return compileProblem != null ? compileProblem
-                : IsolatedDevModeMain.deploymentProblem != null ? IsolatedDevModeMain.deploymentProblem
+                : deploymentProblem.get() != null ? deploymentProblem.get()
                         : hotReloadProblem;
     }
 
@@ -535,7 +538,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             //all broken we just assume the reason that they have refreshed is because they have fixed something
             //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
             boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
-                    || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || fileRestartNeeded);
+                    || (deploymentProblem.get() != null && userInitiated) || fileRestartNeeded);
             if (restartNeeded) {
                 String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
                         .collect(Collectors.joining(", "));

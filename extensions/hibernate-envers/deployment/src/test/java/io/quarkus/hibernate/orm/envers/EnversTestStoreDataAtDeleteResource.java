@@ -41,7 +41,7 @@ public class EnversTestStoreDataAtDeleteResource {
             AuditReader auditReader = AuditReaderFactory.get(em);
             List<Number> revisions = auditReader.getRevisions(MyAuditedEntity.class, entity.getId());
             if (revisions.size() != 2) {
-                throw new IllegalStateException(String.format("found {} revisions", revisions.size()));
+                throw new IllegalStateException(String.format("found %d revisions", revisions.size()));
             }
 
             for (Number revision : revisions) {

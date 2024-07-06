@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -10,18 +12,41 @@ public class CompletionStageResponseHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         // FIXME: handle Response with entity being a CompletionStage
-        if (requestContext.getResult() instanceof CompletionStage) {
-            CompletionStage<?> result = (CompletionStage<?>) requestContext.getResult();
+        if (requestContext.getResult() instanceof CompletionStage<?> result) {
             requestContext.suspend();
 
+            AtomicBoolean done = new AtomicBoolean();
+            AtomicBoolean canceled = new AtomicBoolean();
             result.handle((v, t) -> {
-                if (t != null) {
-                    requestContext.handleException(t, true);
+                done.set(true);
+                if (canceled.get()) {
+                    try {
+                        // get rid of everything related to the request since the connection has already gone away
+                        requestContext.close();
+                    } catch (Exception ignored) {
+
+                    }
                 } else {
-                    requestContext.setResult(v);
+                    if (t != null) {
+                        requestContext.handleException(t, true);
+                    } else {
+                        requestContext.setResult(v);
+                    }
+                    requestContext.resume();
                 }
-                requestContext.resume();
                 return null;
+            });
+
+            requestContext.serverResponse().addCloseHandler(new Runnable() {
+                @Override
+                public void run() {
+                    if (!done.get()) {
+                        if (result instanceof CompletableFuture<?> cf) {
+                            canceled.set(true);
+                            cf.cancel(true);
+                        }
+                    }
+                }
             });
         }
     }

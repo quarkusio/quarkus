@@ -26,7 +26,7 @@ public final class AuthenticationConfigBuilder {
             Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
             boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
             Optional<String> cookieDomain, CookieSameSite cookieSameSite, boolean allowMultipleCodeFlows,
-            boolean failOnMissingStateParam, Optional<Boolean> userInfoRequired, Duration sessionAgeExtension,
+            boolean failOnMissingStateParam, Optional<Boolean> userInfoRequired, Optional<Duration> sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
             Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
             Optional<String> stateSecret) implements Authentication {
@@ -56,7 +56,7 @@ public final class AuthenticationConfigBuilder {
     private boolean allowMultipleCodeFlows;
     private boolean failOnMissingStateParam;
     private Optional<Boolean> userInfoRequired;
-    private Duration sessionAgeExtension;
+    private Optional<Duration> sessionAgeExtension;
     private Duration stateCookieAge;
     private boolean javaScriptAutoRedirect;
     private Optional<Boolean> idTokenRequired;
@@ -428,7 +428,7 @@ public final class AuthenticationConfigBuilder {
      * @return this builder
      */
     public AuthenticationConfigBuilder sessionAgeExtension(Duration sessionAgeExtension) {
-        this.sessionAgeExtension = Objects.requireNonNull(sessionAgeExtension);
+        this.sessionAgeExtension = Optional.of(sessionAgeExtension);
         return this;
     }
 

@@ -1426,7 +1426,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
-        public Duration sessionAgeExtension() {
+        public Optional<Duration> sessionAgeExtension() {
             return sessionAgeExtension;
         }
 
@@ -1698,14 +1698,30 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<Boolean> userInfoRequired = Optional.empty();
 
         /**
-         * Session age extension in minutes.
-         * The user session age property is set to the value of the ID token life-span by default and
-         * the user is redirected to the OIDC provider to re-authenticate once the session has expired.
-         * If this property is set to a nonzero value, then the expired ID token can be refreshed before
-         * the session has expired.
-         * This property is ignored if the `token.refresh-expired` property has not been enabled.
+         * Session cookie max-age extension.
+         *
+         * Session cookie max-age property is set to the value of the ID token life-span by default
+         * and the authenticated user is redirected to the OIDC provider to re-authenticate, after the session cookie has
+         * expired and the user has attempted to access the application again.
+         *
+         * However, if this property is set to a reasonable idle-time duration of several hours,
+         * longer than an ID token life-span, then, even if the ID token has expired,
+         * it can still be made available to the application which may refresh it or redirect the user
+         * to a session expired page, because the session cookie which keeps ID token is still available
+         * during the current authenticated user's request.
+         *
+         * An important point is that extending the session cookie's age with this property
+         * is only about maximizing the chances of making even an expired ID token associated
+         * with this cookie available to the application for further processing.
+         * It improves a user experience, otherwise, an authenticated user may be surprised by seeing an immediate
+         * re-authentication challenge if the ID token has expired together with the session cookie which
+         * holds it.
+         *
+         * By default, this property will be set to 1 hour if either 'quarkus.oidc.token.refresh-expired'
+         * or 'quarkus.oidc.authentication.session-expired-page' features are enabled since they can only
+         * be effective if an expired ID token is available.
          */
-        public Duration sessionAgeExtension = Duration.ofMinutes(5);
+        public Optional<Duration> sessionAgeExtension = Optional.empty();
 
         /**
          * State cookie age in minutes.
@@ -1915,12 +1931,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             this.verifyAccessToken = verifyAccessToken;
         }
 
-        public Duration getSessionAgeExtension() {
+        public Optional<Duration> getSessionAgeExtension() {
             return sessionAgeExtension;
         }
 
         public void setSessionAgeExtension(Duration sessionAgeExtension) {
-            this.sessionAgeExtension = sessionAgeExtension;
+            this.sessionAgeExtension = Optional.of(sessionAgeExtension);
         }
 
         public Optional<String> getCookiePathHeader() {

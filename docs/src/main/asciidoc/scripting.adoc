@@ -375,18 +375,29 @@ With that in place running `jbang quarkusapp.java` will log and render as expect
 
 == Configuring Application
 
-You can use `//Q:CONFIG <property>=<value>` to set up static configuration for your application.
+To configure the application you can use the `application.properties` file as usual, but you need to _add_ it to the script:
 
-I.e. if you wanted to add the `smallrye-openapi` and `swagger-ui` extensions and have the Swagger UI always show up you would add the following:
-
-[source,java,subs=attributes+]
+[source,java]
 ----
-//DEPS io.quarkus:quarkus-smallrye-openapi:{quarkus-version}
-//DEPS io.quarkus:quarkus-swagger-ui:{quarkus-version}
-//Q:CONFIG quarkus.swagger-ui.always-include=true
+//FILES application.properties
+
+// ...
+@ConfigProperty(name = "prefix", defaultValue = "WG -")
+String prefix;
 ----
 
-Now during build the `quarkus.swagger-ui.always-include` will be generated into the resulting jar and `http://0.0.0.0:8080/q/swagger-ui` will be available when run.
+This will make the `application.properties` file available to the script, and process the configuration as usual.
+
+You can also use the `application.yaml` file.
+For this, you need to _add_ it to the `application.yaml` file to the script and include the `quarkus-config-yaml` dependency:
+
+[source,java]
+----
+//DEPS io.quarkus:quarkus-config-yaml
+//FILES application.yaml
+----
+
+NOTE: The path to the `application.properties` and `application.yaml` files are relative to the script file.
 
 == Running as a native application
 
@@ -439,6 +450,23 @@ __  ____  __  _____   ___  __ ____  ______
 2023-03-22 09:38:45,450 INFO  [io.quarkus] (main) Profile prod activated.
 2023-03-22 09:38:45,450 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
+
+=== Using Qute
+
+You can use the xref:./qute.adoc[Qute templating engine] in your JBang script by adding the `quarkus-qute` dependency.
+You also need to include the `templates` directory in the script:
+[source,java]
+----
+//DEPS io.quarkus:quarkus-qute
+//FILES templates/=templates/*
+
+// ...
+
+ @Inject
+ Template template; // Locate and load the `templates/template.html` file
+----
+
+If your `templates` directory includes sub-directories, use `templates/=templates/**/*` instead.
 
 === Conclusion
 

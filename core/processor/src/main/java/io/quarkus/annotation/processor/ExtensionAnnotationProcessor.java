@@ -304,16 +304,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private void writeListResourceFile(Collection<String> crListClasses, FileObject listResource) throws IOException {
-        try (OutputStream os = listResource.openOutputStream()) {
-            try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
-                    try (BufferedWriter bw = new BufferedWriter(osw)) {
-                        for (String item : crListClasses) {
-                            bw.write(item);
-                            bw.newLine();
-                        }
-                    }
-                }
+        try (BufferedWriter bw = new BufferedWriter(
+                new OutputStreamWriter(listResource.openOutputStream(), StandardCharsets.UTF_8))) {
+            for (String className : crListClasses) {
+                bw.write(className);
+                bw.newLine();
             }
         }
     }

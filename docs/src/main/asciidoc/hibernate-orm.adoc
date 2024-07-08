@@ -227,9 +227,16 @@ quarkus.datasource.username = hibernate
 quarkus.datasource.password = hibernate
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.CockroachDialect <1>
+quarkus.hibernate-orm.dialect=Cockroach <1>
 ----
 <1> Set the Hibernate ORM dialect.
++
+For built-in dialects, the expected value is one of the names
+in the link:{hibernate-orm-dialect-docs-url}[official list of dialects], *without* the `Dialect` suffix,
+for example `Cockroach` for `CockroachDialect`.
++
+For third-party dialects, the expected value is the fully-qualified class name,
+for example `com.acme.hibernate.AcmeDbDialect`.
 
 [WARNING]
 ====
@@ -249,7 +256,7 @@ quarkus.datasource.username = hibernate
 quarkus.datasource.password = hibernate
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.CockroachDialect <2>
+quarkus.hibernate-orm.dialect=Cockroach <2>
 ----
 <1> Set the database version. The Hibernate ORM dialect will target that version.
 Since we're targeting CockroachDB here, we're passing the CockroachDB version, not the PostgreSQL version.

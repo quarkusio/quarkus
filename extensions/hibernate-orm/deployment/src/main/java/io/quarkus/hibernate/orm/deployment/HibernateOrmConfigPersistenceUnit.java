@@ -276,11 +276,15 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitDialect {
 
         /**
-         * Class name of the Hibernate ORM dialect.
+         * Name of the Hibernate ORM dialect.
          *
-         * The complete list of bundled dialects is available in the
-         * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM
-         * JavaDoc].
+         * For built-in dialects, the expected value is one of the names
+         * in the link:{hibernate-orm-dialect-docs-url}[official list of dialects],
+         * *without* the `Dialect` suffix,
+         * for example `Cockroach` for `CockroachDialect`.
+         *
+         * For third-party dialects, the expected value is the fully-qualified class name,
+         * for example `com.acme.hibernate.AcmeDbDialect`.
          *
          * Setting the dialect directly is only recommended as a last resort:
          * most popular databases have a corresponding Quarkus extension,

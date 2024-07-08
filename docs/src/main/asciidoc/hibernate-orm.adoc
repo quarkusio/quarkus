@@ -262,6 +262,23 @@ quarkus.hibernate-orm.dialect=Cockroach <2>
 Since we're targeting CockroachDB here, we're passing the CockroachDB version, not the PostgreSQL version.
 <2> Set the Hibernate ORM dialect.
 
+[[hibernate-dialect-varying-database]]
+== Varying database
+
+When enabling <<database-approach,database multi-tenancy>>,
+Hibernate ORM will use multiple datasources at runtime for the same persistence unit,
+and by default Quarkus cannot tell which datasource is going to be used,
+so it will not be able to detect a dialect to use in Hibernate ORM.
+
+For that reason, when enabling <<database-approach,database multi-tenancy>>,
+it is recommended to explicitly point the Hibernate ORM configuration to one datasource
+among those that will be used at runtime, e.g. with `quarkus.hibernate-orm.datasource=base`
+(`base` being the name of a datasource).
+
+When doing so, Quarkus will infer the database version and (if possible) dialect from that datasource.
+For unsupported databases, you may still need to set the Hibernate ORM dialect explicitly,
+as explained in <<hibernate-dialect-other-databases,this section>>.
+
 [[hibernate-configuration-properties]]
 === Hibernate ORM configuration properties
 
@@ -1191,38 +1208,52 @@ INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
 
 For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`.
 
+[CAUTION]
+====
+// Related to https://github.com/quarkusio/quarkus/issues/11861
+With this approach, all datasources used by the same persistence unit
+are assumed to point to a database of the same vendor (same `db-kind`) and version.
+
+Mismatches will not be detected, and may result in unpredictable behavior.
+====
+
 [source,properties]
 ----
 quarkus.hibernate-orm.database.generation=none <1>
 
 quarkus.hibernate-orm.multitenant=DATABASE <2>
+quarkus.hibernate-orm.datasource=base <3>
 
 # Default tenant 'base'
-quarkus.datasource.base.db-kind=postgresql <3>
+quarkus.datasource.base.db-kind=postgresql <4>
 quarkus.datasource.base.username=quarkus_test
 quarkus.datasource.base.password=quarkus_test
 quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
-quarkus.flyway.base.locations=classpath:database/base <4>
+quarkus.flyway.base.locations=classpath:database/base <5>
 quarkus.flyway.base.migrate-at-start=true
 
 # Tenant 'mycompany'
-quarkus.datasource.mycompany.db-kind=postgresql <5>
+quarkus.datasource.mycompany.db-kind=postgresql <6>
 quarkus.datasource.mycompany.username=mycompany
 quarkus.datasource.mycompany.password=mycompany
 quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
-quarkus.flyway.mycompany.locations=classpath:database/mycompany <6>
+quarkus.flyway.mycompany.locations=classpath:database/mycompany <7>
 quarkus.flyway.mycompany.migrate-at-start=true
 ----
 <1> Disable schema generation, because it is not supported by Hibernate ORM for database multi-tenancy.
 We'll use Flyway instead, see further down.
 <2> Enable database multi-tenancy.
-<3> xref:datasource.adoc[Configure the datasource] for one tenant, `base`.
-<4> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `base`,
+<3> Select a datasource for the persistence unit.
++
+This is only to allow Quarkus to determine the Hibernate ORM dialect to use;
+see <<hibernate-dialect-varying-database,this section>> for details.
+<4> xref:datasource.adoc[Configure the datasource] for one tenant, `base`.
+<5> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `base`,
 because schema generation by Hibernate ORM is not supported in this case.
-<5> xref:datasource.adoc[Configure the datasource] for another tenant.
+<6> xref:datasource.adoc[Configure the datasource] for another tenant.
 +
 There could be more tenants, but here we're stopping at two.
-<6> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `mycompany`,
+<7> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `mycompany`,
 because schema generation by Hibernate ORM is not supported in this case.
 
 Following are examples of the Flyway SQL files to be created in the configured folder `src/main/resources/database`.

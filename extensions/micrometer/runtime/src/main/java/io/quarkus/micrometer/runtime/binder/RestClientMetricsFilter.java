@@ -21,6 +21,7 @@ import io.quarkus.arc.Unremovable;
  */
 @Unremovable
 @Provider
+@SuppressWarnings("unused") // this is used by io.quarkus.micrometer.deployment.binder.HttpBinderProcessor
 public class RestClientMetricsFilter implements ClientRequestFilter, ClientResponseFilter {
 
     private final static String REQUEST_METRIC_PROPERTY = "restClientMetrics";

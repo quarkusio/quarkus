@@ -6,6 +6,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -71,5 +72,12 @@ public @interface QuarkusComponentTest {
      * @see QuarkusComponentTestExtensionBuilder#addAnnotationsTransformer(AnnotationsTransformer)
      */
     Class<? extends AnnotationsTransformer>[] annotationsTransformers() default {};
+
+    /**
+     * The additional config converters. By default, the Quarkus-specific converters are registered.
+     *
+     * @see QuarkusComponentTestExtensionBuilder#addConverter(Converter)
+     */
+    Class<? extends Converter<?>>[] configConverters() default {};
 
 }

@@ -57,6 +57,7 @@ import jakarta.interceptor.InvocationContext;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -203,7 +204,7 @@ public class QuarkusComponentTestExtension
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
         this(new QuarkusComponentTestConfiguration(Map.of(), List.of(additionalComponentClasses),
                 List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of()));
+                List.of(), List.of()));
     }
 
     QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration) {
@@ -421,6 +422,7 @@ public class QuarkusComponentTestExtension
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
                     .addDefaultInterceptors()
+                    .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
                     .addDefaultSources()
                     .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
                     .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())

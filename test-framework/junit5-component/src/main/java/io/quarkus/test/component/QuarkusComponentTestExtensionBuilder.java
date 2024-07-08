@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.spi.Converter;
+
 import io.quarkus.arc.processor.AnnotationsTransformer;
 
 /**
@@ -26,6 +28,7 @@ public class QuarkusComponentTestExtensionBuilder {
     private final List<Class<?>> componentClasses = new ArrayList<>();
     private final List<MockBeanConfiguratorImpl<?>> mockConfigurators = new ArrayList<>();
     private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
+    private final List<Converter<?>> configConverters = new ArrayList<>();
     private boolean useDefaultConfigProperties = false;
     private boolean addNestedClassesAsComponents = true;
     private int configSourceOrdinal = QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL;
@@ -106,6 +109,17 @@ public class QuarkusComponentTestExtensionBuilder {
     }
 
     /**
+     * Add an additional {@link Converter}. By default, the Quarkus-specific converters are registered.
+     *
+     * @param transformer
+     * @return self
+     */
+    public QuarkusComponentTestExtensionBuilder addConverter(Converter<?> converter) {
+        configConverters.add(converter);
+        return this;
+    }
+
+    /**
      * Configure a new mock of a bean.
      * <p>
      * Note that a mock is created automatically for all unsatisfied dependencies in the test. This API provides full control
@@ -124,10 +138,18 @@ public class QuarkusComponentTestExtensionBuilder {
      * @return a new extension instance
      */
     public QuarkusComponentTestExtension build() {
+        List<Converter<?>> converters;
+        if (configConverters.isEmpty()) {
+            converters = QuarkusComponentTestConfiguration.DEFAULT_CONVERTERS;
+        } else {
+            converters = new ArrayList<>(QuarkusComponentTestConfiguration.DEFAULT_CONVERTERS);
+            converters.addAll(configConverters);
+            converters = List.copyOf(converters);
+        }
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
-                List.copyOf(componentClasses),
-                List.copyOf(mockConfigurators), useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers)));
+                List.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
+                addNestedClassesAsComponents, configSourceOrdinal,
+                List.copyOf(annotationsTransformers), converters));
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

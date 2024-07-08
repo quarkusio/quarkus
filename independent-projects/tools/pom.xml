@@ -60,6 +60,7 @@
         <jandex.version>3.2.0</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.2.1</awaitility.version>
+        <java-properties.version>0.0.7</java-properties.version>
     </properties>
     <modules>
         <module>registry-client</module>
@@ -174,6 +175,11 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codejive</groupId>
+                <artifactId>java-properties</artifactId>
+                <version>${java-properties.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

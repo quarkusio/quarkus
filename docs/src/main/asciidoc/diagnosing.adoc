@@ -1,0 +1,99 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+
+= How to diagnose a Quarkus application in production
+
+include::./attributes.adoc[]
+
+Once your app is written and deployed, or rather before, you should anticipate how you or your operation's team will help diagnose problems.
+
+== Telemetry is your first line of defense
+
+Metrics to your dashboard
+Logs -> to Loki or CloudWatch
+Trace -> nothing today
+
+[TODO]
+====
+point to the OpenTelemetry document?
+====
+
+== Enable JFR event collection
+
+JFR or Java Flight Recorder is a technology allowing to collect, store or stream events with a very low overhead.
+
+The default profile provided by the JDK are very useful already and cost ~1% overhead (default jfr profile)
+
+Use cryostat to enable JFR in your Quarkus or Java container
+https://developers.redhat.com/blog/2021/01/25/introduction-to-containerjfr-jdk-flight-recorder-for-containers[]
+
+Set the `default.jfr`.
+See `JAVA_HOME/lib/jfr/default.jfc`
+
+JFR can create:
+
+* thread dumps every “chunk” whatever that is
+* Heap dumps every n nanoseconds
+
+Does JFR and cryostat works for mandrel?
+How do you change these settings (chunk and nanosecond value)?
+How to make it easier for people to set cryostat from a quarkus app to a kube deployment?
+
+== Privileged scripts - ran by someone with cluster privilege
+
+Next step is to use a script that captures the relevant information from the Kubernetes pod(s).
+This script has to be run by a specially authorized group of people.
+
+Specific needs that got raised thus far:
+
+* thread dump capture
+* heap dump capture
+* maybe flamegraph
+* maybe JFR 
+
+**Note that JFR can do thread and heap dump for you.**
+
+Otherwise, use the jmap/jstack tools
+https://stackoverflow.com/questions/64121941/how-to-get-a-heap-dump-from-kubernetes-k8s-pod[] 
+https://www.jaktech.co.uk/java/how-to-get-java-memory-heap-dump-from-pod-in-kubernetes/[]
+
+[TODO]
+====
+get the specific examples here
+====
+
+[WARNING]
+====
+Max said that only JFR works for native image, `jmap`, `jstack` etc are *not* working for native image.
+
+So do we go for separate path, or some common coverage path?
+====
+
+[NOTE]
+.Some notes from Loïc
+====
+For native applications, JFR is a new solution that I didn't test it yet but looking at the documentation it has a limited set of events and can only be activated at startup, see https://www.graalvm.org/22.0/reference-manual/native-image/JFR/. So you cannot really use it in production as it needs to be started at the beginning of your application and the profile will be available when you stop it (or at a time defined when starting the application). On JVM I usually use jcmd to start a profiling session when needed.
+
+For native application, you should rely on standard Linux tool and native image capabilities, so you can:
+
+- take thread dump with kill
+- if you're on the enterprise version you can take heap dump (never tested): https://www.graalvm.org/22.0/reference-manual/native-image/NativeImageHeapdump/
+- use perf to profile it (self promotion: https://www.loicmathieu.fr/wordpress/en/informatique/profiler-une-image-native-graalvm-avec-perf/)
+- activate the GC logs: https://www.graalvm.org/22.0/reference-manual/native-image/MemoryManagement/#printing-garbage-collections
+====
+
+== How to make things better
+
+As issues to track, not within the doc.
+
+=== Create higher level tools
+
+
+https://docs.microsoft.com/en-us/azure/spring-cloud/how-to-capture-dumps[Azure Spring Cloud has higher level commands for it]
+
+=== Find a way to automate this process for people for capturing heap dump on OOME
+
+e.g. https://medium.com/@281332/how-collect-java-heap-dumps-from-stateless-microservices-running-on-kubernets-a1aed5575128[]

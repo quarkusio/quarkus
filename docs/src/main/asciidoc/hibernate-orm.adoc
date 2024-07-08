@@ -84,15 +84,15 @@ then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 .Example `{config-file}`
 ----
-# datasource configuration
-quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-kind = postgresql <1>
 quarkus.datasource.username = hibernate
 quarkus.datasource.password = hibernate
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.database.generation=drop-and-create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource].
+<2> Drop and create the database at startup (use `update` to only update the schema).
 
 Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file.
 They will often map to Hibernate ORM configuration properties but could have different names and don't necessarily map 1:1 to each other.
@@ -1127,32 +1127,37 @@ In general, it is not possible to use the Hibernate ORM database generation feat
 Therefore, you have to disable it, and you need to make sure that the tables are created per schema.
 The following setup will use the xref:flyway.adoc[Flyway] extension to achieve this goal.
 
+[[schema-approach]]
 ==== SCHEMA approach
 
 The same data source will be used for all tenants and a schema has to be created for every tenant inside that data source.
-CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the DATABASE approach below.
+
+CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the <<database-approach,database approach>>.
 
 [source,properties]
 ----
-# Disable generation
-quarkus.hibernate-orm.database.generation=none
+quarkus.hibernate-orm.database.generation=none <1>
 
-# Enable SCHEMA approach and use default datasource
-quarkus.hibernate-orm.multitenant=SCHEMA
-# You could use a non-default datasource by using the following setting
-# quarkus.hibernate-orm.datasource=other
+quarkus.hibernate-orm.multitenant=SCHEMA <2>
 
-# The default data source used for all tenant schemas
-quarkus.datasource.db-kind=postgresql
+quarkus.datasource.db-kind=postgresql <3>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 
-# Enable Flyway configuration to create schemas
-quarkus.flyway.schemas=base,mycompany
+quarkus.flyway.schemas=base,mycompany <4>
 quarkus.flyway.locations=classpath:schema
 quarkus.flyway.migrate-at-start=true
 ----
+<1> Disable schema generation, because it is not supported by Hibernate ORM for schema multi-tenancy.
+We'll use Flyway instead, see further down.
+<2> Enable schema multi-tenancy.
++
+We use the default datasource here, but could use a named datasource if we wanted to,
+by following instructions <<multiple-persistence-units,there>>.
+<3> xref:datasource.adoc[Configure the datasource].
+<4> Configure xref:flyway.adoc[Flyway] for database initialization,
+because schema generation by Hibernate ORM is not supported in this case.
 
 Here is an example of the Flyway SQL (`V1.0.0__create_fruits.sql`) to be created in the configured folder `src/main/resources/schema`.
 
@@ -1181,44 +1186,48 @@ INSERT INTO mycompany.known_fruits(id, name) VALUES (2, 'Apricots');
 INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
 ----
 
-
-
+[[database-approach]]
 ==== DATABASE approach
 
 For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`.
 
 [source,properties]
 ----
-# Disable generation
-quarkus.hibernate-orm.database.generation=none
+quarkus.hibernate-orm.database.generation=none <1>
 
-# Enable DATABASE approach
-quarkus.hibernate-orm.multitenant=DATABASE
+quarkus.hibernate-orm.multitenant=DATABASE <2>
 
 # Default tenant 'base'
-quarkus.datasource.base.db-kind=postgresql
+quarkus.datasource.base.db-kind=postgresql <3>
 quarkus.datasource.base.username=quarkus_test
 quarkus.datasource.base.password=quarkus_test
 quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+quarkus.flyway.base.locations=classpath:database/base <4>
+quarkus.flyway.base.migrate-at-start=true
 
 # Tenant 'mycompany'
-quarkus.datasource.mycompany.db-kind=postgresql
+quarkus.datasource.mycompany.db-kind=postgresql <5>
 quarkus.datasource.mycompany.username=mycompany
 quarkus.datasource.mycompany.password=mycompany
 quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
-
-# Flyway configuration for the default datasource
-quarkus.flyway.locations=classpath:database/default
-quarkus.flyway.migrate-at-start=true
-
-# Flyway configuration for the mycompany datasource
-quarkus.flyway.mycompany.locations=classpath:database/mycompany
+quarkus.flyway.mycompany.locations=classpath:database/mycompany <6>
 quarkus.flyway.mycompany.migrate-at-start=true
 ----
+<1> Disable schema generation, because it is not supported by Hibernate ORM for database multi-tenancy.
+We'll use Flyway instead, see further down.
+<2> Enable database multi-tenancy.
+<3> xref:datasource.adoc[Configure the datasource] for one tenant, `base`.
+<4> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `base`,
+because schema generation by Hibernate ORM is not supported in this case.
+<5> xref:datasource.adoc[Configure the datasource] for another tenant.
++
+There could be more tenants, but here we're stopping at two.
+<6> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `mycompany`,
+because schema generation by Hibernate ORM is not supported in this case.
 
 Following are examples of the Flyway SQL files to be created in the configured folder `src/main/resources/database`.
 
-Default schema (`src/main/resources/database/default/V1.0.0__create_fruits.sql`):
+Schema for tenant `base` (`src/main/resources/database/base/V1.0.0__create_fruits.sql`):
 
 [source,sql]
 ----
@@ -1234,7 +1243,7 @@ INSERT INTO known_fruits(id, name) VALUES (2, 'Apple');
 INSERT INTO known_fruits(id, name) VALUES (3, 'Banana');
 ----
 
-Mycompany schema (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
+Schema for tenant `mycompany` (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
 
 [source,sql]
 ----
@@ -1250,8 +1259,7 @@ INSERT INTO known_fruits(id, name) VALUES (2, 'Apricots');
 INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 ----
 
-
-
+[[discriminator-approach]]
 ==== DISCRIMINATOR approach
 
 The default data source will be used for all tenants. All entities defining a field annotated with `@TenantId` will have that field populated automatically, and will get filtered automatically in queries.
@@ -1259,16 +1267,15 @@ The default data source will be used for all tenants. All entities defining a fi
 
 [source,properties]
 ----
-# Enable DISCRIMINATOR approach
-quarkus.hibernate-orm.multitenant=DISCRIMINATOR
+quarkus.hibernate-orm.multitenant=DISCRIMINATOR <1>
 
-# The default data source used for all tenant schemas
-quarkus.datasource.db-kind=postgresql
+quarkus.datasource.db-kind=postgresql <2>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 ----
-
+<1> Enable discriminator multi-tenancy.
+<2> xref:datasource.adoc[Configure the datasource].
 
 === Programmatically Resolving Tenants Connections
 

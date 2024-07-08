@@ -73,7 +73,7 @@
         <maven.compiler.argument.testSource>${maven.compiler.testSource}</maven.compiler.argument.testSource>
 
         <!-- maven-enforcer-plugin -->
-        <maven.min.version>3.8.6</maven.min.version>
+        <maven.min.version>3.9.6</maven.min.version>
         <jdk.min.version>${maven.compiler.argument.source}</jdk.min.version>
         <insecure.repositories>ERROR</insecure.repositories>
 

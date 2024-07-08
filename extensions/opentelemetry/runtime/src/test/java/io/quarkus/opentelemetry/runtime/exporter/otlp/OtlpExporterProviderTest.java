@@ -11,6 +11,7 @@ import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 
@@ -171,6 +172,82 @@ class OtlpExporterProviderTest {
                         };
                     }
                 };
+            }
+
+            @Override
+            public OtlpExporterMetricsConfig metrics() {
+                return new OtlpExporterMetricsConfig() {
+                    @Override
+                    public Optional<String> temporalityPreference() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> defaultHistogramAggregation() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> endpoint() {
+                        return Optional.ofNullable(newTrace);
+                    }
+
+                    @Override
+                    public Optional<List<String>> headers() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<CompressionType> compression() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Duration timeout() {
+                        return null;
+                    }
+
+                    @Override
+                    public Optional<String> protocol() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public KeyCert keyCert() {
+                        return new KeyCert() {
+                            @Override
+                            public Optional<List<String>> keys() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public TrustCert trustCert() {
+                        return new TrustCert() {
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public Optional<String> tlsConfigurationName() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public ProxyConfig proxyOptions() {
+                        return null;
+                    }
+                };
+
             }
         };
     }

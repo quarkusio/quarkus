@@ -27,12 +27,14 @@ import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.exporter.otlp.internal.OtlpMetricExporterProvider;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurablePropagatorProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -105,6 +107,7 @@ public class OpenTelemetryProcessor {
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
     }
@@ -144,11 +147,12 @@ public class OpenTelemetryProcessor {
             BuildProducer<RemovedResourceBuildItem> removedResources,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) throws IOException {
 
-        List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
+        final List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
                 Thread.currentThread().getContextClassLoader(),
                 SPI_ROOT + ConfigurableSpanExporterProvider.class.getName())
                 .stream()
-                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p)).collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
+                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
         if (!spanExporterProviders.isEmpty()) {
             services.produce(
                     new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(), spanExporterProviders));
@@ -160,8 +164,26 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")));
         }
 
+        final List<String> metricExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableMetricExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpMetricExporterProvider.class.getName().equals(p))
+                .collect(toList()); // filter out OtlpMetricExporterProvider since it depends on OkHttp
+        if (!metricExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableMetricExporterProvider.class.getName(), metricExporterProviders));
+        }
+        if (config.metrics().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
+            removedResources.produce(new RemovedResourceBuildItem(
+                    ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                    Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
+        }
+
         runtimeReinitialized.produce(
                 new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
 
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));

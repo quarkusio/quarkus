@@ -11,6 +11,9 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.opentelemetry.api.baggage.Baggage;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.context.Scope;
 
 @Path("")
@@ -40,6 +43,9 @@ public class SimpleResource {
 
     @Inject
     Baggage baggage;
+
+    @Inject
+    Meter meter;
 
     @GET
     public TraceData noPath() {
@@ -85,6 +91,19 @@ public class SimpleResource {
         TraceData data = new TraceData();
         data.message = "Direct trace";
 
+        return data;
+    }
+
+    @GET
+    @Path("/direct-metrics")
+    public TraceData directTraceWithMetrics() {
+        meter.counterBuilder("direct-trace-counter")
+                .setUnit("items")
+                .setDescription("A counter of direct traces")
+                .build()
+                .add(1, Attributes.of(AttributeKey.stringKey("key"), "low-cardinality-value"));
+        TraceData data = new TraceData();
+        data.message = "Direct trace";
         return data;
     }
 

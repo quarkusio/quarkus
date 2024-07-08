@@ -15,8 +15,8 @@ public class OtlpExporterConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withEmptyApplication()
-            .overrideConfigKey("otel.traces.exporter", "cdi")
-            .overrideConfigKey("otel.exporter.otlp.traces.protocol", "http/protobuf")
+            .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
+            .overrideConfigKey("quarkus.otel.exporter.otlp.traces.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.otel.exporter.otlp.traces.legacy-endpoint", "http://localhost ")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50")
             .overrideConfigKey("quarkus.otel.bsp.export.timeout", "PT1S");

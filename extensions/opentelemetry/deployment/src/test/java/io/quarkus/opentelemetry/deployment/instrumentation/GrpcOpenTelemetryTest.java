@@ -58,6 +58,8 @@ import io.quarkus.opentelemetry.deployment.StreamingBean;
 import io.quarkus.opentelemetry.deployment.StreamingClient;
 import io.quarkus.opentelemetry.deployment.StreamingGrpc;
 import io.quarkus.opentelemetry.deployment.StreamingProto;
+import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
+import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
@@ -70,6 +72,7 @@ public class GrpcOpenTelemetryTest {
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
+                    .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
                     .addClasses(HelloService.class)
                     .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
                             Greeter.class, GreeterBean.class, GreeterClient.class,
@@ -80,7 +83,9 @@ public class GrpcOpenTelemetryTest {
                             Streaming.class, StreamingBean.class, StreamingClient.class,
                             StreamingProto.class, Item.class, ItemOrBuilder.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.greeter.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.greeter.port", "9001")

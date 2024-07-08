@@ -155,6 +155,10 @@ public abstract class BuildFile implements ExtensionManager {
         Files.write(projectDirPath.resolve(fileName), content);
     }
 
+    protected void writeToProjectFile(final String fileName, final String content) throws IOException {
+        Files.writeString(projectDirPath.resolve(fileName), content);
+    }
+
     private Set<ArtifactKey> getDependenciesKeys() throws IOException {
         return getDependencies().stream().map(ArtifactCoords::getKey).collect(Collectors.toSet());
     }

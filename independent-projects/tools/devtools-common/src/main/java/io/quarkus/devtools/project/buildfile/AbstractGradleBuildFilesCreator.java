@@ -8,8 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.codejive.properties.Properties;
 
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
@@ -120,6 +121,10 @@ abstract class AbstractGradleBuildFilesCreator {
 
     protected void writeToProjectFile(final String fileName, final byte[] content) throws IOException {
         Files.write(quarkusProject.getProjectDirPath().resolve(fileName), content);
+    }
+
+    protected void writeToProjectFile(final String fileName, final String content) throws IOException {
+        Files.writeString(quarkusProject.getProjectDirPath().resolve(fileName), content);
     }
 
     private void createProperties() throws IOException {

@@ -689,7 +689,7 @@ quarkus.oidc.auth-server-url=https://dev-3ve0cgn7.us.auth0.com
 
 which is all what is needed for the OIDC `service` application to fetch Auth0 public verification keys and use them to verify Auth0 access tokens in JWT format.
 
-[[NOTE]]
+[NOTE]
 ====
 In this tutorial you have already configured the OIDC `hybrid` application which can handle both authorization code and bearer token authentication flows. In production you will run microservices as separate servers but for the sake of simplicity `ApiEchoService` will not have to be started as a second server with its own configuration containing `quarkus.oidc.auth-server-url=https://dev-3ve0cgn7.us.auth0.com` only, and therefore the current configuration which already has the Auth0 dev tenant address configured will be reused.
 

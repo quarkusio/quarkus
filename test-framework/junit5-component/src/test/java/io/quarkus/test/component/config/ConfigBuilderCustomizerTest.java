@@ -1,12 +1,9 @@
 package io.quarkus.test.component.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import jakarta.annotation.Priority;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -16,26 +13,27 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.component.QuarkusComponentTestExtension;
 import io.quarkus.test.component.TestConfigProperty;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
-public class ConfigConverterExtensionTest {
+public class ConfigBuilderCustomizerTest {
 
     @RegisterExtension
     static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .addConverter(new CustomBooleanConverter()).build();
+            .setConfigBuilderCustomizer(new Consumer<SmallRyeConfigBuilder>() {
+                @Override
+                public void accept(SmallRyeConfigBuilder builder) {
+                    builder.withConverter(Boolean.class, 300, new CustomBooleanConverter());
+                }
+            }).build();
 
     @TestConfigProperty(key = "my.boolean", value = "jo")
-    @TestConfigProperty(key = "my.duration", value = "5s")
     @Test
-    public void testConverters(Foo foo) {
-        assertEquals(TimeUnit.SECONDS.toMillis(5), foo.durationVal.toMillis());
+    public void testBuilderCustomizer(Foo foo) {
         assertTrue(foo.boolVal);
     }
 
     @Singleton
     public static class Foo {
-
-        @ConfigProperty(name = "my.duration", defaultValue = "60s")
-        Duration durationVal;
 
         @ConfigProperty(name = "my.boolean")
         boolean boolVal;
@@ -43,7 +41,6 @@ public class ConfigConverterExtensionTest {
     }
 
     @SuppressWarnings("serial")
-    @Priority(300)
     public static class CustomBooleanConverter implements Converter<Boolean> {
 
         @Override

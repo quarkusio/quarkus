@@ -23,7 +23,7 @@ public class ConfigConverterTest {
     @TestConfigProperty(key = "my.boolean", value = "jo")
     @TestConfigProperty(key = "my.duration", value = "5s")
     @Test
-    public void testQuarkusDurationConverter(Foo foo) {
+    public void testConverters(Foo foo) {
         assertEquals(TimeUnit.SECONDS.toMillis(5), foo.durationVal.toMillis());
         assertTrue(foo.boolVal);
     }

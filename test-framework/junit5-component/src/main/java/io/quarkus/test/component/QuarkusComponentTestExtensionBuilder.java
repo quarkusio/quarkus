@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * Convenient builder for {@link QuarkusComponentTestExtension}.
@@ -32,6 +34,7 @@ public class QuarkusComponentTestExtensionBuilder {
     private boolean useDefaultConfigProperties = false;
     private boolean addNestedClassesAsComponents = true;
     private int configSourceOrdinal = QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL;
+    private Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
 
     /**
      * The initial set of components under test is derived from the test class. The types of all fields annotated with
@@ -111,11 +114,25 @@ public class QuarkusComponentTestExtensionBuilder {
     /**
      * Add an additional {@link Converter}. By default, the Quarkus-specific converters are registered.
      *
-     * @param transformer
+     * @param converter
      * @return self
+     * @see #setConfigBuilderCustomizer(Consumer)
      */
     public QuarkusComponentTestExtensionBuilder addConverter(Converter<?> converter) {
         configConverters.add(converter);
+        return this;
+    }
+
+    /**
+     * Set the {@link SmallRyeConfigBuilder} customizer.
+     * <p>
+     * The customizer can affect the configuration of a test method and should be used with caution.
+     *
+     * @param customizer
+     * @return self
+     */
+    public QuarkusComponentTestExtensionBuilder setConfigBuilderCustomizer(Consumer<SmallRyeConfigBuilder> customizer) {
+        this.configBuilderCustomizer = customizer;
         return this;
     }
 
@@ -149,7 +166,7 @@ public class QuarkusComponentTestExtensionBuilder {
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
                 List.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters));
+                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer));
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

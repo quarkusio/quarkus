@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -34,6 +35,7 @@ import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.ZoneIdConverter;
 import io.quarkus.runtime.logging.LevelConverter;
 import io.quarkus.test.InjectMock;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 class QuarkusComponentTestConfiguration {
 
@@ -52,7 +54,7 @@ class QuarkusComponentTestConfiguration {
 
     static final QuarkusComponentTestConfiguration DEFAULT = new QuarkusComponentTestConfiguration(Map.of(), List.of(),
             List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(),
-            DEFAULT_CONVERTERS);
+            DEFAULT_CONVERTERS, null);
 
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestConfiguration.class);
 
@@ -64,11 +66,13 @@ class QuarkusComponentTestConfiguration {
     final int configSourceOrdinal;
     final List<AnnotationsTransformer> annotationsTransformers;
     final List<Converter<?>> configConverters;
+    final Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
 
     QuarkusComponentTestConfiguration(Map<String, String> configProperties, List<Class<?>> componentClasses,
             List<MockBeanConfiguratorImpl<?>> mockConfigurators, boolean useDefaultConfigProperties,
             boolean addNestedClassesAsComponents, int configSourceOrdinal,
-            List<AnnotationsTransformer> annotationsTransformers, List<Converter<?>> configConverters) {
+            List<AnnotationsTransformer> annotationsTransformers, List<Converter<?>> configConverters,
+            Consumer<SmallRyeConfigBuilder> configBuilderCustomizer) {
         this.configProperties = configProperties;
         this.componentClasses = componentClasses;
         this.mockConfigurators = mockConfigurators;
@@ -77,6 +81,7 @@ class QuarkusComponentTestConfiguration {
         this.configSourceOrdinal = configSourceOrdinal;
         this.annotationsTransformers = annotationsTransformers;
         this.configConverters = configConverters;
+        this.configBuilderCustomizer = configBuilderCustomizer;
     }
 
     QuarkusComponentTestConfiguration update(Class<?> testClass) {
@@ -159,7 +164,7 @@ class QuarkusComponentTestConfiguration {
         return new QuarkusComponentTestConfiguration(Map.copyOf(configProperties), List.copyOf(componentClasses),
                 this.mockConfigurators,
                 useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), List.copyOf(configConverters));
+                List.copyOf(annotationsTransformers), List.copyOf(configConverters), configBuilderCustomizer);
     }
 
     QuarkusComponentTestConfiguration update(Method testMethod) {
@@ -171,7 +176,7 @@ class QuarkusComponentTestConfiguration {
         }
         return new QuarkusComponentTestConfiguration(configProperties, componentClasses,
                 mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                annotationsTransformers, configConverters);
+                annotationsTransformers, configConverters, configBuilderCustomizer);
     }
 
     private static boolean resolvesToBuiltinBean(Class<?> rawType) {

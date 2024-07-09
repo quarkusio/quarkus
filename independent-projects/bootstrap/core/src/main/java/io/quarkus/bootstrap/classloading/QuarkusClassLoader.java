@@ -511,8 +511,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        ensureOpen();
-
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.loadClass(name, this.name);
         }
@@ -529,6 +527,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 if (c != null) {
                     return c;
                 }
+
+                ensureOpen();
+
                 String resourceName = fromClassNameToResourceName(name);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
@@ -643,8 +644,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
-        ensureOpen();
-
         return super.defineClass(name, b, off, len);
     }
 

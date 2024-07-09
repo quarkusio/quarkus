@@ -153,7 +153,7 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         Objects.requireNonNull(callback);
         Objects.requireNonNull(callbacks);
         Map<Class<?>, Collection<Class<?>>> ret = new HashMap<>();
-        ret.put(callback.getClass(), register(callback));
+        ret.put(callback, register(callback));
         for (Class<?> cb : callbacks) {
             ret.put(cb, register(cb));
         }

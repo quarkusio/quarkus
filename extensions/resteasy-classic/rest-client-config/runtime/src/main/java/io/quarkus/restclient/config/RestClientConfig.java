@@ -24,6 +24,7 @@ public class RestClientConfig {
         EMPTY = new RestClientConfig();
         EMPTY.url = Optional.empty();
         EMPTY.uri = Optional.empty();
+        EMPTY.overrideUri = Optional.empty();
         EMPTY.providers = Optional.empty();
         EMPTY.connectTimeout = Optional.empty();
         EMPTY.readTimeout = Optional.empty();
@@ -74,6 +75,15 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> uri;
+
+    /**
+     * This property is only meant to be set by advanced configurations to override whatever value was set for the uri or url.
+     * The override is done using the REST Client class name configuration syntax.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigItem
+    public Optional<String> overrideUri;
 
     /**
      * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
@@ -314,6 +324,7 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(configKey, "url", String.class);
         instance.uri = getConfigValue(configKey, "uri", String.class);
+        instance.overrideUri = getConfigValue(configKey, "override-uri", String.class);
         instance.providers = getConfigValue(configKey, "providers", String.class);
         instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
@@ -357,6 +368,7 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(interfaceClass, "url", String.class);
         instance.uri = getConfigValue(interfaceClass, "uri", String.class);
+        instance.overrideUri = getConfigValue(interfaceClass, "override-uri", String.class);
         instance.providers = getConfigValue(interfaceClass, "providers", String.class);
         instance.connectTimeout = getConfigValue(interfaceClass, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);
@@ -403,7 +415,7 @@ public class RestClientConfig {
         return optional;
     }
 
-    private static <T> Optional<T> getConfigValue(Class<?> clientInterface, String fieldName, Class<T> type) {
+    public static <T> Optional<T> getConfigValue(Class<?> clientInterface, String fieldName, Class<T> type) {
         final Config config = ConfigProvider.getConfig();
         // first try interface full name
         Optional<T> optional = config.getOptionalValue(composePropertyKey('"' + clientInterface.getName() + '"', fieldName),

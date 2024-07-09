@@ -8,6 +8,15 @@ import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Transform a class using ASM {@link ClassVisitor}. Note that the transformation is performed after assembling the
+ * index and thus the changes won't be visible to any processor steps relying on the index.
+ * <p>
+ * You may consider using {@code io.quarkus.arc.deployment.AnnotationsTransformerBuildItem} if your transformation
+ * should be visible for Arc. See also
+ * <a href="https://quarkus.io/version/main/guides/cdi-integration#annotations_transformer_build_item">I Need To
+ * Transform Annotation Metadata</a> section of Quarkus CDI integration guide.
+ */
 public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     final String classToTransform;

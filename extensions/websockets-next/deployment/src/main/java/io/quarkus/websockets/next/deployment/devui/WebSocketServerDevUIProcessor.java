@@ -40,7 +40,7 @@ public class WebSocketServerDevUIProcessor {
                 .title("Server Endpoints")
                 .icon("font-awesome-solid:plug")
                 .componentLink("qwc-wsn-endpoints.js")
-                .staticLabel(String.valueOf(endpoints.size())));
+                .staticLabel(String.valueOf(endpoints.stream().filter(WebSocketEndpointBuildItem::isServer).count())));
 
         cardPages.produce(pageBuildItem);
     }

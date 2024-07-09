@@ -35,9 +35,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>\${compiler-plugin.version}</version>
                     <configuration>
-                        <compilerArgs>
-                            <arg>-parameters</arg>
-                        </compilerArgs>
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>

@@ -219,9 +219,7 @@ Your extension is a multi-module project. So let's start by checking out the par
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${compiler-plugin.version}</version>
           <configuration>
-            <compilerArgs>
-              <arg>-parameters</arg><!--5-->
-            </compilerArgs>
+            <parameters>true</parameters>
           </configuration>
         </plugin>
       </plugins>
@@ -234,7 +232,6 @@ Your extension is a multi-module project. So let's start by checking out the par
 <2> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 <3> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
 <4> Quarkus requires these configs to run tests properly.
-<5> Setting the `parameters` flag this way works around https://issues.apache.org/jira/browse/MCOMPILER-413[MCOMPILER-413].
 
 ==== The Deployment module
 

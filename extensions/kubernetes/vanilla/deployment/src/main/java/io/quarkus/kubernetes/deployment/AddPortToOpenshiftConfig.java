@@ -29,7 +29,7 @@ public class AddPortToOpenshiftConfig extends Configurator<OpenshiftConfigFluent
      */
     private boolean hasPort(OpenshiftConfigFluent<?> config) {
         for (Port p : config.buildPorts()) {
-            if (p.getContainerPort() == port.getContainerPort()) {
+            if (Objects.equals(p.getContainerPort(), port.getContainerPort())) {
                 return true;
             }
         }

@@ -118,7 +118,9 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add("-i"); // Interactive, write logs to stdout
         args.add("--rm");
 
-        args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        if (!volumeMounts.isEmpty()) {
+            args.addAll(NativeImageBuildLocalContainerRunner.getVolumeAccessArguments(containerRuntime));
+        }
 
         args.add("-p");
         args.add(httpPort + ":" + httpPort);

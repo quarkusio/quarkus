@@ -21,6 +21,7 @@ import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.net.SSLOptions;
 
 abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>> {
@@ -190,5 +191,22 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
             }
         }
         return clientOptions;
+    }
+
+    protected WebSocketConnectOptions newConnectOptions(URI serverEndpointUri) {
+        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
+                .setSsl(isHttps(serverEndpointUri))
+                .setHost(serverEndpointUri.getHost());
+        if (serverEndpointUri.getPort() != -1) {
+            connectOptions.setPort(serverEndpointUri.getPort());
+        } else if (isHttps(serverEndpointUri)) {
+            // If port is undefined and https is used then use 443 by default
+            connectOptions.setPort(443);
+        }
+        return connectOptions;
+    }
+
+    protected boolean isHttps(URI uri) {
+        return "https".equals(uri.getScheme());
     }
 }

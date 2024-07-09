@@ -116,10 +116,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         // TODO would it make sense to share clients?
         WebSocketClient client = vertx.createWebSocketClient(populateClientOptions());
 
-        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
-                .setSsl(baseUri.getScheme().equals("https"))
-                .setHost(baseUri.getHost())
-                .setPort(baseUri.getPort());
+        WebSocketConnectOptions connectOptions = newConnectOptions(baseUri);
         StringBuilder requestUri = new StringBuilder();
         String mergedPath = mergePath(baseUri.getPath(), replacePathParameters(path));
         requestUri.append(mergedPath);

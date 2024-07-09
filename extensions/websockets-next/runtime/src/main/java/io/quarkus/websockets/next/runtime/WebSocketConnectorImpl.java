@@ -72,10 +72,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
             throw new WebSocketClientException(e);
         }
 
-        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
-                .setSsl(serverEndpointUri.getScheme().equals("https"))
-                .setHost(serverEndpointUri.getHost())
-                .setPort(serverEndpointUri.getPort());
+        WebSocketConnectOptions connectOptions = newConnectOptions(serverEndpointUri);
         StringBuilder uri = new StringBuilder();
         if (serverEndpointUri.getPath() != null) {
             uri.append(serverEndpointUri.getRawPath());

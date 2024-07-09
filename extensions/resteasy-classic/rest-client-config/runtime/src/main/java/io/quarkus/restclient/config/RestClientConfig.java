@@ -80,7 +80,7 @@ public class RestClientConfig {
      * This property is only meant to be set by advanced configurations to override whatever value was set for the uri or url.
      * The override is done using the REST Client class name configuration syntax.
      * <p>
-     * This property is not applicable to the RESTEasy Client.
+     * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy Reactive client).
      */
     @ConfigItem
     public Optional<String> overrideUri;
@@ -406,7 +406,7 @@ public class RestClientConfig {
         return instance;
     }
 
-    private static <T> Optional<T> getConfigValue(String configKey, String fieldName, Class<T> type) {
+    public static <T> Optional<T> getConfigValue(String configKey, String fieldName, Class<T> type) {
         final Config config = ConfigProvider.getConfig();
         Optional<T> optional = config.getOptionalValue(composePropertyKey(configKey, fieldName), type);
         if (optional.isEmpty()) { // try to find property with quoted configKey

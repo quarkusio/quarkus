@@ -36,6 +36,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-tls-registry-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-http-proxy</artifactId>
+        </dependency>
         <!-- test dependencies: -->
         <dependency>
             <groupId>io.quarkus</groupId>

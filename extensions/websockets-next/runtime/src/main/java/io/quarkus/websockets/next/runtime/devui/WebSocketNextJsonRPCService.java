@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -53,16 +54,18 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
 
     private final WebSocketsServerRuntimeConfig.DevMode devModeConfig;
 
-    WebSocketNextJsonRPCService(ConnectionManager connectionManager, Vertx vertx, HttpConfiguration httpConfig,
+    WebSocketNextJsonRPCService(Instance<ConnectionManager> connectionManager, Vertx vertx, HttpConfiguration httpConfig,
             WebSocketsServerRuntimeConfig config) {
         this.connectionStatus = BroadcastProcessor.create();
         this.connectionMessages = BroadcastProcessor.create();
-        this.connectionManager = connectionManager;
+        this.connectionManager = connectionManager.isResolvable() ? connectionManager.get() : null;
         this.vertx = vertx;
         this.httpConfig = httpConfig;
         this.devModeConfig = config.devMode();
         this.sockets = new ConcurrentHashMap<>();
-        connectionManager.addListener(this);
+        if (this.connectionManager != null) {
+            this.connectionManager.addListener(this);
+        }
     }
 
     public Multi<JsonObject> connectionStatus() {
@@ -75,14 +78,16 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
 
     public JsonObject getConnections(List<String> endpoints) {
         JsonObject json = new JsonObject();
-        for (String endpoint : endpoints) {
-            List<WebSocketConnection> connections = new ArrayList<>(connectionManager.getConnections(endpoint));
-            connections.sort(Comparator.comparing(WebSocketConnection::creationTime));
-            JsonArray array = new JsonArray();
-            for (WebSocketConnection c : connections) {
-                array.add(toJsonObject(endpoint, c));
+        if (connectionManager != null) {
+            for (String endpoint : endpoints) {
+                List<WebSocketConnection> connections = new ArrayList<>(connectionManager.getConnections(endpoint));
+                connections.sort(Comparator.comparing(WebSocketConnection::creationTime));
+                JsonArray array = new JsonArray();
+                for (WebSocketConnection c : connections) {
+                    array.add(toJsonObject(endpoint, c));
+                }
+                json.put(endpoint, array);
             }
-            json.put(endpoint, array);
         }
         json.put("connectionMessagesLimit", devModeConfig.connectionMessagesLimit());
         return json;
@@ -104,6 +109,9 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     }
 
     public Uni<JsonObject> openDevConnection(String path, String endpointPath) {
+        if (connectionManager == null) {
+            return failureUni();
+        }
         if (isInvalidPath(path, endpointPath)) {
             LOG.errorf("Invalid path %s; original endpoint path %s", path, endpointPath);
             return failureUni();
@@ -179,6 +187,9 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     }
 
     public Uni<JsonObject> closeDevConnection(String connectionKey) {
+        if (connectionManager == null) {
+            return failureUni();
+        }
         DevWebSocket socket = sockets.remove(connectionKey);
         if (socket != null) {
             Uni<Void> uni = UniHelper.toUni(socket.socket.close());

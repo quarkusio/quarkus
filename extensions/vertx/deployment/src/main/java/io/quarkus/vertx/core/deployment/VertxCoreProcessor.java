@@ -369,7 +369,7 @@ class VertxCoreProcessor {
                         debugPort = Integer.parseInt(m.group(2));
                         String host = m.group(1);
                         if (host.equals("*")) {
-                            host.equals("localhost");
+                            host = "localhost";
                         }
                         bindAddress = InetAddress.getByName(host);
                     }

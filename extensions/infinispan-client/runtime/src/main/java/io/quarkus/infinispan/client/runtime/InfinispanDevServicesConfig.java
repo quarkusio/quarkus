@@ -148,7 +148,7 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
                 Objects.equals(imageName, that.imageName) &&
-                Objects.equals(artifacts, this.artifacts) &&
+                Objects.equals(artifacts, that.artifacts) &&
                 Objects.equals(containerEnv, that.containerEnv);
     }
 

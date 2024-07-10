@@ -23,5 +23,6 @@ class JsonSubTypesResourceTest {
                 .extract().response();
         assertThat(response.jsonPath().getString("mammals[0].color")).isEqualTo("white");
         assertThat(response.jsonPath().getString("mammals[1].continent")).isEqualTo("africa");
+        assertThat(response.jsonPath().getString("mammals[1].horn_length")).isEqualTo("10");
     }
 }

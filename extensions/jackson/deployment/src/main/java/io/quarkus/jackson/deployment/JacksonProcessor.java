@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -83,6 +84,7 @@ public class JacksonProcessor {
 
     private static final DotName JSON_TYPE_ID_RESOLVER = DotName.createSimple(JsonTypeIdResolver.class.getName());
     private static final DotName JSON_SUBTYPES = DotName.createSimple(JsonSubTypes.class.getName());
+    private static final DotName JACKSON_NAMING = DotName.createSimple(JsonNaming.class.getName());
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
 
     private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
@@ -296,6 +298,18 @@ public class JacksonProcessor {
         if (!subTypeTypesNames.isEmpty()) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(subTypeTypesNames.toArray(EMPTY_STRING))
                     .methods().fields().build());
+        }
+
+        // register @JsonNaming for reflection
+        Set<String> namingTypesNames = new HashSet<>();
+        for (AnnotationInstance namingInstance : index.getAnnotations(JSON_NAMING)) {
+            AnnotationValue namingValue = namingInstance.value();
+            if (namingValue != null) {
+                namingTypesNames.add(namingValue.asClass().name().toString());
+            }
+        }
+        if (!namingTypesNames.isEmpty()) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(namingTypesNames.toArray(EMPTY_STRING)).build());
         }
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex

@@ -309,7 +309,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return null;
     }
 
-    private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t");
+    private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t|\\r");
 
     /**
      * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be

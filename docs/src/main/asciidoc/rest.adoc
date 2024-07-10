@@ -1420,10 +1420,11 @@ public class Person {
     @SecureField(rolesAllowed = "${role:admin}")                 <1>
     private String address;
 
-    public Person(Long id, String first, String last) {
+    public Person(Long id, String first, String last, String address) {
         this.id = id;
         this.first = first;
         this.last = last;
+        this.address = address;
     }
 
     public Long getId() {
@@ -1466,7 +1467,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
 @Path("person")
-public class Person {
+public class PersonResource {
 
     @Path("{id}")
     @GET

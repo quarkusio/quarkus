@@ -25,7 +25,9 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +36,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
@@ -183,8 +186,106 @@ public class ServerEndpointIndexer
             }
         }
         serverResourceMethod.setHandlerChainCustomizers(methodCustomizers);
-        serverResourceMethod.setActualDeclaringClassName(methodInfo.declaringClass().name().toString());
+
+        var actualDeclaringClassName = findActualDeclaringClassName(methodInfo, actualEndpointClass);
+        serverResourceMethod.setActualDeclaringClassName(actualDeclaringClassName);
+        var classDeclMethodThatHasJaxRsEndpointDefiningAnn = methodInfo.declaringClass().name().toString();
+        if (!actualDeclaringClassName.equals(classDeclMethodThatHasJaxRsEndpointDefiningAnn)) {
+            serverResourceMethod
+                    .setClassDeclMethodThatHasJaxRsEndpointDefiningAnn(classDeclMethodThatHasJaxRsEndpointDefiningAnn);
+        }
+
         return serverResourceMethod;
+    }
+
+    private String findActualDeclaringClassName(MethodInfo methodInfo, ClassInfo actualEndpointClass) {
+        return findEndpointImplementation(methodInfo, actualEndpointClass, index).declaringClass().name().toString();
+    }
+
+    /**
+     * Aim here is to find a method that actually returns endpoint response.
+     * We can receive method with similar signature several times here, only differing in the modifiers (abstract etc.).
+     * However, {@code actualEndpointClass} will change.
+     * For example once from the interface with JAX-RS endpoint defining annotations and also from implementors.
+     *
+     * @return method that returns endpoint response
+     */
+    public static MethodInfo findEndpointImplementation(MethodInfo methodInfo, ClassInfo actualEndpointClass, IndexView index) {
+        // provided that 'actualEndpointClass' is requested from CDI via InstanceHandler factory
+        // we know that this class resolution must be unambiguous:
+        // 1. go down - find exactly one non-abstract class
+        ClassInfo clazz = null;
+        if (actualEndpointClass.isInterface()) {
+            for (var implementor : index.getAllKnownImplementors(actualEndpointClass.name())) {
+                if (!implementor.isInterface() && !implementor.isAbstract()) {
+                    if (clazz == null) {
+                        clazz = implementor;
+                        // keep going to recognize if there is more than one non-abstract implementor
+                    } else {
+                        // resolution is not unambiguous, this at least make behavior deterministic
+                        clazz = actualEndpointClass;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (var subClass : index.getAllKnownSubclasses(actualEndpointClass.name())) {
+                if (!subClass.isAbstract()) {
+                    if (clazz == null) {
+                        clazz = subClass;
+                        // keep going to recognize if there is more than one non-abstract subclass
+                    } else {
+                        // resolution is not unambiguous, this at least make behavior deterministic
+                        clazz = actualEndpointClass;
+                        break;
+                    }
+                }
+            }
+        }
+        if (clazz == null) {
+            clazz = actualEndpointClass;
+        }
+
+        // 2. go up - first impl. going up is the one invoked on the endpoint instance
+        Queue<MethodInfo> defaultInterfaceMethods = new ArrayDeque<>();
+        do {
+            // is non-abstract method declared on this class?
+            var method = clazz.method(methodInfo.name(), methodInfo.parameterTypes());
+            if (method != null && !Modifier.isAbstract(method.flags())) {
+                return method;
+            }
+
+            var interfaceWithImplMethod = findInterfaceDefaultMethod(clazz, methodInfo, index);
+            if (interfaceWithImplMethod != null) {
+                // class methods override default interface methods -> check parent first
+                defaultInterfaceMethods.add(interfaceWithImplMethod);
+            }
+
+            if (clazz.superName() != null && !clazz.superName().equals(ResteasyReactiveDotNames.OBJECT)) {
+                clazz = index.getClassByName(clazz.superName());
+            } else {
+                break;
+            }
+        } while (clazz != null);
+        if (!defaultInterfaceMethods.isEmpty()) {
+            return defaultInterfaceMethods.peek();
+        }
+
+        // 3. fallback to original behavior
+        return methodInfo;
+    }
+
+    private static MethodInfo findInterfaceDefaultMethod(ClassInfo clazz, MethodInfo methodInfo, IndexView index) {
+        for (DotName interfaceName : clazz.interfaceNames()) {
+            var interfaceClass = index.getClassByName(interfaceName);
+            if (interfaceClass != null) {
+                var intMethod = interfaceClass.method(methodInfo.name(), methodInfo.parameterTypes());
+                if (intMethod != null && intMethod.isDefault() && Modifier.isPublic(intMethod.flags())) {
+                    return intMethod;
+                }
+            }
+        }
+        return null;
     }
 
     @Override

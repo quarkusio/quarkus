@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -29,18 +30,37 @@ public final class EagerSecurityInterceptorMethodsBuildItem extends MultiBuildIt
      */
     final DotName interceptorBinding;
 
+    /**
+     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}.
+     * For example, we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
+     */
+    private final boolean requiresSecurityCheck;
+
     EagerSecurityInterceptorMethodsBuildItem(Map<String, List<MethodInfo>> bindingValueToInterceptedMethods,
-            DotName interceptorBinding) {
+            DotName interceptorBinding, boolean requiresSecurityCheck) {
         this.bindingValueToInterceptedMethods = Map.copyOf(bindingValueToInterceptedMethods);
         this.interceptorBinding = interceptorBinding;
+        this.requiresSecurityCheck = requiresSecurityCheck;
     }
 
     private Stream<MethodInfo> interceptedMethods() {
         return bindingValueToInterceptedMethods.values().stream().flatMap(Collection::stream);
     }
 
-    public static List<MethodInfo> collectInterceptedMethods(List<EagerSecurityInterceptorMethodsBuildItem> items) {
-        return items.stream().flatMap(EagerSecurityInterceptorMethodsBuildItem::interceptedMethods).toList();
+    public static Map<MethodInfo, Boolean> collectInterceptedMethods(List<EagerSecurityInterceptorMethodsBuildItem> items) {
+        Map<MethodInfo, Boolean> result = new HashMap<>();
+        for (var item : items) {
+            item.interceptedMethods().forEach(mi -> {
+                if (result.containsKey(mi)) {
+                    var requiresCheck = result.get(mi);
+                    if (!requiresCheck && item.requiresSecurityCheck) {
+                        result.put(mi, true);
+                    }
+                } else {
+                    result.put(mi, item.requiresSecurityCheck);
+                }
+            });
+        }
+        return result;
     }
-
 }

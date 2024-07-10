@@ -16,9 +16,7 @@ import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -30,13 +28,10 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
-import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.DefaultAuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -51,9 +46,7 @@ public class EagerSecurityContext {
     final AbstractPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
     final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
     final InjectableInstance<CurrentIdentityAssociation> identityAssociation;
-    final EagerSecurityInterceptorStorage interceptorStorage;
     final AuthorizationController authorizationController;
-    final SecurityCheckStorage securityCheckStorage;
     final boolean doNotRunPermissionSecurityCheck;
     final boolean isProactiveAuthDisabled;
 
@@ -61,14 +54,11 @@ public class EagerSecurityContext {
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             Event<AuthorizationSuccessEvent> authorizationSuccessEvent, BeanManager beanManager,
             InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
-            SecurityCheckStorage securityCheckStorage, HttpConfiguration httpConfig, BlockingSecurityExecutor blockingExecutor,
+            HttpConfiguration httpConfig, BlockingSecurityExecutor blockingExecutor,
             HttpBuildTimeConfig buildTimeConfig, Instance<HttpSecurityPolicy> installedPolicies) {
-        var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
-        this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
         this.isProactiveAuthDisabled = !buildTimeConfig.auth.proactive;
         this.identityAssociation = identityAssociation;
         this.authorizationController = authorizationController;
-        this.securityCheckStorage = securityCheckStorage;
         this.eventHelper = new SecurityEventHelper<>(authorizationSuccessEvent, authorizationFailureEvent,
                 AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
         var jaxRsPathMatchingPolicy = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,
@@ -87,8 +77,8 @@ public class EagerSecurityContext {
     void initSingleton(@Observes StartupEvent event) {
         // intention here is to initialize this instance during app startup and make it accessible as singleton to
         // all the security ServerRestHandler instances, so that they don't need to access it via CDI programmatically
-        // and write to a volatile variable during the request; the EagerSecurityHandler is created for each secured
-        // endpoint, so there can be a lot of them
+        // and write to a volatile variable during the request; the EagerSecurityHandler is created for each
+        // endpoint (in case there is HTTP permission configured), so there can be a lot of them
         instance = this;
     }
 
@@ -175,10 +165,5 @@ public class EagerSecurityContext {
                         throw exception;
                     }
                 });
-    }
-
-    static MethodDescription lazyMethodToMethodDescription(ResteasyReactiveResourceInfo lazyMethod) {
-        return new MethodDescription(lazyMethod.getActualDeclaringClassName(),
-                lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
     }
 }

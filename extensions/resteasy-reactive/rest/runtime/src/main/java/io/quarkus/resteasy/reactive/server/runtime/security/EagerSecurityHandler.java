@@ -1,9 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
 import static io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor.STANDARD_SECURITY_CHECK_INTERCEPTOR;
-import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.lazyMethodToMethodDescription;
 
-import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,12 +15,14 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -31,22 +31,21 @@ import io.vertx.ext.web.RoutingContext;
 
 public class EagerSecurityHandler implements ServerRestHandler {
 
-    private static final SecurityCheck NULL_SENTINEL = new SecurityCheck() {
-        @Override
-        public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
+    /**
+     * Used when no endpoint security checks were detected, no default Jakarta REST security is in place, and
+     * we have this handler in place for whether Jakarta REST specific HTTP Permissions are required
+     * is determined when runtime config is available.
+     */
+    private static final EagerSecurityHandler HTTP_PERMS_ONLY = new EagerSecurityHandler(null, false, null);
 
-        }
+    private final SecurityCheck check;
+    private final boolean isDefaultJaxRsSecCheck;
+    private final MethodDescription invokedMethodDesc;
 
-        @Override
-        public void apply(SecurityIdentity identity, MethodDescription method, Object[] parameters) {
-
-        }
-    };
-    private final boolean onlyCheckForHttpPermissions;
-    private volatile SecurityCheck check;
-
-    public EagerSecurityHandler(boolean onlyCheckForHttpPermissions) {
-        this.onlyCheckForHttpPermissions = onlyCheckForHttpPermissions;
+    private EagerSecurityHandler(SecurityCheck check, boolean isDefaultJaxRsSecCheck, MethodDescription invokedMethodDesc) {
+        this.check = check;
+        this.isDefaultJaxRsSecCheck = isDefaultJaxRsSecCheck;
+        this.invokedMethodDesc = invokedMethodDesc;
     }
 
     @Override
@@ -55,14 +54,26 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return;
         }
 
-        var securityCheck = getSecurityCheck(requestContext);
+        if (isDefaultJaxRsSecCheck && isRequestAlreadyChecked(requestContext)) {
+            // default Jakarta REST security is applied on subresource locators
+            // this ensures it's not reapplied on subresource endpoints
+            return;
+        }
+
+        final Function<SecurityIdentity, Uni<?>> checkRequiringIdentity;
+        if (check == null) {
+            checkRequiringIdentity = null;
+        } else {
+            checkRequiringIdentity = getSecurityCheck(requestContext, check, invokedMethodDesc);
+        }
+
         final Uni<?> check;
-        if (securityCheck == null) {
+        if (checkRequiringIdentity == null) {
             if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
-                // no check
+                // either permit all security check or no check at all
                 return;
             } else {
-                // only permission check
+                // only HTTP permission check
                 check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
                     @Override
                     public Uni<?> get() {
@@ -72,10 +83,10 @@ public class EagerSecurityHandler implements ServerRestHandler {
             }
         } else {
             if (EagerSecurityContext.instance.doNotRunPermissionSecurityCheck) {
-                // only security check
-                check = EagerSecurityContext.instance.getDeferredIdentity().chain(securityCheck);
+                // only security check that requires identity
+                check = EagerSecurityContext.instance.getDeferredIdentity().chain(checkRequiringIdentity);
             } else {
-                // both security check and permission check
+                // both security check that requires identity and HTTP permission check
                 check = EagerSecurityContext.instance.getDeferredIdentity()
                         .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                             @Override
@@ -83,7 +94,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                 return EagerSecurityContext.instance.getPermissionCheck(requestContext, securityIdentity);
                             }
                         })
-                        .chain(securityCheck);
+                        .chain(checkRequiringIdentity);
             }
         }
 
@@ -107,30 +118,13 @@ public class EagerSecurityHandler implements ServerRestHandler {
         });
     }
 
-    private Function<SecurityIdentity, Uni<?>> getSecurityCheck(ResteasyReactiveRequestContext requestContext) {
-        if (this.onlyCheckForHttpPermissions || this.check == NULL_SENTINEL) {
-            return null;
-        }
-        SecurityCheck check = this.check;
-        MethodDescription methodDescription = lazyMethodToMethodDescription(requestContext.getTarget().getLazyMethod());
-        if (check == null) {
-            check = EagerSecurityContext.instance.securityCheckStorage.getSecurityCheck(methodDescription);
-            if (check == null) {
-                if (EagerSecurityContext.instance.securityCheckStorage.getDefaultSecurityCheck() == null
-                        || isRequestAlreadyChecked(requestContext)) {
-                    check = NULL_SENTINEL;
-                } else {
-                    check = EagerSecurityContext.instance.securityCheckStorage.getDefaultSecurityCheck();
-                }
-            }
-            this.check = check;
-        }
-        if (check == NULL_SENTINEL) {
-            return null;
-        }
-
+    /**
+     * @return null if the check permits all requests, otherwise fun that requires identity to perform check
+     */
+    private static Function<SecurityIdentity, Uni<?>> getSecurityCheck(ResteasyReactiveRequestContext requestContext,
+            SecurityCheck check, MethodDescription invokedMethodDesc) {
         if (check.isPermitAll()) {
-            preventRepeatedSecurityChecks(requestContext, methodDescription);
+            preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
             if (EagerSecurityContext.instance.eventHelper.fireEventOnSuccess()) {
                 requestContext.requireCDIRequestScope();
 
@@ -144,11 +138,10 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 }
 
                 EagerSecurityContext.instance.eventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(identity,
-                        check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext), methodDescription));
+                        check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
             }
             return null;
         } else {
-            SecurityCheck theCheck = check;
             return new Function<SecurityIdentity, Uni<?>>() {
                 @Override
                 public Uni<?> apply(SecurityIdentity securityIdentity) {
@@ -159,7 +152,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         EagerSecurityContext.instance.identityAssociation.get().setIdentity(securityIdentity);
                     }
 
-                    if (theCheck.requiresMethodArguments()) {
+                    if (check.requiresMethodArguments()) {
                         // if security check requires method arguments, we can't perform it now
                         // however we only allow to pass authenticated requests to avoid security risks
                         if (securityIdentity == null || securityIdentity.isAnonymous()) {
@@ -167,16 +160,16 @@ public class EagerSecurityHandler implements ServerRestHandler {
                             if (EagerSecurityContext.instance.eventHelper.fireEventOnFailure()) {
                                 EagerSecurityContext.instance.eventHelper
                                         .fireFailureEvent(new AuthorizationFailureEvent(securityIdentity, unauthorizedException,
-                                                theCheck.getClass().getName(), createEventPropsWithRoutingCtx(requestContext),
-                                                methodDescription));
+                                                check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext),
+                                                invokedMethodDesc));
                             }
                             throw unauthorizedException;
                         }
                         // security check will be performed by CDI interceptor
                         return Uni.createFrom().nullItem();
                     } else {
-                        preventRepeatedSecurityChecks(requestContext, methodDescription);
-                        var checkResult = theCheck.nonBlockingApply(securityIdentity, methodDescription,
+                        preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
+                        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc,
                                 requestContext.getParameters());
                         if (EagerSecurityContext.instance.eventHelper.fireEventOnFailure()) {
                             checkResult = checkResult
@@ -186,8 +179,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                         public void accept(Throwable throwable) {
                                             EagerSecurityContext.instance.eventHelper
                                                     .fireFailureEvent(new AuthorizationFailureEvent(
-                                                            securityIdentity, throwable, theCheck.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext), methodDescription));
+                                                            securityIdentity, throwable, check.getClass().getName(),
+                                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
                                         }
                                     });
                         }
@@ -198,8 +191,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                                         public void run() {
                                             EagerSecurityContext.instance.eventHelper.fireSuccessEvent(
                                                     new AuthorizationSuccessEvent(securityIdentity,
-                                                            theCheck.getClass().getName(),
-                                                            createEventPropsWithRoutingCtx(requestContext), methodDescription));
+                                                            check.getClass().getName(),
+                                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
                                         }
                                     });
                         }
@@ -244,7 +237,35 @@ public class EagerSecurityHandler implements ServerRestHandler {
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityHandler(onlyCheckForHttpPermissions()));
+                if (onlyCheckForHttpPermissions()) {
+                    return Collections.singletonList(HTTP_PERMS_ONLY);
+                }
+
+                boolean isDefaultJaxRsSecCheck = false;
+                var desc = ResourceMethodDescription.of(serverResourceMethod);
+                var checkStorage = Arc.container().instance(SecurityCheckStorage.class).get();
+
+                var check = checkStorage.getSecurityCheck(desc.invokedMethodDesc());
+                if (check == null && desc.fallbackMethodDesc() != null) {
+                    check = checkStorage.getSecurityCheck(desc.fallbackMethodDesc());
+                }
+                if (check == null) {
+                    check = checkStorage.getDefaultSecurityCheck();
+                    isDefaultJaxRsSecCheck = true;
+                }
+
+                if (check == null) {
+                    throw new IllegalStateException(
+                            """
+                                    Security annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
+                                    Please report issue in Quarkus project.
+                                    """
+                                    .formatted(desc.invokedMethodDesc().getClassName(),
+                                            desc.invokedMethodDesc().getMethodName()));
+                }
+
+                return Collections
+                        .singletonList(new EagerSecurityHandler(check, isDefaultJaxRsSecCheck, desc.invokedMethodDesc()));
             }
             return Collections.emptyList();
         }

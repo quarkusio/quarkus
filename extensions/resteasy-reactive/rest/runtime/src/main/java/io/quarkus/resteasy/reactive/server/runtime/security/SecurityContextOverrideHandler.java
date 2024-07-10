@@ -16,8 +16,6 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityContext;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -28,7 +26,10 @@ import io.vertx.ext.web.RoutingContext;
 
 public class SecurityContextOverrideHandler implements ServerRestHandler {
 
-    private volatile InjectableInstance<CurrentIdentityAssociation> currentIdentityAssociation;
+    private static final SecurityContextOverrideHandler INSTANCE = new SecurityContextOverrideHandler();
+
+    private SecurityContextOverrideHandler() {
+    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -46,10 +47,9 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
 
     private void updateIdentity(ResteasyReactiveRequestContext requestContext, SecurityContext modified) {
         requestContext.requireCDIRequestScope();
-        InjectableInstance<CurrentIdentityAssociation> instance = getCurrentIdentityAssociation();
-        if (instance.isResolvable()) {
+        if (EagerSecurityContext.instance.identityAssociation.isResolvable()) {
             RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
-            CurrentIdentityAssociation currentIdentityAssociation = instance.get();
+            CurrentIdentityAssociation currentIdentityAssociation = EagerSecurityContext.instance.identityAssociation.get();
             Uni<SecurityIdentity> oldIdentity = currentIdentityAssociation.getDeferredIdentity();
             currentIdentityAssociation.setIdentity(oldIdentity.map(new Function<SecurityIdentity, SecurityIdentity>() {
                 @Override
@@ -119,20 +119,12 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
         }
     }
 
-    private InjectableInstance<CurrentIdentityAssociation> getCurrentIdentityAssociation() {
-        InjectableInstance<CurrentIdentityAssociation> identityAssociation = this.currentIdentityAssociation;
-        if (identityAssociation == null) {
-            return this.currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class);
-        }
-        return identityAssociation;
-    }
-
     public static class Customizer implements HandlerChainCustomizer {
         @Override
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_PRE_MATCH) {
-                return Collections.singletonList(new SecurityContextOverrideHandler());
+                return Collections.singletonList(INSTANCE);
             }
             return Collections.emptyList();
         }

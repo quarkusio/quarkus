@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.test;
+package io.quarkus.scheduler.test.timezone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,7 +41,6 @@ public class ScheduledMethodTimeZoneTest {
                                 + "simpleJobs2.cron=0/1 * %s * * ?\n"
                                 + "simpleJobs2.timeZone=%s",
                         now.getHour(), timeZone, job2Hour, timeZone);
-                // System.out.println(properties);
                 jar.addClasses(Jobs.class)
                         .addAsResource(
                                 new StringAsset(properties),

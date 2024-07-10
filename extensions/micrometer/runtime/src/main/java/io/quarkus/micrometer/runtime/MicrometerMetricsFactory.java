@@ -1,5 +1,8 @@
 package io.quarkus.micrometer.runtime;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -16,10 +19,14 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 public class MicrometerMetricsFactory implements MetricsFactory {
     final MeterRegistry globalRegistry;
     final MicrometerConfig config;
+    final Map<String,MetricBuilder> metricsBuilders;
+    final Map<TimerMultiKey,Timer> timerMap;
 
     public MicrometerMetricsFactory(MicrometerConfig config, MeterRegistry globalRegistry) {
         this.globalRegistry = globalRegistry;
         this.config = config;
+        this.metricsBuilders = new HashMap<>();
+        this.timerMap = new HashMap<>();
     }
 
     @Override
@@ -35,7 +42,7 @@ public class MicrometerMetricsFactory implements MetricsFactory {
      */
     @Override
     public MetricBuilder builder(String name, MetricsFactory.Type type) {
-        return new MicrometerMetricsBuilder(name);
+        return metricsBuilders.computeIfAbsent(name, MicrometerMetricsBuilder::new);
     }
 
     class MicrometerMetricsBuilder implements MetricBuilder {
@@ -106,42 +113,43 @@ public class MicrometerMetricsFactory implements MetricsFactory {
 
         @Override
         public TimeRecorder buildTimer() {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = getTimer();
 
             return new MicrometerTimeRecorder(timer);
         }
 
         @Override
         public Runnable buildTimer(Runnable f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = getTimer();
 
             return timer.wrap(f);
         }
 
         @Override
         public <T> Callable<T> buildTimer(Callable<T> f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = getTimer();
 
             return timer.wrap(f);
         }
 
         @Override
         public <T> Supplier<T> buildTimer(Supplier<T> f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = getTimer();
 
             return timer.wrap(f);
+        }
+
+        private Timer getTimer() {
+            TimerMultiKey key = new TimerMultiKey(name, description, tags);
+
+            return timerMap.computeIfAbsent(key, new Function<TimerMultiKey,Timer>() {
+                public Timer apply(TimerMultiKey key) {
+                    return Timer.builder(key.name)
+                        .description(key.description)
+                        .tags(key.tags)
+                        .register(globalRegistry);
+                }
+            } );
         }
     }
 
@@ -155,6 +163,38 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         @Override
         public void update(long amount, TimeUnit unit) {
             timer.record(amount, unit);
+        }
+    }
+
+    private class TimerMultiKey {
+        private final String name;
+        private final String description;
+        private final Tags tags;
+
+        TimerMultiKey( String name, String description, Tags tags ) {
+            this.name = name;
+            this.description = description;
+            this.tags = tags;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 31 * name.hashCode();
+            result = result + 31 * description.hashCode();
+            return result + 31 * tags.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if( !(obj instanceof TimerMultiKey) ) {
+                return false;
+            }
+
+            TimerMultiKey key = (TimerMultiKey) obj;
+
+            return Objects.equals(this.name, key.name) &&
+                Objects.equals(this.description, key.description) &&
+                Objects.equals(this.tags, key.tags);
         }
     }
 }

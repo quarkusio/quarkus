@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
-import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.lazyMethodToMethodDescription;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -12,8 +10,9 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.arc.Arc;
 import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -22,36 +21,16 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class EagerSecurityInterceptorHandler implements ServerRestHandler {
 
-    private static final Consumer<RoutingContext> NULL_SENTINEL = new Consumer<RoutingContext>() {
-        @Override
-        public void accept(RoutingContext routingContext) {
+    private final Consumer<RoutingContext> interceptor;
 
-        }
-    };
-    private volatile Consumer<RoutingContext> interceptor;
-
-    private EagerSecurityInterceptorHandler() {
+    private EagerSecurityInterceptorHandler(Consumer<RoutingContext> interceptor) {
+        this.interceptor = interceptor;
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         // right now we do apply security interceptors even when authorization is disabled (for example for tests), as
         // even though you don't want to run security checks, you still might want to authenticate (access identity)
-
-        if (interceptor == NULL_SENTINEL) {
-            return;
-        }
-
-        if (interceptor == null) {
-            MethodDescription methodDescription = lazyMethodToMethodDescription(requestContext.getTarget().getLazyMethod());
-            interceptor = EagerSecurityContext.instance.interceptorStorage.getInterceptor(methodDescription);
-
-            if (interceptor == null) {
-                interceptor = NULL_SENTINEL;
-                return;
-            }
-        }
-
         interceptor.accept(requestContext.unwrap(RoutingContext.class));
     }
 
@@ -65,7 +44,25 @@ public class EagerSecurityInterceptorHandler implements ServerRestHandler {
         public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
-                return Collections.singletonList(new EagerSecurityInterceptorHandler());
+
+                var desc = ResourceMethodDescription.of(serverResourceMethod);
+                var interceptorStorage = Arc.container().instance(EagerSecurityInterceptorStorage.class).get();
+                var interceptor = interceptorStorage.getInterceptor(desc.invokedMethodDesc());
+                if (interceptor == null && desc.fallbackMethodDesc() != null) {
+                    interceptor = interceptorStorage.getInterceptor(desc.fallbackMethodDesc());
+                }
+
+                if (interceptor == null) {
+                    throw new IllegalStateException(
+                            """
+                                    Security annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
+                                    Please report issue in Quarkus project.
+                                    """
+                                    .formatted(desc.invokedMethodDesc().getClassName(),
+                                            desc.invokedMethodDesc().getMethodName()));
+                }
+
+                return Collections.singletonList(new EagerSecurityInterceptorHandler(interceptor));
             }
             return Collections.emptyList();
         }

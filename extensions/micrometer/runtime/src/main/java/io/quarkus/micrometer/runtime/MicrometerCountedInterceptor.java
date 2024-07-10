@@ -35,7 +35,7 @@ public class MicrometerCountedInterceptor {
 
     private final MeterRegistry meterRegistry;
     private final MeterTagsSupport meterTagsSupport;
-    private final Map<String,Counter.Builder> countedBuilderMap;
+    private final Map<String, Counter.Builder> countedBuilderMap;
 
     public MicrometerCountedInterceptor(MeterRegistry meterRegistry, MeterTagsSupport meterTagsSupport) {
         this.meterRegistry = meterRegistry;
@@ -44,17 +44,23 @@ public class MicrometerCountedInterceptor {
     }
 
     /**
-     * Intercept methods annotated with the {@link Counted} annotation and expose a few counters about
-     * their execution status. By default, record both failed and successful attempts. If the
+     * Intercept methods annotated with the {@link Counted} annotation and expose a
+     * few counters about
+     * their execution status. By default, record both failed and successful
+     * attempts. If the
      * {@link Counted#recordFailuresOnly()} is set to {@code true}, then record only
-     * failed attempts. In case of a failure, tags the counter with the simple name of the thrown
+     * failed attempts. In case of a failure, tags the counter with the simple name
+     * of the thrown
      * exception.
      *
      * <p>
-     * When the annotated method returns a {@link CompletionStage} or any of its subclasses,
-     * the counters will be incremented only when the {@link CompletionStage} is completed.
+     * When the annotated method returns a {@link CompletionStage} or any of its
+     * subclasses,
+     * the counters will be incremented only when the {@link CompletionStage} is
+     * completed.
      * If completed exceptionally a failure is recorded, otherwise if
-     * {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is recorded.
+     * {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is
+     * recorded.
      *
      * @return Whatever the intercepted method returns.
      * @throws Throwable When the intercepted method throws one.

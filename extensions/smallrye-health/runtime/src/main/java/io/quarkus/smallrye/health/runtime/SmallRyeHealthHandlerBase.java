@@ -63,7 +63,7 @@ public abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContex
                     .set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
                     .set(HttpHeaders.CACHE_CONTROL, "no-store");
             Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
-            try (BufferOutputStream outputStream = new BufferOutputStream(buffer);) {
+            try (BufferOutputStream outputStream = new BufferOutputStream(buffer)) {
                 reporter.reportHealth(outputStream, health);
                 resp.end(buffer);
             } catch (IOException e) {

@@ -40,7 +40,7 @@ public class DevModeMain implements Closeable {
 
     private final DevModeContext context;
 
-    private static volatile CuratedApplication curatedApplication;
+    private volatile CuratedApplication curatedApplication;
     private Closeable realCloseable;
 
     public DevModeMain(DevModeContext context) {

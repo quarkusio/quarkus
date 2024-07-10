@@ -225,6 +225,7 @@ public class ApplicationLifecycleManager {
         if (!alreadyStarted) {
             application.stop(); //this could have already been called
         }
+        currentApplication = null;
         (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
     }
 
@@ -435,6 +436,7 @@ public class ApplicationLifecycleManager {
                 currentApplication.stop();
             }
             currentApplication.awaitShutdown();
+            currentApplication = null;
             System.out.flush();
             System.err.flush();
         }

@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -57,7 +58,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
-    static volatile Throwable deploymentProblem;
+    private AtomicReference<Throwable> deploymentProblem = new AtomicReference<>();
     static volatile RemoteDevClient remoteDevClient;
     static volatile Closeable remoteDevClientSession;
     private static volatile CuratedApplication curatedApplication;
@@ -99,7 +100,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         curatedApplication.getApplicationModel(), null);
                 return start.getJar();
             } catch (Throwable t) {
-                deploymentProblem = t;
+                deploymentProblem.set(t);
                 log.error("Failed to generate Quarkus application", t);
                 return null;
             }
@@ -137,7 +138,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         public byte[] apply(String s, byte[] bytes) {
                             return ClassTransformingBuildStep.transform(s, bytes);
                         }
-                    }, null);
+                    }, null, deploymentProblem);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getOrCreateBaseRuntimeClassLoader())) {
@@ -189,6 +190,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 }
             }
         } finally {
+            deploymentProblem.set(null);
             curatedApplication.close();
         }
 
@@ -248,7 +250,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     }
 
     private Closeable doConnect() {
-        return remoteDevClient.sendConnectRequest(new RemoteDevState(currentHashes, deploymentProblem),
+        return remoteDevClient.sendConnectRequest(new RemoteDevState(currentHashes, deploymentProblem.get()),
                 new Function<Set<String>, Map<String, byte[]>>() {
                     @Override
                     public Map<String, byte[]> apply(Set<String> fileNames) {
@@ -283,6 +285,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         Set<String> removed = new HashSet<>();
         Map<String, byte[]> changed = new HashMap<>();
         try {
+            deploymentProblem.set(null);
             boolean scanResult = RuntimeUpdatesProcessor.INSTANCE.doScan(true);
             if (!scanResult && !copiedStaticResources.isEmpty()) {
                 scanResult = true;
@@ -305,7 +308,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 currentHashes = newHashes;
             }
         } catch (IOException e) {
-            deploymentProblem = e;
+            deploymentProblem.set(e);
         }
         return new RemoteDevClient.SyncResult() {
             @Override

@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -17,16 +18,43 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
+import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.runtime.configuration.CharsetConverter;
+import io.quarkus.runtime.configuration.CidrAddressConverter;
+import io.quarkus.runtime.configuration.DurationConverter;
+import io.quarkus.runtime.configuration.InetAddressConverter;
+import io.quarkus.runtime.configuration.InetSocketAddressConverter;
+import io.quarkus.runtime.configuration.LocaleConverter;
+import io.quarkus.runtime.configuration.MemorySizeConverter;
+import io.quarkus.runtime.configuration.PathConverter;
+import io.quarkus.runtime.configuration.RegexConverter;
+import io.quarkus.runtime.configuration.ZoneIdConverter;
+import io.quarkus.runtime.logging.LevelConverter;
 import io.quarkus.test.InjectMock;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 class QuarkusComponentTestConfiguration {
 
+    // As defined in /quarkus/core/runtime/src/main/resources/META-INF/services/org.eclipse.microprofile.config.spi.Converter
+    static final List<Converter<?>> DEFAULT_CONVERTERS = List.of(new InetSocketAddressConverter(),
+            new CharsetConverter(),
+            new CidrAddressConverter(),
+            new InetAddressConverter(),
+            new RegexConverter(),
+            new PathConverter(),
+            new DurationConverter(),
+            new MemorySizeConverter(),
+            new LocaleConverter(),
+            new ZoneIdConverter(),
+            new LevelConverter());
+
     static final QuarkusComponentTestConfiguration DEFAULT = new QuarkusComponentTestConfiguration(Map.of(), List.of(),
-            List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of());
+            List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(),
+            DEFAULT_CONVERTERS, null);
 
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestConfiguration.class);
 
@@ -37,11 +65,14 @@ class QuarkusComponentTestConfiguration {
     final boolean addNestedClassesAsComponents;
     final int configSourceOrdinal;
     final List<AnnotationsTransformer> annotationsTransformers;
+    final List<Converter<?>> configConverters;
+    final Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
 
     QuarkusComponentTestConfiguration(Map<String, String> configProperties, List<Class<?>> componentClasses,
             List<MockBeanConfiguratorImpl<?>> mockConfigurators, boolean useDefaultConfigProperties,
             boolean addNestedClassesAsComponents, int configSourceOrdinal,
-            List<AnnotationsTransformer> annotationsTransformers) {
+            List<AnnotationsTransformer> annotationsTransformers, List<Converter<?>> configConverters,
+            Consumer<SmallRyeConfigBuilder> configBuilderCustomizer) {
         this.configProperties = configProperties;
         this.componentClasses = componentClasses;
         this.mockConfigurators = mockConfigurators;
@@ -49,6 +80,8 @@ class QuarkusComponentTestConfiguration {
         this.addNestedClassesAsComponents = addNestedClassesAsComponents;
         this.configSourceOrdinal = configSourceOrdinal;
         this.annotationsTransformers = annotationsTransformers;
+        this.configConverters = configConverters;
+        this.configBuilderCustomizer = configBuilderCustomizer;
     }
 
     QuarkusComponentTestConfiguration update(Class<?> testClass) {
@@ -58,6 +91,7 @@ class QuarkusComponentTestConfiguration {
         boolean addNestedClassesAsComponents = this.addNestedClassesAsComponents;
         int configSourceOrdinal = this.configSourceOrdinal;
         List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>(this.annotationsTransformers);
+        List<Converter<?>> configConverters = new ArrayList<>(this.configConverters);
 
         QuarkusComponentTest testAnnotation = testClass.getAnnotation(QuarkusComponentTest.class);
         if (testAnnotation != null) {
@@ -71,7 +105,17 @@ class QuarkusComponentTestConfiguration {
                     try {
                         annotationsTransformers.add(transformerClass.getDeclaredConstructor().newInstance());
                     } catch (Exception e) {
-                        LOG.errorf("Unable to instantiate %s", transformerClass);
+                        LOG.errorf(e, "Unable to instantiate %s", transformerClass);
+                    }
+                }
+            }
+            Class<? extends Converter<?>>[] converters = testAnnotation.configConverters();
+            if (converters.length > 0) {
+                for (Class<? extends Converter<?>> converterClass : converters) {
+                    try {
+                        configConverters.add(converterClass.getDeclaredConstructor().newInstance());
+                    } catch (Exception e) {
+                        LOG.errorf(e, "Unable to instantiate %s", converterClass);
                     }
                 }
             }
@@ -120,7 +164,7 @@ class QuarkusComponentTestConfiguration {
         return new QuarkusComponentTestConfiguration(Map.copyOf(configProperties), List.copyOf(componentClasses),
                 this.mockConfigurators,
                 useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers));
+                List.copyOf(annotationsTransformers), List.copyOf(configConverters), configBuilderCustomizer);
     }
 
     QuarkusComponentTestConfiguration update(Method testMethod) {
@@ -132,7 +176,7 @@ class QuarkusComponentTestConfiguration {
         }
         return new QuarkusComponentTestConfiguration(configProperties, componentClasses,
                 mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                annotationsTransformers);
+                annotationsTransformers, configConverters, configBuilderCustomizer);
     }
 
     private static boolean resolvesToBuiltinBean(Class<?> rawType) {

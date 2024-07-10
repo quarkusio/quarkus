@@ -276,25 +276,27 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitDialect {
 
         /**
-         * Class name of the Hibernate ORM dialect.
+         * Name of the Hibernate ORM dialect.
          *
-         * The complete list of bundled dialects is available in the
-         * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM
-         * JavaDoc].
-         *
-         * Setting the dialect directly is only recommended as a last resort:
-         * most popular databases have a corresponding Quarkus extension,
-         * allowing Quarkus to select the dialect automatically,
-         * in which case you do not need to set the dialect at all,
-         * though you may want to set
-         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[`quarkus.datasource.db-version`] as
-         * high as possible
+         * For xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases],
+         * this property does not need to be set explicitly:
+         * it is selected automatically based on the datasource,
+         * and configured using the xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[DB version set on the
+         * datasource]
          * to benefit from the best performance and latest features.
          *
          * If your database does not have a corresponding Quarkus extension,
-         * you will need to set the dialect directly.
+         * you *will* need to set this property explicitly.
          * In that case, keep in mind that the JDBC driver and Hibernate ORM dialect
          * may not work properly in GraalVM native executables.
+         *
+         * For built-in dialects, the expected value is one of the names
+         * in the link:{hibernate-orm-dialect-docs-url}[official list of dialects],
+         * *without* the `Dialect` suffix,
+         * for example `Cockroach` for `CockroachDialect`.
+         *
+         * For third-party dialects, the expected value is the fully-qualified class name,
+         * for example `com.acme.hibernate.AcmeDbDialect`.
          *
          * @asciidoclet
          */

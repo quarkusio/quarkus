@@ -16,14 +16,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>quarkus-opentelemetry-exporter-jaeger</module>
-        <module>quarkus-opentelemetry-exporter-jaeger-deployment</module>
-        <module>quarkus-opentelemetry-exporter-otlp</module>
-        <module>quarkus-opentelemetry-exporter-otlp-deployment</module>
-        <module>quarkus-jaeger</module>
-        <module>quarkus-jaeger-deployment</module>
-        <module>quarkus-smallrye-opentracing</module>
-        <module>quarkus-smallrye-opentracing-deployment</module>
         <module>quarkus-hibernate-search-orm-coordination-outbox-polling</module>
         <module>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</module>
         <module>quarkus-resteasy-reactive</module>

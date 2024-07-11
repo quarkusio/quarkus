@@ -331,6 +331,11 @@ public class HttpSecurityProcessor {
             List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
             BuildProducer<EagerSecurityInterceptorMethodsBuildItem> methodsProducer) {
         if (!interceptorBindings.isEmpty()) {
+            Map<DotName, Boolean> bindingToRequiresSecCheckFlag = interceptorBindings.stream()
+                    .flatMap(ib -> Arrays
+                            .stream(ib.getAnnotationBindings())
+                            .map(b -> Map.entry(b, ib.requiresSecurityCheck())))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             var index = indexBuildItem.getIndex();
             Map<MethodInfo, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
             Map<DotName, Map<String, List<MethodInfo>>> result = new HashMap<>();
@@ -338,7 +343,8 @@ public class HttpSecurityProcessor {
             addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.CLASS, result, cache);
             if (!result.isEmpty()) {
                 result.forEach((annotationBinding, bindingValueToInterceptedMethods) -> methodsProducer.produce(
-                        new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods, annotationBinding)));
+                        new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods, annotationBinding,
+                                bindingToRequiresSecCheckFlag.get(annotationBinding))));
             }
         }
     }

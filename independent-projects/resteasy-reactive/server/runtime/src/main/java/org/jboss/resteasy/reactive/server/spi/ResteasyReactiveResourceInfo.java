@@ -132,6 +132,11 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
         return methodId;
     }
 
+    /**
+     * @return declaring class of a method that returns endpoint response
+     * @deprecated if you need the method, please open an issue so that we can document and test your use case
+     */
+    @Deprecated
     public String getActualDeclaringClassName() {
         return actualDeclaringClassName;
     }

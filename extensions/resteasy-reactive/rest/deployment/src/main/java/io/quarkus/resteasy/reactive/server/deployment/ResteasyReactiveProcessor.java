@@ -87,7 +87,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
-import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -104,6 +103,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
+import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.generation.converters.GeneratedConverterIndexerExtension;
 import org.jboss.resteasy.reactive.server.processor.generation.exceptionmappers.ServerExceptionMapperGenerator;
 import org.jboss.resteasy.reactive.server.processor.generation.injection.TransformedFieldInjectionIndexerExtension;
@@ -520,14 +520,6 @@ public class ResteasyReactiveProcessor {
                             String source = ResteasyReactiveProcessor.class.getSimpleName() + " > "
                                     + method.declaringClass()
                                     + "[" + method + "]";
-
-                            ClassInfo classInfoWithSecurity = consumeStandardSecurityAnnotations(method,
-                                    entry.getActualEndpointInfo(), index, c -> c);
-                            if (classInfoWithSecurity != null) {
-                                reflectiveClassBuildItemBuildProducer.produce(
-                                        ReflectiveClassBuildItem.builder(entry.getActualEndpointInfo().name().toString())
-                                                .constructors(false).methods().build());
-                            }
 
                             if (!result.getPossibleSubResources().containsKey(method.returnType().name())) {
                                 reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
@@ -1520,21 +1512,42 @@ public class ResteasyReactiveProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (applySecurityInterceptors && interceptedMethods.contains(method)) {
-                    return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
-                            EagerSecurityHandler.Customizer.newInstance(false));
-                } else {
-                    return List.of(newEagerSecurityHandlerCustomizerInstance(method, actualEndpointClass, index,
-                            withDefaultSecurityCheck));
+                var endpointImpl = ServerEndpointIndexer.findEndpointImplementation(method, actualEndpointClass, index);
+                if (applySecurityInterceptors) {
+                    boolean isMethodIntercepted = interceptedMethods.containsKey(endpointImpl);
+                    if (isMethodIntercepted) {
+                        return createEagerSecCustomizerWithInterceptor(interceptedMethods, endpointImpl, method, endpointImpl,
+                                withDefaultSecurityCheck);
+                    } else {
+                        isMethodIntercepted = interceptedMethods.containsKey(method);
+                        if (isMethodIntercepted && !endpointImpl.equals(method)) {
+                            return createEagerSecCustomizerWithInterceptor(interceptedMethods, method, method, endpointImpl,
+                                    withDefaultSecurityCheck);
+                        }
+                    }
                 }
+                return List.of(newEagerSecurityHandlerCustomizerInstance(method, endpointImpl, withDefaultSecurityCheck));
             }
         });
     }
 
-    private HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, ClassInfo actualEndpointClass,
-            IndexView index, boolean withDefaultSecurityCheck) {
-        if (withDefaultSecurityCheck
-                || consumeStandardSecurityAnnotations(method, actualEndpointClass, index, (c) -> c) != null) {
+    private static List<HandlerChainCustomizer> createEagerSecCustomizerWithInterceptor(
+            Map<MethodInfo, Boolean> interceptedMethods, MethodInfo method, MethodInfo originalMethod, MethodInfo endpointImpl,
+            boolean withDefaultSecurityCheck) {
+        var requiresSecurityCheck = interceptedMethods.get(method);
+        final HandlerChainCustomizer eagerSecCustomizer;
+        if (requiresSecurityCheck) {
+            eagerSecCustomizer = EagerSecurityHandler.Customizer.newInstance(false);
+        } else {
+            eagerSecCustomizer = newEagerSecurityHandlerCustomizerInstance(originalMethod, endpointImpl,
+                    withDefaultSecurityCheck);
+        }
+        return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(), eagerSecCustomizer);
+    }
+
+    private static HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, MethodInfo endpointImpl,
+            boolean withDefaultSecurityCheck) {
+        if (withDefaultSecurityCheck || consumesStandardSecurityAnnotations(method, endpointImpl)) {
             return EagerSecurityHandler.Customizer.newInstance(false);
         }
         return EagerSecurityHandler.Customizer.newInstance(true);
@@ -1602,19 +1615,19 @@ public class ResteasyReactiveProcessor {
         }
     }
 
-    private <T> T consumeStandardSecurityAnnotations(MethodInfo methodInfo, ClassInfo classInfo, IndexView index,
-            Function<ClassInfo, T> function) {
-        if (SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)) {
-            return function.apply(methodInfo.declaringClass());
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo, MethodInfo endpointImpl) {
+        // invoked method
+        if (consumesStandardSecurityAnnotations(endpointImpl)) {
+            return true;
         }
-        ClassInfo c = classInfo;
-        while (c.superName() != null) {
-            if (SecurityTransformerUtils.hasStandardSecurityAnnotation(c)) {
-                return function.apply(c);
-            }
-            c = index.getClassByName(c.superName());
-        }
-        return null;
+
+        // fallback to original behavior
+        return !endpointImpl.equals(methodInfo) && consumesStandardSecurityAnnotations(methodInfo);
+    }
+
+    private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo) {
+        return SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)
+                || SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo.declaringClass());
     }
 
     private Optional<String> getAppPath(Optional<String> newPropertyValue) {

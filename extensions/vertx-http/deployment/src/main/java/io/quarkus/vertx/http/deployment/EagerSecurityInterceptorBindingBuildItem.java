@@ -27,6 +27,11 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
     private final DotName[] annotationBindings;
     private final Function<String, Consumer<RoutingContext>> interceptorCreator;
     private final Map<String, String> bindingToValue;
+    /**
+     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}.
+     * For example, we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
+     */
+    private final boolean requiresSecurityCheck;
 
     /**
      *
@@ -38,6 +43,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         this.annotationBindings = interceptorBindings;
         this.interceptorCreator = interceptorCreator;
         this.bindingToValue = Map.of();
+        this.requiresSecurityCheck = false;
     }
 
     EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
@@ -45,6 +51,7 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         this.annotationBindings = interceptorBindings;
         this.interceptorCreator = interceptorCreator;
         this.bindingToValue = bindingToValue;
+        this.requiresSecurityCheck = true;
     }
 
     public DotName[] getAnnotationBindings() {
@@ -72,5 +79,9 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
         } else {
             return target.asClass().name().toString();
         }
+    }
+
+    boolean requiresSecurityCheck() {
+        return requiresSecurityCheck;
     }
 }

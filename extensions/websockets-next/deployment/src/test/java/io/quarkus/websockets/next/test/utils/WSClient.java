@@ -144,6 +144,13 @@ public class WSClient implements AutoCloseable {
         return messages.get(c);
     }
 
+    public Buffer sendAndAwaitReply(Buffer message) {
+        var c = messages.size();
+        sendAndAwait(message);
+        Awaitility.await().until(() -> messages.size() > c);
+        return messages.get(c);
+    }
+
     public boolean isClosed() {
         return socket.get().isClosed();
     }

@@ -19,8 +19,8 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 public class MicrometerMetricsFactory implements MetricsFactory {
     final MeterRegistry globalRegistry;
     final MicrometerConfig config;
-    final Map<String,MetricBuilder> metricsBuilders;
-    final Map<TimerMultiKey,Timer> timerMap;
+    final Map<String, MetricBuilder> metricsBuilders;
+    final Map<TimerMultiKey, Timer> timerMap;
 
     public MicrometerMetricsFactory(MicrometerConfig config, MeterRegistry globalRegistry) {
         this.globalRegistry = globalRegistry;
@@ -142,14 +142,14 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         private Timer getTimer() {
             TimerMultiKey key = new TimerMultiKey(name, description, tags);
 
-            return timerMap.computeIfAbsent(key, new Function<TimerMultiKey,Timer>() {
+            return timerMap.computeIfAbsent(key, new Function<TimerMultiKey, Timer>() {
                 public Timer apply(TimerMultiKey key) {
                     return Timer.builder(key.name)
-                        .description(key.description)
-                        .tags(key.tags)
-                        .register(globalRegistry);
+                            .description(key.description)
+                            .tags(key.tags)
+                            .register(globalRegistry);
                 }
-            } );
+            });
         }
     }
 
@@ -171,7 +171,7 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         private final String description;
         private final Tags tags;
 
-        TimerMultiKey( String name, String description, Tags tags ) {
+        TimerMultiKey(String name, String description, Tags tags) {
             this.name = name;
             this.description = description;
             this.tags = tags;
@@ -186,15 +186,15 @@ public class MicrometerMetricsFactory implements MetricsFactory {
 
         @Override
         public boolean equals(Object obj) {
-            if( !(obj instanceof TimerMultiKey) ) {
+            if (!(obj instanceof TimerMultiKey)) {
                 return false;
             }
 
             TimerMultiKey key = (TimerMultiKey) obj;
 
             return Objects.equals(this.name, key.name) &&
-                Objects.equals(this.description, key.description) &&
-                Objects.equals(this.tags, key.tags);
+                    Objects.equals(this.description, key.description) &&
+                    Objects.equals(this.tags, key.tags);
         }
     }
 }

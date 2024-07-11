@@ -2,8 +2,12 @@ package io.quarkus.micrometer.runtime;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -33,10 +37,14 @@ public class MicrometerTimedInterceptor {
 
     private final MeterRegistry meterRegistry;
     private final MeterTagsSupport meterTagsSupport;
+    private final Map<String, Timer.Builder> methodsBuilders;
+    private final Map<String, LongTaskTimer.Sample> longMethodsBuilders;
 
     public MicrometerTimedInterceptor(MeterRegistry meterRegistry, MeterTagsSupport meterTagsSupport) {
         this.meterRegistry = meterRegistry;
         this.meterTagsSupport = meterTagsSupport;
+        this.methodsBuilders = new HashMap<>();
+        this.longMethodsBuilders = new HashMap<>();
     }
 
     @AroundInvoke
@@ -86,7 +94,7 @@ public class MicrometerTimedInterceptor {
     }
 
     private List<Sample> getSamples(ArcInvocationContext context) {
-        List<Timed> timed = context.findIterceptorBindings(Timed.class);
+        Set<Timed> timed = context.getInterceptorBindings(Timed.class);
         if (timed.isEmpty()) {
             return Collections.emptyList();
         }
@@ -111,12 +119,17 @@ public class MicrometerTimedInterceptor {
     private void record(Timed timed, Timer.Sample sample, String exceptionClass, Tags timerTags) {
         final String metricName = timed.value().isEmpty() ? DEFAULT_METRIC_NAME : timed.value();
         try {
-            Timer.Builder builder = Timer.builder(metricName)
-                    .description(timed.description().isEmpty() ? null : timed.description())
-                    .tags(timerTags)
-                    .tag("exception", exceptionClass)
-                    .publishPercentileHistogram(timed.histogram())
-                    .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles());
+            Timer.Builder builder = methodsBuilders.computeIfAbsent(metricName, new Function<String, Timer.Builder>() {
+                @Override
+                public Timer.Builder apply(String t) {
+                    return Timer.builder(metricName)
+                            .description(timed.description().isEmpty() ? null : timed.description())
+                            .tags(timerTags)
+                            .tag("exception", exceptionClass)
+                            .publishPercentileHistogram(timed.histogram())
+                            .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles());
+                }
+            });
 
             sample.stop(builder.register(meterRegistry));
         } catch (Exception e) {
@@ -130,13 +143,18 @@ public class MicrometerTimedInterceptor {
         try {
             // This will throw if the annotation is incorrect.
             // Errors are checked for at build time, but ...
-            return LongTaskTimer.builder(metricName)
-                    .description(timed.description().isEmpty() ? null : timed.description())
-                    .tags(commonTags)
-                    .tags(timed.extraTags())
-                    .publishPercentileHistogram(timed.histogram())
-                    .register(meterRegistry)
-                    .start();
+            return longMethodsBuilders.computeIfAbsent(metricName, new Function<String, LongTaskTimer.Sample>() {
+                @Override
+                public LongTaskTimer.Sample apply(String t) {
+                    return LongTaskTimer.builder(metricName)
+                            .description(timed.description().isEmpty() ? null : timed.description())
+                            .tags(commonTags)
+                            .tags(timed.extraTags())
+                            .publishPercentileHistogram(timed.histogram())
+                            .register(meterRegistry)
+                            .start();
+                }
+            });
         } catch (Exception e) {
             // ignoring on purpose: possible meter registration error should not interrupt main code flow.
             log.warnf(e, "Unable to create long task timer named %s", metricName);
@@ -151,10 +169,6 @@ public class MicrometerTimedInterceptor {
             // ignoring on purpose
             log.warnf(e, "Unable to update long task timer named %s", metricName);
         }
-    }
-
-    private Tags getCommonTags(String className, String methodName) {
-        return Tags.of("class", className, "method", methodName);
     }
 
     abstract static class Sample {

@@ -188,6 +188,7 @@
         <!-- Database migrations -->
         <module>flyway</module>
         <module>flyway-postgresql</module>
+        <module>flyway-mysql</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
 

@@ -15,6 +15,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -166,14 +167,13 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                     .constructors().build());
         }
 
-        return NativeImageConfigBuildItem.builder()
+        NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.handler.ssl.noOpenSsl", "true")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.allocator.PulsarByteBufAllocator")
                 .addRuntimeInitializedClass("org.apache.pulsar.common.protocol.Commands")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.crypto.MessageCryptoBc")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.schema.generic.GenericProtobufNativeSchema")
-                .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ConnectionPool")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.ControlledClusterFailover")
                 .addRuntimeInitializedClass("org.apache.pulsar.client.impl.HttpClient")
@@ -188,8 +188,17 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addRuntimeInitializedClass("org.asynchttpclient.RequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.BoundRequestBuilder")
                 .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
-                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher")
-                .build();
+                .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
+        }
+        if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.client.impl.Backoff")) {
+            nativeImageConfig
+                    .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
+        }
+
+        return nativeImageConfig.build();
     }
 
 }

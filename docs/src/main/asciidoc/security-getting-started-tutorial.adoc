@@ -46,7 +46,7 @@ To examine the completed example, download the {quickstarts-archive-url}[archive
 git clone {quickstarts-clone-url}
 ----
 
-You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart[directory].
+You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart/[directory].
 ====
 
 :sectnums:

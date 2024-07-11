@@ -768,7 +768,8 @@ Start by adding the following dependencies to your test project:
 </dependency>
 ----
 
-[[integration-testing-wiremock]]
+ifndef::no-deprecated-test-resource[]
+[[oidc-client-ref-integration-testing-wiremock]]
 ==== Wiremock
 
 Add the following dependencies to your test project:
@@ -857,10 +858,11 @@ quarkus.oidc-client.grant-options.password.password=alice
 ----
 
 And finally, write the test code. Given the Wiremock-based resource above, the first test invocation should return the `access_token_1` access token, which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return the `access_token_2` access token, which confirms the expired `access_token_1` access token has been refreshed.
+endif::no-deprecated-test-resource[]
 
 ==== Keycloak
 
-If you work with Keycloak, you can use the same approach described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section.
+If you work with Keycloak, you can use the same approach described in the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-keycloak[OpenID Connect Bearer Token Integration testing] Keycloak section.
 
 === How to check the errors in the logs
 
@@ -880,7 +882,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=T
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
 ----
 
-[[oidc-request-filters]]
+[[oidc-client-ref-oidc-request-filters]]
 == OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
@@ -1149,7 +1151,7 @@ As mentioned, use `AccessTokenRequestFilter` if you work with Keycloak or an Ope
 [[integration-testing-token-propagation]]
 === Testing
 
-You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
+You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing[OpenID Connect Bearer Token Integration testing] section.
 Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
 
 ifndef::no-quarkus-oidc-token-propagation[]

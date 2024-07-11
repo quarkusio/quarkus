@@ -190,7 +190,7 @@ Where:
 
 * `%prod.quarkus.oidc.auth-server-url` sets the base URL of the OpenID Connect (OIDC) server.
 The `%prod.` profile prefix ensures that `Dev Services for Keycloak` launches a container when you run the application in development (dev) mode.
-For more information, see the <<keycloak-dev-mode>> section.
+For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> section.
 
 * `quarkus.oidc.client-id` sets a client id that identifies the application.
 * `quarkus.oidc.credentials.secret` sets the client secret, which is used by the `client_secret_basic` authentication method.
@@ -206,7 +206,7 @@ You do not need to do this if you have already built a link:{quickstarts-tree-ur
 [NOTE]
 ====
 Do not start the Keycloak server when you run the application in dev mode; `Dev Services for Keycloak` will start a container.
-For more information, see the <<keycloak-dev-mode>> section.
+For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> section.
 ====
 +
 . To start a Keycloak server, you can use Docker to run the following command:
@@ -238,7 +238,7 @@ endif::no-quarkus-keycloak-admin-client[]
 
 
 
-[[keycloak-dev-mode]]
+[[bearer-token-tutorial-keycloak-dev-mode]]
 == Run the application in dev mode
 
 . To run the application in dev mode, run the following commands:
@@ -301,7 +301,7 @@ include::{includes}/devtools/build-native.adoc[]
 
 == Test the application
 
-For information about testing your application in dev mode, see the preceding <<keycloak-dev-mode>> section.
+For information about testing your application in dev mode, see the preceding <<bearer-token-tutorial-keycloak-dev-mode>> section.
 
 You can test the application launched in JVM or native modes with `curl`.
 
@@ -352,7 +352,7 @@ export access_token=$(\
  )
 ----
 
-For information about writing integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-bearer-token-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
+For information about writing integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-keycloak-devservices[Dev Services for Keycloak] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 //:sectnums!:
 

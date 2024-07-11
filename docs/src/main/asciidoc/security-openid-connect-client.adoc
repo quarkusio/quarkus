@@ -393,12 +393,12 @@ This configuration references Keycloak, which is used by `ProtectedResource` to 
 Both REST clients point to `ProtectedResource`'s HTTP address.
 
 NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` launches a container for you when the application is run in dev or test modes.
-For more information, see the <<keycloak-dev-mode,Running the application in dev mode>> section.
+For more information, see the <<oidc-client-keycloak-dev-mode,Running the application in dev mode>> section.
 
 == Starting and configuring the Keycloak server
 
 NOTE: Do not start the Keycloak server when you run the application in dev or test modes; `Dev Services for Keycloak` launches a container.
-For more information, see the <<keycloak-dev-mode,Running the application in dev mode>> section.
+For more information, see the <<oidc-client-keycloak-dev-mode,Running the application in dev mode>> section.
 Ensure you put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath, in the `target/classes` directory.
 This placement ensures that the file is automatically imported in dev mode.
 However, if you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution], you do not need to add the realm file to the classpath because the build process has already done so.
@@ -424,7 +424,7 @@ This `quarkus` realm file adds a `frontend` client, and `alice` and `admin` user
 `alice` has a `user` role.
 `admin` has both `user` and `admin` roles.
 
-[[keycloak-dev-mode]]
+[[oidc-client-keycloak-dev-mode]]
 == Running the application in dev mode
 
 To run the application in a dev mode, use:
@@ -485,7 +485,7 @@ After a little while, when the build finishes, you can run the native binary dir
 
 == Testing the application
 
-For more information about testing your application in dev mode, see the preceding <<keycloak-dev-mode,Running the application in dev mode>> section.
+For more information about testing your application in dev mode, see the preceding <<oidc-client-keycloak-dev-mode,Running the application in dev mode>> section.
 
 You can test the application launched in JVM or Native modes with `curl`.
 

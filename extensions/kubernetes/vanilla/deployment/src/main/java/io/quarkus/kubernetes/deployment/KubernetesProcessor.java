@@ -51,6 +51,7 @@ import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
+import io.quarkus.kubernetes.spi.CustomKubernetesOutputDirBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
@@ -115,6 +116,7 @@ class KubernetesProcessor {
             List<DecoratorBuildItem> decorators,
             BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
+            Optional<CustomKubernetesOutputDirBuildItem> customOutputDir,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
             BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer,
             BuildProducer<KubernetesOutputDirectoryBuildItem> outputDirectoryBuildItemBuildProducer) {
@@ -187,8 +189,13 @@ class KubernetesProcessor {
                     }
                 });
 
-                Path targetDirectory = getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
-                        outputTarget.getOutputDirectory());
+                //The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
+                //I this case 'default' means that one that we used until now (up until we introduced the ability to override).
+                Path targetDirectory = customOutputDir
+                        .map(c -> c.getOutputDir())
+                        .map(d -> d.isAbsolute() ? d : project.getRoot().resolve(d))
+                        .orElseGet(() -> getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
+                                outputTarget.getOutputDirectory()));
 
                 outputDirectoryBuildItemBuildProducer.produce(new KubernetesOutputDirectoryBuildItem(targetDirectory));
 

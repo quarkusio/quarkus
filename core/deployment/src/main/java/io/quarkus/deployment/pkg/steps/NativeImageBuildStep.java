@@ -788,6 +788,7 @@ public class NativeImageBuildStep {
                  * control its actual inclusion which will depend on the usual analysis.
                  */
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
+                nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.jgss=ALL-UNNAMED");
 
                 //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");

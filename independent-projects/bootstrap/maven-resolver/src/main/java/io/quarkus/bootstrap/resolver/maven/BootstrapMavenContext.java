@@ -95,8 +95,10 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_XML = "settings.xml";
     private static final String SETTINGS_SECURITY = "settings.security";
 
-    private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
-    private static final String WARN_ON_FAILING_WS_MODULES_PROP = "quarkus.bootstrap.warn-on-failing-workspace-modules";
+    private static final String PROP_PREFIX = "quarkus.bootstrap.";
+    private static final String PROP_RESOLVER_PREFIX = PROP_PREFIX + "resolver.";
+    private static final String EFFECTIVE_MODEL_BUILDER_PROP = PROP_PREFIX + "effective-model-builder";
+    private static final String WARN_ON_FAILING_WS_MODULES_PROP = PROP_PREFIX + "warn-on-failing-workspace-modules";
 
     private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
     private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
@@ -509,7 +511,7 @@ public class BootstrapMavenContext {
         }
         session.setProxySelector(proxySelector);
 
-        final Map<Object, Object> configProps = new LinkedHashMap<>(session.getConfigProperties());
+        final Map<String, Object> configProps = new LinkedHashMap<>(session.getConfigProperties());
         configProps.put(ConfigurationProperties.USER_AGENT, getUserAgent());
         configProps.put(ConfigurationProperties.INTERACTIVE, settings.isInteractiveMode());
 
@@ -619,6 +621,13 @@ public class BootstrapMavenContext {
             throw new IllegalArgumentException("Unknown resolver transport '" + transport
                     + "'. Supported transports are: " + MAVEN_RESOLVER_TRANSPORT_WAGON + ", "
                     + MAVEN_RESOLVER_TRANSPORT_NATIVE + ", " + MAVEN_RESOLVER_TRANSPORT_AUTO);
+        }
+
+        for (var e : System.getProperties().entrySet()) {
+            String key = e.getKey().toString();
+            if (key.startsWith(PROP_RESOLVER_PREFIX) && key.length() > PROP_RESOLVER_PREFIX.length()) {
+                configProps.put(key.substring(PROP_RESOLVER_PREFIX.length()), e.getValue().toString());
+            }
         }
 
         session.setConfigProperties(configProps);

@@ -180,8 +180,16 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         @Override
         public int hashCode() {
             int result = 31 * name.hashCode();
-            result = result + 31 * description.hashCode();
-            return result + 31 * tags.hashCode();
+
+            if (description != null && !description.isEmpty()) {
+                result += 31 * description.hashCode();
+            }
+
+            if (tags != null) {
+                result += 31 * tags.hashCode();
+            }
+
+            return result;
         }
 
         @Override

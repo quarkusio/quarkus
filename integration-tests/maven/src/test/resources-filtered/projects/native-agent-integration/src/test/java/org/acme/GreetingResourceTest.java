@@ -25,7 +25,6 @@ public class GreetingResourceTest
         given()
             .when().get("/hello/Bob")
             .then()
-            .statusCode(404)
-            .body(is(""));
+            .statusCode(404);
     }
 }

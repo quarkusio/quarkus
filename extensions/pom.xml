@@ -191,6 +191,7 @@
         <module>flyway-oracle</module>
         <module>flyway-mysql</module>
         <module>flyway-mssql</module>
+        <module>flyway-derby</module>
         <module>liquibase</module>
         <module>liquibase-mongodb</module>
 

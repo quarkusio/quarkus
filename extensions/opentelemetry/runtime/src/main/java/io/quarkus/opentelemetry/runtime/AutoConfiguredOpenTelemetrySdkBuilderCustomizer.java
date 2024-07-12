@@ -41,7 +41,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
 
     @Singleton
-    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelBuildConfig oTelBuildConfig;
@@ -49,7 +49,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
+        public TracingResourceCustomizer(ApplicationConfig appConfig,
                 OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
@@ -66,7 +66,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
-                    if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
+                    if (oTelBuildConfig.traces().enabled().orElse(TRUE) ||
+                            oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
                         Resource consolidatedResource = existingResource.merge(
                                 Resource.create(delayedAttributes.get()));
 
@@ -82,13 +83,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 })
                                 .orElse(null);
 
-                        // must be resolved at startup, once.
-                        String hostname = null;
-                        try {
-                            hostname = InetAddress.getLocalHost().getHostName();
-                        } catch (UnknownHostException e) {
-                            hostname = "unknown";
-                        }
+                        String hostname = getHostname();
 
                         // Merge resource instances with env attributes
                         Resource resource = resources.stream()
@@ -259,4 +254,16 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             }
         }
     }
+
+    private static String getHostname() {
+        // must be resolved at startup, once.
+        String hostname = null;
+        try {
+            hostname = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            hostname = "unknown";
+        }
+        return hostname;
+    }
+
 }

@@ -638,9 +638,9 @@ If the metrics collection for this datasource is disabled, all values result in 
 [[datasource-tracing]]
 === Datasource tracing
 
-To use tracing with a datasource, you need to add the xref:opentelemetry.adoc[`quarkus-opentelemetry`] extension to your project.
+To use tracing with a datasource, you need to add the xref:opentelemetry-tracing.adoc[`quarkus-opentelemetry`] extension to your project.
 
-You don't need to declare a different driver because you need tracing. If you use a JDBC driver, you need to follow the instructions in the OpenTelemetry extension xref:opentelemetry.adoc#jdbc[here].
+You don't need to declare a different driver because you need tracing. If you use a JDBC driver, you need to follow the instructions in the OpenTelemetry extension xref:opentelemetry-tracing.adoc#jdbc[here].
 
 Even with all the tracing infrastructure in place the datasource tracing is not enabled by default, and you need to enable it by setting this property:
 [source, properties]

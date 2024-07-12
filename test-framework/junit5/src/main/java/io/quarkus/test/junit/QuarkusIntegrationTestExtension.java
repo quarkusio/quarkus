@@ -1,6 +1,7 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
+import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
@@ -194,7 +195,10 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
 
         String artifactType = getArtifactType(quarkusArtifactProperties);
 
-        boolean isDockerLaunch = isContainer(artifactType);
+        Config config = LauncherUtil.installAndGetSomeConfig();
+        String testProfile = TestConfigUtil.integrationTestProfile(config);
+        boolean isDockerLaunch = isContainer(artifactType)
+                || (isJar(artifactType) && "test-with-native-agent".equals(testProfile));
 
         ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
                 isDockerLaunch);
@@ -272,10 +276,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             if ((testHost != null) && !testHost.isEmpty()) {
                 launcher = new TestHostLauncher();
             } else {
-                Config config = LauncherUtil.installAndGetSomeConfig();
                 Duration waitDuration = TestConfigUtil.waitTimeValue(config);
                 String target = TestConfigUtil.runTarget(config);
-                String testProfile = TestConfigUtil.integrationTestProfile(config);
                 // try to execute a run command published by an extension if it exists.  We do this so that extensions that have a custom run don't have to create any special artifact type
                 launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
                         target, waitDuration);

@@ -604,7 +604,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-postgresql-deployment</artifactId>
+            <artifactId>quarkus-flyway-mysql-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -617,7 +617,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-mysql-deployment</artifactId>
+            <artifactId>quarkus-flyway-postgresql-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

@@ -48,7 +48,10 @@ ifndef::no-webauthn-authentication[]
 |WebAuthn |xref:security-webauthn.adoc[WebAuthn]
 endif::no-webauthn-authentication[]
 
+ifndef::no-quarkus-kerberos[]
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
+endif::no-quarkus-kerberos[]
+
 |====
 
 For more information, see the following <<table>> table.

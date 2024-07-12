@@ -253,7 +253,7 @@ The OIDC Dev UI is also more beneficial because hybrid applications can also acc
 You can run the tests against a Keycloak container started in a test mode in a xref:continuous-testing.adoc[Continuous Testing] mode.
 
 It is also recommended to run the integration tests against Keycloak by using Dev Services for Keycloak.
-For more information, see xref:security-oidc-bearer-token-authentication.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect Service Applications with Dev Services] and xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services].
+For more information, see xref:security-oidc-bearer-token-authentication.adoc#bearer-token-integration-testing-keycloak-devservices[Testing OpenID Connect Service Applications with Dev Services] and xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-keycloak-devservices[Testing OpenID Connect WebApp Applications with Dev Services].
 
 [[keycloak-initialization]]
 === Keycloak initialization

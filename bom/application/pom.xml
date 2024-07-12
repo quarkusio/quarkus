@@ -102,7 +102,7 @@
         <narayana.version>7.0.2.Final</narayana.version>
         <agroal.version>2.4</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.14.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.14.3</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
@@ -171,7 +171,7 @@
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.1</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.15.0</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.16.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.1.SP2</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.2.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.2</quarkus-spring-security-api.version>

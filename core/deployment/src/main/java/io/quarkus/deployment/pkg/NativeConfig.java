@@ -122,7 +122,7 @@ public interface NativeConfig {
     String fileEncoding();
 
     /**
-     * If all character sets should be added to the native image. This increases image size
+     * If all character sets should be added to the native image (Different from GraalVM option : -H:+AddAllCharsets; this flag enables quarkus extensions to do some specific work). This increases image size
      */
     @WithDefault("false")
     boolean addAllCharsets();

@@ -1,6 +1,6 @@
 package io.quarkus.deployment;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

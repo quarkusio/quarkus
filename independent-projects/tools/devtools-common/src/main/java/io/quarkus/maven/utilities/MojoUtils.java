@@ -28,7 +28,7 @@ import org.eclipse.aether.RepositorySystemSession;
 
 import io.fabric8.maven.Maven;
 import io.fabric8.maven.XMLFormat;
-import io.quarkus.commons.classloading.ClassloadHelper;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 
 /**
  * @author kameshs
@@ -320,7 +320,7 @@ public class MojoUtils {
      * classpath of the context classloader
      */
     public static Path getClassOrigin(Class<?> cls) throws IOException {
-        return getResourceOrigin(cls.getClassLoader(), ClassloadHelper.fromClassNameToResourceName(cls.getName()));
+        return getResourceOrigin(cls.getClassLoader(), ClassLoaderHelper.fromClassNameToResourceName(cls.getName()));
     }
 
     public static Path getResourceOrigin(ClassLoader cl, final String name) throws IOException {

@@ -1,6 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

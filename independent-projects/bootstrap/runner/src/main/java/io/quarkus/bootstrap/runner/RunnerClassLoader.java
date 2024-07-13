@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public final class RunnerClassLoader extends ClassLoader {
         //note that for performance reasons this CL does not do parent first delegation
         //although the intention is not for it to be a true isolated parent first CL
         //'delegation misses' where the parent throws a ClassNotFoundException are very expensive
-        if (name.startsWith("java.")) {
+        if (isInJdkPackage(name)) {
             return getParent().loadClass(name);
         }
         String packageName = getPackageNameFromClassName(name);

@@ -1,8 +1,10 @@
 package io.quarkus.commons.classloading;
 
-public final class ClassloadHelper {
+public final class ClassLoaderHelper {
 
-    private ClassloadHelper() {
+    private static final String JAVA = "java.";
+
+    private ClassLoaderHelper() {
         //Not meant to be instantiated
     }
 
@@ -18,4 +20,7 @@ public final class ClassloadHelper {
         return className.replace('.', '/').concat(".class");
     }
 
+    public static boolean isInJdkPackage(String name) {
+        return name.startsWith(JAVA);
+    }
 }

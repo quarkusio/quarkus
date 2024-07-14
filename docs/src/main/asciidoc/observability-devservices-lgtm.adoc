@@ -97,6 +97,10 @@ If you miss the message you can always check the port with this Docker command:
 docker ps | grep grafana
 ----
 
+Another option is to use the Dev UI as the Grafana URL link will be available and if selected will open a new browser tab directly to the running Grafana instance:
+
+image::dev-ui-observability-card.png[alt=Dev UI LGTM, align=center,width=80%]
+
 === Additional configuration
 
 This extension will configure your `quarkus-opentelemetry` and `quarkus-micrometer-registry-otlp` extensions to send data to the OTel Collector bundled with the Grafana OTel LGTM image.

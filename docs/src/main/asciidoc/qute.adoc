@@ -31,7 +31,7 @@ The solution is located in the `qute-quickstart` link:{quickstarts-tree-url}/qut
 
 If you want to serve your templates via http:
 
-1. The Qute Web extension allows you to directly serve via http templates located in `src/main/resource/templates/pub/`. In that case you don't need any Java code to "plug" the template, for example, the template `src/main/resource/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
+1. The Qute Web extension allows you to directly serve via http templates located in `src/main/resources/templates/pub/`. In that case you don't need any Java code to "plug" the template, for example, the template `src/main/resources/templates/pub/foo.html` will be served from the paths `/foo` and `/foo.html` by default.
 2. For finer control, you can combine it with Quarkus REST to control how your template will be served. All files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates and can be injected in a REST resource.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -63,7 +63,7 @@ Let's start with a Hello World template:
 ----
 <1> `{http:param('name', 'Quarkus')}` is an expression that is evaluated when the template is rendered (Quarkus is the default value).
 
-NOTE: Templates located in the `pub` directory are served via HTTP. Automatically, no controllers needed. For example, the template src/main/resource/templates/pub/foo.html will be served from the paths /foo and /foo.html by default.
+NOTE: Templates located in the `pub` directory are served via HTTP. Automatically, no controllers needed. For example, the template src/main/resources/templates/pub/foo.html will be served from the paths /foo and /foo.html by default.
 
 If your application is running, you can open your browser and hit:  http://localhost:8080/hello?name=Martin
 

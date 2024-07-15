@@ -1,9 +1,6 @@
 package io.quarkus.test.junit5.virtual;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Marker indicating that the test method or class should not pin the carrier thread.
@@ -12,6 +9,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
+@Inherited
 public @interface ShouldNotPin {
 
     /**

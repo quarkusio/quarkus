@@ -186,10 +186,14 @@ public class QuarkusBuildItemDoc {
         String className = source.getQualifiedName();
         String attributes = buildAttributes(source);
         String description = getJavaDoc(source);
+        String baseBuildItemText = source.isAbstract()
+                ? "icon:building[title=Non-instantiatable Build Item (can be inherited from)]"
+                : "";
 
         String linkToClass = String.format("%s[`%s`, window=\"_blank\"]", link, className);
 
-        out.println(String.format("\n\na|%s\n[.description]\n--\n%s\n-- a|%s",
+        out.println(String.format("\n\na|%s %s\n[.description]\n--\n%s\n-- a|%s",
+                baseBuildItemText,
                 linkToClass,
                 javadocToAsciidoc(description),
                 attributes));

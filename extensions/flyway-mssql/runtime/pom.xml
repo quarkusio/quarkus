@@ -2,48 +2,32 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <parent>
-        <artifactId>quarkus-jdbc-oracle-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-flyway-mssql-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-oracle</artifactId>
-    <name>Quarkus - JDBC - Oracle - Runtime</name>
-    <description>Connect to the Oracle database via JDBC</description>
+    <artifactId>quarkus-flyway-mssql</artifactId>
+    <name>Quarkus - Flyway - MSSQL - Runtime</name>
+    <description>This extension is added by Quarkus automatically when quarkus-flyway and quarkus-jdbc-mssql are on the classpath</description>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-agroal</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle.database.jdbc</groupId>
-            <artifactId>ojdbc11</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle.database.nls</groupId>
-            <artifactId>orai18n</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>nativeimage</artifactId>
+            <artifactId>quarkus-flyway</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-service-binding</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-oracle</artifactId>
-            <optional>true</optional>  <!-- conditional dependency -->
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-sqlserver</artifactId>
         </dependency>
     </dependencies>
 
@@ -52,11 +36,20 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
-                <configuration>
-                    <capabilities>
-                        <provides>io.quarkus.jdbc.oracle</provides>
-                    </capabilities>
-                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                            <dependencyCondition>
+                                <artifact>io.quarkus:quarkus-flyway</artifact>
+                            </dependencyCondition>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -72,5 +65,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

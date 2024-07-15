@@ -38,6 +38,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-mssql</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
+        </dependency>
+        <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
         </dependency>

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Assertions;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.instrumentation.api.internal.SemconvStability;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.InstrumentType;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
@@ -35,9 +34,6 @@ import io.quarkus.arc.Unremovable;
 @ApplicationScoped
 public class InMemoryMetricExporter implements MetricExporter {
 
-    private static final List<String> LEGACY_KEY_COMPONENTS = List.of(SemanticAttributes.HTTP_METHOD.getKey(),
-            SemanticAttributes.HTTP_ROUTE.getKey(),
-            SemanticAttributes.HTTP_STATUS_CODE.getKey());
     private static final List<String> KEY_COMPONENTS = List.of(SemanticAttributes.HTTP_REQUEST_METHOD.getKey(),
             SemanticAttributes.HTTP_ROUTE.getKey(),
             SemanticAttributes.HTTP_RESPONSE_STATUS_CODE.getKey());
@@ -77,13 +73,7 @@ public class InMemoryMetricExporter implements MetricExporter {
                 .collect(toMap(
                         pointData -> pointData.getAttributes().asMap().entrySet().stream()
                                 //valid attributes for the resulting map key
-                                .filter(entry -> {
-                                    if (SemconvStability.emitOldHttpSemconv()) {
-                                        return LEGACY_KEY_COMPONENTS.contains(entry.getKey().getKey());
-                                    } else {
-                                        return KEY_COMPONENTS.contains(entry.getKey().getKey());
-                                    }
-                                })
+                                .filter(entry -> KEY_COMPONENTS.contains(entry.getKey().getKey()))
                                 // ensure order
                                 .sorted(Comparator.comparing(o -> o.getKey().getKey()))
                                 // build key

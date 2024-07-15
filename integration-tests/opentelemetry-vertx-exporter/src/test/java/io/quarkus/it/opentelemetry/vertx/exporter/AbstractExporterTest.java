@@ -85,7 +85,7 @@ public abstract class AbstractExporterTest {
         assertThat(span.getAttributesList())
                 .contains(
                         KeyValue.newBuilder()
-                                .setKey("http.method")
+                                .setKey("http.request.method")
                                 .setValue(AnyValue.newBuilder()
                                         .setStringValue("GET").build())
                                 .build());

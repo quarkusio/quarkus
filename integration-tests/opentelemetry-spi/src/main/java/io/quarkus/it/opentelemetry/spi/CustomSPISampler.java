@@ -1,5 +1,7 @@
 package io.quarkus.it.opentelemetry.spi;
 
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+
 import java.util.List;
 
 import io.opentelemetry.api.common.Attributes;
@@ -8,7 +10,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
-import io.opentelemetry.semconv.SemanticAttributes;
 
 public class CustomSPISampler implements Sampler {
     @Override
@@ -18,7 +19,7 @@ public class CustomSPISampler implements Sampler {
             SpanKind spanKind,
             Attributes attributes,
             List<LinkData> list) {
-        if (attributes.get(SemanticAttributes.HTTP_TARGET).startsWith("/param/")) {
+        if (attributes.get(URL_PATH).startsWith("/param/")) {
             return SamplingResult.drop();
         }
         return Sampler.alwaysOn().shouldSample(context, s, s1, spanKind, attributes, list);

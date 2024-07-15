@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment.instrumentation;
 
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_CLIENT_IP;
+import static io.opentelemetry.semconv.ClientAttributes.CLIENT_ADDRESS;
 import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static org.hamcrest.Matchers.is;
@@ -50,6 +50,6 @@ public class VertxOpenTelemetryForwardedTest {
         List<SpanData> spans = testSpanExporter.getFinishedSpanItems(2);
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
-        assertSemanticAttribute(server, "192.0.2.60", HTTP_CLIENT_IP);
+        assertSemanticAttribute(server, "192.0.2.60", CLIENT_ADDRESS);
     }
 }

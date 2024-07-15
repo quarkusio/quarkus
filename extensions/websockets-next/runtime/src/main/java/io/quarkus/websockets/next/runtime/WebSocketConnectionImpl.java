@@ -219,18 +219,26 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
             throw new UnsupportedOperationException();
         }
 
-        private <M> Uni<Void> doSend(BiFunction<WebSocketConnection, M, Uni<Void>> function, M message) {
+        private <M> Uni<Void> doSend(BiFunction<WebSocketConnection, M, Uni<Void>> sendFunction, M message) {
             Set<WebSocketConnection> connections = connectionManager.getConnections(generatedEndpointClass);
             if (connections.isEmpty()) {
                 return Uni.createFrom().voidItem();
             }
             List<Uni<Void>> unis = new ArrayList<>(connections.size());
             for (WebSocketConnection connection : connections) {
-                if (connection.isOpen() && (filter == null || filter.test(connection))) {
-                    unis.add(function.apply(connection, message));
+                if (connection.isOpen()
+                        && (filter == null || filter.test(connection))) {
+                    unis.add(sendFunction.apply(connection, message)
+                            // Intentionally ignore 'WebSocket is closed' failures
+                            // It might happen that the connection is closed in the mean time
+                            .onFailure(t -> Endpoints.isWebSocketIsClosedFailure(t, (WebSocketConnectionBase) connection))
+                            .recoverWithNull());
                 }
             }
-            return unis.isEmpty() ? Uni.createFrom().voidItem() : Uni.join().all(unis).andFailFast().replaceWithVoid();
+            if (unis.isEmpty()) {
+                return Uni.createFrom().voidItem();
+            }
+            return Uni.join().all(unis).andCollectFailures().replaceWithVoid();
         }
 
     }

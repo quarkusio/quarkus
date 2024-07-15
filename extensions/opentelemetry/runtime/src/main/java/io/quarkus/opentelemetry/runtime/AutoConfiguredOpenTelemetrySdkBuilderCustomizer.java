@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.runtime;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.getSemconvStabilityOptin;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -41,7 +40,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     void customize(AutoConfiguredOpenTelemetrySdkBuilder builder);
 
     @Singleton
-    final class ResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+    final class TracingResourceCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         private final ApplicationConfig appConfig;
         private final OTelBuildConfig oTelBuildConfig;
@@ -49,7 +48,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
+        public TracingResourceCustomizer(ApplicationConfig appConfig,
                 OTelBuildConfig oTelBuildConfig,
                 OTelRuntimeConfig oTelRuntimeConfig,
                 @Any Instance<DelayedAttributes> delayedAttributes,
@@ -66,7 +65,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
-                    if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
+                    if (oTelBuildConfig.traces().enabled().orElse(TRUE) ||
+                            oTelBuildConfig.metrics().enabled().orElse(TRUE)) {
                         Resource consolidatedResource = existingResource.merge(
                                 Resource.create(delayedAttributes.get()));
 
@@ -82,13 +82,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 })
                                 .orElse(null);
 
-                        // must be resolved at startup, once.
-                        String hostname = null;
-                        try {
-                            hostname = InetAddress.getLocalHost().getHostName();
-                        } catch (UnknownHostException e) {
-                            hostname = "unknown";
-                        }
+                        String hostname = getHostname();
 
                         // Merge resource instances with env attributes
                         Resource resource = resources.stream()
@@ -108,8 +102,6 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     @Singleton
     final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
-        private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
-
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
@@ -143,10 +135,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
                         // make sure dropped targets are not sampled
                         if (!dropTargets.isEmpty()) {
-                            return new DropTargetsSampler(effectiveSampler,
-                                    dropTargets,
-                                    getSemconvStabilityOptin(
-                                            configProperties.getString(OTEL_SEMCONV_STABILITY_OPT_IN)));
+                            return new DropTargetsSampler(effectiveSampler, dropTargets);
                         } else {
                             return effectiveSampler;
                         }
@@ -259,4 +248,16 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             }
         }
     }
+
+    private static String getHostname() {
+        // must be resolved at startup, once.
+        String hostname = null;
+        try {
+            hostname = InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            hostname = "unknown";
+        }
+        return hostname;
+    }
+
 }

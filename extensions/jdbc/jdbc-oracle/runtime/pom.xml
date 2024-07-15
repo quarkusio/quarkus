@@ -40,6 +40,11 @@
             <artifactId>quarkus-kubernetes-service-binding</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-oracle</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
+        </dependency>
     </dependencies>
 
     <build>

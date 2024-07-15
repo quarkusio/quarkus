@@ -57,11 +57,6 @@ class HttpClientOptionsConsumerTest {
             }
 
             @Override
-            public Optional<String> legacyEndpoint() {
-                return Optional.empty();
-            }
-
-            @Override
             public Optional<List<String>> headers() {
                 return Optional.empty();
             }

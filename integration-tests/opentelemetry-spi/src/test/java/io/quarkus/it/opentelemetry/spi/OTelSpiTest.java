@@ -67,13 +67,13 @@ public class OTelSpiTest {
         assertFalse((Boolean) spanData.get("parent_valid"));
         assertFalse((Boolean) spanData.get("parent_remote"));
 
-        assertEquals("GET", spanData.get("attr_http.method"));
-        assertEquals("/direct", spanData.get("attr_http.target"));
-        assertEquals(deepPathUrl.getHost(), spanData.get("attr_net.host.name"));
-        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_net.host.port")));
-        assertEquals("http", spanData.get("attr_http.scheme"));
-        assertEquals("200", spanData.get("attr_http.status_code"));
-        assertNotNull(spanData.get("attr_http.client_ip"));
+        assertEquals("GET", spanData.get("attr_http.request.method"));
+        assertEquals("/direct", spanData.get("attr_url.path"));
+        assertEquals(deepPathUrl.getHost(), spanData.get("attr_server.address"));
+        assertEquals(deepPathUrl.getPort(), Integer.valueOf((String) spanData.get("attr_server.port")));
+        assertEquals("http", spanData.get("attr_url.scheme"));
+        assertEquals("200", spanData.get("attr_http.response.status_code"));
+        assertNotNull(spanData.get("attr_client.address"));
         assertNotNull(spanData.get("attr_user_agent.original"));
     }
 

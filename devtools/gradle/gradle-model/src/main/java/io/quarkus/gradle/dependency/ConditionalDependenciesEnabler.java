@@ -170,8 +170,7 @@ public class ConditionalDependenciesEnabler {
     private Configuration createConditionalDependenciesConfiguration(Project project, Dependency conditionalDep) {
         // previously we used a detached configuration here but apparently extendsFrom(enforcedPlatforms)
         // wouldn't actually enforce platforms on a detached configuration
-        final String name = conditionalDep.getGroup() + ":" + conditionalDep.getName() + ":" + conditionalDep.getVersion()
-                + "Configuration";
+        var name = getConditionalConfigurationName(conditionalDep);
         var config = project.getConfigurations().findByName(name);
         if (config == null) {
             project.getConfigurations().register(name, configuration -> {
@@ -182,6 +181,31 @@ public class ConditionalDependenciesEnabler {
             config = project.getConfigurations().getByName(name);
         }
         return config;
+    }
+
+    private static String getConditionalConfigurationName(Dependency conditionalDep) {
+        var name = new StringBuilder().append("quarkusConditional");
+        appendCapitalized(name, conditionalDep.getGroup());
+        appendCapitalized(name, conditionalDep.getName());
+        appendCapitalized(name, conditionalDep.getVersion());
+        return name.append("Configuration").toString();
+    }
+
+    private static void appendCapitalized(StringBuilder sb, String part) {
+        if (part != null && !part.isEmpty()) {
+            boolean toUpperCase = true;
+            for (int i = 0; i < part.length(); ++i) {
+                var c = part.charAt(i);
+                if (toUpperCase) {
+                    sb.append(Character.toUpperCase(c));
+                    toUpperCase = false;
+                } else if (c == '.' || c == '-') {
+                    toUpperCase = true;
+                } else {
+                    sb.append(c);
+                }
+            }
+        }
     }
 
     private void enableConditionalDependency(ModuleVersionIdentifier dependency) {

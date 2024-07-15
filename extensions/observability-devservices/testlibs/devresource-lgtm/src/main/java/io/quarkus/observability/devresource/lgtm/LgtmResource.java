@@ -61,9 +61,9 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
         // set relevant properties for Quarkus extensions directly
         if (catalog != null && catalog.hasOpenTelemetry()) {
-            containerConfigs.put("quarkus.otel.exporter.otlp.traces.endpoint",
+            containerConfigs.put("quarkus.otel.exporter.otlp.endpoint",
                     String.format("http://%s:%s", host, container.getOtlpPort()));
-            containerConfigs.put("quarkus.otel.exporter.otlp.traces.protocol", "http/protobuf");
+            containerConfigs.put("quarkus.otel.exporter.otlp.protocol", "http/protobuf");
         }
         if (catalog != null && catalog.hasMicrometerOtlp()) {
             containerConfigs.put("quarkus.micrometer.export.otlp.url",

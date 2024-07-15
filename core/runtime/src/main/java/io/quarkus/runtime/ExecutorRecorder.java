@@ -16,6 +16,8 @@ import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
 import org.wildfly.common.cpu.ProcessorInfo;
 
+import io.github.loomania.ExecutorServiceListener;
+import io.github.loomania.Loomania;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -25,6 +27,8 @@ import io.quarkus.runtime.annotations.Recorder;
 public class ExecutorRecorder {
 
     private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
+    private static final boolean VT_ENABLE = Boolean
+            .parseBoolean(System.getProperty("exp.quarkus.virtual-blocking-pool", "false"));
 
     private static volatile Executor current;
 
@@ -57,7 +61,17 @@ public class ExecutorRecorder {
         if (threadPoolConfig.prefill) {
             underlying.prestartAllCoreThreads();
         }
-        current = underlying;
+        if (VT_ENABLE) {
+            if (Loomania.isInstalled()) {
+                log.warn("Enabling experimental virtual thread blocking pool. Good luck!");
+                current = Loomania.newVirtualThreadExecutor(underlying, "Virtual blocking pool", ExecutorServiceListener.EMPTY);
+            } else {
+                log.warn("Loomania wasn't installed, so the experimental virtual thread blocking pool was not enabled.");
+                current = underlying;
+            }
+        } else {
+            current = underlying;
+        }
         return underlying;
     }
 

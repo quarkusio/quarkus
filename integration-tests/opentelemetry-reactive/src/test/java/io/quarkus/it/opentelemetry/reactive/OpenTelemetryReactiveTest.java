@@ -3,8 +3,9 @@ package io.quarkus.it.opentelemetry.reactive;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_TARGET;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_URL;
+import static io.opentelemetry.semconv.UrlAttributes.URL_FULL;
+import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
+import static io.opentelemetry.semconv.UrlAttributes.URL_QUERY;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getExceptionEventData;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanEventAttrs;
@@ -169,25 +170,27 @@ public class OpenTelemetryReactiveTest {
 
         // Naruto Span
         Optional<Map<String, Object>> narutoSpan = clientSpans.stream()
-                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(HTTP_URL.getKey())).contains("Naruto"))
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Naruto"))
                 .findFirst();
         assertTrue(narutoSpan.isPresent());
         Map<String, Object> naruto = narutoSpan.get();
 
         Map<String, Object> narutoServer = getSpanByKindAndParentId(spans, SERVER, naruto.get("spanId"));
-        assertEquals("/reactive?name=Naruto", ((Map<?, ?>) narutoServer.get("attributes")).get(HTTP_TARGET.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Naruto", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_QUERY.getKey()));
         Map<String, Object> narutoInternal = getSpanByKindAndParentId(spans, INTERNAL, narutoServer.get("spanId"));
         assertEquals("helloGet", narutoInternal.get("name"));
 
         // Goku Span
         Optional<Map<String, Object>> gokuSpan = clientSpans.stream()
-                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(HTTP_URL.getKey())).contains("Goku"))
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Goku"))
                 .findFirst();
         assertTrue(gokuSpan.isPresent());
         Map<String, Object> goku = gokuSpan.get();
 
         Map<String, Object> gokuServer = getSpanByKindAndParentId(spans, SERVER, goku.get("spanId"));
-        assertEquals("/reactive?name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(HTTP_TARGET.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_QUERY.getKey()));
         Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
         assertEquals("helloGet", gokuInternal.get("name"));
     }
@@ -218,25 +221,27 @@ public class OpenTelemetryReactiveTest {
 
         // Naruto Span
         Optional<Map<String, Object>> narutoSpan = clientSpans.stream()
-                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(HTTP_URL.getKey())).contains("Naruto"))
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Naruto"))
                 .findFirst();
         assertTrue(narutoSpan.isPresent());
         Map<String, Object> naruto = narutoSpan.get();
 
         Map<String, Object> narutoServer = getSpanByKindAndParentId(spans, SERVER, naruto.get("spanId"));
-        assertEquals("/reactive?name=Naruto", ((Map<?, ?>) narutoServer.get("attributes")).get(HTTP_TARGET.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Naruto", ((Map<?, ?>) narutoServer.get("attributes")).get(URL_QUERY.getKey()));
         Map<String, Object> narutoInternal = getSpanByKindAndParentId(spans, INTERNAL, narutoServer.get("spanId"));
         assertEquals("helloGet", narutoInternal.get("name"));
 
         // Goku Span
         Optional<Map<String, Object>> gokuSpan = clientSpans.stream()
-                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(HTTP_URL.getKey())).contains("Goku"))
+                .filter(map -> ((String) ((Map<?, ?>) map.get("attributes")).get(URL_FULL.getKey())).contains("Goku"))
                 .findFirst();
         assertTrue(gokuSpan.isPresent());
         Map<String, Object> goku = gokuSpan.get();
 
         Map<String, Object> gokuServer = getSpanByKindAndParentId(spans, SERVER, goku.get("spanId"));
-        assertEquals("/reactive?name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(HTTP_TARGET.getKey()));
+        assertEquals("/reactive", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_PATH.getKey()));
+        assertEquals("name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(URL_QUERY.getKey()));
         Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
         assertEquals("helloGet", gokuInternal.get("name"));
     }

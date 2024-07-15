@@ -38,7 +38,9 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
      * @param catalog observability catalog. If OpenTelemetry or Micrometer are enabled.
      * @return module's config
      */
-    T config(ModulesConfiguration configuration, ExtensionsCatalog catalog);
+    default T config(ModulesConfiguration configuration, ExtensionsCatalog catalog) {
+        return config(configuration);
+    }
 
     /**
      * Should we enable / start this dev resource.

@@ -2,6 +2,7 @@ package io.quarkus.test.junit5.virtual.internal;
 
 import static io.quarkus.test.junit5.virtual.internal.EventStreamFacade.CARRIER_PINNED_EVENT_NAME;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -62,7 +63,7 @@ public class VirtualThreadExtension
     }
 
     private boolean requiresRecording(Class<?> clazz, Method method) {
-        if (clazz.isAnnotationPresent(ShouldNotPin.class) || clazz.isAnnotationPresent(ShouldPin.class)
+        if (isAnnotationPresent(clazz, ShouldNotPin.class) || isAnnotationPresent(clazz, ShouldPin.class)
                 || method.isAnnotationPresent(ShouldNotPin.class) || method.isAnnotationPresent(ShouldPin.class)) {
             return true;
         }
@@ -79,8 +80,8 @@ public class VirtualThreadExtension
             return null;
         }
 
-        if (clazz.isAnnotationPresent(ShouldPin.class)) {
-            return clazz.getAnnotation(ShouldPin.class);
+        if (isAnnotationPresent(clazz, ShouldPin.class)) {
+            return getAnnotation(clazz, ShouldPin.class);
         }
 
         return null;
@@ -96,11 +97,26 @@ public class VirtualThreadExtension
             return null;
         }
 
-        if (clazz.isAnnotationPresent(ShouldNotPin.class)) {
-            return clazz.getAnnotation(ShouldNotPin.class);
+        if (isAnnotationPresent(clazz, ShouldNotPin.class)) {
+            return getAnnotation(clazz, ShouldNotPin.class);
         }
 
         return null;
+    }
+
+    private static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotationClass) {
+        if (clazz == null) {
+            return false;
+        }
+        return clazz.isAnnotationPresent(annotationClass) || isAnnotationPresent(clazz.getSuperclass(), annotationClass);
+    }
+
+    private static <A extends Annotation> A getAnnotation(Class<?> clazz, Class<A> annotationClass) {
+        A annotation = clazz.getAnnotation(annotationClass);
+        if (annotation != null) {
+            return annotation;
+        }
+        return getAnnotation(clazz.getSuperclass(), annotationClass);
     }
 
     @Override

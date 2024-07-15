@@ -15,7 +15,7 @@ public class InputCollectionOutputCollectionLambda implements RequestHandler<Lis
     public List<OutputPerson> handleRequest(List<InputPerson> people, Context context) {
 
         List<OutputPerson> outputPeople = new ArrayList<>();
-        people.stream().parallel().forEach((person) -> {
+        people.forEach((person) -> {
             outputPeople.add(new OutputPerson(person.getName()));
         });
 

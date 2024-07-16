@@ -198,7 +198,8 @@ public class QuarkusBuildItemDoc {
             if (field.isStatic()) {
                 continue;
             }
-            sb.append("`").append(field.getType().getName()).append(" ").append(field.getName()).append("` :: ");
+            sb.append("`").append(field.getType().getQualifiedNameWithGenerics()).append(" ").append(field.getName())
+                    .append("` :: ");
             sb.append("+++").append(javadocToHTML(getJavaDoc(field))).append("+++");
             sb.append("\n");
         }

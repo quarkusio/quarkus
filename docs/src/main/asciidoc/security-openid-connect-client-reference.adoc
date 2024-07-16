@@ -133,7 +133,9 @@ quarkus.oidc-client.grant.type=refresh
 
 Then you can use the `OidcClient.refreshTokens` method with a provided refresh token to get the access token.
 
-Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants might be required if you are building a complex microservices application and want to avoid the same `Bearer` token be propagated to and used by more than one service. See <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
+ifndef::no-quarkus-oidc-token-propagation-reactive[]
+If you're building a complex microservices application, using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants might be necessary to prevent the same `Bearer` token from being propagated to and used by multiple services. For more information, see <<token-propagation-reactive,Token Propagation Reactive>> and <<token-propagation,Token Propagation>>.
+endif::no-quarkus-oidc-token-propagation-reactive[]
 
 Using `OidcClient` to support the `authorization code` grant might be required if, for some reason, you cannot use the xref:security-oidc-code-flow-authentication.adoc[Quarkus OIDC extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow, then you can configure `OidcClient` as follows:
 

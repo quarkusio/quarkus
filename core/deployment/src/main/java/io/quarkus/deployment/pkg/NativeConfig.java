@@ -122,7 +122,12 @@ public interface NativeConfig {
     String fileEncoding();
 
     /**
-     * If all character sets should be added to the native image. This increases image size
+     * If all character sets should be added to the native executable.
+     * <p>
+     * Note that some extensions (e.g. the Oracle JDBC driver) also take this setting into account to enable support for all
+     * charsets at the extension level.
+     * <p>
+     * This increases image size.
      */
     @WithDefault("false")
     boolean addAllCharsets();

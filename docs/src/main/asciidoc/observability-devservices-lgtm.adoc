@@ -72,9 +72,9 @@ For Tracing add the `quarkus-opentelemetry` extension to your build file:
 implementation("io.quarkus:quarkus-opentelemetry")
 ----
 
-The `quarkus.otel.exporter.otlp.traces.endpoint` property is automatically set to OTel collector endpoint as seen from the outside of the docker container.
+The `quarkus.otel.exporter.otlp.endpoint` property is automatically set to OTel collector endpoint as seen from the outside of the docker container.
 
-The `quarkus.otel.exporter.otlp.traces.protocol` is set to `http/protobuf`.
+The `quarkus.otel.exporter.otlp.protocol` is set to `http/protobuf`.
 
 === Access Grafana
 
@@ -86,7 +86,7 @@ You will see a log entry like this:
 
 [source, log]
 ----
-[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.traces.protocol=http/protobuf}
+[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, quarkus.otel.exporter.otlp.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.protocol=http/protobuf}
 
 ----
 Remember that Grafana is accessible in an ephemeral port, so you need to check the logs to see which port is being used. In this example, the grafana endpoint is `grafana.endpoint=http://localhost:42797`.

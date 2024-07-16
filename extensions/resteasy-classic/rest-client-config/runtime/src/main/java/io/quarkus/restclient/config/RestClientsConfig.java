@@ -4,7 +4,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
+import io.quarkus.bootstrap.runner.VirtualThreadSupport;
 import jakarta.enterprise.inject.CreationException;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -37,7 +40,7 @@ public class RestClientsConfig {
     // The @Deprecated annotation prevents this field from being included in generated docs. We only want the `configKey` field
     // above to be included.
     @Deprecated
-    private final Map<String, RestClientConfig> configs = new ConcurrentHashMap<>();
+    private final ConcurrentVThreadMap<String, RestClientConfig> configs = new ConcurrentVThreadMap<>();
 
     /**
      * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
@@ -362,5 +365,34 @@ public class RestClientsConfig {
             throw new IllegalStateException("Unable to find the RestClientConfigs");
         }
         return configHandle.get();
+    }
+
+    private static class ConcurrentVThreadMap<K, V> extends ConcurrentHashMap<K, V> {
+
+        private final ReentrantLock lock = new ReentrantLock();
+
+        @Override
+        public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+            if (!VirtualThreadSupport.isVirtualThread()) {
+                return super.computeIfAbsent(key, mappingFunction);
+            }
+
+            V value = get(key);
+            return value != null ? value : threadSafePutIfAbsent(key, mappingFunction);
+        }
+
+        private V threadSafePutIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+            lock.lock();
+            try {
+                V value = get(key);
+                if (value == null) {
+                    value = mappingFunction.apply(key);
+                    put(key, value);
+                }
+                return value;
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 }

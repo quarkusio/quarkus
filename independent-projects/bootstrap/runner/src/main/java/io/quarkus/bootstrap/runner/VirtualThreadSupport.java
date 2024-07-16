@@ -19,7 +19,7 @@ public class VirtualThreadSupport {
         }
     }
 
-    static boolean isVirtualThread() {
+    public static boolean isVirtualThread() {
         if (virtualMh == null) {
             return false;
         }
@@ -30,11 +30,11 @@ public class VirtualThreadSupport {
         }
     }
 
-    static int majorVersionFromJavaSpecificationVersion() {
+    private static int majorVersionFromJavaSpecificationVersion() {
         return majorVersion(System.getProperty("java.specification.version", "17"));
     }
 
-    static int majorVersion(String javaSpecVersion) {
+    private static int majorVersion(String javaSpecVersion) {
         String[] components = javaSpecVersion.split("\\.");
         int[] version = new int[components.length];
 

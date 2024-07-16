@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -644,7 +645,11 @@ public class QuarkusProdModeTest
         try {
             if (process != null) {
                 process.destroy();
-                process.waitFor();
+                boolean stopped = process.waitFor(1, TimeUnit.MINUTES);
+                if (!stopped) {
+                    process.destroyForcibly();
+                    process.waitFor(1, TimeUnit.MINUTES);
+                }
                 exitCode = process.exitValue();
             }
         } catch (InterruptedException ignored) {

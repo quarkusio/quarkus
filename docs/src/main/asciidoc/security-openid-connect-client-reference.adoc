@@ -363,8 +363,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.i
-nject.Inject;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class OidcClientCreator {

@@ -17,7 +17,6 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.runtime.LaunchMode;
-import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -81,10 +80,7 @@ public final class ConfigUtils {
                 .addDefaultInterceptors()
                 .addDiscoveredInterceptors()
                 .addDiscoveredSecretKeysHandlers()
-                .addDefaultSources()
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
-                .withSources(new DotEnvConfigSourceProvider());
+                .addDefaultSources();
     }
 
     public static List<String> getProfiles() {

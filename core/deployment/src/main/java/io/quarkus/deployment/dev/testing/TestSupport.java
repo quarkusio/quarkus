@@ -40,8 +40,6 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
-import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -565,11 +563,7 @@ public class TestSupport implements TestController {
     }
 
     private static SmallRyeConfig getMinimalConfig() {
-        return new SmallRyeConfigBuilder()
-                .addDefaultSources()
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
-                .withSources(new DotEnvConfigSourceProvider()).build();
+        return new SmallRyeConfigBuilder().addDefaultSources().build();
     }
 
     private Optional<List<String>> getTrimmedListFromConfig(SmallRyeConfig updatedConfig, String property) {

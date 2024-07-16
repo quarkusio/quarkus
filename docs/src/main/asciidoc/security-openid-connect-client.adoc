@@ -79,14 +79,15 @@ endif::no-quarkus-oidc-token-propagation[]
 
 ifdef::no-quarkus-oidc-token-propagation[]
 :create-app-artifact-id: security-openid-connect-client-quickstart
-:create-app-extensions: oidc,rest-client-oidc-filter,rest
+:create-app-extensions: oidc,oidc-client-reactive-filter,resteasy-reactive
+
 include::{includes}/devtools/create-app.adoc[]
 
-It generates a Maven project, importing the `oidc`, `rest-client-oidc-filter`, and `rest` extensions.
+It generates a Maven project, importing the `oidc`, `oidc-client-reactive-filter`, and `resteasy-reactive` extensions.
 
 If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
 
-:add-extension-extensions: oidc,rest-client-oidc-filter,rest
+:add-extension-extensions: oidc,oidc-client-reactive-filter,resteasy-reactive
 include::{includes}/devtools/extension-add.adoc[]
 endif::no-quarkus-oidc-token-propagation[]
 
@@ -141,7 +142,7 @@ ifdef::no-quarkus-oidc-token-propagation[]
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-oidc,rest-client-oidc-filter,rest")
+implementation("io.quarkus:quarkus-oidc,oidc-client-reactive-filter,resteasy-reactive")
 ----
 endif::no-quarkus-oidc-token-propagation[]
 

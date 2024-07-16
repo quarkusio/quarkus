@@ -209,7 +209,8 @@ public class NativeImageBuildStep {
         if (nativeConfig.reuseExisting()) {
             if (Files.exists(finalExecutablePath)) {
                 return new NativeImageBuildItem(finalExecutablePath,
-                        NativeImageBuildItem.GraalVMVersion.unknown());
+                        NativeImageBuildItem.GraalVMVersion.unknown(),
+                        true);
             }
         }
 
@@ -297,7 +298,8 @@ public class NativeImageBuildStep {
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.getVersionAsString(),
                             graalVMVersion.javaVersion.feature(),
-                            graalVMVersion.distribution.name()));
+                            graalVMVersion.distribution.name()),
+                    false);
         } catch (ImageGenerationFailureException e) {
             throw e;
         } catch (Exception e) {

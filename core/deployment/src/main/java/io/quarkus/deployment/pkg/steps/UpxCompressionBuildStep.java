@@ -40,8 +40,13 @@ public class UpxCompressionBuildStep {
             NativeImageBuildItem image,
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+
         if (nativeConfig.compression().level().isEmpty()) {
             log.debug("UPX compression disabled");
+            return;
+        }
+        if (image.isReused()) {
+            log.debug("Native executable reused: skipping compression");
             return;
         }
 
@@ -53,16 +58,16 @@ public class UpxCompressionBuildStep {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else if (nativeConfig.remoteContainerBuild()) {
-            log.errorf("Compression of native executables is not yet implemented for remote container builds.");
+            log.error("Compression of native executables is not yet implemented for remote container builds.");
             throw new IllegalStateException(
                     "Unable to compress the native executable: Compression of native executables is not yet supported for remote container builds");
         } else if (nativeImageRunner.isContainerBuild()) {
-            log.infof("Running UPX from a container using the builder image: " + effectiveBuilderImage);
+            log.info("Running UPX from a container using the builder image: " + effectiveBuilderImage);
             if (!runUpxInContainer(image, nativeConfig, effectiveBuilderImage)) {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else {
-            log.errorf("Unable to compress the native executable. Either install `upx` from https://upx.github.io/" +
+            log.error("Unable to compress the native executable. Either install `upx` from https://upx.github.io/" +
                     " on your machine, or enable in-container build using `-Dquarkus.native.container-build=true`.");
             throw new IllegalStateException("Unable to compress the native executable: `upx` not available");
         }
@@ -90,12 +95,12 @@ public class UpxCompressionBuildStep {
             ProcessUtil.streamOutputToSysOut(process);
             final int exitCode = process.waitFor();
             if (exitCode != 0) {
-                log.errorf("Command: " + String.join(" ", args) + " failed with exit code " + exitCode);
+                log.error("Command: " + String.join(" ", args) + " failed with exit code " + exitCode);
                 return false;
             }
             return true;
         } catch (Exception e) {
-            log.errorf("Command: " + String.join(" ", args) + " failed", e);
+            log.error("Command: " + String.join(" ", args) + " failed", e);
             return false;
         } finally {
             if (process != null) {
@@ -169,7 +174,7 @@ public class UpxCompressionBuildStep {
             }
             return true;
         } catch (Exception e) {
-            log.errorf("Command: " + String.join(" ", commandLine) + " failed", e);
+            log.error("Command: " + String.join(" ", commandLine) + " failed", e);
             return false;
         } finally {
             if (process != null) {

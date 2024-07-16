@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * A utility class for handling URI template parameters. As the Java
- * regulare expressions package does not handle named groups, this
+ * regular expressions package does not handle named groups, this
  * class attempts to simulate that functionality by using groups.
  *
  * @author Ryan J. McDonough
@@ -97,6 +97,21 @@ public class PathHelper {
 
     public static String recoverEnclosedCurlyBraces(String str) {
         return str.replace(openCurlyReplacement, '{').replace(closeCurlyReplacement, '}');
+    }
+
+    public static String getPathWithoutPrefix(String path, String prefix) {
+        if (path != null) {
+            if (!prefix.isEmpty()) {
+                // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
+                if (path.startsWith(prefix)) {
+                    if (path.length() == prefix.length()) {
+                        return "/";
+                    }
+                    return path.substring(prefix.length());
+                }
+            }
+        }
+        return path;
     }
 
 }

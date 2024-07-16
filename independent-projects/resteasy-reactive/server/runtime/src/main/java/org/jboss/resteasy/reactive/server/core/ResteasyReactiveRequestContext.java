@@ -43,6 +43,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
@@ -443,20 +444,7 @@ public abstract class ResteasyReactiveRequestContext
      * Returns the normalised non-decoded path excluding any prefix.
      */
     public String getPathWithoutPrefix() {
-        String path = getPath();
-        if (path != null) {
-            String prefix = deployment.getPrefix();
-            if (!prefix.isEmpty()) {
-                // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
-                if (path.startsWith(prefix)) {
-                    if (path.length() == prefix.length()) {
-                        return "/";
-                    }
-                    return path.substring(prefix.length());
-                }
-            }
-        }
-        return path;
+        return PathHelper.getPathWithoutPrefix(getPath(), deployment.getPrefix());
     }
 
     /**

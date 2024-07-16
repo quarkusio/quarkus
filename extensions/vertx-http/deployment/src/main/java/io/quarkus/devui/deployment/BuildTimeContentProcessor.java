@@ -45,6 +45,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
+import io.mvnpm.importmap.model.Imports;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
@@ -340,8 +341,8 @@ public class BuildTimeContentProcessor {
             aggregator.addMappings(importMap);
         }
 
-        Map<String, String> currentImportMap = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath())
-                .getImports();
+        Imports imports = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+        Map<String, String> currentImportMap = imports.getImports();
         Map<String, String> relocationMap = relocationImportMapBuildItem.getRelocationMap();
         for (Map.Entry<String, String> relocation : relocationMap.entrySet()) {
             String from = relocation.getKey();
@@ -356,7 +357,7 @@ public class BuildTimeContentProcessor {
         }
 
         String esModuleShimsVersion = extractEsModuleShimsVersion(mvnpmBuildItem.getMvnpmJars());
-        String importmap = aggregator.aggregateAsJson(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+        String importmap = aggregator.aggregateAsJson(imports);
         aggregator.reset();
 
         String themeVars = themeVarsBuildItem.getTemplateValue();

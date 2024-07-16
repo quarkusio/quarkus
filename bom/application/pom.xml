@@ -220,7 +220,7 @@
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.10</importmap.version>
+        <importmap.version>1.0.11</importmap.version>
     </properties>
 
     <dependencyManagement>

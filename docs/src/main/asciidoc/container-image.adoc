@@ -119,7 +119,12 @@ include::{includes}/devtools/extension-add.adoc[]
 
 The `quarkus-container-image-docker` extension is capable of https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images/[creating multi-platform (or multi-arch)] images using https://docs.docker.com/engine/reference/commandline/buildx_build/[`docker buildx build`]. See the `quarkus.docker.buildx.*` configuration items in the <<#DockerOptions,Docker Options>> section below.
 
-NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
+[NOTE]
+====
+`docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
+
+This means that if you want to build images for more than one platform at a time (i.e. `quarkus.docker.buildx.platform=linux/amd64,linux/arm64`), you need to push the images (`quarkus.container-image.push=true`) directly as part of the build process. Docker buildx does not support loading into the local registry when building multi-platform images.
+====
 
 [[podman]]
 === Podman
@@ -130,6 +135,16 @@ To use this feature, add the following extension to your project.
 
 :add-extension-extensions: container-image-podman
 include::{includes}/devtools/extension-add.adoc[]
+
+[TIP]
+.When to use Docker vs Podman extension
+====
+The <<#docker,Docker extension>> is and has always been backwards-compatible with Podman because Podman exposes a https://podman.io/docs/installation[Docker-compatible API]. You can build container images with Podman using the Docker extension (see the https://quarkus.io/guides/podman[Using Podman with Quarkus guide]).
+
+Use either the `quarkus-container-image-docker` or `quarkus-container-image-podman` extension when doing things specific to either Docker or Podman, respectively.
+
+For example, building multi-platform images is implemented differently for Docker and Podman. Docker uses https://docs.docker.com/engine/reference/commandline/buildx_build/[the buildx plugin] whereas Podman can build multi-platform images https://docs.podman.io/en/latest/markdown/podman-build.1.html#platform-os-arch-variant[natively]. Because of this, you would need to use the specific extension to perform that function.
+====
 
 [[openshift]]
 === OpenShift

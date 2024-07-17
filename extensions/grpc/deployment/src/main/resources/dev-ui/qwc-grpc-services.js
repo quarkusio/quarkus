@@ -282,7 +282,9 @@ export class QwcGrpcServices extends observeState(QwcHotReloadElement) {
                 methodType: method.type,
                 content: content
             }).then(jsonRpcResponse => {
-                this._responseTextArea(service.name, method).populatePrettyJson(jsonRpcResponse.result);
+                const jsonObject = JSON.parse(jsonRpcResponse.result);
+                const prettyJson = JSON.stringify(jsonObject, null, 2);
+                this._responseTextArea(service.name, method).populatePrettyJson(prettyJson);
             });
         }else{
             let id = this._id(service.name, method);

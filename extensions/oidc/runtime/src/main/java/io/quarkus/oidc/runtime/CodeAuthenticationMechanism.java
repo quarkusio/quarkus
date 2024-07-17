@@ -175,9 +175,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
         OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
         if (!parsedStateCookieValue[0].equals(stateQueryParam.get(0))) {
-            LOG.debug("State cookie value does not match the state query parameter value, "
-                    + "completing the code flow with HTTP status 401");
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
+            final String error = "State cookie value does not match the state query parameter value, "
+                    + "completing the code flow with HTTP status 401";
+            LOG.error(error);
+            return Uni.createFrom().failure(new AuthenticationCompletionException(error));
         }
 
         // State cookie is available, try to complete the code flow and start a new session
@@ -240,13 +241,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         });
             } else {
-                LOG.error(
-                        "Authentication has failed but no error handler is found, completing the code flow with HTTP status 401");
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
+                final String errorMessage = """
+                        Authorization code flow has failed, error code: %s, error description: %s.
+                        Error handler path is not configured. Have a public JAX-RS resource listening
+                        on a path such as '/error' and point to it with 'quarkus.oidc.authentication.error-path=/error'.
+                        Completing the flow with HTTP status 401.
+                        """.formatted(error, errorDescription == null ? "" : errorDescription);
+                LOG.error(errorMessage);
+                return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
             }
         } else {
-            LOG.error("State cookie is present but neither 'code' nor 'error' query parameter is returned");
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
+            final String error = "State cookie is present but neither 'code' nor 'error' query parameter is returned";
+            LOG.error(error);
+            return Uni.createFrom().failure(new AuthenticationCompletionException(error));
         }
 
     }
@@ -273,9 +280,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private Uni<SecurityIdentity> stateParamIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
             Map<String, Cookie> cookies, boolean multipleStateQueryParams) {
         if (multipleStateQueryParams) {
-            LOG.warn("State query parameter can not be multi-valued if the state cookie is present");
+            final String error = "State query parameter can not be multi-valued if the state cookie is present";
+            LOG.error(error);
             removeStateCookies(oidcTenantConfig, context, cookies);
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
+            return Uni.createFrom().failure(new AuthenticationCompletionException(error));
         }
         LOG.debug("State parameter can not be empty if the state cookie is present");
         return stateCookieIsNotMatched(oidcTenantConfig, context, cookies);
@@ -293,7 +301,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 || context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
             if (oidcTenantConfig.authentication.failOnMissingStateParam) {
                 removeStateCookies(oidcTenantConfig, context, cookies);
-                return Uni.createFrom().failure(new AuthenticationCompletionException());
+                final String error = "State query parameter is missing";
+                LOG.error(error);
+                return Uni.createFrom().failure(new AuthenticationCompletionException(error));
             }
             if (!oidcTenantConfig.authentication.allowMultipleCodeFlows) {
                 removeStateCookies(oidcTenantConfig, context, cookies);
@@ -366,14 +376,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                logAuthenticationError(context, t);
+                                                String error = logAuthenticationError(context, t);
                                                 return removeSessionCookie(context, configContext.oidcConfig)
                                                         .replaceWith(Uni.createFrom()
                                                                 .failure(t
                                                                         .getCause() instanceof AuthenticationCompletionException
                                                                                 ? t.getCause()
                                                                                 : new AuthenticationCompletionException(
-                                                                                        t.getCause())));
+                                                                                        error, t.getCause())));
                                             }
                                             // Token has expired, try to refresh
                                             if (isRpInitiatedLogout(context, configContext)) {
@@ -897,8 +907,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             return tInner;
                                         }
 
-                                        logAuthenticationError(context, tInner);
-                                        return new AuthenticationCompletionException(tInner);
+                                        final String errorMessage = logAuthenticationError(context, tInner);
+                                        return new AuthenticationCompletionException(errorMessage, tInner);
                                     }
                                 });
                     }
@@ -906,14 +916,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
-    private static void logAuthenticationError(RoutingContext context, Throwable t) {
-        final String errorMessage = errorMessage(t);
+    private static String logAuthenticationError(RoutingContext context, Throwable t) {
+        String errorMessage = null;
         final boolean accessTokenFailure = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null;
         if (accessTokenFailure) {
-            LOG.errorf("Access token verification has failed: %s.", errorMessage);
+            errorMessage = """
+                    Access token verification has failed: %s
+                    """.formatted(errorMessage(t));
+            LOG.error(errorMessage);
         } else {
-            LOG.errorf("ID token verification has failed: %s", errorMessage);
+            errorMessage = """
+                    ID token verification has failed: %s
+                    """.formatted(errorMessage(t));
+            LOG.error(errorMessage);
         }
+
+        return errorMessage;
     }
 
     private static boolean prepareNonceForVerification(RoutingContext context, OidcTenantConfig oidcConfig,
@@ -1015,8 +1033,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         JsonObject idTokenJson = OidcUtils.decodeJwtContent(idToken);
 
                         if (!idTokenJson.containsKey("exp") || !idTokenJson.containsKey("iat")) {
-                            LOG.error("ID Token is required to contain 'exp' and 'iat' claims");
-                            throw new AuthenticationCompletionException();
+                            final String error = "ID Token is required to contain 'exp' and 'iat' claims";
+                            LOG.error(error);
+                            throw new AuthenticationCompletionException(error);
                         }
                         long maxAge = idTokenJson.getLong("exp") - idTokenJson.getLong("iat");
                         LOG.debugf("ID token is valid for %d seconds", maxAge);

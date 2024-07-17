@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -275,7 +276,13 @@ public class HttpSecurityRecorder {
                     protected void proceed(Throwable throwable) {
                         //we can't fail event here as request processing has already begun (e.g. in RESTEasy Reactive)
                         //and extensions may have their ways to handle failures
-                        event.end();
+                        if (throwable instanceof AuthenticationCompletionException
+                                && throwable.getMessage() != null
+                                && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                            event.end(throwable.getMessage());
+                        } else {
+                            event.end();
+                        }
                     }
                 });
             }

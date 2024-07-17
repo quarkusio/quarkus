@@ -103,7 +103,7 @@ public class CodeFlowDevModeTestCase {
             }
             webClient.getCookieManager().clearCookies();
 
-            // Now set the correct client-id
+            // Now set the correct client secret
             test.modifyResourceFile("application.properties", s -> s.replace("secret-from-vault-typo", "secret-from-vault"));
 
             page = webClient.getPage("http://localhost:8080/protected");

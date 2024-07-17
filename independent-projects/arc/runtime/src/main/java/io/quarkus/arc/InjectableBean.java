@@ -162,6 +162,26 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return getBeanClass();
     }
 
+    /**
+     * Equivalent to {@code checkActive().value()}.
+     *
+     * @see #checkActive()
+     */
+    default boolean isActive() {
+        return checkActive().value();
+    }
+
+    /**
+     * Returns whether this bean is active and if not, the reason why. Certain
+     * synthetic beans may be inactive from time to time. Attempting to inject
+     * or lookup such an inactive bean leads to {@link InactiveBeanException}.
+     *
+     * @return whether this bean is active and if not, the reason why
+     */
+    default ActiveResult checkActive() {
+        return ActiveResult.active();
+    }
+
     enum Kind {
 
         CLASS,

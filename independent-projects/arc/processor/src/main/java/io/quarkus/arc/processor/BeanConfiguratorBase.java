@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -22,6 +23,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableBean;
@@ -59,6 +61,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected final Set<TypeAndQualifiers> injectionPoints;
     protected Integer startupPriority;
     protected InterceptionProxyInfo interceptionProxy;
+    protected Consumer<MethodCreator> checkActiveConsumer;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -101,6 +104,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
         interceptionProxy = base.interceptionProxy;
+        checkActiveConsumer = base.checkActiveConsumer;
         return self();
     }
 
@@ -264,8 +268,11 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     /**
      * Initialize the bean eagerly at application startup.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
      *
-     * @param priority
+     * @param priority priority of the generated synthetic observer, to affect eager init ordering
      * @return self
      */
     public THIS startup(int priority) {
@@ -275,6 +282,9 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     /**
      * Initialize the bean eagerly at application startup.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
      *
      * @return self
      */
@@ -388,6 +398,37 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
         this.destroyerConsumer = methodCreatorConsumer;
+        return cast(this);
+    }
+
+    /**
+     * Configures the class of the "check active" procedure.
+     *
+     * @see #checkActive(Consumer)
+     */
+    public THIS checkActive(Class<? extends Supplier<ActiveResult>> checkActiveClazz) {
+        return checkActive(mc -> {
+            // return new FooActiveResultSupplier().get()
+            ResultHandle supplierHandle = mc.newInstance(MethodDescriptor.ofConstructor(checkActiveClazz));
+            mc.returnValue(mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                    supplierHandle));
+        });
+    }
+
+    /**
+     * Configures the procedure that generates the bytecode for checking whether this bean is active or not.
+     * Usually, this method should not be called, because most beans are always active. However, certain
+     * synthetic beans may be inactive from time to time -- as determined by this procedure. If a bean
+     * is inactive, injecting it or looking it up ends with {@code InactiveBeanException}.
+     * <p>
+     * The procedure is expected to return an {@link io.quarkus.arc.ActiveResult ActiveResult}, which
+     * for inactive beans must include an explanation (why is this bean not active) and optionally also
+     * a cause (in case the bean is inactive because another bean is also inactive).
+     *
+     * @return the procedure that generates the bytecode for checking whether this bean is active or not
+     */
+    public THIS checkActive(Consumer<MethodCreator> methodCreatorConsumer) {
+        this.checkActiveConsumer = methodCreatorConsumer;
         return cast(this);
     }
 

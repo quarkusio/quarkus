@@ -66,7 +66,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                     mc.returnValue(ret);
                 },
                 null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""),
-                null, null, null);
+                null, null, null, null);
         this.bindings = bindings;
         this.interceptionType = interceptionType;
         this.creatorClass = creatorClass;

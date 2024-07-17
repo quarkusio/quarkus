@@ -77,9 +77,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             prepareResult = null;
         }
         if (prepareResult == null) {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            PrepareResult result = createAugmentor(extensionContext, profile, shutdownTasks);
-            prepareResult = result;
+            LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
+            prepareResult = createAugmentor(extensionContext, profile, shutdownTasks);
         }
     }
 

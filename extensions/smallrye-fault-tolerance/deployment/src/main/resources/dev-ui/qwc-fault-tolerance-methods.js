@@ -86,6 +86,7 @@ export class QwcFaultToleranceMethods extends LitElement {
                 ${guardedMethod.FibonacciBackoff ? this._renderFibonacciBackoff(guardedMethod.FibonacciBackoff) : html``}
                 ${guardedMethod.CustomBackoff ? this._renderCustomBackoff(guardedMethod.CustomBackoff) : html``}
                 ${guardedMethod.RetryWhen ? this._renderRetryWhen(guardedMethod.RetryWhen) : html``}
+                ${guardedMethod.BeforeRetry ? this._renderBeforeRetry(guardedMethod.BeforeRetry) : html``}
                 ${guardedMethod.Timeout ? this._renderTimeout(guardedMethod.Timeout) : html``}
             </vaadin-vertical-layout>
         `;
@@ -185,6 +186,15 @@ export class QwcFaultToleranceMethods extends LitElement {
             <span>
                 &rarrhk;
                 @RetryWhen(result = ${retryWhen.result}, exception = ${retryWhen.exception})
+            </span>
+        `;
+    }
+
+    _renderBeforeRetry(beforeRetry) {
+        return html`
+            <span>
+                &rarrhk;
+                @BeforeRetry(value = ${beforeRetry.value}, methodName = ${beforeRetry.methodName})
             </span>
         `;
     }

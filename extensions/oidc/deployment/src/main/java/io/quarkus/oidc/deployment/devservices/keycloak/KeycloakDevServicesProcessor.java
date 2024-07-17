@@ -538,7 +538,7 @@ public class KeycloakDevServicesProcessor {
 
             if (showLogs) {
                 super.withLogConsumer(t -> {
-                    LOG.info("Keycloak: " + t.getUtf8String());
+                    LOG.info("Keycloak: " + t.getUtf8StringWithoutLineEnding());
                 });
             }
 

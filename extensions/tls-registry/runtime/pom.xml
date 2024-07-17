@@ -26,6 +26,13 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-credentials</artifactId>
         </dependency>
+
+        <!-- To register the let's encrypt routes -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

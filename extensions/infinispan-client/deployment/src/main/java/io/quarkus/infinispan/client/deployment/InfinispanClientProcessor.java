@@ -303,6 +303,22 @@ class InfinispanClientProcessor {
                         "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash")
                         .build());
 
+        // Elytron Classes
+        String[] elytronClasses = new String[] {
+                "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
+                "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
+                "org.wildfly.security.credential.BearerTokenCredential",
+                "org.wildfly.security.credential.GSSKerberosCredential",
+                "org.wildfly.security.credential.KeyPairCredential",
+                "org.wildfly.security.credential.PasswordCredential",
+                "org.wildfly.security.credential.PublicKeyCredential",
+                "org.wildfly.security.credential.SecretKeyCredential",
+                "org.wildfly.security.credential.SSHCredential",
+                "org.wildfly.security.credential.X509CertificateChainPrivateCredential",
+                "org.wildfly.security.credential.X509CertificateChainPublicCredential"
+        };
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).build());
         return new InfinispanPropertiesBuildItem(propertiesMap);
     }
 

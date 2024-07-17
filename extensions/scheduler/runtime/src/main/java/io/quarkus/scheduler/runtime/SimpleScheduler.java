@@ -589,28 +589,29 @@ public class SimpleScheduler implements Scheduler {
             super(id, start, description);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
-            this.lastFireTime = start;
             this.gracePeriod = gracePeriod;
             this.timeZone = timeZone;
+            // The last fire time stores the zoned time
+            this.lastFireTime = zoned(start);
         }
 
         @Override
         public Instant getNextFireTime() {
-            Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(lastFireTime);
-            return nextFireTime.isPresent() ? nextFireTime.get().toInstant() : null;
+            return executionTime.nextExecution(lastFireTime).map(ZonedDateTime::toInstant).orElse(null);
         }
 
+        @Override
         ZonedDateTime evaluate(ZonedDateTime now) {
             if (now.isBefore(start)) {
                 return null;
             }
-            ZonedDateTime zonedNow = timeZone == null ? now : now.withZoneSameInstant(timeZone);
-            Optional<ZonedDateTime> lastExecution = executionTime.lastExecution(zonedNow);
+            now = zoned(now);
+            Optional<ZonedDateTime> lastExecution = executionTime.lastExecution(now);
             if (lastExecution.isPresent()) {
                 ZonedDateTime lastTruncated = lastExecution.get().truncatedTo(ChronoUnit.SECONDS);
-                if (zonedNow.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
+                if (now.isAfter(lastTruncated) && lastFireTime.isBefore(lastTruncated)) {
                     LOG.tracef("%s fired, last=%s", this, lastTruncated);
-                    lastFireTime = zonedNow;
+                    lastFireTime = now;
                     return lastTruncated;
                 }
             }
@@ -623,15 +624,19 @@ public class SimpleScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return false;
             }
-            ZonedDateTime zonedNow = timeZone == null ? now : now.withZoneSameInstant(timeZone);
+            now = zoned(now);
             Optional<ZonedDateTime> nextFireTime = executionTime.nextExecution(lastFireTime);
-            return nextFireTime.isEmpty() || nextFireTime.get().plus(gracePeriod).isBefore(zonedNow);
+            return nextFireTime.isEmpty() || nextFireTime.get().plus(gracePeriod).isBefore(now);
         }
 
         @Override
         public String toString() {
             return "CronTrigger [id=" + id + ", cron=" + cron.asString() + ", gracePeriod=" + gracePeriod + ", timeZone="
                     + timeZone + "]";
+        }
+
+        private ZonedDateTime zoned(ZonedDateTime time) {
+            return timeZone == null ? time : time.withZoneSameInstant(timeZone);
         }
 
     }

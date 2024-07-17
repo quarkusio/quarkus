@@ -291,7 +291,7 @@ class Endpoints {
                 || throwable instanceof ForbiddenException;
     }
 
-    private static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
+    static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
         if (!connection.isClosed()) {
             return false;
         }

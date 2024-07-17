@@ -23,6 +23,10 @@
             <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-classes-kqueue</artifactId>
         </dependency>

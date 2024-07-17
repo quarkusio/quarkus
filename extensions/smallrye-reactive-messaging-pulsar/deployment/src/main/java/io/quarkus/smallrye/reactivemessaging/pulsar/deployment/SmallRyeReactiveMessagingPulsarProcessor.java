@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.pulsar.PulsarClientConfigCustomizer;
 import io.quarkus.pulsar.PulsarRuntimeConfigProducer;
 
 public class SmallRyeReactiveMessagingPulsarProcessor {
@@ -45,6 +46,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
     public AdditionalBeanBuildItem runtimeConfig() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(PulsarRuntimeConfigProducer.class)
+                .addBeanClass(PulsarClientConfigCustomizer.class)
                 .setUnremovable()
                 .build();
     }

@@ -104,6 +104,7 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
+import io.quarkus.kafka.client.tls.QuarkusKafkaSslEngineFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class KafkaProcessor {
@@ -280,6 +281,8 @@ public class KafkaProcessor {
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
 
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(QuarkusKafkaSslEngineFactory.class).build());
     }
 
     @BuildStep(onlyIf = { HasSnappy.class, NativeOrNativeSourcesBuild.class })

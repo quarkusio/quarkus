@@ -42,9 +42,9 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-caffeine-deployment</artifactId>
+            <artifactId>quarkus-tls-registry-deployment</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>

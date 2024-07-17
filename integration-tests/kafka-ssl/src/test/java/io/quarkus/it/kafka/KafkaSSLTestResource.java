@@ -21,13 +21,20 @@ public class KafkaSSLTestResource implements QuarkusTestResourceLifecycleManager
             .withCopyFileToContainer(MountableFile.forHostPath("target/certs/kafka-truststore.p12"),
                     "/opt/kafka/config/kafka-truststore.p12");
 
+    private Map<String, String> initProps;
+
+    @Override
+    public void init(Map<String, String> initArgs) {
+        initProps = initArgs;
+    }
+
     @Override
     public Map<String, String> start() {
         kafka.start();
         // Used by the test
         System.setProperty("bootstrap.servers", kafka.getBootstrapServers());
         // Used by the application
-        Map<String, String> properties = new HashMap<>();
+        Map<String, String> properties = new HashMap<>(initProps);
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());
         properties.put("ssl-dir", new File("target/certs").getAbsolutePath());
 

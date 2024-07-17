@@ -23,6 +23,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
@@ -37,6 +38,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -179,6 +181,30 @@ public class StartupBuildSteps {
             ResultHandle containerHandle = mc.invokeStaticMethod(ARC_CONTAINER);
             ResultHandle beanHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
                     mc.load(bean.getIdentifier()));
+
+            // if the [synthetic] bean is not active and is not injected in a user bean, skip obtaining the instance
+            // this means that an inactive bean that is injected into a user bean will end up with an error
+            if (bean.canBeInactive()) {
+                boolean isInjectedInUserBean = false;
+                for (InjectionPointInfo ip : observerRegistration.getBeanProcessor().getBeanDeployment().getInjectionPoints()) {
+                    if (bean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
+                            && !ip.getTargetBean().get().isSynthetic()) {
+                        isInjectedInUserBean = true;
+                        break;
+                    }
+                }
+
+                if (!isInjectedInUserBean) {
+                    ResultHandle activeResult = mc.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(InjectableBean.class, "isActive", ActiveResult.class),
+                            beanHandle);
+                    ResultHandle isActive = mc.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(ActiveResult.class, "result", boolean.class),
+                            activeResult);
+                    mc.ifFalse(isActive).trueBranch().returnVoid();
+                }
+            }
+
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
                 // It does not make a lot of sense to support @Startup dependent beans but it's still a valid use case
                 ResultHandle creationalContext = mc.newInstance(
@@ -212,7 +238,7 @@ public class StartupBuildSteps {
                     mc.invokeInterfaceMethod(CLIENT_PROXY_CONTEXTUAL_INSTANCE, proxyHandle);
                 }
             }
-            mc.returnValue(null);
+            mc.returnVoid();
         });
         configurator.done();
     }

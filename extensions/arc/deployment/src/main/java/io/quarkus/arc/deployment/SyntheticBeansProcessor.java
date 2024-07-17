@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.CreationException;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
@@ -32,15 +34,16 @@ public class SyntheticBeansProcessor {
     void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
+        Map<String, Supplier<ActiveResult>> isActiveSuppliers = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && bean.isStaticInit()) {
-                configureSyntheticBean(recorder, functionsMap, beanRegistration, bean);
+                configureSyntheticBean(recorder, creationFunctions, isActiveSuppliers, beanRegistration, bean);
             }
         }
         // Init the map of bean instances
-        recorder.initStaticSupplierBeans(functionsMap);
+        recorder.initStaticSupplierBeans(creationFunctions, isActiveSuppliers);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -49,14 +52,15 @@ public class SyntheticBeansProcessor {
     ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
-        Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap = new HashMap<>();
+        Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions = new HashMap<>();
+        Map<String, Supplier<ActiveResult>> isActiveSuppliers = new HashMap<>();
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.hasRecorderInstance() && !bean.isStaticInit()) {
-                configureSyntheticBean(recorder, functionsMap, beanRegistration, bean);
+                configureSyntheticBean(recorder, creationFunctions, isActiveSuppliers, beanRegistration, bean);
             }
         }
-        recorder.initRuntimeSupplierBeans(functionsMap);
+        recorder.initRuntimeSupplierBeans(creationFunctions, isActiveSuppliers);
         return new ServiceStartBuildItem("runtime-bean-init");
     }
 
@@ -66,28 +70,33 @@ public class SyntheticBeansProcessor {
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (!bean.hasRecorderInstance()) {
-                configureSyntheticBean(null, null, beanRegistration, bean);
+                configureSyntheticBean(null, null, null, beanRegistration, bean);
             }
         }
     }
 
     private void configureSyntheticBean(ArcRecorder recorder,
-            Map<String, Function<SyntheticCreationalContext<?>, ?>> functionsMap,
-            BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
+            Map<String, Function<SyntheticCreationalContext<?>, ?>> creationFunctions,
+            Map<String, Supplier<ActiveResult>> isActiveSuppliers, BeanRegistrationPhaseBuildItem beanRegistration,
+            SyntheticBeanBuildItem bean) {
         String name = createName(bean.configurator());
         if (bean.configurator().getRuntimeValue() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeValue()));
         } else if (bean.configurator().getSupplier() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getSupplier()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getSupplier()));
         } else if (bean.configurator().getFunction() != null) {
-            functionsMap.put(name, bean.configurator().getFunction());
+            creationFunctions.put(name, bean.configurator().getFunction());
         } else if (bean.configurator().getRuntimeProxy() != null) {
-            functionsMap.put(name, recorder.createFunction(bean.configurator().getRuntimeProxy()));
+            creationFunctions.put(name, recorder.createFunction(bean.configurator().getRuntimeProxy()));
         }
         BeanConfigurator<?> configurator = beanRegistration.getContext().configure(bean.configurator().getImplClazz())
                 .read(bean.configurator());
         if (bean.hasRecorderInstance()) {
             configurator.creator(creator(name, bean));
+        }
+        if (bean.hasIsActiveSupplier()) {
+            configurator.isActive(isActive(name, bean));
+            isActiveSuppliers.put(name, bean.configurator().getIsActive());
         }
         configurator.done();
     }
@@ -114,6 +123,25 @@ public class SyntheticBeansProcessor {
                         MethodDescriptor.ofMethod(Function.class, "apply", Object.class, Object.class),
                         function, m.getMethodParam(0));
                 m.returnValue(result);
+            }
+        };
+    }
+
+    private Consumer<MethodCreator> isActive(String name, SyntheticBeanBuildItem bean) {
+        return new Consumer<MethodCreator>() {
+            @Override
+            public void accept(MethodCreator mc) {
+                ResultHandle staticMap = mc.readStaticField(
+                        FieldDescriptor.of(ArcRecorder.class, "syntheticBeanIsActive", Map.class));
+                ResultHandle supplier = mc.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
+                        staticMap, mc.load(name));
+                // TODO different message, possibly even different exception
+                mc.ifNull(supplier).trueBranch().throwException(CreationException.class,
+                        createMessage(name, bean));
+                mc.returnValue(mc.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                        supplier));
             }
         };
     }

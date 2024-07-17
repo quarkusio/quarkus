@@ -103,13 +103,15 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final Integer startupPriority;
 
+    private final Consumer<MethodCreator> isActiveConsumer;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
             boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
             Integer priority, Set<Type> unrestrictedTypes, InterceptionProxyInfo interceptionProxy) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy);
+                targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -117,7 +119,8 @@ public class BeanInfo implements InjectionTargetInfo {
             DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean,
             Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params,
             boolean isRemovable, boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier,
-            Set<Type> unrestrictedTypes, Integer startupPriority, InterceptionProxyInfo interceptionProxy) {
+            Set<Type> unrestrictedTypes, Integer startupPriority, InterceptionProxyInfo interceptionProxy,
+            Consumer<MethodCreator> isActiveConsumer) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -151,6 +154,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.removable = isRemovable;
         this.params = params;
         this.interceptionProxy = interceptionProxy;
+        this.isActiveConsumer = isActiveConsumer;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1_base64((identifier != null ? identifier : "") + toString() + beanDeployment.toString());
         this.interceptedMethods = Collections.emptyMap();
@@ -588,6 +592,14 @@ public class BeanInfo implements InjectionTargetInfo {
 
     Consumer<MethodCreator> getDestroyerConsumer() {
         return destroyerConsumer;
+    }
+
+    Consumer<MethodCreator> getIsActiveConsumer() {
+        return isActiveConsumer;
+    }
+
+    public boolean canBeInactive() {
+        return isActiveConsumer != null;
     }
 
     Map<String, Object> getParams() {
@@ -1130,6 +1142,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private InterceptionProxyInfo interceptionProxy;
 
+        private Consumer<MethodCreator> isActiveConsumer;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -1259,11 +1273,16 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder isActive(Consumer<MethodCreator> isActiveConsumer) {
+            this.isActiveConsumer = isActiveConsumer;
+            return this;
+        }
+
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
-                    identifier, null, startupPriority, interceptionProxy);
+                    identifier, null, startupPriority, interceptionProxy, isActiveConsumer);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

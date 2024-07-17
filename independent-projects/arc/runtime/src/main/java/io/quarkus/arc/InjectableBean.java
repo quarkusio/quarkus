@@ -162,6 +162,17 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return getBeanClass();
     }
 
+    /**
+     * Returns whether this bean is active and if not, the reason why. Certain
+     * synthetic beans may be inactive from time to time. Attempting to inject
+     * or lookup such an inactive bean leads to {@link InactiveBeanException}.
+     *
+     * @return whether this bean is active and if not, the reason why
+     */
+    default ActiveResult isActive() {
+        return ActiveResult.active();
+    }
+
     enum Kind {
 
         CLASS,

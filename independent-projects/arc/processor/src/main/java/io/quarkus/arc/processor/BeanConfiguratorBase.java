@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -22,6 +23,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.InjectableBean;
@@ -59,6 +61,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected final Set<TypeAndQualifiers> injectionPoints;
     protected Integer startupPriority;
     protected InterceptionProxyInfo interceptionProxy;
+    protected Consumer<MethodCreator> isActiveConsumer;
 
     protected BeanConfiguratorBase(DotName implClazz) {
         this.implClazz = implClazz;
@@ -101,6 +104,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
         interceptionProxy = base.interceptionProxy;
+        isActiveConsumer = base.isActiveConsumer;
         return self();
     }
 
@@ -388,6 +392,20 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
         this.destroyerConsumer = methodCreatorConsumer;
+        return cast(this);
+    }
+
+    public THIS isActive(Class<? extends Supplier<ActiveResult>> isActiveClazz) {
+        return isActive(mc -> {
+            // return new FooActiveResultSupplier().get()
+            ResultHandle supplierHandle = mc.newInstance(MethodDescriptor.ofConstructor(isActiveClazz));
+            mc.returnValue(mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                    supplierHandle));
+        });
+    }
+
+    public THIS isActive(Consumer<MethodCreator> methodCreatorConsumer) {
+        this.isActiveConsumer = methodCreatorConsumer;
         return cast(this);
     }
 

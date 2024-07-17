@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -36,14 +37,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.devtools.project.extensions.ScmInfoProvider;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.extension.gradle.dsl.Capability;
 import io.quarkus.extension.gradle.dsl.RemovedResource;
 import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 
@@ -113,9 +113,9 @@ public class ExtensionDescriptorTask extends DefaultTask {
         if (conditionalDependencies != null && !conditionalDependencies.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
             int i = 0;
-            buf.append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+            buf.append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
             while (i < conditionalDependencies.size()) {
-                buf.append(' ').append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+                buf.append(' ').append(ArtifactCoords.fromString(conditionalDependencies.get(i++)));
             }
             props.setProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
         }
@@ -315,7 +315,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
             }
         }
         if (artifactNode == null || groupId == null || artifactId == null || version == null) {
-            final AppArtifactCoords coords = new AppArtifactCoords(
+            final ArtifactCoords coords = ArtifactCoords.of(
                     groupId == null ? projectInfo.get("group") : groupId,
                     artifactId == null ? projectInfo.get("name") : artifactId,
                     null,
@@ -363,7 +363,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
         ObjectNode metadataNode = getMetadataNode(extObject);
         Set<ResolvedArtifact> extensions = new HashSet<>();
         for (ResolvedArtifact resolvedArtifact : getClasspath().getResolvedConfiguration().getResolvedArtifacts()) {
-            if (resolvedArtifact.getExtension().equals("jar")) {
+            if (Objects.equals(resolvedArtifact.getExtension(), "jar")) {
                 Path p = resolvedArtifact.getFile().toPath();
                 if (Files.isDirectory(p) && isExtension(p)) {
                     extensions.add(resolvedArtifact);
@@ -382,7 +382,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
         for (ResolvedArtifact extension : extensions) {
             ModuleVersionIdentifier id = extension.getModuleVersion().getId();
             extensionArray
-                    .add(new AppArtifactKey(id.getGroup(), id.getName(), extension.getClassifier(), extension.getExtension())
+                    .add(ArtifactKey.of(id.getGroup(), id.getName(), extension.getClassifier(), extension.getExtension())
                             .toGacString());
         }
     }

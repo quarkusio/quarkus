@@ -3,7 +3,10 @@ package io.quarkus.restclient.config;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.CreationException;
 
@@ -37,7 +40,7 @@ public class RestClientsConfig {
     // The @Deprecated annotation prevents this field from being included in generated docs. We only want the `configKey` field
     // above to be included.
     @Deprecated
-    private final Map<String, RestClientConfig> configs = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<RestClientConfig>> configs = new ConcurrentHashMap<>();
 
     /**
      * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
@@ -327,19 +330,36 @@ public class RestClientsConfig {
         if (configKey == null) {
             return RestClientConfig.EMPTY;
         }
-        return configs.computeIfAbsent(configKey, RestClientConfig::load);
+        return getClientConfig(configKey, configKey, RestClientConfig::load);
     }
 
     public RestClientConfig getClientConfig(Class<?> clientInterface) {
-        return configs.computeIfAbsent(clientInterface.getName(), name -> RestClientConfig.load(clientInterface));
+        return getClientConfig(clientInterface.getName(), clientInterface, RestClientConfig::load);
+    }
+
+    private <T> RestClientConfig getClientConfig(String key, T loadArgument, Function<T, RestClientConfig> configSupplier) {
+        CompletableFuture<RestClientConfig> futureConfig = configs.get(key);
+        if (futureConfig != null) {
+            return futureConfig.join();
+        }
+
+        futureConfig = new CompletableFuture<>();
+        CompletableFuture<RestClientConfig> existingFuture = configs.putIfAbsent(key, futureConfig);
+        if (existingFuture == null) {
+            RestClientConfig config = configSupplier.apply(loadArgument);
+            futureConfig.complete(config);
+            return config;
+        }
+
+        return existingFuture.join();
     }
 
     public void putClientConfig(String configKey, RestClientConfig clientConfig) {
-        configs.put(configKey, clientConfig);
+        configs.put(configKey, CompletableFuture.completedFuture(clientConfig));
     }
 
     public void putClientConfig(Class<?> clientInterface, RestClientConfig clientConfig) {
-        configs.put(clientInterface.getName(), clientConfig);
+        configs.put(clientInterface.getName(), CompletableFuture.completedFuture(clientConfig));
     }
 
     public Set<String> getConfigKeys() {

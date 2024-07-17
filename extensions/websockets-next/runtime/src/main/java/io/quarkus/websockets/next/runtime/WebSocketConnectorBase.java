@@ -16,13 +16,12 @@ import java.util.regex.Pattern;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
-import io.vertx.core.net.SSLOptions;
 
 abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>> {
 
@@ -155,40 +154,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 config.tlsConfigurationName());
         if (maybeTlsConfiguration.isPresent()) {
-            clientOptions.setSsl(true);
-
-            TlsConfiguration tlsConfiguration = maybeTlsConfiguration.get();
-            if (tlsConfiguration.getTrustStoreOptions() != null) {
-                clientOptions.setTrustOptions(tlsConfiguration.getTrustStoreOptions());
-            }
-
-            // For mTLS:
-            if (tlsConfiguration.getKeyStoreOptions() != null) {
-                clientOptions.setKeyCertOptions(tlsConfiguration.getKeyStoreOptions());
-            }
-
-            if (tlsConfiguration.isTrustAll()) {
-                clientOptions.setTrustAll(true);
-            }
-            if (tlsConfiguration.getHostnameVerificationAlgorithm().isPresent()
-                    && tlsConfiguration.getHostnameVerificationAlgorithm().get().equals("NONE")) {
-                // Only disable hostname verification if the algorithm is explicitly set to NONE
-                clientOptions.setVerifyHost(false);
-            }
-
-            SSLOptions sslOptions = tlsConfiguration.getSSLOptions();
-            if (sslOptions != null) {
-                clientOptions.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
-                clientOptions.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
-                for (String suite : sslOptions.getEnabledCipherSuites()) {
-                    clientOptions.addEnabledCipherSuite(suite);
-                }
-                for (Buffer buffer : sslOptions.getCrlValues()) {
-                    clientOptions.addCrlValue(buffer);
-                }
-                clientOptions.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
-                clientOptions.setUseAlpn(sslOptions.isUseAlpn());
-            }
+            TlsConfigUtils.configure(clientOptions, maybeTlsConfiguration.get());
         }
         return clientOptions;
     }

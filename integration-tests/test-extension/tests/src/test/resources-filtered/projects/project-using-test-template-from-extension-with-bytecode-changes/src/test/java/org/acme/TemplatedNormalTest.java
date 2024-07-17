@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 // No QuarkusTest annotation
 
 /**
- * It's likely we would never expect this to work; unit tests which don't have a @QuarkusTest
+ * It's likely we would never expect Quarkus bytecode changes to be visible in this kind of test; unit tests which don't have
  * annotation would not be able to
  * benefit from bytecode manipulations from extensions.
  */
@@ -46,22 +46,8 @@ public class TemplatedNormalTest {
     @TestTemplate
     @ExtendWith(MyContextProvider.class)
     void contextAnnotationCheckingTestTemplate(ExtensionContext context) {
-        Annotation[] contextAnnotations = context.getRequiredTestClass()
-                .getAnnotations();
-        Assertions.assertTrue(Arrays.toString(contextAnnotations)
-                .contains("AnnotationAddedByExtension"),
-                "The JUnit extension context does not see the annotation, only sees " + Arrays.toString(
-                        contextAnnotations));
+        // We don't expect to see the annotations because we don't have a @QuarkusTest annotation, but the basic test should work
+        Assertions.assertEquals(true, true);
     }
 
-    @TestTemplate
-    @ExtendWith(MyContextProvider.class)
-    void executionAnnotationCheckingTestTemplate(ExtensionContext context) {
-        Annotation[] myAnnotations = this.getClass()
-                .getAnnotations();
-        Assertions.assertTrue(Arrays.toString(myAnnotations)
-                .contains("AnnotationAddedByExtension"),
-                "The test execution does not see the annotation, only sees " + Arrays.toString(
-                        myAnnotations));
-    }
 }

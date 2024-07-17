@@ -8,7 +8,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 // No QuarkusTest annotation
 
 /**
- * It's likely we would never expect this to work; unit tests which don't have a @QuarkusTest
+ * It's likely we would never expect Quarkus bytecode changes to be visible in this kind of test; unit tests which don't have
+ * a @QuarkusTest
  * annotation would not be able to
  * benefit from bytecode manipulations from extensions.
  */

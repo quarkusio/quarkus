@@ -4,10 +4,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class SelfSignedGenerationTest {
+
+    @AfterAll
+    static void cleanup() {
+        // File generated during the generation.
+        File file = new File(".env");
+        if (file.isFile()) {
+            file.delete();
+        }
+    }
 
     @Test
     public void testSelfSignedGeneration() throws Exception {

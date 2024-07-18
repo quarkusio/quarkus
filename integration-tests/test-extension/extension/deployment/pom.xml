@@ -88,6 +88,9 @@
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>-AgenerateDoc=false</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

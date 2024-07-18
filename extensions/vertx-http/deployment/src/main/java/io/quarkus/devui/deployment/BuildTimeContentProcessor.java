@@ -341,7 +341,7 @@ public class BuildTimeContentProcessor {
             aggregator.addMappings(importMap);
         }
 
-        Imports imports = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
+        Imports imports = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath(), false);
         Map<String, String> currentImportMap = imports.getImports();
         Map<String, String> relocationMap = relocationImportMapBuildItem.getRelocationMap();
         for (Map.Entry<String, String> relocation : relocationMap.entrySet()) {

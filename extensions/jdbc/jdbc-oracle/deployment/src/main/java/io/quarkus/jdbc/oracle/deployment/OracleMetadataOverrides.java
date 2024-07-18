@@ -77,15 +77,6 @@ public final class OracleMetadataOverrides {
                 .constructors().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.sql.AnyDataFactory")
                 .constructors().build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("com.sun.rowset.providers.RIOptimisticProvider")
-                        .build());
-        //This is listed in the original metadata, but it doesn't actually exist:
-        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Supports")
-        //                .constructors().methods().build());
-        //This is listed in the original metadata, but it doesn't actually exist:
-        //        reflectiveClass.produce(ReflectiveClassBuildItem.builder("oracle.jdbc.logging.annotations.Feature")
-        //                .constructors().methods().build());
     }
 
     @BuildStep

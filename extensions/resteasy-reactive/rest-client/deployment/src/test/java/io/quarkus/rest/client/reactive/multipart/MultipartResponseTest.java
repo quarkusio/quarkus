@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +31,7 @@ import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileDownload;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,13 +47,17 @@ public class MultipartResponseTest {
     public static final String WOO_HOO_WOO_HOO_HOO = "Woo hoo, woo hoo hoo";
     private static final long ONE_GIGA = 1024l * 1024l * 1024l * 1l;
 
+    private static final File TXT_FILE = new File("./src/test/resources/lorem.txt");
+    private static final File HTML_FILE = new File("./src/test/resources/test.html");
+
     @TestHTTPResource
     URI baseUri;
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot(
-                    (jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class, TestJacksonBasicMessageBodyWriter.class));
+                    (jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class, TestJacksonBasicMessageBodyWriter.class,
+                            PathFileDownload.class));
 
     @Test
     void shouldParseMultipartResponse() {
@@ -114,6 +120,22 @@ public class MultipartResponseTest {
         MultipartData data = client.getLargeFile();
         assertThat(data.file).exists();
         assertThat(data.file.length()).isEqualTo(ONE_GIGA);
+    }
+
+    @Test
+    void shouldParseMultipartResponseWithListOfFiles() {
+        Client client = createClient();
+        FileList data = client.getFileList();
+        assertThat(data.name).isEqualTo("test");
+        assertThat(data.files).hasSize(2);
+    }
+
+    @Test
+    void shouldParseMultipartResponseWithListOfFileDownloads() {
+        Client client = createClient();
+        FileDownloadList data = client.getFileDownloadList();
+        assertThat(data.name).isEqualTo("test");
+        assertThat(data.files).hasSize(2);
     }
 
     @Test
@@ -197,6 +219,16 @@ public class MultipartResponseTest {
 
         @GET
         @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/file-list")
+        FileList getFileList();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/file-download-list")
+        FileDownloadList getFileDownloadList();
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
         @Path("/empty")
         MultipartData getFileEmpty();
 
@@ -255,6 +287,26 @@ public class MultipartResponseTest {
             RandomAccessFile f = new RandomAccessFile(file, "rw");
             f.setLength(ONE_GIGA);
             return new MultipartData("foo", file, null, 1984, null);
+        }
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/file-list")
+        public FileList fileList() {
+            var response = new FileList();
+            response.name = "test";
+            response.files = List.of(TXT_FILE, HTML_FILE);
+            return response;
+        }
+
+        @GET
+        @Produces(MediaType.MULTIPART_FORM_DATA)
+        @Path("/file-download-list")
+        public FileDownloadList fileDownloadList() {
+            var response = new FileDownloadList();
+            response.name = "test";
+            response.files = List.of(new PathFileDownload(TXT_FILE), new PathFileDownload(HTML_FILE));
+            return response;
         }
 
         @GET
@@ -393,5 +445,25 @@ public class MultipartResponseTest {
             this.height = height;
             this.mood = mood;
         }
+    }
+
+    public static class FileList {
+        @RestForm
+        @PartType(MediaType.TEXT_PLAIN)
+        public String name;
+
+        @RestForm
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        public List<File> files;
+    }
+
+    public static class FileDownloadList {
+        @RestForm
+        @PartType(MediaType.TEXT_PLAIN)
+        public String name;
+
+        @RestForm
+        @PartType(MediaType.APPLICATION_OCTET_STREAM)
+        public List<FileDownload> files;
     }
 }

@@ -12,7 +12,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
@@ -36,7 +35,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  * require it, so this would facilitate the option to revert to the older version in
  * case of problems.
  */
-@BuildSteps(onlyIf = NativeOrNativeSourcesBuild.class)
+@BuildSteps
 public final class OracleMetadataOverrides {
 
     static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";

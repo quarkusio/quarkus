@@ -952,7 +952,6 @@ Start by adding the following dependencies to your test project:
 </dependency>
 ----
 
-ifndef::no-deprecated-test-resource[]
 [[oidc-client-ref-integration-testing-wiremock]]
 ==== Wiremock
 
@@ -1042,7 +1041,6 @@ quarkus.oidc-client.grant-options.password.password=alice
 ----
 
 And finally, write the test code. Given the Wiremock-based resource above, the first test invocation should return the `access_token_1` access token, which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return the `access_token_2` access token, which confirms the expired `access_token_1` access token has been refreshed.
-endif::no-deprecated-test-resource[]
 
 ==== Keycloak
 

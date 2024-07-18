@@ -574,7 +574,6 @@ testImplementation("io.rest-assured:rest-assured")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
-ifndef::no-deprecated-test-resource[]
 [[bearer-token-integration-testing-wiremock]]
 ==== WireMock
 
@@ -695,7 +694,6 @@ public class CustomOidcWireMockStubTest {
     }
 }
 ----
-endif::no-deprecated-test-resource[]
 
 [[integration-testing-oidc-test-client]]
 === `OidcTestClient`
@@ -711,7 +709,6 @@ For example, you have the following configuration:
 %test.quarkus.oidc.credentials.secret=secret
 ----
 
-ifndef::no-deprecated-test-resource[]
 To start, add the same dependency, `quarkus-test-oidc-server`, as described in the <<bearer-token-integration-testing-wiremock>> section.
 
 Next, write the test code as follows:
@@ -763,7 +760,6 @@ This test code acquires a token by using a `password` grant from the test `Auth0
 For a test like this to work, the test `Auth0` application must have the `password` grant enabled.
 This example code also shows how to pass additional parameters.
 For `Auth0`, these are the `audience` and `scope` parameters.
-endif::no-deprecated-test-resource[]
 
 [[bearer-token-integration-testing-keycloak-devservices]]
 ==== Dev Services for Keycloak
@@ -977,13 +973,11 @@ quarkus.oidc.public-key=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlivFI8qB4D0y
 smallrye.jwt.sign.key.location=/privateKey.pem
 ----
 
-ifndef::no-deprecated-test-resource[]
 To generate JWT tokens, copy `privateKey.pem` from the `integration-tests/oidc-tenancy` in the `main` Quarkus repository and use a test code similar to the one in the preceding <<bearer-token-integration-testing-wiremock>> section.
 You can use your own test keys, if preferred.
 
 This approach provides limited coverage compared to the WireMock approach.
 For example, the remote communication code is not covered.
-endif::no-deprecated-test-resource[]
 
 [[bearer-token-integration-testing-security-annotation]]
 ==== TestSecurity annotation

@@ -1709,7 +1709,6 @@ testImplementation("net.sourceforge.htmlunit:htmlunit")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 
-ifndef::no-deprecated-test-resource[]
 [[code-flow-integration-testing-wiremock]]
 === Wiremock
 
@@ -1796,7 +1795,6 @@ The user `admin` has the `user` and `admin` roles by default - it can be customi
 Additionally, `OidcWiremockTestResource` sets the token issuer and audience to `https://service.example.com`,  which can be customized with `quarkus.test.oidc.token.issuer` and `quarkus.test.oidc.token.audience` system properties.
 
 `OidcWiremockTestResource` can be used to emulate all OIDC providers.
-endif::no-deprecated-test-resource[]
 
 [[code-flow-integration-testing-keycloak-devservices]]
 === Dev Services for Keycloak
@@ -1823,7 +1821,6 @@ If a custom realm file has to be imported into Keycloak before running the tests
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-ifndef::no-deprecated-test-resource[]
 Finally, write a test code the same way as it is described in the <<code-flow-integration-testing-wiremock,Wiremock>> section.
 The only difference is that `@WithTestResource` is no longer needed:
 
@@ -1833,7 +1830,6 @@ The only difference is that `@WithTestResource` is no longer needed:
 public class CodeFlowAuthorizationTest {
 }
 ----
-endif::no-deprecated-test-resource[]
 
 ifndef::no-deprecated-test-resource[]
 [[code-flow-integration-testing-keycloak]]

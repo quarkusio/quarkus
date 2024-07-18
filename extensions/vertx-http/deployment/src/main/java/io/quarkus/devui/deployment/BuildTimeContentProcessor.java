@@ -350,7 +350,7 @@ public class BuildTimeContentProcessor {
 
             if (currentImportMap.containsKey(to)) {
                 String newTo = currentImportMap.get(to);
-                aggregator.addMapping(from, newTo);
+                currentImportMap.put(from, newTo);
             } else {
                 log.warn("Could not relocate " + from + " as " + to + " does not exist in the importmap");
             }

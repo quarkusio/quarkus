@@ -704,6 +704,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 if (isAnnotationPresent(clazz, ANNOTATION_CONFIG_MAPPING)) {
                     recordMappingJavadoc(clazz);
                 } else if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_ROOT)) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "The configuration class " + clazz
+                            + " implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration ");
                     recordConfigJavadoc(clazz);
                     generateAccessor(clazz);
                 }

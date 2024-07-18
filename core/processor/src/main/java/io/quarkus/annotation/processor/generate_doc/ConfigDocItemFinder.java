@@ -396,6 +396,19 @@ class ConfigDocItemFinder {
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));
                 ConfigDocItem configDocItem = new ConfigDocItem();
                 configDocItem.setConfigDocKey(configDocKey);
+
+                // If there is already a config item with the same key it comes from a super type, and we need to override it
+                ConfigDocItem parent = null;
+                for (ConfigDocItem docItem : configDocItems) {
+                    if (docItem.getConfigDocKey().getKey().equals(configDocKey.getKey())) {
+                        parent = docItem;
+                        break;
+                    }
+                }
+                // We many want to merge the metadata, but let's keep this simple for now
+                if (parent != null) {
+                    configDocItems.remove(parent);
+                }
                 configDocItems.add(configDocItem);
             }
         }

@@ -52,7 +52,7 @@ Source: https://excalidraw.com/#json=JMERR95gRufcmnUpWy6A_,Qd9efiR40LR3wv82CxyLK
 So how do we minimise the impact?
 What needs to happen for it to work?
 
-* The registry reads `quarkus-extension.yaml` from the deployment model, not the runtime module
+* The registry reads `quarkus-extension.yaml` from the deployment module, not the runtime module
 * The build of extensions' deployment module invokes a maven plugin (the existing one, or a new one)
 * (optional) Extension source code refactoring: `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly.
 

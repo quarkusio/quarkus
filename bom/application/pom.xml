@@ -68,7 +68,7 @@
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
         <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
-        <jakarta.el-api.version>5.0.1</jakarta.el-api.version>
+        <jakarta.el-api.version>6.0.1</jakarta.el-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <jakarta.interceptor-api.version>2.2.0</jakarta.interceptor-api.version>

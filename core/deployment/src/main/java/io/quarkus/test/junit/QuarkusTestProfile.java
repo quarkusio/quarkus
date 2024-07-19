@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
 /**
  * Defines a 'test profile'. Tests run under a test profile
  * will have different configuration options to other tests.
@@ -47,7 +45,7 @@ public interface QuarkusTestProfile {
     }
 
     /**
-     * Additional {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
+     * Additional { QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
      * specific test profile.
      *
      * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the
@@ -60,7 +58,7 @@ public interface QuarkusTestProfile {
     }
 
     /**
-     * If this returns true then only the test resources returned from {@link #testResources()} will be started,
+     * If this returns true then only the test resources returned from { #testResources()} will be started,
      * global annotated test resources will be ignored.
      */
     default boolean disableGlobalTestResources() {
@@ -80,7 +78,7 @@ public interface QuarkusTestProfile {
     /**
      * The command line parameters that are passed to the main method on startup.
      *
-     * This is ignored for {@link io.quarkus.test.junit.main.QuarkusMainTest}, which has its own way of passing parameters.
+     * This is ignored for { io.quarkus.test.junit.main.QuarkusMainTest}, which has its own way of passing parameters.
      */
     default String[] commandLineParameters() {
         return new String[0];
@@ -89,7 +87,7 @@ public interface QuarkusTestProfile {
     /**
      * If the main method should be run.
      *
-     * This is ignored for {@link io.quarkus.test.junit.main.QuarkusMainTest}, where the main method is always run.
+     * This is ignored for { io.quarkus.test.junit.main.QuarkusMainTest}, where the main method is always run.
      */
     default boolean runMainMethod() {
         return false;
@@ -104,26 +102,26 @@ public interface QuarkusTestProfile {
     }
 
     final class TestResourceEntry {
-        private final Class<? extends QuarkusTestResourceLifecycleManager> clazz;
+        private final Class<?> clazz; //TODO was  extends QuarkusTestResourceLifecycleManager but that class is in the wrong module now
         private final Map<String, String> args;
         private final boolean parallel;
 
-        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz) {
+        public TestResourceEntry(Class<?> clazz) {
             this(clazz, Collections.emptyMap());
         }
 
-        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args) {
+        public TestResourceEntry(Class<?> clazz, Map<String, String> args) {
             this(clazz, args, false);
         }
 
-        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args,
+        public TestResourceEntry(Class<?> clazz, Map<String, String> args,
                 boolean parallel) {
             this.clazz = clazz;
             this.args = args;
             this.parallel = parallel;
         }
 
-        public Class<? extends QuarkusTestResourceLifecycleManager> getClazz() {
+        public Class<?> getClazz() {
             return clazz;
         }
 

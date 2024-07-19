@@ -166,7 +166,7 @@ public class DevServicesRedisProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please configure quarkus.redis.hosts for "
                     + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " or get a working docker instance");

@@ -248,7 +248,7 @@
                 <scope>import</scope>
             </dependency>
 
-             <!-- Dev UI -->
+            <!-- Dev UI -->
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom-dev-ui</artifactId>

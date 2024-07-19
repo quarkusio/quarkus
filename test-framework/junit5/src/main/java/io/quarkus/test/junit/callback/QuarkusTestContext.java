@@ -2,7 +2,7 @@ package io.quarkus.test.junit.callback;
 
 import java.util.List;
 
-import io.quarkus.test.common.TestStatus;
+import io.quarkus.deployment.dev.testing.TestStatus;
 
 /**
  * Context object passed to {@link QuarkusTestAfterAllCallback}

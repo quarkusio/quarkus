@@ -213,7 +213,7 @@ public class DevServicesKafkaProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
                     "Docker isn't working, please configure the Kafka bootstrap servers property (kafka.bootstrap.servers).");
             return null;

@@ -248,7 +248,7 @@ public class DevServicesDatasourceProcessor {
             }
         }
 
-        if (devDbProvider.isDockerRequired() && !dockerStatusBuildItem.isDockerAvailable()) {
+        if (devDbProvider.isDockerRequired() && !dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             String message = "Please configure the datasource URL for " + dataSourcePrettyName
                     + " or ensure the Docker daemon is up and running.";
             if (launchMode == LaunchMode.TEST) {

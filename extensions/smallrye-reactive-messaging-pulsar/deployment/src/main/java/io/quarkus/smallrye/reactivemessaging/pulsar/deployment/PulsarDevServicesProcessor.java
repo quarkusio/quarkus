@@ -157,7 +157,7 @@ public class PulsarDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the Pulsar broker location.");
             return null;
         }

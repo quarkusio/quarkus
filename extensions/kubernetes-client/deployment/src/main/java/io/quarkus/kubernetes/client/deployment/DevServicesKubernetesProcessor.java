@@ -185,7 +185,7 @@ public class DevServicesKubernetesProcessor {
             }
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
                     "Docker isn't working, please configure the Kubernetes client.");
             return null;

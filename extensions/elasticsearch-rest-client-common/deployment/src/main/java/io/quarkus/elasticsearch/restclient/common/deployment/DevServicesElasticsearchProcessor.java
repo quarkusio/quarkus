@@ -175,7 +175,7 @@ public class DevServicesElasticsearchProcessor {
             }
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warnf("Docker isn't working, please configure the Elasticsearch hosts property (%s).",
                     displayProperties(buildItemConfig.hostsConfigProperties));
             return null;

@@ -44,6 +44,7 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.dev.testing.TestClassIndexer;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -51,7 +52,6 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -173,7 +173,7 @@ public final class IntegrationTestUtil {
             boolean isDockerAppLaunch) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
-        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+        final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation);
 
         final PathList.Builder rootBuilder = PathList.builder();
 

@@ -8,6 +8,7 @@ import io.quarkus.builder.BuildChainBuilder;
 
 /**
  * Implementation of this class have the ability to add build items
+ * // TODO move this back to junit5 when we move FacadeClassLoader
  */
 public interface TestBuildChainCustomizerProducer {
 

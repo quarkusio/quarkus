@@ -18,6 +18,7 @@ public class BeanManagerInjectionInTestCase {
     @Test
     public void testInjection() {
         Assertions.assertNotNull(beanManager);
-        Assertions.assertFalse(beanManager.getBeans(ExternalService.class).isEmpty());
+        Assertions.assertFalse(beanManager.getBeans(ExternalService.class).isEmpty(),
+                () -> "Beans is " + beanManager.getBeans(ExternalService.class));
     }
 }

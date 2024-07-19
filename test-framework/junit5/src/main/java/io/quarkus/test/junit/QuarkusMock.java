@@ -1,7 +1,11 @@
 package io.quarkus.test.junit;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -55,7 +59,46 @@ public class QuarkusMock {
                         + " is not assignable to type " + instance.getClass().getSuperclass());
             }
         }
-        MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock);
+        System.out.println("HOLLY will ask CDI for current " + CDI.class.getClassLoader());
+        // TODO #store
+
+        Class<?> cdiClazz = null;
+        try {
+            cdiClazz = Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass(CDI.class.getName());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        Method m = null;
+        Method select;
+        try {
+            m = cdiClazz.getMethod("current");
+            select = Arrays.stream(cdiClazz.getMethods())
+                    .filter(mm -> mm.getName().equals("select") && mm.getParameterTypes()[0].equals(Class.class)).findAny()
+                    .get();
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+        //  CDI<Object> current = CDI.current();
+        try {
+            Object current = m.invoke(null);
+            Object selected = select.invoke(current, instance, qualifiers);
+            Class instanceClass = Thread.currentThread().getContextClassLoader().loadClass(Instance.class.getName());
+            Method getMethod = instanceClass.getMethod("get");
+            MockSupport.installMock(getMethod.invoke(selected), mock);
+
+            //current.select(instance, qualifiers)
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

@@ -38,6 +38,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.deployment.dev.testing.TestClassIndexer;
+import io.quarkus.deployment.dev.testing.TestStatus;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
@@ -337,6 +339,21 @@ public class TestResourceManager implements Closeable {
         Class<?> testClassFromTCCL = alwaysFromTccl(testClass);
 
         Set<TestResourceClassEntry> uniqueEntries = new LinkedHashSet<>();
+        // reload the test and profile classes in the right CL
+        // TODO check first, we might not need to do this on all paths
+        Class<?> testClassFromTCCL;
+        Class<?> profileClassFromTCCL;
+        try {
+            testClassFromTCCL = Class.forName(testClass.getName(), false, Thread.currentThread().getContextClassLoader());
+            if (profileClass != null) {
+                profileClassFromTCCL = Class.forName(profileClass.getName(), false,
+                        Thread.currentThread().getContextClassLoader());
+            } else {
+                profileClassFromTCCL = null;
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
         // handle meta-annotations: in this case we must rely on reflection because meta-annotations are not indexed
         // because they are not in the user's test folder but come from test extensions
@@ -441,9 +458,15 @@ public class TestResourceManager implements Closeable {
         // collect all test supertypes for matching per-test targets
         Set<String> testClasses = new HashSet<>();
         Class<?> current = testClass;
-        while (current != Object.class) {
+        // If this gets called for an @interface, the superclass will be null.
+        while (current != Object.class && current != null) {
             testClasses.add(current.getName());
+            // @interface objects may not have a superclass
             current = current.getSuperclass();
+            if (current == null) {
+                throw new RuntimeException("Internal error: The class " + testClass
+                        + " is not a descendant of Object.class, so cannot be a Quarkus test.");
+            }
         }
         current = testClass.getEnclosingClass();
         while (current != null) {

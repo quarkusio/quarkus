@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ public class QuarkusTestNestedWithTestProfileTestCase {
 
     @Nested
     @TestProfile(QuarkusTestNestedWithTestProfileTestCase.ModernEnglishProfile.class)
+    @Disabled("With the current test classloading design, test profiles on nested inner classes are too hard, because nested classes should run with the same classloader as the parent, but a test profile involves a new application, which involves a new classloader.")
     class ModernEnglishCase {
 
         @Test

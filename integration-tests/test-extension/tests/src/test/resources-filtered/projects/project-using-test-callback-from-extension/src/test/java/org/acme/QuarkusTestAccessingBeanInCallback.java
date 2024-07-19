@@ -1,6 +1,5 @@
 package org.acme;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
@@ -8,6 +7,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -22,6 +22,7 @@ public class QuarkusTestAccessingBeanInCallback {
 
     @Callback
     public void callback() {
+        callbackHappened = true;
         // Callbacks invoked by test frameworks should be able to see injected beans
         assertNotNull(bean, "A method invoked by a test interceptor should have access to CDI beans");
 

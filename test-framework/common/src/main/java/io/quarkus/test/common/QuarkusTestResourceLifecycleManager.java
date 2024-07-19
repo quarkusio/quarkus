@@ -5,6 +5,8 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import io.quarkus.deployment.dev.testing.TestStatus;
+
 /**
  * Manage the lifecycle of a test resource, for instance a H2 test server.
  * <p>

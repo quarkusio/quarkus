@@ -144,8 +144,22 @@ public final class PathTestHelper {
             } catch (MalformedURLException e) {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
+        } else if (resource.getProtocol().equals("quarkus")) {
+            // resources loaded in memory in the runtime classloader may have a quarkus: prefix
+            // TODO terrible hack, why was this not needed in earlier prototypes? maybe it only happens second time round?
+            Path projectRoot = Paths.get("")
+                    .normalize()
+                    .toAbsolutePath();
+            Path applicationRoot = getTestClassLocationForRootLocation(projectRoot.toString());
+            System.out.println("HOLLY dealinh with " + resource);
+            Path path = applicationRoot.resolve(classFileName);
+            System.out.println("HOLLY so made " + path);
+            path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
+            // TODO should we check existence in the test dir-ness, like we do on the other path?
+            return path;
         }
         Path path = toPath(resource);
+
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
 
         if (!isInTestDir(resource) && !path.getParent().getFileName().toString().equals(TARGET)) {
@@ -168,16 +182,17 @@ public final class PathTestHelper {
      * @return directory or JAR containing the application being tested by the test class
      */
     public static Path getAppClassLocation(Class<?> testClass) {
-        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass).toString());
+        return getAppClassLocationForTestLocation(getTestClassesLocation(testClass));
     }
 
     /**
      * Resolves the directory or the JAR file containing the application being tested by a test from the given location.
      *
-     * @param testClassLocation the test class location
+     * @param testClassLocationPath the test class location
      * @return directory or JAR containing the application being tested by a test from the given location
      */
-    public static Path getAppClassLocationForTestLocation(String testClassLocation) {
+    public static Path getAppClassLocationForTestLocation(Path testClassLocationPath) {
+        String testClassLocation = testClassLocationPath.toString();
         if (testClassLocation.endsWith(".jar")) {
             if (testClassLocation.endsWith("-tests.jar")) {
                 return Paths.get(new StringBuilder()
@@ -299,5 +314,53 @@ public final class PathTestHelper {
             return projectRoot.resolve("target");
         }
         return projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
+    }
+
+    public static Path getTestClassLocationForRootLocation(String rootLocation) {
+        if (rootLocation.endsWith(".jar")) {
+            if (rootLocation.endsWith("-tests.jar")) {
+                return Paths.get(new StringBuilder()
+                        .append(rootLocation, 0, rootLocation.length() - "-tests.jar".length())
+                        .append(".jar")
+                        .toString());
+            }
+            return Path.of(rootLocation);
+        }
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            return mainClassesDir.get();
+        }
+
+        // TODO reduce duplicated code, check if we can get rid of some of the regexes
+
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "target" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            return mainClassesDir.get();
+        }
+
+        // Try the gradle build dir
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "build" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            return mainClassesDir.get();
+        }
+
+        // TODO is it safe to throw or return null? are there other build systems we should be considering?
+        // throw new IllegalStateException("Unable to find any application content in " + rootLocation);
+        return null;
     }
 }

@@ -16,6 +16,7 @@ import io.quarkus.test.common.TestResourceScope;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
@@ -34,7 +35,7 @@ import io.quarkus.test.junit.main.QuarkusMainTest;
  * <p/>
  * Internally, ordering is based on prefixes that are prepended to a secondary order suffix (by default the fully qualified
  * name of the respective test class), with the fully qualified class name of the
- * {@link io.quarkus.test.junit.QuarkusTestProfile QuarkusTestProfile} as an infix (if present).
+ * {@link QuarkusTestProfile QuarkusTestProfile} as an infix (if present).
  * The default prefixes are defined by {@code DEFAULT_ORDER_PREFIX_*} and can be overridden in {@code junit-platform.properties}
  * via {@code CFGKEY_ORDER_PREFIX_*}, e.g. non-Quarkus tests can be run first (not last) by setting
  * {@link #CFGKEY_ORDER_PREFIX_NON_QUARKUS_TEST} to {@code 10_}.
@@ -72,9 +73,46 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     @Override
     public void orderClasses(ClassOrdererContext context) {
         // don't do anything if there is just one test class or the current order request is for @Nested tests
-        if (context.getClassDescriptors().size() <= 1 || context.getClassDescriptors().get(0).isAnnotated(Nested.class)) {
+        if (context.getClassDescriptors()
+                .size() <= 1 || context.getClassDescriptors()
+                        .get(0)
+                        .isAnnotated(Nested.class)) {
             return;
         }
+
+        // In many cases (like QuarkusTest), the heavy lifting of understanding profiles and resources has been done elsewhere; we just need to group tests by classloader
+        // However, for integration tests and main tests, profiles will not have been read
+        long classloaderCount = context.getClassDescriptors()
+                .stream()
+                .map(d -> d.getTestClass()
+                        .getClassLoader())
+                .distinct()
+                .count();
+        if (classloaderCount > 1) {
+
+            // If we sort first before applying the classloader sorting, the original order will be preserved within classloader groups
+            ClassOrderer secondary = buildSecondaryOrderer(context);
+            secondary.orderClasses(context);
+
+            context.getClassDescriptors().sort(Comparator.<ClassDescriptor, String> comparing(o -> o.getTestClass()
+                    .getClassLoader()
+                    .getName()));
+
+        } else {
+            orderByProfiles(context);
+        }
+    }
+
+    private void orderByProfiles(ClassOrdererContext context) {
+
+        // don't do anything if there is just one test class or the current order request is for @Nested tests
+        if (context.getClassDescriptors()
+                .size() <= 1 || context.getClassDescriptors()
+                        .get(0)
+                        .isAnnotated(Nested.class)) {
+            return;
+        }
+
         var prefixQuarkusTest = getConfigParam(
                 CFGKEY_ORDER_PREFIX_QUARKUS_TEST,
                 DEFAULT_ORDER_PREFIX_QUARKUS_TEST,
@@ -95,7 +133,8 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
         // first pass: run secondary orderer first (!), which is easier than running it per "grouping"
         buildSecondaryOrderer(context).orderClasses(context);
         var classDecriptors = context.getClassDescriptors();
-        var firstPassIndexMap = IntStream.range(0, classDecriptors.size()).boxed()
+        var firstPassIndexMap = IntStream.range(0, classDecriptors.size())
+                .boxed()
                 .collect(Collectors.toMap(classDecriptors::get, i -> String.format("%06d", i)));
 
         // second pass: apply the actual Quarkus aware ordering logic, using the first pass indices as order key suffixes
@@ -124,14 +163,17 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
     }
 
     private String getConfigParam(String key, String fallbackValue, ClassOrdererContext context) {
-        return context.getConfigurationParameter(key).orElse(fallbackValue);
+        return context.getConfigurationParameter(key)
+                .orElse(fallbackValue);
     }
 
     private ClassOrderer buildSecondaryOrderer(ClassOrdererContext context) {
         return Optional.ofNullable(getConfigParam(CFGKEY_SECONDARY_ORDERER, null, context))
                 .map(fqcn -> {
                     try {
-                        return (ClassOrderer) Class.forName(fqcn).getDeclaredConstructor().newInstance();
+                        return (ClassOrderer) Class.forName(fqcn)
+                                .getDeclaredConstructor()
+                                .newInstance();
                     } catch (ReflectiveOperationException e) {
                         throw new IllegalArgumentException("Failed to instantiate " + fqcn, e);
                     }
@@ -150,13 +192,15 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     @Deprecated(forRemoval = true)
     private boolean isMetaTestResource(QuarkusTestResource resource, ClassDescriptor classDescriptor) {
-        return Arrays.stream(classDescriptor.getTestClass().getAnnotationsByType(QuarkusTestResource.class))
+        return Arrays.stream(classDescriptor.getTestClass()
+                .getAnnotationsByType(QuarkusTestResource.class))
                 .map(QuarkusTestResource::value)
                 .noneMatch(resource.value()::equals);
     }
 
     private boolean isMetaTestResource(WithTestResource resource, ClassDescriptor classDescriptor) {
-        return Arrays.stream(classDescriptor.getTestClass().getAnnotationsByType(WithTestResource.class))
+        return Arrays.stream(classDescriptor.getTestClass()
+                .getAnnotationsByType(WithTestResource.class))
                 .map(WithTestResource::value)
                 .noneMatch(resource.value()::equals);
     }

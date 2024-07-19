@@ -49,6 +49,7 @@ public class TemplatedQuarkusTest {
     void executionAnnotationCheckingTestTemplate(ExtensionContext context) {
         Annotation[] myAnnotations = this.getClass().getAnnotations();
         Assertions.assertTrue(Arrays.toString(myAnnotations).contains("AnnotationAddedByExtension"),
-                "The test execution does not see the annotation, only sees " + Arrays.toString(myAnnotations));
+                "The test execution does not see the annotation, only sees " + Arrays.toString(myAnnotations)
+                        + ". The classloader is " + this.getClass().getClassLoader());
     }
 }

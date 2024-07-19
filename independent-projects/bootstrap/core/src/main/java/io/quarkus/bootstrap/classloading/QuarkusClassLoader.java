@@ -27,6 +27,8 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.PathVisit;
@@ -45,6 +47,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private static final byte STATUS_CLOSED = -1;
 
     protected static final String META_INF_SERVICES = "META-INF/services/";
+
+    private final CuratedApplication curatedApplication;
+    private StartupAction startupAction;
 
     static {
         registerAsParallelCapable();
@@ -194,6 +199,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.aggregateParentResources = builder.aggregateParentResources;
         this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
                 : builder.classLoaderEventListeners;
+        this.curatedApplication = builder.curatedApplication;
         setDefaultAssertionStatus(builder.assertionsEnabled);
 
         if (lifecycleLog.isDebugEnabled()) {
@@ -527,6 +533,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (isInJdkPackage(name)) {
             return parent.loadClass(name);
         }
+
         //even if the thread is interrupted we still want to be able to load classes
         //if the interrupt bit is set then we clear it and restore it at the end
         boolean interrupted = Thread.interrupted();
@@ -803,9 +810,21 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    public CuratedApplication getCuratedApplication() {
+        return curatedApplication;
+    }
+
     @Override
     public String toString() {
         return "QuarkusClassLoader:" + name + "@" + Integer.toHexString(hashCode());
+    }
+
+    public StartupAction getStartupAction() {
+        return startupAction;
+    }
+
+    public void setStartupAction(StartupAction startupAction) {
+        this.startupAction = startupAction;
     }
 
     public static class Builder {
@@ -816,6 +835,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         final List<ClassPathElement> parentFirstElements = new ArrayList<>();
         final List<ClassPathElement> lesserPriorityElements = new ArrayList<>();
         final boolean parentFirst;
+        CuratedApplication curatedApplication;
         MemoryClassPathElement resettableElement;
         private Map<String, byte[]> transformedClasses = Collections.emptyMap();
         boolean aggregateParentResources;
@@ -939,6 +959,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         public Builder addClassLoaderEventListeners(List<ClassLoaderEventListener> classLoadListeners) {
             this.classLoaderEventListeners.addAll(classLoadListeners);
+            return this;
+        }
+
+        public Builder setCuratedApplication(CuratedApplication curatedApplication) {
+            this.curatedApplication = curatedApplication;
             return this;
         }
 

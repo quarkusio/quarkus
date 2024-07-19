@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
+import io.quarkus.logging.Log;
+
 public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
         implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler, TestWatcher {
 
@@ -54,8 +56,18 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected QuarkusTestExtensionState getState(ExtensionContext context) {
         ExtensionContext.Store store = getStoreFromContext(context);
-        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
-        if (state != null) {
+        Object o = store.get(QuarkusTestExtensionState.class.getName());
+        if (o != null) {
+
+            QuarkusTestExtensionState state;
+
+            // It's quite possible the state was created in another classloader, and if so, we will need to clone it across into this classloader
+            if (o instanceof QuarkusTestExtensionState) {
+                state = (QuarkusTestExtensionState) o;
+            } else {
+                state = QuarkusTestExtensionState.clone(o);
+            }
+
             Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
             if (!this.getTestingType().equals(testingTypeOfState)) {
                 // The current state was created by a different testing type, so we need to renew it, so the new state is
@@ -63,16 +75,21 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
                 try {
                     state.close();
                 } catch (IOException ignored) {
+                    Log.debug(ignored);
                     // ignoring exceptions when closing state.
+
                 } finally {
                     getStoreFromContext(context).remove(QuarkusTestExtensionState.class.getName());
                 }
 
                 return null;
             }
+            return state;
+
+        } else {
+            return null;
         }
 
-        return state;
     }
 
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
@@ -82,6 +99,11 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
     }
 
     protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {
+        // TODO if we would add some ugly code here to jump up to the
+        // system classloader, we could load QuarkusTestExtension with the test's classloader, and
+        // avoid a whole bunch of reflection
+        // TODO #store
+
         ExtensionContext root = context.getRoot();
         return root.getStore(ExtensionContext.Namespace.GLOBAL);
     }

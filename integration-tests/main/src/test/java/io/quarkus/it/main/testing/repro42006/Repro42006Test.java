@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -15,7 +14,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/42006")
 // fails with `java.lang.ClassNotFoundException: io.quarkus.it.main.testing.repro42006.Repro42006Test$LambdaProvider$$Lambda$4007/0x000075d5017e8450`
 @QuarkusTest
 public class Repro42006Test {

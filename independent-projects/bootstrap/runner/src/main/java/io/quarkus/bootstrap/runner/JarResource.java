@@ -154,8 +154,9 @@ public class JarResource implements ClassLoadingResource {
             // The jarfile has been already used and it's going to be removed from the cache,
             // so the future must be already completed
             var ref = futureRef.getNow(null);
-            assert (ref != null);
-            ref.close(this);
+            if (ref != null) {
+                ref.close(this);
+            }
         }
     }
 

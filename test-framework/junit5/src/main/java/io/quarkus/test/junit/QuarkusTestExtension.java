@@ -9,6 +9,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
@@ -54,8 +55,6 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
-import io.quarkus.bootstrap.app.AugmentAction;
-import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -78,8 +77,6 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.callback.QuarkusTestContext;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
-import io.quarkus.test.junit.internal.DeepClone;
-import io.quarkus.test.junit.internal.NewSerializingDeepClone;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
@@ -87,6 +84,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
         ParameterResolver {
 
+    // Be very careful with static variables; they will not be as global as one might think, since tests can be loaded with many different classloaders
+    // TODO go through and remove or evaluate each of these static vars
     private static final Logger log = Logger.getLogger(QuarkusTestExtension.class);
 
     public static final String QUARKUS_TEST_HANG_DETECTION_TIMEOUT = "quarkus.test.hang-detection-timeout";
@@ -97,7 +96,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static Object actualTestInstance;
     // needed for @Nested
     private static final Deque<Object> outerInstances = new ArrayDeque<>(1);
-    private static RunningQuarkusApplication runningQuarkusApplication;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static Class<?> quarkusTestMethodContextClass;
@@ -105,7 +103,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private static List<Object> testMethodInvokers;
 
-    private static DeepClone deepClone;
     private static volatile ScheduledExecutorService hangDetectionExecutor;
     private static volatile Duration hangTimeout;
     private static volatile ScheduledFuture<?> hangTaskKey;
@@ -165,6 +162,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
         JBossVersion.disableVersionLogging();
 
+        // TODO we should do much less of this, because it's being done upfront by the interceptor
         TracingHandler.quarkusStarting();
         hangDetectionExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
             @Override
@@ -187,15 +185,22 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-            PrepareResult result = createAugmentor(context, profile, shutdownTasks);
-            AugmentAction augmentAction = result.augmentAction;
-            QuarkusTestProfile profileInstance = result.profileInstance;
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
-            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
-            Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
-            populateDeepCloneField(startupAction);
 
+            // clear the test.url system property as the value leaks into the run when using different profiles
+            System.clearProperty("test.url");
+            Map<String, String> additional = new HashMap<>();
+            QuarkusTestProfile profileInstance = getQuarkusTestProfile(profile, shutdownTasks, additional);
+            StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
+
+            // TODO this might be a good idea, but if so, we'd need to undo it
+            Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+
+            Path testClassLocation = startupAction.getClassLoader().getCuratedApplication().getQuarkusBootstrap()
+                    .getTestClassesLocation();
+
+            // Do we need the augmentation classloader as the TCCL?
             //must be done after the TCCL has been set
             Class<?> testResourceManagerClass = startupAction.getClassLoader().loadClass(TestResourceManager.class.getName());
             testResourceManager = TestResourceUtil.TestResourceManagerReflections.createReflectively(testResourceManagerClass,
@@ -206,7 +211,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     profileInstance != null && profileInstance.disableGlobalTestResources(),
                     startupAction.getDevServicesProperties(),
                     Optional.empty(),
-                    result.testClassLocation);
+                    testClassLocation);
             TestResourceUtil.TestResourceManagerReflections.initReflectively(testResourceManager, profile);
             Map<String, String> properties = TestResourceUtil.TestResourceManagerReflections
                     .startReflectively(testResourceManager);
@@ -224,6 +229,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .run(profileInstance == null ? new String[0] : profileInstance.commandLineParameters());
             } else {
 
+                // TODO we should be able to skip this reflection now, because we are the right CL
                 Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
                         startupAction.getClassLoader());
                 lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
@@ -235,19 +241,20 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             TracingHandler.quarkusStarted();
 
-            deepClone.setRunningQuarkusApplication(runningQuarkusApplication);
-
-            //now we have full config reset the hang timer
-
+            // TODO before #45100 infinite loops? also causes all paramstests to fail + 37 failures??
+            // TODO I don't entirely understand why this has changed from a good diea to a bad idea
+            //            ConfigProviderResolver.instance().registerConfig(
+            //                    new RunningAppConfigResolver(runningQuarkusApplication).getConfig(),
+            //                    runningQuarkusApplication.getClassLoader());
+            // now we have full config reset the hang timer
             if (hangTaskKey != null) {
                 hangTaskKey.cancel(false);
                 hangTimeout = runningQuarkusApplication.getConfigValue(QUARKUS_TEST_HANG_DETECTION_TIMEOUT, Duration.class)
                         .orElse(Duration.of(10, ChronoUnit.MINUTES));
+
                 hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
-            ConfigProviderResolver.instance().registerConfig(
-                    new RunningAppConfigResolver(runningQuarkusApplication).getConfig(),
-                    runningQuarkusApplication.getClassLoader());
+
             RestorableSystemProperties restorableSystemProperties = RestorableSystemProperties.setProperties(
                     Collections.singletonMap("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication)));
 
@@ -256,7 +263,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 public void close() {
                     TracingHandler.quarkusStopping();
                     try {
-                        runningQuarkusApplication.close();
+                        // In a nested class with no tests in the outer profile, the running Quarkus application could be null
+                        if (runningQuarkusApplication != null) {
+                            runningQuarkusApplication.close();
+                        }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     } finally {
@@ -298,6 +308,27 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
         }
+
+    }
+
+    private static QuarkusClassLoader getClassLoaderFromTestClass(Class<?> requiredTestClass) {
+        try {
+            return (QuarkusClassLoader) requiredTestClass.getClassLoader();
+        } catch (ClassCastException e) {
+            if (requiredTestClass.getClassLoader().getName().contains("QuarkusClassLoader")) {
+                throw new RuntimeException("Internal error. The test class " + requiredTestClass
+                        + " was not loaded with the expected classloader. Expected a QuarkusClassLoader loaded with "
+                        + QuarkusClassLoader.class.getClassLoader()
+                        + " but was "
+                        + requiredTestClass.getClassLoader()
+                        + " This should not happen, but changing directory names or class layout may help work around the issue.");
+            } else {
+                throw new RuntimeException("Internal error. The test class " + requiredTestClass
+                        + " should have been loaded with a QuarkusClassLoader, but instead it was loaded with "
+                        + requiredTestClass.getClassLoader()
+                        + ". This is caused by the FacadeClassLoader not correctly identifying this class as a QuarkusTest.");
+            }
+        }
     }
 
     private Throwable determineEffectiveException(Throwable e) {
@@ -323,10 +354,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    private void populateDeepCloneField(StartupAction startupAction) {
-        deepClone = new NewSerializingDeepClone(originalCl, startupAction.getClassLoader());
-    }
-
     private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
         testMethodInvokers = new ArrayList<>();
         try {
@@ -345,6 +372,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || isBeforeTestCallbacksEmpty()) {
             return;
         }
+
         if (!failedBoot) {
             ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
             try {
@@ -385,6 +413,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             } finally {
                 setCCL(original);
+                // TODO pretty pointless setting and unsetting, since we wrap the whole execution in this test's CL
             }
         } else {
             throwBootFailureException();
@@ -393,7 +422,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     public static String getEndpointPath(ExtensionContext context, List<Function<Class<?>, String>> testHttpEndpointProviders) {
         String endpointPath = null;
+
         TestHTTPEndpoint testHTTPEndpoint = context.getRequiredTestMethod().getAnnotation(TestHTTPEndpoint.class);
+
+        // TODO we can use JUnit's AnnotationSupport to simplify searching the hierarchy
+        //TODO we should also be able to bypass all the reflection here
         if (testHTTPEndpoint == null) {
             Class<?> clazz = context.getRequiredTestClass();
             while (true) {
@@ -409,16 +442,33 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
         }
         if (testHTTPEndpoint != null) {
+            Object value = "[no value]";
             for (Function<Class<?>, String> i : testHttpEndpointProviders) {
-                endpointPath = i.apply(testHTTPEndpoint.value());
-                if (endpointPath != null) {
-                    break;
+
+                // TODO #store
+                try {
+                    Method m = TestHTTPEndpoint.class.getMethod("value");
+
+                    value = m.invoke(testHTTPEndpoint);
+
+                    endpointPath = i.apply((Class<?>) value);
+                    if (endpointPath != null) {
+                        break;
+                    }
+
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
                 }
             }
             if (endpointPath == null) {
-                throw new RuntimeException("Cannot determine HTTP path for endpoint " + testHTTPEndpoint.value()
+                throw new RuntimeException("Cannot determine HTTP path for endpoint " + value
                         + " for test method " + context.getRequiredTestMethod());
             }
+
         }
         if (endpointPath != null) {
             if (endpointPath.indexOf(':') != -1) {
@@ -470,6 +520,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 setCCL(original);
             }
         }
+
     }
 
     @Override
@@ -550,21 +601,31 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         QuarkusTestExtensionState state = getState(extensionContext);
+
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
+
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        boolean isNested = isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass());
+        if (wrongProfile && isNested) {
+            throw new TestInstantiationException("@Nested tests may not contain @TestProfile annotations.");
+        }
+
         // we reset the failed state if we changed test class and the new test class is not a nested class
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
-                && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass());
+                && !isNested;
         if (isNewTestClass && state != null) {
             state.setTestFailed(null);
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
-        // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-        boolean reloadTestResources = false;
-        if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
-                        selectedProfile))) {
-            if (wrongProfile || reloadTestResources) {
+        boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
+        // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
+        // we could try to start and application which has already been started, and fail with a mysterious error about
+        // null shutdown contexts; we should try and detect that case, and give a friendlier error message
+
+        // We want to start if the profile changed (or there are new test resources),
+        // or if we don't have an app and that's not because the previous attempt to start it failed
+        if ((state == null && !failedBoot) || (runningQuarkusApplication != null && isNewApplication)) {
+            if (isNewApplication) {
                 if (state != null) {
                     try {
                         state.close();
@@ -575,6 +636,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
             PropertyTestUtil.setLogFileProperty();
             try {
+                //TODO remove the later TCCL setting
+                Thread.currentThread().setContextClassLoader(extensionContext.getRequiredTestClass().getClassLoader());
                 state = doJavaStart(extensionContext, selectedProfile);
                 setState(extensionContext, state);
 
@@ -616,6 +679,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        // TODO this originalCl logic is half in here and half in the parent class
+        originalCl = Thread.currentThread().getContextClassLoader();
         Class<?> requiredTestClass = context.getRequiredTestClass();
         GroovyClassValue.disable();
         currentTestClassStack.push(requiredTestClass);
@@ -628,14 +693,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
             pushMockContext();
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
-            try {
-                Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-                invokeBeforeClassCallbacks(Class.class,
-                        runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
-            } finally {
-                Thread.currentThread().setContextClassLoader(old);
-            }
+
+            // Set the TCCL to be the test class's classloader, for the duration of the execution
+            // TODO almost all the other TCCL-ing will now be redundnant, go through and delete it.
+
+            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
+            // TODO this is now redundant, we can just get the class from requiredTestClass
+            invokeBeforeClassCallbacks(Class.class,
+                    runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
+
         } else {
             // can this ever happen?
             invokeBeforeClassCallbacks(Class.class, requiredTestClass);
@@ -741,8 +807,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private void initTestState(ExtensionContext extensionContext, QuarkusTestExtensionState state) {
         try {
-            actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
-                    Thread.currentThread().getContextClassLoader());
+            actualTestClass = extensionContext.getRequiredTestClass();
             if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
                 Class<?> outerClass = actualTestClass.getEnclosingClass();
                 Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(outerClass);
@@ -827,6 +892,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void interceptDynamicTest(Invocation<Void> invocation, ExtensionContext extensionContext) throws Throwable {
+        // TODO check if this is needed; the earlier interceptor may already have done it
         if (runningQuarkusApplication == null) {
             invocation.proceed();
             return;
@@ -863,6 +929,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         return result;
     }
 
+    // TODO can this and the other interceptions go away?
     @Override
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
@@ -897,8 +964,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         ClassLoader old = setCCL(runningQuarkusApplication.getClassLoader());
         try {
-            Class<?> testClassFromTCCL = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
-                    Thread.currentThread().getContextClassLoader());
+            Class<?> testClassFromTCCL = extensionContext.getRequiredTestClass();
             Map<Class<?>, Object> allTestsClasses = new HashMap<>();
             // static loading
             allTestsClasses.put(testClassFromTCCL, actualTestInstance);
@@ -947,9 +1013,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             .invoke(testMethodInvokerToUse, argClass.getName()));
                 } else {
                     Object arg = originalArguments.get(i);
-                    argumentsFromTccl.add(deepClone.clone(arg));
+                    argumentsFromTccl.add(arg); // No clone
                 }
             }
+
+            // TODO is all this reflection even needed?
 
             if (testMethodInvokerToUse != null) {
                 return testMethodInvokerToUse.getClass()
@@ -969,6 +1037,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
+    // TODO surely this whole method can go away?
     private Method determineTCCLExtensionMethod(Method originalMethod, Class<?> c)
             throws ClassNotFoundException {
         Class<?> declaringClass = resolveDeclaringClass(originalMethod, c);
@@ -982,9 +1051,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (type.isPrimitive()) {
                     parameterTypesFromTccl.add(type);
                 } else {
-                    parameterTypesFromTccl
-                            .add(Class.forName(type.getName(), true,
-                                    Thread.currentThread().getContextClassLoader()));
+                    parameterTypesFromTccl.add(type);
                 }
             }
             return declaringClass.getDeclaredMethod(originalMethod.getName(),
@@ -1085,6 +1152,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
      * since the class instance that is passed to JUnit isn't really used.
      * The actual test instance that is used is the one that is pulled from Arc, which of course will already have its
      * constructor parameters properly resolved
+     * // TODO this comment is probably wrong, we do use the class instance which is passed in
      */
     @Override
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
@@ -1133,6 +1201,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             super(testResourceManager, resource, clearCallbacks);
         }
 
+        public ExtensionState(Closeable trm, Closeable resource, Runnable clearCallbacks, Thread shutdownHook) {
+            super(trm, resource, clearCallbacks, shutdownHook);
+        }
+
         @Override
         protected void doClose() {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -1145,8 +1217,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             } catch (Throwable e) {
                 log.error("Failed to shutdown Quarkus", e);
             } finally {
-                ((SmallRyeConfigProviderResolver) ConfigProviderResolver.instance())
-                        .releaseConfig(runningQuarkusApplication.getClassLoader());
+                if (runningQuarkusApplication != null) {
+                    ((SmallRyeConfigProviderResolver) ConfigProviderResolver.instance())
+                            .releaseConfig(runningQuarkusApplication.getClassLoader());
+                }
                 runningQuarkusApplication = null;
                 Thread.currentThread().setContextClassLoader(old);
             }
@@ -1159,6 +1233,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             shutdownHangDetection();
             firstException = null;
             failedBoot = false;
+            ConfigProviderResolver.setInstance(null);
         }
     }
 

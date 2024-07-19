@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -13,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 
 public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
 
-    private InvocationBuilderImpl invocationBuilder;
+    private final InvocationBuilderImpl invocationBuilder;
 
     public UniInvoker(InvocationBuilderImpl invocationBuilder) {
         this.invocationBuilder = invocationBuilder;
@@ -22,10 +24,16 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
     @Override
     public <R> Uni<R> method(String name, Entity<?> entity, GenericType<R> responseType) {
         AsyncInvokerImpl invoker = (AsyncInvokerImpl) invocationBuilder.rx();
+        AtomicReference<RestClientRequestContext> restClientRequestContextRef = new AtomicReference<>();
         return Uni.createFrom().completionStage(new Supplier<CompletionStage<R>>() {
             @Override
             public CompletionStage<R> get() {
-                return invoker.method(name, entity, responseType);
+                RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity,
+                        responseType == null ? new GenericType<>(String.class) : responseType,
+                        true);
+                restClientRequestContextRef.set(restClientRequestContext);
+                CompletableFuture response = restClientRequestContext.getResult();
+                return invoker.mapResponse(response, responseType == null ? String.class : responseType.getRawType());
             }
         }).onFailure().transform(new Function<>() {
             @Override
@@ -34,6 +42,11 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
                     return t.getCause();
                 }
                 return t;
+            }
+        }).onCancellation().invoke(new Runnable() {
+            @Override
+            public void run() {
+                restClientRequestContextRef.get().getHttpClientRequest().reset();
             }
         });
     }

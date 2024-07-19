@@ -5,15 +5,13 @@ import java.sql.SQLException;
 import java.util.Locale;
 import java.util.Optional;
 
-import jakarta.enterprise.inject.Default;
-
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 
@@ -74,11 +72,7 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
     }
 
     private static AgroalDataSource getDataSource(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Arc.container().instance(AgroalDataSource.class, Default.Literal.INSTANCE).get();
-        } else {
-            return Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(dataSourceName)).get();
-        }
+        return Arc.container().instance(AgroalDataSource.class, AgroalDataSourceUtil.qualifier(dataSourceName)).get();
     }
 
     private static class SchemaTenantConnectionProvider extends QuarkusConnectionProvider {

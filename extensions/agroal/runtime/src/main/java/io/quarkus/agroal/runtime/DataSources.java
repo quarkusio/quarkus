@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 import jakarta.transaction.TransactionManager;
@@ -39,7 +38,6 @@ import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
-import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
@@ -59,7 +57,12 @@ import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
  * The {@code createDataSource} method is called at runtime (see
  * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)})
  * in order to produce the actual {@code AgroalDataSource} objects.
+ *
+ * @deprecated This class should not be used from applications or other extensions.
+ *             For applications, use CDI to retrieve datasources instead.
+ *             For extensions, use {@link AgroalDataSourceUtil} instead.
  */
+@Deprecated
 @Singleton
 public class DataSources {
 
@@ -290,9 +293,7 @@ public class DataSources {
 
         // Set pool interceptors for this datasource
         Collection<AgroalPoolInterceptor> interceptorList = agroalPoolInterceptors
-                .select(dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)
-                        ? Default.Literal.INSTANCE
-                        : new DataSource.DataSourceLiteral(dataSourceName))
+                .select(AgroalDataSourceUtil.qualifier(dataSourceName))
                 .stream().collect(Collectors.toList());
         if (!interceptorList.isEmpty()) {
             dataSource.setPoolInterceptors(interceptorList);

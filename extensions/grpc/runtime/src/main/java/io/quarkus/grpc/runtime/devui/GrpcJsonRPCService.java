@@ -1,23 +1,36 @@
 package io.quarkus.grpc.runtime.devui;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Flow;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.MessageOrBuilder;
+import com.google.protobuf.util.JsonFormat;
+
+import io.grpc.Channel;
+import io.grpc.MethodDescriptor;
+import io.grpc.ServiceDescriptor;
+import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
 import io.quarkus.vertx.http.runtime.CertificateConfig;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -31,11 +44,10 @@ import io.vertx.core.json.JsonObject;
 public class GrpcJsonRPCService {
     private static final Logger LOG = Logger.getLogger(GrpcJsonRPCService.class);
 
-    @Inject
-    HttpConfiguration httpConfiguration;
+    private Map<String, GrpcServiceClassInfo> grpcServiceClassInfos;
 
     @Inject
-    HttpBuildTimeConfig httpBuildTimeConfig;
+    HttpConfiguration httpConfiguration;
 
     @Inject
     GrpcConfiguration grpcConfiguration;
@@ -59,6 +71,7 @@ public class GrpcJsonRPCService {
             this.port = httpConfiguration.port;
             this.ssl = isTLSConfigured(httpConfiguration.ssl.certificate);
         }
+        this.grpcServiceClassInfos = getGrpcServiceClassInfos();
     }
 
     private boolean isTLSConfigured(CertificateConfig certificate) {
@@ -102,14 +115,68 @@ public class GrpcJsonRPCService {
         }
     }
 
-    public Multi<String> streamService(String serviceName, String methodName, String methodType, String content) {
+    public Multi<String> streamService(String serviceName, String methodName, String methodType, String content)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
         if (content == null) {
             return Multi.createFrom().item(error("Invalid messsge").encodePrettily());
         }
-        Map<String, String> params = createParams(serviceName, methodName, methodType, content);
-        Flow.Publisher<String> publisher = DevConsoleManager.invoke("grpc-action", params);
-        return Multi.createFrom().publisher(publisher);
-        //return multi.onItem().transform((json) -> new JsonObject(json));
+
+        BroadcastProcessor<String> streamEvent = BroadcastProcessor.create();
+
+        GrpcServiceClassInfo info = this.grpcServiceClassInfos.get(serviceName);
+
+        Object grpcStub = createStub(info.grpcServiceClass, host, port);
+
+        ServiceDescriptor serviceDescriptor = info.serviceDescriptor;
+
+        final MethodDescriptor<?, ?> methodDescriptor = getMethodDescriptor(serviceDescriptor, methodName);
+        MethodDescriptor.Marshaller<?> requestMarshaller = methodDescriptor.getRequestMarshaller();
+        MethodDescriptor.PrototypeMarshaller<?> protoMarshaller = (MethodDescriptor.PrototypeMarshaller<?>) requestMarshaller;
+        Class<?> requestType = protoMarshaller.getMessagePrototype().getClass();
+
+        // Create a new builder for the request message, e.g. HelloRequest.newBuilder()
+        Method newBuilderMethod = requestType.getDeclaredMethod("newBuilder");
+        Message.Builder builder = (Message.Builder) newBuilderMethod.invoke(null);
+
+        // Use the test data to build the request object
+        JsonFormat.parser().merge(content, builder);
+        Message message = builder.build();
+
+        StreamObserver<?> responseObserver = new TestObserver<Object>(streamEvent);
+
+        final Method stubMethod = getStubMethod(grpcStub, methodDescriptor.getBareMethodName());
+        stubMethod.invoke(grpcStub, message, responseObserver);
+
+        return streamEvent;
+    }
+
+    private Map<String, GrpcJsonRPCService.GrpcServiceClassInfo> getGrpcServiceClassInfos() {
+        Set<String> serviceClassNames = DevConsoleManager.getGlobal("io.quarkus.grpc.serviceClassNames");
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        Map<String, GrpcJsonRPCService.GrpcServiceClassInfo> m = new HashMap<>();
+        for (String className : serviceClassNames) {
+            try {
+                Class<?> grpcServiceClass = tccl.loadClass(className);
+                ServiceDescriptor serviceDescriptor = createServiceDescriptor(grpcServiceClass);
+                GrpcJsonRPCService.GrpcServiceClassInfo s = new GrpcJsonRPCService.GrpcServiceClassInfo(serviceDescriptor,
+                        grpcServiceClass);
+                m.put(serviceDescriptor.getName(), s);
+            } catch (ClassNotFoundException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return m;
+    }
+
+    private ServiceDescriptor createServiceDescriptor(Class<?> grpcServiceClass) {
+        try {
+            Method method = grpcServiceClass.getDeclaredMethod("getServiceDescriptor");
+            return (ServiceDescriptor) method.invoke(null);
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+                | InvocationTargetException e) {
+            LOG.warnf("Could not create stub for %s - " + e.getMessage(), grpcServiceClass);
+            return null;
+        }
     }
 
     private JsonObject error(String message) {
@@ -120,14 +187,91 @@ public class GrpcJsonRPCService {
         return error;
     }
 
-    private Map<String, String> createParams(String serviceName, String methodName, String methodType, String content) {
-        return Map.of(
-                "serviceName", serviceName,
-                "methodName", methodName,
-                "methodType", methodType,
-                "content", content,
-                "host", host,
-                "port", String.valueOf(port),
-                "ssl", String.valueOf(ssl));
+    private Method getStubMethod(Object grpcStub, String bareMethodName) {
+        String realMethodName = decapitalize(bareMethodName);
+
+        for (Method method : grpcStub.getClass().getDeclaredMethods()) {
+            if (method.getName().equals(realMethodName)) {
+                return method;
+            }
+        }
+        return null;
+    }
+
+    private String decapitalize(String name) {
+        if (name == null || name.length() == 0) {
+            return name;
+        }
+        if (name.length() > 1 && Character.isUpperCase(name.charAt(1)) &&
+                Character.isUpperCase(name.charAt(0))) {
+            return name;
+        }
+        char[] chars = name.toCharArray();
+        chars[0] = Character.toLowerCase(chars[0]);
+        return new String(chars);
+    }
+
+    private MethodDescriptor getMethodDescriptor(ServiceDescriptor serviceDescriptor, String methodName) {
+        for (MethodDescriptor<?, ?> method : serviceDescriptor.getMethods()) {
+            if (method.getBareMethodName() != null && method.getBareMethodName().equals(methodName)) {
+                return method;
+            }
+        }
+        return null;
+    }
+
+    private Object createStub(Class<?> grpcServiceClass, String host, int port) {
+        try {
+            Method stubFactoryMethod = grpcServiceClass.getDeclaredMethod("newStub", Channel.class);
+            return stubFactoryMethod.invoke(null, getChannel(host, port));
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            LOG.warnf("Could not create stub for %s - " + e.getMessage(), grpcServiceClass);
+            return null;
+        }
+    }
+
+    private Channel getChannel(String host, int port) {
+        return NettyChannelBuilder
+                .forAddress(host, port)
+                .usePlaintext()
+                .build();
+    }
+
+    private class TestObserver<Object> implements StreamObserver<Object> {
+        private BroadcastProcessor<String> broadcaster;
+
+        public TestObserver(BroadcastProcessor<String> broadcaster) {
+            this.broadcaster = broadcaster;
+        }
+
+        @Override
+        public void onNext(Object value) {
+            try {
+                String body = JsonFormat.printer().omittingInsignificantWhitespace().print((MessageOrBuilder) value);
+                this.broadcaster.onNext(body);
+            } catch (InvalidProtocolBufferException e) {
+                this.broadcaster.onError(e);
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            this.broadcaster.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            this.broadcaster.onComplete();
+        }
+    }
+
+    public static final class GrpcServiceClassInfo {
+        public ServiceDescriptor serviceDescriptor;
+        public Class<?> grpcServiceClass;
+
+        public GrpcServiceClassInfo(ServiceDescriptor serviceDescriptor, Class<?> grpcServiceClass) {
+            this.serviceDescriptor = serviceDescriptor;
+            this.grpcServiceClass = grpcServiceClass;
+        }
     }
 }

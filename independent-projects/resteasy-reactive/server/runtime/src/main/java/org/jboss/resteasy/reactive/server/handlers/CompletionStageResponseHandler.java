@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,7 +29,11 @@ public class CompletionStageResponseHandler implements ServerRestHandler {
                     }
                 } else {
                     if (t != null) {
-                        requestContext.handleException(t, true);
+                        if (t instanceof CompletionException ce) {
+                            requestContext.handleException(ce.getCause(), true);
+                        } else {
+                            requestContext.handleException(t, true);
+                        }
                     } else {
                         requestContext.setResult(v);
                     }

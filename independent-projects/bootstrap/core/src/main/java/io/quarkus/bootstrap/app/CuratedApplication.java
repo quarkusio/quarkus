@@ -61,6 +61,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     private volatile QuarkusClassLoader baseRuntimeClassLoader;
 
+    // TODO this probably isn't the right place to store this
+    private volatile QuarkusClassLoader runtimeClassLoader;
+
     private final QuarkusBootstrap quarkusBootstrap;
     private final CurationResult curationResult;
     private final ConfiguredClassLoading configuredClassLoading;
@@ -252,6 +255,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                     quarkusBootstrap.getBaseClassLoader(), false)
                     .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled());
             builder.addClassLoaderEventListeners(quarkusBootstrap.getClassLoaderEventListeners());
+            builder.setCuratedApplication(this);
 
             if (configuredClassLoading.isFlatTestClassPath()) {
                 //in test mode we have everything in the base class loader
@@ -390,7 +394,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 + runtimeClassLoaderCount.getAndIncrement(),
                         getOrCreateBaseRuntimeClassLoader(), false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
+                .setCuratedApplication(this)
                 .setAggregateParentResources(true);
+
         builder.setTransformedClasses(transformedClasses);
 
         builder.addNormalPriorityElement(new MemoryClassPathElement(resources, true));
@@ -416,7 +422,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
-        return builder.build();
+        QuarkusClassLoader loader = builder.build();
+        runtimeClassLoader = loader;
+        return loader;
     }
 
     public boolean isReloadableArtifact(ArtifactKey key) {
@@ -438,6 +446,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+    }
+
+    // TODO delete this? the model doesn't really work?
+    public void tidy() {
+        this.runtimeClassLoader = null;
     }
 
     /**

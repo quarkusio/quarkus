@@ -69,6 +69,7 @@ public class QuarkusBootstrap implements Serializable {
     private final String baseName;
     private final String originalBaseName;
     private final Path targetDirectory;
+    private final Path testClassesLocation;
 
     private final Mode mode;
     private final Boolean offline;
@@ -110,6 +111,7 @@ public class QuarkusBootstrap implements Serializable {
         this.originalBaseName = builder.originalJarName;
         this.baseClassLoader = builder.baseClassLoader;
         this.targetDirectory = builder.targetDirectory;
+        this.testClassesLocation = builder.testClassesLocation;
         this.appModelResolver = builder.appModelResolver;
         this.assertionsEnabled = builder.assertionsEnabled;
         this.appArtifact = builder.appArtifact;
@@ -309,12 +311,21 @@ public class QuarkusBootstrap implements Serializable {
         return depInfoProvider;
     }
 
+    // TODO where is the cleanest place for this to live? We don't want code which has been given classes
+    // loaded with a QuarkusClassLoader to be trying to derive the testClassLocation, partly because it's
+    // duplicated effort, since whatever created this loader must already know it, and partly because
+    // unpicking the quarkus: protocol is a bit tricky for the path test helper
+    public Path getTestClassesLocation() {
+        return testClassesLocation;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         public boolean hostApplicationIsTestOnly;
         boolean flatClassPath;
         boolean rebuild;
         PathCollection applicationRoot;
+        Path testClassesLocation;
         String baseName;
         String originalJarName;
         Path projectRoot;
@@ -563,6 +574,11 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        public Builder setTestClassLocation(Path testClassesLocation) {
+            this.testClassesLocation = testClassesLocation;
+            return this;
+        }
+
         public QuarkusBootstrap build() {
             Objects.requireNonNull(applicationRoot, "Application root must not be null");
             if (appArtifact != null) {
@@ -570,6 +586,7 @@ public class QuarkusBootstrap implements Serializable {
             }
             return new QuarkusBootstrap(this);
         }
+
     }
 
     public enum Mode {

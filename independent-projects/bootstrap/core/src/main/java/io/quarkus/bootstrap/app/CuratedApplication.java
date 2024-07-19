@@ -61,6 +61,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     private volatile QuarkusClassLoader baseRuntimeClassLoader;
 
+    // TODO this probably isn't the right place to store this
+    private volatile QuarkusClassLoader runtimeClassLoader;
+
     private final QuarkusBootstrap quarkusBootstrap;
     private final CurationResult curationResult;
     private final ConfiguredClassLoading configuredClassLoading;
@@ -193,6 +196,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
         if (augmentClassLoader == null) {
+            System.out.println("HOLLY making augment classloader ");
             //first run, we need to build all the class loaders
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Augmentation Class Loader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
@@ -246,6 +250,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      *
      */
     public synchronized QuarkusClassLoader getOrCreateBaseRuntimeClassLoader() {
+        System.out.println("HOLLY will get or create base runtime " + baseRuntimeClassLoader);
+        System.out.println("HOLLY root is " + quarkusBootstrap.getApplicationRoot());
         if (baseRuntimeClassLoader == null) {
             QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder(
                     "Quarkus Base Runtime ClassLoader: " + quarkusBootstrap.getMode() + getClassLoaderNameSuffix(),
@@ -390,7 +396,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                                 + runtimeClassLoaderCount.getAndIncrement(),
                         getOrCreateBaseRuntimeClassLoader(), false)
                 .setAssertionsEnabled(quarkusBootstrap.isAssertionsEnabled())
+                .setCuratedApplication(this)
                 .setAggregateParentResources(true);
+
         builder.setTransformedClasses(transformedClasses);
 
         builder.addNormalPriorityElement(new MemoryClassPathElement(resources, true));
@@ -416,7 +424,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
-        return builder.build();
+        QuarkusClassLoader loader = builder.build();
+        runtimeClassLoader = loader;
+        return loader;
     }
 
     public boolean isReloadableArtifact(ArtifactKey key) {
@@ -438,6 +448,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
+    }
+
+    // TODO delete this? the model doesn't really work?
+    public void tidy() {
+        this.runtimeClassLoader = null;
     }
 
     /**

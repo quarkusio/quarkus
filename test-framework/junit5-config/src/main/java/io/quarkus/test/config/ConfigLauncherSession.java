@@ -16,6 +16,7 @@ import io.quarkus.runtime.LaunchMode;
 public class ConfigLauncherSession implements LauncherSessionListener {
     @Override
     public void launcherSessionOpened(final LauncherSession session) {
+        System.out.println("HOLLY CONFIG setting instance on cl" + this.getClass().getClassLoader());
         TestConfigProviderResolver resolver = new TestConfigProviderResolver();
         ConfigProviderResolver.setInstance(resolver);
         resolver.getConfig(LaunchMode.TEST);
@@ -23,6 +24,9 @@ public class ConfigLauncherSession implements LauncherSessionListener {
 
     @Override
     public void launcherSessionClosed(final LauncherSession session) {
+        System.out.println("HOLLY CONFIG CLS " + TestConfigProviderResolver.class.getClassLoader() + " and the instance "
+                + ConfigProviderResolver.instance() + " with CL "
+                + ConfigProviderResolver.instance().getClass().getClassLoader());
         ((TestConfigProviderResolver) ConfigProviderResolver.instance()).restore();
     }
 }

@@ -257,11 +257,11 @@ After clicking the `Login` button, you are redirected back to the application, a
 
 The session for this demo is valid for a short period of time and, on every page refresh, you will be asked to re-authenticate.
 For information about how to increase the session timeouts, see the Keycloak https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] documentation.
-For example, you can access the Keycloak Admin console directly from the dev UI by clicking the `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
+For example, you can access the Keycloak Admin console directly from the dev UI by clicking the `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
-For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
+For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#code-flow-integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
 
 :sectnums!:
 

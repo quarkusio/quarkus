@@ -739,7 +739,7 @@ Depending on your developer API subscription level, some providers may enforce a
 
 It may not be a problem when Quarkus fetches public verification keys from OIDC-compliant providers like the <<google>> provider and keeps verifying the user session with these keys locally. However, for pure OAuth2 providers where only an access token is available and which has to be verified indirectly by requesting UserInfo from the provider endpoint on every request done by an already authenticated user, it can become a problem.
 
-In such cases consider xref:security-oidc-bearer-token-authentication#token-introspection-userinfo-cache[caching UserInfo], using either a default or custom cache implementation or even embedding UserInfo in an internally generated ID token which is encrypted by default, for example:
+In such cases consider xref:security-oidc-bearer-token-authentication#bearer-token-token-introspection-userinfo-cache[caching UserInfo], using either a default or custom cache implementation or even embedding UserInfo in an internally generated ID token which is encrypted by default, for example:
 
 [source,properties]
 ----

@@ -17,7 +17,7 @@ public class TestPinJfrEvent extends Event {
         this.message = message;
     }
 
-    static void pin() {
+    public static void pin() {
         TestPinJfrEvent event = new TestPinJfrEvent("Hello, JFR!");
         event.commit();
     }

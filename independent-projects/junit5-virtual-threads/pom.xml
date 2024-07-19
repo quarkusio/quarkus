@@ -46,6 +46,7 @@
         <impsort-maven-plugin.version>1.11.0</impsort-maven-plugin.version>
 
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
+        <junit.testkit.version>1.10.3</junit.testkit.version>
         <assertj.version>3.26.3</assertj.version>
     </properties>
 
@@ -56,6 +57,11 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
             <version>${junit.jupiter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-testkit</artifactId>
+            <version>${junit.testkit.version}</version>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
@@ -135,6 +141,9 @@
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                         <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+                        <excludes>
+                            <exclude>io.quarkus.test.junit5.virtual.internal.ignore.**Test.java</exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
                 <!-- Replicate what's in parent, since this pom doesn't inherit parent but IDE settings will be common -->

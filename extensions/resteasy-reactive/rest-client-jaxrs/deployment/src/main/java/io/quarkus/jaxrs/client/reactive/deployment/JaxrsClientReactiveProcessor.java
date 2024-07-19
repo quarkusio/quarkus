@@ -13,6 +13,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
@@ -221,6 +222,9 @@ public class JaxrsClientReactiveProcessor {
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
+    private static final MethodDescriptor ARRAY_LIST_CONSTRUCTOR = MethodDescriptor.ofConstructor(ArrayList.class);
+    private static final MethodDescriptor COLLECTION_ADD = MethodDescriptor.ofMethod(Collection.class, "add", boolean.class,
+            Object.class);
 
     private static final String MULTIPART_FORM_DATA = "multipart/form-data";
 
@@ -569,6 +573,9 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private ResultHandle performValueConversion(Type parameter, MethodCreator set, ResultHandle value) {
+        if (treatMultipartDownloadFieldAsCollection(parameter)) {
+            parameter = parameter.asParameterizedType().arguments().get(0);
+        }
         if (parameter.kind() == CLASS) {
             if (parameter.asClassType().name().equals(FILE)) {
                 // we should get a FileDownload type, let's convert it to File
@@ -586,21 +593,38 @@ public class JaxrsClientReactiveProcessor {
     private String createFieldFillerForField(AnnotationInstance partType, FieldInfo field, String partName,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, String dataClassName) {
         String fillerClassName = dataClassName + "$$" + field.name();
+        Type fieldType = field.type();
         try (ClassCreator c = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
                 fillerClassName, null, FieldFiller.class.getName())) {
-            createFieldFillerConstructor(partType, field.type(), partName, fillerClassName, c);
+            boolean treatAsCollection = treatMultipartDownloadFieldAsCollection(fieldType);
+
+            createFieldFillerConstructor(partType, fieldType, partName, fillerClassName, c);
 
             MethodCreator set = c
                     .getMethodCreator(
                             MethodDescriptor.ofMethod(fillerClassName, "set", void.class, Object.class, Object.class));
 
+            ResultHandle resultObj = set.getMethodParam(0);
             ResultHandle value = set.getMethodParam(1);
-            value = performValueConversion(field.type(), set, value);
-            set.writeInstanceField(field, set.getMethodParam(0), value);
+            value = performValueConversion(fieldType, set, value);
+            if (treatAsCollection) {
+                ResultHandle collection = set.readInstanceField(field, resultObj);
+                BytecodeCreator firstInvocation = set.ifNull(collection).trueBranch();
+                firstInvocation.writeInstanceField(field, resultObj,
+                        firstInvocation.newInstance(ARRAY_LIST_CONSTRUCTOR));
+                set.invokeInterfaceMethod(COLLECTION_ADD, set.readInstanceField(field, resultObj), value);
+            } else {
+                set.writeInstanceField(field, resultObj, value);
+            }
 
             set.returnValue(null);
         }
         return fillerClassName;
+    }
+
+    private boolean treatMultipartDownloadFieldAsCollection(Type type) {
+        return (type.kind() == PARAMETERIZED_TYPE) && (LIST.equals(type.name()) || COLLECTION.equals(
+                type.name()));
     }
 
     private void createFieldFillerConstructor(AnnotationInstance partType, Type type, String partName,

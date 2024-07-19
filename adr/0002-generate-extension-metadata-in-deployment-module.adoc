@@ -24,7 +24,7 @@ Source: https://excalidraw.com/#json=cTOOltCdWxadxC8QYc93R,AzxQWd7ALVSsk_FbyIuqA
 
 === Related problems
 
-We have a similar circularity problem with config javadoc; the config is discovered in the deployment module, but the generated of the final-format data is done elsewhere. A solution here *might* help with that.
+We have a similar circularity problem with config javadoc; the config is discovered in the deployment module, but the generation of the final-format data is done elsewhere. A solution here *might* help with that.
 
 Although it's not a serious problem, it would also be nice to allow people to use `CapabilityBuildItems` to register capabilities.
 At the moment, if authors do that, the information https://quarkus.io/guides/capabilities#capabilitybuilditem[will not be available to the dev tools], so we need to have lots of warnings in our documentation telling them not to.

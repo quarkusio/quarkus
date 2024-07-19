@@ -19,6 +19,7 @@ public class TemplateDevModeIT extends RunAndCheckMojoTestBase {
     /*
      * We have a few tests that will run in parallel, so set a unique port
      */
+    @Override
     protected int getPort() {
         return 8092;
     }

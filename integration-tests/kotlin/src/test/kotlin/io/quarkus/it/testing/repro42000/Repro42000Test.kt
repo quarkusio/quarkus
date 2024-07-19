@@ -3,7 +3,6 @@ package io.quarkus.it.testing.repro42000
 import io.quarkus.test.junit.QuarkusTest
 import java.util.stream.Stream
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -28,8 +27,6 @@ class Repro42000Test {
 
     @ParameterizedTest
     @MethodSource("lambdaProvider")
-    @Disabled("https://github.com/quarkusio/quarkus/issues/42000")
-    // fails with `IllegalArgumentException: argument type mismatch`
     fun testLambdaProvider(function: (String) -> String) {
         assertNotNull(function)
     }

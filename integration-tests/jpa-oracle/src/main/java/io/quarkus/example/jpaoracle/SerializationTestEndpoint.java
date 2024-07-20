@@ -11,8 +11,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 @Path("/jpa-oracle/testserialization")
 @Produces(MediaType.TEXT_PLAIN)
+@RegisterForReflection(targets = { String.class }, serialization = true)
 public class SerializationTestEndpoint {
 
     @GET

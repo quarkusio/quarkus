@@ -138,7 +138,7 @@ public class DevServicesProcessor {
 
     private Map<String, Container> fetchContainerInfos(DockerStatusBuildItem dockerStatusBuildItem,
             Set<String> containerIds) {
-        if (containerIds.isEmpty() || !dockerStatusBuildItem.isDockerAvailable()) {
+        if (containerIds.isEmpty() || !dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             return Collections.emptyMap();
         }
         return DockerClientFactory.lazyClient().listContainersCmd()

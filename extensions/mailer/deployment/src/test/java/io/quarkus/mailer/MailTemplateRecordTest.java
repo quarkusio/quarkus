@@ -2,6 +2,8 @@ package io.quarkus.mailer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.inject.Inject;
+
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -10,7 +12,6 @@ import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.ext.mail.MailMessage;
-import jakarta.inject.Inject;
 
 public class MailTemplateRecordTest {
 

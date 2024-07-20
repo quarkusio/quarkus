@@ -545,7 +545,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
         if (!params.isEmpty() || !byteArrayParams.isEmpty()) {
             list.add("PARAMS");
-            list.add(Integer.toString(params.size() + byteArrayParams.size()));
+            list.add(Integer.toString((params.size() + byteArrayParams.size()) * 2));
             for (Map.Entry<String, byte[]> entry : byteArrayParams.entrySet()) {
                 list.add(entry.getKey());
                 list.add(entry.getValue());

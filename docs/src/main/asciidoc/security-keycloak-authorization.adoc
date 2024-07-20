@@ -559,6 +559,65 @@ quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 ----
 
+== Dynamic tenant configuration resolution
+
+If you need a more dynamic configuration for the different tenants you want to support and don’t want to end up
+with multiple entries in your configuration file, you can use the `io.quarkus.keycloak.pep.TenantPolicyConfigResolver`.
+
+This interface allows you to dynamically create tenant configurations at runtime:
+
+[source,java]
+----
+package org.acme.security.keycloak.authorization;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.keycloak.pep.TenantPolicyConfigResolver;
+import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
+import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig;
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomTenantPolicyConfigResolver implements TenantPolicyConfigResolver {
+
+    private final KeycloakPolicyEnforcerTenantConfig enhancedTenantConfig;
+    private final KeycloakPolicyEnforcerTenantConfig newTenantConfig;
+
+    public CustomTenantPolicyConfigResolver(KeycloakPolicyEnforcerConfig enforcerConfig) {
+        this.enhancedTenantConfig = KeycloakPolicyEnforcerTenantConfig.builder(config) <1>
+            .paths("/enhanced-config")
+            .permissionName("Permission Name")
+            .get("read-scope")
+            .build();
+        this.newTenantConfig = KeycloakPolicyEnforcerTenantConfig.builder() <2>
+            .paths("/new-config")
+            .claimInformationPoint(Map.of("claims", Map.of("grant", "{request.parameter['grant']}")))
+            .build();
+    }
+
+    @Override
+    public Uni<KeycloakPolicyEnforcerTenantConfig> resolve(RoutingContext routingContext, OidcTenantConfig tenantConfig,
+                                                OidcRequestContext<KeycloakPolicyEnforcerTenantConfig> requestContext) {
+        String path = routingContext.normalizedPath();
+        String tenantId = tenantConfig.tenantId.orElse(null);
+        if ("enhanced-config-tenant".equals(tenantId) && path.equals("/enhanced-config")) {
+            return Uni.createFrom().item(enhancedTenantConfig);
+        } else if ("new-config-tenant".equals(tenantId) && path.equals("/new-config")) {
+            return Uni.createFrom().item(newTenantConfig);
+        }
+        return Uni.createFrom().nullItem(); <3>
+    }
+}
+----
+<1> Create or update the `/enhanced-config` path in the default tenant config.
+<2> Add `/new-config` path into tenant config populated with documented configuration default values.
+<3> Use default static tenant configuration resolution based on the `application.properties` file and other SmallRye Config configuration sources.
+
 == Configuration reference
 
 This configuration adheres to the official [Keycloak Policy Enforcer Configuration](https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter) guidelines.

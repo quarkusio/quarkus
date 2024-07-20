@@ -17,14 +17,12 @@ import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpFacade implements HttpRequest, HttpResponse {
 
-    private final RoutingContext routingContext;
     private final long readTimeout;
     private final HttpRequest request;
     private final HttpResponse response;
     private final TokenPrincipal tokenPrincipal;
 
     public VertxHttpFacade(RoutingContext routingContext, String token, long readTimeout) {
-        this.routingContext = routingContext;
         this.readTimeout = readTimeout;
         this.request = createRequest(routingContext);
         this.response = createResponse(routingContext);

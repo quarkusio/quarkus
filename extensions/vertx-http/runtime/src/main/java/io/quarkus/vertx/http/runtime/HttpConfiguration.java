@@ -289,6 +289,12 @@ public class HttpConfiguration {
     @ConfigItem
     public Map<String, FilterConfig> filter;
 
+    /**
+     * This will decorate the stacktrace in dev mode to show the line in the code that cause the exception
+     */
+    @ConfigItem(defaultValue = "true")
+    public Boolean decorateStacktraces;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

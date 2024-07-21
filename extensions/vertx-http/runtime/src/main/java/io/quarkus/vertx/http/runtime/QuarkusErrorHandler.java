@@ -41,10 +41,13 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
+    private final boolean decorateStack;
     private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
 
-    public QuarkusErrorHandler(boolean showStack, Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
+            Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
         this.showStack = showStack;
+        this.decorateStack = decorateStack;
         this.contentTypeDefault = contentTypeDefault;
     }
 
@@ -129,7 +132,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             exception.addSuppressed(e);
         }
         if (showStack && exception != null) {
-            exception = new DecoratedAssertionError(exception);
+            if (decorateStack) {
+                exception = new DecoratedAssertionError(exception);
+            }
             details = generateHeaderMessage(exception, uuid);
             stack = generateStackTrace(exception);
         } else {

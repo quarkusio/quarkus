@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 import static io.quarkus.runtime.TemplateHtmlBuilder.adjustRoot;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -74,7 +75,7 @@ public class ResourceNotFoundData {
 
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         TemplateHtmlBuilder builder = new TemplateHtmlBuilder(this.baseUrl,
-                "404 - Resource Not Found", "", "Resources overview");
+                HEADING, "", "Resources overview");
 
         builder.resourcesStart(RESOURCE_ENDPOINTS);
 
@@ -198,6 +199,70 @@ public class ResourceNotFoundData {
 
     }
 
+    @NonBlocking
+    public String getTextContent() {
+        List<RouteDescription> combinedRoutes = getCombinedRoutes();
+        try (StringWriter sw = new StringWriter()) {
+            sw.write(NL + HEADING + NL);
+            sw.write("------------------------" + NL);
+            sw.write(NL);
+            // REST Endpoints
+            if (!combinedRoutes.isEmpty()) {
+                sw.write(RESOURCE_ENDPOINTS + NL);
+                for (RouteDescription resource : combinedRoutes) {
+                    for (RouteMethodDescription method : resource.getCalls()) {
+                        String description = method.getHttpMethod();
+                        if (method.getConsumes() != null) {
+                            description = description + " (consumes: " + method.getConsumes() + ")";
+                        }
+                        if (method.getProduces() != null) {
+                            description = description + " (produces:" + method.getProduces() + ")";
+                        }
+                        if (method.getJavaMethod() != null) {
+                            description = description + " (java:" + method.getJavaMethod() + ")";
+                        }
+                        sw.write(TAB + "- " + adjustRoot(this.httpRoot, method.getFullPath()) + NL);
+                        sw.write(TAB + TAB + "- " + description + NL);
+                    }
+                }
+                sw.write(NL);
+            }
+            // Servlets
+            if (!servletMappings.isEmpty()) {
+                sw.write(SERVLET_MAPPINGS + NL);
+                for (String servletMapping : servletMappings) {
+                    sw.write(TAB + "- " + adjustRoot(this.httpRoot, servletMapping) + NL);
+                }
+                sw.write(NL);
+            }
+            // Static Resources
+            if (!this.staticRoots.isEmpty()) {
+                List<String> resources = findRealResources();
+                if (!resources.isEmpty()) {
+                    sw.write(STATIC_RESOURCES + NL);
+                    for (String staticResource : resources) {
+                        sw.write(TAB + "- " + adjustRoot(this.httpRoot, staticResource) + NL);
+                    }
+                    sw.write(NL);
+                }
+            }
+
+            // Additional Endpoints
+            if (!this.additionalEndpoints.isEmpty()) {
+                sw.write(ADDITIONAL_ENDPOINTS + NL);
+                for (AdditionalRouteDescription additionalEndpoint : this.additionalEndpoints) {
+                    sw.write(TAB + "- " + additionalEndpoint.getUri() + NL);
+                    sw.write(TAB + TAB + "- " + additionalEndpoint.getDescription() + NL);
+                }
+                sw.write(NL);
+            }
+
+            return sw.toString();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
     private List<RouteDescription> getCombinedRoutes() {
         // Endpoints
         List<RouteDescription> combinedRoutes = new ArrayList<>();
@@ -276,6 +341,7 @@ public class ResourceNotFoundData {
         return fileName.endsWith(".html") || fileName.endsWith(".htm") || fileName.endsWith(".xhtml");
     }
 
+    private static final String HEADING = "404 - Resource Not Found";
     private static final String RESOURCE_ENDPOINTS = "Resource Endpoints";
     private static final String SERVLET_MAPPINGS = "Servlet mappings";
     private static final String STATIC_RESOURCES = "Static resources";
@@ -283,5 +349,7 @@ public class ResourceNotFoundData {
     private static final String URI = "uri";
     private static final String DESCRIPTION = "description";
     private static final String EMPTY = "";
+    private static final String NL = "\n";
+    private static final String TAB = "\t";
 
 }

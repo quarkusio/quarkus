@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
+import java.util.Locale;
+
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.vertx.core.Handler;
@@ -22,8 +24,17 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
         String header = routingContext.request().getHeader("Accept");
         if (header != null && header.startsWith("application/json")) {
             handleJson(routingContext);
-        } else {
+        } else if (header != null && header.startsWith("text/html")) {
             handleHTML(routingContext);
+        } else {
+            // If not explicitly asked for json/html, let determine based on the user agent
+            String userAgent = routingContext.request().getHeader("User-Agent");
+            if (userAgent != null && (userAgent.toLowerCase(Locale.ROOT).startsWith("wget/")
+                    || userAgent.toLowerCase(Locale.ROOT).startsWith("curl/"))) {
+                handleText(routingContext);
+            } else {
+                handleHTML(routingContext);
+            }
         }
     }
 
@@ -32,6 +43,13 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
                 .setStatusCode(404)
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .end(Json.encodePrettily(resourceNotFoundData.getJsonContent()));
+    }
+
+    private void handleText(RoutingContext routingContext) {
+        routingContext.response()
+                .setStatusCode(404)
+                .putHeader("content-type", "text/plain; charset=utf-8")
+                .end(resourceNotFoundData.getTextContent());
     }
 
     private void handleHTML(RoutingContext routingContext) {

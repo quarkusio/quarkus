@@ -405,7 +405,7 @@ class ConfigDocItemFinder {
                         break;
                     }
                 }
-                // We many want to merge the metadata, but let's keep this simple for now
+                // We may want to merge the metadata, but let's keep this simple for now
                 if (parent != null) {
                     configDocItems.remove(parent);
                 }

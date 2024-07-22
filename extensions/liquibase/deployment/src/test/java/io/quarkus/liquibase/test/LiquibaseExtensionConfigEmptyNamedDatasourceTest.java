@@ -28,12 +28,12 @@ public class LiquibaseExtensionConfigEmptyNamedDatasourceTest {
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
     @Inject
     @LiquibaseDataSource("users")
-    Instance<LiquibaseFactory> liquibaseForNamedDatasource;
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
     @DisplayName("If there is no config for a named datasource, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibaseForNamedDatasource.get().getConfiguration())
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(UnsatisfiedResolutionException.class)
                 .hasMessageContaining("No bean found");
     }

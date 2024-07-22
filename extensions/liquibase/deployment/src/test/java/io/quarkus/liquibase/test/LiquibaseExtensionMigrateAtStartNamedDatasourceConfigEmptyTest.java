@@ -32,12 +32,12 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigEmptyTest {
 
     @Inject
     @LiquibaseDataSource("users")
-    Instance<LiquibaseFactory> liquibaseForNamedDatasource;
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
     @DisplayName("If there is no config for a named datasource, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibaseForNamedDatasource.get().getConfiguration())
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(UnsatisfiedResolutionException.class)
                 .hasMessageContaining("No bean found");
     }

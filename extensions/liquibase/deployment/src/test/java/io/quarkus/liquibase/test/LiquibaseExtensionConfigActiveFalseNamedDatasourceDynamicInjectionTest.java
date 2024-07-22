@@ -14,7 +14,7 @@ import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LiquibaseExtensionConfigActiveFalseNamedDatasourceTest {
+public class LiquibaseExtensionConfigActiveFalseNamedDatasourceDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -28,14 +28,15 @@ public class LiquibaseExtensionConfigActiveFalseNamedDatasourceTest {
             .overrideConfigKey("quarkus.datasource.password", "sa")
             .overrideConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
+
     @Inject
     @LiquibaseDataSource("users")
-    Instance<LiquibaseFactory> liquibaseForNamedDatasource;
+    Instance<LiquibaseFactory> liquibase;
 
     @Test
     @DisplayName("If a named datasource is deactivated, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibaseForNamedDatasource.get().getConfiguration())
+        assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource 'users' for Liquibase",

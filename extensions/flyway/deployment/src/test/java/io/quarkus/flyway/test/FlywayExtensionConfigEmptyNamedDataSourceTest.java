@@ -29,12 +29,12 @@ public class FlywayExtensionConfigEmptyNamedDataSourceTest {
 
     @Inject
     @FlywayDataSource("users")
-    Instance<Flyway> flywayForNamedDatasource;
+    Instance<Flyway> flyway;
 
     @Test
     @DisplayName("If there is no config for a named datasource, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForNamedDatasource::get)
+        assertThatThrownBy(flyway::get)
                 .isInstanceOf(UnsatisfiedResolutionException.class)
                 .hasMessageContaining("No bean found");
     }

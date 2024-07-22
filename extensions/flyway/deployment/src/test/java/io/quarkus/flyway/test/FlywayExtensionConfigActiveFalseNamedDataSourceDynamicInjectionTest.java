@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlywayExtensionConfigActiveFalseNamedDataSourceTest {
+public class FlywayExtensionConfigActiveFalseNamedDataSourceDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -31,12 +31,12 @@ public class FlywayExtensionConfigActiveFalseNamedDataSourceTest {
 
     @Inject
     @FlywayDataSource("users")
-    Instance<Flyway> flywayForNamedDatasource;
+    Instance<Flyway> flyway;
 
     @Test
     @DisplayName("If a named datasource is deactivated, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForNamedDatasource::get)
+        assertThatThrownBy(flyway::get)
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource 'users' for Flyway",

@@ -13,20 +13,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseTest {
+public class LiquibaseExtensionConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml"))
-            .overrideConfigKey("quarkus.datasource.active", "false")
-            .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true");
+            .overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
     Instance<LiquibaseFactory> liquibase;
 
     @Test
-    @DisplayName("If the default datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
+    @DisplayName("If the default datasource is deactivated, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
         assertThatThrownBy(() -> liquibase.get().getConfiguration())
                 .isInstanceOf(CreationException.class)

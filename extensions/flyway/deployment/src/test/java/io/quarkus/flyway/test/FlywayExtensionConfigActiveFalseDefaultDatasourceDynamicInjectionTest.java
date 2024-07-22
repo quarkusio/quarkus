@@ -13,29 +13,26 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlywayExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
+public class FlywayExtensionConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql"))
-            .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
-            // The datasource won't be truly "unconfigured" if dev services are enabled
-            .overrideConfigKey("quarkus.devservices.enabled", "false");
+            .overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
     Instance<Flyway> flyway;
 
     @Test
-    @DisplayName("If there is no config for the default datasource, even if migrate-at-start is enabled, the application should boot, but Flyway should be deactivated for that datasource")
+    @DisplayName("If the default datasource is deactivated, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
         assertThatThrownBy(flyway::get)
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
-                        "Datasource '<default>' is not configured.",
-                        "To solve this, configure datasource '<default>'.",
+                        "Datasource '<default>' was deactivated through configuration properties.",
+                        "To solve this, avoid accessing this datasource at runtime, for instance by deactivating consumers (persistence units, ...).",
+                        "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.active'"
+                                + " to 'true' and configure datasource '<default>'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
-
 }

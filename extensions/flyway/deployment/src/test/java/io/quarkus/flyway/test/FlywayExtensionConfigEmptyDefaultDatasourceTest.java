@@ -22,7 +22,7 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false");
 
     @Inject
-    Instance<Flyway> flywayForDefaultDatasource;
+    Instance<Flyway> flyway;
 
     @Inject
     MyBean myBean;
@@ -30,7 +30,7 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
     @Test
     @DisplayName("If there is no config for the default datasource, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForDefaultDatasource::get)
+        assertThatThrownBy(flyway::get)
                 .isInstanceOf(CreationException.class)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
@@ -40,7 +40,7 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
     }
 
     @Test
-    @DisplayName("If there is no config for the default datasource, the application should boot even if we inject a bean that depends on Liquibase, but actually using Liquibase should fail")
+    @DisplayName("If there is no config for the default datasource, the application should boot even if we inject a bean that depends on Flyway, but actually using Flyway should fail")
     public void testBootSucceedsWithInjectedBeanDependingOnFlywayButFlywayDeactivated() {
         assertThatThrownBy(() -> myBean.useFlyway())
                 .cause()
@@ -53,10 +53,10 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
     @ApplicationScoped
     public static class MyBean {
         @Inject
-        Flyway flywayForDefaultDatasource;
+        Flyway flyway;
 
         public void useFlyway() {
-            flywayForDefaultDatasource.getConfiguration();
+            flyway.getConfiguration();
         }
     }
 }

@@ -2,8 +2,7 @@ package io.quarkus.flyway.test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import jakarta.enterprise.inject.CreationException;
-import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
@@ -13,20 +12,19 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlywayExtensionConfigActiveFalseDefaultDatasourceTest {
+public class FlywayExtensionConfigActiveFalseDefaultDatasourceStaticInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
-    Instance<Flyway> flywayForDefaultDatasource;
+    MyBean myBean;
 
     @Test
     @DisplayName("If the default datasource is deactivated, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flywayForDefaultDatasource::get)
-                .isInstanceOf(CreationException.class)
+        assertThatThrownBy(myBean::useFlyway)
                 .cause()
                 .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
                         "Datasource '<default>' was deactivated through configuration properties.",
@@ -34,5 +32,15 @@ public class FlywayExtensionConfigActiveFalseDefaultDatasourceTest {
                         "Alternatively, activate the datasource by setting configuration property 'quarkus.datasource.active'"
                                 + " to 'true' and configure datasource '<default>'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
+    }
+
+    @ApplicationScoped
+    public static class MyBean {
+        @Inject
+        Flyway flyway;
+
+        public void useFlyway() {
+            flyway.getConfiguration();
+        }
     }
 }

@@ -8,7 +8,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-@RegisterRestClient(baseUri = "https://wrong.host.badssl.com/", configKey = "wrong-host")
+@RegisterRestClient(configKey = "wrong-host")
 public interface WrongHostClient {
 
     @GET

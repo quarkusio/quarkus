@@ -355,6 +355,15 @@ public class AssembleDownstreamDocumentation {
             lineNumber++;
 
             if (!documentTitleFound && line.startsWith("= ")) {
+                // anything in the buffer needs to be appended
+                // we don't need to rewrite it as before the title we can only have the preamble
+                // and we don't want to change anything in the preamble
+                // if at some point we want to adjust the preamble, make sure to do it in a separate method and not reuse rewriteContent
+                if (currentBuffer.length() > 0) {
+                    rewrittenGuide.append(currentBuffer);
+                    currentBuffer.setLength(0);
+                }
+
                 // this is the document title
                 rewrittenGuide.append(line.replace(PROJECT_NAME_ATTRIBUTE, RED_HAT_BUILD_OF_QUARKUS) + "\n");
                 documentTitleFound = true;

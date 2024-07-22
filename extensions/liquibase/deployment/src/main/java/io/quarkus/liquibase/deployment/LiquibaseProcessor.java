@@ -97,7 +97,8 @@ class LiquibaseProcessor {
     private static final String LIQUIBASE_PROPERTIES_PATH = "";
     private static final String LIQUIBASE_DB_CHANGELOG_XSD_PATH = "www.liquibase.org/xml/ns/dbchangelog";
     private static final String LIQUIBASE_SERVICE_PATH = "META-INF/services/";
-    private static final Set<String> RUNTIME_INITIALIZATION_SERVICES = Set.of(
+    // see: https://github.com/quarkusio/quarkus/pull/41928#issuecomment-2242353134
+    private static final Set<String> EXCLUDED_SERVICES = Set.of(
             liquibase.configuration.ConfigurationValueProvider.class.getName());
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
@@ -208,7 +209,7 @@ class LiquibaseProcessor {
             }
         });
 
-        resolveLiquibaseResources(curateOutcome, services, reflective, runtimeInitialized, resource);
+        resolveLiquibaseResources(curateOutcome, services, reflective, resource);
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
@@ -237,7 +238,6 @@ class LiquibaseProcessor {
             CurateOutcomeBuildItem curateOutcome,
             BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<ReflectiveClassBuildItem> reflective,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
             BuildProducer<NativeImageResourceBuildItem> resource) {
 
         var dependencies = curateOutcome.getApplicationModel().getDependencies();
@@ -250,7 +250,7 @@ class LiquibaseProcessor {
         var tree = liquibaseDependency.getContentTree();
         loadLiquibaseRootProperties(tree, resource);
         loadLiquibaseXsdResources(tree, resource);
-        loadLiquibaseServiceProviderConfig(tree, services, reflective, runtimeInitialized);
+        loadLiquibaseServiceProviderConfig(tree, services, reflective);
     }
 
     private List<String> getResourceNames(PathTree pathTree, String basePath, String fileExtension, boolean stripPath) {
@@ -294,11 +294,10 @@ class LiquibaseProcessor {
     private void loadLiquibaseServiceProviderConfig(
             PathTree tree,
             BuildProducer<ServiceProviderBuildItem> services,
-            BuildProducer<ReflectiveClassBuildItem> reflective,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
 
         getResourceNames(tree, LIQUIBASE_SERVICE_PATH, "", true).stream()
-                .filter(not(RUNTIME_INITIALIZATION_SERVICES::contains))
+                .filter(not(EXCLUDED_SERVICES::contains))
                 .forEach(t -> consumeService(t, (serviceClassName, implementations) -> {
                     services.produce(new ServiceProviderBuildItem(
                             serviceClassName,
@@ -306,14 +305,6 @@ class LiquibaseProcessor {
                     reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
                             .constructors().methods().build());
                 }));
-        initializeLiquibaseServiceProviderAtRuntime(runtimeInitialized);
-    }
-
-    private void initializeLiquibaseServiceProviderAtRuntime(
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
-
-        RUNTIME_INITIALIZATION_SERVICES
-                .forEach(className -> runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(className)));
     }
 
     @BuildStep

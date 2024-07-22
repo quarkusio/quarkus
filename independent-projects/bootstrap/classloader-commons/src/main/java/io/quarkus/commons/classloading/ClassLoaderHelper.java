@@ -3,6 +3,8 @@ package io.quarkus.commons.classloading;
 public final class ClassLoaderHelper {
 
     private static final String JAVA = "java.";
+    private static final String JDK_INTERNAL = "jdk.internal.";
+    private static final String SUN_MISC = "sun.misc.";
 
     private ClassLoaderHelper() {
         //Not meant to be instantiated
@@ -21,6 +23,6 @@ public final class ClassLoaderHelper {
     }
 
     public static boolean isInJdkPackage(String name) {
-        return name.startsWith(JAVA);
+        return name.startsWith(JAVA) || name.startsWith(JDK_INTERNAL) || name.startsWith(SUN_MISC);
     }
 }

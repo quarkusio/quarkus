@@ -15,12 +15,12 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.gradle.tooling.dependency.ArtifactExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
-import io.quarkus.maven.dependency.ArtifactKey;
 
 public class ValidateExtensionTask extends DefaultTask {
 
@@ -59,12 +59,12 @@ public class ValidateExtensionTask extends DefaultTask {
     public void validateExtension() {
         Set<ResolvedArtifact> runtimeArtifacts = getRuntimeModuleClasspath().getResolvedConfiguration().getResolvedArtifacts();
 
-        List<ArtifactKey> deploymentModuleKeys = collectRuntimeExtensionsDeploymentKeys(runtimeArtifacts);
-        List<ArtifactKey> invalidRuntimeArtifacts = findExtensionInConfiguration(runtimeArtifacts, deploymentModuleKeys);
+        List<AppArtifactKey> deploymentModuleKeys = collectRuntimeExtensionsDeploymentKeys(runtimeArtifacts);
+        List<AppArtifactKey> invalidRuntimeArtifacts = findExtensionInConfiguration(runtimeArtifacts, deploymentModuleKeys);
 
         Set<ResolvedArtifact> deploymentArtifacts = getDeploymentModuleClasspath().getResolvedConfiguration()
                 .getResolvedArtifacts();
-        List<ArtifactKey> existingDeploymentModuleKeys = findExtensionInConfiguration(deploymentArtifacts,
+        List<AppArtifactKey> existingDeploymentModuleKeys = findExtensionInConfiguration(deploymentArtifacts,
                 deploymentModuleKeys);
         deploymentModuleKeys.removeAll(existingDeploymentModuleKeys);
 
@@ -81,17 +81,21 @@ public class ValidateExtensionTask extends DefaultTask {
         }
     }
 
-    private List<ArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
-        List<ArtifactKey> runtimeExtensions = new ArrayList<>();
+    private List<AppArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
+        List<AppArtifactKey> runtimeExtensions = new ArrayList<>();
         for (ResolvedArtifact resolvedArtifact : runtimeArtifacts) {
             ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
             if (extension != null) {
-                if (extension instanceof ProjectExtensionDependency ped) {
+                if (extension instanceof ProjectExtensionDependency) {
+                    final ProjectExtensionDependency ped = (ProjectExtensionDependency) extension;
+
                     runtimeExtensions
-                            .add(ArtifactKey.ga(ped.getDeploymentModule().getGroup().toString(),
+                            .add(new AppArtifactKey(ped.getDeploymentModule().getGroup().toString(),
                                     ped.getDeploymentModule().getName()));
-                } else if (extension instanceof ArtifactExtensionDependency aed) {
-                    runtimeExtensions.add(ArtifactKey.ga(aed.getDeploymentModule().getGroupId(),
+                } else if (extension instanceof ArtifactExtensionDependency) {
+                    final ArtifactExtensionDependency aed = (ArtifactExtensionDependency) extension;
+
+                    runtimeExtensions.add(new AppArtifactKey(aed.getDeploymentModule().getGroupId(),
                             aed.getDeploymentModule().getArtifactId()));
                 }
             }
@@ -99,12 +103,12 @@ public class ValidateExtensionTask extends DefaultTask {
         return runtimeExtensions;
     }
 
-    private List<ArtifactKey> findExtensionInConfiguration(Set<ResolvedArtifact> deploymentArtifacts,
-            List<ArtifactKey> extensions) {
-        List<ArtifactKey> foundExtensions = new ArrayList<>();
+    private List<AppArtifactKey> findExtensionInConfiguration(Set<ResolvedArtifact> deploymentArtifacts,
+            List<AppArtifactKey> extensions) {
+        List<AppArtifactKey> foundExtensions = new ArrayList<>();
 
         for (ResolvedArtifact deploymentArtifact : deploymentArtifacts) {
-            ArtifactKey key = toArtifactKey(deploymentArtifact.getModuleVersion());
+            AppArtifactKey key = toAppArtifactKey(deploymentArtifact.getModuleVersion());
             if (extensions.contains(key)) {
                 foundExtensions.add(key);
             }
@@ -112,21 +116,21 @@ public class ValidateExtensionTask extends DefaultTask {
         return foundExtensions;
     }
 
-    private void printValidationErrors(List<ArtifactKey> invalidRuntimeArtifacts,
-            List<ArtifactKey> missingDeploymentArtifacts) {
+    private void printValidationErrors(List<AppArtifactKey> invalidRuntimeArtifacts,
+            List<AppArtifactKey> missingDeploymentArtifacts) {
         Logger log = getLogger();
         log.error("Quarkus Extension Dependency Verification Error");
 
         if (!invalidRuntimeArtifacts.isEmpty()) {
             log.error("The following deployment artifact(s) appear on the runtime classpath: ");
-            for (ArtifactKey invalidRuntimeArtifact : invalidRuntimeArtifacts) {
+            for (AppArtifactKey invalidRuntimeArtifact : invalidRuntimeArtifacts) {
                 log.error("- " + invalidRuntimeArtifact);
             }
         }
 
         if (!missingDeploymentArtifacts.isEmpty()) {
             log.error("The following deployment artifact(s) were found to be missing in the deployment module: ");
-            for (ArtifactKey missingDeploymentArtifact : missingDeploymentArtifacts) {
+            for (AppArtifactKey missingDeploymentArtifact : missingDeploymentArtifacts) {
                 log.error("- " + missingDeploymentArtifact);
             }
         }
@@ -134,7 +138,7 @@ public class ValidateExtensionTask extends DefaultTask {
         throw new GradleException("Quarkus Extension Dependency Verification Error. See logs below");
     }
 
-    private static ArtifactKey toArtifactKey(ResolvedModuleVersion artifactId) {
-        return ArtifactKey.ga(artifactId.getId().getGroup(), artifactId.getId().getName());
+    private static AppArtifactKey toAppArtifactKey(ResolvedModuleVersion artifactId) {
+        return new AppArtifactKey(artifactId.getId().getGroup(), artifactId.getId().getName());
     }
 }

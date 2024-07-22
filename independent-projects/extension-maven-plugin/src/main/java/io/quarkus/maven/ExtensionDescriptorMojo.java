@@ -593,7 +593,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     /**
      * If artifact contains "G:A" the project version is added to have "G:A:V" <br>
-     * else the version must be defined either with ${project.version} or hardcoded
+     * else the version must be defined either with ${project.version} or hardcoded <br>
+     * to be compatible with AppArtifactCoords.fromString
      *
      * @param originalArtifact
      * @param projectVersion

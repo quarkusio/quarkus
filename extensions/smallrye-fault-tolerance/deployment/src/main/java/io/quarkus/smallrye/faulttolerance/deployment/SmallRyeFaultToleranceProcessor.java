@@ -58,6 +58,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.faulttolerance.deployment.devui.FaultToleranceInfoBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
+import io.quarkus.smallrye.faulttolerance.runtime.QuarkusBeforeRetryHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerNames;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
@@ -102,19 +103,22 @@ public class SmallRyeFaultToleranceProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        // Add reflective access to fallback handlers
-        Set<String> fallbackHandlers = new HashSet<>();
+        // Add reflective access to fallback handlers and before retry handlers
+        Set<String> handlers = new HashSet<>();
         for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
-            fallbackHandlers.add(implementor.name().toString());
+            handlers.add(implementor.name().toString());
         }
-        if (!fallbackHandlers.isEmpty()) {
-            AdditionalBeanBuildItem.Builder fallbackHandlersBeans = AdditionalBeanBuildItem.builder()
+        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.BEFORE_RETRY_HANDLER)) {
+            handlers.add(implementor.name().toString());
+        }
+        if (!handlers.isEmpty()) {
+            AdditionalBeanBuildItem.Builder handlerBeans = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(BuiltinScope.DEPENDENT.getName());
-            for (String fallbackHandler : fallbackHandlers) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(fallbackHandler).methods().build());
-                fallbackHandlersBeans.addBeanClass(fallbackHandler);
+            for (String handler : handlers) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(handler).methods().build());
+                handlerBeans.addBeanClass(handler);
             }
-            beans.produce(fallbackHandlersBeans.build());
+            beans.produce(handlerBeans.build());
         }
         // Add reflective access to fallback methods
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
@@ -200,6 +204,7 @@ public class SmallRyeFaultToleranceProcessor {
                         ExecutorHolder.class,
                         StrategyCache.class,
                         QuarkusFallbackHandlerProvider.class,
+                        QuarkusBeforeRetryHandlerProvider.class,
                         QuarkusAsyncExecutorProvider.class,
                         CircuitBreakerMaintenanceImpl.class,
                         RequestContextIntegration.class,
@@ -374,6 +379,11 @@ public class SmallRyeFaultToleranceProcessor {
         for (AnnotationInstance it : index.getAnnotations(DotNames.RETRY_WHEN)) {
             if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                 exceptions.add(new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
+            }
+        }
+        for (AnnotationInstance it : index.getAnnotations(DotNames.BEFORE_RETRY)) {
+            if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
+                exceptions.add(new DefinitionException("@BeforeRetry present on '" + it.target() + "', but @Retry is missing"));
             }
         }
 

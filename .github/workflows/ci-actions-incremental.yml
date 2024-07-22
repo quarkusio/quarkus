@@ -56,7 +56,6 @@ env:
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
-  DEVELOCITY_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
 
 defaults:
@@ -152,6 +151,8 @@ jobs:
           job-name: "Initial JDK 17 Build"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -377,6 +378,8 @@ jobs:
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -485,6 +488,8 @@ jobs:
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -588,6 +593,8 @@ jobs:
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -671,6 +678,8 @@ jobs:
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -763,6 +772,8 @@ jobs:
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -842,6 +853,8 @@ jobs:
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - uses: actions/github-script@v7
         id: get-quickstarts-branch
         with:
@@ -928,6 +941,8 @@ jobs:
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -997,6 +1012,8 @@ jobs:
           job-name: "MicroProfile TCKs Tests"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
@@ -1106,6 +1123,8 @@ jobs:
           job-name: "Native Tests - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
       - name: Cache Quarkus metadata
         uses: actions/cache@v4
         with:

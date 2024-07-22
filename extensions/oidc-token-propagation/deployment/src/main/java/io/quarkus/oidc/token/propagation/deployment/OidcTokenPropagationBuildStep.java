@@ -92,7 +92,7 @@ public class OidcTokenPropagationBuildStep {
         OidcTokenPropagationBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 
@@ -100,7 +100,7 @@ public class OidcTokenPropagationBuildStep {
         OidcTokenPropagationBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabledDuringAuthentication;
+            return config.enabledDuringAuthentication();
         }
     }
 }

@@ -3,7 +3,6 @@ package io.quarkus.flyway.test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.CreationException;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
@@ -31,9 +31,9 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
     @DisplayName("If there is no config for the default datasource, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
         assertThatThrownBy(flywayForDefaultDatasource::get)
-                .isInstanceOf(CreationException.class)
-                .cause()
-                .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
+                .isInstanceOf(InactiveBeanException.class)
+                .hasMessageContainingAll(
+                        "Flyway for datasource '<default>' was deactivated automatically because this datasource was not configured",
                         "Datasource '<default>' is not configured.",
                         "To solve this, configure datasource '<default>'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
@@ -44,7 +44,8 @@ public class FlywayExtensionConfigEmptyDefaultDatasourceTest {
     public void testBootSucceedsWithInjectedBeanDependingOnFlywayButFlywayDeactivated() {
         assertThatThrownBy(() -> myBean.useFlyway())
                 .cause()
-                .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
+                .hasMessageContainingAll(
+                        "Flyway for datasource '<default>' was deactivated automatically because this datasource was not configured",
                         "Datasource '<default>' is not configured.",
                         "To solve this, configure datasource '<default>'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");

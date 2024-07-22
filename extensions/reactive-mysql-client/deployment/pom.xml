@@ -214,7 +214,7 @@
                                                     ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
                                                 </volume>
                                                 <volume>
-                                                    ${project.basedir}/src/test/resources/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+                                                    ${project.basedir}/src/test/resources/setup.sql:/docker-entrypoint-initdb.d/setup.sql${volume.access.modifier}
                                                 </volume>
                                             </bind>
                                         </volumes>

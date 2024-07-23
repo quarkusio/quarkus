@@ -52,8 +52,14 @@ public class NativeImageReflectConfigStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, true, false, false, false, false, false, false, false,
-                    i.providers().toArray(new String[] {}));
+            for (String provider : i.providers()) {
+                // Register the nullary constructor
+                addReflectiveMethod(reflectiveClasses, new ReflectiveMethodBuildItem(provider, "<init>", new String[0]));
+                // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
+                // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
+                addReflectiveMethod(reflectiveClasses,
+                        new ReflectiveMethodBuildItem(true, provider, "provider", new String[0]));
+            }
         }
 
         // Perform this as last step, since it augments the already added reflective classes
@@ -72,6 +78,7 @@ public class NativeImageReflectConfigStep {
 
             ReflectionInfo info = entry.getValue();
             JsonArrayBuilder methodsArray = Json.array();
+            JsonArrayBuilder queriedMethodsArray = Json.array();
             if (info.typeReachable != null) {
                 json.put("condition", Json.object().put("typeReachable", info.typeReachable));
             }
@@ -82,16 +89,7 @@ public class NativeImageReflectConfigStep {
                     json.put("queryAllDeclaredConstructors", true);
                 }
                 if (!info.ctorSet.isEmpty()) {
-                    for (ReflectiveMethodBuildItem ctor : info.ctorSet) {
-                        JsonObjectBuilder methodObject = Json.object();
-                        methodObject.put("name", ctor.getName());
-                        JsonArrayBuilder paramsArray = Json.array();
-                        for (int i = 0; i < ctor.getParams().length; ++i) {
-                            paramsArray.add(ctor.getParams()[i]);
-                        }
-                        methodObject.put("parameterTypes", paramsArray);
-                        methodsArray.add(methodObject);
-                    }
+                    extractToJsonArray(info.ctorSet, methodsArray);
                 }
             }
             if (info.methods) {
@@ -101,20 +99,17 @@ public class NativeImageReflectConfigStep {
                     json.put("queryAllDeclaredMethods", true);
                 }
                 if (!info.methodSet.isEmpty()) {
-                    for (ReflectiveMethodBuildItem method : info.methodSet) {
-                        JsonObjectBuilder methodObject = Json.object();
-                        methodObject.put("name", method.getName());
-                        JsonArrayBuilder paramsArray = Json.array();
-                        for (int i = 0; i < method.getParams().length; ++i) {
-                            paramsArray.add(method.getParams()[i]);
-                        }
-                        methodObject.put("parameterTypes", paramsArray);
-                        methodsArray.add(methodObject);
-                    }
+                    extractToJsonArray(info.methodSet, methodsArray);
+                }
+                if (!info.queriedMethodSet.isEmpty()) {
+                    extractToJsonArray(info.queriedMethodSet, queriedMethodsArray);
                 }
             }
             if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
+            }
+            if (!queriedMethodsArray.isEmpty()) {
+                json.put("queriedMethods", queriedMethodsArray);
             }
 
             if (info.fields) {
@@ -142,6 +137,19 @@ public class NativeImageReflectConfigStep {
         }
     }
 
+    private static void extractToJsonArray(Set<ReflectiveMethodBuildItem> methodSet, JsonArrayBuilder methodsArray) {
+        for (ReflectiveMethodBuildItem method : methodSet) {
+            JsonObjectBuilder methodObject = Json.object();
+            methodObject.put("name", method.getName());
+            JsonArrayBuilder paramsArray = Json.array();
+            for (int i = 0; i < method.getParams().length; ++i) {
+                paramsArray.add(method.getParams()[i]);
+            }
+            methodObject.put("parameterTypes", paramsArray);
+            methodsArray.add(methodObject);
+        }
+    }
+
     public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
@@ -151,7 +159,11 @@ public class NativeImageReflectConfigStep {
         if (methodInfo.getName().equals("<init>")) {
             existing.ctorSet.add(methodInfo);
         } else {
-            existing.methodSet.add(methodInfo);
+            if (methodInfo.isQueryOnly()) {
+                existing.queriedMethodSet.add(methodInfo);
+            } else {
+                existing.methodSet.add(methodInfo);
+            }
         }
     }
 
@@ -211,6 +223,7 @@ public class NativeImageReflectConfigStep {
         String typeReachable;
         Set<String> fieldSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
+        Set<ReflectiveMethodBuildItem> queriedMethodSet = new HashSet<>();
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {

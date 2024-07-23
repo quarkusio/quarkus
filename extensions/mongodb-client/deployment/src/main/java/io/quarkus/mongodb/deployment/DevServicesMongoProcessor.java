@@ -313,5 +313,10 @@ public class DevServicesMongoProcessor {
                 return super.getReplicaSetUrl(databaseName);
             }
         }
+
+        @Override
+        public String getHost() {
+            return useSharedNetwork ? hostName : super.getHost();
+        }
     }
 }

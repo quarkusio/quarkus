@@ -86,7 +86,6 @@ import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.SecurityCheck;
-import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -445,18 +444,17 @@ public class WebSocketProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class) // SecurityHttpUpgradeCheck is runtime init due to runtime config
     @Record(RUNTIME_INIT)
     @BuildStep
-    public void registerRoutes(WebSocketServerRecorder recorder, HttpRootPathBuildItem httpRootPath,
-            List<GeneratedEndpointBuildItem> generatedEndpoints, HttpBuildTimeConfig httpConfig, Capabilities capabilities,
+    public void registerRoutes(WebSocketServerRecorder recorder, List<GeneratedEndpointBuildItem> generatedEndpoints,
+            HttpBuildTimeConfig httpConfig, Capabilities capabilities,
             BuildProducer<RouteBuildItem> routes) {
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
             RouteBuildItem.Builder builder = RouteBuildItem.builder();
-            String relativePath = httpRootPath.relativePath(endpoint.path);
             if (capabilities.isPresent(Capability.SECURITY) && !httpConfig.auth.proactive) {
                 // Add a special handler so that it's possible to capture the SecurityIdentity before the HTTP upgrade
-                builder.routeFunction(relativePath, recorder.initializeSecurityHandler());
+                builder.routeFunction(endpoint.path, recorder.initializeSecurityHandler());
             } else {
-                builder.route(relativePath);
+                builder.route(endpoint.path);
             }
             builder
                     .displayOnNotFoundPage("WebSocket Endpoint")

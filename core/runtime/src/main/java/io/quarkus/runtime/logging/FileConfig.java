@@ -2,6 +2,7 @@ package io.quarkus.runtime.logging;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -83,6 +84,8 @@ public class FileConfig {
         /**
          * The file handler rotation file suffix.
          * When used, the file will be rotated based on its suffix.
+         * <p>
+         * The suffix must be in a date-time format that is understood by {@link DateTimeFormatter}.
          * <p>
          * Example fileSuffix: .yyyy-MM-dd
          * <p>

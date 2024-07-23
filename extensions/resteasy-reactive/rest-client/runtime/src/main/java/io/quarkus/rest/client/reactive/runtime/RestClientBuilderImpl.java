@@ -45,6 +45,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
+import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
@@ -389,15 +390,21 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     @Override
     public <T> T build(Class<T> aClass) throws IllegalStateException, RestClientDefinitionException {
-        if (uri == null) {
-            // mandated by the spec
-            throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
-        }
-
         ArcContainer arcContainer = Arc.container();
         if (arcContainer == null) {
             throw new IllegalStateException(
                     "The Reactive REST Client needs to be built within the context of a Quarkus application with a valid ArC (CDI) context running.");
+        }
+
+        // support overriding the URI from the override-uri property
+        Optional<String> maybeOverrideUri = RestClientConfig.getConfigValue(aClass, "override-uri", String.class);
+        if (maybeOverrideUri.isPresent()) {
+            uri = URI.create(maybeOverrideUri.get());
+        }
+
+        if (uri == null) {
+            // mandated by the spec
+            throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
         }
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));

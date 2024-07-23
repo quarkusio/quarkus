@@ -16,7 +16,6 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVI
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
@@ -407,9 +405,57 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
+    void determineRegisteredRestClients(CombinedIndexBuildItem combinedIndexBuildItem,
+            RestClientsBuildTimeConfig clientsConfig,
+            BuildProducer<RegisteredRestClientBuildItem> producer) {
+        CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
+        Set<DotName> seen = new HashSet<>();
+
+        List<AnnotationInstance> actualInstances = index.getAnnotations(REGISTER_REST_CLIENT);
+        for (AnnotationInstance instance : actualInstances) {
+            AnnotationTarget annotationTarget = instance.target();
+            ClassInfo classInfo = annotationTarget.asClass();
+            if (!Modifier.isAbstract(classInfo.flags())) {
+                continue;
+            }
+            DotName className = classInfo.name();
+            seen.add(className);
+
+            AnnotationValue configKeyValue = instance.value("configKey");
+            Optional<String> configKey = configKeyValue == null ? Optional.empty() : Optional.of(configKeyValue.asString());
+
+            AnnotationValue baseUriValue = instance.value("baseUri");
+            Optional<String> baseUri = baseUriValue == null ? Optional.empty() : Optional.of(baseUriValue.asString());
+
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, configKey, baseUri));
+        }
+
+        // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
+        Set<String> configKeyNames = clientsConfig.configs.keySet();
+        for (String configKeyName : configKeyNames) {
+            ClassInfo classInfo = index.getClassByName(configKeyName);
+            if (classInfo == null) {
+                continue;
+            }
+            if (seen.contains(classInfo.name())) {
+                continue;
+            }
+            if (!Modifier.isAbstract(classInfo.flags())) {
+                continue;
+            }
+            Optional<String> cdiScope = clientsConfig.configs.get(configKeyName).scope;
+            if (cdiScope.isEmpty()) {
+                continue;
+            }
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.of(configKeyName), Optional.empty()));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            List<RegisteredRestClientBuildItem> registeredRestClients,
             CustomScopeAnnotationsBuildItem scopes,
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
@@ -419,142 +465,138 @@ class RestClientReactiveProcessor {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
 
-        Set<AnnotationInstance> registerRestClientAnnos = determineRegisterRestClientInstances(clientsBuildConfig, index);
-
         Map<String, String> configKeys = new HashMap<>();
         var annotationsStore = new AnnotationStore(index, restClientAnnotationsTransformerBuildItem.stream()
                 .map(RestClientAnnotationsTransformerBuildItem::getAnnotationTransformation).toList());
-        for (AnnotationInstance registerRestClient : registerRestClientAnnos) {
-            ClassInfo jaxrsInterface = registerRestClient.target().asClass();
+        for (RegisteredRestClientBuildItem registerRestClient : registeredRestClients) {
+            ClassInfo jaxrsInterface = registerRestClient.getClassInfo();
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
-            if (Modifier.isAbstract(jaxrsInterface.flags())) {
-                validateKotlinDefaultMethods(jaxrsInterface, index);
+            validateKotlinDefaultMethods(jaxrsInterface, index);
 
-                List<MethodInfo> methodsToImplement = new ArrayList<>();
+            List<MethodInfo> methodsToImplement = new ArrayList<>();
 
-                // search this interface and its super interfaces for jaxrs methods
-                searchForJaxRsMethods(methodsToImplement, jaxrsInterface, index);
-                // search this interface for default methods
-                // we could search for default methods in super interfaces too,
-                // but emitting the correct invokespecial instruction would become convoluted
-                // (as invokespecial may only reference a method from a _direct_ super interface)
-                for (MethodInfo method : jaxrsInterface.methods()) {
-                    boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
-                    if (isDefault) {
-                        methodsToImplement.add(method);
-                    }
+            // search this interface and its super interfaces for jaxrs methods
+            searchForJaxRsMethods(methodsToImplement, jaxrsInterface, index);
+            // search this interface for default methods
+            // we could search for default methods in super interfaces too,
+            // but emitting the correct invokespecial instruction would become convoluted
+            // (as invokespecial may only reference a method from a _direct_ super interface)
+            for (MethodInfo method : jaxrsInterface.methods()) {
+                boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
+                if (isDefault) {
+                    methodsToImplement.add(method);
                 }
-                if (methodsToImplement.isEmpty()) {
-                    continue;
+            }
+            if (methodsToImplement.isEmpty()) {
+                continue;
+            }
+
+            String wrapperClassName = jaxrsInterface.name().toString() + CDI_WRAPPER_SUFFIX;
+            try (ClassCreator classCreator = ClassCreator.builder()
+                    .className(wrapperClassName)
+                    .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
+                    .interfaces(jaxrsInterface.name().toString())
+                    .superClass(RestClientReactiveCDIWrapperBase.class)
+                    .build()) {
+
+                // CLASS LEVEL
+                final Optional<String> configKey = registerRestClient.getConfigKey();
+
+                configKey.ifPresent(
+                        key -> configKeys.put(jaxrsInterface.name().toString(), key));
+
+                final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
+                        configKey);
+                // add a scope annotation, e.g. @Singleton
+                classCreator.addAnnotation(scope.getDotName().toString());
+                classCreator.addAnnotation(RestClient.class);
+                // e.g. @Typed({InterfaceClass.class})
+                // needed for CDI to inject the proper wrapper in case of
+                // subinterfaces
+                org.objectweb.asm.Type asmType = org.objectweb.asm.Type
+                        .getObjectType(jaxrsInterface.name().toString().replace('.', '/'));
+                classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
+                        .addValue("value", new org.objectweb.asm.Type[] { asmType });
+
+                for (AnnotationInstance annotation : annotationsStore.getAnnotations(jaxrsInterface)) {
+                    if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
+                        continue;
+                    }
+
+                    // scope annotation is added to the generated class already, see above
+                    if (scopes.isScopeIn(Set.of(annotation))) {
+                        continue;
+                    }
+
+                    classCreator.addAnnotation(annotation);
                 }
 
-                String wrapperClassName = jaxrsInterface.name().toString() + CDI_WRAPPER_SUFFIX;
-                try (ClassCreator classCreator = ClassCreator.builder()
-                        .className(wrapperClassName)
-                        .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
-                        .interfaces(jaxrsInterface.name().toString())
-                        .superClass(RestClientReactiveCDIWrapperBase.class)
-                        .build()) {
+                // CONSTRUCTOR:
 
-                    // CLASS LEVEL
-                    final Optional<String> configKey = getConfigKey(registerRestClient);
+                MethodCreator constructor = classCreator
+                        .getMethodCreator(MethodDescriptor.ofConstructor(classCreator.getClassName()));
 
-                    configKey.ifPresent(
-                            key -> configKeys.put(jaxrsInterface.name().toString(), key));
+                Optional<String> baseUri = registerRestClient.getDefaultBaseUri();
 
-                    final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
-                            configKey);
-                    // add a scope annotation, e.g. @Singleton
-                    classCreator.addAnnotation(scope.getDotName().toString());
-                    classCreator.addAnnotation(RestClient.class);
-                    // e.g. @Typed({InterfaceClass.class})
-                    // needed for CDI to inject the proper wrapper in case of
-                    // subinterfaces
-                    org.objectweb.asm.Type asmType = org.objectweb.asm.Type
-                            .getObjectType(jaxrsInterface.name().toString().replace('.', '/'));
-                    classCreator.addAnnotation(Typed.class.getName(), RetentionPolicy.RUNTIME)
-                            .addValue("value", new org.objectweb.asm.Type[] { asmType });
+                ResultHandle baseUriHandle = constructor.load(baseUri.isPresent() ? baseUri.get() : "");
+                constructor.invokeSpecialMethod(
+                        MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
+                                String.class, boolean.class),
+                        constructor.getThis(),
+                        constructor.loadClassFromTCCL(jaxrsInterface.toString()),
+                        baseUriHandle,
+                        configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
+                        constructor.load(scope.getDotName().equals(REQUEST_SCOPED)));
+                constructor.returnValue(null);
 
-                    for (AnnotationInstance annotation : annotationsStore.getAnnotations(jaxrsInterface)) {
-                        if (SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS.contains(annotation.name())) {
-                            continue;
+                // METHODS:
+                for (MethodInfo method : methodsToImplement) {
+                    // for each method that corresponds to making a rest call, create a method like:
+                    // public JsonArray get() {
+                    //      return ((InterfaceClass)this.getDelegate()).get();
+                    // }
+                    //
+                    // for each default method, create a method like:
+                    // public JsonArray get() {
+                    //     return InterfaceClass.super.get();
+                    // }
+                    MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
+                    methodCreator.setSignature(method.genericSignatureIfRequired());
+
+                    // copy method annotations, there can be interceptors bound to them:
+                    for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
+                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
+                                && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
+                                && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
+                            methodCreator.addAnnotation(annotation);
                         }
-
-                        // scope annotation is added to the generated class already, see above
-                        if (scopes.isScopeIn(Set.of(annotation))) {
-                            continue;
+                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                            // TODO should skip annotations like `@PathParam` / `@RestPath`, probably (?)
+                            short position = annotation.target().asMethodParameter().position();
+                            methodCreator.getParameterAnnotations(position).addAnnotation(annotation);
                         }
-
-                        classCreator.addAnnotation(annotation);
                     }
 
-                    // CONSTRUCTOR:
+                    ResultHandle result;
 
-                    MethodCreator constructor = classCreator
-                            .getMethodCreator(MethodDescriptor.ofConstructor(classCreator.getClassName()));
-
-                    AnnotationValue baseUri = registerRestClient.value("baseUri");
-
-                    ResultHandle baseUriHandle = constructor.load(baseUri != null ? baseUri.asString() : "");
-                    constructor.invokeSpecialMethod(
-                            MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
-                                    String.class, boolean.class),
-                            constructor.getThis(),
-                            constructor.loadClassFromTCCL(jaxrsInterface.toString()),
-                            baseUriHandle,
-                            configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
-                            constructor.load(scope.getDotName().equals(REQUEST_SCOPED)));
-                    constructor.returnValue(null);
-
-                    // METHODS:
-                    for (MethodInfo method : methodsToImplement) {
-                        // for each method that corresponds to making a rest call, create a method like:
-                        // public JsonArray get() {
-                        //      return ((InterfaceClass)this.getDelegate()).get();
-                        // }
-                        //
-                        // for each default method, create a method like:
-                        // public JsonArray get() {
-                        //     return InterfaceClass.super.get();
-                        // }
-                        MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(method));
-                        methodCreator.setSignature(method.genericSignatureIfRequired());
-
-                        // copy method annotations, there can be interceptors bound to them:
-                        for (AnnotationInstance annotation : annotationsStore.getAnnotations(method)) {
-                            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
-                                    && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
-                                    && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
-                                methodCreator.addAnnotation(annotation);
-                            }
-                            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                                // TODO should skip annotations like `@PathParam` / `@RestPath`, probably (?)
-                                short position = annotation.target().asMethodParameter().position();
-                                methodCreator.getParameterAnnotations(position).addAnnotation(annotation);
-                            }
-                        }
-
-                        ResultHandle result;
-
-                        int parameterCount = method.parameterTypes().size();
-                        ResultHandle[] params = new ResultHandle[parameterCount];
-                        for (int i = 0; i < parameterCount; i++) {
-                            params[i] = methodCreator.getMethodParam(i);
-                        }
-
-                        if (Modifier.isAbstract(method.flags())) { // RestClient method
-                            ResultHandle delegate = methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
-                                            Object.class),
-                                    methodCreator.getThis());
-
-                            result = methodCreator.invokeInterfaceMethod(method, delegate, params);
-                        } else { // default method
-                            result = methodCreator.invokeSpecialInterfaceMethod(method, methodCreator.getThis(), params);
-                        }
-
-                        methodCreator.returnValue(result);
+                    int parameterCount = method.parameterTypes().size();
+                    ResultHandle[] params = new ResultHandle[parameterCount];
+                    for (int i = 0; i < parameterCount; i++) {
+                        params[i] = methodCreator.getMethodParam(i);
                     }
+
+                    if (Modifier.isAbstract(method.flags())) { // RestClient method
+                        ResultHandle delegate = methodCreator.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(RestClientReactiveCDIWrapperBase.class, "getDelegate",
+                                        Object.class),
+                                methodCreator.getThis());
+
+                        result = methodCreator.invokeInterfaceMethod(method, delegate, params);
+                    } else { // default method
+                        result = methodCreator.invokeSpecialInterfaceMethod(method, methodCreator.getThis(), params);
+                    }
+
+                    methodCreator.returnValue(result);
                 }
             }
         }
@@ -579,34 +621,6 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
-    }
-
-    private Set<AnnotationInstance> determineRegisterRestClientInstances(RestClientsBuildTimeConfig clientsConfig,
-            CompositeIndex index) {
-        // these are the actual instances
-        Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
-        // a set of the original target class
-        Set<ClassInfo> registerRestClientTargets = registerRestClientAnnos.stream().map(ai -> ai.target().asClass()).collect(
-                Collectors.toSet());
-
-        // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
-        Set<String> configKeyNames = clientsConfig.configs.keySet();
-        for (String configKeyName : configKeyNames) {
-            ClassInfo classInfo = index.getClassByName(configKeyName);
-            if (classInfo == null) {
-                continue;
-            }
-            if (registerRestClientTargets.contains(classInfo)) {
-                continue;
-            }
-            Optional<String> cdiScope = clientsConfig.configs.get(configKeyName).scope;
-            if (cdiScope.isEmpty()) {
-                continue;
-            }
-            registerRestClientAnnos.add(AnnotationInstance.builder(REGISTER_REST_CLIENT).add("configKey", configKeyName)
-                    .buildWithTarget(classInfo));
-        }
-        return registerRestClientAnnos;
     }
 
     /**

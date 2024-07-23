@@ -737,6 +737,25 @@ public class SearchCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    void testParams() {
+        setupMovies();
+
+        QueryArgs queryArgs = new QueryArgs().param("GENRE", "Action").dialect(2);
+        var res = search.ftSearch("idx:movie", "@genre:{$GENRE}", queryArgs);
+        assertThat(res.count()).isEqualTo(2);
+        assertThat(res.documents()).allSatisfy(doc -> assertThat(doc.property("genre").asString()).isEqualTo("Action"));
+
+        queryArgs = new QueryArgs().param("LOWEST_RATING", "8").param("HIGHEST_RATING", "9");
+        queryArgs.dialect(2);
+        res = search.ftSearch("idx:movie", "@rating: [$LOWEST_RATING, $HIGHEST_RATING]", queryArgs);
+        assertThat(res.count()).isEqualTo(3);
+        assertThat(res.documents()).allSatisfy(doc -> {
+            assertThat(doc.property("rating").asDouble()).isGreaterThan(8.0);
+            assertThat(doc.property("rating").asDouble()).isLessThan(9.0);
+        });
+    }
+
+    @Test
     void testDictAndSpellcheck() {
         search.ftCreate("my-index", new CreateArgs().prefixes("word:").indexedField("word", FieldType.TEXT));
         hash.hset("word:1", "word", "hockey");
@@ -875,7 +894,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         QueryArgs args = new QueryArgs()
                 .sortByAscending("vector_score")
-                .param("DIALECT", "2")
+                .dialect(2)
                 .param("BLOB", queryVector);
         SearchQueryResponse response = ds.search().ftSearch("IDX:double", query, args);
         assertEquals(1, response.count());
@@ -906,7 +925,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
         String query = "*=>[ KNN 1 @vector $BLOB AS vector_score ]";
         QueryArgs args = new QueryArgs()
                 .sortByAscending("vector_score")
-                .param("DIALECT", "2")
+                .dialect(2)
                 .param("BLOB", queryVector);
 
         SearchQueryResponse response = ds.search().ftSearch("IDX:float", query, args);

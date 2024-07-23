@@ -170,7 +170,7 @@ public class DevServicesMongoProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please configure datasource URL for "
                     + (isDefault(connectionName) ? "default datasource" : connectionName)
                     + " or get a working docker instance");

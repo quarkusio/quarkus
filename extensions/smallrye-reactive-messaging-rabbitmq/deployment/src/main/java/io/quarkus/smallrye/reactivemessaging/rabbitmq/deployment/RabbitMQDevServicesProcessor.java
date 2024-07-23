@@ -170,7 +170,7 @@ public class RabbitMQDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Docker isn't working, please configure the RabbitMQ broker location.");
             return null;
         }

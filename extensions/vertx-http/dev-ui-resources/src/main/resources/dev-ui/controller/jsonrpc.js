@@ -125,9 +125,7 @@ export class JsonRpc {
             } else {
                 JsonRpc.serverUri = "ws:";
             }
-            var currentPath = window.location.pathname;
-            currentPath = currentPath.substring(0, currentPath.indexOf('/dev')) + "/dev-ui";
-            JsonRpc.serverUri += "//" + window.location.host + currentPath + "/json-rpc-ws";
+            JsonRpc.serverUri += "//" + window.location.host + RouterController.getBasePath() + "/json-rpc-ws";
             JsonRpc.connect();
         }
 

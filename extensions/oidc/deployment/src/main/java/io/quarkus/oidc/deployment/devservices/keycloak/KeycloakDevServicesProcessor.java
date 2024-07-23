@@ -345,7 +345,7 @@ public class KeycloakDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             LOG.warn("Please configure 'quarkus.oidc.auth-server-url' or get a working docker instance");
             return null;
         }
@@ -538,7 +538,7 @@ public class KeycloakDevServicesProcessor {
 
             if (showLogs) {
                 super.withLogConsumer(t -> {
-                    LOG.info("Keycloak: " + t.getUtf8String());
+                    LOG.info("Keycloak: " + t.getUtf8StringWithoutLineEnding());
                 });
             }
 

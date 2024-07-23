@@ -80,9 +80,8 @@ table.configuration-reference.tableblock .description-collapsed {
 table.configuration-reference.tableblock .description-decoration {
   height: 10px;
   margin: 0px;
-  padding: 0px;
+  padding: 0px 0px .75rem 0px;
   text-align: center;
-
   cursor: pointer;
 }
 
@@ -100,7 +99,6 @@ table.configuration-reference.tableblock a.link-collapsible i.fa {
 }
 
 table.configuration-reference.tableblock tr.row-collapsible td {
-  cursor: pointer;
 }
 
 table.configuration-reference.tableblock td.tableblock > .content > :last-child {

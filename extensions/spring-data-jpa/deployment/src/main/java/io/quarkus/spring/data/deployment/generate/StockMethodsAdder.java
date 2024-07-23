@@ -99,6 +99,10 @@ public class StockMethodsAdder {
                 allMethodsToBeImplementedToResult);
         generateGetOne(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
                 allMethodsToBeImplementedToResult);
+        generateGetReferenceById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateGetById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
+                allMethodsToBeImplementedToResult);
         generateFindAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
                 allMethodsToBeImplementedToResult);
         generateFindAllWithSort(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
@@ -114,6 +118,12 @@ public class StockMethodsAdder {
         generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
         generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
         generateDeleteAllInBatch(classCreator, entityClassFieldDescriptor, generatedClassName,
+                allMethodsToBeImplementedToResult);
+        generateDeleteAllInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateDeleteInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateDeleteAllByIdInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
                 allMethodsToBeImplementedToResult);
 
         handleUnimplementedMethods(classCreator, allMethodsToBeImplementedToResult);
@@ -508,19 +518,42 @@ public class StockMethodsAdder {
     private void generateGetOne(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, String entityTypeStr, String idTypeStr,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getOne", allMethodsToBeImplementedToResult);
 
-        MethodDescriptor getOneDescriptor = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+    }
+
+    private void generateGetById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getById", allMethodsToBeImplementedToResult);
+    }
+
+    private void generateGetReferenceById(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        generateSpecificFindEntityReference(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr,
+                idTypeStr, "getReferenceById", allMethodsToBeImplementedToResult);
+    }
+
+    private void generateSpecificFindEntityReference(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, String entityTypeStr, String idTypeStr, String actualMethodName,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        MethodDescriptor getReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 entityTypeStr, idTypeStr);
-        MethodDescriptor bridgeGetOneDescriptor = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+        MethodDescriptor bridgegetReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 Object.class, Object.class);
 
-        if (allMethodsToBeImplementedToResult.containsKey(getOneDescriptor)
-                || allMethodsToBeImplementedToResult.containsKey(bridgeGetOneDescriptor)) {
+        if (allMethodsToBeImplementedToResult.containsKey(getReferenceByIdDescriptor)
+                || allMethodsToBeImplementedToResult.containsKey(bridgegetReferenceByIdDescriptor)) {
 
-            if (!classCreator.getExistingMethods().contains(getOneDescriptor)) {
-                try (MethodCreator findById = classCreator.getMethodCreator(getOneDescriptor)) {
+            if (!classCreator.getExistingMethods().contains(getReferenceByIdDescriptor)) {
+                try (MethodCreator findById = classCreator.getMethodCreator(getReferenceByIdDescriptor)) {
 
-                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, "getOne",
+                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, actualMethodName,
                             Object.class, AbstractJpaOperations.class, Class.class, Object.class),
                             findById.readStaticField(operationsField),
                             findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()),
@@ -528,19 +561,19 @@ public class StockMethodsAdder {
 
                     findById.returnValue(entity);
                 }
-                try (MethodCreator bridgeGetOne = classCreator.getMethodCreator(bridgeGetOneDescriptor)) {
-                    MethodDescriptor getOne = MethodDescriptor.ofMethod(generatedClassName, "getOne",
+                try (MethodCreator bridgeGetOne = classCreator.getMethodCreator(bridgegetReferenceByIdDescriptor)) {
+                    MethodDescriptor getReferenceById = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                             entityTypeStr, idTypeStr);
                     ResultHandle methodParam = bridgeGetOne.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeGetOne.checkCast(methodParam, idTypeStr);
-                    ResultHandle result = bridgeGetOne.invokeVirtualMethod(getOne, bridgeGetOne.getThis(),
+                    ResultHandle result = bridgeGetOne.invokeVirtualMethod(getReferenceById, bridgeGetOne.getThis(),
                             castedMethodParam);
                     bridgeGetOne.returnValue(result);
                 }
             }
 
-            allMethodsToBeImplementedToResult.put(getOneDescriptor, true);
-            allMethodsToBeImplementedToResult.put(bridgeGetOneDescriptor, true);
+            allMethodsToBeImplementedToResult.put(getReferenceByIdDescriptor, true);
+            allMethodsToBeImplementedToResult.put(bridgegetReferenceByIdDescriptor, true);
         }
     }
 
@@ -886,10 +919,41 @@ public class StockMethodsAdder {
         allMethodsToBeImplementedToResult.put(bridgeDeleteDescriptor, true);
     }
 
+    private void generateDeleteInBatchWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
+    private void generateDeleteAllInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
+    private void generateDeleteAllByIdInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllByIdInBatch",
+                allMethodsToBeImplementedToResult);
+
+    }
+
     private void generateDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+        generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAll",
+                allMethodsToBeImplementedToResult);
 
-        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, "deleteAll",
+    }
+
+    private void generateSpecificDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr, String actualMethodName,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+
+        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 void.class, Iterable.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(deleteAllWithIterableDescriptor)) {

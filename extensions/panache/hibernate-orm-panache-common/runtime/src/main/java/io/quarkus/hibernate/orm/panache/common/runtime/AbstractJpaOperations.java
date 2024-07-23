@@ -20,7 +20,6 @@ import org.hibernate.query.MutationQuery;
 import org.hibernate.query.SelectionQuery;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.agroal.DataSource;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -83,12 +82,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName));
         if (sessionHandle.isAvailable()) {
             return sessionHandle.get();
-        }
-        if (!arcContainer.instance(AgroalDataSource.class,
-                new DataSource.DataSourceLiteral(persistentUnitName)).isAvailable()) {
-            throw new IllegalStateException(
-                    "The named datasource '" + persistentUnitName
-                            + "' has not been properly configured. See https://quarkus.io/guides/datasource#multiple-datasources for information on how to do that.");
         }
         throw new IllegalStateException(
                 "No entities were attached to persistence unit '" + persistentUnitName

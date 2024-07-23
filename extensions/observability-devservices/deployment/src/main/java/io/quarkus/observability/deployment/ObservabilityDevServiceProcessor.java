@@ -93,7 +93,7 @@ class ObservabilityDevServiceProcessor {
             return;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please get a working Docker instance");
             return;
         }

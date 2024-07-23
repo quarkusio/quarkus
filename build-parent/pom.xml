@@ -85,9 +85,9 @@
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
         <db2.image>icr.io/db2_community/db2:11.5.9.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
-        <mysql.image>docker.io/mysql:8.0</mysql.image>
+        <mysql.image>docker.io/mysql:8.4</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
-        <mongo.image>docker.io/mongo:4.4</mongo.image>
+        <mongo.image>docker.io/mongo:7.0</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>

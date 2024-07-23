@@ -400,7 +400,7 @@ class ConfigDocItemFinder {
                 // If there is already a config item with the same key it comes from a super type, and we need to override it
                 ConfigDocItem parent = null;
                 for (ConfigDocItem docItem : configDocItems) {
-                    if (docItem.getConfigDocKey().getKey().equals(configDocKey.getKey())) {
+                    if (docItem.getConfigDocKey() != null && docItem.getConfigDocKey().getKey().equals(configDocKey.getKey())) {
                         parent = docItem;
                         break;
                     }

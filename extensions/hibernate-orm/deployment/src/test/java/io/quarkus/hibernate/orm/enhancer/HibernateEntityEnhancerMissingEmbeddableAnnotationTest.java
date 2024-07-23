@@ -32,6 +32,8 @@ class HibernateEntityEnhancerMissingEmbeddableAnnotationTest {
             .withConfigurationResource("application.properties")
             .assertException(ex -> assertThat(ex)
                     .isNotNull()
+                    .cause()
+                    .isNotNull()
                     .hasMessageContainingAll(
                             "Type " + EntityWithEmbedded.EmbeddableMissingAnnotation.class.getName(),
                             "must be annotated with @Embeddable, because it is used as an embeddable",

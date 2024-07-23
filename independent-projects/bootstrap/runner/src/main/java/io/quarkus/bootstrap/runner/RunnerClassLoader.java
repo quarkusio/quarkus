@@ -28,10 +28,6 @@ import org.crac.Resource;
  */
 public final class RunnerClassLoader extends ClassLoader {
 
-    static {
-        registerAsParallelCapable();
-    }
-
     /**
      * A map of resources by dir name. Root dir/default package is represented by the empty string
      */
@@ -107,55 +103,18 @@ public final class RunnerClassLoader extends ClassLoader {
                     continue;
                 }
                 definePackage(packageName, resources);
-                return defineClass(name, data, resource);
-            }
-        }
-        return getParent().loadClass(name);
-    }
-
-    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
-        if ((pkgName != null) && getDefinedPackage(pkgName) == null) {
-            for (ClassLoadingResource classPathElement : resources) {
-                ManifestInfo mf = classPathElement.getManifestInfo();
-                if (mf != null) {
-                    try {
-                        definePackage(pkgName, mf.getSpecTitle(),
-                                mf.getSpecVersion(),
-                                mf.getSpecVendor(),
-                                mf.getImplTitle(),
-                                mf.getImplVersion(),
-                                mf.getImplVendor(), null);
-                    } catch (IllegalArgumentException e) {
-                        var loaded = getDefinedPackage(pkgName);
-                        if (loaded == null) {
-                            throw e;
-                        }
+                try {
+                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
+                } catch (LinkageError e) {
+                    loaded = findLoadedClass(name);
+                    if (loaded != null) {
+                        return loaded;
                     }
-                    return;
-                }
-            }
-            try {
-                definePackage(pkgName, null, null, null, null, null, null, null);
-            } catch (IllegalArgumentException e) {
-                var loaded = getDefinedPackage(pkgName);
-                if (loaded == null) {
                     throw e;
                 }
             }
         }
-    }
-
-    private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
-        Class<?> loaded;
-        try {
-            return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
-        } catch (LinkageError e) {
-            loaded = findLoadedClass(name);
-            if (loaded != null) {
-                return loaded;
-            }
-            throw e;
-        }
+        return getParent().loadClass(name);
     }
 
     private void accessingResource(final ClassLoadingResource resource) {
@@ -172,31 +131,23 @@ public final class RunnerClassLoader extends ClassLoader {
                 //it's already on the head of the cache: nothing to be done.
                 return;
             }
-
             for (int i = 1; i < currentlyBufferedResources.length; i++) {
                 final ClassLoadingResource currentI = currentlyBufferedResources[i];
                 if (currentI == resource || currentI == null) {
                     //it was already cached, or we found an empty slot: bubble it up by one position to give it a boost
-                    bubbleUpCachedResource(resource, i);
+                    final ClassLoadingResource previous = currentlyBufferedResources[i - 1];
+                    currentlyBufferedResources[i - 1] = resource;
+                    currentlyBufferedResources[i] = previous;
                     return;
                 }
             }
-
             // else, we drop one element from the cache,
             // and inserting the latest resource on the tail:
             toEvict = currentlyBufferedResources[currentlyBufferedResources.length - 1];
-            bubbleUpCachedResource(resource, currentlyBufferedResources.length - 1);
+            currentlyBufferedResources[currentlyBufferedResources.length - 1] = resource;
         }
-
         // Finally, release the cache for the dropped element:
         toEvict.resetInternalCaches();
-    }
-
-    private void bubbleUpCachedResource(ClassLoadingResource resource, int i) {
-        for (int j = i; j > 0; j--) {
-            currentlyBufferedResources[j] = currentlyBufferedResources[j - 1];
-        }
-        currentlyBufferedResources[0] = resource;
     }
 
     @Override
@@ -268,6 +219,28 @@ public final class RunnerClassLoader extends ClassLoader {
             }
         }
         return Collections.enumeration(urls);
+    }
+
+    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
+        if ((pkgName != null) && getPackage(pkgName) == null) {
+            synchronized (getClassLoadingLock(pkgName)) {
+                if (getPackage(pkgName) == null) {
+                    for (ClassLoadingResource classPathElement : resources) {
+                        ManifestInfo mf = classPathElement.getManifestInfo();
+                        if (mf != null) {
+                            definePackage(pkgName, mf.getSpecTitle(),
+                                    mf.getSpecVersion(),
+                                    mf.getSpecVendor(),
+                                    mf.getImplTitle(),
+                                    mf.getImplVersion(),
+                                    mf.getImplVendor(), null);
+                            return;
+                        }
+                    }
+                    definePackage(pkgName, null, null, null, null, null, null, null);
+                }
+            }
+        }
     }
 
     private String getPackageNameFromClassName(String className) {

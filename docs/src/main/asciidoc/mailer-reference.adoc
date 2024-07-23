@@ -418,6 +418,8 @@ quarkus.mailer.start-tls=REQUIRED
 quarkus.mailer.trust-all=true
 ----
 
+IMPORTANT: To use `START_TLS`, make sure you set `tls` to `false` and `start-tls` to `REQUIRED` or `OPTIONAL`.
+
 === Configuring SSL/TLS
 
 To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:

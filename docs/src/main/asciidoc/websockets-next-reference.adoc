@@ -108,6 +108,8 @@ public class ChatWebSocket {
 Thus, client can connect to this web socket endpoint using `ws://localhost:8080/chat/your-name`.
 If TLS is used, the URL is `wss://localhost:8443/chat/your-name`.
 
+NOTE: The endpoint path is relative to the xref:http-reference.adoc#context-path[root context] configured by the `quarkus.http.root-path` (which is `/` by default). For example, if you add `quarkus.http.root-path=/api` to your `application.properties` then a client can connect to this endpoint using `http://localhost:8080/api/chat/the-name`. 
+
 [[client-endpoints]]
 === Client endpoints
 

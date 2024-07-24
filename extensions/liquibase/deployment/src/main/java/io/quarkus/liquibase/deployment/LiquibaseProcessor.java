@@ -97,9 +97,6 @@ class LiquibaseProcessor {
     private static final String LIQUIBASE_PROPERTIES_PATH = "";
     private static final String LIQUIBASE_DB_CHANGELOG_XSD_PATH = "www.liquibase.org/xml/ns/dbchangelog";
     private static final String LIQUIBASE_SERVICE_PATH = "META-INF/services/";
-    // see: https://github.com/quarkusio/quarkus/pull/41928#issuecomment-2242353134
-    private static final Set<String> EXCLUDED_SERVICES = Set.of(
-            liquibase.configuration.ConfigurationValueProvider.class.getName());
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
@@ -116,7 +113,7 @@ class LiquibaseProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     @Record(STATIC_INIT)
     void nativeImageConfiguration(
-            LiquibaseRecorder recorder,
+            LiquibaseRecorder ignored,
             LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             CombinedIndexBuildItem combinedIndex,
@@ -296,13 +293,12 @@ class LiquibaseProcessor {
             BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
 
-        getResourceNames(tree, LIQUIBASE_SERVICE_PATH, "", true).stream()
-                .filter(not(EXCLUDED_SERVICES::contains))
+        getResourceNames(tree, LIQUIBASE_SERVICE_PATH, "", true)
                 .forEach(t -> consumeService(t, (serviceClassName, implementations) -> {
                     services.produce(new ServiceProviderBuildItem(
                             serviceClassName,
-                            implementations.toArray(new String[0])));
-                    reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(new String[0]))
+                            implementations.toArray(String[]::new)));
+                    reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(String[]::new))
                             .constructors().methods().build());
                 }));
     }

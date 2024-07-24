@@ -31,6 +31,9 @@ public final class NewSerializingDeepClone implements DeepClone {
                 if (isUncloneable(original)) {
                     return original;
                 }
+                if (original.isArray()) {
+                    return clone(original.getComponentType()).arrayType();
+                }
                 try {
                     return targetLoader.loadClass(original.getName());
                 } catch (ClassNotFoundException ignored) {
@@ -46,10 +49,11 @@ public final class NewSerializingDeepClone implements DeepClone {
         cc.setCloneTable(
                 (original, objectCloner, classCloner) -> {
                     // The class we're really dealing with, which might be wrapped inside an array, or a nest of arrays
-                    Class<?> theClassWeCareAbout = original.getClass();
-                    while (theClassWeCareAbout.isArray()) {
-                        theClassWeCareAbout = theClassWeCareAbout.getComponentType();
+                    if (original.getClass().isArray()) {
+                        // use default cloning strategy
+                        return null;
                     }
+                    Class<?> theClassWeCareAbout = original.getClass();
 
                     // Short-circuit the checks if we've been configured to clone this
                     if (!clonePattern.matcher(theClassWeCareAbout.getName()).matches()) {

@@ -85,6 +85,8 @@ public class ConfigAnnotationScanner {
 
     public void scanConfigRoots(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configRoot : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
+            checkConfigRootAnnotationConsistency(configRoot);
+
             final PackageElement pkg = utils.element().getPackageOf(configRoot);
             if (pkg == null) {
                 utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -418,6 +420,30 @@ public class ConfigAnnotationScanner {
         }
 
         return discoveryRootElement;
+    }
+
+    private void checkConfigRootAnnotationConsistency(TypeElement configRoot) {
+        // for now quarkus-core is a mix of both @ConfigRoot and @ConfigMapping
+        // see https://github.com/quarkusio/quarkus/issues/42114
+        if ("quarkus-core".equals(config.getExtension().artifactId())) {
+            return;
+        }
+
+        if (config.useConfigMapping()) {
+            if (!utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
+                throw new IllegalStateException(
+                        "This module is configured to use @ConfigMapping annotations but we found a @ConfigRoot without a corresponding @ConfigMapping annotation in: "
+                                + configRoot + "."
+                                + " Either add the annotation or add the -AlegacyConfigRoot=true argument to the annotation processor config in the pom.xml");
+            }
+        } else {
+            if (utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
+                throw new IllegalStateException(
+                        "This module is configured to use legacy @ConfigRoot annotations but we found a @ConfigMapping annotation in: "
+                                + configRoot + "."
+                                + " Check the configuration of the annotation processor and drop the -AlegacyConfigRoot=true argument from the pom.xml if needed");
+            }
+        }
     }
 
     private void debug(String debug, Element element) {

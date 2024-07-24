@@ -47,8 +47,8 @@ public final class NewSerializingDeepClone implements DeepClone {
                 (original, objectCloner, classCloner) -> {
                     // The class we're really dealing with, which might be wrapped inside an array, or a nest of arrays
                     Class<?> theClassWeCareAbout = original.getClass();
-                    while (theClassWeCareAbout.isArray()) {
-                        theClassWeCareAbout = theClassWeCareAbout.getComponentType();
+                    if (theClassWeCareAbout.isArray()) {
+                        return classCloner.clone(theClassWeCareAbout.getComponentType()).arrayType();
                     }
 
                     // Short-circuit the checks if we've been configured to clone this

@@ -5,11 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
-@ConfigGroup
 public interface OtlpExporterConfig {
     String DEFAULT_GRPC_BASE_URI = "http://localhost:4317/";
     String DEFAULT_HTTP_BASE_URI = "http://localhost:4318/";

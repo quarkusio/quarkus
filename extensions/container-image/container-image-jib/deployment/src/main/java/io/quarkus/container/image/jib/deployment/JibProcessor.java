@@ -453,9 +453,10 @@ public class JibProcessor {
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
             envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
-            envVars.put("JAVA_OPTS_APPEND", String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult)));
+            envVars.put("JAVA_OPTS_APPEND",
+                    String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar)));
         } else {
-            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult);
+            List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult, isMutableJar);
             List<String> argsList = new ArrayList<>(3 + effectiveJvmArguments.size());
             argsList.add("java");
             argsList.addAll(effectiveJvmArguments);
@@ -693,7 +694,8 @@ public class JibProcessor {
     }
 
     private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
-            Optional<AppCDSResultBuildItem> appCDSResult) {
+            Optional<AppCDSResultBuildItem> appCDSResult,
+            boolean isMutableJar) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments);
         jibConfig.jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
         if (appCDSResult.isPresent()) {
@@ -707,6 +709,10 @@ public class JibProcessor {
             if (!containsAppCDSOptions) {
                 effectiveJvmArguments.add("-XX:SharedArchiveFile=" + appCDSResult.get().getAppCDS().getFileName().toString());
             }
+        }
+        if (isMutableJar) {
+            // see https://github.com/quarkusio/quarkus/issues/41797
+            effectiveJvmArguments.add("-Dquarkus.package.output-directory=${PWD}");
         }
         return effectiveJvmArguments;
     }
@@ -746,7 +752,7 @@ public class JibProcessor {
             // when there is no custom entry point, we just set everything up for a regular java run
             if (!jibConfig.jvmEntrypoint.isPresent()) {
                 javaContainerBuilder
-                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty()))
+                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty(), false))
                         .setMainClass(mainClassBuildItem.getClassName());
             }
 

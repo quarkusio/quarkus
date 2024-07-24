@@ -40,10 +40,10 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
 
     static Stream<Arguments> imageCombinations() {
         return Stream.of(
-                Arguments.of(17, 8, "1.19"),
-                Arguments.of(21, 8, "1.19"),
-                Arguments.of(17, 9, "1.18"),
-                Arguments.of(21, 9, "1.18"));
+                Arguments.of(17, 8, "1.20"),
+                Arguments.of(21, 8, "1.20"),
+                Arguments.of(17, 9, "1.20"),
+                Arguments.of(21, 9, "1.20"));
     }
 
     @Test

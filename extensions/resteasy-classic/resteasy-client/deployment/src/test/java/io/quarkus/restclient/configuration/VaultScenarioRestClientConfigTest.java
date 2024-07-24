@@ -59,7 +59,7 @@ public class VaultScenarioRestClientConfigTest {
 
         @Override
         public Set<String> getPropertyNames() {
-            return Collections.emptySet();
+            return Set.of("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
         }
 
         @Override

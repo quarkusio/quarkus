@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyStore;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -23,11 +24,13 @@ import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
+import org.eclipse.microprofile.rest.client.spi.RestClientListener;
 import org.jboss.resteasy.reactive.client.TlsConfig;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
@@ -407,23 +410,37 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
         }
 
-        RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));
+        Collection<RestClientListener> listeners = RestClientListeners.get();
+        for (RestClientListener listener : listeners) {
+            listener.onNewClient(aClass, this);
+        }
 
         AnnotationRegisteredProviders annotationRegisteredProviders = arcContainer
                 .instance(AnnotationRegisteredProviders.class).get();
-        for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
+        for (var mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
             register(mapper.getKey(), mapper.getValue());
         }
 
         Object defaultMapperDisabled = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
-        Boolean globallyDisabledMapper = ConfigProvider.getConfig()
+        Config mpConfig = ConfigProvider.getConfig();
+        Boolean globallyDisabledMapper = mpConfig
                 .getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class).orElse(false);
         if (!globallyDisabledMapper && !(defaultMapperDisabled instanceof Boolean && (Boolean) defaultMapperDisabled)) {
             exceptionMappers.add(new DefaultMicroprofileRestClientExceptionMapper());
         }
 
-        exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
-        redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
+        exceptionMappers.sort(new Comparator<>() {
+            @Override
+            public int compare(ResponseExceptionMapper<?> o1, ResponseExceptionMapper<?> o2) {
+                return Integer.compare(o1.getPriority(), o2.getPriority());
+            }
+        });
+        redirectHandlers.sort(new Comparator<>() {
+            @Override
+            public int compare(RedirectHandler o1, RedirectHandler o2) {
+                return Integer.compare(o1.getPriority(), o2.getPriority());
+            }
+        });
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
 
@@ -456,7 +473,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         Boolean effectiveTrustAll = trustAll;
         if (effectiveTrustAll == null) {
-            effectiveTrustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
+            effectiveTrustAll = mpConfig.getOptionalValue(TLS_TRUST_ALL, Boolean.class)
                     .orElse(false);
         }
 
@@ -493,7 +510,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.alpn(restClientsConfig.alpn.get());
         }
 
-        Boolean enableCompression = ConfigProvider.getConfig()
+        Boolean enableCompression = mpConfig
                 .getOptionalValue(ENABLE_COMPRESSION, Boolean.class).orElse(false);
         if (enableCompression) {
             clientBuilder.enableCompression();

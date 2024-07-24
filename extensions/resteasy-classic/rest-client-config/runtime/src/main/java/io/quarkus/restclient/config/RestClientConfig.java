@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
@@ -320,144 +319,204 @@ public class RestClientConfig {
     public Optional<Boolean> captureStacktrace;
 
     public static RestClientConfig load(String configKey) {
-        final RestClientConfig instance = new RestClientConfig();
+        var config = (SmallRyeConfig) ConfigProvider.getConfig();
+        if (!atLeastOnPropertyExists(configKey, config)) {
+            // there is no reason to query Smallrye Config a ton of times if we know there are no properties...
+            return EMPTY;
+        }
 
-        instance.url = getConfigValue(configKey, "url", String.class);
-        instance.uri = getConfigValue(configKey, "uri", String.class);
-        instance.overrideUri = getConfigValue(configKey, "override-uri", String.class);
-        instance.providers = getConfigValue(configKey, "providers", String.class);
-        instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
-        instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
-        instance.followRedirects = getConfigValue(configKey, "follow-redirects", Boolean.class);
-        instance.multipartPostEncoderMode = getConfigValue(configKey, "multipart-post-encoder-mode", String.class);
-        instance.proxyAddress = getConfigValue(configKey, "proxy-address", String.class);
-        instance.proxyUser = getConfigValue(configKey, "proxy-user", String.class);
-        instance.proxyPassword = getConfigValue(configKey, "proxy-password", String.class);
-        instance.nonProxyHosts = getConfigValue(configKey, "non-proxy-hosts", String.class);
-        instance.queryParamStyle = getConfigValue(configKey, "query-param-style", QueryParamStyle.class);
-        instance.verifyHost = getConfigValue(configKey, "verify-host", Boolean.class);
-        instance.trustStore = getConfigValue(configKey, "trust-store", String.class);
-        instance.trustStorePassword = getConfigValue(configKey, "trust-store-password", String.class);
-        instance.trustStoreType = getConfigValue(configKey, "trust-store-type", String.class);
-        instance.keyStore = getConfigValue(configKey, "key-store", String.class);
-        instance.keyStorePassword = getConfigValue(configKey, "key-store-password", String.class);
-        instance.keyStoreType = getConfigValue(configKey, "key-store-type", String.class);
-        instance.hostnameVerifier = getConfigValue(configKey, "hostname-verifier", String.class);
-        instance.tlsConfigurationName = getConfigValue(configKey, "tls-configuration-name", String.class);
-        instance.connectionTTL = getConfigValue(configKey, "connection-ttl", Integer.class);
-        instance.connectionPoolSize = getConfigValue(configKey, "connection-pool-size", Integer.class);
-        instance.keepAliveEnabled = getConfigValue(configKey, "keep-alive-enabled", Boolean.class);
-        instance.maxRedirects = getConfigValue(configKey, "max-redirects", Integer.class);
-        instance.headers = getConfigValues(configKey, "headers", String.class, String.class);
-        instance.shared = getConfigValue(configKey, "shared", Boolean.class);
-        instance.name = getConfigValue(configKey, "name", String.class);
-        instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
-        instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
-        instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", MemorySize.class);
-        instance.alpn = getConfigValue(configKey, "alpn", Boolean.class);
-        instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
+        var instance = new RestClientConfig();
+        var configKeyPrefixes = new ConfigKeyPrefixes(composePropertyPrefix(configKey),
+                composePropertyPrefix('"' + configKey + '"'));
+
+        instance.url = getConfigValue(configKeyPrefixes, "url", String.class, config);
+        instance.uri = getConfigValue(configKeyPrefixes, "uri", String.class, config);
+        instance.overrideUri = getConfigValue(configKeyPrefixes, "override-uri", String.class, config);
+        instance.providers = getConfigValue(configKeyPrefixes, "providers", String.class, config);
+        instance.connectTimeout = getConfigValue(configKeyPrefixes, "connect-timeout", Long.class, config);
+        instance.readTimeout = getConfigValue(configKeyPrefixes, "read-timeout", Long.class, config);
+        instance.followRedirects = getConfigValue(configKeyPrefixes, "follow-redirects", Boolean.class, config);
+        instance.multipartPostEncoderMode = getConfigValue(configKeyPrefixes, "multipart-post-encoder-mode", String.class,
+                config);
+        instance.proxyAddress = getConfigValue(configKeyPrefixes, "proxy-address", String.class, config);
+        instance.proxyUser = getConfigValue(configKeyPrefixes, "proxy-user", String.class, config);
+        instance.proxyPassword = getConfigValue(configKeyPrefixes, "proxy-password", String.class, config);
+        instance.nonProxyHosts = getConfigValue(configKeyPrefixes, "non-proxy-hosts", String.class, config);
+        instance.queryParamStyle = getConfigValue(configKeyPrefixes, "query-param-style", QueryParamStyle.class, config);
+        instance.verifyHost = getConfigValue(configKeyPrefixes, "verify-host", Boolean.class, config);
+        instance.trustStore = getConfigValue(configKeyPrefixes, "trust-store", String.class, config);
+        instance.trustStorePassword = getConfigValue(configKeyPrefixes, "trust-store-password", String.class, config);
+        instance.trustStoreType = getConfigValue(configKeyPrefixes, "trust-store-type", String.class, config);
+        instance.keyStore = getConfigValue(configKeyPrefixes, "key-store", String.class, config);
+        instance.keyStorePassword = getConfigValue(configKeyPrefixes, "key-store-password", String.class, config);
+        instance.keyStoreType = getConfigValue(configKeyPrefixes, "key-store-type", String.class, config);
+        instance.hostnameVerifier = getConfigValue(configKeyPrefixes, "hostname-verifier", String.class, config);
+        instance.tlsConfigurationName = getConfigValue(configKeyPrefixes, "tls-configuration-name", String.class, config);
+        instance.connectionTTL = getConfigValue(configKeyPrefixes, "connection-ttl", Integer.class, config);
+        instance.connectionPoolSize = getConfigValue(configKeyPrefixes, "connection-pool-size", Integer.class, config);
+        instance.keepAliveEnabled = getConfigValue(configKeyPrefixes, "keep-alive-enabled", Boolean.class, config);
+        instance.maxRedirects = getConfigValue(configKeyPrefixes, "max-redirects", Integer.class, config);
+        instance.headers = getMapConfigValue(configKeyPrefixes, "headers", String.class, String.class, config);
+        instance.shared = getConfigValue(configKeyPrefixes, "shared", Boolean.class, config);
+        instance.name = getConfigValue(configKeyPrefixes, "name", String.class, config);
+        instance.userAgent = getConfigValue(configKeyPrefixes, "user-agent", String.class, config);
+        instance.http2 = getConfigValue(configKeyPrefixes, "http2", Boolean.class, config);
+        instance.maxChunkSize = getConfigValue(configKeyPrefixes, "max-chunk-size", MemorySize.class, config);
+        instance.alpn = getConfigValue(configKeyPrefixes, "alpn", Boolean.class, config);
+        instance.captureStacktrace = getConfigValue(configKeyPrefixes, "capture-stacktrace", Boolean.class, config);
 
         instance.multipart = new RestClientMultipartConfig();
-        instance.multipart.maxChunkSize = getConfigValue(configKey, "multipart.max-chunk-size", Integer.class);
+        instance.multipart.maxChunkSize = getConfigValue(configKeyPrefixes, "multipart.max-chunk-size", Integer.class, config);
 
         return instance;
     }
 
     public static RestClientConfig load(Class<?> interfaceClass) {
-        final RestClientConfig instance = new RestClientConfig();
+        var config = (SmallRyeConfig) ConfigProvider.getConfig();
+        if (!atLeastOnPropertyExists(interfaceClass, config)) {
+            // there is no reason to query Smallrye Config a ton of times if we know there are no properties...
+            return EMPTY;
+        }
 
-        instance.url = getConfigValue(interfaceClass, "url", String.class);
-        instance.uri = getConfigValue(interfaceClass, "uri", String.class);
-        instance.overrideUri = getConfigValue(interfaceClass, "override-uri", String.class);
-        instance.providers = getConfigValue(interfaceClass, "providers", String.class);
-        instance.connectTimeout = getConfigValue(interfaceClass, "connect-timeout", Long.class);
-        instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);
-        instance.followRedirects = getConfigValue(interfaceClass, "follow-redirects", Boolean.class);
-        instance.proxyAddress = getConfigValue(interfaceClass, "proxy-address", String.class);
-        instance.proxyUser = getConfigValue(interfaceClass, "proxy-user", String.class);
-        instance.proxyPassword = getConfigValue(interfaceClass, "proxy-password", String.class);
-        instance.nonProxyHosts = getConfigValue(interfaceClass, "non-proxy-hosts", String.class);
-        instance.queryParamStyle = getConfigValue(interfaceClass, "query-param-style", QueryParamStyle.class);
-        instance.verifyHost = getConfigValue(interfaceClass, "verify-host", Boolean.class);
-        instance.trustStore = getConfigValue(interfaceClass, "trust-store", String.class);
-        instance.trustStorePassword = getConfigValue(interfaceClass, "trust-store-password", String.class);
-        instance.trustStoreType = getConfigValue(interfaceClass, "trust-store-type", String.class);
-        instance.keyStore = getConfigValue(interfaceClass, "key-store", String.class);
-        instance.keyStorePassword = getConfigValue(interfaceClass, "key-store-password", String.class);
-        instance.keyStoreType = getConfigValue(interfaceClass, "key-store-type", String.class);
-        instance.hostnameVerifier = getConfigValue(interfaceClass, "hostname-verifier", String.class);
-        instance.tlsConfigurationName = getConfigValue(interfaceClass, "tls-configuration-name", String.class);
-        instance.connectionTTL = getConfigValue(interfaceClass, "connection-ttl", Integer.class);
-        instance.connectionPoolSize = getConfigValue(interfaceClass, "connection-pool-size", Integer.class);
-        instance.keepAliveEnabled = getConfigValue(interfaceClass, "keep-alive-enabled", Boolean.class);
-        instance.maxRedirects = getConfigValue(interfaceClass, "max-redirects", Integer.class);
-        instance.headers = getConfigValues(interfaceClass, "headers", String.class, String.class);
-        instance.shared = getConfigValue(interfaceClass, "shared", Boolean.class);
-        instance.name = getConfigValue(interfaceClass, "name", String.class);
-        instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
-        instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
-        instance.maxChunkSize = getConfigValue(interfaceClass, "max-chunk-size", MemorySize.class);
-        instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
-        instance.captureStacktrace = getConfigValue(interfaceClass, "capture-stacktrace", Boolean.class);
+        var instance = new RestClientConfig();
+        var prefixes = new InterfaceNamePrefixes(
+                composePropertyPrefix('"' + interfaceClass.getName() + '"'),
+                composePropertyPrefix(interfaceClass.getSimpleName()),
+                composePropertyPrefix('"' + interfaceClass.getSimpleName() + '"'));
+
+        instance.url = getConfigValue(prefixes, "url", String.class, config);
+        instance.uri = getConfigValue(prefixes, "uri", String.class, config);
+        instance.overrideUri = getConfigValue(prefixes, "override-uri", String.class, config);
+        instance.providers = getConfigValue(prefixes, "providers", String.class, config);
+        instance.connectTimeout = getConfigValue(prefixes, "connect-timeout", Long.class, config);
+        instance.readTimeout = getConfigValue(prefixes, "read-timeout", Long.class, config);
+        instance.followRedirects = getConfigValue(prefixes, "follow-redirects", Boolean.class, config);
+        instance.proxyAddress = getConfigValue(prefixes, "proxy-address", String.class, config);
+        instance.proxyUser = getConfigValue(prefixes, "proxy-user", String.class, config);
+        instance.proxyPassword = getConfigValue(prefixes, "proxy-password", String.class, config);
+        instance.nonProxyHosts = getConfigValue(prefixes, "non-proxy-hosts", String.class, config);
+        instance.queryParamStyle = getConfigValue(prefixes, "query-param-style", QueryParamStyle.class, config);
+        instance.verifyHost = getConfigValue(prefixes, "verify-host", Boolean.class, config);
+        instance.trustStore = getConfigValue(prefixes, "trust-store", String.class, config);
+        instance.trustStorePassword = getConfigValue(prefixes, "trust-store-password", String.class, config);
+        instance.trustStoreType = getConfigValue(prefixes, "trust-store-type", String.class, config);
+        instance.keyStore = getConfigValue(prefixes, "key-store", String.class, config);
+        instance.keyStorePassword = getConfigValue(prefixes, "key-store-password", String.class, config);
+        instance.keyStoreType = getConfigValue(prefixes, "key-store-type", String.class, config);
+        instance.hostnameVerifier = getConfigValue(prefixes, "hostname-verifier", String.class, config);
+        instance.tlsConfigurationName = getConfigValue(prefixes, "tls-configuration-name", String.class, config);
+        instance.connectionTTL = getConfigValue(prefixes, "connection-ttl", Integer.class, config);
+        instance.connectionPoolSize = getConfigValue(prefixes, "connection-pool-size", Integer.class, config);
+        instance.keepAliveEnabled = getConfigValue(prefixes, "keep-alive-enabled", Boolean.class, config);
+        instance.maxRedirects = getConfigValue(prefixes, "max-redirects", Integer.class, config);
+        instance.headers = getMapConfigValue(prefixes, "headers", String.class, String.class, config);
+        instance.shared = getConfigValue(prefixes, "shared", Boolean.class, config);
+        instance.name = getConfigValue(prefixes, "name", String.class, config);
+        instance.userAgent = getConfigValue(prefixes, "user-agent", String.class, config);
+        instance.http2 = getConfigValue(prefixes, "http2", Boolean.class, config);
+        instance.maxChunkSize = getConfigValue(prefixes, "max-chunk-size", MemorySize.class, config);
+        instance.alpn = getConfigValue(prefixes, "alpn", Boolean.class, config);
+        instance.captureStacktrace = getConfigValue(prefixes, "capture-stacktrace", Boolean.class, config);
 
         instance.multipart = new RestClientMultipartConfig();
-        instance.multipart.maxChunkSize = getConfigValue(interfaceClass, "multipart.max-chunk-size", Integer.class);
+        instance.multipart.maxChunkSize = getConfigValue(prefixes, "multipart.max-chunk-size", Integer.class, config);
 
         return instance;
     }
 
     public static <T> Optional<T> getConfigValue(String configKey, String fieldName, Class<T> type) {
-        final Config config = ConfigProvider.getConfig();
-        Optional<T> optional = config.getOptionalValue(composePropertyKey(configKey, fieldName), type);
-        if (optional.isEmpty()) { // try to find property with quoted configKey
-            optional = config.getOptionalValue(composePropertyKey('"' + configKey + '"', fieldName), type);
-        }
-        return optional;
+        var config = (SmallRyeConfig) ConfigProvider.getConfig();
+        var configKeyPrefixes = new ConfigKeyPrefixes(composePropertyPrefix(configKey),
+                composePropertyPrefix('"' + configKey + '"'));
+        return getConfigValue(configKeyPrefixes, fieldName, type, config);
     }
 
     public static <T> Optional<T> getConfigValue(Class<?> clientInterface, String fieldName, Class<T> type) {
-        final Config config = ConfigProvider.getConfig();
-        // first try interface full name
-        Optional<T> optional = config.getOptionalValue(composePropertyKey('"' + clientInterface.getName() + '"', fieldName),
-                type);
-        if (optional.isEmpty()) { // then interface simple name
-            optional = config.getOptionalValue(composePropertyKey(clientInterface.getSimpleName(), fieldName), type);
+        var config = (SmallRyeConfig) ConfigProvider.getConfig();
+        var prefixes = new InterfaceNamePrefixes(
+                composePropertyPrefix('"' + clientInterface.getName() + '"'),
+                composePropertyPrefix(clientInterface.getSimpleName()),
+                composePropertyPrefix('"' + clientInterface.getSimpleName() + '"'));
+        return getConfigValue(prefixes, fieldName, type, config);
+    }
+
+    private static boolean atLeastOnPropertyExists(String configKeyPart, SmallRyeConfig config) {
+        var allPropertyNames = config.getPropertyNames();
+        for (String propertyName : allPropertyNames) {
+            if ((propertyName.startsWith(Constants.QUARKUS_CONFIG_PREFIX) && propertyName.contains(configKeyPart))
+                    || (propertyName.startsWith(configKeyPart) && propertyName.contains(Constants.MP_REST))) {
+                return true;
+            }
         }
-        if (optional.isEmpty()) { // lastly quoted interface simple name
-            optional = config.getOptionalValue(composePropertyKey('"' + clientInterface.getSimpleName() + '"', fieldName),
-                    type);
+        return false;
+    }
+
+    private static boolean atLeastOnPropertyExists(Class<?> interfaceClass, SmallRyeConfig config) {
+        var allPropertyNames = config.getPropertyNames();
+        for (String propertyName : allPropertyNames) {
+            if ((propertyName.startsWith(interfaceClass.getName()) && propertyName.contains(Constants.MP_REST))
+                    || (propertyName.startsWith(Constants.QUARKUS_CONFIG_PREFIX)
+                            && propertyName.contains(interfaceClass.getSimpleName()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static <T> Optional<T> getConfigValue(ConfigKeyPrefixes prefixes, String fieldName, Class<T> type,
+            SmallRyeConfig config) {
+        var optional = config.getOptionalValue(prefixes.normal + fieldName, type);
+        if (optional.isEmpty()) { // try to find property with quoted configKey
+            optional = config.getOptionalValue(prefixes.quoted + fieldName, type);
         }
         return optional;
     }
 
-    private static <K, V> Map<K, V> getConfigValues(String configKey, String fieldName, Class<K> keyType, Class<V> valueType) {
-        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        Optional<Map<K, V>> optional = config.getOptionalValues(composePropertyKey(configKey, fieldName), keyType, valueType);
-        if (optional.isEmpty()) { // try to find property with quoted configKey
-            optional = config.getOptionalValues(composePropertyKey('"' + configKey + '"', fieldName), keyType, valueType);
-        }
-        return optional.isPresent() ? optional.get() : Collections.emptyMap();
-    }
-
-    private static <K, V> Map<K, V> getConfigValues(Class<?> clientInterface, String fieldName, Class<K> keyType,
-            Class<V> valueType) {
-        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+    private static <T> Optional<T> getConfigValue(InterfaceNamePrefixes interfaceNamePrefixes, String fieldName, Class<T> type,
+            SmallRyeConfig config) {
         // first try interface full name
-        Optional<Map<K, V>> optional = config.getOptionalValues(
-                composePropertyKey('"' + clientInterface.getName() + '"', fieldName),
-                keyType, valueType);
+        var optional = config.getOptionalValue(interfaceNamePrefixes.quotedFullName + fieldName, type);
         if (optional.isEmpty()) { // then interface simple name
-            optional = config.getOptionalValues(composePropertyKey(clientInterface.getSimpleName(), fieldName), keyType,
-                    valueType);
+            optional = config.getOptionalValue(interfaceNamePrefixes.unquotedSimpleName + fieldName, type);
         }
         if (optional.isEmpty()) { // lastly quoted interface simple name
-            optional = config.getOptionalValues(composePropertyKey('"' + clientInterface.getSimpleName() + '"', fieldName),
-                    keyType, valueType);
+            optional = config.getOptionalValue(interfaceNamePrefixes.quotedSimpleName + fieldName, type);
+        }
+        return optional;
+    }
+
+    private static <K, V> Map<K, V> getMapConfigValue(ConfigKeyPrefixes prefixes, String fieldName, Class<K> keyType,
+            Class<V> valueType, SmallRyeConfig config) {
+        var optional = config.getOptionalValues(prefixes.normal + fieldName, keyType, valueType);
+        if (optional.isEmpty()) { // try to find property with quoted configKey
+            optional = config.getOptionalValues(prefixes.quoted + fieldName, keyType,
+                    valueType);
         }
         return optional.isPresent() ? optional.get() : Collections.emptyMap();
     }
 
-    private static String composePropertyKey(String key, String fieldName) {
-        return Constants.QUARKUS_CONFIG_PREFIX + key + "." + fieldName;
+    private static <K, V> Map<K, V> getMapConfigValue(InterfaceNamePrefixes namePrefixes, String fieldName, Class<K> keyType,
+            Class<V> valueType, SmallRyeConfig config) {
+        // first try interface full name
+        Optional<Map<K, V>> optional = config.getOptionalValues(namePrefixes.quotedFullName + fieldName, keyType, valueType);
+        if (optional.isEmpty()) { // then interface simple name
+            optional = config.getOptionalValues(namePrefixes.unquotedSimpleName + fieldName, keyType, valueType);
+        }
+        if (optional.isEmpty()) { // lastly quoted interface simple name
+            optional = config.getOptionalValues(namePrefixes.quotedSimpleName + fieldName, keyType, valueType);
+        }
+        return optional.isPresent() ? optional.get() : Collections.emptyMap();
+    }
+
+    private static String composePropertyPrefix(String key) {
+        return Constants.QUARKUS_CONFIG_PREFIX + key + ".";
+    }
+
+    private record ConfigKeyPrefixes(String normal, String quoted) {
+
+    }
+
+    private record InterfaceNamePrefixes(String quotedFullName, String unquotedSimpleName, String quotedSimpleName) {
+
     }
 }

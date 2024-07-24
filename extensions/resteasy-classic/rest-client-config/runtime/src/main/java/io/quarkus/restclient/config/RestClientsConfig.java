@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import jakarta.enterprise.inject.CreationException;
 
@@ -327,11 +328,21 @@ public class RestClientsConfig {
         if (configKey == null) {
             return RestClientConfig.EMPTY;
         }
-        return configs.computeIfAbsent(configKey, RestClientConfig::load);
+        return configs.computeIfAbsent(configKey, new Function<>() {
+            @Override
+            public RestClientConfig apply(String configKey) {
+                return RestClientConfig.load(configKey);
+            }
+        });
     }
 
     public RestClientConfig getClientConfig(Class<?> clientInterface) {
-        return configs.computeIfAbsent(clientInterface.getName(), name -> RestClientConfig.load(clientInterface));
+        return configs.computeIfAbsent(clientInterface.getName(), new Function<>() {
+            @Override
+            public RestClientConfig apply(String interfaceName) {
+                return RestClientConfig.load(clientInterface);
+            }
+        });
     }
 
     public void putClientConfig(String configKey, RestClientConfig clientConfig) {

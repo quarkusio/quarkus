@@ -19,6 +19,7 @@ import com.google.common.collect.Iterators;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.AbstractConfigSource;
 
 public class RestClientConfigNotationTest {
@@ -41,6 +42,7 @@ public class RestClientConfigNotationTest {
     })
     public void testInterfaceConfiguration(final String urlPropertyName) {
         TestConfigSource.urlPropertyName = urlPropertyName;
+        refreshPropertyNames();
 
         RestClientsConfig configRoot = new RestClientsConfig();
         RestClientConfig clientConfig = configRoot.getClientConfig(EchoClient.class);
@@ -55,10 +57,17 @@ public class RestClientConfigNotationTest {
     })
     public void testConfigKeyConfiguration(final String urlPropertyName) {
         TestConfigSource.urlPropertyName = urlPropertyName;
+        refreshPropertyNames();
+
         RestClientsConfig configRoot = new RestClientsConfig();
         RestClientConfig clientConfig = configRoot.getClientConfig("echo-client");
 
         verifyConfig(clientConfig, urlPropertyName);
+    }
+
+    private void refreshPropertyNames() {
+        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        config.getLatestPropertyNames();
     }
 
     private void verifyConfig(final RestClientConfig clientConfig, final String urlPropertyName) {

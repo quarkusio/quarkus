@@ -167,7 +167,7 @@
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <SA_PASSWORD>yourStrong(!)Password</SA_PASSWORD>
+                                            <MSSQL_SA_PASSWORD>yourStrong(!)Password</MSSQL_SA_PASSWORD>
                                         </env>
                                         <log>
                                             <prefix>MSSQL:</prefix>

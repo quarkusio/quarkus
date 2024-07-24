@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
@@ -438,6 +439,56 @@ public class ConfigGenerationBuildStep {
         }
     }
 
+    /**
+     * Registers configuration files for access at runtime in native-mode. Doesn't use absolute paths.
+     */
+    @BuildStep
+    public NativeImageResourceBuildItem nativeConfigFiles() {
+        List<String> configFiles = new ArrayList<>();
+
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+
+        // Main files
+        configFiles.add("application.properties");
+        configFiles.add("META-INF/microprofile-config.properties");
+        configFiles.add(".env");
+        configFiles.add(Paths.get("config", "application.properties").toString());
+
+        // Profiles
+        for (String profile : config.getProfiles()) {
+            configFiles.add(String.format("application-%s.properties", profile));
+            configFiles.add(String.format("META-INF/microprofile-config-%s.properties", profile));
+            configFiles.add(String.format(".env-%s", profile));
+            configFiles.add(Paths.get("config", String.format("application-%s.properties", profile))
+                    .toString());
+        }
+
+        Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
+        optionalLocations.ifPresent(locations -> {
+            for (URI location : locations) {
+                Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                        : Paths.get(location.getPath());
+                // Include missing files as smallrye will still try to access them at runtime
+                if (Files.isRegularFile(path) || !Files.exists(path)) {
+                    configFiles.add(path.toString());
+                    for (String profile : config.getProfiles()) {
+                        configFiles.add(appendProfileToFilename(path, profile));
+                    }
+                } else if (Files.isDirectory(path)) {
+                    try (DirectoryStream<Path> files = Files.newDirectoryStream(path, Files::isRegularFile)) {
+                        for (Path file : files) {
+                            configFiles.add(file.toString());
+                        }
+                    } catch (IOException e) {
+                        // Ignore
+                    }
+                }
+            }
+        });
+
+        return new NativeImageResourceBuildItem(configFiles);
+    }
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void unknownConfigFiles(
@@ -676,7 +727,6 @@ public class ConfigGenerationBuildStep {
             // The discovery includes deployment modules, so we only include services available at runtime
             if (QuarkusClassLoader.isClassPresentAtRuntime(service)) {
                 services.add(service);
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(service).build());
             }
         }
         return services;

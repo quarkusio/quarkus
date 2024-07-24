@@ -41,9 +41,9 @@ public final class Types {
             ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER, ANNOTATION_CONFIG_MAPPING);
 
     static final Map<String, String> ALIASED_TYPES = Map.of(
-            OptionalLong.class.getName(), Long.class.getName(),
-            OptionalInt.class.getName(), Integer.class.getName(),
-            OptionalDouble.class.getName(), Double.class.getName(),
+            OptionalLong.class.getName(), long.class.getName(),
+            OptionalInt.class.getName(), int.class.getName(),
+            OptionalDouble.class.getName(), double.class.getName(),
             "java.lang.Class<?>", "class name",
             "java.net.InetSocketAddress", "host:port",
             Path.class.getName(), "path",

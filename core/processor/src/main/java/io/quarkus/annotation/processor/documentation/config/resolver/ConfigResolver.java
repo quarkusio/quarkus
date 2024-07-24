@@ -70,8 +70,7 @@ public class ConfigResolver {
             configRoot.addUnresolvedInterfaces(discoveryConfigRoot.getUnresolvedInterfaces());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
-                    configRoot,
-                    false);
+                    configRoot, false, false);
             for (DiscoveryConfigProperty discoveryConfigProperty : discoveryConfigRoot.getProperties().values()) {
                 resolveProperty(configRoot, discoveryConfigRoot.getPhase(), context, discoveryConfigProperty);
             }
@@ -94,6 +93,7 @@ public class ConfigResolver {
         List<String> additionalPaths = context.getAdditionalPaths().stream()
                 .map(p -> appendPath(p, discoveryConfigProperty.getPath()))
                 .collect(Collectors.toCollection(ArrayList::new));
+        boolean deprecated = context.isDeprecated() || discoveryConfigProperty.isDeprecated();
 
         String typeQualifiedName = discoveryConfigProperty.getType().qualifiedName();
 
@@ -126,10 +126,10 @@ public class ConfigResolver {
                         discoveryConfigProperty.getSection().description());
                 context.getItemCollection().addItem(configSection);
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
-                        discoveryConfigProperty.getType().isMap());
+                        discoveryConfigProperty.getType().isMap(), deprecated);
             } else {
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup,
-                        context.getItemCollection(), discoveryConfigProperty.getType().isMap());
+                        context.getItemCollection(), discoveryConfigProperty.getType().isMap(), deprecated);
             }
 
             for (DiscoveryConfigProperty configGroupProperty : discoveryConfigGroup.getProperties().values()) {
@@ -200,7 +200,7 @@ public class ConfigResolver {
                     discoveryConfigProperty.getType().isEnum(),
                     enumAcceptedValues, defaultValue, discoveryConfigProperty.getDescription(),
                     JavadocUtil.getJavadocSiteLink(typeBinaryName),
-                    discoveryConfigProperty.isDeprecated(),
+                    deprecated,
                     discoveryConfigProperty.getSince());
             context.getItemCollection().addItem(configProperty);
         }
@@ -249,15 +249,17 @@ public class ConfigResolver {
         private final DiscoveryRootElement discoveryRootElement;
         private final ConfigItemCollection itemCollection;
         private final boolean withinMap;
+        private final boolean deprecated;
 
         private ResolutionContext(String path, List<String> additionalPaths, DiscoveryRootElement discoveryRootElement,
                 ConfigItemCollection itemCollection,
-                boolean withinMap) {
+                boolean withinMap, boolean deprecated) {
             this.path = path;
             this.additionalPaths = additionalPaths;
             this.discoveryRootElement = discoveryRootElement;
             this.itemCollection = itemCollection;
             this.withinMap = withinMap;
+            this.deprecated = deprecated;
         }
 
         public String getPath() {
@@ -278,6 +280,10 @@ public class ConfigResolver {
 
         public boolean isWithinMap() {
             return withinMap;
+        }
+
+        public boolean isDeprecated() {
+            return deprecated;
         }
     }
 }

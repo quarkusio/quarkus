@@ -72,6 +72,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -82,6 +85,7 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.restclient.runtime.PathFeatureHandler;
@@ -212,10 +216,6 @@ class RestClientProcessor {
             return;
         }
 
-        for (DotName interfaze : interfaces.keySet()) {
-            restClient.produce(new RestClientBuildItem(interfaze.toString()));
-        }
-
         warnAboutNotWorkingFeaturesInNative(nativeConfig, interfaces);
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
@@ -249,19 +249,31 @@ class RestClientProcessor {
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             DotName restClientName = entry.getKey();
+            ClassInfo classInfo = entry.getValue();
+
+            Optional<String> configKey;
+            Optional<String> baseUri;
+            AnnotationInstance instance = classInfo.declaredAnnotation(REGISTER_REST_CLIENT);
+            if (instance != null) {
+                AnnotationValue configKeyValue = instance.value("configKey");
+                configKey = configKeyValue == null ? Optional.empty() : Optional.of(configKeyValue.asString());
+                AnnotationValue baseUriValue = instance.value("baseUri");
+                baseUri = baseUriValue == null ? Optional.empty() : Optional.of(baseUriValue.asString());
+            } else {
+                configKey = Optional.empty();
+                baseUri = Optional.empty();
+            }
+
             ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(restClientName);
             // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
             configurator.addType(restClientName);
             configurator.addQualifier(REST_CLIENT);
-            final Optional<String> configKey = getConfigKey(entry.getValue());
-            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configKey);
-            final List<String> clientProviders = checkRestClientProviders(entry.getValue(),
-                    restClientProviders);
-            configurator.scope(scope);
+            List<String> clientProviders = checkRestClientProviders(entry.getValue(), restClientProviders);
+            configurator.scope(computeDefaultScope(capabilities, config, entry, configKey));
             configurator.creator(m -> {
                 // return new RestClientBase(proxyType, baseUri).create();
                 ResultHandle interfaceHandle = m.loadClassFromTCCL(restClientName.toString());
-                ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
+                ResultHandle baseUriHandle = baseUri.isPresent() ? m.load(baseUri.get()) : m.loadNull();
                 ResultHandle configKeyHandle = configKey.isPresent() ? m.load(configKey.get()) : m.loadNull();
                 ResultHandle restClientProvidersHandle;
                 if (!clientProviders.isEmpty()) {
@@ -284,7 +296,26 @@ class RestClientProcessor {
             configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
 
             syntheticBeans.produce(configurator.done());
+            restClient.produce(new RestClientBuildItem(classInfo, configKey, baseUri));
         }
+    }
+
+    @BuildStep
+    void generateRestClientConfigBuilder(
+            List<RestClientBuildItem> restClients,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+
+        List<RegisteredRestClient> registeredRestClients = restClients.stream()
+                .map(rc -> new RegisteredRestClient(
+                        rc.getClassInfo().name().toString(),
+                        rc.getClassInfo().simpleName(),
+                        rc.getConfigKey().orElse(null)))
+                .toList();
+
+        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
+                runTimeConfigBuilder);
     }
 
     @BuildStep
@@ -387,14 +418,6 @@ class RestClientProcessor {
         }
     }
 
-    private Optional<String> getConfigKey(ClassInfo classInfo) {
-        String configKey = getAnnotationParameter(classInfo, "configKey");
-        if (configKey.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(configKey);
-    }
-
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config, Map.Entry<DotName, ClassInfo> entry,
             Optional<String> configKey) {
         ScopeInfo scopeToUse = null;
@@ -449,20 +472,6 @@ class RestClientProcessor {
 
         // Initialize a default @Dependent scope as per the spec
         return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
-    }
-
-    private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {
-        AnnotationInstance instance = classInfo.declaredAnnotation(REGISTER_REST_CLIENT);
-        if (instance == null) {
-            return "";
-        }
-
-        AnnotationValue value = instance.value(parameterName);
-        if (value == null) {
-            return "";
-        }
-
-        return value.asString();
     }
 
     @BuildStep

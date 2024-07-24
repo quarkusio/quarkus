@@ -1,5 +1,9 @@
 package io.quarkus.restclient.runtime;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.eclipse.microprofile.rest.client.ext.QueryParamStyle.*;
+import static org.mockito.Mockito.verify;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
@@ -11,8 +15,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -22,15 +26,14 @@ import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class RestClientBaseTest {
 
@@ -83,8 +86,13 @@ public class RestClientBaseTest {
     public void testClientSpecificConfigs() throws Exception {
         // given
 
-        RestClientsConfig configRoot = createSampleConfigRoot();
-        configRoot.putClientConfig("test-client", createSampleClientConfig());
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
+                .setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class)
+                .withDefaultValues(createSampleConfigRoot())
+                .withDefaultValues(createSampleClientConfig("test-client"))
+                .build()
+                .getConfigMapping(RestClientsConfig.class);
 
         // when
 
@@ -98,26 +106,31 @@ public class RestClientBaseTest {
 
         // then
 
-        Mockito.verify(restClientBuilderMock).baseUrl(new URL("http://localhost"));
-        Mockito.verify(restClientBuilderMock).proxyAddress("host1", 123);
-        Mockito.verify(restClientBuilderMock).connectTimeout(100, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).readTimeout(101, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier1.class));
-        Mockito.verify(restClientBuilderMock).property("resteasy.connectionTTL", Arrays.asList(102, TimeUnit.MILLISECONDS));
-        Mockito.verify(restClientBuilderMock).property("resteasy.connectionPoolSize", 103);
-        Mockito.verify(restClientBuilderMock).followRedirects(true);
-        Mockito.verify(restClientBuilderMock).register(MyResponseFilter1.class);
-        Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.COMMA_SEPARATED);
+        verify(restClientBuilderMock).baseUrl(new URL("http://localhost"));
+        verify(restClientBuilderMock).proxyAddress("host1", 123);
+        verify(restClientBuilderMock).connectTimeout(100, MILLISECONDS);
+        verify(restClientBuilderMock).readTimeout(101, MILLISECONDS);
+        verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier1.class));
+        verify(restClientBuilderMock).property("resteasy.connectionTTL", Arrays.asList(102, MILLISECONDS));
+        verify(restClientBuilderMock).property("resteasy.connectionPoolSize", 103);
+        verify(restClientBuilderMock).followRedirects(true);
+        verify(restClientBuilderMock).register(MyResponseFilter1.class);
+        verify(restClientBuilderMock).queryParamStyle(COMMA_SEPARATED);
 
-        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any());
-        Mockito.verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
+        verify(restClientBuilderMock).trustStore(Mockito.any());
+        verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }
 
     @Test
     public void testGlobalConfigs() throws MalformedURLException {
         // given
 
-        RestClientsConfig configRoot = createSampleConfigRoot();
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
+                .setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class)
+                .withDefaultValues(createSampleConfigRoot())
+                .build()
+                .getConfigMapping(RestClientsConfig.class);
 
         // when
 
@@ -131,69 +144,64 @@ public class RestClientBaseTest {
 
         // then
 
-        Mockito.verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
-        Mockito.verify(restClientBuilderMock).proxyAddress("host2", 123);
-        Mockito.verify(restClientBuilderMock).connectTimeout(200, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).readTimeout(201, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier2.class));
-        Mockito.verify(restClientBuilderMock).property("resteasy.connectionTTL", Arrays.asList(202, TimeUnit.MILLISECONDS));
-        Mockito.verify(restClientBuilderMock).property("resteasy.connectionPoolSize", 203);
-        Mockito.verify(restClientBuilderMock).followRedirects(true);
-        Mockito.verify(restClientBuilderMock).register(MyResponseFilter2.class);
-        Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.MULTI_PAIRS);
+        verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
+        verify(restClientBuilderMock).proxyAddress("host2", 123);
+        verify(restClientBuilderMock).connectTimeout(200, MILLISECONDS);
+        verify(restClientBuilderMock).readTimeout(201, MILLISECONDS);
+        verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier2.class));
+        verify(restClientBuilderMock).property("resteasy.connectionTTL", Arrays.asList(202, MILLISECONDS));
+        verify(restClientBuilderMock).property("resteasy.connectionPoolSize", 203);
+        verify(restClientBuilderMock).followRedirects(true);
+        verify(restClientBuilderMock).register(MyResponseFilter2.class);
+        verify(restClientBuilderMock).queryParamStyle(MULTI_PAIRS);
 
-        Mockito.verify(restClientBuilderMock).trustStore(Mockito.any());
-        Mockito.verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
+        verify(restClientBuilderMock).trustStore(Mockito.any());
+        verify(restClientBuilderMock).keyStore(Mockito.any(), Mockito.anyString());
     }
 
-    private static RestClientsConfig createSampleConfigRoot() {
-        RestClientsConfig configRoot = new RestClientsConfig();
-
-        configRoot.proxyAddress = Optional.of("host2:123");
-        configRoot.connectTimeout = 200L;
-        configRoot.readTimeout = 201L;
-        configRoot.hostnameVerifier = Optional.of("io.quarkus.restclient.runtime.RestClientBaseTest$MyHostnameVerifier2");
-        configRoot.connectionTTL = Optional.of(202);
-        configRoot.connectionPoolSize = Optional.of(203);
-        configRoot.followRedirects = Optional.of(true);
-        configRoot.providers = Optional.of("io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter2");
-        configRoot.queryParamStyle = Optional.of(QueryParamStyle.MULTI_PAIRS);
-
-        configRoot.trustStore = Optional.of(truststorePath.toAbsolutePath().toString());
-        configRoot.trustStorePassword = Optional.of("truststorePassword");
-        configRoot.trustStoreType = Optional.of("JKS");
-        configRoot.keyStore = Optional.of(keystorePath.toAbsolutePath().toString());
-        configRoot.keyStorePassword = Optional.of("keystorePassword");
-        configRoot.keyStoreType = Optional.of("JKS");
-
-        return configRoot;
+    private static Map<String, String> createSampleConfigRoot() {
+        Map<String, String> rootConfig = new HashMap<>();
+        rootConfig.put("quarkus.rest-client.proxy-address", "host2:123");
+        rootConfig.put("quarkus.rest-client.connect-timeout", "200");
+        rootConfig.put("quarkus.rest-client.read-timeout", "201");
+        rootConfig.put("quarkus.rest-client.hostname-verifier",
+                "io.quarkus.restclient.runtime.RestClientBaseTest$MyHostnameVerifier2");
+        rootConfig.put("quarkus.rest-client.connection-ttl", "202");
+        rootConfig.put("quarkus.rest-client.connection-pool-size", "203");
+        rootConfig.put("quarkus.rest-client.follow-redirects", "true");
+        rootConfig.put("quarkus.rest-client.providers", "io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter2");
+        rootConfig.put("quarkus.rest-client.query-param-style", "multi-pairs");
+        rootConfig.put("quarkus.rest-client.trust-store", truststorePath.toAbsolutePath().toString());
+        rootConfig.put("quarkus.rest-client.trust-store-password", "truststorePassword");
+        rootConfig.put("quarkus.rest-client.trust-store-type", "JKS");
+        rootConfig.put("quarkus.rest-client.key-store", keystorePath.toAbsolutePath().toString());
+        rootConfig.put("quarkus.rest-client.key-store-password", "keystorePassword");
+        rootConfig.put("quarkus.rest-client.key-store-type", "JKS");
+        return rootConfig;
     }
 
-    private static RestClientConfig createSampleClientConfig() {
-        RestClientConfig clientConfig = new RestClientConfig();
-
+    private static Map<String, String> createSampleClientConfig(final String restClientName) {
+        Map<String, String> clientConfig = new HashMap<>();
         // properties only configurable via client config
-        clientConfig.url = Optional.of("http://localhost");
-        clientConfig.uri = Optional.empty();
-
+        clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost");
         // properties that override configRoot counterparts
-        clientConfig.proxyAddress = Optional.of("host1:123");
-        clientConfig.connectTimeout = Optional.of(100L);
-        clientConfig.readTimeout = Optional.of(101L);
-        clientConfig.hostnameVerifier = Optional.of("io.quarkus.restclient.runtime.RestClientBaseTest$MyHostnameVerifier1");
-        clientConfig.connectionTTL = Optional.of(102);
-        clientConfig.connectionPoolSize = Optional.of(103);
-        clientConfig.followRedirects = Optional.of(true);
-        clientConfig.providers = Optional.of("io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter1");
-        clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);
-
-        clientConfig.trustStore = Optional.of(truststorePath.toAbsolutePath().toString());
-        clientConfig.trustStorePassword = Optional.of("truststorePassword");
-        clientConfig.trustStoreType = Optional.of("JKS");
-        clientConfig.keyStore = Optional.of(keystorePath.toAbsolutePath().toString());
-        clientConfig.keyStorePassword = Optional.of("keystorePassword");
-        clientConfig.keyStoreType = Optional.of("JKS");
-
+        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-address", "host1:123");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".connect-timeout", "100");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".read-timeout", "101");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".hostname-verifier",
+                "io.quarkus.restclient.runtime.RestClientBaseTest$MyHostnameVerifier1");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".connection-ttl", "102");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".connection-pool-size", "103");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".follow-redirects", "true");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".providers",
+                "io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter1");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".query-param-style", "comma-separated");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store", truststorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-password", "truststorePassword");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-type", "JKS");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store", keystorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-password", "keystorePassword");
+        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-type", "JKS");
         return clientConfig;
     }
 

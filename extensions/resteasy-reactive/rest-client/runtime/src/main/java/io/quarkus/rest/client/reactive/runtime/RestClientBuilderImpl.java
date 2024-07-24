@@ -45,10 +45,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
-import io.quarkus.restclient.config.RestClientConfig;
-import io.quarkus.restclient.config.RestClientLoggingConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.SSLOptions;
 import io.vertx.core.net.TrustOptions;
@@ -396,8 +395,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                     "The Reactive REST Client needs to be built within the context of a Quarkus application with a valid ArC (CDI) context running.");
         }
 
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        RestClientsConfig restClients = config.getConfigMapping(RestClientsConfig.class);
+
         // support overriding the URI from the override-uri property
-        Optional<String> maybeOverrideUri = RestClientConfig.getConfigValue(aClass, "override-uri", String.class);
+        Optional<String> maybeOverrideUri = restClients.getClient(aClass).overrideUri();
         if (maybeOverrideUri.isPresent()) {
             uri = URI.create(maybeOverrideUri.get());
         }
@@ -427,19 +429,17 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
 
-        RestClientsConfig restClientsConfig = arcContainer.instance(RestClientsConfig.class).get();
-
-        RestClientLoggingConfig logging = restClientsConfig.logging;
+        RestClientsConfig.RestClientLoggingConfig logging = restClients.logging();
 
         LoggingScope effectiveLoggingScope = loggingScope; // if a scope was specified programmatically, it takes precedence
         if (effectiveLoggingScope == null) {
-            effectiveLoggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
+            effectiveLoggingScope = logging != null ? logging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE)
                     : LoggingScope.NONE;
         }
 
         Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
         if (effectiveLoggingBodyLimit == null) {
-            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit : 100;
+            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit() : 100;
         }
         clientBuilder.loggingScope(effectiveLoggingScope);
         clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
@@ -461,36 +461,36 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         clientBuilder.trustAll(effectiveTrustAll);
-        restClientsConfig.verifyHost.ifPresent(clientBuilder::verifyHost);
+        restClients.verifyHost().ifPresent(clientBuilder::verifyHost);
 
         String effectiveUserAgent = userAgent;
         if (effectiveUserAgent != null) {
             clientBuilder.setUserAgent(effectiveUserAgent);
-        } else if (restClientsConfig.userAgent.isPresent()) { // if config set and client obtained programmatically
-            clientBuilder.setUserAgent(restClientsConfig.userAgent.get());
+        } else if (restClients.userAgent().isPresent()) { // if config set and client obtained programmatically
+            clientBuilder.setUserAgent(restClients.userAgent().get());
         }
 
         Integer maxChunkSize = (Integer) getConfiguration().getProperty(QuarkusRestClientProperties.MAX_CHUNK_SIZE);
         if (maxChunkSize != null) {
             clientBuilder.maxChunkSize(maxChunkSize);
-        } else if (restClientsConfig.maxChunkSize.isPresent()) {
-            clientBuilder.maxChunkSize((int) restClientsConfig.maxChunkSize.get().asLongValue());
-        } else if (restClientsConfig.multipart.maxChunkSize.isPresent()) {
-            clientBuilder.maxChunkSize(restClientsConfig.multipart.maxChunkSize.get());
+        } else if (restClients.maxChunkSize().isPresent()) {
+            clientBuilder.maxChunkSize((int) restClients.maxChunkSize().get().asLongValue());
+        } else if (restClients.multipart().maxChunkSize().isPresent()) {
+            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().get());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {
             clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
-        } else if (restClientsConfig.http2) {
+        } else if (restClients.http2()) {
             clientBuilder.http2(true);
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.ALPN)) {
             clientBuilder.alpn((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.ALPN));
-        } else if (restClientsConfig.alpn.isPresent()) {
-            clientBuilder.alpn(restClientsConfig.alpn.get());
+        } else if (restClients.alpn().isPresent()) {
+            clientBuilder.alpn(restClients.alpn().get());
         }
 
         Boolean enableCompression = ConfigProvider.getConfig()
@@ -501,10 +501,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         if (proxyHost != null) {
             configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts);
-        } else if (restClientsConfig.proxyAddress.isPresent()) {
-            HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClientsConfig.proxyAddress.get());
-            configureProxy(globalProxy.host, globalProxy.port, restClientsConfig.proxyUser.orElse(null),
-                    restClientsConfig.proxyPassword.orElse(null), restClientsConfig.nonProxyHosts.orElse(null));
+        } else if (restClients.proxyAddress().isPresent()) {
+            HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClients.proxyAddress().get());
+            configureProxy(globalProxy.host, globalProxy.port, restClients.proxyUser().orElse(null),
+                    restClients.proxyPassword().orElse(null), restClients.nonProxyHosts().orElse(null));
         }
 
         if (!clientBuilder.getConfiguration().hasProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE)) {
@@ -512,9 +512,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             if (this.multipartPostEncoderMode != null) {
                 multipartPostEncoderMode = PausableHttpPostRequestEncoder.EncoderMode
                         .valueOf(this.multipartPostEncoderMode.toUpperCase(Locale.ROOT));
-            } else if (restClientsConfig.multipartPostEncoderMode.isPresent()) {
+            } else if (restClients.multipartPostEncoderMode().isPresent()) {
                 multipartPostEncoderMode = PausableHttpPostRequestEncoder.EncoderMode
-                        .valueOf(restClientsConfig.multipartPostEncoderMode.get().toUpperCase(Locale.ROOT));
+                        .valueOf(restClients.multipartPostEncoderMode().get().toUpperCase(Locale.ROOT));
             }
             if (multipartPostEncoderMode != null) {
                 clientBuilder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, multipartPostEncoderMode);

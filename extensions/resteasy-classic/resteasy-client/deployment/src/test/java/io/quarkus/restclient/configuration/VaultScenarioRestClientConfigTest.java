@@ -21,7 +21,7 @@ import io.smallrye.config.common.AbstractConfigSource;
 /**
  * This test makes sure that the rest client configuration is loaded even if it's provided by a ConfigSource which doesn't
  * list its contents via {@link ConfigSource#getPropertyNames()} (e.g. {@link VaultLikeConfigSource}).
- *
+ * <p>
  * This wasn't working when the configuration was accessed through a ConfigSource map - rest client initialization would fail
  * because no URI/URL configuration was obtained.
  */

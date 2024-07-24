@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -25,8 +26,8 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientBase {
 
@@ -43,7 +44,7 @@ public class RestClientBase {
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
             Class<?>[] clientProviders) {
         this(proxyType, baseUriFromAnnotation, configKey, clientProviders,
-                RestClientsConfig.getInstance());
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
     }
 
     RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
@@ -79,14 +80,14 @@ public class RestClientBase {
     }
 
     protected void configureCustomProperties(RestClientBuilder builder) {
-        Optional<Integer> connectionPoolSize = oneOf(clientConfigByClassName().connectionPoolSize,
-                clientConfigByConfigKey().connectionPoolSize, configRoot.connectionPoolSize);
+        Optional<Integer> connectionPoolSize = oneOf(clientConfigByClassName().connectionPoolSize(),
+                clientConfigByConfigKey().connectionPoolSize(), configRoot.connectionPoolSize());
         if (connectionPoolSize.isPresent()) {
             builder.property("resteasy.connectionPoolSize", connectionPoolSize.get());
         }
 
-        Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL,
-                clientConfigByConfigKey().connectionTTL, configRoot.connectionTTL);
+        Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL(),
+                clientConfigByConfigKey().connectionTTL(), configRoot.connectionTTL());
         if (connectionTTL.isPresent()) {
             builder.property("resteasy.connectionTTL",
                     Arrays.asList(connectionTTL.get(), TimeUnit.MILLISECONDS));
@@ -94,8 +95,9 @@ public class RestClientBase {
     }
 
     protected void configureProxy(RestClientBuilder builder) {
-        Optional<String> proxyAddress = oneOf(clientConfigByClassName().proxyAddress, clientConfigByConfigKey().proxyAddress,
-                configRoot.proxyAddress);
+        Optional<String> proxyAddress = oneOf(clientConfigByClassName().proxyAddress(),
+                clientConfigByConfigKey().proxyAddress(),
+                configRoot.proxyAddress());
         if (proxyAddress.isPresent() && !NONE.equals(proxyAddress.get())) {
             String proxyString = proxyAddress.get();
 
@@ -118,42 +120,42 @@ public class RestClientBase {
     }
 
     protected void configureRedirects(RestClientBuilder builder) {
-        Optional<Boolean> followRedirects = oneOf(clientConfigByClassName().followRedirects,
-                clientConfigByConfigKey().followRedirects, configRoot.followRedirects);
+        Optional<Boolean> followRedirects = oneOf(clientConfigByClassName().followRedirects(),
+                clientConfigByConfigKey().followRedirects(), configRoot.followRedirects());
         if (followRedirects.isPresent()) {
             builder.followRedirects(followRedirects.get());
         }
     }
 
     protected void configureQueryParamStyle(RestClientBuilder builder) {
-        Optional<QueryParamStyle> queryParamStyle = oneOf(clientConfigByClassName().queryParamStyle,
-                clientConfigByConfigKey().queryParamStyle, configRoot.queryParamStyle);
+        Optional<QueryParamStyle> queryParamStyle = oneOf(clientConfigByClassName().queryParamStyle(),
+                clientConfigByConfigKey().queryParamStyle(), configRoot.queryParamStyle());
         if (queryParamStyle.isPresent()) {
             builder.queryParamStyle(queryParamStyle.get());
         }
     }
 
     protected void configureSsl(RestClientBuilder builder) {
-        Optional<String> trustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
-                configRoot.trustStore);
+        Optional<String> trustStore = oneOf(clientConfigByClassName().trustStore(), clientConfigByConfigKey().trustStore(),
+                configRoot.trustStore());
         if (trustStore.isPresent() && !trustStore.get().isBlank() && !NONE.equals(trustStore.get())) {
             registerTrustStore(trustStore.get(), builder);
         }
 
-        Optional<String> keyStore = oneOf(clientConfigByClassName().keyStore, clientConfigByConfigKey().keyStore,
-                configRoot.keyStore);
+        Optional<String> keyStore = oneOf(clientConfigByClassName().keyStore(), clientConfigByConfigKey().keyStore(),
+                configRoot.keyStore());
         if (keyStore.isPresent() && !keyStore.get().isBlank() && !NONE.equals(keyStore.get())) {
             registerKeyStore(keyStore.get(), builder);
         }
 
-        Optional<String> hostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier,
-                clientConfigByConfigKey().hostnameVerifier, configRoot.hostnameVerifier);
+        Optional<String> hostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier(),
+                clientConfigByConfigKey().hostnameVerifier(), configRoot.hostnameVerifier());
         if (hostnameVerifier.isPresent()) {
             registerHostnameVerifier(hostnameVerifier.get(), builder);
         } else {
             // If `verify-host` is disabled, we configure the client using the `NoopHostnameVerifier` verifier.
-            Optional<Boolean> verifyHost = oneOf(clientConfigByClassName().verifyHost, clientConfigByConfigKey().verifyHost,
-                    configRoot.verifyHost);
+            Optional<Boolean> verifyHost = oneOf(clientConfigByClassName().verifyHost(), clientConfigByConfigKey().verifyHost(),
+                    configRoot.verifyHost());
             if (verifyHost.isPresent() && !verifyHost.get()) {
                 registerHostnameVerifier(NoopHostnameVerifier.class.getName(), builder);
             }
@@ -182,12 +184,12 @@ public class RestClientBase {
 
     private void registerKeyStore(String keyStorePath, RestClientBuilder builder) {
         try {
-            Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType,
-                    clientConfigByConfigKey().keyStoreType, configRoot.keyStoreType);
+            Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType(),
+                    clientConfigByConfigKey().keyStoreType(), configRoot.keyStoreType());
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
 
-            Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword,
-                    clientConfigByConfigKey().keyStorePassword, configRoot.keyStorePassword);
+            Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword(),
+                    clientConfigByConfigKey().keyStorePassword(), configRoot.keyStorePassword());
             if (keyStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for keystore");
             }
@@ -208,12 +210,12 @@ public class RestClientBase {
 
     private void registerTrustStore(String trustStorePath, RestClientBuilder builder) {
         try {
-            Optional<String> trustStoreType = oneOf(clientConfigByClassName().trustStoreType,
-                    clientConfigByConfigKey().trustStoreType, configRoot.trustStoreType);
+            Optional<String> trustStoreType = oneOf(clientConfigByClassName().trustStoreType(),
+                    clientConfigByConfigKey().trustStoreType(), configRoot.trustStoreType());
             KeyStore trustStore = KeyStore.getInstance(trustStoreType.orElse("JKS"));
 
-            Optional<String> trustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
-                    clientConfigByConfigKey().trustStorePassword, configRoot.trustStorePassword);
+            Optional<String> trustStorePassword = oneOf(clientConfigByClassName().trustStorePassword(),
+                    clientConfigByConfigKey().trustStorePassword(), configRoot.trustStorePassword());
             if (trustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for truststore");
             }
@@ -258,8 +260,8 @@ public class RestClientBase {
     }
 
     protected void configureProviders(RestClientBuilder builder) {
-        Optional<String> providers = oneOf(clientConfigByClassName().providers, clientConfigByConfigKey().providers,
-                configRoot.providers);
+        Optional<String> providers = oneOf(clientConfigByClassName().providers(), clientConfigByConfigKey().providers(),
+                configRoot.providers());
 
         if (providers.isPresent()) {
             registerProviders(builder, providers.get());
@@ -286,23 +288,23 @@ public class RestClientBase {
     }
 
     protected void configureTimeouts(RestClientBuilder builder) {
-        Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
-                clientConfigByConfigKey().connectTimeout).orElse(this.configRoot.connectTimeout);
+        Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout(),
+                clientConfigByConfigKey().connectTimeout()).orElse(this.configRoot.connectTimeout());
         if (connectTimeout != null) {
             builder.connectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
         }
 
-        Long readTimeout = oneOf(clientConfigByClassName().readTimeout,
-                clientConfigByConfigKey().readTimeout).orElse(this.configRoot.readTimeout);
+        Long readTimeout = oneOf(clientConfigByClassName().readTimeout(),
+                clientConfigByConfigKey().readTimeout()).orElse(this.configRoot.readTimeout());
         if (readTimeout != null) {
             builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
     protected void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uri, clientConfigByConfigKey().uri);
+        Optional<String> baseUrlOptional = oneOf(clientConfigByClassName().uri(), clientConfigByConfigKey().uri());
         if (baseUrlOptional.isEmpty()) {
-            baseUrlOptional = oneOf(clientConfigByClassName().url, clientConfigByConfigKey().url);
+            baseUrlOptional = oneOf(clientConfigByClassName().url(), clientConfigByConfigKey().url());
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && baseUrlOptional.isEmpty()) {
@@ -330,12 +332,12 @@ public class RestClientBase {
         }
     }
 
-    private RestClientConfig clientConfigByConfigKey() {
-        return this.configRoot.getClientConfig(this.configKey);
+    private RestClientsConfig.RestClientConfig clientConfigByConfigKey() {
+        return this.configRoot.getClient(this.configKey);
     }
 
-    private RestClientConfig clientConfigByClassName() {
-        return this.configRoot.getClientConfig(this.proxyType);
+    private RestClientsConfig.RestClientConfig clientConfigByClassName() {
+        return this.configRoot.getClient(this.proxyType);
     }
 
     @SafeVarargs

@@ -2,11 +2,13 @@ package io.quarkus.rest.client.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
@@ -16,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.configuration.EchoResource;
-import io.quarkus.restclient.config.RestClientConfig;
+import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigurationTest {
@@ -29,9 +31,10 @@ public class ConfigurationTest {
 
     @RestClient
     HelloClientWithBaseUri client;
-
     @RestClient
     EchoClientWithEmptyPath echoClientWithEmptyPath;
+    @Inject
+    RestClientsConfig restClientsConfig;
 
     @Test
     void shouldHaveSingletonScope() {
@@ -48,21 +51,21 @@ public class ConfigurationTest {
 
     @Test
     void checkClientSpecificConfigs() {
-        RestClientConfig clientConfig = RestClientConfig.load(io.quarkus.rest.client.reactive.HelloClientWithBaseUri.class);
+        RestClientsConfig.RestClientConfig clientConfig = restClientsConfig.getClient(HelloClientWithBaseUri.class);
         verifyClientConfig(clientConfig, true);
 
-        clientConfig = RestClientConfig.load("client-prefix");
+        clientConfig = restClientsConfig.getClient("client-prefix");
         verifyClientConfig(clientConfig, true);
-        assertThat(clientConfig.proxyAddress.isPresent()).isTrue();
-        assertThat(clientConfig.proxyAddress.get()).isEqualTo("localhost:8080");
-        assertThat(clientConfig.headers).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
+        assertThat(clientConfig.proxyAddress().isPresent()).isTrue();
+        assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
+        assertThat(clientConfig.headers()).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
 
-        clientConfig = RestClientConfig.load("quoted-client-prefix");
-        assertThat(clientConfig.url.isPresent()).isTrue();
-        assertThat(clientConfig.url.get()).endsWith("/hello");
-        assertThat(clientConfig.headers).containsOnly(entry("foo", "bar"));
+        clientConfig = restClientsConfig.getClient("quoted-client-prefix");
+        assertThat(clientConfig.url().isPresent()).isTrue();
+        assertThat(clientConfig.url().get()).endsWith("/hello");
+        assertThat(clientConfig.headers()).containsOnly(entry("foo", "bar"));
 
-        clientConfig = RestClientConfig.load("mp-client-prefix");
+        clientConfig = restClientsConfig.getClient("mp-client-prefix");
         verifyClientConfig(clientConfig, false);
     }
 
@@ -71,30 +74,30 @@ public class ConfigurationTest {
         assertThat(echoClientWithEmptyPath.echo("hello", "hello world")).isEqualTo("hello world");
     }
 
-    private void verifyClientConfig(RestClientConfig clientConfig, boolean checkExtraProperties) {
-        assertThat(clientConfig.url).isPresent();
-        assertThat(clientConfig.url.get()).endsWith("/hello");
-        assertThat(clientConfig.providers).isPresent();
-        assertThat(clientConfig.providers.get())
+    private void verifyClientConfig(RestClientsConfig.RestClientConfig clientConfig, boolean checkExtraProperties) {
+        assertTrue(clientConfig.url().isPresent());
+        assertThat(clientConfig.url().get()).endsWith("/hello");
+        assertTrue(clientConfig.providers().isPresent());
+        assertThat(clientConfig.providers().get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");
-        assertThat(clientConfig.connectTimeout).isPresent();
-        assertThat(clientConfig.connectTimeout.get()).isEqualTo(5000);
-        assertThat(clientConfig.readTimeout).isPresent();
-        assertThat(clientConfig.readTimeout.get()).isEqualTo(6000);
-        assertThat(clientConfig.followRedirects).isPresent();
-        assertThat(clientConfig.followRedirects.get()).isEqualTo(true);
-        assertThat(clientConfig.queryParamStyle).isPresent();
-        assertThat(clientConfig.queryParamStyle.get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+        assertTrue(clientConfig.connectTimeout().isPresent());
+        assertThat(clientConfig.connectTimeout().get()).isEqualTo(5000);
+        assertTrue(clientConfig.readTimeout().isPresent());
+        assertThat(clientConfig.readTimeout().get()).isEqualTo(6000);
+        assertTrue(clientConfig.followRedirects().isPresent());
+        assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
+        assertTrue(clientConfig.queryParamStyle().isPresent());
+        assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
 
         if (checkExtraProperties) {
-            assertThat(clientConfig.connectionTTL).isPresent();
-            assertThat(clientConfig.connectionTTL.get()).isEqualTo(30000);
-            assertThat(clientConfig.connectionPoolSize).isPresent();
-            assertThat(clientConfig.connectionPoolSize.get()).isEqualTo(10);
-            assertThat(clientConfig.keepAliveEnabled).isPresent();
-            assertThat(clientConfig.keepAliveEnabled.get()).isFalse();
-            assertThat(clientConfig.maxRedirects).isPresent();
-            assertThat(clientConfig.maxRedirects.get()).isEqualTo(5);
+            assertTrue(clientConfig.connectionTTL().isPresent());
+            assertThat(clientConfig.connectionTTL().get()).isEqualTo(30000);
+            assertTrue(clientConfig.connectionPoolSize().isPresent());
+            assertThat(clientConfig.connectionPoolSize().get()).isEqualTo(10);
+            assertTrue(clientConfig.keepAliveEnabled().isPresent());
+            assertThat(clientConfig.keepAliveEnabled().get()).isFalse();
+            assertTrue(clientConfig.maxRedirects().isPresent());
+            assertThat(clientConfig.maxRedirects().get()).isEqualTo(5);
         }
     }
 }

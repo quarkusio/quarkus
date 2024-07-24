@@ -44,10 +44,14 @@ public interface Scheduler {
 
     /**
      * Identity must not be null and {@code false} is returned for non-existent identity.
+     * <p>
+     * Note that this method only returns {@code true} if the job was explicitly paused. I.e. it does not reflect a paused
+     * scheduler.
      *
      * @param identity
      * @return {@code true} if the job with the given identity is paused, {@code false} otherwise
      * @see Scheduled#identity()
+     * @see #pause(String)
      */
     boolean isPaused(String identity);
 
@@ -87,6 +91,13 @@ public interface Scheduler {
      * @return the trigger or {@code null} if no such job exists
      */
     Trigger unscheduleJob(String identity);
+
+    /**
+     *
+     * @return the implementation
+     * @see Scheduled#executeWith()
+     */
+    String implementation();
 
     /**
      * The job definition is a builder-like API that can be used to define a job programmatically.
@@ -176,6 +187,16 @@ public interface Scheduler {
          * @see Scheduled#timeZone()
          */
         JobDefinition setTimeZone(String timeZone);
+
+        /**
+         * {@link Scheduled#executeWith()}
+         *
+         * @param implementation
+         * @return self
+         * @throws IllegalArgumentException If the composite scheduler is used and the selected implementation is not available
+         * @see Scheduled#executeWith()
+         */
+        JobDefinition setExecuteWith(String implementation);
 
         /**
          *

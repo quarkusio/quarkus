@@ -198,7 +198,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
-        } else if (!forceStart && context.getScheduledMethods().isEmpty() && !context.forceSchedulerStart()) {
+        } else if (!forceStart && context.getScheduledMethods(Scheduled.QUARTZ).isEmpty()
+                && !context.forceSchedulerStart()) {
             LOGGER.info("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
         } else {
@@ -232,10 +233,13 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                     }
                 };
 
-                for (ScheduledMethod method : context.getScheduledMethods()) {
+                for (ScheduledMethod method : context.getScheduledMethods(Scheduled.QUARTZ)) {
                     int nameSequence = 0;
 
                     for (Scheduled scheduled : method.getSchedules()) {
+                        if (!context.matchesImplementation(scheduled, Scheduled.QUARTZ)) {
+                            continue;
+                        }
                         String identity = SchedulerUtils.lookUpPropertyValue(scheduled.identity());
                         if (identity.isEmpty()) {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
@@ -343,6 +347,11 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     @Override
     public org.quartz.Scheduler getScheduler() {
         return scheduler;
+    }
+
+    @Override
+    public String implementation() {
+        return Scheduled.QUARTZ;
     }
 
     @Override
@@ -893,7 +902,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             }
             scheduled = true;
             SyntheticScheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation);
             return createJobDefinitionQuartzTrigger(this, scheduled, null);
         }
 

@@ -1,12 +1,15 @@
 package io.quarkus.quartz.test.programmatic;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -40,12 +43,15 @@ public class InterruptableJobTest {
 
     static final CountDownLatch INTERRUPT_LATCH = new CountDownLatch(1);
     static final CountDownLatch EXECUTE_LATCH = new CountDownLatch(1);
+    static final CountDownLatch DESTROY_LATCH = new CountDownLatch(1);
 
     static final CountDownLatch NON_INTERRUPTABLE_EXECUTE_LATCH = new CountDownLatch(1);
     static final CountDownLatch NON_INTERRUPTABLE_HOLD_LATCH = new CountDownLatch(1);
 
     @Test
     public void testInterruptableJob() throws InterruptedException {
+        assertEquals(0, MyJob.timesInitialized);
+        assertEquals(0, MyJob.timesPredestroyInvoked);
 
         String jobKey = "myJob";
         JobKey key = new JobKey(jobKey);
@@ -61,12 +67,16 @@ public class InterruptableJobTest {
             scheduler.scheduleJob(job, trigger);
             // wait for job to start executing, then interrupt
             EXECUTE_LATCH.await(2, TimeUnit.SECONDS);
+            assertEquals(1, MyJob.timesInitialized);
             scheduler.interrupt(key);
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }
 
         assertTrue(INTERRUPT_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(DESTROY_LATCH.await(3, TimeUnit.SECONDS));
+        assertEquals(1, MyJob.timesInitialized);
+        assertEquals(1, MyJob.timesPredestroyInvoked);
     }
 
     @Test
@@ -99,8 +109,21 @@ public class InterruptableJobTest {
         }
     }
 
-    @ApplicationScoped
+    @Dependent
     static class MyJob implements InterruptableJob {
+
+        public static int timesInitialized = 0;
+        public static int timesPredestroyInvoked = 0;
+
+        public MyJob() {
+            timesInitialized++;
+        }
+
+        @PreDestroy
+        public void destroy() {
+            timesPredestroyInvoked++;
+            DESTROY_LATCH.countDown();
+        }
 
         @Override
         public void execute(JobExecutionContext context) {

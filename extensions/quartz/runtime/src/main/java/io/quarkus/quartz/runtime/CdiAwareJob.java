@@ -19,36 +19,38 @@ import org.quartz.spi.TriggerFiredBundle;
  */
 class CdiAwareJob implements InterruptableJob {
 
-    private final Instance<? extends Job> jobInstance;
+    private final Instance<? extends Job> instance;
+    // keep a contextual reference so that we avoid race condition where interrupt() is invoked after execute() finished
+    private Job contextualReference;
+    private Instance.Handle<? extends Job> handle;
 
-    public CdiAwareJob(Instance<? extends Job> jobInstance) {
-        this.jobInstance = jobInstance;
+    public CdiAwareJob(Instance<? extends Job> instance) {
+        this.instance = instance;
     }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Instance.Handle<? extends Job> handle = jobInstance.getHandle();
+        if (handle == null) {
+            this.handle = instance.getHandle();
+            this.contextualReference = handle.get();
+        }
         try {
-            handle.get().execute(context);
+            contextualReference.execute(context);
         } finally {
             if (handle.getBean().getScope().equals(Dependent.class)) {
                 handle.destroy();
+                // needed for jobs that can re-fire; we always want a new dependent bean there
+                // intentionally not cleaning up bean reference as interrupt() can occur after execute()
+                handle = null;
             }
         }
     }
 
     @Override
     public void interrupt() throws UnableToInterruptJobException {
-        Instance.Handle<? extends Job> handle = jobInstance.getHandle();
         // delegate if possible; throw an exception in other cases
         if (InterruptableJob.class.isAssignableFrom(handle.getBean().getBeanClass())) {
-            try {
-                ((InterruptableJob) handle.get()).interrupt();
-            } finally {
-                if (handle.getBean().getScope().equals(Dependent.class)) {
-                    handle.destroy();
-                }
-            }
+            ((InterruptableJob) contextualReference).interrupt();
         } else {
             throw new UnableToInterruptJobException("Job " + handle.getBean().getBeanClass()
                     + " can not be interrupted, since it does not implement " + InterruptableJob.class.getName());

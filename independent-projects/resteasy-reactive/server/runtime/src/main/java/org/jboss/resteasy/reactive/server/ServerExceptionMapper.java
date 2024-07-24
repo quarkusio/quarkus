@@ -41,6 +41,8 @@ import jakarta.ws.rs.core.UriInfo;
  * <p>
  * The return type of the method must be either be of type {@code Response}, {@code Uni<Response>}, {@code RestResponse} or
  * {@code Uni<RestResponse>}.
+ * <p>
+ * See also {@link UnwrapException}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

@@ -66,7 +66,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     /**
      * Read the {@link JBangCatalog} from project or fallback to global catalog.
      *
-     * @param ouput an {@link OutputOptionMixin} that can be used for tests to
+     * @param output an {@link OutputOptionMixin} that can be used for tests to
      *        substitute current dir with a test directory.
      * @param projectDir An optional path pointing to the project directory.
      * @param userdir An optional path pointing to the user directory

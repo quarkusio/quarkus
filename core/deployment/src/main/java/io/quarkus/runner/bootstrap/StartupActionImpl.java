@@ -1,6 +1,6 @@
 package io.quarkus.runner.bootstrap;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.Closeable;
 import java.io.File;

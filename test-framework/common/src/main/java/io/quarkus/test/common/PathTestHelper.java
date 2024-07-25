@@ -1,6 +1,6 @@
 package io.quarkus.test.common;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
 
 import java.io.File;
 import java.net.MalformedURLException;

@@ -154,7 +154,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
      *
      * @param root the root command
      * @param args the arguments passed to the root command
-     * @retunr the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
+     * @return the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
      */
     public Optional<String> checkMissingCommand(CommandLine root, String[] args) {
         if (args.length == 0) {

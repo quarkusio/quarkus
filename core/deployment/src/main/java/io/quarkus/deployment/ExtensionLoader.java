@@ -13,6 +13,8 @@ import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -23,6 +25,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -432,6 +435,7 @@ public final class ExtensionLoader {
         final List<Method> methods = getMethods(clazz);
         final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
 
+        MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         for (Method method : methods) {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             if (buildStep == null) {
@@ -785,6 +789,7 @@ public final class ExtensionLoader {
                 stepId = name;
             }
 
+            MethodHandle methodHandle = unreflect(method, lookup);
             chainConfig = chainConfig
                     .andThen(bcb -> {
                         BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
@@ -846,17 +851,13 @@ public final class ExtensionLoader {
                                 }
                                 Object result;
                                 try {
-                                    result = method.invoke(instance, methodArgs);
+                                    result = methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
                                 } catch (IllegalAccessException e) {
                                     throw ReflectUtil.toError(e);
-                                } catch (InvocationTargetException e) {
-                                    try {
-                                        throw e.getCause();
-                                    } catch (RuntimeException | Error e2) {
-                                        throw e2;
-                                    } catch (Throwable t) {
-                                        throw new IllegalStateException(t);
-                                    }
+                                } catch (RuntimeException | Error e2) {
+                                    throw e2;
+                                } catch (Throwable t) {
+                                    throw new UndeclaredThrowableException(t);
                                 }
                                 resultConsumer.accept(bc, result);
                                 if (isRecorder) {
@@ -883,6 +884,15 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
+    }
+
+    private static MethodHandle unreflect(Method method, MethodHandles.Lookup lookup) {
+        try {
+            return lookup.unreflect(method);
+        } catch (IllegalAccessException e) {
+            throw ReflectUtil.toError(e);
+        }
+
     }
 
     private static BooleanSupplier and(BooleanSupplier addStep, BooleanSupplierFactoryBuildItem supplierFactory,

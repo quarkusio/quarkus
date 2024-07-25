@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketClientConnection;
+import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketBase;
 
@@ -20,8 +21,9 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
 
     WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs,
             Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
-            TrafficLogger trafficLogger) {
-        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger);
+            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+        super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger,
+                sendingInterceptor);
         this.clientId = clientId;
         this.webSocket = Objects.requireNonNull(webSocket);
     }

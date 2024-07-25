@@ -17,6 +17,8 @@ import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.UnhandledFailureStrategy;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
+import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
+import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupport;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import io.vertx.core.Context;
@@ -32,7 +34,7 @@ class Endpoints {
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
             SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, TrafficLogger trafficLogger,
-            Runnable onClose) {
+            Runnable onClose, TelemetrySupport telemetrySupport) {
 
         Context context = vertx.getOrCreateContext();
 
@@ -45,8 +47,8 @@ class Endpoints {
                 container.requestContext());
 
         // Create an endpoint that delegates callbacks to the endpoint bean
-        WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport,
-                securitySupport);
+        WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, connection, codecs, contextSupport,
+                securitySupport, telemetrySupport);
 
         // A broadcast processor is only needed if Multi is consumed by the callback
         BroadcastProcessor<Object> textBroadcastProcessor = endpoint.consumedTextMultiType() != null
@@ -357,8 +359,9 @@ class Endpoints {
         });
     }
 
-    private static WebSocketEndpoint createEndpoint(String endpointClassName, Context context,
-            WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport, SecuritySupport securitySupport) {
+    private static WebSocketEndpoint createEndpoint(String endpointClassName,
+            WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport, SecuritySupport securitySupport,
+            TelemetrySupport telemetrySupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -369,9 +372,10 @@ class Endpoints {
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
                     .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class,
-                            SecuritySupport.class)
-                    .newInstance(connection, codecs, contextSupport, securitySupport);
-            return endpoint;
+                            SecuritySupport.class, ErrorInterceptor.class)
+                    .newInstance(connection, codecs, contextSupport, securitySupport,
+                            telemetrySupport.getErrorInterceptor());
+            return telemetrySupport.decorate(endpoint, connection);
         } catch (Exception e) {
             throw new WebSocketException("Unable to create endpoint instance: " + endpointClassName, e);
         }

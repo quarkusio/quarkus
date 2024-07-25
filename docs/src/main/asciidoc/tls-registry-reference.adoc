@@ -19,7 +19,7 @@ It allows to define the TLS configuration in a single place and to reference it 
 The TLS extension should be automatically added to your project as soon as you use a compatible extension.
 For example, if your application uses Quarkus REST, gRPC or reactive routes, the TLS registry is automatically added to your project.
 
-== Examples
+== Using TLS registry
 
 To configure a TLS connection, and more specifically the key stores and trust stores, you use the `quarkus.tls.*` properties.
 
@@ -1107,3 +1107,161 @@ On Mac, you can use the following command:
 ----
 sudo security -v remove-trusted-cert -d /Users/clement/.quarkus/quarkus-dev-root-ca.pem
 ----
+
+[[lets-encrypt]]
+== Automatic certificate management with Let's Encrypt
+
+https://letsencrypt.org[Let's Encrypt] is a free, automated certificate authority provided by https://www.abetterinternet.org/[Internet Security Research Group].
+
+Let's Encrypt uses https://datatracker.ietf.org/doc/html/rfc8555[Automated certificate management environment (ACME) protocol] to support an automatic certificate issuance and renewal. Please read https://letsencrypt.org/docs/[Let's Encrypt documentation] to learn more about Let's Encrypt and ACME.
+
+TLS registry project provides a CLI ACME client to issue and renew Let's Encrypt certificates.
+Your application uses TLS registry to resolve ACME protocol challenges.
+
+Follow the steps below to have your Quarkus application prepared and automatically updated with new and renewed Let's Encrypt certificates.
+
+[[lets-encrypt-prerequisites]]
+=== Prerequisites
+
+Make sure that a fully resolvable DNS domain name is available and can be used to access your application.
+This domain name is used for creating a Let's Encrypt account, and supporting Let's Encrypt ACME challenges to prove that you own this domain.
+You can use https://ngrok.com/[Ngrok] to start experimenting with the Quarkus Let's Encrypt ACME feature, see <<lets-encrypt-ngrok>> section below for more information.
+
+Your Quarkus HTTPS application must use a _build-time_ property to enable a Let's Encrypt ACME challenge route:
+
+[source, properties]
+----
+quarkus.tls.lets-encrypt.enabled=true
+----
+
+The TLS registry can manage the challenge process from either the main HTTP interface or from the management interface.
+Using a management interface is **strongly** recommended to let Quarkus deal with ACME challenge configuration separately to the main application's deployment and security requirements:
+
+[source, properties]
+----
+quarkus.tls.lets-encrypt.enabled=true
+quarkus.management.enabled=true
+----
+
+The challenge itself is served from the primary HTTP interface (the one accessible from your DNS domain name).
+
+IMPORTANT: Do not start your application yet.
+
+=== Application preparation
+
+Before you request a Let's Encrypt certificate, you must run TLS registry Let's Encrypt CLI `prepare` command to prepare your application:
+
+[source, shell]
+----
+quarkus tls lets-encrypt prepare --domain=<domain-dns-name>
+----
+
+IMPORTANT: Make sure you run a prepare command in the root directory of your application.
+
+The `prepare` command does the following:
+
+- Creates a `.letsencrypt` folder in your application's root directory
+- Creates a self-signed domain certificate and private key for your application configured in the previous <<lets-encrypt-prerequisites>> step to be able to start and accept HTTPS requests.
+- Create a `.env` configuration file in your application's root directory configure the application to use the self-signed domain certificate and private key (until we get the Let's Encrypt certificate).
+
+The following snippet shows an example of the generated `.env` file:
+
+[source, properties]
+----
+quarkus.tls.key-store.pem.acme.cert=.letsencrypt/lets-encrypt.crt
+quarkus.tls.key-store.pem.acme.key=.letsencrypt/lets-encrypt.key
+----
+
+NOTE: The `.env` file does not contain the `quarkus.tls.lets-encrypt.enabled` and `quarkus.management.enabled` properties as they are build-time properties requiring a rebuild of the application.
+
+=== Start your application
+
+You can start your application:
+
+[source, shell]
+----
+java -jar quarkus-run.jar
+----
+
+Access your application endpoint using `https://your-domain-name:8443/`, for example, `https://your-domain-name:8443/hello`, accept a self-signed certificate in the browser.
+
+Next, keep the application running and request your first Let's Encrypt certificate.
+
+[[lets-encrypt-issue-certificate]]
+=== Issue certificate
+
+From the application directory, run the `issue-certificate` command to acquire your first Let's Encrypt certificate:
+
+[source, shell]
+----
+quarkus tls lets-encrypt issue-certificate \
+  --domain=<domain-dns-name> \ <1>
+  --email=<your contact email> \ <2>
+  --management-url=https://localhost:9000 <3>
+----
+<1> Set your domain name.
+<2> Provide your contact email address that Let's Encrypt can use to contact you in case of any issues with your Let's Encrypt account.
+<3> Set your application management URL which can be used to handle ACME challenges. Use `https://localhost:8443/` if you chose not to enable a management router in the <<lets-encrypt-prerequisites>> step.
+
+During this command, the TLS registry CLI checks if the application is prepared to serve the challenge, creates and records Let's Encrypt account information, issues a Let's Encrypt certificate request, and interacts with the Quarkus application to resolve ACME challenges.
+
+Once the Let's Encrypt certificate chain and private key have been successfully acquired, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
+The TLS registry is informed that a new certificate and private key are ready, and reloads them automatically.
+
+Now, access your application's endpoint using `https://your-domain-name:8443/` again.
+Confirm in the browser that your domain certificate is now signed by the Let's Encrypt certificate authority.
+
+Note that currently, a Let's Encrypt account is created implicitly by the `issue-certificate` command to make it easy for users to get started with the ACME protocol.
+Support for the Let's Encrypt account management will evolve further.
+
+[[lets-encrypt-renew-certificate]]
+=== Renew certificate
+
+Renewing certificates is similar to issuing the first certificate, but it requires an existing account created during the <<lets-encrypt-issue-certificate>> step.
+
+Run the following command to renew your Let's Encrypt certificate:
+
+[source, shell]
+----
+quarkus tls lets-encrypt renew-certificate \
+  --domain=<domain-dns-name> <1>
+----
+<1> Set your domain name.
+
+During this command, TLS registry CLI reads a Let's Encrypt account information recorded during the <<lets-encrypt-issue-certificate>> step, issues a Let's Encrypt certificate request, and communicates with a Quarkus application to have ACME challenges resolved.
+
+Once the Let's Encrypt certificate chain and private key have been successfully renewed, they are converted to PEM format and copied to your application's `.letsencrypt` folder.
+TLS registry is informed that a new certificate and private key are ready and it reloads them automatically.
+
+[[lets-encrypt-ngrok]]
+=== Use NGrok for testing
+
+https://ngrok.com/[Ngrok] can be used to provide a secure HTTPS tunnel to your application running on localhost, and make it easy to test HTTPS based applications.
+
+Using Ngrok provides an easiest option to get started with the Quarkus Let's Encrypt ACME feature.
+
+The first thing you have to do with Ngrok is to ask it to reserve a domain.
+You can use https://github.com/quarkiverse/quarkus-ngrok[Quarkiverse NGrok] in devmode, or have it reserved directly in the NGrok dashboard.
+
+Unfortunately, you can't use your NGrok domain to test the Quarkus Let's Encrypt ACME feature immediately.
+This is due to the fact that Ngrok is itself using Let's Encrypt and intercepts ACME challenges which are meant to be handled by the Quarkus application instead.
+
+Therefore, you need to remove an NGrok Let's Encrypt certificate policy from your NGrok domain:
+
+[source, shell]
+----
+ngrok api --api-key <YOUR-API-KEY> reserved-domains delete-certificate-management-policy <YOUR-RESERVED-DOMAIN-ID>
+----
+
+`YOUR-RESERVED-DOMAIN-ID` is your reserved domain's id which starts from `rd_`, you can find it in the https://dashboard.ngrok.com/cloud-edge/domains[NGrok dashboard domains section].
+
+Now, NGrok will forward ACME challenges over HTTP only, therefore you need to start Ngrok like this:
+
+[source, shell]
+----
+ngrok http --domain <YOUR-NGROK-DOMAIN> 8080 --scheme http
+----
+
+where `8080` is the localhost HTTP port that your application is listening on.
+
+You can now test the Quarkus Let's Encrypt ACME feature from your local machine.

@@ -19,6 +19,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean methods;
     private final boolean queryMethods;
     private final boolean fields;
+    private final boolean classes;
     private final boolean constructors;
     private final boolean queryConstructors;
     private final boolean weak;
@@ -43,7 +44,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean weak, boolean serialization,
+            boolean fields, boolean getClasses, boolean weak, boolean serialization,
             boolean unsafeAllocated, Class<?>... classes) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : classes) {
@@ -63,6 +64,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             this.queryMethods = queryMethods;
         }
         this.fields = fields;
+        this.classes = getClasses;
         this.constructors = constructors;
         if (methods && queryMethods) {
             Log.warnf(
@@ -95,7 +97,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, false, methods, false, fields, false, false, false, classes);
+        this(constructors, false, methods, false, fields, false, false, false, false, classes);
     }
 
     /**
@@ -144,8 +146,16 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
+    @Deprecated(since = "3.14", forRemoval = true)
     ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String... className) {
+        this(constructors, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
+                className);
+    }
+
+    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+            boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String... className) {
         for (String i : className) {
             if (i == null) {
@@ -163,6 +173,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             this.queryMethods = queryMethods;
         }
         this.fields = fields;
+        this.classes = classes;
         this.constructors = constructors;
         if (methods && queryMethods) {
             Log.warnf(
@@ -191,6 +202,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public boolean isFields() {
         return fields;
+    }
+
+    public boolean isClasses() {
+        return classes;
     }
 
     public boolean isConstructors() {
@@ -229,6 +244,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean methods;
         private boolean queryMethods;
         private boolean fields;
+        private boolean classes;
         private boolean weak;
         private boolean serialization;
         private boolean unsafeAllocated;
@@ -307,6 +323,19 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         /**
+         * Configures whether declared classes should be registered for reflection.
+         * Setting this enables getting all declared classes through Class.getClasses().
+         */
+        public Builder classes(boolean classes) {
+            this.classes = classes;
+            return this;
+        }
+
+        public Builder classes() {
+            return fields(true);
+        }
+
+        /**
          * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This
          *             will be removed in a future version of Quarkus.
          */
@@ -349,7 +378,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, queryConstructors, methods, queryMethods, fields, weak,
+            return new ReflectiveClassBuildItem(constructors, queryConstructors, methods, queryMethods, fields, classes, weak,
                     serialization, unsafeAllocated, className);
         }
     }

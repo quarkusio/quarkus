@@ -239,7 +239,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
             returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
             tryBlock.close();
         } else {
-            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery, fieldValues, Uni.class);
+            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery, fieldValues,
+                    Uni.class);
 
             methodCreator.returnValue(UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE,
                     (body, pageCount) -> {
@@ -319,7 +320,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     private ResultHandle pageCount(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
-                                   ResultHandle page, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues, Object returnType) {
+            ResultHandle page, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues, Object returnType) {
         AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues, Boolean.FALSE);
         ResultHandle dataParams = queryImplementor.getDataParams(creator, fieldValues);
 

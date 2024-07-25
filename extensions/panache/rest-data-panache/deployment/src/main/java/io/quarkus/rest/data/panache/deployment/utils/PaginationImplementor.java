@@ -62,7 +62,8 @@ public final class PaginationImplementor {
 
         BytecodeCreator previousPageCreator = isTheSamePage(creator, page, firstPage).falseBranch();
         ResultHandle previousPage = previousPageCreator.invokeVirtualMethod(ofMethod(Page.class, "previous", Page.class), page);
-        ResultHandle previousPageLink = getLink(previousPageCreator, uriInfo, previousPage, "previous", fieldValues, namedQuery);
+        ResultHandle previousPageLink = getLink(previousPageCreator, uriInfo, previousPage, "previous", fieldValues,
+                namedQuery);
         previousPageCreator.invokeInterfaceMethod(
                 ofMethod(List.class, "add", boolean.class, Object.class), links, previousPageLink);
 
@@ -124,7 +125,8 @@ public final class PaginationImplementor {
             BytecodeCreator existFieldValue = creator.ifNotNull(field.getValue()).trueBranch();
             existFieldValue.invokeVirtualMethod(
                     ofMethod(UriBuilder.class, "queryParam", UriBuilder.class, String.class, Object[].class),
-                    uriBuilder, existFieldValue.load(paramName), existFieldValue.marshalAsArray(Object.class, field.getValue()));
+                    uriBuilder, existFieldValue.load(paramName),
+                    existFieldValue.marshalAsArray(Object.class, field.getValue()));
         }
 
         return creator.invokeVirtualMethod(

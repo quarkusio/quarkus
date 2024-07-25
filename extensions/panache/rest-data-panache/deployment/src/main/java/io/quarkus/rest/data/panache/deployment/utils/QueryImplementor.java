@@ -19,12 +19,12 @@ public final class QueryImplementor {
      *
      * <pre>
      * {@code
-     *      String query;
-     *      if (namedQuery != null) {
-     *          query = "#" + namedQuery;
-     *      } else {
-     *          query = String.join(" AND ", queryList);
-     *      }
+     * String query;
+     * if (namedQuery != null) {
+     *     query = "#" + namedQuery;
+     * } else {
+     *     query = String.join(" AND ", queryList);
+     * }
      * }
      * </pre>
      *
@@ -83,11 +83,11 @@ public final class QueryImplementor {
      *
      * <pre>
      * {@code
-     *     var namedQueries = namedQuery.split(",", 2);
-     *     var listQuery = namedQueries.length >= 1 ? namedQueries[0] : "";
-     *     var countQuery = namedQueries.length == 2 ? namedQueries[1] : listQuery;
+     * var namedQueries = namedQuery.split(",", 2);
+     * var listQuery = namedQueries.length >= 1 ? namedQueries[0] : "";
+     * var countQuery = namedQueries.length == 2 ? namedQueries[1] : listQuery;
      *
-     *     return isList ? listQuery : countQuery;
+     * return isList ? listQuery : countQuery;
      * }
      * </pre>
      *

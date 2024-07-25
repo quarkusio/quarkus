@@ -78,7 +78,7 @@ public final class PaginationImplementor {
     }
 
     private ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel,
-            Map<String, ResultHandle> fieldValues, ResultHandle namedQuery)  {
+            Map<String, ResultHandle> fieldValues, ResultHandle namedQuery) {
         ResultHandle builder = creator.invokeStaticMethod(
                 ofMethod(Link.class, "fromUri", Link.Builder.class, URI.class),
                 getPageUri(creator, uriInfo, page, fieldValues, namedQuery));

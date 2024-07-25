@@ -32,7 +32,7 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
 
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
-        return delegate.invoke(execution).whenComplete((v, t) -> {
+        return invokeDelegate(execution).whenComplete((v, t) -> {
             if (t != null) {
                 LOG.errorf(t, "Error occurred while executing task for trigger %s", execution.getTrigger());
                 Events.fire(failedEvent, new FailedExecution(execution, t));

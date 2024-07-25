@@ -489,6 +489,12 @@ public class OidcProvider implements Closeable {
                 }
             }
 
+            if (key == null && oidcConfig.jwks.tryAll && kid == null && thumbprint == null) {
+                LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                        + " falling back to trying all available keys");
+                key = jwks.findKeyInAllKeys(jws);
+            }
+
             if (key == null && chainResolverFallback != null) {
                 LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
                         + " falling back to the certificate chain resolver");

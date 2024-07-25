@@ -123,14 +123,15 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Implements <code>repository.findAll().page(page).pageCount()</code>
+     * Implements <code>repository.find(query, params).page(page).pageCount()</code>
      */
     @Override
-    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
-                getRepositoryInstance(creator));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), query);
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator
+                .invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class,
+                        String.class, Map.class), getRepositoryInstance(creator), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), panacheQuery);
     }
 
     /**

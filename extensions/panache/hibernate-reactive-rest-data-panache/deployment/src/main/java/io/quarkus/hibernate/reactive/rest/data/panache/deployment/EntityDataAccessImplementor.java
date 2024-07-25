@@ -113,14 +113,15 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Implements <code>Entity.findAll().page(page).pageCount()</code>
+     * Implements <code>Entity.find(query, params).page(page).pageCount()</code>
      */
     @Override
-    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "find", PanacheQuery.class,
+                String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
                 page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), query);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), panacheQuery);
     }
 
     /**

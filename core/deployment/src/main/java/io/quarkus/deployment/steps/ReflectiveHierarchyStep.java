@@ -223,6 +223,7 @@ public class ReflectiveHierarchyStep {
                         .builder(name.toString())
                         .methods()
                         .fields()
+                        .classes()
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
                         .build());
 

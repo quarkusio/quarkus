@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.event.Observes;
@@ -233,8 +234,22 @@ public class JsonRpcRouter {
             }
         } else if (this.jsonRpcToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to extension (deployment)
             Object item = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
-            codec.writeResponse(s, jsonRpcRequest.getId(), item,
-                    MessageType.Response);
+
+            // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
+            // Supporting something like CompletableFuture that is in the JDK works fine
+            if (item instanceof CompletionStage) {
+                CompletionStage<?> future = (CompletionStage) item;
+                future.thenAccept(r -> {
+                    codec.writeResponse(s, jsonRpcRequest.getId(), r,
+                            MessageType.Response);
+                }).exceptionally(throwable -> {
+                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
+                    return null;
+                });
+            } else {
+                codec.writeResponse(s, jsonRpcRequest.getId(), item,
+                        MessageType.Response);
+            }
         } else {
             // Method not found
             codec.writeMethodNotFoundResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName);

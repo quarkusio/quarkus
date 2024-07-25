@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.common.runtime;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import io.quarkus.arc.Arc;
@@ -24,10 +25,10 @@ public abstract class DefaultInvoker implements ScheduledInvoker {
                 return invokeBean(execution).whenComplete((v, t) -> {
                     requestContext.destroy(state);
                 });
-            } catch (RuntimeException e) {
-                // Just terminate the context and rethrow the exception if something goes really wrong
+            } catch (Throwable e) {
+                // Terminate the context and return a failed stage if something goes really wrong
                 requestContext.terminate();
-                throw e;
+                return CompletableFuture.failedStage(e);
             } finally {
                 // Always deactivate the context
                 requestContext.deactivate();
@@ -35,6 +36,7 @@ public abstract class DefaultInvoker implements ScheduledInvoker {
         }
     }
 
+    // This method is generated and should never throw an exception
     protected abstract CompletionStage<Void> invokeBean(ScheduledExecution execution);
 
 }

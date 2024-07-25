@@ -40,7 +40,7 @@ public final class SkipPredicateInvoker extends DelegateInvoker {
             event.fireAsync(payload);
             return CompletableFuture.completedStage(null);
         } else {
-            return delegate.invoke(execution);
+            return invokeDelegate(execution);
         }
     }
 

@@ -34,7 +34,7 @@ public final class SkipConcurrentExecutionInvoker extends DelegateInvoker {
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
         if (running.compareAndSet(false, true)) {
-            return delegate.invoke(execution).whenComplete((r, t) -> running.set(false));
+            return invokeDelegate(execution).whenComplete((r, t) -> running.set(false));
         }
         LOG.debugf("Skipped scheduled invoker execution: %s", delegate.getClass().getName());
         SkippedExecution payload = new SkippedExecution(execution,

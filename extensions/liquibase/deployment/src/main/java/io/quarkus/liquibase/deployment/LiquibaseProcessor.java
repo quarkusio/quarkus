@@ -1,6 +1,5 @@
 package io.quarkus.liquibase.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static java.util.function.Predicate.not;
 
 import java.io.FileNotFoundException;
@@ -111,9 +110,7 @@ class LiquibaseProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Record(STATIC_INIT)
     void nativeImageConfiguration(
-            LiquibaseRecorder ignored,
             LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             CombinedIndexBuildItem combinedIndex,

@@ -126,6 +126,7 @@ class LiquibaseMongodbProcessor {
                 liquibase.change.ColumnConfig.class.getName(),
                 liquibase.change.AddColumnConfig.class.getName(),
                 liquibase.change.core.LoadDataColumnConfig.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName(),
                 liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),

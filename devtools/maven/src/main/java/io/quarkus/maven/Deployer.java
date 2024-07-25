@@ -85,7 +85,7 @@ public enum Deployer {
      * Get the deployer extensions found in the project.
      *
      * @param dependencies the dependencies for extensions
-     * @return A set with the discovered extenions.
+     * @return A set with the discovered extensions.
      */
     public static Set<String> getProjectDeployers(List<Dependency> dependencies) {
         if (dependencies == null) {

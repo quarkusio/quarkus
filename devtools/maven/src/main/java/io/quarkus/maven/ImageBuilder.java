@@ -68,7 +68,7 @@ public enum ImageBuilder {
      * Get teh image builder extensions found in the project.
      *
      * @param the project to search for extensions
-     * @return A set with the discovered extenions.
+     * @return A set with the discovered extensions.
      */
     public static Set<String> getProjectBuilder(MavenProject project) {
         return project.getDependencies().stream()

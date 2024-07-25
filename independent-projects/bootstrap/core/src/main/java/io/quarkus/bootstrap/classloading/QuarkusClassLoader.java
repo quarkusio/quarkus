@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.classloading;
 
-import static io.quarkus.commons.classloading.ClassloadHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -44,7 +45,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private static final byte STATUS_CLOSED = -1;
 
     protected static final String META_INF_SERVICES = "META-INF/services/";
-    protected static final String JAVA = "java.";
 
     static {
         registerAsParallelCapable();
@@ -186,7 +186,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     public boolean isParentFirst(String name) {
         ensureOpen();
 
-        if (name.startsWith(JAVA)) {
+        if (isInJdkPackage(name)) {
             return true;
         }
 
@@ -516,7 +516,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.loadClass(name, this.name);
         }
-        if (name.startsWith(JAVA)) {
+        if (isInJdkPackage(name)) {
             return parent.loadClass(name);
         }
         //even if the thread is interrupted we still want to be able to load classes

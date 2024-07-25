@@ -135,7 +135,7 @@
         {
             "category": "Windows support",
             "timeout": 50,
-            "test-modules": "resteasy-jackson, qute",
+            "test-modules": "resteasy-jackson, qute, liquibase",
             "os-name": "windows-latest"
         },
         {

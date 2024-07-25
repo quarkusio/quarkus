@@ -1,5 +1,8 @@
 package io.quarkus.rest.data.panache.deployment.utils;
 
+import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -9,9 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 public final class QueryImplementor {
     /**

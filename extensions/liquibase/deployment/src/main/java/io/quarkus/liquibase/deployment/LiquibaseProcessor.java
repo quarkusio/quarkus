@@ -1,7 +1,6 @@
 package io.quarkus.liquibase.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static java.util.function.Predicate.not;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -260,11 +259,7 @@ class LiquibaseProcessor {
     }
 
     private static Predicate<String> commandStepPredicate(Capabilities capabilities) {
-        if (capabilities.isPresent("io.quarkus.jdbc.h2")) {
-            return (s) -> true;
-        } else {
-            return not("liquibase.command.core.StartH2CommandStep"::equals);
-        }
+        return (s) -> true;
     }
 
     private void consumeService(Class<?> serviceClass, BiConsumer<Class<?>, Collection<String>> consumer) {

@@ -15,13 +15,19 @@ public class BuildpackConfig {
      * The buildpacks builder image to use when building the project in jvm mode.
      */
     @ConfigItem(defaultValue = "paketocommunity/builder-ubi-base")
-    public Optional<String> jvmBuilderImage;
+    public String jvmBuilderImage;
 
     /**
-     * The buildpacks builder image to use when building the project in jvm mode.
+     * The buildpacks builder image to use when building the project in native mode.pu
      */
-    @ConfigItem(defaultValue = "paketocommunity/builder-ubi-base")
+    @ConfigItem
     public Optional<String> nativeBuilderImage;
+
+    /**
+     * Should the builder image be 'trusted' (use creator lifecycle)
+     */
+    @ConfigItem
+    public Optional<Boolean> trustBuilderImage;
 
     /**
      * Environment key/values to pass to buildpacks.
@@ -39,22 +45,29 @@ public class BuildpackConfig {
     public Optional<String> runImage;
 
     /**
-     * Max pull timeout for builder/run images, in seconds
+     * Initial pull timeout for builder/run images, in seconds
      */
     @ConfigItem(defaultValue = "300")
     public Integer pullTimeoutSeconds;
 
     /**
-     * Max pull timeout for builder/run images, in seconds
+     * Increase pull timeout for builder/run images after failure, in seconds
      */
     @ConfigItem(defaultValue = "15")
     public Integer pullTimeoutIncreaseSeconds;
 
     /**
+     * How many times to retry an image pull after a failure
+     */
+    @ConfigItem(defaultValue = "3")
+    public Integer pullRetryCount;
+
+    /**
      * DOCKER_HOST value to use.
      *
-     * If not set, the env var DOCKER_HOST is used, if that is not set
-     * the value `unix:///var/run/docker.sock' (or 'npipe:///./pipe/docker_engine' for windows) is used.
+     * If not set, the env var DOCKER_HOST is used, if that is not set the platform will look for
+     * 'npipe:///./pipe/docker_engine' for windows, and `unix:///var/run/docker.sock' then
+     * `unix:///var/run/podman.sock` then `unix:///var/run/user/<uid>/podman/podman.sock` for linux
      */
     @ConfigItem
     public Optional<String> dockerHost;

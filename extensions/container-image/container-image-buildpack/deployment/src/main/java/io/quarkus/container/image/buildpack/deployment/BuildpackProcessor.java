@@ -47,7 +47,6 @@ public class BuildpackProcessor {
     private static final Logger log = Logger.getLogger(BuildpackProcessor.class);
     private static final String QUARKUS_CONTAINER_IMAGE_BUILD = "QUARKUS_CONTAINER_IMAGE_BUILD";
     private static final String QUARKUS_CONTAINER_IMAGE_PUSH = "QUARKUS_CONTAINER_IMAGE_PUSH";
-    private static final String BP_JVM_VERSION = "BP_JVM_VERSION";
 
     public static final String BUILDPACK = "buildpack";
 
@@ -194,11 +193,16 @@ public class BuildpackProcessor {
                     .withLogger(new BuildpackLogger())
                     .withLogLevel(buildpackConfig.logLevel)
                     .and()
+                    .withNewDockerConfig()
+                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds)
+                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds)
+                    .withPullRetryCount(buildpackConfig.pullRetryCount)
+                    .and()
                     .accept(BuildConfigBuilder.class, b -> {
                         if (isNativeBuild) {
                             buildpackConfig.nativeBuilderImage.ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
                         } else {
-                            buildpackConfig.jvmBuilderImage.ifPresent(i -> b.withBuilderImage(new ImageReference(i)));
+                            b.withBuilderImage(new ImageReference(buildpackConfig.jvmBuilderImage));
                         }
 
                         if (buildpackConfig.runImage.isPresent()) {
@@ -208,14 +212,12 @@ public class BuildpackProcessor {
 
                         if (buildpackConfig.dockerHost.isPresent()) {
                             log.info("Using DockerHost of " + buildpackConfig.dockerHost.get());
-                            b.withNewDockerConfig()
-                                    .withDockerHost(buildpackConfig.dockerHost.get())
-                                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds)
-                                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds);
-                        } else {
-                            b.withNewDockerConfig()
-                                    .withPullRetryIncreaseSeconds(buildpackConfig.pullTimeoutIncreaseSeconds)
-                                    .withPullTimeoutSeconds(buildpackConfig.pullTimeoutSeconds);
+                            b.editDockerConfig().withDockerHost(buildpackConfig.dockerHost.get());
+                        }
+
+                        if (buildpackConfig.trustBuilderImage.isPresent()) {
+                            log.info("Setting trusted image to " + buildpackConfig.trustBuilderImage.get());
+                            b.editPlatformConfig().withTrustBuilder(buildpackConfig.trustBuilderImage.get());
                         }
                     })
                     .build()

@@ -13,6 +13,7 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
 
     private final List<BuildTimeAction> actions = new ArrayList<>();
+    private final List<BuildTimeAction> subscriptions = new ArrayList<>();
 
     public BuildTimeActionBuildItem() {
         super();
@@ -33,5 +34,18 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
 
     public List<BuildTimeAction> getActions() {
         return actions;
+    }
+
+    public void addSubscription(BuildTimeAction buildTimeAction) {
+        this.subscriptions.add(buildTimeAction);
+    }
+
+    public <T> void addSubscription(String methodName,
+            Function<Map<String, String>, T> action) {
+        this.addSubscription(new BuildTimeAction(methodName, action));
+    }
+
+    public List<BuildTimeAction> getSubscriptions() {
+        return subscriptions;
     }
 }

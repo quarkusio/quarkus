@@ -46,10 +46,11 @@ public class DevUIRecorder {
 
     public void createJsonRpcRouter(BeanContainer beanContainer,
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
-            List<String> deploymentMethods) {
+            List<String> deploymentMethods,
+            List<String> deploymentSubscriptions) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
         jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
-        jsonRpcRouter.setJsonRPCDeploymentMethods(deploymentMethods);
+        jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
 

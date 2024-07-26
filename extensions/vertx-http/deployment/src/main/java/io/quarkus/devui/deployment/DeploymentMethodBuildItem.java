@@ -10,9 +10,11 @@ import io.quarkus.builder.item.SimpleBuildItem;
 public final class DeploymentMethodBuildItem extends SimpleBuildItem {
 
     private final List<String> methods;
+    private final List<String> subscriptions;
 
-    public DeploymentMethodBuildItem(List<String> methods) {
+    public DeploymentMethodBuildItem(List<String> methods, List<String> subscriptions) {
         this.methods = methods;
+        this.subscriptions = subscriptions;
     }
 
     public List<String> getMethods() {
@@ -21,5 +23,13 @@ public final class DeploymentMethodBuildItem extends SimpleBuildItem {
 
     public boolean hasMethods() {
         return this.methods != null && !this.methods.isEmpty();
+    }
+
+    public List<String> getSubscriptions() {
+        return this.subscriptions;
+    }
+
+    public boolean hasSubscriptions() {
+        return this.subscriptions != null && !this.subscriptions.isEmpty();
     }
 }

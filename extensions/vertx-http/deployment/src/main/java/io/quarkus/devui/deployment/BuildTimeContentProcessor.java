@@ -207,6 +207,7 @@ public class BuildTimeContentProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         List<String> methodNames = new ArrayList<>();
+        List<String> subscriptionNames = new ArrayList<>();
         for (BuildTimeActionBuildItem actions : buildTimeActions) {
             String extensionPathName = actions.getExtensionPathName(curateOutcomeBuildItem);
             for (BuildTimeAction bta : actions.getActions()) {
@@ -214,9 +215,14 @@ public class BuildTimeContentProcessor {
                 DevConsoleManager.register(fullName, bta.getAction());
                 methodNames.add(fullName);
             }
+            for (BuildTimeAction bts : actions.getSubscriptions()) {
+                String fullName = extensionPathName + "." + bts.getMethodName();
+                DevConsoleManager.register(fullName, bts.getAction());
+                subscriptionNames.add(fullName);
+            }
         }
 
-        return new DeploymentMethodBuildItem(methodNames);
+        return new DeploymentMethodBuildItem(methodNames, subscriptionNames);
     }
 
     private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {

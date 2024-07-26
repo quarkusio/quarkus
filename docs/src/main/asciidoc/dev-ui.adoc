@@ -1035,7 +1035,7 @@ this._observer.cancel(); //<2>
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
 
-==== JsonRpc against the deployment classpath
+=== JsonRpc against the deployment classpath
 
 In certain cases you might need to execute methods and/or get data against the deployment classpath. This also happens over JsonRPC communication, but in this case you do not create a JsonRPC Service in the runtime module,
 you can just supply the code to be run in a supplier in the deployment module. To do this you will produce a `BuildTimeActionBuildItem`, example:
@@ -1064,9 +1064,11 @@ you can just supply the code to be run in a supplier in the deployment module. T
 ----
 <1> Return or use a BuildProducer to create a `BuildTimeActionBuildItem`
 <2> `BuildTimeActionBuildItem` is automatically scoped with your extension namespace
-<3> The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`
+<3> Here we add an action, that is the same as a request-response method. The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`. 
 
-===== Dev UI Log
+You can also return a `CompletableFuture`/`CompletionStage` as an action, and if you want to stream data you need to use `addSubscription` (rather than `addAction`) and return a `Flow.Publisher`.
+
+=== Dev UI Log
 
 When running a local application using the `999-SNAPSHOT` version, the Dev UI will show a `Dev UI` Log in the footer. This is useful for debugging all JSON RPC messages flowing between the browser and the Quarkus app.
 

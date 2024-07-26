@@ -379,6 +379,10 @@ public class DevUIProcessor {
             requestResponseMethods.addAll(deploymentMethodBuildItem.getMethods());
         }
 
+        if (deploymentMethodBuildItem.hasSubscriptions()) {
+            subscriptionMethods.addAll(deploymentMethodBuildItem.getSubscriptions());
+        }
+
         if (!extensionMethodsMap.isEmpty()) {
             jsonRPCMethodsProvider.produce(new JsonRPCRuntimeMethodsBuildItem(extensionMethodsMap));
         }
@@ -409,7 +413,8 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods());
+            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
+                    deploymentMethodBuildItem.getSubscriptions());
         }
     }
 

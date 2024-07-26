@@ -46,7 +46,8 @@ public class LogStreamProcessor {
             LoggingDecorateBuildItem loggingDecorateBuildItem,
             LogStreamRecorder recorder) {
         RuntimeValue<Optional<MutinyLogHandler>> mutinyLogHandler = recorder.mutinyLogHandler(
-                logBuildTimeConfig.decorateStacktraces, loggingDecorateBuildItem.getSrcMainJava().toString(),
+                logBuildTimeConfig.decorateStacktraces(),
+                loggingDecorateBuildItem.getSrcMainJava().toString(),
                 loggingDecorateBuildItem.getKnowClasses());
         streamingLogHandlerBuildItem.produce(new StreamingLogHandlerBuildItem((RuntimeValue) mutinyLogHandler));
     }

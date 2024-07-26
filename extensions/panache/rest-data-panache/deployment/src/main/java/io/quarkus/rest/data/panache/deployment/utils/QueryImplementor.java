@@ -31,11 +31,10 @@ public final class QueryImplementor {
      * @param creator a bytecode creator to be used for code generation.
      * @param namedQuery HQL query to list entities.
      * @param fieldValues fields query params.
-     * @param isList to get list query or count query.
      * @return query.
      */
     public AssignableResultHandle getQuery(BytecodeCreator creator, ResultHandle namedQuery,
-            Map<String, ResultHandle> fieldValues, Boolean isList) {
+            Map<String, ResultHandle> fieldValues) {
         ResultHandle queryList = creator.newInstance(ofConstructor(ArrayList.class));
 
         for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
@@ -53,7 +52,7 @@ public final class QueryImplementor {
         BytecodeCreator whenNamedQueryIsNotNull = checkIfNamedQueryIsNull.falseBranch();
         whenNamedQueryIsNotNull.assign(query, whenNamedQueryIsNotNull.invokeVirtualMethod(
                 ofMethod(String.class, "concat", String.class, String.class),
-                whenNamedQueryIsNotNull.load("#"), getSpecificQuery(whenNamedQueryIsNotNull, namedQuery, isList)));
+                whenNamedQueryIsNotNull.load("#"), namedQuery));
         whenNamedQueryIsNull.assign(query, whenNamedQueryIsNull.invokeStaticMethod(
                 ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
                 creator.load(" AND "), queryList));
@@ -75,51 +74,5 @@ public final class QueryImplementor {
         }
 
         return dataParams;
-    }
-
-    /**
-     * Returns the list or counter query as specified. The list query is located before
-     * the comma and on the left side is the count query.
-     *
-     * <pre>
-     * {@code
-     * var namedQueries = namedQuery.split(",", 2);
-     * var listQuery = namedQueries.length >= 1 ? namedQueries[0] : "";
-     * var countQuery = namedQueries.length == 2 ? namedQueries[1] : listQuery;
-     *
-     * return isList ? listQuery : countQuery;
-     * }
-     * </pre>
-     *
-     * @param creator a bytecode creator to be used for code generation.
-     * @param namedQuery HQL query to list entities.
-     * @param isList to get list query or count query.
-     * @return list query or count query.
-     */
-    private ResultHandle getSpecificQuery(BytecodeCreator creator, ResultHandle namedQuery, Boolean isList) {
-        ResultHandle namedQueries = creator.invokeVirtualMethod(ofMethod(String.class, "split", String[].class,
-                String.class, int.class), namedQuery, creator.load(","), creator.load(2));
-        ResultHandle lengthNamedQueries = creator.arrayLength(namedQueries);
-
-        AssignableResultHandle specificQuery = creator.createVariable(String.class);
-
-        if (isList) {
-            BranchResult lengthGreaterThanOrEqualToOne = creator.ifIntegerGreaterEqual(lengthNamedQueries, creator.load(1));
-            BytecodeCreator lengthGreaterThanOrEqualToOneTrue = lengthGreaterThanOrEqualToOne.trueBranch();
-            lengthGreaterThanOrEqualToOneTrue.assign(specificQuery, lengthGreaterThanOrEqualToOneTrue
-                    .readArrayValue(namedQueries, lengthGreaterThanOrEqualToOneTrue.load(0)));
-            BytecodeCreator lengthGreaterThanOrEqualToOneFalse = lengthGreaterThanOrEqualToOne.falseBranch();
-            lengthGreaterThanOrEqualToOneFalse.assign(specificQuery, lengthGreaterThanOrEqualToOneFalse.load(""));
-        } else {
-            BranchResult lengthGreaterThanOrEqualToTwo = creator.ifIntegerGreaterEqual(lengthNamedQueries, creator.load(2));
-            BytecodeCreator lengthGreaterThanOrEqualToTwoTrue = lengthGreaterThanOrEqualToTwo.trueBranch();
-            lengthGreaterThanOrEqualToTwoTrue.assign(specificQuery, lengthGreaterThanOrEqualToTwoTrue
-                    .readArrayValue(namedQueries, lengthGreaterThanOrEqualToTwoTrue.load(1)));
-            BytecodeCreator lengthGreaterThanOrEqualToTwoFalse = lengthGreaterThanOrEqualToTwo.falseBranch();
-            lengthGreaterThanOrEqualToTwoFalse.assign(specificQuery, lengthGreaterThanOrEqualToTwoFalse
-                    .readArrayValue(namedQueries, lengthGreaterThanOrEqualToTwoFalse.load(0)));
-        }
-
-        return specificQuery;
     }
 }

@@ -96,6 +96,7 @@ public final class PaginationImplementor {
      * @param creator a bytecode creator to be used for code generation
      * @param uriInfo a {@link UriInfo} to be used for the absolute path extraction
      * @param page a {@link Page} to be used for getting page number and size
+     * @param namedQuery a custom query
      * @return a page {@link URI}
      */
     private ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
@@ -121,11 +122,10 @@ public final class PaginationImplementor {
                 uriBuilder, existNamedQuery.load("namedQuery"), existNamedQuery.marshalAsArray(Object.class, namedQuery));
 
         for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
-            String paramName = field.getKey().replace(".", "__");
             BytecodeCreator existFieldValue = creator.ifNotNull(field.getValue()).trueBranch();
             existFieldValue.invokeVirtualMethod(
                     ofMethod(UriBuilder.class, "queryParam", UriBuilder.class, String.class, Object[].class),
-                    uriBuilder, existFieldValue.load(paramName),
+                    uriBuilder, existFieldValue.load(field.getKey()),
                     existFieldValue.marshalAsArray(Object.class, field.getValue()));
         }
 

@@ -35,6 +35,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -230,17 +231,15 @@ public class ListMethodImplementor extends StandardMethodImplementor {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
 
             ResultHandle pageCount = pageCount(tryBlock, resourceMetadata, resource, page, namedQuery, fieldValues, int.class);
-
-            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount, fieldValues,
-                    namedQuery);
+            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount, fieldValues, namedQuery);
             ResultHandle entities = list(tryBlock, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
 
             // Return response
             returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
             tryBlock.close();
         } else {
-            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery, fieldValues,
-                    Uni.class);
+            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery,
+                    fieldValues, Uni.class);
 
             methodCreator.returnValue(UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE,
                     (body, pageCount) -> {
@@ -320,8 +319,9 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     private ResultHandle pageCount(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
-            ResultHandle page, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues, Object returnType) {
-        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues, Boolean.FALSE);
+            ResultHandle page, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues,
+            Object returnType) {
+        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues);
         ResultHandle dataParams = queryImplementor.getDataParams(creator, fieldValues);
 
         return creator.invokeVirtualMethod(
@@ -332,7 +332,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
 
     public ResultHandle list(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
             ResultHandle page, ResultHandle sort, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues) {
-        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues, Boolean.TRUE);
+        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues);
         ResultHandle dataParams = queryImplementor.getDataParams(creator, fieldValues);
 
         return creator.invokeVirtualMethod(

@@ -431,6 +431,8 @@ In this example, we have added a named query to list all the persons that contai
 
 Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
 
+IMPORTANT: If you have pagination enabled, using JOIN FETCH or others might prevent the query (`namedQuery`) from being reused for the count query. To resolve this you can add an additional query by adding a comma in front of it like this `http://localhost:8080/people?namedQuery=Person.containsInName,Person.countContainsInName&name=ter` which will be used for the pagination count.
+
 For more information about how named queries work, go to the xref:hibernate-orm-panache.adoc#named-queries[Hibernate ORM] guide or to the xref:hibernate-reactive-panache.adoc#named-queries[Hibernate Reactive] guide.
 
 == Resource Method Before/After Listeners

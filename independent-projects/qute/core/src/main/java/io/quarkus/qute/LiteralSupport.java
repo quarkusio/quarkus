@@ -74,7 +74,15 @@ class LiteralSupport {
      *         <code>false</code> otherwise
      */
     static boolean isStringLiteralSeparator(char character) {
-        return character == '"' || character == '\'';
+        return isStringLiteralSeparatorSingle(character) || isStringLiteralSeparatorDouble(character);
+    }
+
+    static boolean isStringLiteralSeparatorSingle(char character) {
+        return character == '\'';
+    }
+
+    static boolean isStringLiteralSeparatorDouble(char character) {
+        return character == '"';
     }
 
     static boolean isStringLiteral(String value) {

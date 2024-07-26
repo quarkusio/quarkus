@@ -452,6 +452,30 @@ public class ParserTest {
                 "Parser error: mandatory section parameters not declared for {#include /}: [template]", 1);
     }
 
+    @Test
+    public void testSectionParameterWithNestedSingleQuotationMark() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertSectionParams(engine, "{#let id=\"'Foo'\"}", Map.of("id", "\"'Foo'\""));
+        assertSectionParams(engine, "{#let id=\"'Foo \"}", Map.of("id", "\"'Foo \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \"}", Map.of("id", "\"'Foo ' \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \" bar='baz'}", Map.of("id", "\"'Foo ' \"", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let my=bad id=(\"'Foo ' \" + 1) bar='baz'}",
+                Map.of("my", "bad", "id", "(\"'Foo ' \" + 1)", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let id = 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let id= 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let my = (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+        assertSectionParams(engine, "{#let my= (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+
+    }
+
+    private void assertSectionParams(Engine engine, String content, Map<String, String> expectedParams) {
+        Template template = engine.parse(content);
+        SectionNode node = template.findNodes(n -> n.isSection() && n.asSection().name.equals("let")).iterator().next()
+                .asSection();
+        Map<String, String> params = node.getBlocks().get(0).parameters;
+        assertEquals(expectedParams, params);
+    }
+
     public static class Foo {
 
         public List<Item> getItems() {

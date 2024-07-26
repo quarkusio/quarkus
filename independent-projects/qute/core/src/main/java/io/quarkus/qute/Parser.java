@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
@@ -165,7 +166,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 } else {
                     String reason = null;
                     ErrorCode code = null;
-                    if (state == State.TAG_INSIDE_STRING_LITERAL) {
+                    if (state == State.TAG_INSIDE_STRING_LITERAL_SINGLE || state == State.TAG_INSIDE_STRING_LITERAL_DOUBLE) {
                         reason = "unterminated string literal";
                         code = ParserError.UNTERMINATED_STRING_LITERAL;
                     } else if (state == State.TAG_INSIDE) {
@@ -249,8 +250,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             case TAG_INSIDE:
                 tag(character);
                 break;
-            case TAG_INSIDE_STRING_LITERAL:
-                tagStringLiteral(character);
+            case TAG_INSIDE_STRING_LITERAL_SINGLE:
+                tagStringLiteralSingle(character);
+                break;
+            case TAG_INSIDE_STRING_LITERAL_DOUBLE:
+                tagStringLiteralDouble(character);
                 break;
             case COMMENT:
                 comment(character);
@@ -339,7 +343,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     private void tag(char character) {
         if (LiteralSupport.isStringLiteralSeparator(character)) {
-            state = State.TAG_INSIDE_STRING_LITERAL;
+            state = LiteralSupport.isStringLiteralSeparatorSingle(character) ? State.TAG_INSIDE_STRING_LITERAL_SINGLE
+                    : State.TAG_INSIDE_STRING_LITERAL_DOUBLE;
             buffer.append(character);
         } else if (character == END_DELIMITER) {
             flushTag();
@@ -348,8 +353,15 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
     }
 
-    private void tagStringLiteral(char character) {
-        if (LiteralSupport.isStringLiteralSeparator(character)) {
+    private void tagStringLiteralSingle(char character) {
+        if (LiteralSupport.isStringLiteralSeparatorSingle(character)) {
+            state = State.TAG_INSIDE;
+        }
+        buffer.append(character);
+    }
+
+    private void tagStringLiteralDouble(char character) {
+        if (LiteralSupport.isStringLiteralSeparatorDouble(character)) {
             state = State.TAG_INSIDE;
         }
         buffer.append(character);
@@ -819,7 +831,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     static <B extends ErrorInitializer & WithOrigin> Iterator<String> splitSectionParams(String content, B block) {
 
-        boolean stringLiteral = false;
+        boolean stringLiteralSingle = false;
+        boolean stringLiteralDouble = false;
         short composite = 0;
         byte brackets = 0;
         boolean space = false;
@@ -830,7 +843,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             char c = content.charAt(i);
             if (c == ' ') {
                 if (!space) {
-                    if (!stringLiteral && composite == 0 && brackets == 0) {
+                    if (!stringLiteralSingle
+                            && !stringLiteralDouble
+                            && composite == 0
+                            && brackets == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -842,19 +858,30 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 }
             } else {
                 if (composite == 0
-                        && LiteralSupport.isStringLiteralSeparator(c)) {
-                    stringLiteral = !stringLiteral;
-                } else if (!stringLiteral
-                        && isCompositeStart(c) && (i == 0 || space || composite > 0
+                        && !stringLiteralDouble
+                        && LiteralSupport.isStringLiteralSeparatorSingle(c)) {
+                    stringLiteralSingle = !stringLiteralSingle;
+                } else if (composite == 0
+                        && !stringLiteralSingle
+                        && LiteralSupport.isStringLiteralSeparatorDouble(c)) {
+                    stringLiteralDouble = !stringLiteralDouble;
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
+                        && isCompositeStart(c)
+                        && (i == 0 || space || composite > 0
                                 || (buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == '!'))) {
                     composite++;
-                } else if (!stringLiteral
-                        && isCompositeEnd(c) && composite > 0) {
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
+                        && isCompositeEnd(c)
+                        && composite > 0) {
                     composite--;
-                } else if (!stringLiteral
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
                         && Parser.isLeftBracket(c)) {
                     brackets++;
-                } else if (!stringLiteral
+                } else if (!stringLiteralSingle
+                        && !stringLiteralDouble
                         && Parser.isRightBracket(c) && brackets > 0) {
                     brackets--;
                 }
@@ -864,7 +891,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
 
         if (buffer.length() > 0) {
-            if (stringLiteral || composite > 0) {
+            if (stringLiteralSingle || stringLiteralDouble || composite > 0) {
                 throw block.error("unterminated string literal or composite parameter detected for [{content}]")
                         .argument("content", content)
                         .code(ParserError.UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER)
@@ -874,10 +901,16 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             parts.add(buffer.toString());
         }
 
-        // Try to find/replace "standalone" equals signs used as param names separators
-        // This allows for more lenient parsing of named section parameters, e.g. item.name = 'foo' instead of item.name='foo'
+        // Try to find/replace/merge:
+        // 1. "standalone" equals signs used as param names separators
+        // 2. parts that start/end with an equal sign followed/preceded by a valid Java identifier
+        // This allows for more lenient parsing of named section parameters
+        // e.g. `item = 'foo'` or `item= 'foo'` instead of `item='foo'`
         for (ListIterator<String> it = parts.listIterator(); it.hasNext();) {
-            if (it.next().equals("=") && it.previousIndex() != 0 && it.hasNext()) {
+            String next = it.next();
+            if (next.equals("=")
+                    && it.previousIndex() != 0
+                    && it.hasNext()) {
                 // move cursor back
                 it.previous();
                 String merged = parts.get(it.previousIndex()) + it.next() + it.next();
@@ -889,11 +922,32 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 it.remove();
                 it.previous();
                 it.remove();
+            } else if (next.endsWith("=")
+                    && it.hasNext()
+                    && EQUAL_ENDS_PATTERN.matcher(next).matches()) {
+                String merged = next + it.next();
+                // replace the element with the merged value
+                it.set(merged);
+                // move cursor back and remove the element that ended with equals
+                it.previous();
+                it.previous();
+                it.remove();
+            } else if (next.startsWith("=")
+                    && it.hasPrevious()
+                    && EQUAL_STARTS_PATTERN.matcher(next).matches()) {
+                String merged = next + it.previous();
+                // replace the element with the merged value
+                it.set(merged);
+                // move cursor back and remove the element that started with equals
+                it.next();
+                it.remove();
             }
         }
-
         return parts.iterator();
     }
+
+    static final Pattern EQUAL_ENDS_PATTERN = Pattern.compile(".*[a-zA-Z0-9_$]=$");
+    static final Pattern EQUAL_STARTS_PATTERN = Pattern.compile("^=[a-zA-Z0-9_$].*");
 
     static boolean isCompositeStart(char character) {
         return character == START_COMPOSITE_PARAM;
@@ -931,7 +985,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
         TEXT,
         TAG_INSIDE,
-        TAG_INSIDE_STRING_LITERAL,
+        TAG_INSIDE_STRING_LITERAL_SINGLE,
+        TAG_INSIDE_STRING_LITERAL_DOUBLE,
         TAG_CANDIDATE,
         COMMENT,
         ESCAPE,

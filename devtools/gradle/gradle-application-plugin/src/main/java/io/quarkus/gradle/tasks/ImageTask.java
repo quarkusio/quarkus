@@ -11,8 +11,13 @@ import java.util.stream.Collectors;
 
 import org.gradle.api.tasks.TaskAction;
 
+import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
+import io.quarkus.gradle.tooling.ToolingUtils;
+import io.quarkus.runtime.LaunchMode;
+
 public abstract class ImageTask extends QuarkusBuildTask {
 
+    private static final String DEPLOYMENT_SUFFIX = "-deployment";
     static final String QUARKUS_PREFIX = "quarkus-";
     static final String QUARKUS_CONTAINER_IMAGE_PREFIX = "quarkus-container-image-";
     static final String QUARKUS_CONTAINER_IMAGE_BUILD = "quarkus.container-image.build";
@@ -53,10 +58,14 @@ public abstract class ImageTask extends QuarkusBuildTask {
         // This will only pickup direct dependencies and not transitives
         // This means that extensions like quarkus-container-image-openshift via quarkus-openshift are not picked up
         // So, let's relax our filters a bit so that we can pickup quarkus-openshift directly (relax the prefix requirement).
-        return getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
+        return getProject().getConfigurations()
+                .getByName(ToolingUtils.toDeploymentConfigurationName(
+                        ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.NORMAL)))
+                .getDependencies().stream()
                 .map(d -> d.getName())
                 .filter(n -> n.startsWith(QUARKUS_CONTAINER_IMAGE_PREFIX) || n.startsWith(QUARKUS_PREFIX))
-                .map(n -> n.replace(QUARKUS_CONTAINER_IMAGE_PREFIX, "").replace(QUARKUS_PREFIX, ""))
+                .map(n -> n.replace(QUARKUS_CONTAINER_IMAGE_PREFIX, "").replace(QUARKUS_PREFIX, "").replace(DEPLOYMENT_SUFFIX,
+                        ""))
                 .filter(BUILDERS::containsKey)
                 .map(BUILDERS::get)
                 .collect(Collectors.toList());

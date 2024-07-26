@@ -75,7 +75,7 @@ public class ResourceNotFoundData {
 
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
         TemplateHtmlBuilder builder = new TemplateHtmlBuilder(this.baseUrl,
-                HEADING, "", "Resources overview");
+                HEADING, "", "Resources overview", List.of());
 
         builder.resourcesStart(RESOURCE_ENDPOINTS);
 

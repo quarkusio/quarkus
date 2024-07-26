@@ -54,6 +54,7 @@ import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
+import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.QuarkusBindException;
@@ -377,7 +378,8 @@ public class VertxHttpRecorder {
             LaunchMode launchMode, BooleanSupplier[] requireBodyHandlerConditions,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
-            Executor executor) {
+            Executor executor,
+            List<ErrorPageAction> actions) {
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
@@ -415,8 +417,7 @@ public class VertxHttpRecorder {
         applyCompression(httpBuildTimeConfig.enableCompression, httpRouteRouter);
         httpRouteRouter.route().last().failureHandler(
                 new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, httpConfiguration),
-                        httpConfiguration.unhandledErrorContentTypeDefault));
-
+                        httpConfiguration.unhandledErrorContentTypeDefault, actions));
         for (BooleanSupplier requireBodyHandlerCondition : requireBodyHandlerConditions) {
             if (requireBodyHandlerCondition.getAsBoolean()) {
                 //if this is set then everything needs the body handler installed
@@ -535,7 +536,7 @@ public class VertxHttpRecorder {
 
             mr.route().last().failureHandler(
                     new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, httpConfiguration),
-                            httpConfiguration.unhandledErrorContentTypeDefault));
+                            httpConfiguration.unhandledErrorContentTypeDefault, actions));
 
             mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
                     .handler(createBodyHandlerForManagementInterface());

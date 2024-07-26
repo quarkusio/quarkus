@@ -131,7 +131,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     //PagingAndSortingRepository Page<T> findAll(Pageable pageable);
     public void implementListPageCount(ClassCreator classCreator, String repositoryInterfaceName) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list",
-                int.class, Page.class);
+                int.class, Page.class, String.class, Map.class);
         if (entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)) {
             ResultHandle page = methodCreator.getMethodParam(0);
             ResultHandle pageable = toPageable(methodCreator, page);

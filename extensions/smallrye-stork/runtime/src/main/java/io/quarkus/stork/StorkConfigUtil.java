@@ -16,12 +16,15 @@ public class StorkConfigUtil {
         for (String serviceName : servicesConfigs) {
             builder.setServiceName(serviceName);
             ServiceConfiguration serviceConfiguration = storkConfiguration.serviceConfiguration().get(serviceName);
-            SimpleServiceConfig.SimpleServiceDiscoveryConfig storkServiceDiscoveryConfig = new SimpleServiceConfig.SimpleServiceDiscoveryConfig(
-                    serviceConfiguration.serviceDiscovery().type(), serviceConfiguration.serviceDiscovery().params());
-            builder = builder.setServiceDiscovery(storkServiceDiscoveryConfig);
-            SimpleServiceConfig.SimpleLoadBalancerConfig loadBalancerConfig = new SimpleServiceConfig.SimpleLoadBalancerConfig(
-                    serviceConfiguration.loadBalancer().type(), serviceConfiguration.loadBalancer().parameters());
-            builder.setLoadBalancer(loadBalancerConfig);
+            if (serviceConfiguration.serviceDiscovery().isPresent()) {
+                SimpleServiceConfig.SimpleServiceDiscoveryConfig storkServiceDiscoveryConfig = new SimpleServiceConfig.SimpleServiceDiscoveryConfig(
+                        serviceConfiguration.serviceDiscovery().get().type(),
+                        serviceConfiguration.serviceDiscovery().get().params());
+                builder = builder.setServiceDiscovery(storkServiceDiscoveryConfig);
+                SimpleServiceConfig.SimpleLoadBalancerConfig loadBalancerConfig = new SimpleServiceConfig.SimpleLoadBalancerConfig(
+                        serviceConfiguration.loadBalancer().type(), serviceConfiguration.loadBalancer().parameters());
+                builder.setLoadBalancer(loadBalancerConfig);
+            }
             if (serviceConfiguration.serviceRegistrar().isPresent()) {
                 SimpleServiceConfig.SimpleServiceRegistrarConfig serviceRegistrarConfig = new SimpleServiceConfig.SimpleServiceRegistrarConfig(
                         serviceConfiguration.serviceRegistrar().get().type(),

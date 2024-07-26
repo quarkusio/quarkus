@@ -10,7 +10,5 @@
 
     <include relativeToChangelogFile="true" file="create-views.xml" />
 
-    <!-- errorIfMissingOrEmpty to avoid hard error in native,
-         see also: LiquibaseFunctionalityNativeIT.isIncludeAllExpectedToWork() -->
-    <includeAll relativeToChangelogFile="true" path="includeAll" errorIfMissingOrEmpty="false" />
+    <includeAll relativeToChangelogFile="true" path="includeAll" />
 </databaseChangeLog>

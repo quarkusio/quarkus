@@ -28,7 +28,7 @@ public class LiquibaseFunctionalityPMT {
 
     @Test
     public void test() {
-        LiquibaseFunctionalityTest.doTestLiquibaseQuarkusFunctionality(true);
+        LiquibaseFunctionalityTest.doTestLiquibaseQuarkusFunctionality();
     }
 
     @AfterEach

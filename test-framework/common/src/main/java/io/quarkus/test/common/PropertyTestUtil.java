@@ -1,13 +1,13 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.runtime.logging.LogRuntimeConfig.FileConfig;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-
-import io.quarkus.runtime.logging.FileConfig;
 
 public class PropertyTestUtil {
 

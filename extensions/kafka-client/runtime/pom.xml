@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-caffeine</artifactId>
+            <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
 
         <dependency>

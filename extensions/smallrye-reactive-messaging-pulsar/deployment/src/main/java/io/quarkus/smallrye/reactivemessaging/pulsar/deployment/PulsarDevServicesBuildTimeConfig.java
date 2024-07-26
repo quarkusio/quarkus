@@ -34,7 +34,7 @@ public class PulsarDevServicesBuildTimeConfig {
      *
      * Check https://hub.docker.com/r/apachepulsar/pulsar to find the available versions.
      */
-    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.0.0")
+    @ConfigItem(defaultValue = "apachepulsar/pulsar:3.3.0")
     public String imageName;
 
     /**

@@ -26,12 +26,11 @@ import io.quarkus.redis.runtime.client.config.RedisClientConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.core.net.SSLOptions;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisOptions;
@@ -216,38 +215,8 @@ public class VertxRedisClientFactory {
         // Apply the configuration
         if (configuration != null) {
             // This part is often the same (or close) for every Vert.x client:
+            TlsConfigUtils.configure(net, configuration);
             net.setSsl(tlsFromHosts);
-
-            if (configuration.getTrustStoreOptions() != null) {
-                net.setTrustOptions(configuration.getTrustStoreOptions());
-            }
-
-            // For mTLS:
-            if (configuration.getKeyStoreOptions() != null) {
-                net.setKeyCertOptions(configuration.getKeyStoreOptions());
-            }
-
-            if (configuration.isTrustAll()) {
-                net.setTrustAll(true);
-            }
-            if (configuration.getHostnameVerificationAlgorithm().isPresent()) {
-                net.setHostnameVerificationAlgorithm(configuration.getHostnameVerificationAlgorithm().get());
-            }
-
-            SSLOptions sslOptions = configuration.getSSLOptions();
-            if (sslOptions != null) {
-                net.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
-                net.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
-                for (String suite : sslOptions.getEnabledCipherSuites()) {
-                    net.addEnabledCipherSuite(suite);
-                }
-                for (Buffer buffer : sslOptions.getCrlValues()) {
-                    net.addCrlValue(buffer);
-                }
-                net.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
-                net.setUseAlpn(sslOptions.isUseAlpn());
-            }
-
         } else {
             config.tcp().alpn().ifPresent(net::setUseAlpn);
 

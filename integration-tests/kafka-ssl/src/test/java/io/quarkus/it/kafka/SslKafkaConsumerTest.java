@@ -12,24 +12,27 @@ import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.kafka.ssl.CertificateFormat;
-import io.quarkus.test.common.WithTestResource;
-import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import io.smallrye.certs.Format;
-import io.smallrye.certs.junit5.Certificate;
-import io.smallrye.certs.junit5.Certificates;
 
-@Certificates(certificates = {
-        @Certificate(name = "kafka", formats = { Format.PKCS12, Format.JKS,
-                Format.PEM }, password = "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L")
-}, baseDir = "target/certs")
-@QuarkusTest
-@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
-public class SslKafkaConsumerTest {
+public abstract class SslKafkaConsumerTest {
+
+    public abstract CertificateFormat getFormat();
+
+    @Test
+    public void testReception() {
+        String format = getFormat().name();
+        try (Producer<Integer, String> producer = createProducer(CertificateFormat.valueOf(format))) {
+            producer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
+            String string = RestAssured
+                    .given().queryParam("format", format)
+                    .when().get("/ssl")
+                    .andReturn().asString();
+            Assertions.assertEquals("hi world", string);
+        }
+    }
 
     public static Producer<Integer, String> createProducer(CertificateFormat format) {
         Properties props = new Properties();
@@ -41,7 +44,7 @@ public class SslKafkaConsumerTest {
         String truststore = switch (format) {
             case PKCS12 -> "kafka-truststore.p12";
             case JKS -> "kafka-truststore.jks";
-            case PEM -> "kafka-ca.crt";
+            case PEM -> "kafka.crt";
         };
 
         File tsFile = new File("target/certs/" + truststore);
@@ -55,22 +58,4 @@ public class SslKafkaConsumerTest {
 
         return new KafkaProducer<>(props);
     }
-
-    @ParameterizedTest
-    @CsvSource({
-            "PKCS12",
-            "JKS",
-            "PEM"
-    })
-    public void testReception(String format) {
-        try (Producer<Integer, String> producer = createProducer(CertificateFormat.valueOf(format))) {
-            producer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
-            String string = RestAssured
-                    .given().queryParam("format", format)
-                    .when().get("/ssl")
-                    .andReturn().asString();
-            Assertions.assertEquals("hi world", string);
-        }
-    }
-
 }

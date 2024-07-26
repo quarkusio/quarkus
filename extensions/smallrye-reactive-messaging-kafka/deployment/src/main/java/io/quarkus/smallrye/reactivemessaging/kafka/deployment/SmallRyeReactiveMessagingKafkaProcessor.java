@@ -46,6 +46,7 @@ import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedCh
 import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.KafkaConfigCustomizer;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
 import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
 import io.smallrye.mutiny.tuples.Functions.TriConsumer;
@@ -68,8 +69,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ProcessingState.class).methods().fields().build());
+        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(KafkaConfigCustomizer.class));
     }
 
     @BuildStep

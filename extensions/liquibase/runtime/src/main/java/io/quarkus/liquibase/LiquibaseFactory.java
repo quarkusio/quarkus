@@ -10,6 +10,8 @@ import javax.sql.DataSource;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
+import io.quarkus.liquibase.runtime.NativeImageResourceAccessor;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.ResettableSystemProperties;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
@@ -38,33 +40,44 @@ public class LiquibaseFactory {
     }
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
+        var rootAccessor = new CompositeResourceAccessor();
+        return ImageMode.current().isNativeImage()
+                ? nativeImageResourceAccessor(rootAccessor)
+                : defaultResourceAccessor(rootAccessor);
+    }
 
-        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
-        compositeResourceAccessor
-                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+    private ResourceAccessor defaultResourceAccessor(CompositeResourceAccessor rootAccessor)
+            throws FileNotFoundException {
+
+        rootAccessor.addResourceAccessor(
+                new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
         if (!config.changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
-            return compositeResourceAccessor;
+            return rootAccessor;
         }
 
         if (config.searchPath.isEmpty()) {
-            compositeResourceAccessor.addResourceAccessor(
+            return rootAccessor.addResourceAccessor(
                     new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(config.changeLog, "filesystem:", "")).getParent()));
-            return compositeResourceAccessor;
+                            Paths.get(StringUtil
+                                    .changePrefix(config.changeLog, "filesystem:", ""))
+                                    .getParent()));
         }
 
         for (String searchPath : config.searchPath.get()) {
-            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
+            rootAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
         }
+        return rootAccessor;
+    }
 
-        return compositeResourceAccessor;
+    private ResourceAccessor nativeImageResourceAccessor(CompositeResourceAccessor rootAccessor) {
+        return rootAccessor.addResourceAccessor(new NativeImageResourceAccessor());
     }
 
     private String parseChangeLog(String changeLog) {
-
         if (changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
-            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", ""))
+                    .getFileName().toString();
         }
 
         if (changeLog.startsWith("filesystem:")) {

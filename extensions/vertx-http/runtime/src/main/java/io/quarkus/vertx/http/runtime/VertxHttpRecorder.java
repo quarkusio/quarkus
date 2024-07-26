@@ -624,7 +624,7 @@ public class VertxHttpRecorder {
     }
 
     private boolean decorateStacktrace(LaunchMode launchMode, LogBuildTimeConfig logBuildTimeConfig) {
-        return logBuildTimeConfig.decorateStacktraces && launchMode.equals(LaunchMode.DEVELOPMENT);
+        return logBuildTimeConfig.decorateStacktraces() && launchMode.equals(LaunchMode.DEVELOPMENT);
     }
 
     private void addHotReplacementHandlerIfNeeded(Router router) {

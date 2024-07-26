@@ -250,17 +250,24 @@ public class MicrometerProcessor {
     public CardPageBuildItem createCard(List<RegistryBuildItem> registries) {
         var card = new CardPageBuildItem();
 
-        var json = registries.stream().filter(r -> "JSON".equals(r.name())).map(RegistryBuildItem::path).findFirst();
-        var prom = registries.stream().filter(r -> "Prometheus".equals(r.name())).map(RegistryBuildItem::path).findFirst();
+        registries.stream().filter(r -> "JSON".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("JSON")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+        });
 
-        prom.ifPresent(s -> card.addPage(Page.externalPageBuilder("Prometheus")
-                .icon("font-awesome-solid:chart-line")
-                .url(s)));
-
-        json.ifPresent(s -> card.addPage(Page.externalPageBuilder("JSON")
-                .icon("font-awesome-solid:chart-line")
-                .url(s)
-                .isJsonContent()));
+        registries.stream().filter(r -> "Prometheus".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("Prometheus")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+            card.addPage(Page.externalPageBuilder("Prometheus (raw output)")
+                    .doNotEmbed()
+                    .icon("font-awesome-solid:up-right-from-square")
+                    .url(r.path())
+                    .mimeType("text/plain"));
+        });
 
         return card;
     }

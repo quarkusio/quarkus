@@ -105,6 +105,11 @@ class ResourceImplementor {
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle query = methodCreator.getMethodParam(1);
         ResultHandle queryParams = methodCreator.getMethodParam(2);
+        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class), query);
+        BranchResult hasQueryBranch = methodCreator.ifTrue(hasQuery);
+        hasQueryBranch.trueBranch().returnValue(dataAccessImplementor.pageCount(hasQueryBranch.trueBranch(), page));
+        hasQueryBranch.falseBranch().returnValue(dataAccessImplementor.pageCount(hasQueryBranch.falseBranch(), page, query,
+                queryParams));
         methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page, query, queryParams));
         methodCreator.close();
     }

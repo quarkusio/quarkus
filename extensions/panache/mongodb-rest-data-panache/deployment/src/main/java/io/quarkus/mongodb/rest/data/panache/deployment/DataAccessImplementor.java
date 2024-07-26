@@ -97,4 +97,13 @@ public interface DataAccessImplementor {
      * @return int page count.
      */
     ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams);
+
+    /**
+     * Available number of pages given a page instance.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @return int page count.
+     */
+    ResultHandle pageCount(BytecodeCreator creator, ResultHandle page);
 }

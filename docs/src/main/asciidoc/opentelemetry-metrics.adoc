@@ -355,7 +355,7 @@ Gauges can be useful when monitoring the statistics for a cache or collection.
 With this metric you provide a function to be periodically probed by a callback.
 The value returned by the function is the value of the gauge.
 
-The default gauge records `Double`values, but if you want to record `Long` values, you can use
+The default gauge records `Double` values, but if you want to record `Long` values, you can use
 
 [source, java]
 ----

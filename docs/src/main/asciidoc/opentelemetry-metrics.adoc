@@ -508,7 +508,8 @@ We only show 1 of 3 exemplars for brevity.
 
 - Timers and Distribution Summaries are not available in the OpenTelemetry API.
   Instead, use Histograms.
-- The OpenTelemetry API does not define annotations for metrics like Micrometer's `@Counted`, `@Timed` or `@MeterTag` You need to manually create the metrics.
+- The OpenTelemetry API does not define annotations for metrics like Micrometer's `@Counted`, `@Timed` or `@MeterTag`.
+  You need to manually create the metrics.
 - OpenTelemetry uses their own https://opentelemetry.io/docs/specs/semconv/[Semantic Conventions] to name metrics and attributes.
 
 === Resource

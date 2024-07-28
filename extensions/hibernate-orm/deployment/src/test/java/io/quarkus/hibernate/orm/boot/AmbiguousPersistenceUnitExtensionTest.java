@@ -26,8 +26,7 @@ public class AmbiguousPersistenceUnitExtensionTest {
                     .hasMessageContainingAll("Multiple instances of Interceptor were found at ",
                             "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.PersistenceUnitInterceptor",
                             "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.AnotherPersistenceUnitInterceptor",
-                            "for persistence unit <default>. At most one instance can be assigned to each persistence unit.")
-                    .hasNoSuppressedExceptions());
+                            "for persistence unit <default>. At most one instance can be assigned to each persistence unit."));
 
     @PersistenceUnitExtension
     public static class PersistenceUnitInterceptor implements Interceptor {

@@ -11,30 +11,30 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class AmbiguousInterceptorTest {
+public class AmbiguousPersistenceUnitExtensionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
-                    .addClass(DefaultPUInterceptor.class)
-                    .addClass(AnotherDefaultPUInterceptor.class))
+                    .addClass(PersistenceUnitInterceptor.class)
+                    .addClass(AnotherPersistenceUnitInterceptor.class))
             .withConfigurationResource("application.properties")
             .assertException(throwable -> assertThat(throwable)
                     .hasNoSuppressedExceptions()
                     .rootCause()
                     .hasMessageContainingAll("Multiple instances of Interceptor were found at ",
-                            "io.quarkus.hibernate.orm.boot.AmbiguousInterceptorTest.DefaultPUInterceptor",
-                            "io.quarkus.hibernate.orm.boot.AmbiguousInterceptorTest.AnotherDefaultPUInterceptor",
+                            "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.PersistenceUnitInterceptor",
+                            "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.AnotherPersistenceUnitInterceptor",
                             "for persistence unit <default>. At most one instance can be assigned to each persistence unit.")
                     .hasNoSuppressedExceptions());
 
     @PersistenceUnitExtension
-    public static class DefaultPUInterceptor implements Interceptor {
+    public static class PersistenceUnitInterceptor implements Interceptor {
     }
 
     @PersistenceUnitExtension
-    public static class AnotherDefaultPUInterceptor implements Interceptor {
+    public static class AnotherPersistenceUnitInterceptor implements Interceptor {
     }
 
     @Test

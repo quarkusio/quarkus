@@ -115,6 +115,7 @@ public class TemplateHtmlBuilder {
             + "<header>\n" +
             "    <div class=\"exception-message\">\n" +
             "        <h2 class=\"container\">%2$s</h2>\n" +
+            "        <div class=\"actions\">%3$s</div>\n" +
             "    </div>\n" +
             "</header>\n" +
             "<div class=\"container content\">\n";
@@ -176,25 +177,37 @@ public class TemplateHtmlBuilder {
     private String baseUrl;
 
     public TemplateHtmlBuilder(String title, String subTitle, String details) {
-        this(null, title, subTitle, details, null, Collections.emptyList());
+        this(null, title, subTitle, details, Collections.emptyList(), null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details) {
-        this(baseUrl, title, subTitle, details, null, Collections.emptyList());
+    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions) {
+        this(null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String title, String subTitle, String details, String redirect,
+    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, List<ErrorPageAction> actions) {
+        this(baseUrl, title, subTitle, details, actions, null, Collections.emptyList());
+    }
+
+    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions, String redirect,
             List<CurrentConfig> config) {
-        this(null, title, subTitle, details, null, Collections.emptyList());
+        this(null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, String redirect,
+    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, List<ErrorPageAction> actions,
+            String redirect,
             List<CurrentConfig> config) {
         this.baseUrl = baseUrl;
+
         loadCssFile();
+
+        StringBuilder actionLinks = new StringBuilder();
+        for (ErrorPageAction epa : actions) {
+            actionLinks.append(buildLink(epa.name(), epa.url()));
+        }
+
         result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
                 subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-        result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details)));
+        result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         if (!config.isEmpty()) {
             result.append(String.format(CONFIG_EDITOR_HEAD, redirect));
             for (CurrentConfig i : config) {
@@ -378,5 +391,9 @@ public class TemplateHtmlBuilder {
                 throw new UncheckedIOException(e);
             }
         }
+    }
+
+    private String buildLink(String name, String url) {
+        return "<a href=" + url + ">" + name + "</a>";
     }
 }

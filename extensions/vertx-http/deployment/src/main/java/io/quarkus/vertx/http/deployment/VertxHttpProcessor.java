@@ -51,6 +51,7 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
+import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
@@ -338,6 +339,7 @@ class VertxHttpProcessor {
             HttpBuildTimeConfig httpBuildTimeConfig,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
+            List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             ShutdownConfig shutdownConfig,
             LiveReloadConfig lrc,
@@ -391,6 +393,12 @@ class VertxHttpProcessor {
             }
         }
 
+        // Combine all error actions from exceptions
+        List<ErrorPageAction> combinedActions = new ArrayList<>();
+        for (ErrorPageActionsBuildItem errorPageActionsBuildItem : errorPageActionsBuildItems) {
+            combinedActions.addAll(errorPageActionsBuildItem.getActions());
+        }
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
@@ -401,7 +409,8 @@ class VertxHttpProcessor {
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
                 getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
-                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy());
+                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(),
+                combinedActions);
 
         return new ServiceStartBuildItem("vertx-http");
     }

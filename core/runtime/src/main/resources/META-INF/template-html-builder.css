@@ -34,6 +34,25 @@ ul {
 .exception-message {
     background: #960031;
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    padding-right: 50px;
+}
+
+.actions {
+    font-size: 1.1rem;
+    display: flex;
+    gap: 10px;
+}
+
+.actions a {
+
+    padding: 1px 6px;
+    border: 1px outset #180011;
+    border-radius: 4px;
+    color: white !important;
+    background-color: #041437;
+    text-decoration: none !important;
 }
 
 h1, h2 {

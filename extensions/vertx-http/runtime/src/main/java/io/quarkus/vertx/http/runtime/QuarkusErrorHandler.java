@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
@@ -43,12 +44,20 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private final boolean showStack;
     private final boolean decorateStack;
     private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
+    private final List<ErrorPageAction> actions;
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
             Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+        this(showStack, decorateStack, contentTypeDefault, List.of());
+    }
+
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
+            Optional<HttpConfiguration.PayloadHint> contentTypeDefault,
+            List<ErrorPageAction> actions) {
         this.showStack = showStack;
         this.decorateStack = decorateStack;
         this.contentTypeDefault = contentTypeDefault;
+        this.actions = actions;
     }
 
     @Override
@@ -200,10 +209,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     private void htmlResponse(RoutingContext event, String details, Throwable exception) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
-        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
+        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details,
+                this.actions);
         if (showStack && exception != null) {
             htmlBuilder.stack(exception);
         }
+
         writeResponse(event, htmlBuilder.toString());
     }
 

@@ -6431,16 +6431,6 @@
                 <groupId>io.opentelemetry.semconv</groupId>
                 <artifactId>opentelemetry-semconv</artifactId>
                 <version>${opentelemetry-semconv.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-bom</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.opentelemetry</groupId>
-                        <artifactId>opentelemetry-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry.semconv</groupId>

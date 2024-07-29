@@ -548,7 +548,7 @@ public class ArcProcessor {
 
             @Override
             public void registerField(FieldInfo fieldInfo) {
-                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), fieldInfo));
             }
 
             @Override

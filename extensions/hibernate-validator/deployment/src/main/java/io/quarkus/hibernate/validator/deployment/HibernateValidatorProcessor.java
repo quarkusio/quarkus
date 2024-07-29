@@ -498,7 +498,7 @@ class HibernateValidatorProcessor {
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass().name());
-                    reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
+                    reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), annotation.target().asField()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asField().type());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
@@ -528,7 +528,7 @@ class HibernateValidatorProcessor {
                     AnnotationTarget enclosingTarget = annotation.target().asType().enclosingTarget();
                     if (enclosingTarget.kind() == AnnotationTarget.Kind.FIELD) {
                         contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asField().declaringClass().name());
-                        reflectiveFields.produce(new ReflectiveFieldBuildItem(enclosingTarget.asField()));
+                        reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), enclosingTarget.asField()));
                         if (annotation.target().asType().target() != null) {
                             contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
                                     consideredAnnotation,

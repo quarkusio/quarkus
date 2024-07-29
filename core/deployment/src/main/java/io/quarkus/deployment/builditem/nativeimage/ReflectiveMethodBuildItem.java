@@ -3,7 +3,6 @@ package io.quarkus.deployment.builditem.nativeimage;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.MethodInfo;
 
@@ -58,7 +57,7 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name,
-                                     String... params) {
+            String... params) {
         this(null, queryOnly, declaringClass, name, params);
     }
 

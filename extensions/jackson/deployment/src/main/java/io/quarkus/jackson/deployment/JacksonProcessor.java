@@ -273,7 +273,7 @@ public class JacksonProcessor {
         // make sure we register the constructors and methods marked with @JsonCreator for reflection
         for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_CREATOR)) {
             if (METHOD == creatorInstance.target().kind()) {
-                reflectiveMethod.produce(new ReflectiveMethodBuildItem(creatorInstance.target().asMethod()));
+                reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName(), creatorInstance.target().asMethod()));
             }
         }
 

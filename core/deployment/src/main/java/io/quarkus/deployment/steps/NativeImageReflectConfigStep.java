@@ -54,11 +54,11 @@ public class NativeImageReflectConfigStep {
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             for (String provider : i.providers()) {
                 // Register the nullary constructor
-                addReflectiveMethod(reflectiveClasses, new ReflectiveMethodBuildItem(provider, "<init>", new String[0]));
+                addReflectiveMethod(reflectiveClasses, new ReflectiveMethodBuildItem("Class registered as provider", provider, "<init>", new String[0]));
                 // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
                 // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
                 addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem(true, provider, "provider", new String[0]));
+                        new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider", new String[0]));
             }
         }
 
@@ -174,6 +174,13 @@ public class NativeImageReflectConfigStep {
             } else {
                 existing.methodSet.add(methodInfo);
             }
+        }
+        String reason = methodInfo.getReason();
+        if (reason != null) {
+            if (existing.reasons == null) {
+                existing.reasons = new HashSet<>();
+            }
+            existing.reasons.add(reason);
         }
     }
 

@@ -504,7 +504,8 @@ class HibernateValidatorProcessor {
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass().name());
                     // we need to register the method for reflection as it could be a getter
-                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
+                    reflectiveMethods
+                            .produce(new ReflectiveMethodBuildItem(getClass().getName(), annotation.target().asMethod()));
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             annotation.target().asMethod().returnType());
                     contributeMethodsWithInheritedValidation(methodsWithInheritedValidation, indexView,
@@ -535,7 +536,8 @@ class HibernateValidatorProcessor {
                         }
                     } else if (enclosingTarget.kind() == AnnotationTarget.Kind.METHOD) {
                         contributeClass(classNamesToBeValidated, indexView, enclosingTarget.asMethod().declaringClass().name());
-                        reflectiveMethods.produce(new ReflectiveMethodBuildItem(enclosingTarget.asMethod()));
+                        reflectiveMethods
+                                .produce(new ReflectiveMethodBuildItem(getClass().getName(), enclosingTarget.asMethod()));
                         if (annotation.target().asType().target() != null) {
                             contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView,
                                     consideredAnnotation,

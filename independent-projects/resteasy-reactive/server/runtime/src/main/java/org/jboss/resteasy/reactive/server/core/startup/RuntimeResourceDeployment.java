@@ -563,8 +563,16 @@ public class RuntimeResourceDeployment {
     }
 
     private static boolean isNotVoid(Class<?> rawEffectiveReturnType) {
-        return rawEffectiveReturnType != Void.class
-                && rawEffectiveReturnType != void.class;
+        if (rawEffectiveReturnType == Void.class) {
+            return false;
+        }
+        if (rawEffectiveReturnType == void.class) {
+            return false;
+        }
+        if ("kotlin.Unit".equals(rawEffectiveReturnType.getName())) {
+            return false;
+        }
+        return true;
     }
 
     private void addResponseHandler(ServerResourceMethod method, List<ServerRestHandler> handlers) {

@@ -11,7 +11,12 @@ public interface ClassLoadingResource {
      */
     void init();
 
-    byte[] getResourceData(String resource);
+    /**
+     * Returns the bytes for the given resource, or {@code null} if the resource does not exist.<br>
+     * This resource is not in charge to release the buffer, it is the caller's responsibility.
+     * Furthermore, it cannot retain a reference to the buffer, as it may be pooled and reused.
+     */
+    PooledBufferAllocator.Buffer getResourceData(String resource, PooledBufferAllocator allocator);
 
     URL getResourceURL(String resource);
 

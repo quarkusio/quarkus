@@ -40,14 +40,14 @@ For allocation profiling, you also need to install HotSpot debug symbol (unless 
 Depending on your Linux and Java distribution this can be done via:
 
 ```shell script
-# Ubuntu/Debian - Java 8
-apt install openjdk-8-dbg
+# Ubuntu/Debian - Java 17
+apt install openjdk-17-dbg
 
-# Ubuntu/Debian - Java 11
- apt install openjdk-11-dbg
+# Ubuntu/Debian - Java 21
+ apt install openjdk-21-dbg
 
-# On CentOS, RHEL and some other RPM-based distributions - Java 11
-debuginfo-install java-11-openjdk
+# On CentOS, RHEL and some other RPM-based distributions - Java 17
+debuginfo-install java-17-openjdk
 ```
 
 You can also use a __fastdebug__ build of OpenJdk, this kind of build is not for production use (JVM as assertions are enabled), but it includes debug symbols

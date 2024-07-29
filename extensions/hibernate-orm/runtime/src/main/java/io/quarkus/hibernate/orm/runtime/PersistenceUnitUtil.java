@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 
 import jakarta.enterprise.inject.Default;
@@ -30,10 +31,12 @@ public class PersistenceUnitUtil {
         InjectableInstance<T> instance = extensionInstanceForPersistenceUnit(beanType, persistenceUnitName,
                 additionalQualifiers);
         if (instance.isAmbiguous()) {
+            List<String> ambiguousClassNames = instance.handlesStream().map(h -> h.getBean().getBeanClass().getCanonicalName())
+                    .toList();
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "Multiple instances of %1$s were found for persistence unit %2$s. "
-                            + "At most one instance can be assigned to each persistence unit.",
-                    beanType.getSimpleName(), persistenceUnitName));
+                            + "At most one instance can be assigned to each persistence unit. Instances found: %3$s",
+                    beanType.getSimpleName(), persistenceUnitName, ambiguousClassNames));
         }
         return instance;
     }

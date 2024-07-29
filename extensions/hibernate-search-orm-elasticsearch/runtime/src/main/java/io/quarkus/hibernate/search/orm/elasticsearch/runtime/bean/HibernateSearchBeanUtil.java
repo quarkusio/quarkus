@@ -28,21 +28,23 @@ public final class HibernateSearchBeanUtil {
             String persistenceUnitName, String backendName, String indexName) {
         InjectableInstance<T> instance = extensionInstanceFor(beanType, persistenceUnitName, backendName, indexName);
         if (instance.isAmbiguous()) {
+            List<String> ambiguousClassNames = instance.handlesStream().map(h -> h.getBean().getBeanClass().getCanonicalName())
+                    .toList();
             if (indexName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Multiple instances of %1$s were found for Hibernate Search index %3$s in persistence unit %2$s."
-                                + " At most one instance can be assigned to each index.",
-                        beanType.getSimpleName(), persistenceUnitName, indexName));
+                        "Multiple instances of %1$s were found for Hibernate Search index %2$s in persistence unit %3$s."
+                                + " At most one instance can be assigned to each index. Instances found: %4$s",
+                        beanType.getSimpleName(), indexName, persistenceUnitName, ambiguousClassNames));
             } else if (backendName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Multiple instances of %1$s were found for Hibernate Search backend %3$s in persistence unit %2$s."
-                                + " At most one instance can be assigned to each backend.",
-                        beanType.getSimpleName(), persistenceUnitName, backendName));
+                        "Multiple instances of %1$s were found for Hibernate Search backend %2$s in persistence unit %3$s."
+                                + " At most one instance can be assigned to each backend. Instances found: %4$s",
+                        beanType.getSimpleName(), backendName, persistenceUnitName, ambiguousClassNames));
             } else {
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Multiple instances of %1$s were found for Hibernate Search in persistence unit %2$s."
-                                + " At most one instance can be assigned to each persistence unit.",
-                        beanType.getSimpleName(), persistenceUnitName));
+                                + " At most one instance can be assigned to each persistence unit. Instances found: %3$s",
+                        beanType.getSimpleName(), persistenceUnitName, ambiguousClassNames));
             }
         }
         return instance.isResolvable() ? Optional.of(new ArcBeanReference<>(instance.getHandle().getBean())) : Optional.empty();

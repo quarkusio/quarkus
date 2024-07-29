@@ -28,21 +28,23 @@ public final class HibernateSearchBeanUtil {
             String backendName, String indexName) {
         InjectableInstance<T> instance = extensionInstanceFor(beanType, backendName, indexName);
         if (instance.isAmbiguous()) {
+            List<String> ambiguousClassNames = instance.handlesStream().map(h -> h.getBean().getBeanClass().getCanonicalName())
+                    .toList();
             if (indexName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Multiple instances of %1$s were found for Hibernate Search Standalone index %2$s."
-                                + " At most one instance can be assigned to each index.",
-                        beanType.getSimpleName(), indexName));
+                                + " At most one instance can be assigned to each index. Instances found: %3$s",
+                        beanType.getSimpleName(), indexName, ambiguousClassNames));
             } else if (backendName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Multiple instances of %1$s were found for Hibernate Search Standalone backend %2$s."
-                                + " At most one instance can be assigned to each backend.",
-                        beanType.getSimpleName(), backendName));
+                                + " At most one instance can be assigned to each backend. Instances found: %3$s",
+                        beanType.getSimpleName(), backendName, ambiguousClassNames));
             } else {
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Multiple instances of %1$s were found for Hibernate Search Standalone."
-                                + " At most one instance can be assigned.",
-                        beanType.getSimpleName()));
+                                + " At most one instance can be assigned. Instances found: %2$s",
+                        beanType.getSimpleName(), ambiguousClassNames));
             }
         }
         return instance.isResolvable() ? Optional.of(new ArcBeanReference<>(instance.getHandle().getBean())) : Optional.empty();

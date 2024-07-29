@@ -26,10 +26,11 @@ public class AmbiguousSearchExtensionTest {
             .assertException(throwable -> assertThat(throwable)
                     .hasNoSuppressedExceptions()
                     .rootCause()
-                    .hasMessageContainingAll("Multiple instances of FailureHandler were found at ",
+                    .hasMessageContainingAll(
+                            "Multiple instances of FailureHandler were found for Hibernate Search Standalone.",
+                            "At most one instance can be assigned. Instances found:",
                             "io.quarkus.hibernate.search.standalone.elasticsearch.test.boot.AmbiguousSearchExtensionTest.SearchFailureHandler",
-                            "io.quarkus.hibernate.search.standalone.elasticsearch.test.boot.AmbiguousSearchExtensionTest.AnotherSearchFailureHandler",
-                            "for Hibernate Search Standalone. At most one instance can be assigned."));
+                            "io.quarkus.hibernate.search.standalone.elasticsearch.test.boot.AmbiguousSearchExtensionTest.AnotherSearchFailureHandler"));
 
     @SearchEntity
     @Indexed

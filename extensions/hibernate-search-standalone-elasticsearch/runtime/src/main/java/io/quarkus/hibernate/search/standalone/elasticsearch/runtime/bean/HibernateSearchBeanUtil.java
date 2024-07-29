@@ -32,18 +32,18 @@ public final class HibernateSearchBeanUtil {
                     .toList();
             if (indexName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Multiple instances of %1$s were found at %2$s for Hibernate Search Standalone index %3$s."
-                                + " At most one instance can be assigned to each index.",
-                        beanType.getSimpleName(), ambiguousClassNames, indexName));
+                        "Multiple instances of %1$s were found for Hibernate Search Standalone index %2$s."
+                                + " At most one instance can be assigned to each index. Instances found: %3$s",
+                        beanType.getSimpleName(), indexName, ambiguousClassNames));
             } else if (backendName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Multiple instances of %1$s were found at %2$s for Hibernate Search Standalone backend %3$s."
-                                + " At most one instance can be assigned to each backend.",
-                        beanType.getSimpleName(), ambiguousClassNames, backendName));
+                        "Multiple instances of %1$s were found for Hibernate Search Standalone backend %2$s."
+                                + " At most one instance can be assigned to each backend. Instances found: %3$s",
+                        beanType.getSimpleName(), backendName, ambiguousClassNames));
             } else {
                 throw new IllegalStateException(String.format(Locale.ROOT,
-                        "Multiple instances of %1$s were found at %2$s for Hibernate Search Standalone."
-                                + " At most one instance can be assigned.",
+                        "Multiple instances of %1$s were found for Hibernate Search Standalone."
+                                + " At most one instance can be assigned. Instances found: %2$s",
                         beanType.getSimpleName(), ambiguousClassNames));
             }
         }

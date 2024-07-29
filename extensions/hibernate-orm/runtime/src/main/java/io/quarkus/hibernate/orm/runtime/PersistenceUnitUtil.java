@@ -34,9 +34,9 @@ public class PersistenceUnitUtil {
             List<String> ambiguousClassNames = instance.handlesStream().map(h -> h.getBean().getBeanClass().getCanonicalName())
                     .toList();
             throw new IllegalStateException(String.format(Locale.ROOT,
-                    "Multiple instances of %1$s were found at %2$s for persistence unit %3$s. "
-                            + "At most one instance can be assigned to each persistence unit.",
-                    beanType.getSimpleName(), ambiguousClassNames, persistenceUnitName));
+                    "Multiple instances of %1$s were found for persistence unit %2$s. "
+                            + "At most one instance can be assigned to each persistence unit. Instances found: %3$s",
+                    beanType.getSimpleName(), persistenceUnitName, ambiguousClassNames));
         }
         return instance;
     }

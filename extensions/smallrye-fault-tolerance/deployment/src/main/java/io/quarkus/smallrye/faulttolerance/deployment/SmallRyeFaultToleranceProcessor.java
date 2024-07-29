@@ -148,7 +148,7 @@ public class SmallRyeFaultToleranceProcessor {
                 clazz.methods()
                         .stream()
                         .filter(it -> fallbackMethod.equals(it.name()))
-                        .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(it)));
+                        .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName(), it)));
 
                 DotName superClass = clazz.superName();
                 if (superClass != null && !DotNames.OBJECT.equals(superClass)) {

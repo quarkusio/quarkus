@@ -538,12 +538,12 @@ public class ArcProcessor {
 
             @Override
             public void registerMethod(String declaringClass, String name, String... params) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(declaringClass, name, params));
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), declaringClass, name, params));
             }
 
             @Override
             public void registerMethod(MethodInfo methodInfo) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), methodInfo));
             }
 
             @Override

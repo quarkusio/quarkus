@@ -19,18 +19,19 @@ import org.quartz.spi.TriggerFiredBundle;
  */
 class CdiAwareJob implements InterruptableJob {
 
-    private final Instance<? extends Job> jobInstance;
+    private final Instance.Handle<? extends Job> handle;
+    private final Job beanInstance;
 
-    public CdiAwareJob(Instance<? extends Job> jobInstance) {
-        this.jobInstance = jobInstance;
+    public CdiAwareJob(Instance.Handle<? extends Job> handle) {
+        this.handle = handle;
+        this.beanInstance = handle.get();
     }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Instance.Handle<? extends Job> handle = jobInstance.getHandle();
         boolean refire = false;
         try {
-            handle.get().execute(context);
+            beanInstance.execute(context);
         } catch (JobExecutionException e) {
             refire = e.refireImmediately();
             throw e;
@@ -43,16 +44,9 @@ class CdiAwareJob implements InterruptableJob {
 
     @Override
     public void interrupt() throws UnableToInterruptJobException {
-        Instance.Handle<? extends Job> handle = jobInstance.getHandle();
         // delegate if possible; throw an exception in other cases
         if (InterruptableJob.class.isAssignableFrom(handle.getBean().getBeanClass())) {
-            try {
-                ((InterruptableJob) handle.get()).interrupt();
-            } finally {
-                if (handle.getBean().getScope().equals(Dependent.class)) {
-                    handle.destroy();
-                }
-            }
+            ((InterruptableJob) beanInstance).interrupt();
         } else {
             throw new UnableToInterruptJobException("Job " + handle.getBean().getBeanClass()
                     + " can not be interrupted, since it does not implement " + InterruptableJob.class.getName());

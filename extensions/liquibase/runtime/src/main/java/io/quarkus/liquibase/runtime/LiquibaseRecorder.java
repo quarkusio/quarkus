@@ -7,9 +7,9 @@ import javax.sql.DataSource;
 
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -35,7 +35,9 @@ public class LiquibaseRecorder {
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
                 DataSource dataSource;
                 try {
-                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    // ClientProxy.unwrap is necessary to trigger exceptions on inactive datasources
+                    dataSource = ClientProxy.unwrap(context.getInjectedReference(DataSource.class,
+                            AgroalDataSourceUtil.qualifier(dataSourceName)));
                     if (dataSource instanceof UnconfiguredDataSource) {
                         throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
                     }
@@ -55,8 +57,8 @@ public class LiquibaseRecorder {
         if (!config.getValue().enabled) {
             return;
         }
-        // Liquibase is active when the datasource itself is active.
-        if (!Arc.container().instance(DataSources.class).get().getActiveDataSourceNames().contains(dataSourceName)) {
+        // Liquibase is only active when the datasource itself is active.
+        if (AgroalDataSourceUtil.dataSourceIfActive(dataSourceName).isEmpty()) {
             return;
         }
 

@@ -9,13 +9,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
@@ -40,11 +35,11 @@ import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
@@ -80,12 +75,9 @@ public class DataSources {
     private final TransactionManager transactionManager;
     private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
-    private final DataSourceSupport dataSourceSupport;
     private final AgroalDataSourceSupport agroalDataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
     private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
-
-    private final ConcurrentMap<String, AgroalDataSource> dataSources = new ConcurrentHashMap<>();
 
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
@@ -94,7 +86,6 @@ public class DataSources {
             TransactionManager transactionManager,
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
-            DataSourceSupport dataSourceSupport,
             AgroalDataSourceSupport agroalDataSourceSupport,
             @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors,
             Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper) {
@@ -106,7 +97,6 @@ public class DataSources {
         this.transactionManager = transactionManager;
         this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
-        this.dataSourceSupport = dataSourceSupport;
         this.agroalDataSourceSupport = agroalDataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
         this.agroalOpenTelemetryWrapper = agroalOpenTelemetryWrapper;
@@ -123,47 +113,41 @@ public class DataSources {
      * <p>
      * This method is thread-safe
      *
-     * @deprecated This method should not be used as it can very easily lead to timing issues during bean creation
+     * @deprecated Use {@link AgroalDataSourceUtil#dataSourceInstance(String)} instead.
+     *             This method should not be used as it can very easily lead to timing issues during bean creation.
      */
     @Deprecated
     public static AgroalDataSource fromName(String dataSourceName) {
-        return Arc.container().instance(DataSources.class).get()
-                .getDataSource(dataSourceName);
+        return AgroalDataSourceUtil.dataSourceInstance(dataSourceName).get();
     }
 
+    /**
+     * @deprecated This shouldn't be needed.
+     *             Use {@link AgroalDataSourceUtil#dataSourceIfActive(String)} to check if a datasource is active.
+     */
+    @Deprecated
     public boolean isDataSourceCreated(String dataSourceName) {
-        return dataSources.containsKey(dataSourceName);
+        return agroalDataSourceSupport.entries.containsKey(dataSourceName);
     }
 
+    /**
+     * @deprecated Use {@link AgroalDataSourceUtil#activeDataSourceNames()} instead.
+     */
+    @Deprecated
     public Set<String> getActiveDataSourceNames() {
-        // Datasources are created on startup,
-        // and we only create active datasources.
-        return dataSources.keySet();
+        return AgroalDataSourceUtil.activeDataSourceNames();
     }
 
+    /**
+     * @deprecated Use {@link AgroalDataSourceUtil#dataSourceInstance(String)} instead.
+     */
+    @Deprecated
     public AgroalDataSource getDataSource(String dataSourceName) {
-        return dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
-            @Override
-            public AgroalDataSource apply(String s) {
-                return doCreateDataSource(s, true);
-            }
-        });
-    }
-
-    @PostConstruct
-    public void start() {
-        for (String dataSourceName : agroalDataSourceSupport.entries.keySet()) {
-            dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
-                @Override
-                public AgroalDataSource apply(String s) {
-                    return doCreateDataSource(s, false);
-                }
-            });
-        }
+        return ClientProxy.unwrap(AgroalDataSourceUtil.dataSourceInstance(dataSourceName).get());
     }
 
     @SuppressWarnings("resource")
-    public AgroalDataSource doCreateDataSource(String dataSourceName, boolean failIfInactive) {
+    public AgroalDataSource createDataSource(String dataSourceName) {
         if (!agroalDataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
@@ -171,16 +155,6 @@ public class DataSources {
         DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
                 .dataSources().get(dataSourceName).jdbc();
         DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
-
-        if (dataSourceSupport.getInactiveNames().contains(dataSourceName)) {
-            if (failIfInactive) {
-                throw DataSourceUtil.dataSourceInactive(dataSourceName);
-            } else {
-                // This only happens on startup, and effectively cancels the creation
-                // so that we only throw an exception on first actual use.
-                return null;
-            }
-        }
 
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
                 .dataSources().get(dataSourceName).jdbc();
@@ -440,15 +414,6 @@ public class DataSources {
                 iterator.next();
             } catch (Throwable t) {
                 // ignore
-            }
-        }
-    }
-
-    @PreDestroy
-    public void stop() {
-        for (AgroalDataSource dataSource : dataSources.values()) {
-            if (dataSource != null) {
-                dataSource.close();
             }
         }
     }

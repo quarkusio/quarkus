@@ -6,7 +6,7 @@ import java.util.List;
 
 import jakarta.enterprise.inject.Default;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -23,7 +23,7 @@ public final class FlywayContainerUtil {
 
     public static List<FlywayContainer> getActiveFlywayContainers() {
         List<FlywayContainer> result = new ArrayList<>();
-        for (String datasourceName : Arc.container().instance(DataSources.class).get().getActiveDataSourceNames()) {
+        for (String datasourceName : AgroalDataSourceUtil.activeDataSourceNames()) {
             InstanceHandle<FlywayContainer> handle = Arc.container().instance(FlywayContainer.class,
                     getFlywayContainerQualifier(datasourceName));
             if (!handle.isAvailable()) {

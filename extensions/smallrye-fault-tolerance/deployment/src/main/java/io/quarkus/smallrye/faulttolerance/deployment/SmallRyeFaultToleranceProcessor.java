@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Queue;
 import java.util.Set;
 
 import jakarta.annotation.Priority;
@@ -88,7 +86,6 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
@@ -119,43 +116,6 @@ public class SmallRyeFaultToleranceProcessor {
                 handlerBeans.addBeanClass(handler);
             }
             beans.produce(handlerBeans.build());
-        }
-        // Add reflective access to fallback methods
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
-            AnnotationValue fallbackMethodValue = annotation.value("fallbackMethod");
-            if (fallbackMethodValue == null) {
-                continue;
-            }
-            String fallbackMethod = fallbackMethodValue.asString();
-
-            Queue<DotName> classesToScan = new ArrayDeque<>(); // work queue
-
-            // @Fallback can only be present on methods, so this is just future-proofing
-            AnnotationTarget target = annotation.target();
-            if (target.kind() == Kind.METHOD) {
-                classesToScan.add(target.asMethod().declaringClass().name());
-            }
-
-            while (!classesToScan.isEmpty()) {
-                DotName name = classesToScan.poll();
-                ClassInfo clazz = index.getClassByName(name);
-                if (clazz == null) {
-                    continue;
-                }
-
-                // we could further restrict the set of registered methods based on matching parameter types,
-                // but that's relatively complex and SmallRye Fault Tolerance has to do it anyway
-                clazz.methods()
-                        .stream()
-                        .filter(it -> fallbackMethod.equals(it.name()))
-                        .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName(), it)));
-
-                DotName superClass = clazz.superName();
-                if (superClass != null && !DotNames.OBJECT.equals(superClass)) {
-                    classesToScan.add(superClass);
-                }
-                classesToScan.addAll(clazz.interfaceNames());
-            }
         }
         // Add reflective access to custom backoff strategies
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
@@ -261,6 +221,67 @@ public class SmallRyeFaultToleranceProcessor {
     }
 
     @BuildStep
+    // Add reflective access to fallback methods, use bean index since fallback methods can be in bean classes
+    void processFallbackMethodsAndClases(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod) {
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        Map<DotName, Set<String>> classesToScan = new HashMap<>();
+
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
+            AnnotationValue fallbackMethodValue = annotation.value("fallbackMethod");
+            if (fallbackMethodValue == null) {
+                continue;
+            }
+            String fallbackMethod = fallbackMethodValue.asString();
+
+            // @Fallback can only be present on methods, so this is just future-proofing
+            AnnotationTarget target = annotation.target();
+            final ClassInfo clazz = target.asMethod().declaringClass();
+            if (target.kind() != Kind.METHOD) {
+                continue;
+            }
+
+            // Scan both the hierarchy of the declaring class and its (super)interfaces like in
+            // io.smallrye.faulttolerance.internal.SecurityActions.findDeclaredMethodNames
+            DotName name = clazz.name();
+            while (name != null && !DotNames.OBJECT.equals(name)) {
+                classesToScan.computeIfAbsent(name, k1 -> new HashSet<>()).add(fallbackMethod);
+                clazz.interfaceNames()
+                        .forEach(it -> classesToScan.computeIfAbsent(it, k -> new HashSet<>()).add(fallbackMethod));
+                ClassInfo classInfo = index.getClassByName(name);
+                if (classInfo == null) {
+                    break;
+                }
+                name = classInfo.superName();
+            }
+        }
+
+        for (Map.Entry<DotName, Set<String>> entry : classesToScan.entrySet()) {
+            DotName name = entry.getKey();
+            Set<String> methods = entry.getValue();
+            ClassInfo classInfo = index.getClassByName(name);
+
+            // io.smallrye.faulttolerance.config.FaultToleranceOperation.validate reflectively accesses methods and
+            // interfaces of the bean class and its superclasses through
+            // io.smallrye.faulttolerance.internal.SecurityActions.findDeclaredMethodNames
+            if (classInfo.isInterface()) {
+                // for interfaces getMethods() is invoked in addition to getDeclaredMethods()
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(name.toString()).queryPublicMethods().build());
+            }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(name.toString()).queryMethods().build());
+
+            // we could further restrict the set of registered methods based on matching parameter types,
+            // but that's relatively complex and SmallRye Fault Tolerance has to do it anyway
+            classInfo.methods()
+                    .stream()
+                    .filter(it -> methods.contains(it.name()))
+                    .forEach(it -> reflectiveMethod.produce(new ReflectiveMethodBuildItem(it)));
+        }
+
+    }
+
+    @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
     void processFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
@@ -288,6 +309,7 @@ public class SmallRyeFaultToleranceProcessor {
 
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         IndexView index = beanArchiveIndexBuildItem.getIndex();
+
         // only generating annotation literal classes for MicroProfile/SmallRye Fault Tolerance annotations,
         // none of them are application classes
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);

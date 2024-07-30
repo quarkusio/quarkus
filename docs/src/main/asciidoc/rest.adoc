@@ -2271,6 +2271,40 @@ By default, methods annotated with `@ServerExceptionMapper` do **not** run CDI i
 Users however can opt into interceptors by adding the corresponding annotations to the method.
 ====
 
+[TIP]
+====
+When mapping an exception to a `@ServerExceptionMapper` method, the cause of the exception normally does not come into play.
+
+However, some exception types in Java only serve as wrappers for other exceptions. Often, checked exceptions are wrapped into `RuntimeException` just to not have them declared in method `throws` parameters.
+Working with `CompletionStage` for example, will require `CompletionException`. There are many such exception types that are just wrappers around the real cause of the exception.
+
+If you wish to make sure your exception mapper is called for your exception type even when it is wrapped by one of those wrapper exceptions, you can use `@UnwrapException` on the exception wrapper type:
+
+[source,java]
+----
+public class MyExceptionWrapper extends RuntimeException {
+    public MyExceptionWrapper(Exception cause) {
+        super(cause);
+    }
+}
+----
+
+If you don't control that exception wrapper type, you can place the annotation on any class and specify the exception wrapper types it applies to as annotation parameter:
+
+[source,java]
+----
+@UnwrapException({CompletionException.class, RuntimeException.class})
+public class Mapper {
+
+    @ServerExceptionMapper
+    public Response handleMyException(MyException x) {
+        // ...
+    }
+
+}
+----
+====
+
 [NOTE]
 ====
 Εxception mappers defined in REST endpoint classes will only be called if the  exception is thrown in the same class. If you want to define global exception mappers,

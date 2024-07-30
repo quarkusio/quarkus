@@ -205,12 +205,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         hangTimeout = new DurationConverter().convert(time);
         hangTaskKey = hangDetectionExecutor.schedule(hangDetectionTask, hangTimeout.toMillis(), TimeUnit.MILLISECONDS);
-
         quarkusTestProfile = profile;
+
+        LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Closeable testResourceManager = null;
         try {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
             PrepareResult result = createAugmentor(context, profile, shutdownTasks);
             AugmentAction augmentAction = result.augmentAction;
             QuarkusTestProfile profileInstance = result.profileInstance;
@@ -298,8 +298,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     }
                 }
             };
-            ExtensionState state = new ExtensionState(testResourceManager, shutdownTask);
-            return state;
+            return new ExtensionState(testResourceManager, shutdownTask);
         } catch (Throwable e) {
             if (!InitialConfigurator.DELAYED_HANDLER.isActivated()) {
                 activateLogging();
@@ -313,6 +312,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             } catch (Exception ex) {
                 effectiveException.addSuppressed(determineEffectiveException(ex));
+            }
+
+            while (!shutdownTasks.isEmpty()) {
+                shutdownTasks.pop().run();
+            }
+
+            try {
+                TestClassIndexer.removeIndex(requiredTestClass);
+            } catch (Exception ignored) {
+
             }
 
             throw effectiveException;

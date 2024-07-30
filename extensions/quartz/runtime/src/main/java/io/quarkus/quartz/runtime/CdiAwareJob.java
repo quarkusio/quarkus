@@ -28,10 +28,14 @@ class CdiAwareJob implements InterruptableJob {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         Instance.Handle<? extends Job> handle = jobInstance.getHandle();
+        boolean refire = false;
         try {
             handle.get().execute(context);
+        } catch (JobExecutionException e) {
+            refire = e.refireImmediately();
+            throw e;
         } finally {
-            if (handle.getBean().getScope().equals(Dependent.class)) {
+            if (refire != true && handle.getBean().getScope().equals(Dependent.class)) {
                 handle.destroy();
             }
         }

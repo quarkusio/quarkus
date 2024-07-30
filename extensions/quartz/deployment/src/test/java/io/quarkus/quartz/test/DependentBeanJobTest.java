@@ -86,10 +86,10 @@ public class DependentBeanJobTest {
 
     @Test
     public void testDependentBeanJobWithRefire() throws SchedulerException, InterruptedException {
-        // 5 one-off jobs should trigger construction/execution/destruction 10 times in total
-        CountDownLatch execLatch = service.initExecuteLatch(10);
-        CountDownLatch constructLatch = service.initConstructLatch(10);
-        CountDownLatch destroyedLatch = service.initDestroyedLatch(10);
+        // 5 one-off jobs should trigger construction/execution/destruction 5 times in total
+        CountDownLatch execLatch = service.initExecuteLatch(5);
+        CountDownLatch constructLatch = service.initConstructLatch(5);
+        CountDownLatch destroyedLatch = service.initDestroyedLatch(5);
         for (int i = 0; i < 5; i++) {
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity("myTrigger" + i, "myRefiringGroup")
@@ -104,10 +104,10 @@ public class DependentBeanJobTest {
         assertTrue(constructLatch.await(2, TimeUnit.SECONDS), "Latch count: " + constructLatch.getCount());
         assertTrue(destroyedLatch.await(2, TimeUnit.SECONDS), "Latch count: " + destroyedLatch.getCount());
 
-        // repeating job triggering three times; we expect six beans to exist for that due to refires
-        execLatch = service.initExecuteLatch(6);
-        constructLatch = service.initConstructLatch(6);
-        destroyedLatch = service.initDestroyedLatch(6);
+        // repeating job triggering three times; re-fires should NOT recreate the bean instance
+        execLatch = service.initExecuteLatch(3);
+        constructLatch = service.initConstructLatch(3);
+        destroyedLatch = service.initDestroyedLatch(3);
         JobDetail job = JobBuilder.newJob(RefiringJob.class)
                 .withIdentity("myRepeatingJob", "myRefiringGroup")
                 .build();

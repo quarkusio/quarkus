@@ -384,26 +384,20 @@ class LiquibaseProcessor {
      * A {@link LinkedHashSet} is used to avoid duplications.
      */
     private List<String> getChangeLogs(Collection<String> dataSourceNames, LiquibaseBuildTimeConfig liquibaseBuildConfig) {
-        if (dataSourceNames.isEmpty()) {
-            return Collections.emptyList();
-        }
+        var dataSourceConfigs = dataSourceNames.stream()
+                .map(dsName -> DataSourceUtil.isDefault(dsName)
+                        ? liquibaseBuildConfig.defaultDataSource
+                        : liquibaseBuildConfig.getConfigForDataSourceName(dsName))
+                .filter(config -> config.active)
+                .toList();
+        return dataSourceConfigs.isEmpty() ? Collections.emptyList() : getAllChangeLogFiles(dataSourceConfigs);
+    }
 
-        List<LiquibaseDataSourceBuildTimeConfig> liquibaseDataSources = new ArrayList<>();
-
-        if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            liquibaseDataSources.add(liquibaseBuildConfig.defaultDataSource);
-        }
-
-        for (String dataSourceName : dataSourceNames) {
-            if (!DataSourceUtil.isDefault(dataSourceName)) {
-                liquibaseDataSources.add(liquibaseBuildConfig.getConfigForDataSourceName(dataSourceName));
-            }
-        }
-
+    private List<String> getAllChangeLogFiles(List<LiquibaseDataSourceBuildTimeConfig> dataSourceConfigs) {
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
         ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
         Set<String> resources = new LinkedHashSet<>();
-        for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
+        for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : dataSourceConfigs) {
 
             Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath;
             String changeLog = liquibaseDataSourceConfig.changeLog;

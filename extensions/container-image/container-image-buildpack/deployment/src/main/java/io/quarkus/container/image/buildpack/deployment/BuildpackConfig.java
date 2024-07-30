@@ -18,7 +18,7 @@ public class BuildpackConfig {
     public String jvmBuilderImage;
 
     /**
-     * The buildpacks builder image to use when building the project in native mode.pu
+     * The buildpacks builder image to use when building the project in native mode.
      */
     @ConfigItem
     public Optional<String> nativeBuilderImage;

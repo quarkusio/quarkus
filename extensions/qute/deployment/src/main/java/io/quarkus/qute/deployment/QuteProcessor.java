@@ -61,15 +61,17 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
+import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.QualifierRegistrar;
@@ -951,7 +953,7 @@ public class QuteProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             BuildProducer<ImplicitValueResolverBuildItem> implicitClasses,
             BuildProducer<TemplateExpressionMatchesBuildItem> expressionMatches,
-            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            SynthesisFinishedBuildItem synthesisFinished,
             List<CheckedTemplateBuildItem> checkedTemplates,
             List<TemplateDataBuildItem> templateData,
             QuteConfig config,
@@ -970,10 +972,7 @@ public class QuteProcessor {
                 return findTemplatePath(templatesAnalysis, id);
             }
         };
-        // IMPLEMENTATION NOTE:
-        // We do not support injection of synthetic beans with names
-        // Dependency on the ValidationPhaseBuildItem would result in a cycle in the build chain
-        Map<String, BeanInfo> namedBeans = beanDiscovery.beanStream().withName()
+        Map<String, BeanInfo> namedBeans = synthesisFinished.beanStream().withName()
                 .collect(toMap(BeanInfo::getName, Function.identity()));
         // Map implicit class -> set of used members
         Map<DotName, Set<String>> implicitClassToMembersUsed = new HashMap<>();
@@ -2447,9 +2446,7 @@ public class QuteProcessor {
     @BuildStep
     @Record(value = STATIC_INIT)
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
-            List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
-            Optional<TemplateVariantsBuildItem> templateVariants,
-            List<TemplateGlobalProviderBuildItem> templateInitializers,
+            List<TemplatePathBuildItem> templatePaths, Optional<TemplateVariantsBuildItem> templateVariants,
             TemplateRootsBuildItem templateRoots) {
 
         List<String> templates = new ArrayList<>();
@@ -2475,12 +2472,23 @@ public class QuteProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(QuteContext.class)
-                .supplier(recorder.createContext(generatedValueResolvers.stream()
-                        .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
-                        tags, variants, templateInitializers.stream()
-                                .map(TemplateGlobalProviderBuildItem::getClassName).collect(Collectors.toList()),
+                .scope(BuiltinScope.SINGLETON.getInfo())
+                .supplier(recorder.createContext(templates,
+                        tags, variants,
                         templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet()), templateContents))
                 .done());
+    }
+
+    @BuildStep
+    @Record(value = STATIC_INIT)
+    void initializeGeneratedClasses(BeanContainerBuildItem beanContainer, QuteRecorder recorder,
+            List<GeneratedValueResolverBuildItem> generatedValueResolvers,
+            List<TemplateGlobalProviderBuildItem> templateInitializers) {
+        // The generated classes must be initialized after the template expressions are validated in order to break the cycle in the build chain
+        recorder.initializeGeneratedClasses(generatedValueResolvers.stream()
+                .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()),
+                templateInitializers.stream()
+                        .map(TemplateGlobalProviderBuildItem::getClassName).collect(Collectors.toList()));
     }
 
     @BuildStep

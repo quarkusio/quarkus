@@ -9,6 +9,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.config.ConfigMappingInterface;
+import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 
 /**
@@ -22,7 +24,7 @@ final class Substitutions {
         private static volatile ConfigProviderResolver instance;
     }
 
-    @TargetClass(className = "io.smallrye.config.ConfigMappingLoader")
+    @TargetClass(ConfigMappingLoader.class)
     static final class Target_ConfigMappingLoader {
         @Substitute
         static Class<?> loadClass(final Class<?> parent, final ConfigMappingMetadata configMappingMetadata) {
@@ -39,7 +41,7 @@ final class Substitutions {
         }
     }
 
-    @TargetClass(className = "io.smallrye.config.ConfigMappingInterface")
+    @TargetClass(ConfigMappingInterface.class)
     static final class Target_ConfigMappingInterface {
         @Alias
         static ClassValue<Target_ConfigMappingInterface> cv = null;
@@ -62,7 +64,7 @@ final class Substitutions {
         }
     }
 
-    @TargetClass(className = "io.smallrye.config.ConfigMappingClass")
+    @TargetClass(value = ConfigMappingLoader.class, innerClass = "ConfigMappingClass")
     static final class Target_ConfigMappingClass {
         @Alias
         static ClassValue<Target_ConfigMappingClass> cv = null;

@@ -64,7 +64,7 @@ import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.ConfigMappings;
-import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.Converters;
 import io.smallrye.config.KeyMap;
 import io.smallrye.config.SmallRyeConfig;
@@ -1198,13 +1198,13 @@ public final class RunTimeConfigurationGenerator {
 
         private void generateUnknownFilter() {
             Set<String> names = new HashSet<>();
-            for (ConfigClassWithPrefix buildTimeMapping : buildTimeConfigResult.getBuildTimeMappings()) {
+            for (ConfigClass buildTimeMapping : buildTimeConfigResult.getBuildTimeMappings()) {
                 names.addAll(ConfigMappings.getProperties(buildTimeMapping).keySet());
             }
-            for (ConfigClassWithPrefix staticConfigMapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
+            for (ConfigClass staticConfigMapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
                 names.addAll(ConfigMappings.getProperties(staticConfigMapping).keySet());
             }
-            for (ConfigClassWithPrefix runtimeConfigMapping : buildTimeConfigResult.getRunTimeMappings()) {
+            for (ConfigClass runtimeConfigMapping : buildTimeConfigResult.getRunTimeMappings()) {
                 names.addAll(ConfigMappings.getProperties(runtimeConfigMapping).keySet());
             }
 

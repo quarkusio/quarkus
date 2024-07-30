@@ -83,30 +83,27 @@ public class LiquibaseRecorder {
             return;
         }
 
-        InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container().select(LiquibaseFactory.class,
-                LiquibaseFactoryUtil.getLiquibaseFactoryQualifier(dataSourceName));
-        if (!liquibaseFactoryInstance.isResolvable()
-                || !liquibaseFactoryInstance.getHandle().getBean().isActive().result()) {
+        var dataSourceConfig = config.getValue().getConfigForDataSourceName(dataSourceName);
+        if (!dataSourceConfig.cleanAtStart && !dataSourceConfig.migrateAtStart) {
             return;
         }
+
+        InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container().select(LiquibaseFactory.class,
+                LiquibaseFactoryUtil.getLiquibaseFactoryQualifier(dataSourceName));
         try {
             LiquibaseFactory liquibaseFactory = liquibaseFactoryInstance.get();
-            var config = liquibaseFactory.getConfiguration();
-            if (!config.cleanAtStart && !config.migrateAtStart) {
-                return;
-            }
             try (Liquibase liquibase = liquibaseFactory.createLiquibase();
                     ResettableSystemProperties resettableSystemProperties = liquibaseFactory
                             .createResettableSystemProperties()) {
-                if (config.cleanAtStart) {
+                if (dataSourceConfig.cleanAtStart) {
                     liquibase.dropAll();
                 }
-                if (config.migrateAtStart) {
+                if (dataSourceConfig.migrateAtStart) {
                     var lockService = LockServiceFactory.getInstance()
                             .getLockService(liquibase.getDatabase());
                     lockService.waitForLock();
                     try {
-                        if (config.validateOnMigrate) {
+                        if (dataSourceConfig.validateOnMigrate) {
                             liquibase.validate();
                         }
                         liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());

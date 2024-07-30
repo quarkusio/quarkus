@@ -27,7 +27,8 @@ public class LiquibaseExtensionConfigActiveFalseDefaultDatasourceTest {
     public void testBootSucceedsButLiquibaseDeactivated() {
         assertThatThrownBy(() -> liquibaseForDefaultDatasource.get().getConfiguration())
                 .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll("Unable to find datasource '<default>' for Liquibase",
+                .hasMessageContainingAll(
+                        "Liquibase for datasource '<default>' was deactivated automatically because this datasource was deactivated",
                         "Datasource '<default>' was deactivated through configuration properties.",
                         "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
                         "To activate the datasource, set configuration property 'quarkus.datasource.active'"

@@ -52,16 +52,16 @@ Source: https://excalidraw.com/#json=JMERR95gRufcmnUpWy6A_,Qd9efiR40LR3wv82CxyLK
 So how do we minimise the impact?
 What needs to happen for it to work?
 
-* The registry reads `quarkus-extension.yaml` from the deployment module, not the runtime module
+* The registry reads `quarkus-extension.yaml` from the deployment module, not the runtime module. An alternate implementation would be to publish a separate `-metadata` artifact and the tooling could read that artifact.
 * The build of extensions' deployment module invokes a maven plugin (the existing one, or a new one)
-* (optional) Extension source code refactoring: `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly.
+* (optional) Extension source code refactoring:  the template `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly. We want this refactoring to be optional, so if the yaml template isn't found in the deployment module, tooling would look for it in the runtime module.
 
 The `quarkus-extension.properties` will continue to be generated in the runtime module. We should do an inventory to double-check that nothing in the `quarkus-extension.yaml` needs
 
 * to be accessed by tools outside the registry which expects it to be in the runtime JAR (IDEs?)
 * generated information which is only available to the extension plugin when it's running in the runtime module
 
-If so, those informations should move to `quarkus-extension.properties`.
+If so, the consumers will need to be updated to read the deployment module, or those informations should move to `quarkus-extension.properties` (if the consumer has no access to the deployment module).
 
 A secondary benefit of this proposal is reducing the size (slightly) of the extension's runtime artifacts.
 
@@ -69,7 +69,7 @@ A secondary benefit of this proposal is reducing the size (slightly) of the exte
 
 We will need to allow a long transition period (probably one major release lifespan), in which
 
-* The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`
+* The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`, and possibly also the new metadata artifact
 * The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will look in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
 * We still package up a (less complete) `quarkus-extension.yaml` into the runtime module, so that back-level tools (such as the CLI, and maybe IDEs) can find it
 
@@ -103,9 +103,15 @@ We will need to broadcast information about the changes. We should assume that t
 
 === Tooling
 
+==== Platform descriptor generation
+
+The tooling which generates the platform descriptor JSON will need to be updated to look for the new source of this metadata.
+
 ==== Registry
 
-We will need to update the upload process.
+For platform releases, the registry consumes the generated platform descriptors, so assuming that tooling is updated, there won't be much of a change for platform metadata processing on the registry side.
+
+However, for non-platform extensions the metadata source will change and the registry will have to adjust to that. It will need to support both the old and new locations.
 
 ==== CLI
 

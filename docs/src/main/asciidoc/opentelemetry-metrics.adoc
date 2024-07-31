@@ -19,7 +19,6 @@ metrics for interactive web applications.
 - If you search more information about OpenTelemetry Tracing, please refer to the xref:opentelemetry-tracing.adoc[OpenTelemetry Tracing Guide].
 ====
 
-
 == Prerequisites
 
 :prerequisites-docker-compose:
@@ -40,7 +39,8 @@ The solution is located in the `opentelemetry-quickstart` link:{quickstarts-tree
 
 == Creating the Maven project
 
-First, we need a new project. Create a new project with the following command:
+First, we need a new project.
+Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
 :create-app-extensions: rest,quarkus-opentelemetry
@@ -114,12 +114,12 @@ public class MetricResource {
 }
 ----
 
-Quarkus is not currently producing metrics out of the box. Here we are creating a counter for the number of invocations of the `hello()` method.
+Quarkus is not currently producing metrics out of the box.
+Here we are creating a counter for the number of invocations of the `hello()` method.
 
 <1> Constructor injection of the `Meter` instance.
 <2> Create a `LongCounter` named `hello-metrics` with a description and unit.
 <3> Increment the counter by one for each invocation of the `hello()` method.
-
 
 === Create the configuration
 
@@ -135,9 +135,12 @@ quarkus.otel.exporter.otlp.metrics.endpoint=http://localhost:4317 // <3>
 quarkus.otel.exporter.otlp.metrics.headers=authorization=Bearer my_secret // <4>
 ----
 
-<1> All metrics created from the application will include an OpenTelemetry `Resource` indicating the metrics was created by the `myservice` application. If not set, it will default to the artifact id.
-<2> Enable the OpenTelemetry metrics. Must be set at build time.
-<3> gRPC endpoint to send the metrics. If not set, it will default to `http://localhost:4317`.
+<1> All metrics created from the application will include an OpenTelemetry `Resource` indicating the metrics was created by the `myservice` application.
+If not set, it will default to the artifact id.
+<2> Enable the OpenTelemetry metrics.
+Must be set at build time.
+<3> gRPC endpoint to send the metrics.
+If not set, it will default to `http://localhost:4317`.
 <4> Optional gRPC headers commonly used for authentication.
 
 To configure the connection using the same properties for all signals, please check the base xref:opentelemetry.adoc#create-the-configuration[configuration section of the OpenTelemetry guide].
@@ -153,7 +156,8 @@ First we need to start a system to visualise the OpenTelemetry data.
 ==== Grafana-OTel-LGTM dev service
 You can use the xref:observability-devservices-lgtm.adoc[Grafana-OTel-LGTM] devservice.
 
-This Dev service includes a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics. Also provides and OTel collector to receive the data.
+This Dev service includes a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics.
+Also provides and OTel collector to receive the data.
 
 ==== Logging exporter
 
@@ -164,12 +168,16 @@ quarkus.otel.metrics.exporter=logging <1>
 quarkus.otel.metric.export.interval=10000ms <2>
 ----
 
-<1> Set the exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
-<2> Set the interval to export the metrics. The default is `1m`, which is too long for debugging.
+<1> Set the exporter to `logging`.
+Normally you don't need to set this.
+The default is `cdi`.
+<2> Set the interval to export the metrics.
+The default is `1m`, which is too long for debugging.
 
 === Start the application
 
-Now we are ready to run our application. If using `application.properties` to configure the tracer:
+Now we are ready to run our application.
+If using `application.properties` to configure the tracer:
 
 include::{includes}/devtools/dev.adoc[]
 
@@ -187,7 +195,8 @@ $ curl http://localhost:8080/hello-metrics
 hello-metrics
 ----
 
-When using the logger exporter, metrics will be printed to the console. This is a pretty printed example:
+When using the logger exporter, metrics will be printed to the console.
+This is a pretty printed example:
 [source,json]
 ----
 {
@@ -260,8 +269,10 @@ When using the logger exporter, metrics will be printed to the console. This is 
 <1> Resource attributes common to all telemetry data.
 <2> Instrumentation scope is allways `io.quarkus.opentelemetry`
 <3> The name, description and unit of the metric you defined in the constructor of the `MetricResource` class.
-<4> The value of the metric. 3 invocations were made until now.
-<5> Exemplars additional tracing information about the metric. In this case, the traceId and spanId of one os the request that triggered the metric, since it was last sent.
+<4> The value of the metric.
+3 invocations were made until now.
+<5> Exemplars additional tracing information about the metric.
+In this case, the traceId and spanId of one os the request that triggered the metric, since it was last sent.
 
 Hit `CTRL+C` or type `q` to stop the application.
 
@@ -269,11 +280,14 @@ Hit `CTRL+C` or type `q` to stop the application.
 
 === OpenTelemetry Metrics vs Micrometer Metrics
 
-Metrics are single numerical measurements, often have additional data captured with them. This ancillary data is used to group or aggregate metrics for analysis.
+Metrics are single numerical measurements, often have additional data captured with them.
+This ancillary data is used to group or aggregate metrics for analysis.
 
 Pretty much like in the xref:telemetry-micrometer.adoc#create-your-own-metrics[Quarkus Micrometer extension], you can create your own metrics using the OpenTelemetry API and the concepts are analogous.
 
-The OpenTelemetry API provides a `Meter` interface to create metrics instead of a Registry. The `Meter` interface is the entry point for creating metrics. It provides methods to create counters, gauges, and histograms.
+The OpenTelemetry API provides a `Meter` interface to create metrics instead of a Registry.
+The `Meter` interface is the entry point for creating metrics.
+It provides methods to create counters, gauges, and histograms.
 
 Attributes can be added to metrics to add dimensions, pretty much like tags in Micrometer.
 
@@ -322,20 +336,26 @@ counter.add(1, // <2>
 
 <1> Create a `LongCounter` named `hello-metrics` with a description and unit.
 <2> Increment the counter by one.
-<3> Add an attribute to the counter. This will create a dimension called `attribute.name` with value `attribute value`.
+<3> Add an attribute to the counter.
+This will create a dimension called `attribute.name` with value `attribute value`.
 
-IMPORTANT: Each unique combination of metric name and dimension produces a unique time series. Using an unbounded set of dimensional data (many different values like a userId) can lead to a "cardinality explosion", an exponential increase in the creation of new time series. Avoid!
+IMPORTANT: Each unique combination of metric name and dimension produces a unique time series.
+Using an unbounded set of dimensional data (many different values like a userId) can lead to a "cardinality explosion", an exponential increase in the creation of new time series.
+Avoid!
 
 OpenTelemetry provides many other types of Counters: `LongUpDownCounter`, `DoubleCounter`, `DoubleUpDownCounter` and also Observable, async counters like `ObservableLongCounter`, `ObservableDoubleCounter`, `ObservableLongUpDownCounter` and `ObservableDoubleUpDownCounter`.
 
 For more details please refer to the https://opentelemetry.io/docs/languages/java/instrumentation/#using-counters[OpenTelemetry Java documentation about Counters].
 
 === Gauges
-Observable Gauges should be used to measure non-additive values. A value that can increase or decrease over time, like the speedometer on a car. Gauges can be useful when monitoring the statistics for a cache or collection.
+Observable Gauges should be used to measure non-additive values.
+A value that can increase or decrease over time, like the speedometer on a car.
+Gauges can be useful when monitoring the statistics for a cache or collection.
 
-With this metric you provide a function to be periodically probed by a callback. The value returned by the function is the value of the gauge.
+With this metric you provide a function to be periodically probed by a callback.
+The value returned by the function is the value of the gauge.
 
-The default gauge records `Double`values, but if you want to record `Long` values, you can use
+The default gauge records `Double` values, but if you want to record `Long` values, you can use
 
 [source, java]
 ----
@@ -351,7 +371,8 @@ meter.gaugeBuilder("jvm.memory.total")                      // <1>
 ----
 <1> Create a `Gauge` named `jvm.memory.total` with a description and unit.
 <2> If you want to record `Long` values you need this builder method because the default gauge records `Double` values.
-<3> Build the gauge with a callback. An imperative builder is also available.
+<3> Build the gauge with a callback.
+An imperative builder is also available.
 <4> Register the function to call to get the value of the gauge.
 <5> No added attributes, this time.
 
@@ -359,7 +380,6 @@ meter.gaugeBuilder("jvm.memory.total")                      // <1>
 Histograms are synchronous instruments used to measure a distribution of values over time.
 It is intended for statistics such as histograms, summaries, and percentile.
 The request duration and response payload size are good uses for a histogram.
-
 
 On this section we have a new class, the `HistogramResource` that will create a `LongHistogram`.
 
@@ -412,9 +432,11 @@ public class HistogramResource {
 ----
 <1> Create a `LongHistogram` named `hello.roll.dice` with a description and unit.
 <2> If you want to record `Long` values you need this builder method because the default histogram records `Double` values.
-<3> Set the explicit bucket boundaries for the histogram. The boundaries are inclusive.
+<3> Set the explicit bucket boundaries for the histogram.
+The boundaries are inclusive.
 <4> Record the value of the roll.
-<5> Add an attribute to the histogram. This will create a dimension called `attribute.name` with value `value`.
+<5> Add an attribute to the histogram.
+This will create a dimension called `attribute.name` with value `value`.
 
 IMPORTANT: Beware of cardinality explosion.
 
@@ -425,7 +447,8 @@ $ curl http://localhost:8080/roll-dice
 2
 ----
 
-If we execute 4 consecutive requests, with results *2,2,3 and 4* this will produce the following output. The `Resource` and `InstrumentationScopeInfo` data are ignored for brevity.
+If we execute 4 consecutive requests, with results *2,2,3 and 4* this will produce the following output.
+The `Resource` and `InstrumentationScopeInfo` data are ignored for brevity.
 [source,json]
 ----
 //...
@@ -477,13 +500,16 @@ data=ImmutableHistogramData{
 <7> The maximum value recorded.
 <8> The explicit bucket boundaries for the histogram.
 <9> The number of values recorded in each bucket.
-<10> The list of exemplars with tracing data for the values recorded. We only show 1 of 3 exemplars for brevity.
+<10> The list of exemplars with tracing data for the values recorded.
+We only show 1 of 3 exemplars for brevity.
 <11> One of the 2 calls made with the value 2.
 
 === Differences with the Micrometer API
 
-- Timers and Distribution Summaries are not available in the OpenTelemetry API. Instead, use Histograms.
-- The OpenTelemetry API does not define annotations for metrics like Micrometer's `@Counted`, `@Timed` or `@MeterTag`  You need to manually create the metrics.
+- Timers and Distribution Summaries are not available in the OpenTelemetry API.
+  Instead, use Histograms.
+- The OpenTelemetry API does not define annotations for metrics like Micrometer's `@Counted`, `@Timed` or `@MeterTag`.
+  You need to manually create the metrics.
 - OpenTelemetry uses their own https://opentelemetry.io/docs/specs/semconv/[Semantic Conventions] to name metrics and attributes.
 
 === Resource
@@ -491,7 +517,8 @@ See the main xref:opentelemetry.adoc#resource[OpenTelemetry Guide resources] sec
 
 == Additional instrumentation
 
-Automatic metrics are not yet provided by the Quarkus OpenTelemetry extension. We plan to bridge the existing Quarkus Micrometer extension metrics to OpenTelemetry in the future.
+Automatic metrics are not yet provided by the Quarkus OpenTelemetry extension.
+We plan to bridge the existing Quarkus Micrometer extension metrics to OpenTelemetry in the future.
 
 == Exporters
 See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] section.

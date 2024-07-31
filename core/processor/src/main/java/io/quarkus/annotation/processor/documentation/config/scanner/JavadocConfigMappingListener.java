@@ -23,6 +23,10 @@ public class JavadocConfigMappingListener extends AbstractJavadocConfigListener 
     @Override
     public void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz, ExecutableElement method,
             ResolvedType resolvedType) {
+        if (config.getExtension().isMixedModule() && !discoveryRootElement.isConfigMapping()) {
+            return;
+        }
+
         String docComment = utils.element().getRequiredJavadoc(method);
         configCollector.addJavadocProperty(
                 clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),

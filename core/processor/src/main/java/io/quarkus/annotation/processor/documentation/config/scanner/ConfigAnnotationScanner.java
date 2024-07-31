@@ -56,13 +56,26 @@ public class ConfigAnnotationScanner {
         this.configCollector = new ConfigCollector();
 
         List<ConfigAnnotationListener> listeners = new ArrayList<>();
-        if (config.useConfigMapping()) {
-            listeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-            listeners.add(new ConfigMappingListener(config, utils, configCollector));
+        if (!config.getExtension().isMixedModule()) {
+            // This is what we aim for. We have an exception for Quarkus Core and Quarkus Messaging though.
+            if (config.useConfigMapping()) {
+                listeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                listeners.add(new ConfigMappingListener(config, utils, configCollector));
+            } else {
+                listeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
+                listeners.add(new LegacyConfigListener(config, utils, configCollector));
+            }
         } else {
-            listeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-            listeners.add(new LegacyConfigListener(config, utils, configCollector));
+            // TODO #42114 remove once fixed
+            // we handle both traditional config roots and config mappings
+            if (config.getExtension().isMixedModule()) {
+                listeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                listeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
+                listeners.add(new ConfigMappingListener(config, utils, configCollector));
+                listeners.add(new LegacyConfigListener(config, utils, configCollector));
+            }
         }
+
         this.listeners = Collections.unmodifiableList(listeners);
     }
 
@@ -408,7 +421,8 @@ public class ConfigAnnotationScanner {
             Optional<T> discoveryRootElementCandidate = listenerFunction.apply(listener);
             if (discoveryRootElementCandidate.isPresent()) {
                 if (discoveryRootElement != null) {
-                    throw new IllegalStateException("Multiple listeners returned discovery root elements");
+                    throw new IllegalStateException("Multiple listeners returned discovery root elements for: " +
+                            discoveryRootElement.getQualifiedName());
                 }
 
                 discoveryRootElement = discoveryRootElementCandidate.get();
@@ -425,7 +439,9 @@ public class ConfigAnnotationScanner {
     private void checkConfigRootAnnotationConsistency(TypeElement configRoot) {
         // for now quarkus-core is a mix of both @ConfigRoot and @ConfigMapping
         // see https://github.com/quarkusio/quarkus/issues/42114
-        if ("quarkus-core".equals(config.getExtension().artifactId())) {
+        // same for Quarkus Messaging
+        // TODO #42114 remove once fixed
+        if (config.getExtension().isMixedModule()) {
             return;
         }
 

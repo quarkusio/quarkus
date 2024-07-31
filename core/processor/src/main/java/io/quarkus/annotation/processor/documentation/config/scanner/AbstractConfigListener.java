@@ -36,7 +36,9 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
     public Optional<DiscoveryConfigGroup> onConfigGroup(TypeElement configGroup) {
         DiscoveryConfigGroup discoveryConfigGroup = new DiscoveryConfigGroup(config.getExtension(),
                 utils.element().getBinaryName(configGroup),
-                configGroup.getQualifiedName().toString());
+                configGroup.getQualifiedName().toString(),
+                // interface config groups are considered config mappings, let's hope it's enough
+                configGroup.getKind() == ElementKind.INTERFACE);
         configCollector.addResolvedConfigGroup(discoveryConfigGroup);
         return Optional.of(discoveryConfigGroup);
     }

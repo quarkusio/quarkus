@@ -23,6 +23,10 @@ public class JavadocLegacyConfigRootListener extends AbstractJavadocConfigListen
     @Override
     public void onEnclosedField(DiscoveryRootElement discoveryRootElement, TypeElement clazz, VariableElement field,
             ResolvedType resolvedType) {
+        if (config.getExtension().isMixedModule() && discoveryRootElement.isConfigMapping()) {
+            return;
+        }
+
         configCollector.addJavadocProperty(clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName()
                 .toString(), utils.element().getRequiredJavadoc(field));
     }

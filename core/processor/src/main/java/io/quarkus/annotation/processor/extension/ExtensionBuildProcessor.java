@@ -168,8 +168,8 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configGroup : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             // TODO for config groups, we generate an accessor only if we don't use @ConfigMapping
-            // and for core which is still a mess
-            if (!config.useConfigMapping() || "quarkus-core".equals(config.getExtension().artifactId())) {
+            // and for core and messaging which are still a mess
+            if (!config.useConfigMapping() || config.getExtension().isMixedModule()) {
                 utils.accessorGenerator().generateAccessor(configGroup);
             }
         }

@@ -5,9 +5,11 @@ import java.util.Optional;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
+import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
@@ -30,6 +32,10 @@ public class ConfigMappingListener extends AbstractConfigListener {
 
     @Override
     public Optional<DiscoveryConfigRoot> onConfigRoot(TypeElement configRoot) {
+        if (config.getExtension().isMixedModule() && configRoot.getKind() != ElementKind.INTERFACE) {
+            return Optional.empty();
+        }
+
         String prefix = Markers.DEFAULT_PREFIX;
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
 
@@ -89,19 +95,27 @@ public class ConfigMappingListener extends AbstractConfigListener {
         String binaryName = utils.element().getBinaryName(configRoot);
 
         DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), rootPrefix,
-                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName);
+                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);
     }
 
     @Override
     public void onUnresolvedInterface(DiscoveryRootElement discoveryRootElement, TypeElement interfaze) {
+        if (config.getExtension().isMixedModule() && !discoveryRootElement.isConfigMapping()) {
+            return;
+        }
+
         discoveryRootElement.addUnresolvedInterfaces(interfaze.getQualifiedName().toString());
     }
 
     @Override
     public void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz, ExecutableElement method,
             ResolvedType resolvedType) {
+        if (config.getExtension().isMixedModule() && !discoveryRootElement.isConfigMapping()) {
+            return;
+        }
+
         Map<String, AnnotationMirror> methodAnnotations = utils.element().getAnnotations(method);
 
         String sourceName = method.getSimpleName().toString();
@@ -168,5 +182,15 @@ public class ConfigMappingListener extends AbstractConfigListener {
         }
 
         discoveryRootElement.addProperty(builder.build());
+    }
+
+    @Deprecated(forRemoval = true)
+    @Override
+    public Optional<DiscoveryConfigGroup> onConfigGroup(TypeElement configGroup) {
+        if (config.getExtension().isMixedModule() && configGroup.getKind() != ElementKind.INTERFACE) {
+            return Optional.empty();
+        }
+
+        return super.onConfigGroup(configGroup);
     }
 }

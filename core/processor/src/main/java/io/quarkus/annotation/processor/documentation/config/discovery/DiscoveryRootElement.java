@@ -17,10 +17,16 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
     private final List<String> unresolvedInterfaces = new ArrayList<>();
     private final Map<String, DiscoveryConfigProperty> properties = new LinkedHashMap<>();
 
-    DiscoveryRootElement(Extension extension, String binaryName, String qualifiedName) {
+    // TODO #42114 remove once fixed
+    // this is an approximation, we can't fully detect that in the case of config groups
+    @Deprecated(forRemoval = true)
+    private final boolean configMapping;
+
+    DiscoveryRootElement(Extension extension, String binaryName, String qualifiedName, boolean configMapping) {
         this.extension = extension;
         this.binaryName = binaryName;
         this.qualifiedName = qualifiedName;
+        this.configMapping = configMapping;
     }
 
     public Extension getExtension() {
@@ -57,6 +63,11 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
 
     public Map<String, DiscoveryConfigProperty> getProperties() {
         return Collections.unmodifiableMap(properties);
+    }
+
+    @Deprecated(forRemoval = true)
+    public boolean isConfigMapping() {
+        return configMapping;
     }
 
     public String toString() {

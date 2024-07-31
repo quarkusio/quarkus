@@ -13,6 +13,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestSupport;
+import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.runtime.logstream.LogStreamBroadcaster;
 import io.quarkus.devui.runtime.logstream.LogStreamJsonRPCService;
@@ -21,6 +22,7 @@ import io.quarkus.devui.runtime.logstream.MutinyLogHandler;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 
 /**
  * Processor for Log stream in Dev UI
@@ -40,8 +42,12 @@ public class LogStreamProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     public void handler(BuildProducer<StreamingLogHandlerBuildItem> streamingLogHandlerBuildItem,
+            LogBuildTimeConfig logBuildTimeConfig,
+            LoggingDecorateBuildItem loggingDecorateBuildItem,
             LogStreamRecorder recorder) {
-        RuntimeValue<Optional<MutinyLogHandler>> mutinyLogHandler = recorder.mutinyLogHandler();
+        RuntimeValue<Optional<MutinyLogHandler>> mutinyLogHandler = recorder.mutinyLogHandler(
+                logBuildTimeConfig.decorateStacktraces, loggingDecorateBuildItem.getSrcMainJava().toString(),
+                loggingDecorateBuildItem.getKnowClasses());
         streamingLogHandlerBuildItem.produce(new StreamingLogHandlerBuildItem((RuntimeValue) mutinyLogHandler));
     }
 

@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
@@ -16,6 +19,9 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 public class QuarkusErrorServlet extends HttpServlet {
 
     public static final String SHOW_STACK = "show-stack";
+    public static final String SHOW_DECORATION = "show-decoration";
+    public static final String SRC_MAIN_JAVA = "src-main-java";
+    public static final String KNOWN_CLASSES = "known-classes";
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -52,6 +58,16 @@ public class QuarkusErrorServlet extends HttpServlet {
             final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
             if (showStack && exception != null) {
                 htmlBuilder.stack(exception);
+            }
+            final boolean showDecoration = Boolean.parseBoolean(getInitParameter(SHOW_DECORATION));
+            final String srcMainJava = getInitParameter(SRC_MAIN_JAVA);
+            final String knownClassesString = getInitParameter(KNOWN_CLASSES);
+            List<String> knownClasses = null;
+            if (knownClassesString != null) {
+                knownClasses = new ArrayList<>(Arrays.asList(knownClassesString.split(",")));
+            }
+            if (showDecoration && exception != null && srcMainJava != null && knownClasses != null) {
+                htmlBuilder.decorate(exception, srcMainJava, knownClasses);
             }
             resp.getWriter().write(htmlBuilder.toString());
         }

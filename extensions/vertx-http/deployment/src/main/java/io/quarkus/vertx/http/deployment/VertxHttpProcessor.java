@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.logging.LoggingDecorateBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -55,6 +56,7 @@ import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsRegistryBuildItem;
 import io.quarkus.utilities.OS;
@@ -327,7 +329,8 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem finalizeRouter(
+    ServiceStartBuildItem finalizeRouter(Optional<LoggingDecorateBuildItem> decorateBuildItem,
+            LogBuildTimeConfig logBuildTimeConfig,
             VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer, CoreVertxBuildItem vertx,
             LaunchModeBuildItem launchMode,
             List<DefaultRouteBuildItem> defaultRoutes,
@@ -399,6 +402,13 @@ class VertxHttpProcessor {
             combinedActions.addAll(errorPageActionsBuildItem.getActions());
         }
 
+        String srcMainJava = null;
+        List<String> knowClasses = null;
+        if (decorateBuildItem.isPresent()) {
+            srcMainJava = decorateBuildItem.get().getSrcMainJava().toString();
+            knowClasses = decorateBuildItem.get().getKnowClasses();
+        }
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
@@ -410,6 +420,9 @@ class VertxHttpProcessor {
                 launchMode.getLaunchMode(),
                 getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
                 gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(),
+                logBuildTimeConfig,
+                srcMainJava,
+                knowClasses,
                 combinedActions);
 
         return new ServiceStartBuildItem("vertx-http");

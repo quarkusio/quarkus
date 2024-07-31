@@ -24,6 +24,12 @@ public class LogBuildTimeConfig {
     public Level minLevel;
 
     /**
+     * This will decorate the stacktrace in dev mode to show the line in the code that cause the exception
+     */
+    @ConfigItem(defaultValue = "true")
+    public Boolean decorateStacktraces;
+
+    /**
      * Minimum logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be configured independently.

@@ -77,8 +77,10 @@ public class ApplicationLifecycleManager {
 
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
-    private static Application currentApplication;
+    private static volatile Application currentApplication;
     private static boolean vmShuttingDown;
+    private static Consumer<Boolean> alreadyStartedCallback = b -> {
+    };
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
@@ -89,17 +91,19 @@ public class ApplicationLifecycleManager {
 
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
             BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
+        boolean alreadyStarted;
         stateLock.lock();
-        //in tests, we might pass this method an already started application
-        //in this case we don't shut it down at the end
-        boolean alreadyStarted = application.isStarted();
-        if (shutdownHookThread == null) {
-            registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
-        }
-        if (currentApplication != null && !shutdownRequested) {
-            throw new IllegalStateException("Quarkus already running");
-        }
         try {
+            //in tests, we might pass this method an already started application
+            //in this case we don't shut it down at the end
+            alreadyStarted = application.isStarted();
+            alreadyStartedCallback.accept(alreadyStarted);
+            if (shutdownHookThread == null) {
+                registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
+            }
+            if (currentApplication != null && !shutdownRequested) {
+                throw new IllegalStateException("Quarkus already running");
+            }
             exitCode = -1;
             shutdownRequested = false;
             currentApplication = application;
@@ -209,6 +213,7 @@ public class ApplicationLifecycleManager {
             int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
                     ? ((PreventFurtherStepsException) rootCause).getExitCode()
                     : 1;
+            currentApplication = null;
             (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
@@ -367,6 +372,10 @@ public class ApplicationLifecycleManager {
      */
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
         setDefaultExitCodeHandler((exitCode, cause) -> defaultExitCodeHandler.accept(exitCode));
+    }
+
+    public static void setAlreadyStartedCallback(Consumer<Boolean> callback) {
+        alreadyStartedCallback = callback;
     }
 
     /**

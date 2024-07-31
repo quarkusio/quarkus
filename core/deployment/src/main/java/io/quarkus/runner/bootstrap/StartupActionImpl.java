@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -210,38 +211,30 @@ public class StartupActionImpl implements StartupAction {
         try {
             AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
-            Method getCurrentApplication = lifecycleManager.getDeclaredMethod("getCurrentApplication");
-            Object oldApplication = getCurrentApplication.invoke(null);
+            AtomicBoolean alreadyStarted = new AtomicBoolean();
             lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
-                    new Consumer<Integer>() {
-                        @Override
-                        public void accept(Integer integer) {
-                            result.set(integer);
-                        }
-                    });
+                    (Consumer<Integer>) result::set);
+            lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class).invoke(null,
+                    (Consumer<Boolean>) alreadyStarted::set);
             // force init here
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
             Method start = appClass.getMethod("main", String[].class);
             start.invoke(null, (Object) (args == null ? new String[0] : args));
 
             CountDownLatch latch = new CountDownLatch(1);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
-                        q.getMethod("blockingExit").invoke(null);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    } finally {
-                        latch.countDown();
-                    }
+            new Thread(() -> {
+                try {
+                    Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
+                    q.getMethod("blockingExit").invoke(null);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    latch.countDown();
                 }
             }).start();
             latch.await();
 
-            Object newApplication = getCurrentApplication.invoke(null);
-            if (oldApplication == newApplication) {
+            if (alreadyStarted.get()) {
                 //quarkus was not actually started by the main method
                 //just return
                 return 0;

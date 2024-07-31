@@ -76,7 +76,7 @@ Create a file called `src/main/resources/json-schema.json` with the schema for o
       "type": "string",
       "description": "The movie's title."
     },
-    "yeay": {
+    "year": {
       "type": "integer",
       "description": "The movie's year."
     }

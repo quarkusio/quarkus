@@ -4,16 +4,17 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
+import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
 /**
- * This class is responsible for collecting and writing the Javadoc in quarkus-javadoc.properties.
- * We want this class to be replaced by the new descriptors that will be generated.
+ * This class is responsible for collecting and writing the Javadoc.
  */
-@Deprecated(since = "3.14", forRemoval = true)
 public class JavadocLegacyConfigRootListener extends AbstractJavadocConfigListener {
 
     JavadocLegacyConfigRootListener(Config config, Utils utils, ConfigCollector configCollector) {
@@ -33,7 +34,13 @@ public class JavadocLegacyConfigRootListener extends AbstractJavadocConfigListen
             return;
         }
 
-        configCollector.addJavadocProperty(clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName()
-                .toString(), utils.element().getRequiredJavadoc(field));
+        String rawJavadoc = utils.element().getRequiredJavadoc(field);
+        if (rawJavadoc != null && !rawJavadoc.isBlank()) {
+            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc);
+
+            configCollector.addJavadocElement(
+                    clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName().toString(),
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc));
+        }
     }
 }

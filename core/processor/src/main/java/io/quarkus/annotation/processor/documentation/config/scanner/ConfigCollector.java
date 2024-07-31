@@ -4,16 +4,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 
 public class ConfigCollector {
 
-    @Deprecated(since = "3.14", forRemoval = true)
-    private Properties javadocProperties = new Properties();
+    /**
+     * Key is qualified name of the class + "." + element name (for instance field or method name)
+     */
+    private Map<String, JavadocElement> javadocElements = new HashMap<>();
 
     /**
      * Key is the qualified name of the class.
@@ -30,14 +32,12 @@ public class ConfigCollector {
      */
     private Map<String, EnumDefinition> resolvedEnums = new HashMap<>();
 
-    @Deprecated(since = "3.14", forRemoval = true)
-    void addJavadocProperty(String key, String docComment) {
-        javadocProperties.put(key, docComment);
+    public void addJavadocElement(String key, JavadocElement element) {
+        javadocElements.put(key, element);
     }
 
-    @Deprecated(since = "3.14", forRemoval = true)
-    public Properties getJavadocProperties() {
-        return javadocProperties;
+    public Map<String, JavadocElement> getJavadocElements() {
+        return Collections.unmodifiableMap(javadocElements);
     }
 
     public void addConfigRoot(DiscoveryConfigRoot configRoot) {

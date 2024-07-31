@@ -27,11 +27,13 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.EnumAcceptedValues;
 import io.quarkus.annotation.processor.documentation.config.model.EnumAcceptedValues.EnumAcceptedValue;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
 import io.quarkus.annotation.processor.documentation.config.scanner.ConfigCollector;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.JavadocUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
+import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Strings;
 import io.quarkus.annotation.processor.util.Utils;
 
@@ -48,12 +50,18 @@ import io.quarkus.annotation.processor.util.Utils;
  */
 public class ConfigResolver {
 
+    private final Config config;
     private final Utils utils;
     private final ConfigCollector configCollector;
 
-    public ConfigResolver(Utils utils, ConfigCollector configCollector) {
+    public ConfigResolver(Config config, Utils utils, ConfigCollector configCollector) {
+        this.config = config;
         this.utils = utils;
         this.configCollector = configCollector;
+    }
+
+    public JavadocElements resolveJavadoc() {
+        return new JavadocElements(config.getExtension(), configCollector.getJavadocElements());
     }
 
     public ResolvedModel resolveModel() {

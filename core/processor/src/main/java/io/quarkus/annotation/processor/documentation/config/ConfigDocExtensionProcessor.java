@@ -3,7 +3,9 @@ package io.quarkus.annotation.processor.documentation.config;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.annotation.processing.RoundEnvironment;
@@ -16,6 +18,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.annotation.processor.ExtensionProcessor;
 import io.quarkus.annotation.processor.Outputs;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
+import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
 import io.quarkus.annotation.processor.documentation.config.resolver.ConfigResolver;
 import io.quarkus.annotation.processor.documentation.config.scanner.ConfigAnnotationScanner;
@@ -71,9 +75,17 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
     public void finalizeProcessing() {
         ConfigCollector configCollector = configAnnotationScanner.finalizeProcessing();
 
-        utils.filer().write(Outputs.META_INF_QUARKUS_JAVADOC, configCollector.getJavadocProperties());
+        Properties javadocProperties = new Properties();
+        for (Entry<String, JavadocElement> javadocElementEntry : configCollector.getJavadocElements().entrySet()) {
+            javadocProperties.put(javadocElementEntry.getKey(), javadocElementEntry.getValue().rawJavadoc());
+        }
+        utils.filer().write(Outputs.META_INF_QUARKUS_JAVADOC, javadocProperties);
 
-        ConfigResolver configResolver = new ConfigResolver(utils, configCollector);
+        ConfigResolver configResolver = new ConfigResolver(config, utils, configCollector);
+
+        JavadocElements javadocElements = configResolver.resolveJavadoc();
+        utils.filer().writeJson(Outputs.META_INF_QUARKUS_CONFIG_JAVADOC, javadocElements);
+
         ResolvedModel resolvedModel = configResolver.resolveModel();
 
         // we don't want to write this file in the jar

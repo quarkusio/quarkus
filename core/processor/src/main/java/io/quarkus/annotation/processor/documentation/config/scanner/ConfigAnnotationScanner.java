@@ -137,13 +137,9 @@ public class ConfigAnnotationScanner {
 
                 debug("Detected superinterface: " + superInterfaceTypeElement, clazz);
 
-                if (utils.element().isLocalClass(superInterfaceTypeElement)) {
-                    applyListeners(l -> l.onInterface(configRootElement, superInterfaceTypeElement));
-                    if (!isConfigRootAlreadyHandled(superInterfaceTypeElement)) {
-                        scanElement(configRootElement, superInterfaceTypeElement);
-                    }
-                } else {
-                    applyListeners(l -> l.onUnresolvedInterface(configRootElement, superInterfaceTypeElement));
+                applyListeners(l -> l.onInterface(configRootElement, superInterfaceTypeElement));
+                if (!isConfigRootAlreadyHandled(superInterfaceTypeElement)) {
+                    scanElement(configRootElement, superInterfaceTypeElement);
                 }
             }
         } else {
@@ -153,13 +149,9 @@ public class ConfigAnnotationScanner {
 
                 debug("Detected superclass: " + superclassTypeElement, clazz);
 
-                if (utils.element().isLocalClass(superclassTypeElement)) {
-                    applyListeners(l -> l.onSuperclass(configRootElement, clazz));
-                    if (!isConfigRootAlreadyHandled(superclassTypeElement)) {
-                        scanElement(configRootElement, superclassTypeElement);
-                    }
-                } else {
-                    applyListeners(l -> l.onUnresolvedSuperclass(configRootElement, superclassTypeElement));
+                applyListeners(l -> l.onSuperclass(configRootElement, clazz));
+                if (!isConfigRootAlreadyHandled(superclassTypeElement)) {
+                    scanElement(configRootElement, superclassTypeElement);
                 }
             }
         }
@@ -188,20 +180,12 @@ public class ConfigAnnotationScanner {
                         TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
                         if (!utils.element().isJdkClass(unwrappedTypeElement)) {
                             if (!isConfigGroupAlreadyHandled(unwrappedTypeElement)) {
-                                if (utils.element().isLocalClass(unwrappedTypeElement)) {
-                                    debug("Detected config group: " + resolvedType + " on method: "
-                                            + method, clazz);
+                                debug("Detected config group: " + resolvedType + " on method: "
+                                        + method, clazz);
 
-                                    DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
-                                            l -> l.onConfigGroup(unwrappedTypeElement));
-                                    scanElement(discoveryConfigGroup, unwrappedTypeElement);
-                                } else {
-                                    debug("Detected unresolved config group: " + resolvedType + " on method: "
-                                            + method, clazz);
-
-                                    // if the class is not local, we register it as an unresolved config group
-                                    applyListeners(l -> l.onUnresolvedConfigGroup(unwrappedTypeElement));
-                                }
+                                DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
+                                        l -> l.onConfigGroup(unwrappedTypeElement));
+                                scanElement(discoveryConfigGroup, unwrappedTypeElement);
                             }
                         }
                     }
@@ -224,19 +208,6 @@ public class ConfigAnnotationScanner {
 
                     if (resolvedType.isEnum()) {
                         handleEnum(resolvedType.unwrappedTypeElement());
-                    } else if (resolvedType.isClass()) {
-                        TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
-                        if (!utils.element().isJdkClass(unwrappedTypeElement) &&
-                                !isConfigGroupAlreadyHandled(unwrappedTypeElement) &&
-                                !utils.element().isLocalClass(unwrappedTypeElement)) {
-
-                            debug("Detected unresolved config group: " + resolvedType + " on field: " + field,
-                                    clazz);
-
-                            // if the class is not local and has a @ConfigGroup annotation, we register it as an unresolved config group
-                            // fields are used by legacy @ConfigRoot and for them the @ConfigGroup annotation is always mandatory
-                            applyListeners(l -> l.onUnresolvedConfigGroup(unwrappedTypeElement));
-                        }
                     }
 
                     debug("Detected enclosed field: " + field, clazz);
@@ -258,13 +229,11 @@ public class ConfigAnnotationScanner {
     }
 
     private void handleEnum(TypeElement enumTypeElement) {
-        if (!isEnumAlreadyHandled(enumTypeElement)) {
-            if (utils.element().isLocalClass(enumTypeElement)) {
-                applyListeners(l -> l.onResolvedEnum(enumTypeElement));
-            } else {
-                applyListeners(l -> l.onUnresolvedEnum(enumTypeElement));
-            }
+        if (isEnumAlreadyHandled(enumTypeElement)) {
+            return;
         }
+
+        applyListeners(l -> l.onResolvedEnum(enumTypeElement));
     }
 
     private boolean isConfigRootAlreadyHandled(TypeElement clazz) {

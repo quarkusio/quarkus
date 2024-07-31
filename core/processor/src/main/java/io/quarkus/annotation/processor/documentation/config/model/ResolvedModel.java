@@ -14,8 +14,6 @@ import java.util.Map;
  */
 public class ResolvedModel {
 
-    private final boolean fullyResolved;
-
     /**
      * Key is the prefix of the config root (all config roots with the same prefix are merged).
      */
@@ -38,10 +36,9 @@ public class ResolvedModel {
      */
     private Map<String, ConfigGroup> configGroups;
 
-    public ResolvedModel(Map<String, ConfigRoot> configRoots, Map<String, ConfigGroup> configGroups, boolean fullyResolved) {
+    public ResolvedModel(Map<String, ConfigRoot> configRoots, Map<String, ConfigGroup> configGroups) {
         this.configRoots = Collections.unmodifiableMap(configRoots);
         this.configGroups = Collections.unmodifiableMap(configGroups);
-        this.fullyResolved = fullyResolved;
     }
 
     public Map<String, ConfigRoot> getConfigRoots() {
@@ -50,9 +47,5 @@ public class ResolvedModel {
 
     public Map<String, ConfigGroup> getConfigGroups() {
         return configGroups;
-    }
-
-    public boolean isFullyResolved() {
-        return fullyResolved;
     }
 }

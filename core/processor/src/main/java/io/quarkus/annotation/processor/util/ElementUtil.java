@@ -129,16 +129,21 @@ public class ElementUtil {
         }
     }
 
-    public String getRequiredJavadoc(Element e) {
-        String javaDoc = getJavadoc(e);
+    public String checkRequiredJavadoc(Element e) {
+        String javadoc = getJavadoc(e);
 
-        if (javaDoc == null) {
+        if (javadoc == null) {
             processingEnv.getMessager()
                     .printMessage(Diagnostic.Kind.ERROR,
                             "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
             return "";
         }
-        return javaDoc;
+
+        return javadoc;
+    }
+
+    public String getRequiredJavadoc(Element e) {
+        return checkRequiredJavadoc(e);
     }
 
     public String getJavadoc(Element e) {

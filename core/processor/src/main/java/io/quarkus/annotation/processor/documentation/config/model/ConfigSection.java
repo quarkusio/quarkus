@@ -6,16 +6,10 @@ import java.util.List;
 
 public final class ConfigSection extends AbstractConfigItem implements ConfigItemCollection {
 
-    private String title;
     private final List<AbstractConfigItem> items = new ArrayList<>();
 
-    public ConfigSection(String sourceClass, String sourceName, String path, String type, String title, String description) {
-        super(sourceClass, sourceName, path, type, description);
-        this.title = title;
-    }
-
-    public String getTitle() {
-        return title;
+    public ConfigSection(String sourceClass, String sourceName, String path, String type) {
+        super(sourceClass, sourceName, path, type);
     }
 
     @Override

@@ -13,10 +13,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
-import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
@@ -101,15 +98,6 @@ public class ConfigMappingListener extends AbstractConfigListener {
     }
 
     @Override
-    public void onUnresolvedInterface(DiscoveryRootElement discoveryRootElement, TypeElement interfaze) {
-        if (config.getExtension().isMixedModule() && !discoveryRootElement.isConfigMapping()) {
-            return;
-        }
-
-        discoveryRootElement.addUnresolvedInterfaces(interfaze.getQualifiedName().toString());
-    }
-
-    @Override
     public void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz, ExecutableElement method,
             ResolvedType resolvedType) {
         if (config.getExtension().isMixedModule() && !discoveryRootElement.isConfigMapping()) {
@@ -168,17 +156,8 @@ public class ConfigMappingListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        String rawJavadoc = utils.element().getRequiredJavadoc(method);
-        builder.rawJavadoc(rawJavadoc);
-
-        AnnotationMirror configDocSectionAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
-        if (configDocSectionAnnotation != null) {
-            ParsedJavadocSection section = JavadocToAsciidocTransformer.INSTANCE.parseConfigSectionJavadoc(rawJavadoc);
-            builder.section(section);
-        } else {
-            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc);
-            builder.description(parsedJavadoc.description());
-            builder.since(parsedJavadoc.since());
+        if (utils.element().isLocalClass(clazz)) {
+            utils.element().checkRequiredJavadoc(method);
         }
 
         discoveryRootElement.addProperty(builder.build());

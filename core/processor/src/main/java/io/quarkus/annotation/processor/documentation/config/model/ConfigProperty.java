@@ -24,15 +24,14 @@ public final class ConfigProperty extends AbstractConfigItem {
     private final String javadocSiteLink;
 
     private final boolean deprecated;
-    private final String since;
 
     public ConfigProperty(ConfigPhase phase, String sourceClass, String sourceName, String path, List<String> additionalPaths,
             String environmentVariable, String type, String typeDescription, boolean map, boolean list, boolean optional,
             String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
-            String defaultValue, String description, String javadocSiteLink,
-            boolean deprecated, String since) {
-        super(sourceClass, sourceName, path, typeDescription, description);
+            String defaultValue, String javadocSiteLink,
+            boolean deprecated) {
+        super(sourceClass, sourceName, path, typeDescription);
         this.phase = phase;
         this.additionalPaths = additionalPaths;
         this.environmentVariable = environmentVariable;
@@ -49,7 +48,6 @@ public final class ConfigProperty extends AbstractConfigItem {
         this.defaultValue = defaultValue;
         this.javadocSiteLink = javadocSiteLink;
         this.deprecated = deprecated;
-        this.since = since;
     }
 
     public ConfigPhase getPhase() {
@@ -114,10 +112,6 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     public boolean isDeprecated() {
         return deprecated;
-    }
-
-    public String getSince() {
-        return since;
     }
 
     public boolean isSection() {

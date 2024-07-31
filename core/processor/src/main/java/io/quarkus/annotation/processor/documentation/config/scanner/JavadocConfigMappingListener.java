@@ -27,6 +27,12 @@ public class JavadocConfigMappingListener extends AbstractJavadocConfigListener 
             return;
         }
 
+        // we only get Javbadoc for local classes
+        // classes coming from other modules won't have Javadoc available
+        if (!utils.element().isLocalClass(clazz)) {
+            return;
+        }
+
         String docComment = utils.element().getRequiredJavadoc(method);
         configCollector.addJavadocProperty(
                 clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),

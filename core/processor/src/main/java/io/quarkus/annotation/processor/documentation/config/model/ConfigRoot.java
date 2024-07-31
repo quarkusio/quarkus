@@ -19,9 +19,6 @@ public class ConfigRoot implements ConfigItemCollection {
     private String overriddenDocFileName;
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final Set<String> qualifiedNames = new HashSet<>();
-    private final Set<String> unresolvedSuperclasses = new HashSet<>();
-    private final List<String> unresolvedInterfaces = new ArrayList<>();
-    private final Set<String> unresolvedEnums = new HashSet<>();
 
     public ConfigRoot(Extension extension, String prefix) {
         this.extension = extension;
@@ -49,34 +46,6 @@ public class ConfigRoot implements ConfigItemCollection {
 
     public Set<String> getQualifiedNames() {
         return Collections.unmodifiableSet(qualifiedNames);
-    }
-
-    public void addUnresolvedSuperclass(String unresolvedSuperclass) {
-        unresolvedSuperclasses.add(unresolvedSuperclass);
-    }
-
-    public Set<String> getUnresolvedSuperclasses() {
-        return Collections.unmodifiableSet(unresolvedSuperclasses);
-    }
-
-    public void addUnresolvedInterfaces(List<String> unresolvedInterfaces) {
-        this.unresolvedInterfaces.addAll(unresolvedInterfaces);
-    }
-
-    public List<String> getUnresolvedInterfaces() {
-        return Collections.unmodifiableList(unresolvedInterfaces);
-    }
-
-    public void addUnresolvedEnum(String unresolvedEnum) {
-        unresolvedEnums.add(unresolvedEnum);
-    }
-
-    public Set<String> getUnresolvedEnums() {
-        return unresolvedEnums;
-    }
-
-    public boolean isFullyResolved() {
-        return unresolvedSuperclasses.isEmpty() && unresolvedInterfaces.isEmpty() && unresolvedEnums.isEmpty();
     }
 
     @Override

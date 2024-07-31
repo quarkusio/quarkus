@@ -7,6 +7,6 @@ import java.util.Map;
  */
 public record EnumAcceptedValues(String qualifiedName, Map<String, EnumAcceptedValue> values) {
 
-    public record EnumAcceptedValue(String description, String since) {
+    public record EnumAcceptedValue(String configValue) {
     }
 }

@@ -3,6 +3,7 @@ package io.quarkus.annotation.processor.documentation.config.resolver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -18,7 +19,6 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
-import io.quarkus.annotation.processor.documentation.config.discovery.UnresolvedEnumDefinition;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
@@ -59,15 +59,12 @@ public class ConfigResolver {
     public ResolvedModel resolveModel() {
         Map<String, ConfigRoot> configRoots = new HashMap<>();
 
-        boolean fullyResolved = true;
-
         for (DiscoveryConfigRoot discoveryConfigRoot : configCollector.getConfigRoots()) {
             ConfigRoot configRoot = configRoots.computeIfAbsent(discoveryConfigRoot.getPrefix(),
                     k -> new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix()));
 
             configRoot.setOverriddenDocFileName(discoveryConfigRoot.getOverriddenDocFileName());
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
-            configRoot.addUnresolvedInterfaces(discoveryConfigRoot.getUnresolvedInterfaces());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
                     configRoot, false, false);
@@ -76,15 +73,13 @@ public class ConfigResolver {
             }
 
             configRoots.put(configRoot.getPrefix(), configRoot);
-
-            fullyResolved = fullyResolved && configRoot.isFullyResolved();
         }
 
         Map<String, ConfigGroup> configGroups = new HashMap<>();
 
         // TODO GSM: config groups
 
-        return new ResolvedModel(configRoots, configGroups, fullyResolved);
+        return new ResolvedModel(configRoots, configGroups);
     }
 
     private void resolveProperty(ConfigRoot configRoot, ConfigPhase phase, ResolutionContext context,
@@ -121,9 +116,7 @@ public class ConfigResolver {
 
             if (discoveryConfigProperty.isSection()) {
                 ConfigSection configSection = new ConfigSection(typeQualifiedName,
-                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
-                        discoveryConfigProperty.getSection().title(),
-                        discoveryConfigProperty.getSection().description());
+                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName);
                 context.getItemCollection().addItem(configSection);
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
                         discoveryConfigProperty.getType().isMap(), deprecated);
@@ -135,8 +128,6 @@ public class ConfigResolver {
             for (DiscoveryConfigProperty configGroupProperty : discoveryConfigGroup.getProperties().values()) {
                 resolveProperty(configRoot, phase, configGroupContext, configGroupProperty);
             }
-        } else if (configCollector.isUnresolvedConfigGroup(typeQualifiedName)) {
-
         } else {
             String typeBinaryName = discoveryConfigProperty.getType().binaryName();
             String typeSimplifiedName = discoveryConfigProperty.getType().simplifiedName();
@@ -149,29 +140,15 @@ public class ConfigResolver {
 
             EnumAcceptedValues enumAcceptedValues = null;
             if (discoveryConfigProperty.getType().isEnum()) {
-                if (configCollector.isResolvedEnum(typeQualifiedName)) {
-                    EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeQualifiedName);
-                    Map<String, EnumAcceptedValue> localAcceptedValues = enumDefinition.constants().entrySet().stream()
-                            .collect(Collectors.toMap(
-                                    e -> e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
-                                            : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
-                                                    : e.getKey()),
-                                    e -> new EnumAcceptedValue(e.getValue().description(), e.getValue().since())));
-                    enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
-                } else {
-                    UnresolvedEnumDefinition unresolvedEnumDefinition = configCollector.getUnresolvedEnum(typeQualifiedName);
-
-                    Map<String, EnumAcceptedValue> localAcceptedValues = unresolvedEnumDefinition.constants().entrySet()
-                            .stream()
-                            .collect(Collectors.toMap(
-                                    e -> e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
-                                            : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
-                                                    : e.getKey()),
-                                    e -> new EnumAcceptedValue(null, null)));
-                    enumAcceptedValues = new EnumAcceptedValues(unresolvedEnumDefinition.qualifiedName(), localAcceptedValues);
-
-                    configRoot.addUnresolvedEnum(discoveryConfigProperty.getType().qualifiedName());
-                }
+                EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeQualifiedName);
+                Map<String, EnumAcceptedValue> localAcceptedValues = enumDefinition.constants().entrySet().stream()
+                        .collect(Collectors.toMap(
+                                e -> e.getKey(),
+                                e -> new EnumAcceptedValue(e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
+                                        : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
+                                                : e.getKey())),
+                                (x, y) -> y, LinkedHashMap::new));
+                enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
             }
 
             if (discoveryConfigProperty.getType().isMap()) {
@@ -198,10 +175,9 @@ public class ConfigResolver {
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),
                     discoveryConfigProperty.isConverted(),
                     discoveryConfigProperty.getType().isEnum(),
-                    enumAcceptedValues, defaultValue, discoveryConfigProperty.getDescription(),
+                    enumAcceptedValues, defaultValue,
                     JavadocUtil.getJavadocSiteLink(typeBinaryName),
-                    deprecated,
-                    discoveryConfigProperty.getSince());
+                    deprecated);
             context.getItemCollection().addItem(configProperty);
         }
     }

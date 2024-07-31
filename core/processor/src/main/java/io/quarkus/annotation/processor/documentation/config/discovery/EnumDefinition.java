@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public record EnumDefinition(String qualifiedName, Map<String, EnumConstant> constants) {
 
-    public record EnumConstant(String explicitValue, String description, String since, String rawJavadoc) {
+    public record EnumConstant(String explicitValue) {
 
         public boolean hasExplicitValue() {
             return explicitValue != null;

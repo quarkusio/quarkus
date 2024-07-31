@@ -11,14 +11,12 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
     private final String path;
 
     private final String type;
-    private final String description;
 
-    public AbstractConfigItem(String sourceClass, String sourceName, String path, String type, String description) {
+    public AbstractConfigItem(String sourceClass, String sourceName, String path, String type) {
         this.sourceClass = sourceClass;
         this.sourceName = sourceName;
         this.path = path;
         this.type = type;
-        this.description = description;
     }
 
     public String getSourceClass() {
@@ -35,10 +33,6 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     public String getType() {
         return type;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public abstract boolean isSection();

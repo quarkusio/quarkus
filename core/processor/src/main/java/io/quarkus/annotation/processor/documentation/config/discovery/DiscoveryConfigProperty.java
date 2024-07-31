@@ -12,17 +12,14 @@ public class DiscoveryConfigProperty {
     private final boolean deprecated;
     private final String mapKey;
     private final boolean unnamedMapKey;
-    private final String description;
-    private final String since;
-    private final String rawJavadoc;
     private final ResolvedType type;
     private final boolean converted;
-    private final ParsedJavadocSection section;
+    private final boolean section;
 
     public DiscoveryConfigProperty(String path, String sourceName, String defaultValue, String defaultValueForDoc,
             boolean deprecated, String mapKey, boolean unnamedMapKey,
-            String description, String since, String rawJavadoc, ResolvedType type, boolean converted,
-            ParsedJavadocSection section) {
+            ResolvedType type, boolean converted,
+            boolean section) {
         this.path = path;
         this.sourceName = sourceName;
         this.defaultValue = defaultValue;
@@ -30,9 +27,6 @@ public class DiscoveryConfigProperty {
         this.deprecated = deprecated;
         this.mapKey = mapKey;
         this.unnamedMapKey = unnamedMapKey;
-        this.description = description;
-        this.since = since;
-        this.rawJavadoc = rawJavadoc;
         this.type = type;
         this.converted = converted;
         this.section = section;
@@ -66,18 +60,6 @@ public class DiscoveryConfigProperty {
         return unnamedMapKey;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public String getSince() {
-        return since;
-    }
-
-    public String getRawJavadoc() {
-        return rawJavadoc;
-    }
-
     public ResolvedType getType() {
         return type;
     }
@@ -86,12 +68,8 @@ public class DiscoveryConfigProperty {
         return converted;
     }
 
-    public ParsedJavadocSection getSection() {
-        return section;
-    }
-
     public boolean isSection() {
-        return section != null;
+        return section;
     }
 
     public String toString() {
@@ -118,17 +96,8 @@ public class DiscoveryConfigProperty {
         if (unnamedMapKey) {
             sb.append(prefix + "unnamedMapKey = true\n");
         }
-        if (description != null && !description.isBlank()) {
-            sb.append(prefix + "description = " + description.split("\n")[0] + "...\n");
-        }
-        if (since != null) {
-            sb.append(prefix + "since = " + since + "\n");
-        }
         if (converted) {
             sb.append(prefix + "converted = true\n");
-        }
-        if (section != null) {
-            sb.append(prefix + "section title = " + section.title() + "\n");
         }
 
         return sb.toString();
@@ -148,11 +117,8 @@ public class DiscoveryConfigProperty {
         private boolean deprecated = false;
         private String mapKey;
         private boolean unnamedMapKey = false;
-        private String description;
-        private String since;
-        private String rawJavadoc;
-        private boolean converted;
-        private ParsedJavadocSection section;
+        private boolean converted = false;
+        private boolean section = false;
 
         public Builder(String sourceName, ResolvedType type) {
             this.sourceName = sourceName;
@@ -189,28 +155,13 @@ public class DiscoveryConfigProperty {
             return this;
         }
 
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder since(String since) {
-            this.since = since;
-            return this;
-        }
-
-        public Builder rawJavadoc(String rawJavadoc) {
-            this.rawJavadoc = rawJavadoc;
-            return this;
-        }
-
         public Builder converted() {
             this.converted = true;
             return this;
         }
 
-        public Builder section(ParsedJavadocSection section) {
-            this.section = section;
+        public Builder section() {
+            this.section = true;
             return this;
         }
 
@@ -223,7 +174,7 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceName, defaultValue, defaultValueForDoc, deprecated,
-                    mapKey, unnamedMapKey, description, since, rawJavadoc, type, converted, section);
+                    mapKey, unnamedMapKey, type, converted, section);
         }
     }
 }

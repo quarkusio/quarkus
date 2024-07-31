@@ -14,10 +14,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
-import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
-import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
@@ -99,15 +96,6 @@ public class LegacyConfigListener extends AbstractConfigListener {
     }
 
     @Override
-    public void onUnresolvedSuperclass(DiscoveryRootElement discoveryRootElement, TypeElement superclass) {
-        if (config.getExtension().isMixedModule() && discoveryRootElement.isConfigMapping()) {
-            return;
-        }
-
-        discoveryRootElement.setUnresolvedSuperclass(superclass.getQualifiedName().toString());
-    }
-
-    @Override
     public void onEnclosedField(DiscoveryRootElement discoveryRootElement, TypeElement clazz, VariableElement field,
             ResolvedType resolvedType) {
         if (config.getExtension().isMixedModule() && discoveryRootElement.isConfigMapping()) {
@@ -170,17 +158,13 @@ public class LegacyConfigListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        String rawJavadoc = utils.element().getRequiredJavadoc(field);
-        builder.rawJavadoc(rawJavadoc);
+        if (utils.element().isLocalClass(clazz)) {
+            utils.element().checkRequiredJavadoc(field);
+        }
 
         AnnotationMirror configDocSectionAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
         if (configDocSectionAnnotation != null) {
-            ParsedJavadocSection section = JavadocToAsciidocTransformer.INSTANCE.parseConfigSectionJavadoc(rawJavadoc);
-            builder.section(section);
-        } else {
-            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc);
-            builder.description(parsedJavadoc.description());
-            builder.since(parsedJavadoc.since());
+            builder.section();
         }
 
         discoveryRootElement.addProperty(builder.build());

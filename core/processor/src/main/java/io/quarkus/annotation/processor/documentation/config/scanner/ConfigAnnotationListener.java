@@ -20,20 +20,11 @@ public interface ConfigAnnotationListener {
     default void onSuperclass(DiscoveryRootElement discoveryRootElement, TypeElement superClass) {
     }
 
-    default void onUnresolvedSuperclass(DiscoveryRootElement discoveryRootElement, TypeElement superclass) {
-    }
-
     default void onInterface(DiscoveryRootElement discoveryRootElement, TypeElement interfaze) {
-    }
-
-    default void onUnresolvedInterface(DiscoveryRootElement discoveryRootElement, TypeElement interfaze) {
     }
 
     default Optional<DiscoveryConfigGroup> onConfigGroup(TypeElement configGroup) {
         return Optional.empty();
-    }
-
-    default void onUnresolvedConfigGroup(TypeElement configGroup) {
     }
 
     default void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz, ExecutableElement method,
@@ -45,9 +36,6 @@ public interface ConfigAnnotationListener {
     }
 
     default void onResolvedEnum(TypeElement enumTypeElement) {
-    }
-
-    default void onUnresolvedEnum(TypeElement enumTypeElement) {
     }
 
     default void finalizeProcessing() {

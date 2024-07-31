@@ -56,9 +56,9 @@ What needs to happen for it to work?
 * The build of extensions' deployment module invokes a maven plugin (the existing one, or a new one)
 * (optional) Extension source code refactoring: `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly.
 
-The `quarkus-extension.properties` will continue to be generated in `runtime`. We should do an inventory to double-check that nothing in the `quarkus-extension.yaml` needs
+The `quarkus-extension.properties` will continue to be generated in the runtime module. We should do an inventory to double-check that nothing in the `quarkus-extension.yaml` needs
 
-* to be accessed by tools outside the registry which expect it to be in the runtime jar (IDEs?)
+* to be accessed by tools outside the registry which expects it to be in the runtime JAR (IDEs?)
 * generated information which is only available to the extension plugin when it's running in the runtime module
 
 If so, those informations should move to `quarkus-extension.properties`.
@@ -70,7 +70,7 @@ A secondary benefit of this proposal is reducing the size (slightly) of the exte
 We will need to allow a long transition period (probably one major release lifespan), in which
 
 * The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`
-* The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will looks in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
+* The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will look in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
 * We still package up a (less complete) `quarkus-extension.yaml` into the runtime module, so that back-level tools (such as the CLI, and maybe IDEs) can find it
 
 image::images/0002-transition-flow.svg[a transitional process, with fallbacks]

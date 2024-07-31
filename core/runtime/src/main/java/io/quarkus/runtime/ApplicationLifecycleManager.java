@@ -2,7 +2,6 @@ package io.quarkus.runtime;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -51,17 +50,15 @@ public class ApplicationLifecycleManager {
 
     // used by ShutdownEvent to propagate the information about shutdown reason
     public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
-    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
-        @Override
-        public void accept(Integer integer, Throwable cause) {
-            Logger logger = Logger.getLogger(Application.class);
-            logger.debugf("Shutting down with exit code %s", integer);
-            if (logger.isTraceEnabled()) {
-                logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
-            }
-            System.exit(integer);
+    private static final BiConsumer<Integer, Throwable> MAIN_EXIT_CODE_HANDLER = (integer, cause) -> {
+        Logger logger = Logger.getLogger(Application.class);
+        logger.debugf("Shutting down with exit code %s", integer);
+        if (logger.isTraceEnabled()) {
+            logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
         }
+        System.exit(integer);
     };
+    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
 
     private ApplicationLifecycleManager() {
 
@@ -357,7 +354,9 @@ public class ApplicationLifecycleManager {
      * @param defaultExitCodeHandler the new default exit handler
      */
     public static void setDefaultExitCodeHandler(BiConsumer<Integer, Throwable> defaultExitCodeHandler) {
-        Objects.requireNonNull(defaultExitCodeHandler);
+        if (defaultExitCodeHandler == null) {
+            defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
+        }
         ApplicationLifecycleManager.defaultExitCodeHandler = defaultExitCodeHandler;
     }
 
@@ -370,12 +369,18 @@ public class ApplicationLifecycleManager {
      *
      * @param defaultExitCodeHandler the new default exit handler
      */
+    // Used by StartupActionImpl via reflection
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
-        setDefaultExitCodeHandler((exitCode, cause) -> defaultExitCodeHandler.accept(exitCode));
+        BiConsumer<Integer, Throwable> biConsumer = defaultExitCodeHandler == null ? null
+                : (exitCode, cause) -> defaultExitCodeHandler.accept(exitCode);
+        setDefaultExitCodeHandler(biConsumer);
     }
 
-    public static void setAlreadyStartedCallback(Consumer<Boolean> callback) {
-        alreadyStartedCallback = callback;
+    @SuppressWarnings("unused")
+    // Used by StartupActionImpl via reflection
+    public static void setAlreadyStartedCallback(Consumer<Boolean> alreadyStartedCallback) {
+        ApplicationLifecycleManager.alreadyStartedCallback = alreadyStartedCallback != null ? alreadyStartedCallback : b -> {
+        };
     }
 
     /**

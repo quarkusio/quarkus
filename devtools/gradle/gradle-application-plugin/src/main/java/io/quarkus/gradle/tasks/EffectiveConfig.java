@@ -25,6 +25,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
 
 /**
@@ -177,6 +178,6 @@ public final class EffectiveConfig {
                 throw new RuntimeException(e);
             }
         }
-        return new URLClassLoader(urls.toArray(new URL[0]));
+        return new URLClassLoader(urls.toArray(new URL[0]), SmallRyeConfigBuilder.class.getClassLoader());
     }
 }

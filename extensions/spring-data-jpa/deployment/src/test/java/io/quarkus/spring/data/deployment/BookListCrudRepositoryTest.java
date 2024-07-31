@@ -69,6 +69,12 @@ public class BookListCrudRepositoryTest {
                 "Harry Potter and the Prisoner of Azkaban", "Harry Potter and the Globet of Fire");
     }
 
+    @Test
+    @Transactional
+    public void optionalWithNonExisting() {
+        assertThat(repo.findFirstByNameOrderByBid("foobar")).isEmpty();
+    }
+
     private Book populateBook(Integer id, String title) {
         Book book = new Book();
         book.setBid(id);

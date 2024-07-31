@@ -2,7 +2,6 @@ package io.quarkus.runtime;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -51,7 +50,7 @@ public class ApplicationLifecycleManager {
 
     // used by ShutdownEvent to propagate the information about shutdown reason
     public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
-    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
+    private static final BiConsumer<Integer, Throwable> MAIN_EXIT_CODE_HANDLER = new BiConsumer<>() {
         @Override
         public void accept(Integer integer, Throwable cause) {
             Logger logger = Logger.getLogger(Application.class);
@@ -62,6 +61,12 @@ public class ApplicationLifecycleManager {
             System.exit(integer);
         }
     };
+    private static final Consumer<Boolean> NOOP_ALREADY_STARTED_CALLBACK = new Consumer<>() {
+        @Override
+        public void accept(Boolean t) {
+        }
+    };
+    private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
 
     private ApplicationLifecycleManager() {
 
@@ -77,8 +82,9 @@ public class ApplicationLifecycleManager {
 
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
-    private static Application currentApplication;
+    private static volatile Application currentApplication;
     private static boolean vmShuttingDown;
+    private static Consumer<Boolean> alreadyStartedCallback = NOOP_ALREADY_STARTED_CALLBACK;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
@@ -89,17 +95,19 @@ public class ApplicationLifecycleManager {
 
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
             BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
+        boolean alreadyStarted;
         stateLock.lock();
-        //in tests, we might pass this method an already started application
-        //in this case we don't shut it down at the end
-        boolean alreadyStarted = application.isStarted();
-        if (shutdownHookThread == null) {
-            registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
-        }
-        if (currentApplication != null && !shutdownRequested) {
-            throw new IllegalStateException("Quarkus already running");
-        }
         try {
+            //in tests, we might pass this method an already started application
+            //in this case we don't shut it down at the end
+            alreadyStarted = application.isStarted();
+            alreadyStartedCallback.accept(alreadyStarted);
+            if (shutdownHookThread == null) {
+                registerHooks(exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler);
+            }
+            if (currentApplication != null && !shutdownRequested) {
+                throw new IllegalStateException("Quarkus already running");
+            }
             exitCode = -1;
             shutdownRequested = false;
             currentApplication = application;
@@ -209,6 +217,7 @@ public class ApplicationLifecycleManager {
             int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
                     ? ((PreventFurtherStepsException) rootCause).getExitCode()
                     : 1;
+            currentApplication = null;
             (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
@@ -352,7 +361,9 @@ public class ApplicationLifecycleManager {
      * @param defaultExitCodeHandler the new default exit handler
      */
     public static void setDefaultExitCodeHandler(BiConsumer<Integer, Throwable> defaultExitCodeHandler) {
-        Objects.requireNonNull(defaultExitCodeHandler);
+        if (defaultExitCodeHandler == null) {
+            defaultExitCodeHandler = MAIN_EXIT_CODE_HANDLER;
+        }
         ApplicationLifecycleManager.defaultExitCodeHandler = defaultExitCodeHandler;
     }
 
@@ -365,8 +376,18 @@ public class ApplicationLifecycleManager {
      *
      * @param defaultExitCodeHandler the new default exit handler
      */
+    // Used by StartupActionImpl via reflection
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
-        setDefaultExitCodeHandler((exitCode, cause) -> defaultExitCodeHandler.accept(exitCode));
+        BiConsumer<Integer, Throwable> biConsumer = defaultExitCodeHandler == null ? null
+                : (exitCode, cause) -> defaultExitCodeHandler.accept(exitCode);
+        setDefaultExitCodeHandler(biConsumer);
+    }
+
+    @SuppressWarnings("unused")
+    // Used by StartupActionImpl via reflection
+    public static void setAlreadyStartedCallback(Consumer<Boolean> alreadyStartedCallback) {
+        ApplicationLifecycleManager.alreadyStartedCallback = alreadyStartedCallback != null ? alreadyStartedCallback
+                : NOOP_ALREADY_STARTED_CALLBACK;
     }
 
     /**

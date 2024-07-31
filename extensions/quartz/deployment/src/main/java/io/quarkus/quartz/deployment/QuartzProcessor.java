@@ -64,10 +64,9 @@ import io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusStdJDBCDelegate;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.scheduler.Scheduled;
+import io.quarkus.scheduler.deployment.SchedulerImplementationBuildItem;
 
-/**
- *
- */
 public class QuartzProcessor {
 
     private static final DotName JOB = DotName.createSimple(Job.class.getName());
@@ -75,6 +74,11 @@ public class QuartzProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.QUARTZ);
+    }
+
+    @BuildStep
+    SchedulerImplementationBuildItem implementation() {
+        return new SchedulerImplementationBuildItem(Scheduled.QUARTZ, DotName.createSimple(QuartzSchedulerImpl.class), 1);
     }
 
     @BuildStep

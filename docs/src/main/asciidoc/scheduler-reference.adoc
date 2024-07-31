@@ -100,7 +100,7 @@ For example `"0 15 10 * * ?"` fires at 10:15am every day.
 [source,java]
 ----
 @Scheduled(cron = "0 15 10 * * ?")
-void fireAt10AmEveryDay() { }
+void fireAt1015AmEveryDay() { }
 ----
 
 The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron-type` property.
@@ -358,6 +358,30 @@ class Jobs {
 }
 ----
 <1> The return type `Uni<Void>` instructs the scheduler to execute the method on the Vert.x event loop.
+
+=== How to use multiple scheduler implementations
+
+In some cases, it might be useful to choose a scheduler implementation used to execute a scheduled method.
+However, only one `Scheduler` implementation is used for all scheduled methods by default.
+For example, the `quarkus-quartz` extension provides an implementation that supports clustering but it also removes the simple in-memory implementation from the game.
+Now, if clustering is enabled then it's not possible to define a scheduled method that would be executed locally on a single node.
+Nevertheless, if you set the `quarkus.scheduler.use-composite-scheduler` config property to `true` then a composite `Scheduler` is used instead.
+This means that multiple scheduler implementations are kept running side by side.
+Furthermore, it's possible to chose a specific implementation used to execute a scheduled method using `@Scheduled#executeWith()`.
+
+[source,java]
+----
+class Jobs {
+
+   @Scheduled(cron = "0 15 10 * * ?") <1>
+   void fireAt10AmEveryDay() { }
+
+   @Scheduled(every = "1s", executeWith = Scheduled.SIMPLE) <2>
+   void everySecond() { }
+}
+----
+<1> If the `quarkus-quartz` extension is present then this method will be executed with the Quartz-specific scheduler.
+<2> If `quarkus.scheduler.use-composite-scheduler=true` is set then this method will be executed with the simple in-memory implementation provided by the `quarkus-scheduler` extension.
 
 == Scheduler
 

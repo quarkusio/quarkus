@@ -1,5 +1,6 @@
 package io.quarkus.scheduler.common.runtime;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -28,6 +29,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     protected boolean scheduled = false;
     protected String timeZone = Scheduled.DEFAULT_TIMEZONE;
     protected boolean runOnVirtualThread;
+    protected String implementation = Scheduled.AUTO;
 
     public AbstractJobDefinition(String identity) {
         this.identity = identity;
@@ -36,55 +38,63 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     @Override
     public JobDefinition setCron(String cron) {
         checkScheduled();
-        this.cron = cron;
+        this.cron = Objects.requireNonNull(cron);
         return this;
     }
 
     @Override
     public JobDefinition setInterval(String every) {
         checkScheduled();
-        this.every = every;
+        this.every = Objects.requireNonNull(every);
         return this;
     }
 
     @Override
     public JobDefinition setDelayed(String period) {
         checkScheduled();
-        this.delayed = period;
+        this.delayed = Objects.requireNonNull(period);
         return this;
     }
 
     @Override
     public JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution) {
         checkScheduled();
-        this.concurrentExecution = concurrentExecution;
+        this.concurrentExecution = Objects.requireNonNull(concurrentExecution);
         return this;
     }
 
     @Override
     public JobDefinition setSkipPredicate(SkipPredicate skipPredicate) {
         checkScheduled();
-        this.skipPredicate = skipPredicate;
+        this.skipPredicate = Objects.requireNonNull(skipPredicate);
         return this;
     }
 
     @Override
     public JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass) {
-        this.skipPredicateClass = skipPredicateClass;
+        checkScheduled();
+        this.skipPredicateClass = Objects.requireNonNull(skipPredicateClass);
         return setSkipPredicate(SchedulerUtils.instantiateBeanOrClass(skipPredicateClass));
     }
 
     @Override
     public JobDefinition setOverdueGracePeriod(String period) {
         checkScheduled();
-        this.overdueGracePeriod = period;
+        this.overdueGracePeriod = Objects.requireNonNull(period);
         return this;
     }
 
     @Override
     public JobDefinition setTimeZone(String timeZone) {
         checkScheduled();
-        this.timeZone = timeZone;
+        this.timeZone = Objects.requireNonNull(timeZone);
+        return this;
+    }
+
+    @Override
+    public JobDefinition setExecuteWith(String implementation) {
+        checkScheduled();
+        this.implementation = Objects.requireNonNull(implementation);
         return this;
     }
 
@@ -94,14 +104,14 @@ public abstract class AbstractJobDefinition implements JobDefinition {
         if (asyncTask != null) {
             throw new IllegalStateException("Async task was already set");
         }
-        this.task = task;
+        this.task = Objects.requireNonNull(task);
         this.runOnVirtualThread = runOnVirtualThread;
         return this;
     }
 
     @Override
     public JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> taskClass, boolean runOnVirtualThread) {
-        this.taskClass = taskClass;
+        this.taskClass = Objects.requireNonNull(taskClass);
         return setTask(SchedulerUtils.instantiateBeanOrClass(taskClass), runOnVirtualThread);
     }
 
@@ -111,13 +121,13 @@ public abstract class AbstractJobDefinition implements JobDefinition {
         if (task != null) {
             throw new IllegalStateException("Sync task was already set");
         }
-        this.asyncTask = asyncTask;
+        this.asyncTask = Objects.requireNonNull(asyncTask);
         return this;
     }
 
     @Override
     public JobDefinition setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass) {
-        this.asyncTaskClass = asyncTaskClass;
+        this.asyncTaskClass = Objects.requireNonNull(asyncTaskClass);
         return setAsyncTask(SchedulerUtils.instantiateBeanOrClass(asyncTaskClass));
     }
 

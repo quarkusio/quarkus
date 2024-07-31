@@ -131,7 +131,8 @@ public class SimpleScheduler implements Scheduler {
         }
 
         StartMode startMode = schedulerRuntimeConfig.startMode.orElse(StartMode.NORMAL);
-        if (startMode == StartMode.NORMAL && context.getScheduledMethods().isEmpty() && !context.forceSchedulerStart()) {
+        if (startMode == StartMode.NORMAL && context.getScheduledMethods(Scheduled.SIMPLE).isEmpty()
+                && !context.forceSchedulerStart()) {
             this.scheduledExecutor = null;
             LOG.info("No scheduled business methods found - Simple scheduler will not be started");
             return;
@@ -168,9 +169,12 @@ public class SimpleScheduler implements Scheduler {
         }
 
         // Create triggers and invokers for @Scheduled methods
-        for (ScheduledMethod method : context.getScheduledMethods()) {
+        for (ScheduledMethod method : context.getScheduledMethods(Scheduled.SIMPLE)) {
             int nameSequence = 0;
             for (Scheduled scheduled : method.getSchedules()) {
+                if (!context.matchesImplementation(scheduled, Scheduled.SIMPLE)) {
+                    continue;
+                }
                 nameSequence++;
                 String id = SchedulerUtils.lookUpPropertyValue(scheduled.identity());
                 if (id.isEmpty()) {
@@ -190,6 +194,11 @@ public class SimpleScheduler implements Scheduler {
                 }
             }
         }
+    }
+
+    @Override
+    public String implementation() {
+        return Scheduled.SIMPLE;
     }
 
     @Override
@@ -724,7 +733,7 @@ public class SimpleScheduler implements Scheduler {
                 };
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation);
             Optional<SimpleTrigger> trigger = createTrigger(identity, null, cronParser, scheduled,
                     defaultOverdueGracePeriod);
             if (trigger.isPresent()) {

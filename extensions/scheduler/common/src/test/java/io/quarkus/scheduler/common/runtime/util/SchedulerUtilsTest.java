@@ -134,6 +134,12 @@ public class SchedulerUtilsTest {
             public String delayed() {
                 return delayed;
             }
+
+            @Override
+            public String executeWith() {
+                return AUTO;
+            }
+
         };
     }
 }

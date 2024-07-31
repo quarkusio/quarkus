@@ -63,6 +63,28 @@ public @interface Scheduled {
     String DEFAULT_TIMEZONE = "<<default timezone>>";
 
     /**
+     * Constant value for {@link #executeWith()} indicating that the implementation should be selected automatically, i.e. the
+     * implementation with highest priority is used.
+     */
+    String AUTO = "<<auto>>";
+
+    /**
+     * Constant value for {@link #executeWith()} indicating that the simple in-memory implementation provided by the
+     * {@code quarkus-scheduler} extension should be used.
+     * <p>
+     * This implementation has priority {@code 0}.
+     */
+    String SIMPLE = "SIMPLE";
+
+    /**
+     * Constant value for {@link #executeWith()} indicating that the Quartz implementation provided by the
+     * {@code quarkus-quartz} extension should be used.
+     * <p>
+     * This implementation has priority {@code 1}.
+     */
+    String QUARTZ = "QUARTZ";
+
+    /**
      * Optionally defines a unique identifier for this job.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
@@ -204,6 +226,30 @@ public @interface Scheduled {
      * @see #cron()
      */
     String timeZone() default DEFAULT_TIMEZONE;
+
+    /**
+     * Choose a scheduler implementation used to execute a scheduled method.
+     * <p>
+     * Only one scheduler implementation is used for all scheduled methods by default. For example, the {@code quarkus-quartz}
+     * extension provides an implementation that supports clustering but it also removes the simple in-memory implementation
+     * from the game.
+     * <p>
+     * If the {@code quarkus.scheduler.use-composite-scheduler} config property is set to {@code true} then a composite
+     * scheduler is used instead. This means that multiple scheduler implementations are kept running side by side.
+     * In this case, it's possible to choose a specific implementation used to execute a scheduled method. By default, the
+     * implementation with highest priority is selected automatically.
+     * <p>
+     * If the {@code quarkus.scheduler.use-composite-scheduler} config property is set to {@code false} (default) and the
+     * required implementation is not the implementation with highest priority, then the build fails.
+     * <p>
+     * In any case, if the required implementation is not available, then the build fails.
+     *
+     * @return the implementation to execute this scheduled method
+     * @see #AUTO
+     * @see #SIMPLE
+     * @see #QUARTZ
+     */
+    String executeWith() default AUTO;
 
     @Retention(RUNTIME)
     @Target(METHOD)

@@ -27,7 +27,6 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 
@@ -71,7 +70,7 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         // Custom one!
-        serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusStaticInitConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 

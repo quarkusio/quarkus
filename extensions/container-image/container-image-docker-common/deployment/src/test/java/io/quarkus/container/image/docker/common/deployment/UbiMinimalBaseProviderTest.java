@@ -39,8 +39,8 @@ class UbiMinimalBaseProviderTest {
 
     static Stream<Arguments> imageCombinations() {
         return Stream.of(
-                Arguments.of(8, 17, "8.9"),
-                Arguments.of(8, 21, "8.9"),
+                Arguments.of(8, 17, "8.10"),
+                Arguments.of(8, 21, "8.10"),
                 Arguments.of(9, 17, "9.4"),
                 Arguments.of(9, 21, "9.4"));
     }

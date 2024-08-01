@@ -5,6 +5,6 @@ language:
     data:
       dockerfile:
         native:
-          from: registry.access.redhat.com/ubi8/ubi-minimal:8.9
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.10
         native-micro:
           from: quay.io/quarkus/quarkus-micro-image:2.0

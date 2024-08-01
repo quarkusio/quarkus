@@ -71,13 +71,13 @@
         <jacoco.version>0.8.12</jacoco.version>
         <kubernetes-client.version>6.13.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
         <rest-assured.version>5.5.0</rest-assured.version>
-        <hibernate-orm.version>6.6.0.CR1</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <hibernate-orm.version>6.6.0.CR2</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.14.15</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>7.0.1.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>2.3.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-reactive.version>2.4.0.CR1</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
-        <hibernate-search.version>7.2.0.Alpha2</hibernate-search.version>
+        <hibernate-search.version>7.2.0.CR1</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.65.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->

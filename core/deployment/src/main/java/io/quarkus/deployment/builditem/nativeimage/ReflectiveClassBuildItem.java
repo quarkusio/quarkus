@@ -142,7 +142,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
         this.classes = classes;
         this.constructors = constructors;
-        if (methods && queryMethods) {
+        if (constructors && queryConstructors) {
             Log.warnf(
                     "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
                     String.join(", ", className));

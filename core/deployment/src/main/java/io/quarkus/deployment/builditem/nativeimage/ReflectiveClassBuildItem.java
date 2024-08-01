@@ -2,7 +2,6 @@ package io.quarkus.deployment.builditem.nativeimage;
 
 import static java.util.Arrays.stream;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,40 +45,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean getClasses, boolean weak, boolean serialization,
             boolean unsafeAllocated, Class<?>... classes) {
-        List<String> names = new ArrayList<>();
-        for (Class<?> i : classes) {
-            if (i == null) {
-                throw new NullPointerException();
-            }
-            names.add(i.getName());
-        }
-        this.className = names;
-        this.methods = methods;
-        if (methods && queryMethods) {
-            Log.warnf(
-                    "Both methods and queryMethods are set to true for classes: %s. queryMethods is redundant and will be ignored",
-                    String.join(", ", names));
-            this.queryMethods = false;
-        } else {
-            this.queryMethods = queryMethods;
-        }
-        this.fields = fields;
-        this.classes = getClasses;
-        this.constructors = constructors;
-        if (methods && queryMethods) {
-            Log.warnf(
-                    "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
-                    String.join(", ", names));
-            this.queryConstructors = false;
-        } else {
-            this.queryConstructors = queryConstructors;
-        }
-        this.weak = weak;
-        this.serialization = serialization;
-        this.unsafeAllocated = unsafeAllocated;
-        if (weak && serialization) {
-            throw new RuntimeException("Weak reflection not supported with serialization");
-        }
+        this(constructors, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
+                unsafeAllocated, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
     /**
@@ -175,7 +142,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
         this.classes = classes;
         this.constructors = constructors;
-        if (methods && queryMethods) {
+        if (constructors && queryConstructors) {
             Log.warnf(
                     "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
                     String.join(", ", className));
@@ -297,8 +264,9 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Configures whether methods should be registered for reflection, for query purposes only.
-         * Setting this enables getting all declared methods for the class but does not allow invoking them reflectively.
+         * Configures whether declared methods should be registered for reflection, for query purposes only,
+         * i.e. {@link Class#getDeclaredMethods()}. Setting this enables getting all declared methods for the class but
+         * does not allow invoking them reflectively.
          */
         public Builder queryMethods(boolean queryMethods) {
             this.queryMethods = queryMethods;

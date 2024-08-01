@@ -38,6 +38,18 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+        if (!PathFilter.isVisible(filter, relativePath)) {
+            return;
+        }
+        original.walkIfContains(relativePath, visit -> {
+            if (visit != null && filter.isVisible(visit.getRelativePath())) {
+                visitor.visitPath(visit);
+            }
+        });
+    }
+
+    @Override
     public <T> T apply(String relativePath, Function<PathVisit, T> func) {
         if (!PathFilter.isVisible(filter, relativePath)) {
             return func.apply(null);

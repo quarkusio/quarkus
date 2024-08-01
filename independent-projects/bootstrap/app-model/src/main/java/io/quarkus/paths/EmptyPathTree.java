@@ -31,6 +31,10 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
+    public void walkIfContains(String relativePath, PathVisitor visitor) {
+    }
+
+    @Override
     public <T> T apply(String relativePath, Function<PathVisit, T> func) {
         return func.apply(null);
     }

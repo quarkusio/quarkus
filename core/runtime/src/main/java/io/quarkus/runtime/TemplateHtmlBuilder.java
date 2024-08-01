@@ -3,11 +3,13 @@ package io.quarkus.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
 import io.quarkus.dev.config.CurrentConfig;
+import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.runtime.util.ExceptionUtil;
 
 public class TemplateHtmlBuilder {
@@ -146,6 +148,11 @@ public class TemplateHtmlBuilder {
 
     private static final String STACKTRACE_DISPLAY_DIV = "<div id=\"stacktrace\"></div>";
 
+    private static final String BRSTI = "___begin_relative_stack_trace_item___";
+    private static final String ERSTI = "___end_relative_stack_trace_item___";
+
+    private static final String OPEN_IDE_LINK = "<div class='rel-stacktrace-item' onclick=\"event.preventDefault(); fetch('/q/open-in-ide/%s/%s/%d');\">";
+
     private static final String ERROR_STACK = "    <div id=\"original-stacktrace\" class=\"trace hidden\">\n" +
             "<h3>The stacktrace below is the original. " +
             "<a href=\"\" onClick=\"toggleStackTraceOrder(); return false;\">See the stacktrace in reversed order</a> (root-cause first)</h4>"
@@ -159,6 +166,7 @@ public class TemplateHtmlBuilder {
             "        <code class=\"stacktrace\"><pre>%1$s</pre></code>\n" +
             "    </div>\n";
 
+    private static final String DECORATE_DIV = "<pre class='decorate'>%s</pre>";
     private static final String CONFIG_EDITOR_HEAD = "<h3>The following incorrect config values were detected:</h3>" +
             "<form class=\"updateConfigForm\" method=\"post\" enctype=\"application/x-www-form-urlencoded\"  action=\"/io.quarkus.vertx-http.devmode.config.fix\">"
             + "<input type=\"hidden\" name=\"redirect\" value=\"%s\"/>\n";
@@ -218,10 +226,67 @@ public class TemplateHtmlBuilder {
         }
     }
 
+    public TemplateHtmlBuilder decorate(final Throwable throwable, String srcMainJava, List<String> knowClasses) {
+        String decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
+        if (decoratedString != null) {
+            result.append(String.format(DECORATE_DIV, decoratedString));
+        }
+
+        return this;
+    }
+
     public TemplateHtmlBuilder stack(final Throwable throwable) {
-        result.append(String.format(ERROR_STACK, escapeHtml(ExceptionUtil.generateStackTrace(throwable))));
-        result.append(String.format(ERROR_STACK_REVERSED, escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable))));
-        result.append(STACKTRACE_DISPLAY_DIV);
+        return stack(throwable, List.of());
+    }
+
+    public TemplateHtmlBuilder stack(final Throwable throwable, List<String> knowClasses) {
+        if (knowClasses != null && throwable != null) {
+            StackTraceElement[] originalStackTrace = Arrays.copyOf(throwable.getStackTrace(), throwable.getStackTrace().length);
+            StackTraceElement[] stackTrace = throwable.getStackTrace();
+            String className = "";
+            String type = "java"; //default
+            int lineNumber = 0;
+            if (!knowClasses.isEmpty()) {
+
+                for (int i = 0; i < stackTrace.length; ++i) {
+                    var elem = stackTrace[i];
+
+                    className = elem.getClassName();
+                    String filename = elem.getFileName();
+                    if (filename != null) {
+                        int dotindex = filename.lastIndexOf(".");
+                        type = elem.getFileName().substring(dotindex + 1);
+                    }
+                    lineNumber = elem.getLineNumber();
+
+                    if (knowClasses.contains(elem.getClassName())) {
+                        stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
+                                elem.getModuleVersion(),
+                                BRSTI + elem.getClassName()
+                                        + ERSTI,
+                                elem.getMethodName(), elem.getFileName(), elem.getLineNumber());
+                    }
+                }
+            }
+            throwable.setStackTrace(stackTrace);
+
+            String original = escapeHtml(ExceptionUtil.generateStackTrace(throwable));
+            String rootFirst = escapeHtml(ExceptionUtil.rootCauseFirstStackTrace(throwable));
+            if (original.contains(BRSTI)) {
+                original = original.replace(BRSTI,
+                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                original = original.replace(ERSTI, "</div>");
+                rootFirst = rootFirst.replace(BRSTI,
+                        String.format(OPEN_IDE_LINK, className, type, lineNumber));
+                rootFirst = rootFirst.replace(ERSTI, "</div>");
+            }
+
+            result.append(String.format(ERROR_STACK, original));
+            result.append(String.format(ERROR_STACK_REVERSED, rootFirst));
+            result.append(STACKTRACE_DISPLAY_DIV);
+
+            throwable.setStackTrace(originalStackTrace);
+        }
         return this;
     }
 

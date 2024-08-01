@@ -65,6 +65,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfig;
@@ -379,6 +380,9 @@ public class VertxHttpRecorder {
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor,
+            LogBuildTimeConfig logBuildTimeConfig,
+            String srcMainJava,
+            List<String> knowClasses,
             List<ErrorPageAction> actions) {
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
@@ -416,8 +420,8 @@ public class VertxHttpRecorder {
 
         applyCompression(httpBuildTimeConfig.enableCompression, httpRouteRouter);
         httpRouteRouter.route().last().failureHandler(
-                new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, httpConfiguration),
-                        httpConfiguration.unhandledErrorContentTypeDefault, actions));
+                new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
+                        httpConfiguration.unhandledErrorContentTypeDefault, srcMainJava, knowClasses, actions));
         for (BooleanSupplier requireBodyHandlerCondition : requireBodyHandlerConditions) {
             if (requireBodyHandlerCondition.getAsBoolean()) {
                 //if this is set then everything needs the body handler installed
@@ -535,8 +539,8 @@ public class VertxHttpRecorder {
             addHotReplacementHandlerIfNeeded(mr);
 
             mr.route().last().failureHandler(
-                    new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, httpConfiguration),
-                            httpConfiguration.unhandledErrorContentTypeDefault, actions));
+                    new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),
+                            httpConfiguration.unhandledErrorContentTypeDefault, srcMainJava, knowClasses, actions));
 
             mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
                     .handler(createBodyHandlerForManagementInterface());
@@ -577,8 +581,8 @@ public class VertxHttpRecorder {
         }
     }
 
-    private boolean decorateStacktrace(LaunchMode launchMode, HttpConfiguration httpConfiguration) {
-        return httpConfiguration.decorateStacktraces && launchMode.equals(LaunchMode.DEVELOPMENT);
+    private boolean decorateStacktrace(LaunchMode launchMode, LogBuildTimeConfig logBuildTimeConfig) {
+        return logBuildTimeConfig.decorateStacktraces && launchMode.equals(LaunchMode.DEVELOPMENT);
     }
 
     private void addHotReplacementHandlerIfNeeded(Router router) {

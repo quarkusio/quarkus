@@ -114,10 +114,27 @@ h3 {
    display: none;
 }
 
-.stacktrace {
+.decorate {
     font-size: 1.3em;
     line-height: 1.5;
 }
+
+.stacktrace {
+    font-size: 1.3em;
+    line-height: 1.5;
+    color: hsla(3, 89%, 42%, 1.0);
+}
+
+.rel-stacktrace-item {
+    font-weight: 400;
+    display: inline;
+}
+
+.rel-stacktrace-item:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 
 a, a:visited, a:focus, a:active  { 
     text-decoration: none; color:hsla(211, 63%, 54%, 1.0); 

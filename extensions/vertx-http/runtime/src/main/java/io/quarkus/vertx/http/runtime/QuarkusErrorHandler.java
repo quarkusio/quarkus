@@ -45,18 +45,24 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private final boolean decorateStack;
     private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
     private final List<ErrorPageAction> actions;
+    private final List<String> knowClasses;
+    private final String srcMainJava;
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
             Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
-        this(showStack, decorateStack, contentTypeDefault, List.of());
+        this(showStack, decorateStack, contentTypeDefault, null, List.of(), List.of());
     }
 
     public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
             Optional<HttpConfiguration.PayloadHint> contentTypeDefault,
+            String srcMainJava,
+            List<String> knowClasses,
             List<ErrorPageAction> actions) {
         this.showStack = showStack;
         this.decorateStack = decorateStack;
         this.contentTypeDefault = contentTypeDefault;
+        this.srcMainJava = srcMainJava;
+        this.knowClasses = knowClasses;
         this.actions = actions;
     }
 
@@ -141,9 +147,6 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             exception.addSuppressed(e);
         }
         if (showStack && exception != null) {
-            if (decorateStack) {
-                exception = new DecoratedAssertionError(exception);
-            }
             details = generateHeaderMessage(exception, uuid);
             stack = generateStackTrace(exception);
         } else {
@@ -211,8 +214,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
         final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details,
                 this.actions);
+
+        if (decorateStack && exception != null) {
+            htmlBuilder.decorate(exception, this.srcMainJava, this.knowClasses);
+        }
         if (showStack && exception != null) {
-            htmlBuilder.stack(exception);
+            htmlBuilder.stack(exception, this.knowClasses);
         }
 
         writeResponse(event, htmlBuilder.toString());

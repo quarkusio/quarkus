@@ -262,7 +262,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
                 ${this._renderProcessName(message.processName)}
                 ${this._renderThreadId(message.threadId)}
                 ${this._renderThreadName(message.threadName)}
-                ${this._renderMessage(level, message.formattedMessage, message.stacktrace)}
+                ${this._renderMessage(level, message.formattedMessage, message.stacktrace, message.decoration)}
             `;
         }
     }
@@ -403,7 +403,7 @@ export class QwcServerLog extends QwcAbstractLogElement {
         }
     }
     
-    _renderMessage(level, message, stacktrace){
+    _renderMessage(level, message, stacktrace, decoration){
         if(this._selectedColumns.includes('19')){
             // Clean up Ansi
             message = message.replace(/\u001b\[.*?m/g, "");
@@ -417,27 +417,37 @@ export class QwcServerLog extends QwcAbstractLogElement {
             }
             
             // Make sure multi line is supported
-            if(message.includes('\n')){
-                var htmlifiedLines = [];
-                var lines = message.split('\n');
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i];
-                    line = line.replace(/ /g, '\u00a0');
-                    if(i === lines.length-1){
-                        htmlifiedLines.push(line);
-                    }else{
-                        htmlifiedLines.push(line + '<br/>');
-                    }
-                }
-                message = htmlifiedLines.join('');
-            }
+            message = this._makeMultiLine(message);
         
             if(message){
-                return html`<span title="Message" class='text-${level}'>${unsafeHTML(message)}${this._renderStackTrace(stacktrace)}</span>`;
-            }
-
-            
+                return html`<span title="Message" class='text-${level}'>${unsafeHTML(message)}${this._renderDecoration(decoration)}${this._renderStackTrace(stacktrace)}</span>`;
+            }   
         }
+    }
+    
+    _renderDecoration(decoration){
+        if(decoration){
+            decoration = this._makeMultiLine("\n" + decoration + "\n");
+            return html`${unsafeHTML(decoration)}`;
+        }
+    }
+    
+    _makeMultiLine(message){
+        if(message.includes('\n')){
+            var htmlifiedLines = [];
+            var lines = message.split('\n');
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                line = line.replace(/ /g, '\u00a0');
+                if(i === lines.length-1){
+                    htmlifiedLines.push(line);
+                }else{
+                    htmlifiedLines.push(line + '<br/>');
+                }
+            }
+            message = htmlifiedLines.join('');
+        }
+        return message;
     }
     
     _renderStackTrace(stacktrace){

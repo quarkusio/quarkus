@@ -459,7 +459,8 @@ public class UndertowDeploymentRecorder {
     }
 
     public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer,
-            LaunchMode launchMode, ShutdownContext shutdownContext) {
+            LaunchMode launchMode, ShutdownContext shutdownContext, boolean decorateStacktrace, String scrMainJava,
+            List<String> knownClasses) {
         if (info.getValue().getExceptionHandler() == null) {
             //if a 500 error page has not been mapped we change the default to our more modern one, with a UID in the
             //log. If this is not production we also include the stack trace
@@ -475,9 +476,16 @@ public class UndertowDeploymentRecorder {
             if (!alreadyMapped500 || launchMode.isDevOrTest()) {
                 info.getValue().setExceptionHandler(new QuarkusExceptionHandler());
                 info.getValue().addErrorPage(new ErrorPage("/@QuarkusError", StatusCodes.INTERNAL_SERVER_ERROR));
+                String knownClassesString = null;
+                if (knownClasses != null)
+                    knownClassesString = String.join(",", knownClasses);
                 info.getValue().addServlet(new ServletInfo("@QuarkusError", QuarkusErrorServlet.class)
                         .addMapping("/@QuarkusError").setAsyncSupported(true)
-                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest())));
+                        .addInitParam(QuarkusErrorServlet.SHOW_STACK, Boolean.toString(launchMode.isDevOrTest()))
+                        .addInitParam(QuarkusErrorServlet.SHOW_DECORATION,
+                                Boolean.toString(decorateStacktrace(launchMode, decorateStacktrace)))
+                        .addInitParam(QuarkusErrorServlet.SRC_MAIN_JAVA, scrMainJava)
+                        .addInitParam(QuarkusErrorServlet.KNOWN_CLASSES, knownClassesString));
             }
             if (!alreadyMapped404 && launchMode.equals(LaunchMode.DEVELOPMENT)) {
                 info.getValue().addErrorPage(new ErrorPage("/@QuarkusNotFound", StatusCodes.NOT_FOUND));
@@ -762,6 +770,10 @@ public class UndertowDeploymentRecorder {
     public void addErrorPage(RuntimeValue<DeploymentInfo> deployment, String location,
             Class<? extends Throwable> exceptionType) {
         deployment.getValue().addErrorPage(new ErrorPage(location, exceptionType));
+    }
+
+    private boolean decorateStacktrace(LaunchMode launchMode, boolean decorateStacktrace) {
+        return decorateStacktrace && launchMode.equals(LaunchMode.DEVELOPMENT);
     }
 
     /**

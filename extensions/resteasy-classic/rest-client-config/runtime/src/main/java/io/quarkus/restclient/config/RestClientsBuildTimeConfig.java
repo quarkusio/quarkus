@@ -38,11 +38,11 @@ public interface RestClientsBuildTimeConfig {
         Optional<String> scope();
 
         /**
-         * If set to true, then Quarkus will ensure that all calls from the rest client go through a local proxy
+         * If set to true, then Quarkus will ensure that all calls from the REST client go through a local proxy
          * server (that is managed by Quarkus).
-         * This can be very useful for capturing network traffic to a service that use HTTPS.
+         * This can be very useful for capturing network traffic to a service that uses HTTPS.
          * <p>
-         * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy Reactive
+         * This property is not applicable to the RESTEasy Client, only the Quarkus REST client (formerly RESTEasy Reactive
          * client).
          * <p>
          * This property only applicable to dev and test mode.
@@ -56,7 +56,7 @@ public interface RestClientsBuildTimeConfig {
          * <p>
          * The algorithm for picking between multiple provider is the following:
          * <ul>
-         * <li>If only the default is around, use it (it's name is {@code default})</li>
+         * <li>If only the default is around, use it (its name is {@code default})</li>
          * <li>If there is only one besides the default, use it</li>
          * <li>If there are multiple ones, fail</li>
          * </ul>

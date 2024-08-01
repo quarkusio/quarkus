@@ -28,6 +28,7 @@ public interface RestClientsConfig {
      */
     @WithParentName
     @WithDefaults
+    @ConfigDocMapKey("client")
     Map<String, RestClientConfig> clients();
 
     /**

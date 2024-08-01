@@ -17,7 +17,7 @@ public class TestHTTPResourceManager {
 
     public static String getUri() {
         try {
-            return sanitizeUri(ConfigProvider.getConfig().getValue("test.url", String.class));
+            return ConfigProvider.getConfig().getValue("test.url", String.class);
         } catch (IllegalStateException e) {
             //massive hack for dev mode tests, dev mode has not started yet
             //so we don't have any way to load this correctly from config
@@ -27,7 +27,7 @@ public class TestHTTPResourceManager {
 
     public static String getManagementUri() {
         try {
-            return sanitizeUri(ConfigProvider.getConfig().getValue("test.management.url", String.class));
+            return ConfigProvider.getConfig().getValue("test.management.url", String.class);
         } catch (IllegalStateException e) {
             //massive hack for dev mode tests, dev mode has not started yet
             //so we don't have any way to load this correctly from config
@@ -36,26 +36,19 @@ public class TestHTTPResourceManager {
     }
 
     public static String getSslUri() {
-        return sanitizeUri(ConfigProvider.getConfig().getValue("test.url.ssl", String.class));
+        return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
     }
 
     public static String getManagementSslUri() {
-        return sanitizeUri(ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class));
-    }
-
-    private static String sanitizeUri(String result) {
-        if ((result != null) && result.endsWith("/")) {
-            return result.substring(0, result.length() - 1);
-        }
-        return result;
+        return ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class);
     }
 
     public static String getUri(RunningQuarkusApplication application) {
-        return sanitizeUri(application.getConfigValue("test.url", String.class).get());
+        return application.getConfigValue("test.url", String.class).get();
     }
 
     public static String getSslUri(RunningQuarkusApplication application) {
-        return sanitizeUri(application.getConfigValue("test.url.ssl", String.class).get());
+        return application.getConfigValue("test.url.ssl", String.class).get();
     }
 
     public static void inject(Object testCase) {

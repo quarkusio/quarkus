@@ -22,17 +22,18 @@ import java.util.function.Function;
 
 import javax.net.ssl.HostnameVerifier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientCDIDelegateBuilder<T> {
 
@@ -50,7 +51,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
-        this(jaxrsInterface, baseUriFromAnnotation, configKey, RestClientsConfig.getInstance());
+        this(jaxrsInterface, baseUriFromAnnotation, configKey,
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
     }
 
     RestClientCDIDelegateBuilder(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey,
@@ -80,75 +82,75 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureCustomProperties(QuarkusRestClientBuilder builder) {
-        Optional<String> encoder = oneOf(clientConfigByClassName().multipartPostEncoderMode,
-                clientConfigByConfigKey().multipartPostEncoderMode, configRoot.multipartPostEncoderMode);
+        Optional<String> encoder = oneOf(clientConfigByClassName().multipartPostEncoderMode(),
+                clientConfigByConfigKey().multipartPostEncoderMode(), configRoot.multipartPostEncoderMode());
         if (encoder != null && encoder.isPresent()) {
             PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));
             builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
         }
 
-        Optional<Integer> poolSize = oneOf(clientConfigByClassName().connectionPoolSize,
-                clientConfigByConfigKey().connectionPoolSize, configRoot.connectionPoolSize);
+        Optional<Integer> poolSize = oneOf(clientConfigByClassName().connectionPoolSize(),
+                clientConfigByConfigKey().connectionPoolSize(), configRoot.connectionPoolSize());
         if (poolSize.isPresent()) {
             builder.property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, poolSize.get());
         }
 
-        Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL,
-                clientConfigByConfigKey().connectionTTL, configRoot.connectionTTL);
+        Optional<Integer> connectionTTL = oneOf(clientConfigByClassName().connectionTTL(),
+                clientConfigByConfigKey().connectionTTL(), configRoot.connectionTTL());
         if (connectionTTL.isPresent()) {
             // configuration bean contains value in milliseconds
             int connectionTTLSeconds = connectionTTL.get() / 1000;
             builder.property(QuarkusRestClientProperties.CONNECTION_TTL, connectionTTLSeconds);
         }
 
-        Optional<Boolean> keepAliveEnabled = oneOf(clientConfigByClassName().keepAliveEnabled,
-                clientConfigByConfigKey().keepAliveEnabled, configRoot.keepAliveEnabled);
+        Optional<Boolean> keepAliveEnabled = oneOf(clientConfigByClassName().keepAliveEnabled(),
+                clientConfigByConfigKey().keepAliveEnabled(), configRoot.keepAliveEnabled());
         if (keepAliveEnabled.isPresent()) {
             builder.property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, keepAliveEnabled.get());
         }
 
-        Map<String, String> headers = clientConfigByClassName().headers;
+        Map<String, String> headers = clientConfigByClassName().headers();
         if (headers == null || headers.isEmpty()) {
-            headers = clientConfigByConfigKey().headers;
+            headers = clientConfigByConfigKey().headers();
         }
         if (headers == null || headers.isEmpty()) {
-            headers = configRoot.headers;
+            headers = configRoot.headers();
         }
         if (headers != null && !headers.isEmpty()) {
             builder.property(QuarkusRestClientProperties.STATIC_HEADERS, headers);
         }
 
         builder.property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES,
-                configRoot.disableContextualErrorMessages);
+                configRoot.disableContextualErrorMessages());
 
-        Optional<String> userAgent = oneOf(clientConfigByClassName().userAgent,
-                clientConfigByConfigKey().userAgent, configRoot.userAgent);
+        Optional<String> userAgent = oneOf(clientConfigByClassName().userAgent(),
+                clientConfigByConfigKey().userAgent(), configRoot.userAgent());
         if (userAgent.isPresent()) {
             builder.userAgent(userAgent.get());
         }
 
         Optional<Integer> maxChunkSize = oneOf(
-                clientConfigByClassName().maxChunkSize.map(intChunkSize()),
-                clientConfigByClassName().multipart.maxChunkSize,
-                clientConfigByConfigKey().maxChunkSize.map(intChunkSize()),
-                clientConfigByConfigKey().multipart.maxChunkSize,
-                configRoot.maxChunkSize.map(intChunkSize()),
-                configRoot.multipart.maxChunkSize);
+                clientConfigByClassName().maxChunkSize().map(intChunkSize()),
+                clientConfigByClassName().multipart().maxChunkSize(),
+                clientConfigByConfigKey().maxChunkSize().map(intChunkSize()),
+                clientConfigByConfigKey().multipart().maxChunkSize(),
+                configRoot.maxChunkSize().map(intChunkSize()),
+                configRoot.multipart().maxChunkSize());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
-        Boolean http2 = oneOf(clientConfigByClassName().http2,
-                clientConfigByConfigKey().http2).orElse(configRoot.http2);
+        Boolean http2 = oneOf(clientConfigByClassName().http2(),
+                clientConfigByConfigKey().http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
 
-        Optional<Boolean> alpn = oneOf(clientConfigByClassName().alpn,
-                clientConfigByConfigKey().alpn, configRoot.alpn);
+        Optional<Boolean> alpn = oneOf(clientConfigByClassName().alpn(),
+                clientConfigByConfigKey().alpn(), configRoot.alpn());
         if (alpn.isPresent()) {
             builder.property(QuarkusRestClientProperties.ALPN, alpn.get());
         }
 
-        Boolean captureStacktrace = oneOf(clientConfigByClassName().captureStacktrace,
-                clientConfigByConfigKey().captureStacktrace).orElse(configRoot.captureStacktrace);
+        Boolean captureStacktrace = oneOf(clientConfigByClassName().captureStacktrace(),
+                clientConfigByConfigKey().captureStacktrace()).orElse(configRoot.captureStacktrace());
         builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
     }
 
@@ -157,8 +159,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {
-        Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress, clientConfigByConfigKey().proxyAddress,
-                configRoot.proxyAddress);
+        Optional<String> maybeProxy = oneOf(clientConfigByClassName().proxyAddress(), clientConfigByConfigKey().proxyAddress(),
+                configRoot.proxyAddress());
         if (maybeProxy.isEmpty()) {
             return;
         }
@@ -170,18 +172,20 @@ public class RestClientCDIDelegateBuilder<T> {
             ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
             builder.proxyAddress(hostAndPort.host, hostAndPort.port);
 
-            oneOf(clientConfigByClassName().proxyUser, clientConfigByConfigKey().proxyUser, configRoot.proxyUser)
+            oneOf(clientConfigByClassName().proxyUser(), clientConfigByConfigKey().proxyUser(), configRoot.proxyUser())
                     .ifPresent(builder::proxyUser);
-            oneOf(clientConfigByClassName().proxyPassword, clientConfigByConfigKey().proxyPassword, configRoot.proxyPassword)
+            oneOf(clientConfigByClassName().proxyPassword(), clientConfigByConfigKey().proxyPassword(),
+                    configRoot.proxyPassword())
                     .ifPresent(builder::proxyPassword);
-            oneOf(clientConfigByClassName().nonProxyHosts, clientConfigByConfigKey().nonProxyHosts, configRoot.nonProxyHosts)
+            oneOf(clientConfigByClassName().nonProxyHosts(), clientConfigByConfigKey().nonProxyHosts(),
+                    configRoot.nonProxyHosts())
                     .ifPresent(builder::nonProxyHosts);
         }
     }
 
     private void configureQueryParamStyle(QuarkusRestClientBuilder builder) {
-        Optional<QueryParamStyle> maybeQueryParamStyle = oneOf(clientConfigByClassName().queryParamStyle,
-                clientConfigByConfigKey().queryParamStyle, configRoot.queryParamStyle);
+        Optional<QueryParamStyle> maybeQueryParamStyle = oneOf(clientConfigByClassName().queryParamStyle(),
+                clientConfigByConfigKey().queryParamStyle(), configRoot.queryParamStyle());
         if (maybeQueryParamStyle.isPresent()) {
             QueryParamStyle queryParamStyle = maybeQueryParamStyle.get();
             builder.queryParamStyle(queryParamStyle);
@@ -189,29 +193,29 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureRedirects(QuarkusRestClientBuilder builder) {
-        Optional<Integer> maxRedirects = oneOf(clientConfigByClassName().maxRedirects,
-                clientConfigByConfigKey().maxRedirects, configRoot.maxRedirects);
+        Optional<Integer> maxRedirects = oneOf(clientConfigByClassName().maxRedirects(),
+                clientConfigByConfigKey().maxRedirects(), configRoot.maxRedirects());
         if (maxRedirects.isPresent()) {
             builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.get());
         }
 
-        Optional<Boolean> maybeFollowRedirects = oneOf(clientConfigByClassName().followRedirects,
-                clientConfigByConfigKey().followRedirects, configRoot.followRedirects);
+        Optional<Boolean> maybeFollowRedirects = oneOf(clientConfigByClassName().followRedirects(),
+                clientConfigByConfigKey().followRedirects(), configRoot.followRedirects());
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
         }
     }
 
     private void configureShared(QuarkusRestClientBuilder builder) {
-        Optional<Boolean> shared = oneOf(clientConfigByClassName().shared,
-                clientConfigByConfigKey().shared);
+        Optional<Boolean> shared = oneOf(clientConfigByClassName().shared(),
+                clientConfigByConfigKey().shared());
         if (shared.isPresent()) {
             builder.property(QuarkusRestClientProperties.SHARED, shared.get());
 
             if (shared.get()) {
                 // Name is only used if shared = true
-                Optional<String> name = oneOf(clientConfigByClassName().name,
-                        clientConfigByConfigKey().name);
+                Optional<String> name = oneOf(clientConfigByClassName().name(),
+                        clientConfigByConfigKey().name());
                 if (name.isPresent()) {
                     builder.property(QuarkusRestClientProperties.NAME, name.get());
                 }
@@ -232,9 +236,9 @@ public class RestClientCDIDelegateBuilder<T> {
         if (Arc.container() != null) {
             var registry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
             if (registry != null) {
-                Optional<String> maybeTlsConfigurationName = oneOf(clientConfigByClassName().tlsConfigurationName,
-                        clientConfigByConfigKey().tlsConfigurationName,
-                        configRoot.tlsConfigurationName);
+                Optional<String> maybeTlsConfigurationName = oneOf(clientConfigByClassName().tlsConfigurationName(),
+                        clientConfigByConfigKey().tlsConfigurationName(),
+                        configRoot.tlsConfigurationName());
                 return TlsConfiguration.from(registry, maybeTlsConfigurationName);
             }
         }
@@ -242,25 +246,25 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureTLSFromProperties(QuarkusRestClientBuilder builder) {
-        Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore, clientConfigByConfigKey().trustStore,
-                configRoot.trustStore);
+        Optional<String> maybeTrustStore = oneOf(clientConfigByClassName().trustStore(), clientConfigByConfigKey().trustStore(),
+                configRoot.trustStore());
         if (maybeTrustStore.isPresent() && !maybeTrustStore.get().isBlank() && !NONE.equals(maybeTrustStore.get())) {
             registerTrustStore(maybeTrustStore.get(), builder);
         }
 
-        Optional<String> maybeKeyStore = oneOf(clientConfigByClassName().keyStore, clientConfigByConfigKey().keyStore,
-                configRoot.keyStore);
+        Optional<String> maybeKeyStore = oneOf(clientConfigByClassName().keyStore(), clientConfigByConfigKey().keyStore(),
+                configRoot.keyStore());
         if (maybeKeyStore.isPresent() && !maybeKeyStore.get().isBlank() && !NONE.equals(maybeKeyStore.get())) {
             registerKeyStore(maybeKeyStore.get(), builder);
         }
 
-        Optional<String> maybeHostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier,
-                clientConfigByConfigKey().hostnameVerifier, configRoot.hostnameVerifier);
+        Optional<String> maybeHostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier(),
+                clientConfigByConfigKey().hostnameVerifier(), configRoot.hostnameVerifier());
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
         }
 
-        oneOf(clientConfigByClassName().verifyHost, clientConfigByConfigKey().verifyHost, configRoot.verifyHost)
+        oneOf(clientConfigByClassName().verifyHost(), clientConfigByConfigKey().verifyHost(), configRoot.verifyHost())
                 .ifPresent(builder::verifyHost);
     }
 
@@ -285,10 +289,10 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void registerKeyStore(String keyStorePath, QuarkusRestClientBuilder builder) {
-        Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword,
-                clientConfigByConfigKey().keyStorePassword, configRoot.keyStorePassword);
-        Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType,
-                clientConfigByConfigKey().keyStoreType, configRoot.keyStoreType);
+        Optional<String> keyStorePassword = oneOf(clientConfigByClassName().keyStorePassword(),
+                clientConfigByConfigKey().keyStorePassword(), configRoot.keyStorePassword());
+        Optional<String> keyStoreType = oneOf(clientConfigByClassName().keyStoreType(),
+                clientConfigByConfigKey().keyStoreType(), configRoot.keyStoreType());
 
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
@@ -311,10 +315,10 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void registerTrustStore(String trustStorePath, QuarkusRestClientBuilder builder) {
-        Optional<String> maybeTrustStorePassword = oneOf(clientConfigByClassName().trustStorePassword,
-                clientConfigByConfigKey().trustStorePassword, configRoot.trustStorePassword);
-        Optional<String> maybeTrustStoreType = oneOf(clientConfigByClassName().trustStoreType,
-                clientConfigByConfigKey().trustStoreType, configRoot.trustStoreType);
+        Optional<String> maybeTrustStorePassword = oneOf(clientConfigByClassName().trustStorePassword(),
+                clientConfigByConfigKey().trustStorePassword(), configRoot.trustStorePassword());
+        Optional<String> maybeTrustStoreType = oneOf(clientConfigByClassName().trustStoreType(),
+                clientConfigByConfigKey().trustStoreType(), configRoot.trustStoreType());
 
         try {
             KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
@@ -362,8 +366,8 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProviders(QuarkusRestClientBuilder builder) {
-        Optional<String> maybeProviders = oneOf(clientConfigByClassName().providers, clientConfigByConfigKey().providers,
-                configRoot.providers);
+        Optional<String> maybeProviders = oneOf(clientConfigByClassName().providers(), clientConfigByConfigKey().providers(),
+                configRoot.providers());
         if (maybeProviders.isPresent()) {
             registerProviders(builder, maybeProviders.get());
         }
@@ -384,26 +388,26 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureTimeouts(QuarkusRestClientBuilder builder) {
-        Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout,
-                clientConfigByConfigKey().connectTimeout).orElse(this.configRoot.connectTimeout);
+        Long connectTimeout = oneOf(clientConfigByClassName().connectTimeout(),
+                clientConfigByConfigKey().connectTimeout()).orElse(this.configRoot.connectTimeout());
         if (connectTimeout != null) {
             builder.connectTimeout(connectTimeout, TimeUnit.MILLISECONDS);
         }
 
-        Long readTimeout = oneOf(clientConfigByClassName().readTimeout,
-                clientConfigByConfigKey().readTimeout).orElse(this.configRoot.readTimeout);
+        Long readTimeout = oneOf(clientConfigByClassName().readTimeout(),
+                clientConfigByConfigKey().readTimeout()).orElse(this.configRoot.readTimeout());
         if (readTimeout != null) {
             builder.readTimeout(readTimeout, TimeUnit.MILLISECONDS);
         }
     }
 
     private void configureBaseUrl(QuarkusRestClientBuilder builder) {
-        Optional<String> propertyOptional = oneOf(clientConfigByClassName().uri,
-                clientConfigByConfigKey().uri);
+        Optional<String> propertyOptional = oneOf(clientConfigByClassName().uri(),
+                clientConfigByConfigKey().uri());
 
         if (propertyOptional.isEmpty()) {
-            propertyOptional = oneOf(clientConfigByClassName().url,
-                    clientConfigByConfigKey().url);
+            propertyOptional = oneOf(clientConfigByClassName().url(),
+                    clientConfigByConfigKey().url());
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {
@@ -425,12 +429,12 @@ public class RestClientCDIDelegateBuilder<T> {
         }
     }
 
-    private RestClientConfig clientConfigByConfigKey() {
-        return this.configRoot.getClientConfig(configKey);
+    private RestClientsConfig.RestClientConfig clientConfigByConfigKey() {
+        return this.configRoot.getClient(configKey);
     }
 
-    private RestClientConfig clientConfigByClassName() {
-        return this.configRoot.getClientConfig(jaxrsInterface);
+    private RestClientsConfig.RestClientConfig clientConfigByClassName() {
+        return this.configRoot.getClient(jaxrsInterface);
     }
 
     @SafeVarargs

@@ -29,9 +29,8 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem;
 import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
-import io.quarkus.restclient.config.RestClientBuildConfig;
-import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
+import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
 
 @BuildSteps(onlyIfNot = IsNormal.class)
 public class DevServicesRestClientHttpProxyProcessor {
@@ -56,15 +55,15 @@ public class DevServicesRestClientHttpProxyProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
             BuildProducer<RestClientHttpProxyBuildItem> producer) {
-        if (restClientsBuildTimeConfig.configs.isEmpty()) {
+        if (restClientsBuildTimeConfig.clients().isEmpty()) {
             return;
         }
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        Map<String, RestClientBuildConfig> configs = restClientsBuildTimeConfig.configs;
+        Map<String, RestClientBuildConfig> configs = restClientsBuildTimeConfig.clients();
         for (var configEntry : configs.entrySet()) {
-            if (!configEntry.getValue().enableLocalProxy) {
+            if (!configEntry.getValue().enableLocalProxy()) {
                 log.trace("Ignoring config key: '" + configEntry.getKey() + "' because enableLocalProxy is false");
                 break;
             }
@@ -81,8 +80,8 @@ public class DevServicesRestClientHttpProxyProcessor {
             }
             if (matchingBI != null) {
                 Optional<String> baseUri = oneOf(
-                        RestClientConfig.getConfigValue(configKey, "uri", String.class),
-                        RestClientConfig.getConfigValue(configKey, "url", String.class),
+                        Optional.of(configEntry.getValue().properties().get("url")),
+                        Optional.of(configEntry.getValue().properties().get("url")),
                         matchingBI.getDefaultBaseUri());
 
                 if (baseUri.isEmpty()) {
@@ -90,7 +89,7 @@ public class DevServicesRestClientHttpProxyProcessor {
                     break;
                 }
                 producer.produce(new RestClientHttpProxyBuildItem(matchingBI.getClassInfo().name().toString(), baseUri.get(),
-                        configEntry.getValue().localProxyProvider));
+                        configEntry.getValue().localProxyProvider()));
             } else {
                 // now we check if the configKey was actually a class name
                 ClassInfo classInfo = index.getClassByName(configKey);
@@ -100,14 +99,14 @@ public class DevServicesRestClientHttpProxyProcessor {
                     break;
                 }
                 Optional<String> baseUri = oneOf(
-                        RestClientConfig.getConfigValue(configKey, "uri", String.class),
-                        RestClientConfig.getConfigValue(configKey, "url", String.class));
+                        Optional.of(configEntry.getValue().properties().get("url")),
+                        Optional.of(configEntry.getValue().properties().get("url")));
                 if (baseUri.isEmpty()) {
                     log.debug("Unable to determine uri or url for config key '" + configKey + "'");
                     break;
                 }
                 producer.produce(new RestClientHttpProxyBuildItem(classInfo.name().toString(), baseUri.get(),
-                        configEntry.getValue().localProxyProvider));
+                        configEntry.getValue().localProxyProvider()));
             }
         }
     }

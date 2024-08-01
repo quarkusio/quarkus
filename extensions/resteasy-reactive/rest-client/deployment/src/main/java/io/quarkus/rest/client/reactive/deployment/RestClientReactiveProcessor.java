@@ -87,6 +87,8 @@ import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -105,6 +107,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
+import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
@@ -431,7 +434,7 @@ class RestClientReactiveProcessor {
         }
 
         // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
-        Set<String> configKeyNames = clientsConfig.configs.keySet();
+        Set<String> configKeyNames = clientsConfig.clients().keySet();
         for (String configKeyName : configKeyNames) {
             ClassInfo classInfo = index.getClassByName(configKeyName);
             if (classInfo == null) {
@@ -443,12 +446,30 @@ class RestClientReactiveProcessor {
             if (!Modifier.isAbstract(classInfo.flags())) {
                 continue;
             }
-            Optional<String> cdiScope = clientsConfig.configs.get(configKeyName).scope;
+            Optional<String> cdiScope = clientsConfig.clients().get(configKeyName).scope();
             if (cdiScope.isEmpty()) {
                 continue;
             }
             producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.of(configKeyName), Optional.empty()));
         }
+    }
+
+    @BuildStep
+    void generateRestClientConfigBuilder(
+            List<RegisteredRestClientBuildItem> restClients,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+
+        List<RegisteredRestClient> registeredRestClients = restClients.stream()
+                .map(rc -> new RegisteredRestClient(
+                        rc.getClassInfo().name().toString(),
+                        rc.getClassInfo().simpleName(),
+                        rc.getConfigKey().orElse(null)))
+                .toList();
+
+        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
+                runTimeConfigBuilder);
     }
 
     @BuildStep

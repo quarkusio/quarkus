@@ -59,9 +59,9 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
     /**
      * If an MP-style property is detected (e.g. "prefix/mp-rest/url"),
      * we need to include the relevant Quarkus-style property name ("quarkus.rest-client.prefix.url") in the iteration.
-     *
+     * <p>
      * This is required so that the BuildTimeConfigurationReader is aware that it should create the configuration objects for
-     * REST clients ({@link RestClientConfig}).
+     * REST clients ({@link RestClientsConfig.RestClientConfig}).
      */
     @Override
     public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
@@ -94,9 +94,9 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
     }
 
     /**
-     * Splits a property key into client prefix and property name. If given key doesn't contain a client prefix, null will be
-     * returned in the first array item.
-     *
+     * Splits a property key into client prefix and property name. If given key doesn't contain a client prefix, null
+     * will be returned in the first array item.
+     * <p>
      * Examples:
      * <li>`client-prefix.url` will return `String[] {"client-prefix", "url"}`</li>
      * <li>`"client.prefix".url` will return `String[] {"client.prefix", "url"}`</li>

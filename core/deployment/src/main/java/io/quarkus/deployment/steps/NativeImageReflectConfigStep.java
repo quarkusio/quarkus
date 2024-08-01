@@ -40,9 +40,7 @@ public class NativeImageReflectConfigStep {
             forcedNonWeakClasses.add(nonWeakReflectiveClassBuildItem.getClassName());
         }
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
-            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i.isConstructors(), i.isQueryConstructors(),
-                    i.isMethods(), i.isQueryMethods(), i.isFields(), i.isClasses(),
-                    i.isWeak(), i.isSerialization(), i.isUnsafeAllocated(), i.getClassNames().toArray(new String[0]));
+            addReflectiveClass(reflectiveClasses, forcedNonWeakClasses, i);
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
             addReflectiveField(reflectiveClasses, i);
@@ -171,38 +169,35 @@ public class NativeImageReflectConfigStep {
     }
 
     public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, Set<String> forcedNonWeakClasses,
-            boolean constructors, boolean queryConstructors, boolean method,
-            boolean queryMethods, boolean fields, boolean classes, boolean weak, boolean serialization, boolean unsafeAllocated,
-            String... className) {
-        for (String cl : className) {
+            ReflectiveClassBuildItem classBuildItem) {
+        for (String cl : classBuildItem.getClassNames()) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                String typeReachable = (!forcedNonWeakClasses.contains(cl) && weak) ? cl : null;
-                reflectiveClasses.put(cl, new ReflectionInfo(constructors, queryConstructors, method, queryMethods, fields,
-                        classes, typeReachable, serialization, unsafeAllocated));
+                String typeReachable = (!forcedNonWeakClasses.contains(cl) && classBuildItem.isWeak()) ? cl : null;
+                reflectiveClasses.put(cl, new ReflectionInfo(classBuildItem, typeReachable));
             } else {
-                if (constructors) {
+                if (classBuildItem.isConstructors()) {
                     existing.constructors = true;
                 }
-                if (queryConstructors) {
+                if (classBuildItem.isQueryConstructors()) {
                     existing.queryConstructors = true;
                 }
-                if (method) {
+                if (classBuildItem.isMethods()) {
                     existing.methods = true;
                 }
-                if (queryMethods) {
+                if (classBuildItem.isQueryMethods()) {
                     existing.queryMethods = true;
                 }
-                if (fields) {
+                if (classBuildItem.isFields()) {
                     existing.fields = true;
                 }
-                if (classes) {
+                if (classBuildItem.isClasses()) {
                     existing.classes = true;
                 }
-                if (serialization) {
+                if (classBuildItem.isSerialization()) {
                     existing.serialization = true;
                 }
-                if (unsafeAllocated) {
+                if (classBuildItem.isUnsafeAllocated()) {
                     existing.unsafeAllocated = true;
                 }
             }
@@ -234,21 +229,18 @@ public class NativeImageReflectConfigStep {
         Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo() {
-            this(false, false, false, false, false, false, null, false, false);
         }
 
-        private ReflectionInfo(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-                boolean fields, boolean classes, String typeReachable,
-                boolean serialization, boolean unsafeAllocated) {
-            this.methods = methods;
-            this.queryMethods = queryMethods;
-            this.fields = fields;
-            this.classes = classes;
+        private ReflectionInfo(ReflectiveClassBuildItem classBuildItem, String typeReachable) {
+            this.methods = classBuildItem.isMethods();
+            this.queryMethods = classBuildItem.isQueryMethods();
+            this.fields = classBuildItem.isFields();
+            this.classes = classBuildItem.isClasses();
             this.typeReachable = typeReachable;
-            this.constructors = constructors;
-            this.queryConstructors = queryConstructors;
-            this.serialization = serialization;
-            this.unsafeAllocated = unsafeAllocated;
+            this.constructors = classBuildItem.isConstructors();
+            this.queryConstructors = classBuildItem.isQueryConstructors();
+            this.serialization = classBuildItem.isSerialization();
+            this.unsafeAllocated = classBuildItem.isUnsafeAllocated();
         }
     }
 

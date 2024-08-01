@@ -9,7 +9,7 @@ public class JsonMissingMessageBodyReaderErrorMessageContextualizer implements
     @Override
     public String provideContextMessage(Input input) {
         if ((input.mediaType() != null) && input.mediaType().isCompatible(MediaType.APPLICATION_JSON_TYPE)) {
-            return "Consider adding one the 'quarkus-rest-client-reactive-jackson' or 'quarkus-rest-client-reactive-jsonb' extensions";
+            return "Consider adding one the 'quarkus-rest-client-jackson' or 'quarkus-rest-client-jsonb' extensions";
         }
         return null;
     }

@@ -4,9 +4,9 @@ import java.util.Comparator;
 
 public enum ConfigPhase implements Comparable<ConfigPhase> {
 
-    RUN_TIME("RunTime"),
-    BUILD_TIME("BuildTime"),
-    BUILD_AND_RUN_TIME_FIXED("BuildTime");
+    RUN_TIME("RunTime", false),
+    BUILD_TIME("BuildTime", true),
+    BUILD_AND_RUN_TIME_FIXED("BuildTime", true);
 
     static final Comparator<ConfigPhase> COMPARATOR = new Comparator<ConfigPhase>() {
         /**
@@ -49,13 +49,19 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
         }
     };
 
-    private String configSuffix;
+    private final String configSuffix;
+    private final boolean fixedAtBuildTime;
 
-    ConfigPhase(String configSuffix) {
+    ConfigPhase(String configSuffix, boolean fixedAtBuildTime) {
         this.configSuffix = configSuffix;
+        this.fixedAtBuildTime = fixedAtBuildTime;
     }
 
     public String getConfigSuffix() {
         return configSuffix;
+    }
+
+    public boolean isFixedAtBuildTime() {
+        return fixedAtBuildTime;
     }
 }

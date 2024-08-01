@@ -12,10 +12,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.annotation.processor.ExtensionProcessor;
 import io.quarkus.annotation.processor.Outputs;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
@@ -29,12 +25,6 @@ import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
 public class ConfigDocExtensionProcessor implements ExtensionProcessor {
-
-    private static final ObjectMapper YAML_OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
-
-    static {
-        YAML_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-    }
 
     private Config config;
     private Utils utils;
@@ -83,31 +73,25 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
 
         ConfigResolver configResolver = new ConfigResolver(config, utils, configCollector);
 
+        // the model is not written in the jar file
         JavadocElements javadocElements = configResolver.resolveJavadoc();
-        utils.filer().writeJson(Outputs.META_INF_QUARKUS_CONFIG_JAVADOC, javadocElements);
+        if (!javadocElements.elements().isEmpty()) {
+            utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_JAVADOC, javadocElements);
+        }
 
         ResolvedModel resolvedModel = configResolver.resolveModel();
+        if (!resolvedModel.getConfigRoots().isEmpty()) {
+            Path resolvedModelPath = utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_MODEL, resolvedModel);
 
-        // we don't want to write this file in the jar
-        Path quarkusConfigDocPath = utils.filer().getTargetPath().resolve(Outputs.QUARKUS_CONFIG_DOC);
-        Path yamlModelPath = quarkusConfigDocPath.resolve("resolved-model-" + config.getExtension().artifactId() + ".yaml");
-        try {
-            Files.createDirectories(quarkusConfigDocPath);
-            YAML_OBJECT_MAPPER.writeValue(yamlModelPath.toFile(), resolvedModel);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to write the resolved model to: " + yamlModelPath, e);
-        }
-
-        if (config.isDebug()) {
-            utils.processingEnv().getMessager().printMessage(Kind.NOTE,
-                    "Result of config scanning:\n\n" + configCollector.toString());
-
-            try {
-                utils.processingEnv().getMessager().printMessage(Kind.NOTE,
-                        "Resolved model:\n\n" + Files.readString(yamlModelPath));
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to read the resolved model from: " + yamlModelPath, e);
+            if (config.isDebug()) {
+                try {
+                    utils.processingEnv().getMessager().printMessage(Kind.NOTE,
+                            "Resolved model:\n\n" + Files.readString(resolvedModelPath));
+                } catch (IOException e) {
+                    throw new IllegalStateException("Unable to read the resolved model from: " + resolvedModelPath, e);
+                }
             }
         }
+
     }
 }

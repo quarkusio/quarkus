@@ -1,0 +1,17 @@
+{#let anchor = configSection.path.toAnchor}
+h|[[%s]]link:#%s[{configSection.title.escapeCellContent}]
+h|Type
+h|Default
+{/let}
+
+{#for item in configSection.items}
+{#if !item.deprecated}
+{#if item.isSection}
+{#configSection configSection=item /}
+
+{#else}
+{#configProperty configProperty=item /}
+
+{/if}
+{/if}
+{/for}

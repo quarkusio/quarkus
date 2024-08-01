@@ -1,22 +1,26 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public sealed abstract class AbstractConfigItem implements Comparable<AbstractConfigItem>
         permits ConfigProperty, ConfigSection {
 
-    private final String sourceClass;
-    private final String sourceName;
-    private final String path;
+    protected final String sourceClass;
+    protected final String sourceName;
+    protected final String path;
 
-    private final String type;
+    protected final String type;
 
-    public AbstractConfigItem(String sourceClass, String sourceName, String path, String type) {
+    protected final boolean deprecated;
+
+    public AbstractConfigItem(String sourceClass, String sourceName, String path, String type, boolean deprecated) {
         this.sourceClass = sourceClass;
         this.sourceName = sourceName;
         this.path = path;
         this.type = type;
+        this.deprecated = deprecated;
     }
 
     public String getSourceClass() {
@@ -35,5 +39,16 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
         return type;
     }
 
+    public boolean isDeprecated() {
+        return deprecated;
+    }
+
+    @JsonIgnore
     public abstract boolean isSection();
+
+    @JsonIgnore
+    public abstract boolean hasDurationType();
+
+    @JsonIgnore
+    public abstract boolean hasMemorySizeType();
 }

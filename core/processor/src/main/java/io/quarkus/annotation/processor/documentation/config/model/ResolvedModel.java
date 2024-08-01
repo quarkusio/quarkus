@@ -3,6 +3,8 @@ package io.quarkus.annotation.processor.documentation.config.model;
 import java.util.Collections;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**
  * This is the fully resolved model for a given module.
  * <p>
@@ -36,9 +38,10 @@ public class ResolvedModel {
      */
     private Map<String, ConfigGroup> configGroups;
 
+    @JsonCreator
     public ResolvedModel(Map<String, ConfigRoot> configRoots, Map<String, ConfigGroup> configGroups) {
-        this.configRoots = Collections.unmodifiableMap(configRoots);
-        this.configGroups = Collections.unmodifiableMap(configGroups);
+        this.configRoots = configRoots == null ? Map.of() : Collections.unmodifiableMap(configRoots);
+        this.configGroups = configGroups == null ? Map.of() : Collections.unmodifiableMap(configGroups);
     }
 
     public Map<String, ConfigRoot> getConfigRoots() {

@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -19,16 +20,23 @@ import javax.tools.StandardLocation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 
 public class FilerUtil {
 
     private static final ObjectWriter JSON_OBJECT_WRITER;
+    private static final ObjectMapper YAML_OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+
+    static {
+    }
 
     static {
         ObjectMapper jsonObjectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
         JSON_OBJECT_WRITER = jsonObjectMapper.writerWithDefaultPrettyPrinter();
+
+        YAML_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
     }
 
     private final ProcessingEnvironment processingEnv;
@@ -37,14 +45,14 @@ public class FilerUtil {
         this.processingEnv = processingEnv;
     }
 
-    public void write(String fileName, Set<String> set) {
+    public void write(Path filePath, Set<String> set) {
         if (set.isEmpty()) {
             return;
         }
 
         try {
             final FileObject listResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    fileName);
+                    filePath.toString());
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(listResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -54,45 +62,60 @@ public class FilerUtil {
                 }
             }
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + fileName + ": " + e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
             return;
         }
     }
 
-    public void write(String fileName, Properties properties) {
+    public void write(Path filePath, Properties properties) {
         if (properties.isEmpty()) {
             return;
         }
 
         try {
             final FileObject propertiesResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    fileName);
+                    filePath.toString());
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(propertiesResource.openOutputStream(), StandardCharsets.UTF_8))) {
                 PropertyUtils.store(properties, writer);
             }
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + fileName + ": " + e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
             return;
         }
     }
 
-    public void writeJson(String fileName, Object value) {
+    public void writeJson(Path filePath, Object value) {
         if (value == null) {
             return;
         }
 
         try {
             final FileObject jsonResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    fileName);
+                    filePath.toString());
 
             try (OutputStream os = jsonResource.openOutputStream()) {
                 JSON_OBJECT_WRITER.writeValue(os, value);
             }
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + fileName + ": " + e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
             return;
+        }
+    }
+
+    /**
+     * The model files are written outside of target/classes as we don't want to include them in the jar.
+     */
+    public Path writeModel(Path filePath, Object value) {
+        Path yamlModelPath = getTargetPath().resolve(filePath);
+        try {
+            Files.createDirectories(yamlModelPath.getParent());
+            YAML_OBJECT_MAPPER.writeValue(yamlModelPath.toFile(), value);
+
+            return yamlModelPath;
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to write the model to: " + yamlModelPath, e);
         }
     }
 

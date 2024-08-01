@@ -1,6 +1,11 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
+import java.time.Duration;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.quarkus.annotation.processor.documentation.config.util.Types;
 
 public final class ConfigProperty extends AbstractConfigItem {
 
@@ -23,15 +28,13 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     private final String javadocSiteLink;
 
-    private final boolean deprecated;
-
     public ConfigProperty(ConfigPhase phase, String sourceClass, String sourceName, String path, List<String> additionalPaths,
             String environmentVariable, String type, String typeDescription, boolean map, boolean list, boolean optional,
-            String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, boolean isEnum,
+            String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
             String defaultValue, String javadocSiteLink,
             boolean deprecated) {
-        super(sourceClass, sourceName, path, typeDescription);
+        super(sourceClass, sourceName, path, type, deprecated);
         this.phase = phase;
         this.additionalPaths = additionalPaths;
         this.environmentVariable = environmentVariable;
@@ -47,7 +50,6 @@ public final class ConfigProperty extends AbstractConfigItem {
         this.enumAcceptedValues = enumAcceptedValues;
         this.defaultValue = defaultValue;
         this.javadocSiteLink = javadocSiteLink;
-        this.deprecated = deprecated;
     }
 
     public ConfigPhase getPhase() {
@@ -110,10 +112,6 @@ public final class ConfigProperty extends AbstractConfigItem {
         return javadocSiteLink;
     }
 
-    public boolean isDeprecated() {
-        return deprecated;
-    }
-
     public boolean isSection() {
         return false;
     }
@@ -136,5 +134,15 @@ public final class ConfigProperty extends AbstractConfigItem {
         }
 
         return ConfigPhase.COMPARATOR.compare(phase, other.getPhase());
+    }
+
+    @Override
+    public boolean hasDurationType() {
+        return Duration.class.getName().equals(type);
+    }
+
+    @Override
+    public boolean hasMemorySizeType() {
+        return Types.MEMORY_SIZE_TYPE.equals(type);
     }
 }

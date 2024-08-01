@@ -123,8 +123,8 @@ public class ConfigResolver {
             ResolutionContext configGroupContext;
 
             if (discoveryConfigProperty.isSection()) {
-                ConfigSection configSection = new ConfigSection(typeQualifiedName,
-                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName);
+                ConfigSection configSection = new ConfigSection(context.getDiscoveryRootElement().getQualifiedName(),
+                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName, deprecated);
                 context.getItemCollection().addItem(configSection);
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
                         discoveryConfigProperty.getType().isMap(), deprecated);
@@ -170,7 +170,6 @@ public class ConfigResolver {
                         .collect(Collectors.toCollection(ArrayList::new));
             } else if (discoveryConfigProperty.getType().isList()) {
                 typeQualifiedName = discoveryConfigProperty.getType().wrapperType().toString();
-                typeSimplifiedName = "list of " + typeSimplifiedName;
             }
 
             // this is a standard property

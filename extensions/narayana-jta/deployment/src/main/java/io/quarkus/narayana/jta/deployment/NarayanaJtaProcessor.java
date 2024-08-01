@@ -137,7 +137,9 @@ class NarayanaJtaProcessor {
                 JTATransactionLogXAResourceOrphanFilter.class,
                 JTANodeNameXAResourceOrphanFilter.class,
                 JTAActionStatusServiceXAResourceOrphanFilter.class,
-                ExpiredTransactionStatusManagerScanner.class).build());
+                ExpiredTransactionStatusManagerScanner.class)
+                .reason(getClass().getName())
+                .build());
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);

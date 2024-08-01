@@ -340,9 +340,8 @@ public class ResteasyReactiveProcessor {
             Map<String, String> generationResult = ServerExceptionMapperGenerator.generatePerClassMapper(methodInfo,
                     classOutput,
                     Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(generationResult.values().toArray(
-                            EMPTY_STRING_ARRAY)).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generationResult.values().toArray(EMPTY_STRING_ARRAY))
+                    .reason(getClass().getName()).build());
             Map<String, String> classMappers;
             DotName classDotName = methodInfo.declaringClass().name();
             if (resultingMappers.containsKey(classDotName)) {
@@ -531,7 +530,7 @@ public class ResteasyReactiveProcessor {
                                                 QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                         .ignoreMethodPredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                        .source(source)
+                                        .source(source + " > " + method.returnType().name().toString())
                                         .build());
                             }
 
@@ -548,7 +547,7 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                             .ignoreMethodPredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                            .source(source)
+                                            .source(source + " > " + parameterType.name().toString())
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
@@ -935,6 +934,7 @@ public class ResteasyReactiveProcessor {
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY))
+                            .reason(getClass().getName())
                             .serialization(false).build());
         }
     }
@@ -1125,6 +1125,7 @@ public class ResteasyReactiveProcessor {
         if (serializersRequireResourceReflection) {
             producer.produce(ReflectiveClassBuildItem
                     .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new))
+                    .reason(getClass().getName())
                     .constructors(false).methods().build());
         }
     }

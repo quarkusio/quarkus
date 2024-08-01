@@ -318,7 +318,7 @@ class InfinispanClientProcessor {
                 "org.wildfly.security.credential.X509CertificateChainPublicCredential"
         };
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).reason(getClass().getName()).build());
         return new InfinispanPropertiesBuildItem(propertiesMap);
     }
 

@@ -86,7 +86,9 @@ class FlywayProcessor {
     @BuildStep
     void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer) {
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigurationExtension.class).fields().methods().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigurationExtension.class)
+                .reason(getClass().getName())
+                .fields().methods().build());
 
         for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
             var extensionName = configurationExtension.name();

@@ -214,7 +214,17 @@ public class JaxbProcessor {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
                         && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
                     ClassInfo targetClassInfo = jaxbRootAnnotationInstance.target().asClass();
-                    addReflectiveHierarchyClass(targetClassInfo, reflectiveHierarchies, index);
+                    final var name = targetClassInfo.name();
+
+                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                            .builder(name)
+                            .index(index)
+                            .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
+                                    || IGNORE_TYPES.contains(t))
+                            .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
+                            .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
+                            .source(getClass().getSimpleName() + " annotated with @" + jaxbRootAnnotation + " > " + name)
+                            .build());
                     classesToBeBound.add(targetClassInfo.name().toString());
                     jaxbRootAnnotationsDetected = true;
                 }
@@ -230,7 +240,9 @@ public class JaxbProcessor {
             if (xmlSchemaInstance.target().kind() == Kind.CLASS) {
                 String className = xmlSchemaInstance.target().asClass().name().toString();
 
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
+                        .reason(getClass().getName() + " annotated with @" + XML_SCHEMA)
+                        .build());
             }
         }
 
@@ -238,17 +250,22 @@ public class JaxbProcessor {
         for (AnnotationInstance xmlJavaTypeAdapterInstance : index.getAnnotations(XML_JAVA_TYPE_ADAPTER)) {
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(xmlJavaTypeAdapterInstance.value().asClass().name().toString())
+                            .reason(getClass().getName() + " @" + XML_JAVA_TYPE_ADAPTER + " value")
                             .methods().fields().build());
         }
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
-            addReflectiveClass(reflectiveClass, false, false, "jakarta.xml.bind.annotation.W3CDomHandler");
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder("jakarta.xml.bind.annotation.W3CDomHandler")
+                    .reason(getClass().getName() + " @" + XML_ANY_ELEMENT + " annotation present")
+                    .build());
         }
 
         JAXB_ANNOTATIONS.stream()
                 .map(Class::getName)
                 .forEach(className -> {
-                    addReflectiveClass(reflectiveClass, true, false, className);
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
+                            .reason(getClass().getName() + " JAXB annotation")
+                            .methods().build());
                 });
 
         // Register @XmlSeeAlso
@@ -258,7 +275,9 @@ public class JaxbProcessor {
             AnnotationValue value = xmlSeeAlsoAnn.value();
             Type[] types = value.asClassArray();
             for (Type t : types) {
-                addReflectiveClass(reflectiveClass, false, false, t.name().toString());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(t.name().toString())
+                        .reason(getClass().getName() + " @" + XML_SEE_ALSO + " value")
+                        .build());
             }
         }
         // Register Native proxy definitions
@@ -286,11 +305,14 @@ public class JaxbProcessor {
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        addReflectiveClass(reflectiveClass, true, false, "org.glassfish.jaxb.runtime.v2.ContextFactory");
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.xml.internal.stream.XMLOutputFactoryImpl");
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
-        addReflectiveClass(reflectiveClass, true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                "org.glassfish.jaxb.runtime.v2.ContextFactory",
+                "com.sun.xml.internal.stream.XMLInputFactoryImpl",
+                "com.sun.xml.internal.stream.XMLOutputFactoryImpl",
+                "com.sun.org.apache.xpath.internal.functions.FuncNot",
+                "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl")
+                .reason(getClass().getName())
+                .methods().build());
 
         addResourceBundle(resourceBundle, "jakarta.xml.bind.Messages");
         addResourceBundle(resourceBundle, "jakarta.xml.bind.helpers.Messages");
@@ -300,7 +322,9 @@ public class JaxbProcessor {
 
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)
-                .forEach(className -> addReflectiveClass(reflectiveClass, true, false, className));
+                .forEach(className -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
+                        .reason(getClass().getName() + " JAXB reflective class")
+                        .methods().build()));
 
         providerItem
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
@@ -380,6 +404,7 @@ public class JaxbProcessor {
 
             resource.produce(new NativeImageResourceBuildItem(path));
 
+            ArrayList<Class> classes = new ArrayList<>();
             for (String line : Files.readAllLines(p)) {
                 line = line.trim();
                 if (!line.isEmpty() && !line.startsWith("#")) {
@@ -388,11 +413,14 @@ public class JaxbProcessor {
                     classesToBeBound.add(clazz);
 
                     while (cl != Object.class) {
-                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(cl).methods().fields().build());
+                        classes.add(cl);
                         cl = cl.getSuperclass();
                     }
                 }
             }
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new Class[0]))
+                    .reason(getClass().getName() + " jaxb.index file " + path)
+                    .methods().fields().build());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -420,27 +448,6 @@ public class JaxbProcessor {
         } catch (IOException e) {
             throw new IOError(e);
         }
-    }
-
-    private void addReflectiveHierarchyClass(ClassInfo classInfo,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            IndexView index) {
-        final var name = classInfo.name();
-
-        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                .builder(name)
-                .index(index)
-                .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
-                        || IGNORE_TYPES.contains(t))
-                .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
-                .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
-                .source(getClass().getSimpleName() + " > " + name)
-                .build());
-    }
-
-    private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
-            String... className) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods(methods).fields(fields).build());
     }
 
     private void addResourceBundle(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle, String bundle) {

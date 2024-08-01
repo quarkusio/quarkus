@@ -22,6 +22,16 @@ public class PicocliTest {
     private String value;
 
     @Test
+    public void testExitCode(QuarkusMainLauncher launcher) {
+        LaunchResult result = launcher.launch("exitcode", "--code", Integer.toString(42));
+        assertThat(result.exitCode()).isEqualTo(42);
+        result = launcher.launch("exitcode", "--code", Integer.toString(0));
+        assertThat(result.exitCode()).isEqualTo(0);
+        result = launcher.launch("exitcode", "--code", Integer.toString(2));
+        assertThat(result.exitCode()).isEqualTo(2);
+    }
+
+    @Test
     @Launch({ "test-command", "-f", "test.txt", "-f", "test2.txt", "-f", "test3.txt", "-s", "ERROR", "-h", "SOCKS=5.5.5.5",
             "-p", "privateValue", "pos1", "pos2" })
     public void testBasicReflection(LaunchResult result) throws UnknownHostException {

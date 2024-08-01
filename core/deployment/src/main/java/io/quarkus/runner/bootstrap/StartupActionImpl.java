@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -210,24 +211,20 @@ public class StartupActionImpl implements StartupAction {
         try {
             AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
-            Method getCurrentApplication = lifecycleManager.getDeclaredMethod("getCurrentApplication");
-            Object oldApplication = getCurrentApplication.invoke(null);
-            lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
-                    new Consumer<Integer>() {
-                        @Override
-                        public void accept(Integer integer) {
-                            result.set(integer);
-                        }
-                    });
-            // force init here
-            Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
-            Method start = appClass.getMethod("main", String[].class);
-            start.invoke(null, (Object) (args == null ? new String[0] : args));
+            AtomicBoolean alreadyStarted = new AtomicBoolean();
+            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class);
+            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class);
 
-            CountDownLatch latch = new CountDownLatch(1);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
+            try {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<Integer>) result::set);
+                setAlreadyStartedCallback.invoke(null, (Consumer<Boolean>) alreadyStarted::set);
+                // force init here
+                Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
+                Method start = appClass.getMethod("main", String[].class);
+                start.invoke(null, (Object) (args == null ? new String[0] : args));
+
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() -> {
                     try {
                         Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
                         q.getMethod("blockingExit").invoke(null);
@@ -236,17 +233,19 @@ public class StartupActionImpl implements StartupAction {
                     } finally {
                         latch.countDown();
                     }
-                }
-            }).start();
-            latch.await();
+                }).start();
+                latch.await();
 
-            Object newApplication = getCurrentApplication.invoke(null);
-            if (oldApplication == newApplication) {
-                //quarkus was not actually started by the main method
-                //just return
-                return 0;
+                if (alreadyStarted.get()) {
+                    //quarkus was not actually started by the main method
+                    //just return
+                    return 0;
+                }
+                return result.get();
+            } finally {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<?>) null);
+                setAlreadyStartedCallback.invoke(null, (Consumer<?>) null);
             }
-            return result.get();
         } finally {
             for (var closeTask : runtimeCloseTasks) {
                 try {

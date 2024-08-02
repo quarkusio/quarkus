@@ -58,11 +58,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
     public static final String INVOKED_METHOD_PARAMETERS_PROP = "io.quarkus.rest.client.invokedMethodParameters";
+    public static final String INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP = "io.quarkus.rest.client.invokedExceptionMapperClass";
     public static final String DEFAULT_CONTENT_TYPE_PROP = "io.quarkus.rest.client.defaultContentType";
     public static final String DEFAULT_USER_AGENT_VALUE = "Quarkus REST Client";
     private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
     static final MediaType IGNORED_MEDIA_TYPE = new MediaType("ignored", "ignored");
+    // TODO: the following property should really be provided by an SPI
+    private static final String DEFAULT_EXCEPTION_MAPPER_CLASS_NAME = "io.quarkus.rest.client.reactive.runtime.DefaultMicroprofileRestClientExceptionMapper";
 
     private final HttpClient httpClient;
     // Changeable by the request filter
@@ -179,12 +182,19 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     @Override
     protected Throwable unwrapException(Throwable t) {
         var res = super.unwrapException(t);
-        if (res instanceof WebApplicationException) {
-            var webApplicationException = (WebApplicationException) res;
+
+        var invokedExceptionMapperClassNameObj = properties.get(INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP);
+        if (invokedExceptionMapperClassNameObj instanceof String invokedExceptionMapperClassName) {
+            if (!DEFAULT_EXCEPTION_MAPPER_CLASS_NAME.equals(invokedExceptionMapperClassName)) {
+                // in this case a custom exception mapper provided the exception, so we honor it
+                return res;
+            }
+        }
+
+        if (res instanceof WebApplicationException webApplicationException) {
             var message = webApplicationException.getMessage();
             var invokedMethodObject = properties.get(INVOKED_METHOD_PROP);
-            if ((invokedMethodObject instanceof Method) && !disableContextualErrorMessages) {
-                var invokedMethod = (Method) invokedMethodObject;
+            if ((invokedMethodObject instanceof Method invokedMethod) && !disableContextualErrorMessages) {
                 message = "Received: '" + message + "' when invoking: Rest Client method: '"
                         + invokedMethod.getDeclaringClass().getName() + "#"
                         + invokedMethod.getName() + "'";

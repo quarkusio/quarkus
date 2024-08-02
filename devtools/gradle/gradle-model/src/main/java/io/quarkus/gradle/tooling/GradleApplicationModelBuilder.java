@@ -528,12 +528,14 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         final List<SourceDir> sourceDirs = new ArrayList<>(1);
         project.getTasks().withType(AbstractCompile.class,
-                t -> configureCompileTask(t.getSource(), t.getDestinationDirectory(), allClassesDirs, sourceDirs, t));
+                t -> configureCompileTask(t.getSource(), t.getDestinationDirectory(), allClassesDirs, sourceDirs, t,
+                        sourceSet));
 
-        maybeConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs);
+        maybeConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs, sourceSet);
 
         final LinkedHashMap<File, Path> resourceDirs = new LinkedHashMap<>(1);
         final File resourcesOutputDir = sourceSet.getOutput().getResourcesDir();
+
         project.getTasks().withType(ProcessResources.class, t -> {
             if (!t.getEnabled()) {
                 return;
@@ -567,32 +569,33 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private static void maybeConfigureKotlinJvmCompile(Project project, FileCollection allClassesDirs,
-            List<SourceDir> sourceDirs) {
+            List<SourceDir> sourceDirs, SourceSet sourceSet) {
         // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
         try {
             Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile");
-            doConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs);
+            doConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs, sourceSet);
         } catch (ClassNotFoundException e) {
             // ignore
         }
     }
 
     private static void doConfigureKotlinJvmCompile(Project project, FileCollection allClassesDirs,
-            List<SourceDir> sourceDirs) {
+            List<SourceDir> sourceDirs, SourceSet sourceSet) {
         // Use KotlinJvmCompile.class in a separate method to prevent that maybeConfigureKotlinJvmCompile() runs into
         // a ClassNotFoundException due to actually using KotlinJvmCompile.class.
         project.getTasks().withType(KotlinJvmCompile.class, t -> configureCompileTask(t.getSources().getAsFileTree(),
-                t.getDestinationDirectory(), allClassesDirs, sourceDirs, t));
+                t.getDestinationDirectory(), allClassesDirs, sourceDirs, t, sourceSet));
     }
 
     private static void configureCompileTask(FileTree sources, DirectoryProperty destinationDirectory,
-            FileCollection allClassesDirs, List<SourceDir> sourceDirs, Task task) {
+            FileCollection allClassesDirs, List<SourceDir> sourceDirs, Task task, SourceSet sourceSet) {
         if (!task.getEnabled()) {
             return;
         }
         if (sources.isEmpty()) {
             return;
         }
+
         final File destDir = destinationDirectory.getAsFile().get();
         if (!allClassesDirs.contains(destDir)) {
             return;
@@ -602,7 +605,9 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (a.getRelativePath().getSegments().length == 1) {
                 final File srcDir = a.getFile().getParentFile();
                 sourceDirs
-                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), null, Map.of("compiler", task.getName())));
+                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
+                                sourceSet.getOutput().getGeneratedSourcesDirs().getSingleFile().toPath(),
+                                Map.of("compiler", task.getName())));
             }
         });
     }

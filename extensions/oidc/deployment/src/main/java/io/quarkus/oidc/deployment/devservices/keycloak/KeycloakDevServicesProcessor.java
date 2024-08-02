@@ -195,8 +195,10 @@ public class KeycloakDevServicesProcessor {
         try {
             List<String> errors = new ArrayList<>();
 
+            boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
+                    devServicesSharedNetworkBuildItem);
             RunningDevService newDevService = startContainer(dockerStatusBuildItem, keycloakBuildItemBuildProducer,
-                    !devServicesSharedNetworkBuildItem.isEmpty(),
+                    useSharedNetwork,
                     devServicesConfig.timeout,
                     errors);
             if (newDevService == null) {

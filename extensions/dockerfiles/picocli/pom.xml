@@ -1,0 +1,133 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-dockerfiles-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-dockerfiles-cli</artifactId>
+    <name>Quarkus - Dockerfiles - CLI</name>
+    <description>CLI plugin that provides commands for Dockerfile genration</description>
+
+
+    <dependencies>
+
+        <dependency>
+          <groupId>info.picocli</groupId>
+          <artifactId>picocli</artifactId>
+          <version>4.7.0</version>
+        </dependency>
+
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-core</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-devtools-common</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-dockerfiles-spi</artifactId>
+        </dependency>
+
+
+        <!-- aether -->
+
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-api</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-impl</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-spi</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-connector-basic</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-transport-file</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.aether</groupId>
+    <artifactId>aether-transport-http</artifactId>
+    <version>1.1.0</version>
+    <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+      <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jar-plugin</artifactId>
+              <version>3.2.0</version>
+              <configuration>
+                  <archive>
+                      <manifest>
+                          <mainClass>io.quarkus.dockerfiles.cli.Dockerfiles</mainClass>
+                      </manifest>
+                  </archive>
+              </configuration>
+          </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>io.quarkus.dockerfiles.cli.Dockerfiles</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+      </plugins>
+    </build>
+</project>

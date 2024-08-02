@@ -242,19 +242,19 @@ public class SmallRyeFaultToleranceProcessor {
                 continue;
             }
 
-            // Scan both the hierarchy of the declaring class and its interfaces like in
+            // Scan both the hierarchy of the declaring class and its (super)interfaces like in
             // io.smallrye.faulttolerance.internal.SecurityActions.findDeclaredMethodNames
             DotName name = clazz.name();
             while (name != null && !DotNames.OBJECT.equals(name)) {
-                Set<String> methods = classesToScan.computeIfAbsent(name, k -> new HashSet<>());
-                methods.add(fallbackMethod);
+                classesToScan.computeIfAbsent(name, k1 -> new HashSet<>()).add(fallbackMethod);
+                clazz.interfaceNames()
+                        .forEach(it -> classesToScan.computeIfAbsent(it, k -> new HashSet<>()).add(fallbackMethod));
                 ClassInfo classInfo = index.getClassByName(name);
                 if (classInfo == null) {
                     break;
                 }
                 name = classInfo.superName();
             }
-            clazz.interfaceNames().forEach(it -> classesToScan.computeIfAbsent(it, k -> new HashSet<>()).add(fallbackMethod));
         }
 
         for (Map.Entry<DotName, Set<String>> entry : classesToScan.entrySet()) {

@@ -112,7 +112,7 @@ The next lines
 
 [source,java]
 ----
-// //DEPS <dependency1> <dependency2>
+//DEPS <dependency1> <dependency2>
 ----
 
 illustrate how you add dependencies to this script. This is a feature of JBang.

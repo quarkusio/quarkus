@@ -177,7 +177,7 @@ public class MavenRunner implements BuildSystemRunner {
             args.add("-DquarkusUpdateRecipes=" + rewrite.quarkusUpdateRecipes);
         }
         if (rewrite.additionalUpdateRecipes != null) {
-            args.add("-DadditionalUpdateRecipes" + rewrite.additionalUpdateRecipes);
+            args.add("-DadditionalUpdateRecipes=" + rewrite.additionalUpdateRecipes);
         }
         if (rewrite.dryRun) {
             args.add("-DrewriteDryRun");

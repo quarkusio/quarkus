@@ -258,7 +258,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                     throw new IllegalStateException(
                             """
                                     Security annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
-                                    Please report issue in Quarkus project.
+                                    Please consult https://quarkus.io/guides/cdi-reference#bean_discovery on how to make the module containing the code discoverable by Quarkus.
                                     """
                                     .formatted(desc.invokedMethodDesc().getClassName(),
                                             desc.invokedMethodDesc().getMethodName()));

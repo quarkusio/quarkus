@@ -1685,7 +1685,7 @@ Start by adding the following dependencies to your test project:
 .pom.xml
 ----
 <dependency>
-    <groupId>net.sourceforge.htmlunit</groupId>
+    <groupId>org.htmlunit</groupId>
     <artifactId>htmlunit</artifactId>
     <exclusions>
         <exclusion>
@@ -1705,7 +1705,7 @@ Start by adding the following dependencies to your test project:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("net.sourceforge.htmlunit:htmlunit")
+testImplementation("org.htmlunit:htmlunit")
 testImplementation("io.quarkus:quarkus-junit5")
 ----
 

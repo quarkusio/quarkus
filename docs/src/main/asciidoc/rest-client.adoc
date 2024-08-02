@@ -1657,6 +1657,34 @@ quarkus.rest-client.my-client.url=...
 
 NOTE: MicroProfile REST Client specification does not allow setting proxy credentials. In order to specify proxy user and proxy password programmatically, you need to cast your `RestClientBuilder` to `RestClientBuilderImpl`.
 
+=== Local proxy for dev mode
+
+When using the REST Client in dev mode, Quarkus has the ability to stand up a pass-through proxy which can be used as a target for Wireshark (or similar tools)
+in order to capture all the traffic originating from the REST Client (this really makes sense when the REST Client is used against HTTPS services)
+
+To enable this feature, all that needs to be done is set the `enable-local-proxy` configuration option for the configKey corresponding to the client for which proxying is desired.
+For example:
+
+[source,properties]
+----
+quarkus.rest-client.my-client.enable-local-proxy=true
+----
+
+When a REST Client does not use a config key (for example when it is created programmatically via `QuarkusRestClientBuilder`) then the class name can be used instead.
+For example:
+
+[source,properties]
+----
+quarkus.rest-client."org.acme.SomeClient".enable-local-proxy=true
+----
+
+The port the proxy is listening can be found in startup logs. An example entry is:
+
+[source]
+----
+Started HTTP proxy server on http://localhost:38227 for REST Client 'org.acme.SomeClient'
+----
+
 == Package and run the application
 
 Run the application with:

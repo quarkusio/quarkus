@@ -599,6 +599,7 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 
 * Methods of the `org.springframework.data.repository.query.QueryByExampleExecutor` interface - if any of these are invoked, a Runtime exception will be thrown.
 * QueryDSL support. No attempt will be made to generate implementations of the QueryDSL related repositories.
+* Using `org.springframework.data.jpa.repository.JpaSpecificationExecutor`
 * Customizing the base repository for all repository interfaces in the code base.
 ** In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.

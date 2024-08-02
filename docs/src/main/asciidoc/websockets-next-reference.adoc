@@ -819,7 +819,7 @@ Let’s consider the following client endpoint:
 [source, java]
 ----
 @WebSocketClient(path = "/endpoint/{name}")
-public static class ClientEndpoint {
+public class ClientEndpoint {
 
     @OnTextMessage
     void onMessage(@PathParam String name, String message, WebSocketClientConnection connection) {

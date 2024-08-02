@@ -81,9 +81,9 @@ public interface RedisClientConfig {
     Optional<String> password();
 
     /**
-     * The maximum size of the connection pool. When working with cluster or sentinel.
-     * <p>
-     * This value should be at least the total number of cluster member (or number of sentinels + 1)
+     * The maximum size of the connection pool.
+     * When working with cluster or sentinel, this value should be at least the total number of cluster members (or
+     * number of sentinels + 1)
      */
     @WithDefault("6")
     int maxPoolSize();

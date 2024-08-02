@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -40,6 +41,7 @@ public class InterruptableJobTest {
 
     static final CountDownLatch INTERRUPT_LATCH = new CountDownLatch(1);
     static final CountDownLatch EXECUTE_LATCH = new CountDownLatch(1);
+    static Integer initCounter = 0;
 
     static final CountDownLatch NON_INTERRUPTABLE_EXECUTE_LATCH = new CountDownLatch(1);
     static final CountDownLatch NON_INTERRUPTABLE_HOLD_LATCH = new CountDownLatch(1);
@@ -66,7 +68,9 @@ public class InterruptableJobTest {
             throw new RuntimeException(e);
         }
 
-        assertTrue(INTERRUPT_LATCH.await(5, TimeUnit.SECONDS));
+        assertTrue(INTERRUPT_LATCH.await(3, TimeUnit.SECONDS));
+        // asserts that a single dep. scoped bean instance was used for both, execute() and interrupt() methods
+        assertTrue(initCounter == 1);
     }
 
     @Test
@@ -101,6 +105,11 @@ public class InterruptableJobTest {
 
     @ApplicationScoped
     static class MyJob implements InterruptableJob {
+
+        @PostConstruct
+        public void postConstruct() {
+            initCounter++;
+        }
 
         @Override
         public void execute(JobExecutionContext context) {

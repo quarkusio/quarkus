@@ -432,7 +432,7 @@ First, add the following dependencies:
     <scope>test</scope>
 </dependency>
 <dependency>
-    <groupId>net.sourceforge.htmlunit</groupId>
+    <groupId>org.htmlunit</groupId>
     <artifactId>htmlunit</artifactId>
     <scope>test</scope>
 </dependency>
@@ -443,7 +443,7 @@ First, add the following dependencies:
 ----
 testImplementation("io.quarkus:quarkus-test-keycloak-server")
 testImplementation("io.rest-assured:rest-assured")
-testImplementation("net.sourceforge.htmlunit:htmlunit")
+testImplementation("org.htmlunit:htmlunit")
 ----
 
 `quarkus-test-keycloak-server` provides a utility class `io.quarkus.test.keycloak.client.KeycloakTestClient` for acquiring the realm specific access tokens and which you can use with `RestAssured` for testing the `/{tenant}/bearer` endpoint expecting bearer access tokens.

@@ -131,7 +131,12 @@ public abstract class WebSocketConnectionBase {
     public CloseReason closeReason() {
         WebSocketBase ws = webSocket();
         if (ws.isClosed()) {
-            return new CloseReason(ws.closeStatusCode(), ws.closeReason());
+            Short code = ws.closeStatusCode();
+            if (code == null) {
+                // This could happen if the connection is terminated abruptly
+                return CloseReason.INTERNAL_SERVER_ERROR;
+            }
+            return new CloseReason(code, ws.closeReason());
         }
         return null;
     }

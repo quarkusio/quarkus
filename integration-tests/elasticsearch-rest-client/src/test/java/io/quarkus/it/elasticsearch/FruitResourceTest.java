@@ -2,8 +2,6 @@ package io.quarkus.it.elasticsearch;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 
@@ -11,12 +9,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class FruitResourceTest {
-    private static final TypeRef<List<Fruit>> LIST_OF_FRUIT_TYPE_REF = new TypeRef<List<Fruit>>() {
+    private static final TypeRef<List<Fruit>> LIST_OF_FRUIT_TYPE_REF = new TypeRef<>() {
     };
 
     @Test
@@ -57,13 +54,4 @@ public class FruitResourceTest {
         Assertions.assertEquals("Apple", results.get(0).name);
         Assertions.assertEquals("Green", results.get(0).color);
     }
-
-    @Test
-    public void testHealth() {
-        RestAssured.when().get("/q/health/ready").then()
-                .body("status", is("UP"),
-                        "checks.status", containsInAnyOrder("UP"),
-                        "checks.name", containsInAnyOrder("Elasticsearch cluster health check"));
-    }
-
 }

@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:toclevels: 3
 :topics: templating,qute
 :extensions: io.quarkus:quarkus-qute,io.quarkus:quarkus-resteasy-qute,io.quarkus:quarkus-rest-qute
 

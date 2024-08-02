@@ -2,7 +2,9 @@ package io.quarkus.resteasy.reactive.jackson.runtime;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -11,6 +13,7 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
@@ -24,6 +27,8 @@ public class ResteasyReactiveServerJacksonRecorder {
     private static final Map<String, Class<?>> jsonViewMap = new HashMap<>();
     private static final Map<String, Class<?>> customSerializationMap = new HashMap<>();
     private static final Map<String, Class<?>> customDeserializationMap = new HashMap<>();
+
+    private static final Set<Class<? extends StdSerializer>> generatedSerializers = new HashSet<>();
 
     /* STATIC INIT */
     public RuntimeValue<Map<String, Supplier<String[]>>> createConfigExpToAllowedRoles() {
@@ -76,6 +81,10 @@ public class ResteasyReactiveServerJacksonRecorder {
         customDeserializationMap.put(target, loadClass(className));
     }
 
+    public void recordGeneratedSerializer(String className) {
+        generatedSerializers.add((Class<? extends StdSerializer>) loadClass(className));
+    }
+
     public void configureShutdown(ShutdownContext shutdownContext) {
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
@@ -114,6 +123,10 @@ public class ResteasyReactiveServerJacksonRecorder {
     @SuppressWarnings("unchecked")
     public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForClass(Class<?> clazz) {
         return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap.get(clazz.getName());
+    }
+
+    public static Set<Class<? extends StdSerializer>> getGeneratedSerializers() {
+        return generatedSerializers;
     }
 
     private Class<?> loadClass(String className) {

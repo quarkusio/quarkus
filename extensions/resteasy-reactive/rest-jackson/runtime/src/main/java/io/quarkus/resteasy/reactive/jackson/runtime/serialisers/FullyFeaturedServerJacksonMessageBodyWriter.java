@@ -56,6 +56,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             ObjectMapper effectiveMapper = getEffectiveMapper(o, context);
+            effectiveMapper.registerModule(BasicServerJacksonMessageBodyWriter.MappingModuleHolder.mappingModule);
             ObjectWriter effectiveWriter = getEffectiveWriter(effectiveMapper);
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {

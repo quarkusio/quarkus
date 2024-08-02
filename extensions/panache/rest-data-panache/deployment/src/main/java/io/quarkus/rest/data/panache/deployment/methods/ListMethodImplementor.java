@@ -9,7 +9,6 @@ import static io.quarkus.arc.processor.DotNames.INTEGER;
 import static io.quarkus.arc.processor.DotNames.LONG;
 import static io.quarkus.arc.processor.DotNames.SHORT;
 import static io.quarkus.arc.processor.DotNames.STRING;
-import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.gizmo.Type.classType;
 import static io.quarkus.gizmo.Type.intType;
@@ -36,7 +35,6 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -50,6 +48,7 @@ import io.quarkus.rest.data.panache.deployment.Constants;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.QueryImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator;
 import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
@@ -67,6 +66,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
 
     private final PaginationImplementor paginationImplementor = new PaginationImplementor();
     private final SortImplementor sortImplementor = new SortImplementor();
+    private final QueryImplementor queryImplementor = new QueryImplementor();
 
     public ListMethodImplementor(Capabilities capabilities) {
         super(capabilities);
@@ -229,27 +229,22 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         if (isNotReactivePanache()) {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
 
-            ResultHandle pageCount = tryBlock.invokeVirtualMethod(
-                    ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
-                            int.class, Page.class),
-                    resource, page);
-
-            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount);
+            ResultHandle pageCount = pageCount(tryBlock, resourceMetadata, resource, page, namedQuery, fieldValues, int.class);
+            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount, fieldValues, namedQuery);
             ResultHandle entities = list(tryBlock, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
 
             // Return response
             returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
             tryBlock.close();
         } else {
-            ResultHandle uniPageCount = methodCreator.invokeVirtualMethod(
-                    ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
-                            Uni.class, Page.class),
-                    resource, page);
+            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery, fieldValues,
+                    Uni.class);
 
             methodCreator.returnValue(UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE,
                     (body, pageCount) -> {
                         ResultHandle pageCountAsInt = body.checkCast(pageCount, Integer.class);
-                        ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt);
+                        ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt, fieldValues,
+                                namedQuery);
                         ResultHandle uniEntities = list(body, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
                         body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
                                 (listBody, list) -> returnValueWithLinks(listBody, resourceMetadata, resourceProperties, list,
@@ -322,41 +317,21 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         methodCreator.close();
     }
 
+    private ResultHandle pageCount(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
+            ResultHandle page, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues, Object returnType) {
+        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues);
+        ResultHandle dataParams = queryImplementor.getDataParams(creator, fieldValues);
+
+        return creator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), Constants.PAGE_COUNT_METHOD_PREFIX + RESOURCE_METHOD_NAME,
+                        returnType, Page.class, String.class, Map.class),
+                resource, page, query, dataParams);
+    }
+
     public ResultHandle list(BytecodeCreator creator, ResourceMetadata resourceMetadata, ResultHandle resource,
             ResultHandle page, ResultHandle sort, ResultHandle namedQuery, Map<String, ResultHandle> fieldValues) {
-
-        ResultHandle dataParams = creator.newInstance(ofConstructor(HashMap.class));
-        ResultHandle queryList = creator.newInstance(ofConstructor(ArrayList.class));
-        for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
-            String fieldName = field.getKey();
-            String paramName = fieldName.replace(".", "__");
-            ResultHandle fieldValueFromQuery = field.getValue();
-            BytecodeCreator fieldValueFromQueryIsSet = creator.ifNotNull(fieldValueFromQuery).trueBranch();
-            fieldValueFromQueryIsSet.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class),
-                    queryList, fieldValueFromQueryIsSet.load(fieldName + "=:" + paramName));
-            fieldValueFromQueryIsSet.invokeInterfaceMethod(
-                    ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
-                    dataParams, fieldValueFromQueryIsSet.load(paramName), fieldValueFromQuery);
-        }
-
-        /**
-         * String query;
-         * if (namedQuery != null) {
-         * query = "#" + namedQuery;
-         * } else {
-         * query = String.join(" AND ", queryList);
-         * }
-         */
-        AssignableResultHandle query = creator.createVariable(String.class);
-        BranchResult checkIfNamedQueryIsNull = creator.ifNull(namedQuery);
-        BytecodeCreator whenNamedQueryIsNull = checkIfNamedQueryIsNull.trueBranch();
-        BytecodeCreator whenNamedQueryIsNotNull = checkIfNamedQueryIsNull.falseBranch();
-        whenNamedQueryIsNotNull.assign(query, whenNamedQueryIsNotNull.invokeVirtualMethod(
-                ofMethod(String.class, "concat", String.class, String.class),
-                whenNamedQueryIsNotNull.load("#"), namedQuery));
-        whenNamedQueryIsNull.assign(query, whenNamedQueryIsNull.invokeStaticMethod(
-                ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
-                creator.load(" AND "), queryList));
+        AssignableResultHandle query = queryImplementor.getQuery(creator, namedQuery, fieldValues);
+        ResultHandle dataParams = queryImplementor.getDataParams(creator, fieldValues);
 
         return creator.invokeVirtualMethod(
                 ofMethod(resourceMetadata.getResourceClass(), "list", isNotReactivePanache() ? List.class : Uni.class,

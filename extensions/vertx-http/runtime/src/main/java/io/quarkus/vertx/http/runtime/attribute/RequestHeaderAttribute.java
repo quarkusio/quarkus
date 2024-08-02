@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -8,12 +10,19 @@ import io.vertx.ext.web.RoutingContext;
  * A request header
  *
  */
-public class RequestHeaderAttribute implements ExchangeAttribute {
+public class RequestHeaderAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
+
+    private static final String NAME = "Request header";
 
     private final String requestHeader;
 
     public RequestHeaderAttribute(final String requestHeader) {
         this.requestHeader = requestHeader;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -49,7 +58,7 @@ public class RequestHeaderAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Request header";
+            return RequestHeaderAttribute.NAME;
         }
 
         @Override

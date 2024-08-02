@@ -10,7 +10,7 @@ import io.smallrye.config.WithDefault;
 /**
  * Jackson optimization configuration.
  */
-@ConfigMapping(prefix = "quarkus.jackson.optimization")
+@ConfigMapping(prefix = "quarkus.rest.jackson.optimization")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface JacksonOptimizationConfig {
 

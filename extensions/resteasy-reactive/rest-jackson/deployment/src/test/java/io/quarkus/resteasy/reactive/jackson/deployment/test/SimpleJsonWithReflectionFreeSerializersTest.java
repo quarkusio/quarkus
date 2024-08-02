@@ -28,7 +28,7 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends SimpleJsonTest 
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +
-                                    "quarkus.jackson.optimization.enable-reflection-free-serializers=true\n"),
+                                    "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
                                     "application.properties");
                 }
             });

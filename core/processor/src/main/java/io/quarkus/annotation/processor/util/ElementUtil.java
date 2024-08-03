@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.util;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -129,35 +130,24 @@ public class ElementUtil {
         }
     }
 
-    public String checkRequiredJavadoc(Element e) {
-        String javadoc = getJavadoc(e);
-
-        if (javadoc == null) {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
-                            "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
-            return "";
-        }
-
-        return javadoc;
-    }
-
-    public String getRequiredJavadoc(Element e) {
-        return checkRequiredJavadoc(e);
-    }
-
-    public String getJavadoc(Element e) {
+    public Optional<String> getJavadoc(Element e) {
         String docComment = processingEnv.getElementUtils().getDocComment(e);
 
-        if (docComment == null) {
-            return null;
+        if (docComment == null || docComment.isBlank()) {
+            return Optional.empty();
         }
 
         // javax.lang.model keeps the leading space after the "*" so we need to remove it.
 
-        return REMOVE_LEADING_SPACE.matcher(docComment)
+        return Optional.of(REMOVE_LEADING_SPACE.matcher(docComment)
                 .replaceAll("")
-                .trim();
+                .trim());
+    }
+
+    public void addMissingJavadocError(Element e) {
+        processingEnv.getMessager()
+                .printMessage(Diagnostic.Kind.ERROR,
+                        "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
     }
 
     public boolean isJdkClass(TypeElement e) {

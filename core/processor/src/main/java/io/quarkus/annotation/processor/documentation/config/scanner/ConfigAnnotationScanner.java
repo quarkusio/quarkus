@@ -292,18 +292,21 @@ public class ConfigAnnotationScanner {
         boolean isClass = false;
         boolean isEnum = false;
         boolean isDuration = false;
+        boolean isConfigGroup = false;
 
         if (typeElement.getKind() == ElementKind.ENUM) {
             isEnum = true;
         } else if (typeElement.getKind() == ElementKind.INTERFACE) {
             isInterface = true;
+            isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         } else if (typeElement.getKind() == ElementKind.CLASS) {
             isClass = true;
             isDuration = typeMirror.toString().equals(Duration.class.getName());
+            isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         }
 
         ResolvedType resolvedType = ResolvedType.ofDeclaredType(typeMirror, binaryName, qualifiedName, simplifiedName,
-                isInterface, isClass, isEnum, isDuration);
+                isInterface, isClass, isEnum, isDuration, isConfigGroup);
 
         // optional can also be present on non wrapper types (e.g. OptionalInt)
         if (optional) {

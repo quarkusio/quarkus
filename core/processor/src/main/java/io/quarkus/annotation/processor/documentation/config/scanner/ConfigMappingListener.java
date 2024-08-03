@@ -156,8 +156,9 @@ public class ConfigMappingListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        if (utils.element().isLocalClass(clazz)) {
-            utils.element().checkRequiredJavadoc(method);
+        AnnotationMirror configDocSectionAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
+        if (configDocSectionAnnotation != null) {
+            builder.section();
         }
 
         discoveryRootElement.addProperty(builder.build());

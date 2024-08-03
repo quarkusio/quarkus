@@ -158,10 +158,6 @@ public class LegacyConfigListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        if (utils.element().isLocalClass(clazz)) {
-            utils.element().checkRequiredJavadoc(field);
-        }
-
         AnnotationMirror configDocSectionAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
         if (configDocSectionAnnotation != null) {
             builder.section();

@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.scanner;
 
+import java.util.Optional;
+
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
@@ -34,15 +36,18 @@ public class AbstractJavadocConfigListener implements ConfigAnnotationListener {
                 continue;
             }
 
-            String rawJavadoc = utils.element().getJavadoc(enumElement);
-            if (rawJavadoc != null && !rawJavadoc.isBlank()) {
-                ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc);
+            Optional<String> rawJavadoc = utils.element().getJavadoc(enumElement);
 
-                configCollector.addJavadocElement(
-                        enumTypeElement.getQualifiedName().toString() + Markers.DOT + enumElement.getSimpleName()
-                                .toString(),
-                        new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc));
+            if (rawJavadoc.isEmpty()) {
+                continue;
             }
+
+            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc.get());
+
+            configCollector.addJavadocElement(
+                    enumTypeElement.getQualifiedName().toString() + Markers.DOT + enumElement.getSimpleName()
+                            .toString(),
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc.get()));
         }
     }
 }

@@ -18,7 +18,8 @@ public record ResolvedType(
         boolean isInterface,
         boolean isClass,
         boolean isEnum,
-        boolean isDuration) {
+        boolean isDuration,
+        boolean isConfigGroup) {
 
     public TypeElement unwrappedTypeElement() {
         if (!isDeclared) {
@@ -37,18 +38,14 @@ public record ResolvedType(
         String primitiveName = unwrappedType.toString();
 
         return new ResolvedType(unwrappedType, unwrappedType, primitiveName, primitiveName, primitiveName, true, false, false,
-                false, false,
-                false, false, false, false);
+                false, false, false, false, false, false, false);
     }
 
     public static ResolvedType ofDeclaredType(TypeMirror type, String binaryName,
-            String qualifiedName,
-            String simpleName,
-            boolean isInterface, boolean isClass, boolean isEnum, boolean isDuration) {
+            String qualifiedName, String simpleName,
+            boolean isInterface, boolean isClass, boolean isEnum, boolean isDuration, boolean isConfigGroup) {
         return new ResolvedType(type, type, binaryName, qualifiedName, simpleName, false, false, false, false, true,
-                isInterface,
-                isClass,
-                isEnum, isDuration);
+                isInterface, isClass, isEnum, isDuration, isConfigGroup);
     }
 
     public static ResolvedType makeList(TypeMirror type, ResolvedType unwrappedResolvedType) {
@@ -58,7 +55,7 @@ public record ResolvedType(
                 unwrappedResolvedType.isMap, true,
                 unwrappedResolvedType.isOptional,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
-                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration);
+                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }
 
     public static ResolvedType makeOptional(ResolvedType unwrappedResolvedType) {
@@ -68,7 +65,7 @@ public record ResolvedType(
                 unwrappedResolvedType.isMap, unwrappedResolvedType.isList,
                 true,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
-                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration);
+                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }
 
     public static ResolvedType makeMap(TypeMirror type, ResolvedType unwrappedResolvedType) {
@@ -78,6 +75,6 @@ public record ResolvedType(
                 true, unwrappedResolvedType.isList,
                 unwrappedResolvedType.isOptional,
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
-                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration);
+                unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }
 }

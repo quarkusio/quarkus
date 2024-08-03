@@ -36,6 +36,12 @@
         <dependency>
             <groupId>org.liquibase.ext</groupId>
             <artifactId>liquibase-mongodb</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.liquibase</groupId>
+                    <artifactId>liquibase-commercial</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>

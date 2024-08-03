@@ -138,7 +138,8 @@ class LiquibaseProcessor {
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.command.CommandFactory.class.getName(),
                 liquibase.database.LiquibaseTableNamesFactory.class.getName(),
-                liquibase.configuration.ConfiguredValueModifierFactory.class.getName())
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(

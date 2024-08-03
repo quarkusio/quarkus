@@ -125,6 +125,7 @@ class LiquibaseMongodbProcessor {
                 liquibase.command.CommandFactory.class.getName(),
                 liquibase.database.LiquibaseTableNamesFactory.class.getName(),
                 liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName(),
                 // deprecated, but still used by liquibase.nosql.lockservice.AbstractNoSqlLockService
                 liquibase.configuration.GlobalConfiguration.class.getName())
                 .constructors().build());

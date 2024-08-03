@@ -11,7 +11,6 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,6 @@ public class StartupActionImpl implements StartupAction {
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
-    private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
@@ -128,13 +126,6 @@ public class StartupActionImpl implements StartupAction {
                                 log.error("Failed to run close task", t);
                             }
                         }
-                        for (var closeTask : runtimeCloseTasks) {
-                            try {
-                                closeTask.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to run close task", t);
-                            }
-                        }
                     }
                 }
             }, "Quarkus Main Thread");
@@ -176,11 +167,6 @@ public class StartupActionImpl implements StartupAction {
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
-    }
-
-    @Override
-    public void addRuntimeCloseTask(Closeable closeTask) {
-        this.runtimeCloseTasks.add(closeTask);
     }
 
     private void doClose() {
@@ -247,13 +233,6 @@ public class StartupActionImpl implements StartupAction {
                 setAlreadyStartedCallback.invoke(null, (Consumer<?>) null);
             }
         } finally {
-            for (var closeTask : runtimeCloseTasks) {
-                try {
-                    closeTask.close();
-                } catch (Throwable t) {
-                    log.error("Failed to run close task", t);
-                }
-            }
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);
             for (var i : runtimeApplicationShutdownBuildItems) {
@@ -314,13 +293,6 @@ public class StartupActionImpl implements StartupAction {
                             // (e.g. ServiceLoader calls)
                             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                             closeTask.close();
-                            for (var closeTask : runtimeCloseTasks) {
-                                try {
-                                    closeTask.close();
-                                } catch (Throwable t) {
-                                    log.error("Failed to run close task", t);
-                                }
-                            }
                         } finally {
                             Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();

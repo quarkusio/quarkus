@@ -43,7 +43,7 @@ public final class JavadocUtil {
             return null;
         }
 
-        if (TypeUtil.isPrimitiveWrapper(binaryName)) {
+        if (TypeUtil.isPrimitiveWrapper(binaryName) || Types.ALIASED_TYPES.containsKey(binaryName)) {
             return null;
         }
 

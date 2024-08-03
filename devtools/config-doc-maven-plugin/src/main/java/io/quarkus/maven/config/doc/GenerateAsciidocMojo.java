@@ -49,7 +49,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             .registerModule(new ParameterNamesModule());
     private static final String TARGET = "target";
 
-    private static final String CONFIG_ROOT_FILE_FORMAT = "%s.%s.adoc";
+    private static final String CONFIG_ROOT_FILE_FORMAT = "%s_%s.adoc";
     private static final String EXTENSION_FILE_FORMAT = "%s.adoc";
 
     @Parameter(defaultValue = "${session}", readonly = true)

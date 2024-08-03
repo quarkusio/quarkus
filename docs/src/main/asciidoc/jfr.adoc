@@ -386,4 +386,4 @@ public class NewInterceptor {
 
 == Configuration Reference
 
-include::{generated-dir}/quarkus-jfr.adoc[leveloffset=+1, opts=optional]
+include::{generated-config-doc-dir}/quarkus-jfr.adoc[leveloffset=+1, opts=optional]

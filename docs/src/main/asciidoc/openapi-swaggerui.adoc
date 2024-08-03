@@ -575,8 +575,8 @@ If you plan to consume this application from a Single Page Application running o
 
 === OpenAPI
 
-include::{generated-dir}/quarkus-smallrye-openapi.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-smallrye-openapi.adoc[opts=optional, leveloffset=+1]
 
 === Swagger UI
 
-include::{generated-dir}/quarkus-swaggerui.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-swagger-ui.adoc[opts=optional, leveloffset=+1]

@@ -1040,7 +1040,7 @@ quarkus.index-dependency.smallrye-jwt.artifact-id=smallrye-jwt
 
 === Quarkus configuration
 
-include::{generated-dir}/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
 
 === MicroProfile JWT configuration
 

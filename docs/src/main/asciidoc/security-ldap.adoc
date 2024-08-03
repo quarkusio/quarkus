@@ -249,7 +249,7 @@ user%
 [[configuration-reference]]
 == Configuration Reference
 
-include::{generated-dir}/quarkus-elytron-security-ldap.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-elytron-security-ldap.adoc[opts=optional, leveloffset=+1]
 
 == References
 

@@ -1022,4 +1022,4 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 [[websocket-next-configuration-reference]]
 == Configuration reference
 
-include::{generated-dir}/quarkus-websockets-next.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-websockets-next.adoc[opts=optional, leveloffset=+1]

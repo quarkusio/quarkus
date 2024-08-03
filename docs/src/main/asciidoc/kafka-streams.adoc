@@ -1255,4 +1255,4 @@ Refer to the Quarkus guides on xref:telemetry-micrometer.adoc[Micrometer], xref:
 
 == Configuration Reference
 
-include::{generated-dir}/quarkus-kafka-streams.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-kafka-streams.adoc[opts=optional, leveloffset=+1]

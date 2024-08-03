@@ -733,12 +733,12 @@ endif::no-deprecated-test-resource[]
 [[configuration-reference]]
 === Common datasource configuration reference
 
-include::{generated-dir}/quarkus-datasource.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-datasource.adoc[opts=optional, leveloffset=+1]
 
 [[jdbc-configuration]]
 === JDBC configuration reference
 
-include::{generated-dir}/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
 
 [[jdbc-url]]
 === JDBC URL reference
@@ -934,29 +934,29 @@ This automatic resolution is applicable in most cases so that driver configurati
 [[reactive-configuration]]
 === Reactive datasource configuration reference
 
-include::{generated-dir}/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
 
 ifndef::no-quarkus-reactive-db2-client[]
 ==== Reactive DB2 configuration
 
-include::{generated-dir}/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
 endif::no-quarkus-reactive-db2-client[]
 
 ==== Reactive MariaDB/MySQL specific configuration
 
-include::{generated-dir}/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
 
 ==== Reactive Microsoft SQL server-specific configuration
 
-include::{generated-dir}/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
 
 ==== Reactive Oracle-specific configuration
 
-include::{generated-dir}/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
 
 ==== Reactive PostgreSQL-specific configuration
 
-include::{generated-dir}/quarkus-reactive-pg-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-reactive-pg-client.adoc[opts=optional, leveloffset=+1]
 
 
 [[reactive-url]]

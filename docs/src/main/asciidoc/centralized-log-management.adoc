@@ -450,7 +450,7 @@ See the following documentation for Graylog (but the same issue exists for the o
 
 Configuration is done through the usual `application.properties` file.
 
-include::{generated-dir}/quarkus-logging-gelf.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-logging-gelf.adoc[opts=optional, leveloffset=+1]
 
 This extension uses the `logstash-gelf` library that allow more configuration options via system properties,
 you can access its documentation here: https://logging.paluch.biz/ .

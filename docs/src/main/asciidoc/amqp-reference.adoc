@@ -549,7 +549,7 @@ For more information on sending Cloud Events, see https://smallrye.io/smallrye-r
 
 === Quarkus specific configuration
 
-include::{generated-dir}/quarkus-smallrye-reactivemessaging-amqp.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-messaging-amqp.adoc[opts=optional, leveloffset=+1]
 
 === Incoming channel configuration
 

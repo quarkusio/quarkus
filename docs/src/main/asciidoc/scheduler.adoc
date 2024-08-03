@@ -191,4 +191,4 @@ include::{includes}/devtools/build-native.adoc[]
 [[scheduler-configuration-reference]]
 == Scheduler Configuration Reference
 
-include::{generated-dir}/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]
+include::{generated-config-doc-dir}/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

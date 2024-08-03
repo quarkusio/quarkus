@@ -191,7 +191,7 @@ First, you need to add the datasource config to the `{config-file}` file
 in order to allow Flyway to manage the schema.
 Also, you can customize the Flyway behaviour by using the following properties:
 
-include::{generated-dir}/quarkus-flyway.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-flyway.adoc[opts=optional, leveloffset=+1]
 
 == Developing with Flyway
 

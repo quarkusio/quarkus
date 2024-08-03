@@ -34,7 +34,9 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
-        <generated-dir>${project.build.directory}/quarkus-config-doc</generated-dir>
+        <generated-config-doc-dir>${project.build.directory}/quarkus-config-doc</generated-config-doc-dir>
+        <generated-dir>${project.build.directory}/quarkus-generated-doc</generated-dir>
+        <infra-doc-dir>${generated-dir}/infra</infra-doc-dir>
         <code-examples-dir>${generated-dir}/examples</code-examples-dir>
         <vale.image>docker.io/jdkato/vale:v2.15.5</vale.image>
     </properties>
@@ -3250,7 +3252,7 @@
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
                             <arguments>
-                                <argument>${generated-dir}/config/quarkus-all-build-items.adoc</argument>
+                                <argument>${infra-doc-dir}/quarkus-all-build-items.adoc</argument>
                                 <argument>${project.basedir}/../core/deployment</argument>
                                 <argument>${project.basedir}/../extensions</argument>
                             </arguments>
@@ -3377,7 +3379,8 @@
                     <sourceDirectory>target/asciidoc/sources</sourceDirectory>
                     <preserveDirectories>true</preserveDirectories>
                     <attributes>
-                        <generated-dir>${generated-dir}</generated-dir>
+                        <infra-doc-dir>${infra-doc-dir}</infra-doc-dir>
+                        <generated-config-doc-dir>${generated-config-doc-dir}</generated-config-doc-dir>
                         <code-examples>${code-examples-dir}</code-examples>
                         <imagesdir>./images</imagesdir>
                         <icons>font</icons>

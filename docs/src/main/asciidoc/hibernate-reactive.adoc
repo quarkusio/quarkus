@@ -193,7 +193,7 @@ The configuration properties listed here allow you to override such defaults, an
 Hibernate Reactive uses the same properties you would use for Hibernate ORM. You will notice that some properties
 contain `jdbc` in the name but there is no JDBC in Hibernate Reactive, these are simply legacy property names.
 
-include::{generated-dir}/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
+include::{generated-config-doc-dir}/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [TIP]
 ====

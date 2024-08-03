@@ -198,7 +198,7 @@ the `quarkus-jacoco` extension allows JaCoCo to just work out of the box.
 
 There are some config options that affect this:
 
-include::{generated-dir}/quarkus-jacoco-jacoco-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-jacoco.adoc[opts=optional, leveloffset=+1]
 
 [TIP]
 ====

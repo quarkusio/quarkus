@@ -5,8 +5,10 @@
 :idprefix:
 :idseparator: -
 :icons: font
-:generated-dir: ../../../../target/asciidoc/generated
-:code-examples: {generated-dir}/examples
+:target-dir: ../../../target
+:generated-config-doc-dir: {target-dir}/quarkus-config-doc
+:infra-doc-dir: {target-dir}/quarkus-generated-doc/infra
+:code-examples: {target-dir}/quarkus-generated-doc/examples
 :doc-examples: ./_examples
 :imagesdir: ./images
 :includes: ./_includes

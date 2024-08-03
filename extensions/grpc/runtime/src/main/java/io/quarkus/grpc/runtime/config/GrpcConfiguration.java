@@ -18,14 +18,14 @@ public class GrpcConfiguration {
      * Configures the gRPC clients.
      */
     @ConfigItem
-    @ConfigDocSection
+    @ConfigDocSection(generated = true)
     @ConfigDocMapKey("client-name")
     public Map<String, GrpcClientConfiguration> clients;
 
     /**
      * Configure the gRPC server.
      */
-    @ConfigDocSection
+    @ConfigDocSection(generated = true)
     public GrpcServerConfiguration server;
 
 }

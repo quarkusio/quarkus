@@ -450,4 +450,4 @@ class TokenSecuredResourceTest {
 [[config-reference]]
 == Configuration Reference
 
-include::{generated-dir}/quarkus-elytron-security-oauth2.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-elytron-security-oauth2.adoc[opts=optional, leveloffset=+1]

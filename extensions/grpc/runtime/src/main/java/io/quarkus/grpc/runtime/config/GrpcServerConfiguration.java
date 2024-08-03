@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -23,6 +24,7 @@ public class GrpcServerConfiguration {
      * Configure XDS usage, if enabled.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public Xds xds;
 
     /**

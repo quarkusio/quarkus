@@ -481,4 +481,4 @@ If `run-blocking-method-on-quartz-thread` is set, the scheduled method runs on a
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference
 
-include::{generated-dir}/quarkus-quartz.adoc[leveloffset=+1, opts=optional]
+include::{generated-config-doc-dir}/quarkus-quartz.adoc[leveloffset=+1, opts=optional]

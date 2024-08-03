@@ -373,7 +373,10 @@ public class ConfigAnnotationScanner {
             return false;
         }
 
-        return true;
+        // While I would rather ignore the fields that are not annotated, this is not the current behavior.
+        // So let's stick to the current behavior.
+        // See for instance OpenshiftConfig.
+        return false;
     }
 
     private void applyListeners(Consumer<ConfigAnnotationListener> listenerFunction) {

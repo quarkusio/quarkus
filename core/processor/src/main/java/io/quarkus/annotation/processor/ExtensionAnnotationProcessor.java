@@ -42,8 +42,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final String DEBUG = "debug-extension-annotation-processor";
     private static final String ARTIFACT_DEPLOYMENT_SUFFIX = "-deployment";
+    private static final String ARTIFACT_COMMON_SUFFIX = "-common";
+    private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
     private static final String NAME_RUNTIME_SUFFIX = " - Runtime";
-    private static final String NAME_DEPLOYMENT_SUFFIX = " - DEPLOYMENT";
+    private static final String NAME_DEPLOYMENT_SUFFIX = " - Deployment";
 
     private List<ExtensionProcessor> extensionProcessors;
 
@@ -200,6 +202,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         if (artifactId.endsWith(ARTIFACT_DEPLOYMENT_SUFFIX)) {
             artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_DEPLOYMENT_SUFFIX.length());
+        }
+        if (artifactId.endsWith(ARTIFACT_COMMON_SUFFIX)) {
+            artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_COMMON_SUFFIX.length());
+        }
+        if (artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX)) {
+            artifactId = artifactId.substring(0, artifactId.length() - ARTIFACT_INTERNAL_SUFFIX.length());
         }
 
         if (name != null) {

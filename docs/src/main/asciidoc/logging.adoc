@@ -401,7 +401,7 @@ This can be achieved using different profiles, as shown in the following configu
 
 Configure the JSON logging extension using supported properties to customize its behavior.
 
-include::{generated-dir}/config/quarkus-logging-json.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-logging-json.adoc[opts=optional, leveloffset=+1]
 
 WARNING: Enabling pretty printing might cause certain processors and JSON parsers to fail.
 
@@ -845,5 +845,5 @@ NOTE: If applicable, MDC data is stored in a _duplicated context_, which is an i
 [[loggingConfigurationReference]]
 == Logging configuration reference
 
-include::{generated-dir}/config/quarkus-log-logging-log-build-time-config.adoc[opts=optional, leveloffset=+1]
-include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-log-logging-log-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]

@@ -60,7 +60,7 @@ To create anchors for in-file and cross-file navigation, see the following detai
 TODO: If this is an extension reference, include the relevant configuration
 == Configuration Reference
 
-include::{generated-dir}/config/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
 ////
 
 == References

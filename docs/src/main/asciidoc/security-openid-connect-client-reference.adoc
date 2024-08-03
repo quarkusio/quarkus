@@ -1414,11 +1414,11 @@ endif::no-quarkus-oidc-client-graphql[]
 
 === OIDC client
 
-include::{generated-dir}/config/quarkus-oidc-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-oidc-client.adoc[opts=optional, leveloffset=+1]
 
 === OIDC token propagation
 
-include::{generated-dir}/config/quarkus-oidc-token-propagation-reactive.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-oidc-token-propagation-reactive.adoc[opts=optional, leveloffset=+1]
 
 == References
 

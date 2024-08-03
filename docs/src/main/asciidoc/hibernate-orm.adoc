@@ -291,7 +291,7 @@ and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
-include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [NOTE]
 ====

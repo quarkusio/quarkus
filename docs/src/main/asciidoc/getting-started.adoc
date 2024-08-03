@@ -485,7 +485,7 @@ All CDI beans implementing the `InfoContributor` will be picked up and their dat
 
 ==== Configuration Reference
 
-include::{generated-dir}/config/quarkus-info.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/quarkus-info.adoc[opts=optional, leveloffset=+2]
 
 == What's next?
 

@@ -193,4 +193,4 @@ quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-liquibase-mongodb.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/quarkus-liquibase-mongodb.adoc[opts=optional, leveloffset=+2]

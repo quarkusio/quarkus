@@ -677,5 +677,5 @@ quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 [[configuration-reference]]
 == Mailer Configuration Reference
 
-include::{generated-dir}/config/quarkus-mailer.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-mailer.adoc[opts=optional, leveloffset=+1]
 

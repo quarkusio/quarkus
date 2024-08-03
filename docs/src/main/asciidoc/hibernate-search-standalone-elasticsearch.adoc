@@ -1034,7 +1034,7 @@ https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/180[quarki
 [[configuration-reference]]
 == Configuration Reference for Hibernate Search Standalone
 
-include::{generated-dir}/config/quarkus-hibernate-search-standalone-elasticsearch.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/quarkus-hibernate-search-standalone-elasticsearch.adoc[leveloffset=+1, opts=optional]
 
 [NOTE]
 [[bean-reference-note-anchor]]

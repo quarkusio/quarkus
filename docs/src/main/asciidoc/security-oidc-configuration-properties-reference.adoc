@@ -13,7 +13,7 @@ include::_attributes.adoc[]
 
 As a Quarkus developer, you configure the Quarkus OpenID Connect (OIDC) extension by setting the following properties in the `src/main/resources/application.properties` file.
 
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
 
 == References
 

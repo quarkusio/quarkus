@@ -969,4 +969,4 @@ You can set the port by configuring the `quarkus.infinispan-client.devservices.p
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-infinispan-client.adoc[opts=optional, leveloffset=+1]

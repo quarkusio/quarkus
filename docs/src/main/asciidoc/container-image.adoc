@@ -250,7 +250,7 @@ The following properties can be used to customize the container image build proc
 
 === Container Image Options
 
-include::{generated-dir}/config/quarkus-container-image.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-container-image.adoc[opts=optional, leveloffset=+1]
 
 ==== Using CI Environments
 
@@ -272,24 +272,24 @@ NOTE: See xref:config-reference.adoc#with-environment-variables[this] for more i
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:
 
-include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
 [[DockerOptions]]
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:
 
-include::{generated-dir}/config/quarkus-container-image-docker.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-container-image-docker.adoc[opts=optional, leveloffset=+1]
 
 [[PodmanOptions]]
 === Podman Options
 
 In addition to the generic container image options, the `container-image-podman` also provides the following options:
 
-include::{generated-dir}/config/quarkus-container-image-podman.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-container-image-podman.adoc[opts=optional, leveloffset=+1]
 
 === OpenShift  Options
 
 In addition to the generic container image options, the `container-image-openshift` also provides the following options:
 
-include::{generated-dir}/config/quarkus-container-image-openshift.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/quarkus-container-image-openshift.adoc[opts=optional, leveloffset=+1]

@@ -218,7 +218,7 @@ However, if your `io.quarkus.hibernate.orm.runtime.tenant.TenantResolver` must a
 For more information about proactive authentication, see the Quarkus xref:security-proactive-authentication.adoc[Proactive authentication] guide.
 ====
 
-include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
 
 == References
 

@@ -307,4 +307,4 @@ adding the usual `quarkus.*` prefix.
 
 Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.
 
-include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]

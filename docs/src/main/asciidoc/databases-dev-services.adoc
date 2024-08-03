@@ -288,4 +288,4 @@ Dev Services have been started.
 
 Dev Services for Databases support the following configuration options:
 
-include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]
+include::{generated-dir}/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]

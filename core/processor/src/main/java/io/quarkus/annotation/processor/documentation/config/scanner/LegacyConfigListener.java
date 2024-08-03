@@ -107,8 +107,8 @@ public class LegacyConfigListener extends AbstractConfigListener {
         String sourceName = field.getSimpleName().toString();
         String name = ConfigNamingUtil.hyphenate(sourceName);
 
-        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(sourceName,
-                resolvedType);
+        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
+                sourceName, resolvedType);
 
         AnnotationMirror deprecatedAnnotation = fieldAnnotations.get(Deprecated.class.getName());
         if (deprecatedAnnotation != null) {

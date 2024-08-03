@@ -123,7 +123,7 @@ public class ConfigResolver {
             ResolutionContext configGroupContext;
 
             if (discoveryConfigProperty.isSection()) {
-                ConfigSection configSection = new ConfigSection(context.getDiscoveryRootElement().getQualifiedName(),
+                ConfigSection configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
                         discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName, deprecated);
                 context.getItemCollection().addItem(configSection);
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
@@ -174,7 +174,7 @@ public class ConfigResolver {
 
             // this is a standard property
             ConfigProperty configProperty = new ConfigProperty(phase,
-                    context.getDiscoveryRootElement().getQualifiedName(),
+                    discoveryConfigProperty.getSourceClass(),
                     discoveryConfigProperty.getSourceName(), fullPath, additionalPaths,
                     ConfigNamingUtil.toEnvVarName(fullPath), typeQualifiedName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),

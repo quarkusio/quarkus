@@ -6,6 +6,7 @@ import io.quarkus.annotation.processor.util.Strings;
 public class DiscoveryConfigProperty {
 
     private final String path;
+    private final String sourceClass;
     private final String sourceName;
     private final String defaultValue;
     private final String defaultValueForDoc;
@@ -16,11 +17,12 @@ public class DiscoveryConfigProperty {
     private final boolean converted;
     private final boolean section;
 
-    public DiscoveryConfigProperty(String path, String sourceName, String defaultValue, String defaultValueForDoc,
-            boolean deprecated, String mapKey, boolean unnamedMapKey,
+    public DiscoveryConfigProperty(String path, String sourceClass, String sourceName, String defaultValue,
+            String defaultValueForDoc, boolean deprecated, String mapKey, boolean unnamedMapKey,
             ResolvedType type, boolean converted,
             boolean section) {
         this.path = path;
+        this.sourceClass = sourceClass;
         this.sourceName = sourceName;
         this.defaultValue = defaultValue;
         this.defaultValueForDoc = defaultValueForDoc;
@@ -34,6 +36,10 @@ public class DiscoveryConfigProperty {
 
     public String getPath() {
         return path;
+    }
+
+    public String getSourceClass() {
+        return sourceClass;
     }
 
     public String getSourceName() {
@@ -79,6 +85,7 @@ public class DiscoveryConfigProperty {
     public String toString(String prefix) {
         StringBuilder sb = new StringBuilder();
         sb.append(prefix + "name = " + path + "\n");
+        sb.append(prefix + "sourceClass = " + sourceClass + "\n");
         sb.append(prefix + "sourceName = " + sourceName + "\n");
         sb.append(prefix + "type = " + type + "\n");
         if (defaultValue != null) {
@@ -103,13 +110,14 @@ public class DiscoveryConfigProperty {
         return sb.toString();
     }
 
-    public static Builder builder(String sourceName, ResolvedType type) {
-        return new Builder(sourceName, type);
+    public static Builder builder(String sourceClass, String sourceName, ResolvedType type) {
+        return new Builder(sourceClass, sourceName, type);
     }
 
     public static class Builder {
 
         private String name;
+        private final String sourceClass;
         private final String sourceName;
         private final ResolvedType type;
         private String defaultValue;
@@ -120,7 +128,8 @@ public class DiscoveryConfigProperty {
         private boolean converted = false;
         private boolean section = false;
 
-        public Builder(String sourceName, ResolvedType type) {
+        public Builder(String sourceClass, String sourceName, ResolvedType type) {
+            this.sourceClass = sourceClass;
             this.sourceName = sourceName;
             this.type = type;
         }
@@ -173,7 +182,7 @@ public class DiscoveryConfigProperty {
                 defaultValue = TypeUtil.normalizeDurationValue(defaultValue);
             }
 
-            return new DiscoveryConfigProperty(name, sourceName, defaultValue, defaultValueForDoc, deprecated,
+            return new DiscoveryConfigProperty(name, sourceClass, sourceName, defaultValue, defaultValueForDoc, deprecated,
                     mapKey, unnamedMapKey, type, converted, section);
         }
     }

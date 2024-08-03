@@ -107,8 +107,8 @@ public class ConfigMappingListener extends AbstractConfigListener {
         Map<String, AnnotationMirror> methodAnnotations = utils.element().getAnnotations(method);
 
         String sourceName = method.getSimpleName().toString();
-        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(sourceName,
-                resolvedType);
+        DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
+                sourceName, resolvedType);
 
         AnnotationMirror deprecatedAnnotation = methodAnnotations.get(Deprecated.class.getName());
         if (deprecatedAnnotation != null) {

@@ -2,6 +2,8 @@ package io.quarkus.elytron.security.jdbc;
 
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithParentName;
 
@@ -18,9 +20,11 @@ public interface PrincipalQueriesConfig {
     PrincipalQueryConfig defaultPrincipalQuery();
 
     /**
-     * Additional principal queries
+     * Named queries.
      */
     @WithParentName
+    @ConfigDocMapKey("query-name")
+    @ConfigDocSection
     Map<String, PrincipalQueryConfig> namedPrincipalQueries();
 
     String toString();

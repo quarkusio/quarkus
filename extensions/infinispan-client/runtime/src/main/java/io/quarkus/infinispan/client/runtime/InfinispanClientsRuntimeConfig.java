@@ -2,8 +2,9 @@ package io.quarkus.infinispan.client.runtime;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -18,9 +19,11 @@ public class InfinispanClientsRuntimeConfig {
     public InfinispanClientRuntimeConfig defaultInfinispanClient;
 
     /**
-     * Additional named Infinispan Client.
+     * Named clients.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("client-name")
+    @ConfigDocSection
     public Map<String, InfinispanClientRuntimeConfig> namedInfinispanClients;
 
     // @formatter:off

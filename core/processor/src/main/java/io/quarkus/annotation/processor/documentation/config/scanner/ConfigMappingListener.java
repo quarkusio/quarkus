@@ -139,7 +139,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
         }
 
         if (resolvedType.isMap()) {
-            String mapKey = name;
+            String mapKey = ConfigNamingUtil.hyphenate(sourceName);
             AnnotationMirror configDocMapKeyAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_MAP_KEY);
             if (configDocMapKeyAnnotation != null) {
                 mapKey = configDocMapKeyAnnotation.getElementValues().values().iterator().next().getValue().toString();

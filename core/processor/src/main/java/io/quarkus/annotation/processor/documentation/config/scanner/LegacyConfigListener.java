@@ -145,7 +145,7 @@ public class LegacyConfigListener extends AbstractConfigListener {
         builder.name(name);
 
         if (resolvedType.isMap()) {
-            String mapKey = name;
+            String mapKey = ConfigNamingUtil.hyphenate(sourceName);
             AnnotationMirror configDocMapKeyAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_MAP_KEY);
             if (configDocMapKeyAnnotation != null) {
                 mapKey = configDocMapKeyAnnotation.getElementValues().values().iterator().next().getValue().toString();

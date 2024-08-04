@@ -34,6 +34,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
+import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.util.TypeUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.util.Config;
@@ -46,37 +47,51 @@ public class ConfigAnnotationScanner {
     private final ConfigCollector configCollector;
     private final Set<String> configGroupClassNames = new HashSet<>();
     private final Set<String> configRootClassNames = new HashSet<>();
+    private final Set<String> configMappingWithoutConfigRootClassNames = new HashSet<>();
     private final Set<String> enumClassNames = new HashSet<>();
 
-    private final List<ConfigAnnotationListener> listeners;
+    private final List<ConfigAnnotationListener> configRootListeners;
+
+    /**
+     * These are handled specifically as we just want to collect the javadoc.
+     * They are actually consumed as super interfaces in a config root.
+     */
+    private final List<ConfigAnnotationListener> configMappingWithoutConfigRootListeners;
 
     public ConfigAnnotationScanner(Config config, Utils utils) {
         this.config = config;
         this.utils = utils;
         this.configCollector = new ConfigCollector();
 
-        List<ConfigAnnotationListener> listeners = new ArrayList<>();
+        List<ConfigAnnotationListener> configRootListeners = new ArrayList<>();
+        List<ConfigAnnotationListener> configMappingWithoutConfigRootListeners = new ArrayList<>();
+
         if (!config.getExtension().isMixedModule()) {
             // This is what we aim for. We have an exception for Quarkus Core and Quarkus Messaging though.
             if (config.useConfigMapping()) {
-                listeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-                listeners.add(new ConfigMappingListener(config, utils, configCollector));
+                configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
+
+                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
             } else {
-                listeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-                listeners.add(new LegacyConfigListener(config, utils, configCollector));
+                configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
+                configRootListeners.add(new LegacyConfigListener(config, utils, configCollector));
             }
         } else {
             // TODO #42114 remove once fixed
             // we handle both traditional config roots and config mappings
             if (config.getExtension().isMixedModule()) {
-                listeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-                listeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-                listeners.add(new ConfigMappingListener(config, utils, configCollector));
-                listeners.add(new LegacyConfigListener(config, utils, configCollector));
+                configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
+                configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
+                configRootListeners.add(new LegacyConfigListener(config, utils, configCollector));
+
+                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
             }
         }
 
-        this.listeners = Collections.unmodifiableList(listeners);
+        this.configRootListeners = Collections.unmodifiableList(configRootListeners);
+        this.configMappingWithoutConfigRootListeners = Collections.unmodifiableList(configMappingWithoutConfigRootListeners);
     }
 
     public void scanConfigGroups(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -89,7 +104,7 @@ public class ConfigAnnotationScanner {
 
             try {
                 DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(l -> l.onConfigGroup(configGroup));
-                scanElement(discoveryConfigGroup, configGroup);
+                scanElement(configRootListeners, discoveryConfigGroup, configGroup);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to scan config group: " + configGroup, e);
             }
@@ -115,20 +130,60 @@ public class ConfigAnnotationScanner {
 
             try {
                 DiscoveryConfigRoot discoveryConfigRoot = applyRootListeners(l -> l.onConfigRoot(configRoot));
-                scanElement(discoveryConfigRoot, configRoot);
+                scanElement(configRootListeners, discoveryConfigRoot, configRoot);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to scan config root: " + configRoot, e);
             }
         }
     }
 
+    /**
+     * In this case, we will just apply the Javadoc listeners to collect Javadoc.
+     */
+    public void scanConfigMappingsWithoutConfigRoot(RoundEnvironment roundEnv, TypeElement annotation) {
+        for (TypeElement configMappingWithoutConfigRoot : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
+            if (utils.element().isAnnotationPresent(configMappingWithoutConfigRoot, Types.ANNOTATION_CONFIG_ROOT)) {
+                continue;
+            }
+
+            final PackageElement pkg = utils.element().getPackageOf(configMappingWithoutConfigRoot);
+            if (pkg == null) {
+                utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "Element " + configMappingWithoutConfigRoot + " has no enclosing package");
+                continue;
+            }
+
+            if (isConfigMappingWithoutConfigRootAlreadyHandled(configMappingWithoutConfigRoot)) {
+                continue;
+            }
+
+            debug("Detected config mapping without config root: " + configMappingWithoutConfigRoot,
+                    configMappingWithoutConfigRoot);
+
+            try {
+                // we need to forge a dummy DiscoveryConfigRoot
+                // it's mostly ignored in the listeners, except for checking if it's a config mapping (for mixed modules)
+                DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy",
+                        utils.element().getBinaryName(configMappingWithoutConfigRoot),
+                        configMappingWithoutConfigRoot.getQualifiedName().toString(),
+                        ConfigPhase.BUILD_TIME, null, true);
+                scanElement(configMappingWithoutConfigRootListeners, discoveryConfigRoot, configMappingWithoutConfigRoot);
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "Unable to scan config mapping without config root: " + configMappingWithoutConfigRoot, e);
+            }
+        }
+    }
+
     public ConfigCollector finalizeProcessing() {
-        applyListeners(l -> l.finalizeProcessing());
+        applyListeners(configRootListeners, l -> l.finalizeProcessing());
+        applyListeners(configMappingWithoutConfigRootListeners, l -> l.finalizeProcessing());
 
         return configCollector;
     }
 
-    private void scanElement(DiscoveryRootElement configRootElement, TypeElement clazz) {
+    private void scanElement(List<ConfigAnnotationListener> listeners, DiscoveryRootElement configRootElement,
+            TypeElement clazz) {
         // we scan the superclass and interfaces first so that the local elements can potentially override them
         if (clazz.getKind() == ElementKind.INTERFACE) {
             List<? extends TypeMirror> superInterfaces = clazz.getInterfaces();
@@ -137,9 +192,9 @@ public class ConfigAnnotationScanner {
 
                 debug("Detected superinterface: " + superInterfaceTypeElement, clazz);
 
-                applyListeners(l -> l.onInterface(configRootElement, superInterfaceTypeElement));
+                applyListeners(listeners, l -> l.onInterface(configRootElement, superInterfaceTypeElement));
                 if (!isConfigRootAlreadyHandled(superInterfaceTypeElement)) {
-                    scanElement(configRootElement, superInterfaceTypeElement);
+                    scanElement(listeners, configRootElement, superInterfaceTypeElement);
                 }
             }
         } else {
@@ -149,9 +204,9 @@ public class ConfigAnnotationScanner {
 
                 debug("Detected superclass: " + superclassTypeElement, clazz);
 
-                applyListeners(l -> l.onSuperclass(configRootElement, clazz));
+                applyListeners(listeners, l -> l.onSuperclass(configRootElement, clazz));
                 if (!isConfigRootAlreadyHandled(superclassTypeElement)) {
-                    scanElement(configRootElement, superclassTypeElement);
+                    scanElement(listeners, configRootElement, superclassTypeElement);
                 }
             }
         }
@@ -175,7 +230,7 @@ public class ConfigAnnotationScanner {
 
                     ResolvedType resolvedType = resolveType(returnType);
                     if (resolvedType.isEnum()) {
-                        handleEnum(resolvedType.unwrappedTypeElement());
+                        handleEnum(listeners, resolvedType.unwrappedTypeElement());
                     } else if (resolvedType.isInterface()) {
                         TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
                         if (!utils.element().isJdkClass(unwrappedTypeElement)) {
@@ -185,14 +240,14 @@ public class ConfigAnnotationScanner {
 
                                 DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
                                         l -> l.onConfigGroup(unwrappedTypeElement));
-                                scanElement(discoveryConfigGroup, unwrappedTypeElement);
+                                scanElement(listeners, discoveryConfigGroup, unwrappedTypeElement);
                             }
                         }
                     }
 
                     debug("Detected enclosed method: " + method, e);
 
-                    applyListeners(l -> l.onEnclosedMethod(configRootElement, clazz, method, resolvedType));
+                    applyListeners(listeners, l -> l.onEnclosedMethod(configRootElement, clazz, method, resolvedType));
 
                     break;
                 }
@@ -207,17 +262,17 @@ public class ConfigAnnotationScanner {
                     ResolvedType resolvedType = resolveType(field.asType());
 
                     if (resolvedType.isEnum()) {
-                        handleEnum(resolvedType.unwrappedTypeElement());
+                        handleEnum(listeners, resolvedType.unwrappedTypeElement());
                     }
 
                     debug("Detected enclosed field: " + field, clazz);
 
-                    applyListeners(l -> l.onEnclosedField(configRootElement, clazz, field, resolvedType));
+                    applyListeners(listeners, l -> l.onEnclosedField(configRootElement, clazz, field, resolvedType));
                     break;
                 }
 
                 case ENUM: {
-                    handleEnum((TypeElement) e);
+                    handleEnum(listeners, (TypeElement) e);
                     break;
                 }
 
@@ -228,18 +283,24 @@ public class ConfigAnnotationScanner {
         }
     }
 
-    private void handleEnum(TypeElement enumTypeElement) {
+    private void handleEnum(List<ConfigAnnotationListener> listeners, TypeElement enumTypeElement) {
         if (isEnumAlreadyHandled(enumTypeElement)) {
             return;
         }
 
-        applyListeners(l -> l.onResolvedEnum(enumTypeElement));
+        applyListeners(listeners, l -> l.onResolvedEnum(enumTypeElement));
     }
 
     private boolean isConfigRootAlreadyHandled(TypeElement clazz) {
         String qualifiedName = clazz.getQualifiedName().toString();
 
         return !configRootClassNames.add(qualifiedName);
+    }
+
+    private boolean isConfigMappingWithoutConfigRootAlreadyHandled(TypeElement clazz) {
+        String qualifiedName = clazz.getQualifiedName().toString();
+
+        return !configMappingWithoutConfigRootClassNames.add(qualifiedName);
     }
 
     private boolean isConfigGroupAlreadyHandled(TypeElement clazz) {
@@ -382,7 +443,7 @@ public class ConfigAnnotationScanner {
         return false;
     }
 
-    private void applyListeners(Consumer<ConfigAnnotationListener> listenerFunction) {
+    private void applyListeners(List<ConfigAnnotationListener> listeners, Consumer<ConfigAnnotationListener> listenerFunction) {
         for (ConfigAnnotationListener listener : listeners) {
             listenerFunction.accept(listener);
         }
@@ -392,7 +453,7 @@ public class ConfigAnnotationScanner {
             Function<ConfigAnnotationListener, Optional<T>> listenerFunction) {
         T discoveryRootElement = null;
 
-        for (ConfigAnnotationListener listener : listeners) {
+        for (ConfigAnnotationListener listener : configRootListeners) {
             Optional<T> discoveryRootElementCandidate = listenerFunction.apply(listener);
             if (discoveryRootElementCandidate.isPresent()) {
                 if (discoveryRootElement != null) {

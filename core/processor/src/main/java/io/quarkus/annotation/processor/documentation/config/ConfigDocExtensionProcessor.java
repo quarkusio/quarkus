@@ -41,6 +41,7 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
     public void process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Optional<TypeElement> configGroup = findAnnotation(annotations, Types.ANNOTATION_CONFIG_GROUP);
         Optional<TypeElement> configRoot = findAnnotation(annotations, Types.ANNOTATION_CONFIG_ROOT);
+        Optional<TypeElement> configMapping = findAnnotation(annotations, Types.ANNOTATION_CONFIG_MAPPING);
 
         // make sure we scan the groups before the root
         if (configGroup.isPresent()) {
@@ -48,6 +49,9 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
         }
         if (configRoot.isPresent()) {
             configAnnotationScanner.scanConfigRoots(roundEnv, configRoot.get());
+        }
+        if (configMapping.isPresent()) {
+            configAnnotationScanner.scanConfigMappingsWithoutConfigRoot(roundEnv, configMapping.get());
         }
     }
 

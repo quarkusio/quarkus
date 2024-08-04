@@ -45,7 +45,7 @@ public final class LiquibaseRuntimeConfig {
     public LiquibaseDataSourceRuntimeConfig defaultDataSource = LiquibaseDataSourceRuntimeConfig.defaultConfig();
 
     /**
-     * Liquibase configurations for named datasources.
+     * Named datasources.
      */
     @ConfigItem(name = ConfigItem.PARENT)
     @ConfigDocMapKey("datasource-name")

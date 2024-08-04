@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.search.standalone.elasticsearch.deployment;
 
-import static io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.BUILT_IN_ROOT_MAPPING_ANNOTATIONS;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.INDEXED;
 import static io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchTypes.ROOT_MAPPING;
@@ -57,6 +56,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;

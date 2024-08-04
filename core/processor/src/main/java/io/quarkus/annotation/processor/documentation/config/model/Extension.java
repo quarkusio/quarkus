@@ -7,6 +7,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public record Extension(String groupId, String artifactId, String name) {
 
     @Override
+    public final String toString() {
+        return groupId + ":" + artifactId;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(artifactId, groupId);
     }

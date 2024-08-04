@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -31,12 +31,16 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 import io.quarkus.annotation.processor.Outputs;
+import io.quarkus.annotation.processor.documentation.config.model.AbstractConfigItem;
+import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
+import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
+import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -72,62 +76,81 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
         JavadocRepository javadocRepository = findJavadocElements(targetDirectories);
-        Map<ConfigRootKey, ConfigRoot> configRoots = findConfigRoots(targetDirectories);
+        MergedModel mergedModel = mergeModel(targetDirectories);
 
         AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository);
         Engine quteEngine = initializeQuteEngine(asciidocFormatter);
 
         // we generate a file per extension + top level prefix
-        for (Entry<ConfigRootKey, ConfigRoot> configRootEntry : configRoots.entrySet()) {
-            ConfigRootKey configRootKey = configRootEntry.getKey();
-            ConfigRoot configRoot = configRootEntry.getValue();
+        for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : mergedModel.getConfigRoots().entrySet()) {
+            Extension extension = extensionConfigRootsEntry.getKey();
 
-            Path configRootAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
-                    configRootKey.getArtifactId(), configRootKey.getTopLevelPrefix()));
-            String summaryTableId = asciidocFormatter
-                    .toAnchor(configRootKey.getArtifactId() + "_" + configRootKey.getTopLevelPrefix());
+            Path configRootAdocPath = null;
 
-            try {
-                Files.writeString(configRootAdocPath,
-                        generateConfigReference(quteEngine, summaryTableId, configRootKey, configRoot));
-            } catch (Exception e) {
-                throw new MojoExecutionException("Unable to render config root: " + configRootKey, e);
+            for (Entry<String, ConfigRoot> configRootEntry : extensionConfigRootsEntry.getValue().entrySet()) {
+                String topLevelPrefix = configRootEntry.getKey();
+                ConfigRoot configRoot = configRootEntry.getValue();
+
+                configRootAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
+                        extension.artifactId(), topLevelPrefix));
+                String summaryTableId = asciidocFormatter
+                        .toAnchor(extension.artifactId() + "_" + topLevelPrefix);
+
+                try {
+                    Files.writeString(configRootAdocPath,
+                            generateConfigReference(quteEngine, summaryTableId, configRoot));
+                } catch (Exception e) {
+                    throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
+                            + " in extension: " + extension.toString(), e);
+                }
+            }
+
+            // if we have only one top level prefix, we copy the generated file to a file named after the extension
+            // for simplicity's sake
+            if (extensionConfigRootsEntry.getValue().size() == 1 && configRootAdocPath != null) {
+                Path extensionAdocPath = resolvedTargetDirectory.resolve(String.format(EXTENSION_FILE_FORMAT,
+                        extension.artifactId()));
+
+                try {
+                    Files.copy(configRootAdocPath, extensionAdocPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (Exception e) {
+                    throw new MojoExecutionException("Unable to copy extension file for: " + extension, e);
+                }
             }
         }
 
-        // for extensions with only one top level prefix, we also copy the file to an extension file
-        Map<String, List<ConfigRootKey>> configRootKeysPerExtension = configRoots.keySet().stream()
-                .collect(Collectors.groupingBy(crk -> crk.getGroupId() + ":" + crk.getArtifactId()));
+        // we generate files for generated sections
+        for (Entry<Extension, List<ConfigSection>> extensionConfigSectionsEntry : mergedModel.getGeneratedConfigSections()
+                .entrySet()) {
+            Extension extension = extensionConfigSectionsEntry.getKey();
 
-        for (List<ConfigRootKey> extensionConfigRootKeys : configRootKeysPerExtension.values()) {
-            if (extensionConfigRootKeys.size() != 1) {
-                continue;
-            }
+            for (ConfigSection generatedConfigSection : extensionConfigSectionsEntry.getValue()) {
+                Path configSectionAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
+                        extension.artifactId(), generatedConfigSection.getPath()));
+                String summaryTableId = asciidocFormatter
+                        .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath());
 
-            ConfigRootKey configRootKey = extensionConfigRootKeys.get(0);
-
-            Path extensionAdocPath = resolvedTargetDirectory.resolve(String.format(EXTENSION_FILE_FORMAT,
-                    configRootKey.getArtifactId()));
-            Path configRootAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
-                    configRootKey.getArtifactId(), configRootKey.getTopLevelPrefix()));
-
-            try {
-                Files.copy(configRootAdocPath, extensionAdocPath, StandardCopyOption.REPLACE_EXISTING);
-            } catch (Exception e) {
-                throw new MojoExecutionException("Unable to copy extension file for: " + configRootKey, e);
+                try {
+                    Files.writeString(configSectionAdocPath,
+                            generateConfigReference(quteEngine, summaryTableId, generatedConfigSection));
+                } catch (Exception e) {
+                    throw new MojoExecutionException(
+                            "Unable to render config section for section: " + generatedConfigSection.getPath()
+                                    + " in extension: " + extension.toString(),
+                            e);
+                }
             }
         }
     }
 
-    private static String generateConfigReference(Engine quteEngine, String summaryTableId, ConfigRootKey configRootKey,
-            ConfigRoot configRoot) {
+    private static String generateConfigReference(Engine quteEngine, String summaryTableId,
+            ConfigItemCollection configItemCollection) {
         return quteEngine.getTemplate("configReference.qute.adoc")
-                .data("configRootKey", configRootKey)
-                .data("configRoot", configRoot)
+                .data("configItemCollection", configItemCollection)
                 .data("searchable", true)
                 .data("summaryTableId", summaryTableId)
-                .data("includeDurationNote", configRoot.hasDurationType())
-                .data("includeMemorySizeNote", configRoot.hasMemorySizeType())
+                .data("includeDurationNote", configItemCollection.hasDurationType())
+                .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
                 .render();
     }
 
@@ -164,8 +187,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         return new JavadocRepository(javadocElementsMap);
     }
 
-    private static Map<ConfigRootKey, ConfigRoot> findConfigRoots(List<Path> targetDirectories) throws MojoExecutionException {
-        Map<ConfigRootKey, ConfigRoot> configRootsMap = new HashMap<>();
+    private static MergedModel mergeModel(List<Path> targetDirectories) throws MojoExecutionException {
+        Map<Extension, Map<String, ConfigRoot>> configRoots = new HashMap<>();
+        Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
 
         for (Path targetDirectory : targetDirectories) {
             Path javadocPath = targetDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
@@ -181,13 +205,15 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 }
 
                 for (ConfigRoot configRoot : resolvedModel.getConfigRoots().values()) {
-                    ConfigRootKey configRootKey = new ConfigRootKey(configRoot.getExtension().groupId(),
-                            configRoot.getExtension().artifactId(),
-                            configRoot.getPrefix());
+                    String topLevelPrefix = getTopLevelPrefix(configRoot.getPrefix());
 
-                    ConfigRoot existingConfigRoot = configRootsMap.get(configRootKey);
+                    Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
+                            e -> new HashMap<>());
+
+                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(topLevelPrefix);
+
                     if (existingConfigRoot == null) {
-                        configRootsMap.put(configRootKey, configRoot);
+                        extensionConfigRoots.put(topLevelPrefix, configRoot);
                     } else {
                         existingConfigRoot.merge(configRoot);
                     }
@@ -197,7 +223,42 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             }
         }
 
-        return configRootsMap;
+        for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
+            List<ConfigSection> extensionGeneratedConfigSections = generatedConfigSections
+                    .computeIfAbsent(extensionConfigRootsEntry.getKey(), e -> new ArrayList<>());
+
+            for (ConfigRoot configRoot : extensionConfigRootsEntry.getValue().values()) {
+                collectGeneratedConfigSections(extensionGeneratedConfigSections, configRoot);
+            }
+        }
+
+        return new MergedModel(configRoots, generatedConfigSections);
+    }
+
+    private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,
+            ConfigItemCollection configItemCollection) {
+        for (AbstractConfigItem configItem : configItemCollection.getItems()) {
+            if (!configItem.isSection()) {
+                continue;
+            }
+
+            ConfigSection configSection = (ConfigSection) configItem;
+            if (configSection.isGenerated()) {
+                extensionGeneratedConfigSections.add(configSection);
+            }
+
+            collectGeneratedConfigSections(extensionGeneratedConfigSections, configSection);
+        }
+    }
+
+    private static String getTopLevelPrefix(String prefix) {
+        String[] prefixSegments = prefix.split(Pattern.quote(Markers.DOT));
+
+        if (prefixSegments.length == 1) {
+            return prefixSegments[0];
+        }
+
+        return prefixSegments[0] + Markers.DOT + prefixSegments[1];
     }
 
     private static List<Path> findTargetDirectories(Path scanDirectory) throws MojoExecutionException {

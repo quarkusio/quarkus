@@ -16,11 +16,12 @@ public class DiscoveryConfigProperty {
     private final ResolvedType type;
     private final boolean converted;
     private final boolean section;
+    private final boolean sectionGenerated;
 
     public DiscoveryConfigProperty(String path, String sourceClass, String sourceName, String defaultValue,
             String defaultValueForDoc, boolean deprecated, String mapKey, boolean unnamedMapKey,
             ResolvedType type, boolean converted,
-            boolean section) {
+            boolean section, boolean sectionGenerated) {
         this.path = path;
         this.sourceClass = sourceClass;
         this.sourceName = sourceName;
@@ -32,6 +33,7 @@ public class DiscoveryConfigProperty {
         this.type = type;
         this.converted = converted;
         this.section = section;
+        this.sectionGenerated = sectionGenerated;
     }
 
     public String getPath() {
@@ -76,6 +78,10 @@ public class DiscoveryConfigProperty {
 
     public boolean isSection() {
         return section;
+    }
+
+    public boolean isSectionGenerated() {
+        return sectionGenerated;
     }
 
     public String toString() {
@@ -127,6 +133,7 @@ public class DiscoveryConfigProperty {
         private boolean unnamedMapKey = false;
         private boolean converted = false;
         private boolean section = false;
+        private boolean sectionGenerated = false;
 
         public Builder(String sourceClass, String sourceName, ResolvedType type) {
             this.sourceClass = sourceClass;
@@ -169,8 +176,9 @@ public class DiscoveryConfigProperty {
             return this;
         }
 
-        public Builder section() {
+        public Builder section(boolean generated) {
             this.section = true;
+            this.sectionGenerated = generated;
             return this;
         }
 
@@ -183,7 +191,7 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceClass, sourceName, defaultValue, defaultValueForDoc, deprecated,
-                    mapKey, unnamedMapKey, type, converted, section);
+                    mapKey, unnamedMapKey, type, converted, section, sectionGenerated);
         }
     }
 }

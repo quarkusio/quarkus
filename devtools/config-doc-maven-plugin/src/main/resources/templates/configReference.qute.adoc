@@ -8,7 +8,7 @@ h|Configuration property
 h|Type
 h|Default
 
-{#for item in configRoot.items}
+{#for item in configItemCollection.items}
 {#if !item.deprecated}
 {#if item.isSection}
 {#configSection configSection=item /}

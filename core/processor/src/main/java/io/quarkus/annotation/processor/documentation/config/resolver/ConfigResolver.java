@@ -75,7 +75,7 @@ public class ConfigResolver {
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
-                    configRoot, false, false);
+                    configRoot, false, false, false);
             for (DiscoveryConfigProperty discoveryConfigProperty : discoveryConfigRoot.getProperties().values()) {
                 resolveProperty(configRoot, discoveryConfigRoot.getPhase(), context, discoveryConfigProperty);
             }
@@ -122,15 +122,23 @@ public class ConfigResolver {
 
             ResolutionContext configGroupContext;
 
+            boolean isWithinMap = context.isWithinMap() || discoveryConfigProperty.getType().isMap();
+            boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey() || discoveryConfigProperty.isUnnamedMapKey();
+
             if (discoveryConfigProperty.isSection()) {
+                // we don't generate a section file for sections inside a map
+                boolean isSectionGenerated = discoveryConfigProperty.isSectionGenerated() &&
+                        (!isWithinMap || isWithMapWithUnnamedKey);
+
                 ConfigSection configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
-                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName, deprecated);
+                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
+                        isSectionGenerated, deprecated);
                 context.getItemCollection().addItem(configSection);
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
-                        discoveryConfigProperty.getType().isMap(), deprecated);
+                        isWithinMap, isWithMapWithUnnamedKey, deprecated);
             } else {
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup,
-                        context.getItemCollection(), discoveryConfigProperty.getType().isMap(), deprecated);
+                        context.getItemCollection(), isWithinMap, isWithMapWithUnnamedKey, deprecated);
             }
 
             for (DiscoveryConfigProperty configGroupProperty : discoveryConfigGroup.getProperties().values()) {
@@ -232,16 +240,18 @@ public class ConfigResolver {
         private final DiscoveryRootElement discoveryRootElement;
         private final ConfigItemCollection itemCollection;
         private final boolean withinMap;
+        private final boolean withinMapWithUnnamedKey;
         private final boolean deprecated;
 
         private ResolutionContext(String path, List<String> additionalPaths, DiscoveryRootElement discoveryRootElement,
                 ConfigItemCollection itemCollection,
-                boolean withinMap, boolean deprecated) {
+                boolean withinMap, boolean withinMapWithUnnamedKey, boolean deprecated) {
             this.path = path;
             this.additionalPaths = additionalPaths;
             this.discoveryRootElement = discoveryRootElement;
             this.itemCollection = itemCollection;
             this.withinMap = withinMap;
+            this.withinMapWithUnnamedKey = withinMapWithUnnamedKey;
             this.deprecated = deprecated;
         }
 
@@ -263,6 +273,10 @@ public class ConfigResolver {
 
         public boolean isWithinMap() {
             return withinMap;
+        }
+
+        public boolean isWithinMapWithUnnamedKey() {
+            return withinMapWithUnnamedKey;
         }
 
         public boolean isDeprecated() {

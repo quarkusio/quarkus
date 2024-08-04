@@ -8,4 +8,7 @@ public interface ConfigItemCollection {
 
     void addItem(AbstractConfigItem item);
 
+    boolean hasDurationType();
+
+    boolean hasMemorySizeType();
 }

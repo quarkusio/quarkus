@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -10,10 +11,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class RabbitMQBuildTimeConfig {
 
     /**
-     * Configuration for DevServices.
+     * Dev Services.
+     * <p>
      * DevServices allows Quarkus to start a RabbitMQ broker in dev and test mode automatically.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public RabbitMQDevServicesBuildTimeConfig devservices;
 
     /**

@@ -7,10 +7,13 @@ import java.util.Optional;
 
 public final class ConfigSection extends AbstractConfigItem implements ConfigItemCollection {
 
+    private boolean generated;
     private final List<AbstractConfigItem> items = new ArrayList<>();
 
-    public ConfigSection(String sourceClass, String sourceName, String path, String type, boolean deprecated) {
+    public ConfigSection(String sourceClass, String sourceName, String path, String type, boolean generated,
+            boolean deprecated) {
         super(sourceClass, sourceName, path, type, deprecated);
+        this.generated = generated;
     }
 
     @Override
@@ -36,7 +39,13 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
         return true;
     }
 
+    public boolean isGenerated() {
+        return generated;
+    }
+
     public void merge(ConfigSection other) {
+        this.generated = this.generated || other.generated;
+
         for (AbstractConfigItem otherItem : other.getItems()) {
             if (otherItem instanceof ConfigSection configSection) {
                 Optional<ConfigSection> similarConfigSection = findSimilarSection(configSection);

@@ -126,7 +126,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             for (ConfigSection generatedConfigSection : extensionConfigSectionsEntry.getValue()) {
                 Path configSectionAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
-                        extension.artifactId(), generatedConfigSection.getPath()));
+                        extension.artifactId(), cleanSectionPath(generatedConfigSection.getPath())));
                 String summaryTableId = asciidocFormatter
                         .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath());
 
@@ -381,5 +381,15 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 throw new UncheckedIOException("Unable close InputStream for template: " + template, e);
             }
         }
+    }
+
+    /**
+     * A section path can contain quotes when being inside a Map.
+     * <p>
+     * While not very common, we sometimes have to generate a section inside a Map
+     * e.g. for the XDS config of the gRPC client.
+     */
+    private static String cleanSectionPath(String sectionPath) {
+        return sectionPath.replace('"', '-');
     }
 }

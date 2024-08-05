@@ -122,18 +122,14 @@ public class ConfigResolver {
             boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey() || discoveryConfigProperty.isUnnamedMapKey();
 
             if (discoveryConfigProperty.isSection()) {
-                // we don't generate a section file for sections inside a map
-                boolean isSectionGenerated = discoveryConfigProperty.isSectionGenerated() &&
-                        (!isWithinMap || isWithMapWithUnnamedKey);
-
                 ConfigSection configSection = existingRootConfigSections.get(fullPath);
 
                 if (configSection != null) {
-                    configSection.appendState(isSectionGenerated, deprecated);
+                    configSection.appendState(discoveryConfigProperty.isSectionGenerated(), deprecated);
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
                             discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
-                            isSectionGenerated, deprecated);
+                            discoveryConfigProperty.isSectionGenerated(), deprecated);
                     context.getItemCollection().addItem(configSection);
                     existingRootConfigSections.put(configSection.getPath(), configSection);
                 }

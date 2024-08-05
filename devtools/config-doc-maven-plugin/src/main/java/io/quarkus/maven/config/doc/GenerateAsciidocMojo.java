@@ -98,7 +98,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configRootAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, configRoot));
+                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension.toString(), e);
@@ -132,7 +132,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configSectionAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, generatedConfigSection));
+                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
                             "Unable to render config section for section: " + generatedConfigSection.getPath()
@@ -143,9 +143,10 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         }
     }
 
-    private static String generateConfigReference(Engine quteEngine, String summaryTableId,
+    private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
             ConfigItemCollection configItemCollection) {
         return quteEngine.getTemplate("configReference.qute.adoc")
+                .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
                 .data("searchable", true)
                 .data("summaryTableId", summaryTableId)
@@ -307,6 +308,14 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                         .applyToName("toAnchor")
                         .applyToNoParameters()
                         .resolveSync(ctx -> asciidocFormatter.toAnchor((String) ctx.getBase()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(AbstractConfigItem.class)
+                        .applyToName("toAnchor")
+                        .applyToParameters(1)
+                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
+                                .thenApply(o -> asciidocFormatter.toAnchor(
+                                        ((Extension) o).artifactId() + "_" + ((AbstractConfigItem) ctx.getBase()).getPath())))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)

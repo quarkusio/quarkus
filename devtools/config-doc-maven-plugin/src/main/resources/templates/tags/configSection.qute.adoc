@@ -1,16 +1,14 @@
-{#let anchor = configSection.path.toAnchor}
-h|[[%s]]link:#%s[{configSection.title.escapeCellContent}]
+h|[[{configSection.toAnchor(extension)}]] {configSection.title.escapeCellContent}
 h|Type
 h|Default
-{/let}
 
 {#for item in configSection.items}
 {#if !item.deprecated}
 {#if item.isSection}
-{#configSection configSection=item /}
+{#configSection configSection=item extension=extension /}
 
 {#else}
-{#configProperty configProperty=item /}
+{#configProperty configProperty=item extension=extension /}
 
 {/if}
 {/if}

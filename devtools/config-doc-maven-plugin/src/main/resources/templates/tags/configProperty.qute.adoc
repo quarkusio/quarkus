@@ -1,8 +1,7 @@
-{#let anchor = configProperty.path.toAnchor}
-a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.path.toAnchor}]]link:#{anchor}[`{configProperty.path}`]
+a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension)}]] `{configProperty.path}`
 {#for additionalPath in configProperty.additionalPaths}
 
-link:#{anchor}[`{additionalPath}`]
+`{additionalPath}`
 {/for}
 
 [.description]
@@ -12,4 +11,3 @@ link:#{anchor}[`{additionalPath}`]
 --
 {#if configProperty.enum}a{/if}|{configProperty.typeDescription}
 |{#if configProperty.defaultValue}`{configProperty.defaultValue.escapeCellContent}`{#else if !configProperty.optional}required icon:exclamation-circle[title=Configuration property is required]{/if}
-{/let}

@@ -53,8 +53,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             .registerModule(new ParameterNamesModule());
     private static final String TARGET = "target";
 
-    private static final String CONFIG_ROOT_FILE_FORMAT = "%s_%s.adoc";
-    private static final String EXTENSION_FILE_FORMAT = "%s.adoc";
+    private static final String ADOC_SUFFIX = ".adoc";
+    private static final String CONFIG_ROOT_FILE_FORMAT = "%s_%s" + ADOC_SUFFIX;
+    private static final String EXTENSION_FILE_FORMAT = "%s" + ADOC_SUFFIX;
 
     @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession mavenSession;
@@ -101,7 +102,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                             generateConfigReference(quteEngine, summaryTableId, extension, configRoot));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
-                            + " in extension: " + extension.toString(), e);
+                            + " in extension: " + extension, e);
                 }
             }
 
@@ -116,6 +117,28 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to copy extension file for: " + extension, e);
                 }
+            }
+        }
+
+        // we generate the config roots that are saved in a specific file
+        for (Entry<String, ConfigRoot> specificFileConfigRootEntry : mergedModel.getConfigRootsInSpecificFile().entrySet()) {
+            String fileName = specificFileConfigRootEntry.getKey();
+            ConfigRoot configRoot = specificFileConfigRootEntry.getValue();
+            Extension extension = configRoot.getExtension();
+
+            if (!fileName.endsWith(".adoc")) {
+                fileName += ".adoc";
+            }
+
+            Path configRootAdocPath = resolvedTargetDirectory.resolve(fileName);
+            String summaryTableId = asciidocFormatter.toAnchor(stripAdocSuffix(fileName));
+
+            try {
+                Files.writeString(configRootAdocPath,
+                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot));
+            } catch (Exception e) {
+                throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
+                        + " in extension: " + extension, e);
             }
         }
 
@@ -136,7 +159,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 } catch (Exception e) {
                     throw new MojoExecutionException(
                             "Unable to render config section for section: " + generatedConfigSection.getPath()
-                                    + " in extension: " + extension.toString(),
+                                    + " in extension: " + extension,
                             e);
                 }
             }
@@ -190,6 +213,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
     private static MergedModel mergeModel(List<Path> targetDirectories) throws MojoExecutionException {
         Map<Extension, Map<String, ConfigRoot>> configRoots = new HashMap<>();
+        Map<String, ConfigRoot> configRootsInSpecificFile = new HashMap<>();
         Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
 
         for (Path targetDirectory : targetDirectories) {
@@ -206,6 +230,26 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 }
 
                 for (ConfigRoot configRoot : resolvedModel.getConfigRoots()) {
+                    if (configRoot.getOverriddenDocFileName() != null) {
+                        ConfigRoot existingConfigRootInSpecificFile = configRootsInSpecificFile
+                                .get(configRoot.getOverriddenDocFileName());
+
+                        if (existingConfigRootInSpecificFile == null) {
+                            configRootsInSpecificFile.put(configRoot.getOverriddenDocFileName(), configRoot);
+                        } else {
+                            if (!existingConfigRootInSpecificFile.getExtension().equals(configRoot.getExtension())
+                                    || !existingConfigRootInSpecificFile.getPrefix().equals(configRoot.getPrefix())) {
+                                throw new MojoExecutionException(
+                                        "Two config roots with different extensions or prefixes cannot be merged in the same specific config file: "
+                                                + configRoot.getOverriddenDocFileName());
+                            }
+
+                            existingConfigRootInSpecificFile.merge(configRoot);
+                        }
+
+                        continue;
+                    }
+
                     String topLevelPrefix = getTopLevelPrefix(configRoot.getPrefix());
 
                     Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
@@ -233,7 +277,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             }
         }
 
-        return new MergedModel(configRoots, generatedConfigSections);
+        return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
     }
 
     private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,
@@ -391,5 +435,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
      */
     private static String cleanSectionPath(String sectionPath) {
         return sectionPath.replace('"', '-');
+    }
+
+    private String stripAdocSuffix(String fileName) {
+        return fileName.substring(0, fileName.length() - ADOC_SUFFIX.length());
     }
 }

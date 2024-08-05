@@ -847,4 +847,4 @@ link:https://smallrye.io/smallrye-config/Main[SmallRye Config documentation].
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-config-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-config-doc-dir}/quarkus-core_quarkus-config.adoc[opts=optional, leveloffset=+1]

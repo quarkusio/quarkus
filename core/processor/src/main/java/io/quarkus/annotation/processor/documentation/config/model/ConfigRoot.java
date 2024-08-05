@@ -35,6 +35,10 @@ public class ConfigRoot implements ConfigItemCollection {
         return prefix;
     }
 
+    public String getOverriddenDocFileName() {
+        return overriddenDocFileName;
+    }
+
     public void setOverriddenDocFileName(String overriddenDocFileName) {
         if (this.overriddenDocFileName != null) {
             return;

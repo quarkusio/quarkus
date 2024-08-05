@@ -11,16 +11,24 @@ public class MergedModel {
 
     private final Map<Extension, Map<String, ConfigRoot>> configRoots;
 
+    private final Map<String, ConfigRoot> configRootsInSpecificFile;
+
     private final Map<Extension, List<ConfigSection>> generatedConfigSections;
 
     public MergedModel(Map<Extension, Map<String, ConfigRoot>> configRoots,
+            Map<String, ConfigRoot> configRootsInSpecificFile,
             Map<Extension, List<ConfigSection>> configSections) {
         this.configRoots = configRoots;
+        this.configRootsInSpecificFile = configRootsInSpecificFile;
         this.generatedConfigSections = configSections;
     }
 
     public Map<Extension, Map<String, ConfigRoot>> getConfigRoots() {
         return configRoots;
+    }
+
+    public Map<String, ConfigRoot> getConfigRootsInSpecificFile() {
+        return configRootsInSpecificFile;
     }
 
     public Map<Extension, List<ConfigSection>> getGeneratedConfigSections() {

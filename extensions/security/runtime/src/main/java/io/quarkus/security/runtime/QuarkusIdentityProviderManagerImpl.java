@@ -224,6 +224,14 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                 throw new IllegalStateException(
                         "No AnonymousIdentityProvider registered. An instance of AnonymousIdentityProvider must be provided to allow the Anonymous identity to be created.");
             }
+            for (List<IdentityProvider> providers : providers.values()) {
+                providers.sort(new Comparator<IdentityProvider>() {
+                    @Override
+                    public int compare(IdentityProvider o1, IdentityProvider o2) {
+                        return Integer.compare(o2.priority(), o1.priority());
+                    }
+                });
+            }
             if (blockingExecutor == null) {
                 throw new IllegalStateException("no blocking executor specified");
             }

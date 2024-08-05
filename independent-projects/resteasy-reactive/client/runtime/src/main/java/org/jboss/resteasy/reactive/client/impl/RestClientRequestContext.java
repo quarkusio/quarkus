@@ -429,6 +429,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return requestHeaders;
     }
 
+    public MultivaluedMap<String, String> getRequestHeadersAsMap() {
+        return requestHeaders.asMap();
+    }
+
     public String getHttpMethod() {
         return httpMethod;
     }

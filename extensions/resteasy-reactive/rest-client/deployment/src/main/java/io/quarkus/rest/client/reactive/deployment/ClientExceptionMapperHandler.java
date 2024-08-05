@@ -2,9 +2,13 @@ package io.quarkus.rest.client.reactive.deployment;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
@@ -12,7 +16,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -35,6 +41,12 @@ class ClientExceptionMapperHandler {
     private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
     private static final MethodDescriptor GET_INVOKED_METHOD =
             MethodDescriptor.ofMethod(RestClientRequestContext.class, "getInvokedMethod", Method.class);
+    private static final MethodDescriptor GET_URI =
+            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getUri", URI.class);
+    private static final MethodDescriptor GET_PROPERTIES =
+            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getProperties", Map.class);
+    private static final MethodDescriptor GET_REQUEST_HEADERS_AS_MAP =
+            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getRequestHeadersAsMap", MultivaluedMap.class);
     private final ClassOutput classOutput;
 
     ClientExceptionMapperHandler(ClassOutput classOutput) {
@@ -105,17 +117,24 @@ class ClientExceptionMapperHandler {
             LinkedHashMap<String, ResultHandle> targetMethodParams = new LinkedHashMap<>();
             for (Type paramType : targetMethod.parameterTypes()) {
                 ResultHandle targetMethodParamHandle;
-                if (paramType.name().equals(ResteasyReactiveDotNames.RESPONSE)) {
+                DotName paramTypeName = paramType.name();
+                if (paramTypeName.equals(ResteasyReactiveDotNames.RESPONSE)) {
                     targetMethodParamHandle = toThrowable.getMethodParam(0);
-                } else if (paramType.name().equals(DotNames.METHOD)) {
+                } else if (paramTypeName.equals(DotNames.METHOD)) {
                     targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_INVOKED_METHOD, toThrowable.getMethodParam(1));
+                } else if (paramTypeName.equals(DotNames.URI)) {
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_URI, toThrowable.getMethodParam(1));
+                } else if (isMapStringToObject(paramType)) {
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_PROPERTIES, toThrowable.getMethodParam(1));
+                } else if (isMultivaluedMapStringToString(paramType)) {
+                    targetMethodParamHandle = toThrowable.invokeVirtualMethod(GET_REQUEST_HEADERS_AS_MAP, toThrowable.getMethodParam(1));
                 } else {
-                    String message = DotNames.CLIENT_EXCEPTION_MAPPER + " can only take parameters of type '" + ResteasyReactiveDotNames.RESPONSE + "' or '" + DotNames.METHOD + "'"
+                    String message = "Unsupported parameter type used in " + DotNames.CLIENT_EXCEPTION_MAPPER + ". See the Javadoc of the annotation for the supported types."
                     + " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
                             + targetMethod.name() + "'";
                     throw new IllegalStateException(message);
                 }
-                targetMethodParams.put(paramType.name().toString(), targetMethodParamHandle);
+                targetMethodParams.put(paramTypeName.toString(), targetMethodParamHandle);
             }
 
             ResultHandle resultHandle = toThrowable.invokeStaticInterfaceMethod(
@@ -134,6 +153,36 @@ class ClientExceptionMapperHandler {
         }
 
         return new GeneratedClassResult(restClientInterfaceClassInfo.name().toString(), generatedClassName, priority);
+    }
+
+    private boolean isMapStringToObject(Type paramType) {
+        if (paramType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            return false;
+        }
+        ParameterizedType parameterizedType = paramType.asParameterizedType();
+        if (!parameterizedType.name().equals(DotNames.MAP)) {
+            return false;
+        }
+        List<Type> arguments = parameterizedType.arguments();
+        if (arguments.size() != 2) {
+            return false;
+        }
+        return arguments.get(0).name().equals(DotNames.STRING) && arguments.get(1).name().equals(DotNames.OBJECT);
+    }
+
+    private boolean isMultivaluedMapStringToString(Type paramType) {
+        if (paramType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+            return false;
+        }
+        ParameterizedType parameterizedType = paramType.asParameterizedType();
+        if (!parameterizedType.name().equals(DotNames.MULTIVALUED_MAP)) {
+            return false;
+        }
+        List<Type> arguments = parameterizedType.arguments();
+        if (arguments.size() != 2) {
+            return false;
+        }
+        return arguments.get(0).name().equals(DotNames.STRING) && arguments.get(1).name().equals(DotNames.STRING);
     }
 
     public static String getGeneratedClassName(MethodInfo methodInfo) {

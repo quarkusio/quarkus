@@ -5,10 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.Map;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -120,8 +123,14 @@ public class RegisteredClientExceptionMapperTest {
         Dto get400();
 
         @ClientExceptionMapper
-        static DummyException map(Method method, Response response) {
-            if ((response.getStatus() == 404) && method.getName().equals("get404")) {
+        static DummyException map(Method method, Response response, URI uri,
+                Map<String, Object> properties, MultivaluedMap<String, String> requestHeaders) {
+            // the conditions here make sure that the mapper is passed all the data we expect it to be passed
+            if ((response.getStatus() == 404)
+                    && method.getName().equals("get404")
+                    && uri.getPath().equals("/error/404")
+                    && properties.containsKey("org.eclipse.microprofile.rest.client.invokedMethod")
+                    && requestHeaders.containsKey("User-Agent")) {
                 return new DummyException();
             }
             return null;

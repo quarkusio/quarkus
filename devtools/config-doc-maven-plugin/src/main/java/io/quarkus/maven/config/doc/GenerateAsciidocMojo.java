@@ -205,7 +205,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                     continue;
                 }
 
-                for (ConfigRoot configRoot : resolvedModel.getConfigRoots().values()) {
+                for (ConfigRoot configRoot : resolvedModel.getConfigRoots()) {
                     String topLevelPrefix = getTopLevelPrefix(configRoot.getPrefix());
 
                     Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
@@ -310,12 +310,23 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                         .resolveSync(ctx -> asciidocFormatter.toAnchor((String) ctx.getBase()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(AbstractConfigItem.class)
+                        .applyToBaseClass(ConfigProperty.class)
                         .applyToName("toAnchor")
                         .applyToParameters(1)
                         .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
                                 .thenApply(o -> asciidocFormatter.toAnchor(
-                                        ((Extension) o).artifactId() + "_" + ((AbstractConfigItem) ctx.getBase()).getPath())))
+                                        ((Extension) o).artifactId() + "_" + ((ConfigProperty) ctx.getBase()).getPath())))
+                        .build())
+                // we need a different anchor for sections as otherwise we can have a conflict
+                // (typically when you have an `enabled` property with parent name just under the section level)
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigSection.class)
+                        .applyToName("toAnchor")
+                        .applyToParameters(1)
+                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
+                                .thenApply(o -> asciidocFormatter.toAnchor(
+                                        ((Extension) o).artifactId() + "_section_"
+                                                + ((ConfigSection) ctx.getBase()).getPath())))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)

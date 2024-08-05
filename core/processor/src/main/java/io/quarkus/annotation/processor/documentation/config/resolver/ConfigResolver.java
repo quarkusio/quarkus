@@ -19,7 +19,6 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
-import io.quarkus.annotation.processor.documentation.config.model.ConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
@@ -65,11 +64,11 @@ public class ConfigResolver {
     }
 
     public ResolvedModel resolveModel() {
-        Map<String, ConfigRoot> configRoots = new HashMap<>();
+        List<ConfigRoot> configRoots = new ArrayList<>();
 
         for (DiscoveryConfigRoot discoveryConfigRoot : configCollector.getConfigRoots()) {
-            ConfigRoot configRoot = configRoots.computeIfAbsent(discoveryConfigRoot.getPrefix(),
-                    k -> new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix()));
+            ConfigRoot configRoot = new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix());
+            Map<String, ConfigSection> existingRootConfigSections = new HashMap<>();
 
             configRoot.setOverriddenDocFileName(discoveryConfigRoot.getOverriddenDocFileName());
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
@@ -77,21 +76,18 @@ public class ConfigResolver {
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
                     configRoot, false, false, false);
             for (DiscoveryConfigProperty discoveryConfigProperty : discoveryConfigRoot.getProperties().values()) {
-                resolveProperty(configRoot, discoveryConfigRoot.getPhase(), context, discoveryConfigProperty);
+                resolveProperty(configRoot, existingRootConfigSections, discoveryConfigRoot.getPhase(), context,
+                        discoveryConfigProperty);
             }
 
-            configRoots.put(configRoot.getPrefix(), configRoot);
+            configRoots.add(configRoot);
         }
 
-        Map<String, ConfigGroup> configGroups = new HashMap<>();
-
-        // TODO GSM: config groups
-
-        return new ResolvedModel(configRoots, configGroups);
+        return new ResolvedModel(configRoots);
     }
 
-    private void resolveProperty(ConfigRoot configRoot, ConfigPhase phase, ResolutionContext context,
-            DiscoveryConfigProperty discoveryConfigProperty) {
+    private void resolveProperty(ConfigRoot configRoot, Map<String, ConfigSection> existingRootConfigSections,
+            ConfigPhase phase, ResolutionContext context, DiscoveryConfigProperty discoveryConfigProperty) {
         String fullPath = appendPath(context.getPath(), discoveryConfigProperty.getPath());
         List<String> additionalPaths = context.getAdditionalPaths().stream()
                 .map(p -> appendPath(p, discoveryConfigProperty.getPath()))
@@ -130,10 +126,18 @@ public class ConfigResolver {
                 boolean isSectionGenerated = discoveryConfigProperty.isSectionGenerated() &&
                         (!isWithinMap || isWithMapWithUnnamedKey);
 
-                ConfigSection configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
-                        discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
-                        isSectionGenerated, deprecated);
-                context.getItemCollection().addItem(configSection);
+                ConfigSection configSection = existingRootConfigSections.get(fullPath);
+
+                if (configSection != null) {
+                    configSection.appendState(isSectionGenerated, deprecated);
+                } else {
+                    configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
+                            discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
+                            isSectionGenerated, deprecated);
+                    context.getItemCollection().addItem(configSection);
+                    existingRootConfigSections.put(configSection.getPath(), configSection);
+                }
+
                 configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
                         isWithinMap, isWithMapWithUnnamedKey, deprecated);
             } else {
@@ -142,7 +146,7 @@ public class ConfigResolver {
             }
 
             for (DiscoveryConfigProperty configGroupProperty : discoveryConfigGroup.getProperties().values()) {
-                resolveProperty(configRoot, phase, configGroupContext, configGroupProperty);
+                resolveProperty(configRoot, existingRootConfigSections, phase, configGroupContext, configGroupProperty);
             }
         } else {
             String typeBinaryName = discoveryConfigProperty.getType().binaryName();

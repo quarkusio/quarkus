@@ -3,7 +3,7 @@ package io.quarkus.annotation.processor.documentation.config.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 public final class ConfigSection extends AbstractConfigItem implements ConfigItemCollection {
 
@@ -43,17 +43,33 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
         return generated;
     }
 
-    public void merge(ConfigSection other) {
+    /**
+     * This is used when we merge ConfigSection at the ConfigRoot level.
+     * It can happen when for instance a path is both used at a given level and in an unnamed map.
+     * For instance in: HibernateOrmConfig.
+     */
+    public void appendState(boolean generated, boolean deprecated) {
+        // we generate the section if at least one of the sections should be generated
+        // (the output will contain all the items of the section)
+        this.generated = this.generated || generated;
+        // we unmark the section as deprecated if one of the merged section is not deprecated
+        // as we will have to generate the section
+        this.deprecated = this.deprecated && deprecated;
+    }
+
+    /**
+     * This is used to merge ConfigRoot when generating the AsciiDoc output.
+     */
+    public void merge(ConfigSection other, Map<String, ConfigSection> existingConfigSections) {
         this.generated = this.generated || other.generated;
 
         for (AbstractConfigItem otherItem : other.getItems()) {
-            if (otherItem instanceof ConfigSection configSection) {
-                Optional<ConfigSection> similarConfigSection = findSimilarSection(configSection);
-                if (similarConfigSection.isEmpty()) {
-                    this.items.add(configSection);
+            if (otherItem instanceof ConfigSection otherConfigSection) {
+                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath());
+                if (similarConfigSection == null) {
+                    this.items.add(otherConfigSection);
                 } else {
-                    similarConfigSection.get().merge(configSection);
-                    Collections.sort(similarConfigSection.get().items);
+                    similarConfigSection.merge(otherConfigSection, existingConfigSections);
                 }
             } else if (otherItem instanceof ConfigProperty configProperty) {
                 this.items.add(configProperty);
@@ -61,17 +77,8 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
                 throw new IllegalStateException("Unknown item type: " + otherItem.getClass());
             }
         }
-    }
 
-    private Optional<ConfigSection> findSimilarSection(ConfigSection configSection) {
-        // this is a bit naive as a section could be nested differently but with a similar path
-        // it should be sufficient for now
-        // also, it's not exactly optimal, maybe we should have a map (but we need to be careful about the order), we'll see
-        return this.getItems().stream()
-                .filter(i -> i.isSection())
-                .filter(i -> i.getPath().equals(configSection.getPath()))
-                .map(i -> (ConfigSection) i)
-                .findFirst();
+        Collections.sort(this.items);
     }
 
     @Override

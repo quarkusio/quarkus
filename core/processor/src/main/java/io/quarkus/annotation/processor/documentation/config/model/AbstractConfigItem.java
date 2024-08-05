@@ -13,7 +13,7 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     protected final String type;
 
-    protected final boolean deprecated;
+    protected boolean deprecated;
 
     public AbstractConfigItem(String sourceClass, String sourceName, String path, String type, boolean deprecated) {
         this.sourceClass = sourceClass;

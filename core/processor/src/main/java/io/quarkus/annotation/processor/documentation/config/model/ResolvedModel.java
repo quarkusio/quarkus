@@ -1,54 +1,36 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
  * This is the fully resolved model for a given module.
  * <p>
- * Note that while it's fully resolved at the module level, it might not be fully resolved in case a config group, an interface
- * or a superclass is in another module.
+ * This model doesn't contain the Javadoc: the Javadoc is generated per module and can't be part of the model
+ * as when referencing a ConfigGroup that is outside of the boundaries of the module, the Javadoc is not available.
  * <p>
- * When assembling all the models at a more global level (for instance when generating the doc or in the IDE),
- * an additional resolution step might be needed if the model is not fully resolved.
+ * The model is fully resolved though as all the config annotations have a runtime retention so, even if the source
+ * is not available in the module, we can resolve all the annotations and the model.
+ * <p>
+ * It is the responsibility of the model consumer to assemble the config roots (if needed) and to get the Javadoc from the files
+ * containing it.
  */
 public class ResolvedModel {
 
     /**
-     * Key is the prefix of the config root (all config roots with the same prefix are merged).
+     * List of config roots: note that at this point they are not merged: you have one object per {@code @ConfigRoot}
+     * annotation.
      */
-    private Map<String, ConfigRoot> configRoots;
-
-    /**
-     * In some cases, we have a shared config mapping in a separate shared module.
-     * <p>
-     * These mappings are not resolved to config roots but might be useful when fully resolving the unresolved interfaces and
-     * superclasses of a config root.
-     * This is only useful for corner cases, for instance in the observability dev services.
-     * <p>
-     * Key is the prefix of the mapping.
-     */
-    // TODO implement unresolved config mappings
-    //private Map<String, ConfigMapping> unresolvedConfigMappings;
-
-    /**
-     * Key is the qualified name of the class of the config group.
-     */
-    private Map<String, ConfigGroup> configGroups;
+    private List<ConfigRoot> configRoots;
 
     @JsonCreator
-    public ResolvedModel(Map<String, ConfigRoot> configRoots, Map<String, ConfigGroup> configGroups) {
-        this.configRoots = configRoots == null ? Map.of() : Collections.unmodifiableMap(configRoots);
-        this.configGroups = configGroups == null ? Map.of() : Collections.unmodifiableMap(configGroups);
+    public ResolvedModel(List<ConfigRoot> configRoots) {
+        this.configRoots = configRoots == null ? List.of() : Collections.unmodifiableList(configRoots);
     }
 
-    public Map<String, ConfigRoot> getConfigRoots() {
+    public List<ConfigRoot> getConfigRoots() {
         return configRoots;
-    }
-
-    public Map<String, ConfigGroup> getConfigGroups() {
-        return configGroups;
     }
 }

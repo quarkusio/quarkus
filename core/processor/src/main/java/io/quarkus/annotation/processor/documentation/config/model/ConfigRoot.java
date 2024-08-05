@@ -2,9 +2,10 @@ package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -62,13 +63,17 @@ public class ConfigRoot implements ConfigItemCollection {
     public void merge(ConfigRoot other) {
         this.qualifiedNames.addAll(other.getQualifiedNames());
 
+        Map<String, ConfigSection> existingConfigSections = new HashMap<>();
+        collectConfigSections(existingConfigSections, this);
+
         for (AbstractConfigItem otherItem : other.getItems()) {
-            if (otherItem instanceof ConfigSection configSection) {
-                Optional<ConfigSection> similarConfigSection = findSimilarSection(configSection);
-                if (similarConfigSection.isEmpty()) {
-                    this.items.add(configSection);
+            if (otherItem instanceof ConfigSection otherConfigSection) {
+                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath());
+
+                if (similarConfigSection == null) {
+                    this.items.add(otherConfigSection);
                 } else {
-                    similarConfigSection.get().merge(configSection);
+                    similarConfigSection.merge(otherConfigSection, existingConfigSections);
                 }
             } else if (otherItem instanceof ConfigProperty configProperty) {
                 this.items.add(configProperty);
@@ -80,15 +85,14 @@ public class ConfigRoot implements ConfigItemCollection {
         Collections.sort(this.items);
     }
 
-    private Optional<ConfigSection> findSimilarSection(ConfigSection configSection) {
-        // this is a bit naive as a section could be nested differently but with a similar path
-        // it should be sufficient for now
-        // also, it's not exactly optimal, maybe we should have a map (but we need to be careful about the order), we'll see
-        return this.getItems().stream()
-                .filter(i -> i.isSection())
-                .filter(i -> i.getPath().equals(configSection.getPath()))
-                .map(i -> (ConfigSection) i)
-                .findFirst();
+    private void collectConfigSections(Map<String, ConfigSection> configSections, ConfigItemCollection configItemCollection) {
+        for (AbstractConfigItem item : configItemCollection.getItems()) {
+            if (item instanceof ConfigSection configSection) {
+                configSections.put(item.getPath(), configSection);
+
+                collectConfigSections(configSections, configSection);
+            }
+        }
     }
 
     public boolean hasDurationType() {

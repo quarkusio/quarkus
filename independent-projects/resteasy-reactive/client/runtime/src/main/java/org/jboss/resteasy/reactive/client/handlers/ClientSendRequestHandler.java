@@ -158,8 +158,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                                 return;
                                             }
 
-                                            MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
-                                                    .asMap();
+                                            MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                                             updateRequestHeadersFromConfig(requestContext, headerMap);
 
                                             // set the Vertx headers after we've run the interceptors because they can modify them
@@ -170,8 +169,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         }
                                     });
                 } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
-                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
-                            .asMap();
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
                     setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(
@@ -180,8 +178,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                     httpClientRequest));
                     attachSentHandlers(sent, httpClientRequest, requestContext);
                 } else if (requestContext.isMultiBufferUpload()) {
-                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
-                            .asMap();
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
                     setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
@@ -483,7 +480,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
         }
 
-        MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
         updateRequestHeadersFromConfig(state, headerMap);
         QuarkusMultipartForm multipartForm = (QuarkusMultipartForm) state.getEntity().getEntity();
         multipartForm.preparePojos(state);
@@ -524,7 +521,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state)
             throws IOException {
-        MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
         updateRequestHeadersFromConfig(state, headerMap);
 
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;

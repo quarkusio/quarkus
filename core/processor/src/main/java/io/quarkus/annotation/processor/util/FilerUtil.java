@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.util;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
@@ -9,11 +10,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
+import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
@@ -126,6 +130,38 @@ public class FilerUtil {
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to determine the path of target/" + e);
             throw new UncheckedIOException(e);
+        }
+    }
+
+    public Path getPomPath() {
+        try {
+            return Paths.get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
+                    .getParent().getParent().getParent().resolve("pom.xml").toAbsolutePath();
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to determine path to pom.xml");
+        }
+    }
+
+    public Optional<Map<String, Object>> getExtensionMetadata() {
+        String extensionMetadataDescriptor = "META-INF/quarkus-extension.yaml";
+
+        try {
+            FileObject fileObject = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
+                    extensionMetadataDescriptor);
+            if (fileObject == null) {
+                return Optional.empty();
+            }
+
+            try (InputStream is = fileObject.openInputStream()) {
+                String yamlMetadata = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                Map<String, Object> extensionMetadata = YAML_OBJECT_MAPPER.readValue(yamlMetadata, Map.class);
+
+                return Optional.of(extensionMetadata);
+            }
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Kind.WARNING,
+                    "Unable to read extension metadata file: " + extensionMetadataDescriptor + " because of " + e.getMessage());
+            return Optional.empty();
         }
     }
 }

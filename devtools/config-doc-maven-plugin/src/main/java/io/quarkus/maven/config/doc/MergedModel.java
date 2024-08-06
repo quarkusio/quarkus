@@ -1,5 +1,6 @@
 package io.quarkus.maven.config.doc;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -18,9 +19,9 @@ public class MergedModel {
     public MergedModel(Map<Extension, Map<String, ConfigRoot>> configRoots,
             Map<String, ConfigRoot> configRootsInSpecificFile,
             Map<Extension, List<ConfigSection>> configSections) {
-        this.configRoots = configRoots;
-        this.configRootsInSpecificFile = configRootsInSpecificFile;
-        this.generatedConfigSections = configSections;
+        this.configRoots = Collections.unmodifiableMap(configRoots);
+        this.configRootsInSpecificFile = Collections.unmodifiableMap(configRootsInSpecificFile);
+        this.generatedConfigSections = Collections.unmodifiableMap(configSections);
     }
 
     public Map<Extension, Map<String, ConfigRoot>> getConfigRoots() {

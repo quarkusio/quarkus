@@ -8,12 +8,14 @@ public final class Utils {
     private final ElementUtil elementUtil;
     private final AccessorGenerator accessorGenerator;
     private final FilerUtil filerUtil;
+    private final ExtensionUtil extensionUtil;
 
     public Utils(ProcessingEnvironment processingEnv) {
         this.processingEnv = processingEnv;
         this.elementUtil = new ElementUtil(processingEnv);
         this.accessorGenerator = new AccessorGenerator(processingEnv, elementUtil);
         this.filerUtil = new FilerUtil(processingEnv);
+        this.extensionUtil = new ExtensionUtil(filerUtil);
     }
 
     public ElementUtil element() {
@@ -30,5 +32,9 @@ public final class Utils {
 
     public FilerUtil filer() {
         return filerUtil;
+    }
+
+    public ExtensionUtil extension() {
+        return extensionUtil;
     }
 }

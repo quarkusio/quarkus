@@ -4,7 +4,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public record Extension(String groupId, String artifactId, String name) {
+public record Extension(String groupId, String artifactId, String name,
+        NameSource nameSource) implements Comparable<Extension> {
 
     @Override
     public final String toString() {
@@ -36,5 +37,41 @@ public record Extension(String groupId, String artifactId, String name) {
     @JsonIgnore
     public boolean isMixedModule() {
         return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-messaging".equals(artifactId));
+    }
+
+    @Override
+    public int compareTo(Extension other) {
+        if (name != null && other.name != null) {
+            int nameComparison = name.compareToIgnoreCase(other.name);
+            if (nameComparison != 0) {
+                return nameComparison;
+            }
+        }
+
+        int groupIdComparison = groupId.compareToIgnoreCase(other.groupId);
+        if (groupIdComparison != 0) {
+            return groupIdComparison;
+        }
+
+        return artifactId.compareToIgnoreCase(other.artifactId);
+    }
+
+    public static enum NameSource {
+
+        EXTENSION_METADATA(100),
+        EXTENSION_METADATA_COMMON_INTERNAL(90),
+        POM_XML(50),
+        POM_XML_COMMON_INTERNAL(40),
+        NONE(-1);
+
+        private final int priority;
+
+        NameSource(int priority) {
+            this.priority = priority;
+        }
+
+        public boolean isBetterThan(NameSource other) {
+            return this.priority > other.priority;
+        }
     }
 }

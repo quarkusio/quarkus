@@ -12,11 +12,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -37,6 +40,7 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
+import io.quarkus.annotation.processor.documentation.config.model.Extension.NameSource;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
@@ -212,9 +216,12 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     }
 
     private static MergedModel mergeModel(List<Path> targetDirectories) throws MojoExecutionException {
+        // keyed on extension and then top level prefix
         Map<Extension, Map<String, ConfigRoot>> configRoots = new HashMap<>();
-        Map<String, ConfigRoot> configRootsInSpecificFile = new HashMap<>();
-        Map<Extension, List<ConfigSection>> generatedConfigSections = new HashMap<>();
+        // keyed on file name
+        Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
+        // keyed on extension
+        Map<Extension, List<ConfigSection>> generatedConfigSections = new TreeMap<>();
 
         for (Path targetDirectory : targetDirectories) {
             Path javadocPath = targetDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
@@ -268,6 +275,8 @@ public class GenerateAsciidocMojo extends AbstractMojo {
             }
         }
 
+        configRoots = retainBestExtensionKey(configRoots);
+
         for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
             List<ConfigSection> extensionGeneratedConfigSections = generatedConfigSections
                     .computeIfAbsent(extensionConfigRootsEntry.getKey(), e -> new ArrayList<>());
@@ -278,6 +287,25 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         }
 
         return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
+    }
+
+    private static Map<Extension, Map<String, ConfigRoot>> retainBestExtensionKey(
+            Map<Extension, Map<String, ConfigRoot>> configRoots) {
+        return configRoots.entrySet().stream().collect(Collectors.toMap(e -> {
+            Extension extension = e.getKey();
+
+            for (ConfigRoot configRoot : e.getValue().values()) {
+                if (configRoot.getExtension().nameSource().isBetterThan(extension.nameSource())) {
+                    extension = configRoot.getExtension();
+                }
+                if (NameSource.EXTENSION_METADATA.equals(extension.nameSource())) {
+                    // we won't find any better
+                    break;
+                }
+            }
+
+            return extension;
+        }, e -> e.getValue(), (k1, k2) -> k1, TreeMap::new));
     }
 
     private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,
@@ -325,6 +353,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                     return FileVisitResult.CONTINUE;
                 }
             });
+
+            // Make sure we are deterministic
+            Collections.sort(targets);
 
             return targets;
         } catch (IOException e) {

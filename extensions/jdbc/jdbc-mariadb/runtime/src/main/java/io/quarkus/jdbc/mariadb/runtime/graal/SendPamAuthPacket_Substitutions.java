@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import org.mariadb.jdbc.Configuration;
+import org.mariadb.jdbc.HostAddress;
 import org.mariadb.jdbc.client.Context;
 import org.mariadb.jdbc.client.ReadableByteBuf;
 import org.mariadb.jdbc.client.socket.Reader;
@@ -16,7 +17,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class SendPamAuthPacket_Substitutions {
 
     @Substitute
-    public void initialize(String authenticationData, byte[] seed, Configuration conf) {
+    public void initialize(String authenticationData, byte[] seed, Configuration conf, HostAddress hostAddress) {
         throw new UnsupportedOperationException("Authentication strategy 'dialog' is not supported in GraalVM");
     }
 

@@ -3233,6 +3233,7 @@
                             <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
+                                <argument>${infra-doc-dir}/quarkus-maven-plugin-goals.adoc</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>

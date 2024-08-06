@@ -36,7 +36,7 @@
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
         <generated-config-doc-dir>${project.build.directory}/quarkus-config-doc</generated-config-doc-dir>
         <generated-dir>${project.build.directory}/quarkus-generated-doc</generated-dir>
-        <infra-doc-dir>${generated-dir}/infra</infra-doc-dir>
+        <generated-infra-doc-dir>${generated-dir}/infra</generated-infra-doc-dir>
         <code-examples-dir>${generated-dir}/examples</code-examples-dir>
         <vale.image>docker.io/jdkato/vale:v2.15.5</vale.image>
     </properties>
@@ -3233,7 +3233,7 @@
                             <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
-                                <argument>${infra-doc-dir}/quarkus-maven-plugin-goals.adoc</argument>
+                                <argument>${generated-infra-doc-dir}/quarkus-maven-plugin-goals.adoc</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
@@ -3252,7 +3252,7 @@
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
                             <arguments>
-                                <argument>${infra-doc-dir}/quarkus-all-build-items.adoc</argument>
+                                <argument>${generated-infra-doc-dir}/quarkus-all-build-items.adoc</argument>
                                 <argument>${project.basedir}/../core/deployment</argument>
                                 <argument>${project.basedir}/../extensions</argument>
                             </arguments>

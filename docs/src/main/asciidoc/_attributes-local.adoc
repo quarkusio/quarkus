@@ -7,7 +7,7 @@
 :icons: font
 :target-dir: ../../../target
 :generated-config-doc-dir: {target-dir}/quarkus-config-doc
-:infra-doc-dir: {target-dir}/quarkus-generated-doc/infra
+:generated-infra-doc-dir: {target-dir}/quarkus-generated-doc/infra
 :code-examples: {target-dir}/quarkus-generated-doc/examples
 :doc-examples: ./_examples
 :imagesdir: ./images

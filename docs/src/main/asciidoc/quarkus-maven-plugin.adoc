@@ -26,4 +26,4 @@ It is also possible to print out detailed information about a goal, all its para
 
 Here is the list of all the Quarkus Maven Plugin goals:
 
-include::{infra-doc-dir}/quarkus-maven-plugin-goals.adoc[opts=optional, leveloffset=+2]
+include::{generated-infra-doc-dir}/quarkus-maven-plugin-goals.adoc[opts=optional, leveloffset=+2]

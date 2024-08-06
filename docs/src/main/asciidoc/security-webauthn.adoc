@@ -1295,7 +1295,7 @@ The security encryption key can be set with the
 link:all-config#quarkus-vertx-http_quarkus.http.auth.session.encryption-key[`quarkus.http.auth.session.encryption-key`]
 configuration option, as described in the link:security-authentication-mechanisms#form-auth[security guide].
 
-include::{generated-config-doc-dir}/quarkus-security-webauthn.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, leveloffset=+1]
 
 == References
 

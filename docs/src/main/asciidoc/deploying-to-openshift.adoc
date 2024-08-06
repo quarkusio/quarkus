@@ -523,4 +523,4 @@ The application can then be deployed to OpenShift Serverless by enabling the sta
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]

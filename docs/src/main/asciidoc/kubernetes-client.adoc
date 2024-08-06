@@ -521,4 +521,4 @@ testImplementation("io.quarkus:quarkus-test-openshift-client")
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]

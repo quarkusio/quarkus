@@ -514,4 +514,4 @@ is called.
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-hibernate-validator.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-hibernate-validator.adoc[leveloffset=+1, opts=optional]

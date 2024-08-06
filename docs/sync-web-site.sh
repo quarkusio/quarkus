@@ -46,11 +46,11 @@ fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
   TARGET_GUIDES=${TARGET_DIR}/_guides
-  TARGET_CONFIG=${TARGET_DIR}/_generated-doc/latest
+  TARGET_GENERATED_DOC=${TARGET_DIR}/_generated-doc/latest
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/latest/index
 else
   TARGET_GUIDES=${TARGET_DIR}/_versions/${BRANCH}/guides
-  TARGET_CONFIG=${TARGET_DIR}/_generated-doc/${BRANCH}
+  TARGET_GENERATED_DOC=${TARGET_DIR}/_generated-doc/${BRANCH}
   TARGET_INDEX=${TARGET_DIR}/_data/versioned/${BRANCH//[.]/-}/index
   mkdir -p ${TARGET_GUIDES}
   mkdir -p ${TARGET_INDEX}
@@ -109,16 +109,16 @@ rsync -vr --delete \
     target/asciidoc/sources/ \
     $TARGET_GUIDES
 
-if [ -d ../target/asciidoc/generated/ ]; then
+if [ -d target/quarkus-generated-doc/ ]; then
   echo
-  echo "Copying from ../target/asciidoc/generated/ to $TARGET_CONFIG"
+  echo "Copying from target/quarkus-generated-doc/ to $TARGET_GENERATED_DOC"
   echo
   rsync -vr --delete \
       --exclude='**/*.html' \
       --exclude='**/index.adoc' \
       --exclude='**/_attributes.adoc' \
-      ../target/asciidoc/generated/ \
-      $TARGET_CONFIG
+      target/quarkus-generated-doc/ \
+      $TARGET_GENERATED_DOC
 fi
 
 if [ -f target/indexByType.yaml ]; then
@@ -167,7 +167,7 @@ Run one of the following command to check the web site (if not done already):
     cd target/web-site
     docker run --rm --volume=\"$PWD:/srv/jekyll:Z\" \\
         --publish 4000:4000 jekyll/jekyll:4.1.0 jekyll serve --incremental
-  
+
 - If you have Podman, something similar should work, but...
   - you may need to set the Jekyll user/group id to match yours: -e JEKYLL_UID=501 -e JEKYLL_GID=503
   - you may need to add an environment variable if you are running rootless: -e JEKYLL_ROOTLESS=1

@@ -1356,7 +1356,7 @@ To include the generated configuration reference documentation in a guide, use:
 
 [source,asciidoc]
 ----
-\include::{generated-config-doc-dir}/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
+\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
 ----
 
 To include only a specific config group:
@@ -1389,7 +1389,7 @@ And at the end of the guide, the extensive configuration documentation:
 [[configuration-reference]]
 == Configuration Reference
 
-\include::{generated-config-doc-dir}/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
+\include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
 ----
 
 [WARNING]

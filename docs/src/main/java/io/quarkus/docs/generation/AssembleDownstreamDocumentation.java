@@ -40,9 +40,7 @@ public class AssembleDownstreamDocumentation {
     private static final Path SOURCE_DOC_PATH = Path.of("src", "main", "asciidoc");
     private static final Path DOC_PATH = Path.of("target", "asciidoc", "sources");
     private static final Path INCLUDES_PATH = DOC_PATH.resolve("_includes");
-    private static final Path GENERATED_CONFIG_DOC_FILES_PATH = Path.of("target", "quarkus-config-doc");
-    private static final Path GENERATED_INFRA_DOC_FILES_PATH = Path.of("target", "quarkus-generated-doc", "infra");
-    private static final Path GENERATED_CODE_EXAMPLE_FILES_PATH = Path.of("target", "quarkus-generated-doc", "examples");
+    private static final Path GENERATED_DOC_FILES_PATH = Path.of("target", "quarkus-generated-doc");
     private static final Path IMAGES_PATH = DOC_PATH.resolve("images");
     private static final Path TARGET_ROOT_DIRECTORY = Path.of("target", "downstream-tree");
     private static final Path TARGET_IMAGES_DIRECTORY = TARGET_ROOT_DIRECTORY.resolve("images");
@@ -101,16 +99,8 @@ public class AssembleDownstreamDocumentation {
             throw new IllegalStateException(
                     "Transformed AsciiDoc sources directory does not exist. Have you built the documentation?");
         }
-        if (!Files.isDirectory(GENERATED_CONFIG_DOC_FILES_PATH)) {
-            throw new IllegalStateException("Generated files directory `" + GENERATED_CONFIG_DOC_FILES_PATH
-                    + "` does not exist. Have you built the documentation?");
-        }
-        if (!Files.isDirectory(GENERATED_INFRA_DOC_FILES_PATH)) {
-            throw new IllegalStateException("Generated files directory `" + GENERATED_INFRA_DOC_FILES_PATH
-                    + "` does not exist. Have you built the documentation?");
-        }
-        if (!Files.isDirectory(GENERATED_CODE_EXAMPLE_FILES_PATH)) {
-            throw new IllegalStateException("Generated files directory `" + GENERATED_CODE_EXAMPLE_FILES_PATH
+        if (!Files.isDirectory(GENERATED_DOC_FILES_PATH)) {
+            throw new IllegalStateException("Generated files directory `" + GENERATED_DOC_FILES_PATH
                     + "` does not exist. Have you built the documentation?");
         }
         Path referenceIndexPath = Path.of(args[0]);
@@ -160,9 +150,7 @@ public class AssembleDownstreamDocumentation {
             Set<Path> guides = new TreeSet<>();
             Set<Path> simpleIncludes = new TreeSet<>();
             Set<Path> includes = new TreeSet<>();
-            Set<Path> generatedConfigDocFiles = new TreeSet<>();
-            Set<Path> generatedInfraDocFiles = new TreeSet<>();
-            Set<Path> generatedCodeExampleFiles = new TreeSet<>();
+            Set<Path> generatedDocFiles = new TreeSet<>();
             Set<Path> images = new TreeSet<>();
 
             Set<Path> allResolvedPaths = new TreeSet<>();
@@ -186,9 +174,7 @@ public class AssembleDownstreamDocumentation {
                 guides.add(guidePath);
                 simpleIncludes.addAll(guideContent.simpleIncludes);
                 includes.addAll(guideContent.includes);
-                generatedConfigDocFiles.addAll(guideContent.generatedConfigDocFiles);
-                generatedInfraDocFiles.addAll(guideContent.generatedInfraDocFiles);
-                generatedCodeExampleFiles.addAll(guideContent.generatedCodeExampleFiles);
+                generatedDocFiles.addAll(guideContent.generatedDocFiles);
                 images.addAll(guideContent.images);
             }
 
@@ -228,11 +214,7 @@ public class AssembleDownstreamDocumentation {
             }
 
             copyGeneratedFiles(linkRewritingErrors, titlesByReference, allResolvedPaths,
-                    downstreamGuides, GENERATED_CONFIG_DOC_FILES_PATH, generatedConfigDocFiles, Path.of("config"));
-            copyGeneratedFiles(linkRewritingErrors, titlesByReference, allResolvedPaths,
-                    downstreamGuides, GENERATED_INFRA_DOC_FILES_PATH, generatedInfraDocFiles, Path.of("infra"));
-            copyGeneratedFiles(linkRewritingErrors, titlesByReference, allResolvedPaths,
-                    downstreamGuides, GENERATED_CODE_EXAMPLE_FILES_PATH, generatedCodeExampleFiles, Path.of("examples"));
+                    downstreamGuides, GENERATED_DOC_FILES_PATH, generatedDocFiles);
 
             for (Path image : images) {
                 Path sourceFile = IMAGES_PATH.resolve(image);
@@ -278,7 +260,7 @@ public class AssembleDownstreamDocumentation {
 
     private static void copyGeneratedFiles(Map<String, List<String>> linkRewritingErrors, Map<String, String> titlesByReference,
             Set<Path> allResolvedPaths, Set<String> downstreamGuides, Path generatedSourceFilesDirectory,
-            Set<Path> generatedFiles, Path targetSubdirectory)
+            Set<Path> generatedFiles)
             throws IOException {
         for (Path generatedConfigDocFile : generatedFiles) {
             Path sourceFile = generatedSourceFilesDirectory.resolve(generatedConfigDocFile);
@@ -289,7 +271,7 @@ public class AssembleDownstreamDocumentation {
                 LOG.error("Unable to read generated file " + sourceFile);
             }
             allResolvedPaths.add(sourceFile);
-            Path targetFile = TARGET_GENERATED_DIRECTORY.resolve(targetSubdirectory).resolve(generatedConfigDocFile);
+            Path targetFile = TARGET_GENERATED_DIRECTORY.resolve(generatedConfigDocFile);
             Files.createDirectories(targetFile.getParent());
             copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
         }
@@ -305,19 +287,9 @@ public class AssembleDownstreamDocumentation {
                 getFurtherIncludes(guideContent, INCLUDES_PATH.resolve(possibleInclude.get()));
                 continue;
             }
-            Optional<Path> possibleGeneratedConfigDocFile = extractPath(line, "include::{generated-config-doc-dir}");
+            Optional<Path> possibleGeneratedConfigDocFile = extractPath(line, "include::{generated-dir}");
             if (possibleGeneratedConfigDocFile.isPresent()) {
-                guideContent.generatedConfigDocFiles.add(possibleGeneratedConfigDocFile.get());
-                continue;
-            }
-            Optional<Path> possibleGeneratedInfraDocFile = extractPath(line, "include::{generated-infra-doc-dir}");
-            if (possibleGeneratedInfraDocFile.isPresent()) {
-                guideContent.generatedInfraDocFiles.add(possibleGeneratedInfraDocFile.get());
-                continue;
-            }
-            Optional<Path> possibleCodeExampleFile = extractPath(line, "include::{code-examples-dir}");
-            if (possibleGeneratedInfraDocFile.isPresent()) {
-                guideContent.generatedCodeExampleFiles.add(possibleCodeExampleFile.get());
+                guideContent.generatedDocFiles.add(possibleGeneratedConfigDocFile.get());
                 continue;
             }
             Optional<Path> possibleSimpleInclude = extractPath(line, "include::");
@@ -575,9 +547,7 @@ public class AssembleDownstreamDocumentation {
         public Set<Path> simpleIncludes = new TreeSet<>();
         public Set<Path> includes = new TreeSet<>();
         public Set<Path> images = new TreeSet<>();
-        public Set<Path> generatedConfigDocFiles = new TreeSet<>();
-        public Set<Path> generatedInfraDocFiles = new TreeSet<>();
-        public Set<Path> generatedCodeExampleFiles = new TreeSet<>();
+        public Set<Path> generatedDocFiles = new TreeSet<>();
 
         public GuideContent(Path guide) {
             this.guide = guide;

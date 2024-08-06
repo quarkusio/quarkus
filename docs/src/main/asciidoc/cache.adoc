@@ -747,7 +747,7 @@ properties in the `application.properties` file. By default, caches do not perfo
 You need to replace `cache-name` in all the following properties with the real name of the cache you want to configure.
 ====
 
-include::{generated-config-doc-dir}/quarkus-cache.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-cache.adoc[opts=optional, leveloffset=+1]
 
 Here's what your cache configuration could look like:
 

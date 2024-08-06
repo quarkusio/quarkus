@@ -942,7 +942,7 @@ These are provided in `application.properties` the same as any other config prop
 
 The properties are shown below:
 
-include::{generated-config-doc-dir}/quarkus-core_quarkus.native.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-core_quarkus.native.adoc[opts=optional]
 
 == What's next?
 

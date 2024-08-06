@@ -2932,7 +2932,7 @@ Message templates are validated during the build. If a missing message template 
 
 === Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-qute.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]
 
 
 [[standalone]]

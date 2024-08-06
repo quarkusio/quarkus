@@ -1091,7 +1091,7 @@ The table below describe all the available configuration options.
 
 .Kubernetes
 :no-duration-note: true
-include::{generated-config-doc-dir}/quarkus-kubernetes_quarkus.kubernetes.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.kubernetes.adoc[opts=optional, leveloffset=+1]
 
 Properties that use non-standard types, can be referenced by expanding the property.
 For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
@@ -1119,7 +1119,7 @@ quarkus.kubernetes-client.trust-certs=true
 The full list of the Kubernetes client configuration properties is provided below.
 
 :no-duration-note: true
-include::{generated-config-doc-dir}/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
 [[openshift]]
 === OpenShift
@@ -1230,7 +1230,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .OpenShift
 :no-duration-note: true
-include::{generated-config-doc-dir}/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.openshift.adoc[opts=optional, leveloffset=+1]
 
 [[knative]]
 === Knative
@@ -1295,7 +1295,7 @@ The generated service can be customized using the following properties:
 
 .Knative
 :no-duration-note: true
-include::{generated-config-doc-dir}/quarkus-kubernetes_quarkus.knative.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes_quarkus.knative.adoc[opts=optional, leveloffset=+1]
 
 === Deployment targets
 

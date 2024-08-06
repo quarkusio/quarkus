@@ -262,7 +262,7 @@ rsync to sync to the remote application.
 
 All the config options are shown below:
 
-include::{generated-config-doc-dir}/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]
 
 NOTE: It is recommended you use SSL when using remote dev mode, however even if you are using an unencrypted connection
 your password is never sent directly over the wire. For the initial connection request the password is hashed with the
@@ -908,7 +908,7 @@ These are provided in `application.properties` the same as any other config prop
 
 The properties are shown below:
 
-include::{generated-config-doc-dir}/quarkus-core_quarkus.package.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-core_quarkus.package.adoc[opts=optional]
 
 [[custom-test-configuration-profile]]
 === Custom test configuration profile in JVM mode

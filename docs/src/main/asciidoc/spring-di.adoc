@@ -338,7 +338,7 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 
 == Spring DI Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-spring-di.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-spring-di.adoc[leveloffset=+1, opts=optional]
 
 == More Spring guides
 

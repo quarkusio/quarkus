@@ -623,7 +623,7 @@ public class CustomTenantPolicyConfigResolver implements TenantPolicyConfigResol
 This configuration adheres to the official [Keycloak Policy Enforcer Configuration](https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter) guidelines.
 For detailed insights into various configuration options, see the following documentation:
 
-include::{generated-config-doc-dir}/quarkus-keycloak-authorization.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-keycloak-authorization.adoc[opts=optional]
 
 == References
 

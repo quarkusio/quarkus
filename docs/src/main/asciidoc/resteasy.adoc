@@ -740,7 +740,7 @@ This extension slightly differs from the RESTEasy default behavior as the defaul
 
 You can configure this behavior with the following configuration properties:
 
-include::{generated-config-doc-dir}/quarkus-resteasy-multipart.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-resteasy-multipart.adoc[leveloffset=+1, opts=optional]
 
 == Servlet compatibility
 

@@ -764,4 +764,4 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]

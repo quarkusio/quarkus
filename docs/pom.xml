@@ -34,10 +34,7 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
-        <generated-config-doc-dir>${project.build.directory}/quarkus-config-doc</generated-config-doc-dir>
         <generated-dir>${project.build.directory}/quarkus-generated-doc</generated-dir>
-        <generated-infra-doc-dir>${generated-dir}/infra</generated-infra-doc-dir>
-        <code-examples-dir>${generated-dir}/examples</code-examples-dir>
         <vale.image>docker.io/jdkato/vale:v2.15.5</vale.image>
     </properties>
 
@@ -3233,7 +3230,7 @@
                             <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
-                                <argument>${generated-infra-doc-dir}/quarkus-maven-plugin-goals.adoc</argument>
+                                <argument>${generated-dir}/infra/quarkus-maven-plugin-goals.adoc</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
@@ -3252,7 +3249,7 @@
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
                             <arguments>
-                                <argument>${generated-infra-doc-dir}/quarkus-all-build-items.adoc</argument>
+                                <argument>${generated-dir}/infra/quarkus-all-build-items.adoc</argument>
                                 <argument>${project.basedir}/../core/deployment</argument>
                                 <argument>${project.basedir}/../extensions</argument>
                             </arguments>
@@ -3273,7 +3270,7 @@
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.CopyExampleSource</mainClass>
                             <arguments>
-                                <argument>${code-examples-dir}</argument>
+                                <argument>${generated-dir}/examples</argument>
                                 <argument>${project.basedir}/..</argument>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>
                             </arguments>
@@ -3379,9 +3376,7 @@
                     <sourceDirectory>target/asciidoc/sources</sourceDirectory>
                     <preserveDirectories>true</preserveDirectories>
                     <attributes>
-                        <infra-doc-dir>${infra-doc-dir}</infra-doc-dir>
-                        <generated-config-doc-dir>${generated-config-doc-dir}</generated-config-doc-dir>
-                        <code-examples>${code-examples-dir}</code-examples>
+                        <generated-dir>${generated-dir}</generated-dir>
                         <imagesdir>./images</imagesdir>
                         <icons>font</icons>
                         <sectanchors>true</sectanchors>

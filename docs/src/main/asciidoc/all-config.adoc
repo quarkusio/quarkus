@@ -11,4 +11,4 @@ include::_attributes.adoc[]
 :categories: core
 :summary: List all the configuration properties per extensions
 
-include::{generated-config-doc-dir}/quarkus-all-config.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-all-config.adoc[opts=optional]

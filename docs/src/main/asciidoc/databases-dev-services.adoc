@@ -288,4 +288,4 @@ Dev Services have been started.
 
 Dev Services for Databases support the following configuration options:
 
-include::{generated-config-doc-dir}/quarkus-datasource_quarkus.datasource.devservices.adoc[opts=optional,leveloffset=+1]
+include::{generated-dir}/config/quarkus-datasource_quarkus.datasource.devservices.adoc[opts=optional,leveloffset=+1]

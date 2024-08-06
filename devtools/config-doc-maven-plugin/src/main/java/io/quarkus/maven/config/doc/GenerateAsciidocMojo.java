@@ -68,7 +68,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     @Parameter
     private File scanDirectory;
 
-    @Parameter(defaultValue = "${project.build.directory}/quarkus-config-doc", required = true)
+    @Parameter(defaultValue = "${project.build.directory}/quarkus-generated-doc/config", required = true)
     private File targetDirectory;
 
     @Parameter(defaultValue = "false")

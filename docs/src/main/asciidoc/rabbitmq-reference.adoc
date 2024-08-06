@@ -470,7 +470,7 @@ the default mount path of `rabbitmq`. If the RabbitMQ secret engine was mounted 
 
 //=== Quarkus specific configuration
 
-//include::{generated-config-doc-dir}/quarkus-smallrye-reactivemessaging-rabbitmq.adoc[opts=optional, leveloffset=+1]
+//include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq.adoc[opts=optional, leveloffset=+1]
 
 === Incoming channel configuration
 

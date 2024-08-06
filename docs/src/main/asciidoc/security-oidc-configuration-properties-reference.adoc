@@ -15,11 +15,11 @@ As a Quarkus developer, you configure the Quarkus OpenID Connect (OIDC) extensio
 
 == OIDC configuration
 
-include::{generated-config-doc-dir}/quarkus-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-oidc_quarkus.oidc.adoc[opts=optional, leveloffset=+1]
 
 == Keycloak Dev Services configuration
 
-include::{generated-config-doc-dir}/quarkus-oidc_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-oidc_quarkus.keycloak.adoc[opts=optional, leveloffset=+1]
 
 == References
 

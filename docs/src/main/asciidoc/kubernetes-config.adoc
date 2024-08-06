@@ -149,4 +149,4 @@ See xref:deploying-to-kubernetes.adoc#secret-mapping[this] for more details.
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-kubernetes-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-config.adoc[opts=optional, leveloffset=+1]

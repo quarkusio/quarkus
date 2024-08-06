@@ -370,4 +370,4 @@ Finally, the Kubernetes job will be launched every time it is installed in Kuber
 
 == Configuration Reference
 
-include::{generated-config-doc-dir}/quarkus-picocli.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-picocli.adoc[opts=optional, leveloffset=+1]

@@ -23,11 +23,10 @@ import io.quarkus.annotation.processor.documentation.config.ConfigDocExtensionPr
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.extension.ExtensionBuildProcessor;
-import io.quarkus.annotation.processor.generate_doc.LegacyConfigDocExtensionProcessor;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
-@SupportedOptions({ Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC, Options.GENERATE_LEGACY_CONFIG_DOC })
+@SupportedOptions({ Options.LEGACY_CONFIG_ROOT, Options.GENERATE_DOC })
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final String DEBUG = "debug-extension-annotation-processor";
@@ -48,10 +47,6 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         // for now, we generate the old config doc by default but we will change this behavior soon
         if (generateDoc) {
             extensionProcessors.add(new ConfigDocExtensionProcessor());
-
-            if (!"false".equals(processingEnv.getOptions().get(Options.GENERATE_LEGACY_CONFIG_DOC))) {
-                extensionProcessors.add(new LegacyConfigDocExtensionProcessor());
-            }
         }
 
         this.extensionProcessors = Collections.unmodifiableList(extensionProcessors);

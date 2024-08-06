@@ -42,7 +42,7 @@ public final class ConfigNamingUtil {
         return rootPrefix;
     }
 
-    private static String deriveConfigRootName(String simpleClassName, String prefix, ConfigPhase configPhase) {
+    static String deriveConfigRootName(String simpleClassName, String prefix, ConfigPhase configPhase) {
         String simpleNameInLowerCase = simpleClassName.toLowerCase();
         int length = simpleNameInLowerCase.length();
 

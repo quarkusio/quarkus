@@ -34,11 +34,10 @@ import org.jboss.jdeparser.JSources;
 import org.jboss.jdeparser.JType;
 import org.jboss.jdeparser.JTypes;
 
-import io.quarkus.annotation.processor.generate_doc.Constants;
-
 public final class AccessorGenerator {
 
     private static final String QUARKUS_GENERATED = "io.quarkus.Generated";
+    private static final String INSTANCE_SYM = "__instance";
 
     private final ProcessingEnvironment processingEnv;
     private final ElementUtil elementUtil;
@@ -75,7 +74,7 @@ public final class AccessorGenerator {
         classDef.constructor(JMod.PRIVATE); // no construction
         classDef.annotate(QUARKUS_GENERATED)
                 .value("Quarkus annotation processor");
-        final JAssignableExpr instanceName = JExprs.name(Constants.INSTANCE_SYM);
+        final JAssignableExpr instanceName = JExprs.name(INSTANCE_SYM);
         boolean isEnclosingClassPublic = clazz.getModifiers()
                 .contains(Modifier.PUBLIC);
         // iterate fields
@@ -114,14 +113,14 @@ public final class AccessorGenerator {
             final JMethodDef getter = classDef.method(JMod.PUBLIC | JMod.STATIC, publicType, "get_" + fieldName);
             getter.annotate(SuppressWarnings.class)
                     .value("unchecked");
-            getter.param(JType.OBJECT, Constants.INSTANCE_SYM);
+            getter.param(JType.OBJECT, INSTANCE_SYM);
             getter.body()
                     ._return(instanceName.cast(clazzType)
                             .field(fieldName));
             final JMethodDef setter = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.VOID, "set_" + fieldName);
             setter.annotate(SuppressWarnings.class)
                     .value("unchecked");
-            setter.param(JType.OBJECT, Constants.INSTANCE_SYM);
+            setter.param(JType.OBJECT, INSTANCE_SYM);
             setter.param(publicType, fieldName);
             final JAssignableExpr fieldExpr = JExprs.name(fieldName);
             setter.body()

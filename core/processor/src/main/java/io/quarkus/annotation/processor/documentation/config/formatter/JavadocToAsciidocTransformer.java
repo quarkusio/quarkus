@@ -30,7 +30,6 @@ public final class JavadocToAsciidocTransformer {
     private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
     private static final Pattern STARTING_SPACE = Pattern.compile("^ +");
 
-    private static final String EMPTY = "";
     private static final String DOT = ".";
 
     private static final String BACKTICK = "`";
@@ -112,12 +111,16 @@ public final class JavadocToAsciidocTransformer {
                 .map(JavadocDescription::toText)
                 .findFirst();
 
+        if (description != null && description.isBlank()) {
+            description = null;
+        }
+
         return new ParsedJavadoc(description, since.isPresent() ? since.get() : null, originalFormat);
     }
 
     public ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return new ParsedJavadocSection(EMPTY, EMPTY);
+            return new ParsedJavadocSection(null, null);
         }
 
         // the parser expects all the lines to start with "* "
@@ -133,19 +136,28 @@ public final class JavadocToAsciidocTransformer {
         }
 
         if (asciidoc == null || asciidoc.isBlank()) {
-            return new ParsedJavadocSection(EMPTY, EMPTY);
+            return new ParsedJavadocSection(null, null);
         }
 
-        final int endOfTitleIndex = asciidoc.indexOf(DOT);
-        if (endOfTitleIndex == -1) {
-            final String title = asciidoc.replaceAll("^([^\\w])+", EMPTY).trim();
+        final int newLineIndex = asciidoc.indexOf(NEW_LINE);
+        final int dotIndex = asciidoc.indexOf(DOT);
 
-            return new ParsedJavadocSection(title, EMPTY);
+        final int endOfTitleIndex;
+        if (newLineIndex > 0 && newLineIndex < dotIndex) {
+            endOfTitleIndex = newLineIndex;
         } else {
-            final String title = asciidoc.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", EMPTY).trim();
+            endOfTitleIndex = dotIndex;
+        }
+
+        if (endOfTitleIndex == -1) {
+            final String title = asciidoc.replaceAll("^([^\\w])+", "").trim();
+
+            return new ParsedJavadocSection(title, null);
+        } else {
+            final String title = asciidoc.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", "").trim();
             final String details = asciidoc.substring(endOfTitleIndex + 1).trim();
 
-            return new ParsedJavadocSection(title, details);
+            return new ParsedJavadocSection(title, details.isBlank() ? null : details);
         }
     }
 

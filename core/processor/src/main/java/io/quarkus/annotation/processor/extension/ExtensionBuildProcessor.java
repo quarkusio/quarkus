@@ -21,7 +21,6 @@ import javax.tools.Diagnostic;
 import io.quarkus.annotation.processor.ExtensionProcessor;
 import io.quarkus.annotation.processor.Outputs;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
-import io.quarkus.annotation.processor.generate_doc.Constants;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
 
@@ -51,15 +50,15 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
                     processBuildStep(roundEnv, annotation);
                     break;
                 case Types.ANNOTATION_RECORDER:
-                    trackAnnotationUsed(Constants.ANNOTATION_RECORDER);
+                    trackAnnotationUsed(Types.ANNOTATION_RECORDER);
                     processRecorder(roundEnv, annotation);
                     break;
                 case Types.ANNOTATION_CONFIG_ROOT:
-                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_ROOT);
+                    trackAnnotationUsed(Types.ANNOTATION_CONFIG_ROOT);
                     processConfigRoot(roundEnv, annotation);
                     break;
                 case Types.ANNOTATION_CONFIG_GROUP:
-                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_GROUP);
+                    trackAnnotationUsed(Types.ANNOTATION_CONFIG_GROUP);
                     processConfigGroup(roundEnv, annotation);
                     break;
             }
@@ -103,10 +102,10 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
                 continue;
             }
             ExecutableElement ex = (ExecutableElement) e;
-            if (!utils.element().isAnnotationPresent(ex, Constants.ANNOTATION_BUILD_STEP)) {
+            if (!utils.element().isAnnotationPresent(ex, Types.ANNOTATION_BUILD_STEP)) {
                 continue;
             }
-            if (!utils.element().isAnnotationPresent(ex, Constants.ANNOTATION_RECORD)) {
+            if (!utils.element().isAnnotationPresent(ex, Types.ANNOTATION_RECORD)) {
                 continue;
             }
 
@@ -118,7 +117,7 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
                 if (parameterTypeElement == null) {
                     allTypesResolvable = false;
                 } else {
-                    if (utils.element().isAnnotationPresent(parameterTypeElement, Constants.ANNOTATION_RECORDER)) {
+                    if (utils.element().isAnnotationPresent(parameterTypeElement, Types.ANNOTATION_RECORDER)) {
                         if (parameterTypeElement.getModifiers().contains(Modifier.FINAL)) {
                             utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR,
                                     "Class '" + parameterTypeElement.getQualifiedName()
@@ -176,7 +175,7 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     }
 
     private void validateAnnotationUsage() {
-        if (isAnnotationUsed(Constants.ANNOTATION_BUILD_STEP) && isAnnotationUsed(Constants.ANNOTATION_RECORDER)) {
+        if (isAnnotationUsed(Types.ANNOTATION_BUILD_STEP) && isAnnotationUsed(Types.ANNOTATION_RECORDER)) {
             utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "Detected use of @Recorder annotation in 'deployment' module. Classes annotated with @Recorder must be part of the extension's 'runtime' module");
         }

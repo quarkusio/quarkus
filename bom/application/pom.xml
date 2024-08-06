@@ -5745,6 +5745,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-zero</artifactId>
+                <version>${mutiny-zero.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>mutiny-zero-flow-adapters</artifactId>
                 <version>${mutiny-zero.version}</version>
             </dependency>

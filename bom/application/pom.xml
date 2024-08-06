@@ -161,7 +161,7 @@
         <awaitility.version>4.2.1</awaitility.version>
         <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
         <flyway.version>10.17.0</flyway.version>
-        <yasson.version>3.0.3</yasson.version>
+        <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.27.0</liquibase.version>
         <liquibase-mongodb.version>4.24.0</liquibase-mongodb.version>

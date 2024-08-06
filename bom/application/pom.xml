@@ -125,7 +125,7 @@
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.8.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
-        <oracle-jdbc.version>23.4.0.24.05</oracle-jdbc.version>
+        <oracle-jdbc.version>23.5.0.24.07</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>

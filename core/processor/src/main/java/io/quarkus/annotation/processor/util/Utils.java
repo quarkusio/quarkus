@@ -15,7 +15,7 @@ public final class Utils {
         this.elementUtil = new ElementUtil(processingEnv);
         this.accessorGenerator = new AccessorGenerator(processingEnv, elementUtil);
         this.filerUtil = new FilerUtil(processingEnv);
-        this.extensionUtil = new ExtensionUtil(filerUtil);
+        this.extensionUtil = new ExtensionUtil(processingEnv, filerUtil);
     }
 
     public ElementUtil element() {

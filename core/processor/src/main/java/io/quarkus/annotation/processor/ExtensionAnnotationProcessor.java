@@ -16,6 +16,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
+import javax.tools.Diagnostic.Kind;
 
 import org.jboss.jdeparser.JDeparser;
 
@@ -38,19 +39,6 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     public synchronized void init(ProcessingEnvironment processingEnv) {
         super.init(processingEnv);
 
-        List<ExtensionProcessor> extensionProcessors = new ArrayList<>();
-        extensionProcessors.add(new ExtensionBuildProcessor());
-
-        boolean skipDocs = Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly");
-        boolean generateDoc = !skipDocs && !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
-
-        // for now, we generate the old config doc by default but we will change this behavior soon
-        if (generateDoc) {
-            extensionProcessors.add(new ConfigDocExtensionProcessor());
-        }
-
-        this.extensionProcessors = Collections.unmodifiableList(extensionProcessors);
-
         utils = new Utils(processingEnv);
 
         boolean useConfigMapping = !Boolean
@@ -65,7 +53,25 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     + " config implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration");
         }
 
-        for (ExtensionProcessor extensionProcessor : extensionProcessors) {
+        List<ExtensionProcessor> extensionProcessors = new ArrayList<>();
+        extensionProcessors.add(new ExtensionBuildProcessor());
+
+        boolean skipDocs = Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly");
+        boolean generateDoc = !skipDocs && !"false".equals(processingEnv.getOptions().get(Options.GENERATE_DOC));
+
+        // for now, we generate the old config doc by default but we will change this behavior soon
+        if (generateDoc) {
+            if (extension.detected()) {
+                extensionProcessors.add(new ConfigDocExtensionProcessor());
+            } else {
+                processingEnv.getMessager().printMessage(Kind.WARNING,
+                        "We could not detect the groupId and artifactId of this module (maybe you are using Gradle to build your extension?). The generation of the configuration documentation has been disabled.");
+            }
+        }
+
+        this.extensionProcessors = Collections.unmodifiableList(extensionProcessors);
+
+        for (ExtensionProcessor extensionProcessor : this.extensionProcessors) {
             extensionProcessor.init(config, utils);
         }
     }

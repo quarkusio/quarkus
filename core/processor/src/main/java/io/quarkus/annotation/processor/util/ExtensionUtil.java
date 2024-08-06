@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.tools.Diagnostic.Kind;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -26,9 +28,11 @@ public final class ExtensionUtil {
     private static final String NAME_COMMON_SUFFIX = " - Common";
     private static final String NAME_INTERNAL_SUFFIX = " - Internal";
 
+    private final ProcessingEnvironment processingEnv;
     private final FilerUtil filerUtil;
 
-    ExtensionUtil(FilerUtil filerUtil) {
+    ExtensionUtil(ProcessingEnvironment processingEnv, FilerUtil filerUtil) {
+        this.processingEnv = processingEnv;
         this.filerUtil = filerUtil;
     }
 
@@ -37,7 +41,11 @@ public final class ExtensionUtil {
      * One option would be to pass it through the annotation processor but it's not exactly ideal.
      */
     public Extension getExtension() {
-        Path pom = filerUtil.getPomPath();
+        Optional<Path> pom = filerUtil.getPomPath();
+
+        if (pom.isEmpty()) {
+            return Extension.createNotDetected();
+        }
 
         Document doc;
 
@@ -45,13 +53,13 @@ public final class ExtensionUtil {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             DocumentBuilder db = dbf.newDocumentBuilder();
-            doc = db.parse(pom.toFile());
+            doc = db.parse(pom.get().toFile());
             doc.getDocumentElement().normalize();
         } catch (Exception e) {
             throw new IllegalStateException("Unable to parse pom file: " + pom, e);
         }
 
-        return getExtensionFromPom(pom, doc);
+        return getExtensionFromPom(pom.get(), doc);
     }
 
     private Extension getExtensionFromPom(Path pom, Document doc) {
@@ -99,7 +107,8 @@ public final class ExtensionUtil {
         }
 
         if (groupId == null || groupId.isBlank() || artifactId == null || artifactId.isBlank()) {
-            throw new IllegalStateException("Unable to determine artifact coordinates from: " + pom);
+            processingEnv.getMessager().printMessage(Kind.WARNING, "Unable to determine artifact coordinates from: " + pom);
+            return Extension.createNotDetected();
         }
 
         boolean commonOrInternal = false;
@@ -142,7 +151,7 @@ public final class ExtensionUtil {
             }
         }
 
-        return new Extension(groupId, artifactId, name, nameSource);
+        return new Extension(groupId, artifactId, name, nameSource, true);
     }
 
     private Optional<String> getExtensionNameFromExtensionMetadata() {

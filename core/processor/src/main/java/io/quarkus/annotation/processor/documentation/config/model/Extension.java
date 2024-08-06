@@ -5,7 +5,11 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public record Extension(String groupId, String artifactId, String name,
-        NameSource nameSource) implements Comparable<Extension> {
+        NameSource nameSource, boolean detected) implements Comparable<Extension> {
+
+    public static Extension createNotDetected() {
+        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false);
+    }
 
     @Override
     public final String toString() {

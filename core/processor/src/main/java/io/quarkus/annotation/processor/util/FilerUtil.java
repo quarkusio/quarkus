@@ -133,12 +133,18 @@ public class FilerUtil {
         }
     }
 
-    public Path getPomPath() {
+    public Optional<Path> getPomPath() {
         try {
-            return Paths.get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
-                    .getParent().getParent().getParent().resolve("pom.xml").toAbsolutePath();
+            Path pomPath = Paths.get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
+                    .getParent().getParent().getParent().resolve("pom.xml");
+
+            if (!Files.isReadable(pomPath)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(pomPath.toAbsolutePath());
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to determine path to pom.xml");
+            return Optional.empty();
         }
     }
 

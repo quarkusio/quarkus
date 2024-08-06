@@ -74,8 +74,15 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean generateAllConfig;
 
+    @Parameter(defaultValue = "false")
+    private boolean skip;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (skip) {
+            return;
+        }
+
         // I was unable to find an easy way to get the root directory of the project
         Path resolvedScanDirectory = scanDirectory != null ? scanDirectory.toPath()
                 : mavenSession.getCurrentProject().getBasedir().toPath().getParent();

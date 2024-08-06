@@ -3182,10 +3182,19 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-config-doc-maven-plugin</artifactId>
                 <version>${project.version}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <generateAllConfig>true</generateAllConfig>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-config-doc</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>generate-asciidoc</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <generateAllConfig>true</generateAllConfig>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

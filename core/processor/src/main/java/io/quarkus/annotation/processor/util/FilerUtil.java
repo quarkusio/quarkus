@@ -49,7 +49,10 @@ public class FilerUtil {
         this.processingEnv = processingEnv;
     }
 
-    public void write(Path filePath, Set<String> set) {
+    /**
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     */
+    public void write(String filePath, Set<String> set) {
         if (set.isEmpty()) {
             return;
         }
@@ -71,7 +74,10 @@ public class FilerUtil {
         }
     }
 
-    public void write(Path filePath, Properties properties) {
+    /**
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     */
+    public void write(String filePath, Properties properties) {
         if (properties.isEmpty()) {
             return;
         }
@@ -90,7 +96,10 @@ public class FilerUtil {
         }
     }
 
-    public void writeJson(Path filePath, Object value) {
+    /**
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     */
+    public void writeJson(String filePath, Object value) {
         if (value == null) {
             return;
         }
@@ -110,6 +119,8 @@ public class FilerUtil {
 
     /**
      * The model files are written outside of target/classes as we don't want to include them in the jar.
+     * <p>
+     * They are not written by the annotation processor Filer API so we can use proper Paths.
      */
     public Path writeModel(Path filePath, Object value) {
         Path yamlModelPath = getTargetPath().resolve(filePath);

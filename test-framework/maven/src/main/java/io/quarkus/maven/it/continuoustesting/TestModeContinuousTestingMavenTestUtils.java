@@ -22,10 +22,11 @@ public class TestModeContinuousTestingMavenTestUtils extends ContinuousTestingMa
     // Example output we look for
     // 1 test failed (1 passing, 0 skipped), 1 test was run in 217ms. Tests completed at 21:22:34 due to changes to HelloResource$Blah.class and 1 other files.
     // All 2 tests are passing (0 skipped), 2 tests were run in 1413ms. Tests completed at 21:22:33.
+    // All 1 test is passing (0 skipped), ...
     // Windows log, despite `quarkus.console.basic=true', might contain terminal control symbols, colour decorations.
     // e.g. the matcher is then fighting: [39m[91m1 test failed[39m ([32m1 passing[39m, [94m0 skipped[39m)
     private static final Pattern ALL_PASSING = Pattern.compile(
-            "(?:\\e\\[[\\d;]+m)*All (\\d+) tests are passing \\((\\d+) skipped\\)",
+            "(?:\\e\\[[\\d;]+m)*All (\\d+) tests? (?:are|is) passing \\((\\d+) skipped\\)",
             Pattern.MULTILINE);
     private static final Pattern SOME_PASSING = Pattern
             .compile(

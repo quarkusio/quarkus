@@ -58,17 +58,21 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     private static final String TARGET = "target";
 
     private static final String ADOC_SUFFIX = ".adoc";
-    private static final String CONFIG_ROOT_FILE_FORMAT = "%s_%s" + ADOC_SUFFIX;
-    private static final String EXTENSION_FILE_FORMAT = "%s" + ADOC_SUFFIX;
+    private static final String CONFIG_ROOT_FILE_FORMAT = "%s_%s.adoc";
+    private static final String EXTENSION_FILE_FORMAT = "%s.adoc";
+    private static final String ALL_CONFIG_FILE_NAME = "quarkus-all-config.adoc";
 
     @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession mavenSession;
 
-    @Parameter(readonly = true)
+    @Parameter
     private File scanDirectory;
 
-    @Parameter(defaultValue = "${project.build.directory}/quarkus-config-doc", readonly = true, required = true)
+    @Parameter(defaultValue = "${project.build.directory}/quarkus-config-doc", required = true)
     private File targetDirectory;
+
+    @Parameter(defaultValue = "false")
+    private boolean generateAllConfig;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -168,6 +172,17 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 }
             }
         }
+
+        if (generateAllConfig) {
+            // we generate the file centralizing all the config properties
+            try {
+                Path allConfigAdocPath = resolvedTargetDirectory.resolve(ALL_CONFIG_FILE_NAME);
+
+                Files.writeString(allConfigAdocPath, generateAllConfig(quteEngine, mergedModel.getConfigRoots()));
+            } catch (Exception e) {
+                throw new MojoExecutionException("Unable to render all config", e);
+            }
+        }
     }
 
     private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
@@ -179,6 +194,17 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 .data("summaryTableId", summaryTableId)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
+                .render();
+    }
+
+    private static String generateAllConfig(Engine quteEngine,
+            Map<Extension, Map<String, ConfigRoot>> configRootsByExtensions) {
+        return quteEngine.getTemplate("allConfig.qute.adoc")
+                .data("configRootsByExtensions", configRootsByExtensions)
+                .data("searchable", true)
+                .data("summaryTableId", "all-config")
+                .data("includeDurationNote", true)
+                .data("includeMemorySizeNote", true)
                 .render();
     }
 
@@ -425,6 +451,8 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
         engine.putTemplate("configReference.qute.adoc",
                 engine.parse(getTemplate("templates/configReference.qute.adoc")));
+        engine.putTemplate("allConfig.qute.adoc",
+                engine.parse(getTemplate("templates/allConfig.qute.adoc")));
         engine.putTemplate("configProperty.qute.adoc",
                 engine.parse(getTemplate("templates/tags/configProperty.qute.adoc")));
         engine.putTemplate("configSection.qute.adoc",

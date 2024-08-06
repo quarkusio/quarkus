@@ -3183,6 +3183,9 @@
                 <artifactId>quarkus-config-doc-maven-plugin</artifactId>
                 <version>${project.version}</version>
                 <extensions>true</extensions>
+                <configuration>
+                    <generateAllConfig>true</generateAllConfig>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -3208,25 +3211,6 @@
                     <skip>${skipDocs}</skip>
                 </configuration>
                 <executions>
-                    <execution>
-                        <id>all-config-classes</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipDocs}</skip>
-                            <!-- Don't wait for unkillable reference reaper threads -->
-                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                            <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
-                            <arguments>
-                                <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
-                            </arguments>
-                            <environmentVariables>
-                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
-                            </environmentVariables>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>generate-quarkus-mvn-plugin-docs</id>
                         <phase>process-classes</phase>

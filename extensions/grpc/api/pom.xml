@@ -11,9 +11,10 @@
     <name>Quarkus - gRPC - API</name>
 
     <dependencies>
+        <!-- Do not depend on the ArC extension here as we are not in an extension -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <groupId>io.quarkus.arc</groupId>
+            <artifactId>arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>

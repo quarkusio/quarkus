@@ -189,9 +189,6 @@ public class KeycloakDevServicesProcessor {
         StartupLogCompressor compressor = new StartupLogCompressor(
                 (launchMode.isTest() ? "(test) " : "") + "Keycloak Dev Services Starting:",
                 consoleInstalledBuildItem, loggingSetupBuildItem);
-        if (vertxInstance == null) {
-            vertxInstance = Vertx.vertx();
-        }
         try {
             List<String> errors = new ArrayList<>();
 
@@ -280,6 +277,12 @@ public class KeycloakDevServicesProcessor {
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createDefaultRealm);
 
         List<String> realmNames = new LinkedList<>();
+
+        // this needs to be only if we actually start the dev-service as it adds a shutdown hook
+        // whose TCCL is the Augmentation CL, which if not removed, causes a massive memory leaks
+        if (vertxInstance == null) {
+            vertxInstance = Vertx.vertx();
+        }
 
         WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
         try {

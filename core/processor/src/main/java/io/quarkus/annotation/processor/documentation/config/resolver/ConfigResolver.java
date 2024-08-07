@@ -88,7 +88,8 @@ public class ConfigResolver {
 
     private void resolveProperty(ConfigRoot configRoot, Map<String, ConfigSection> existingRootConfigSections,
             ConfigPhase phase, ResolutionContext context, DiscoveryConfigProperty discoveryConfigProperty) {
-        String fullPath = appendPath(context.getPath(), discoveryConfigProperty.getPath());
+        String propertyPath = appendPath(context.getPath(), discoveryConfigProperty.getPath());
+
         List<String> additionalPaths = context.getAdditionalPaths().stream()
                 .map(p -> appendPath(p, discoveryConfigProperty.getPath()))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -99,17 +100,19 @@ public class ConfigResolver {
         if (configCollector.isResolvedConfigGroup(typeQualifiedName)) {
             DiscoveryConfigGroup discoveryConfigGroup = configCollector.getResolvedConfigGroup(typeQualifiedName);
 
+            String potentiallyMappedPath = propertyPath;
             if (discoveryConfigProperty.getType().isMap()) {
                 if (discoveryConfigProperty.isUnnamedMapKey()) {
                     ListIterator<String> additionalPathsIterator = additionalPaths.listIterator();
 
-                    additionalPathsIterator.add(fullPath + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
+                    additionalPathsIterator
+                            .add(propertyPath + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
                     while (additionalPathsIterator.hasNext()) {
                         additionalPathsIterator.add(additionalPathsIterator.next()
                                 + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
                     }
                 } else {
-                    fullPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
+                    potentiallyMappedPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
                     additionalPaths = additionalPaths.stream()
                             .map(p -> p + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()))
                             .collect(Collectors.toCollection(ArrayList::new));
@@ -122,22 +125,22 @@ public class ConfigResolver {
             boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey() || discoveryConfigProperty.isUnnamedMapKey();
 
             if (discoveryConfigProperty.isSection()) {
-                ConfigSection configSection = existingRootConfigSections.get(fullPath);
+                ConfigSection configSection = existingRootConfigSections.get(propertyPath);
 
                 if (configSection != null) {
                     configSection.appendState(discoveryConfigProperty.isSectionGenerated(), deprecated);
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
-                            discoveryConfigProperty.getSourceName(), fullPath, typeQualifiedName,
+                            discoveryConfigProperty.getSourceName(), propertyPath, typeQualifiedName,
                             discoveryConfigProperty.isSectionGenerated(), deprecated);
                     context.getItemCollection().addItem(configSection);
-                    existingRootConfigSections.put(configSection.getPath(), configSection);
+                    existingRootConfigSections.put(propertyPath, configSection);
                 }
 
-                configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup, configSection,
-                        isWithinMap, isWithMapWithUnnamedKey, deprecated);
+                configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
+                        configSection, isWithinMap, isWithMapWithUnnamedKey, deprecated);
             } else {
-                configGroupContext = new ResolutionContext(fullPath, additionalPaths, discoveryConfigGroup,
+                configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
                         context.getItemCollection(), isWithinMap, isWithMapWithUnnamedKey, deprecated);
             }
 
@@ -167,12 +170,14 @@ public class ConfigResolver {
                 enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
             }
 
+            String potentiallyMappedPath = propertyPath;
+
             if (discoveryConfigProperty.getType().isMap()) {
                 // it is a leaf pass through map
                 typeQualifiedName = discoveryConfigProperty.getType().wrapperType().toString();
                 typeSimplifiedName = utils.element().simplifyGenericType(discoveryConfigProperty.getType().wrapperType());
 
-                fullPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
+                potentiallyMappedPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
                 additionalPaths = additionalPaths.stream()
                         .map(p -> p + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()))
                         .collect(Collectors.toCollection(ArrayList::new));
@@ -183,8 +188,8 @@ public class ConfigResolver {
             // this is a standard property
             ConfigProperty configProperty = new ConfigProperty(phase,
                     discoveryConfigProperty.getSourceClass(),
-                    discoveryConfigProperty.getSourceName(), fullPath, additionalPaths,
-                    ConfigNamingUtil.toEnvVarName(fullPath), typeQualifiedName, typeSimplifiedName,
+                    discoveryConfigProperty.getSourceName(), potentiallyMappedPath, additionalPaths,
+                    ConfigNamingUtil.toEnvVarName(potentiallyMappedPath), typeQualifiedName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),
                     discoveryConfigProperty.getType().isOptional(), discoveryConfigProperty.getMapKey(),
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),

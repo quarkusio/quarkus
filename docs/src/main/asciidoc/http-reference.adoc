@@ -270,7 +270,7 @@ quarkus.http.header.Pragma.methods=GET,HEAD
 
 This will apply the `Pragma` header only when the `/headers/pragma` resource is called with a `GET` or a `HEAD` method
 
-include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.header.-header-.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.header.adoc[leveloffset=+1, opts=optional]
 
 === Additional HTTP Headers per path
 
@@ -310,7 +310,7 @@ quarkus.http.filter.any-order.matches=/paths/order.*
 
 Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
 
-include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.-filter-.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.adoc[leveloffset=+1, opts=optional]
 
 == Support 100-Continue in vert.x
 

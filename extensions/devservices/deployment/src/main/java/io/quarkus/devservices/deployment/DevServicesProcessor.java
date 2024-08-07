@@ -130,7 +130,7 @@ public class DevServicesProcessor {
                 config.remove(key);
             }
             if (!config.isEmpty()) {
-                descriptions.add(new DevServiceDescriptionBuildItem("Additional Dev Services config", null, config));
+                descriptions.add(new DevServiceDescriptionBuildItem("Additional Dev Services config", null, null, config));
             }
         }
         return descriptions;
@@ -151,9 +151,11 @@ public class DevServicesProcessor {
 
     private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem, Container container) {
         if (container == null) {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), null, buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(), null,
+                    buildItem.getConfig());
         } else {
-            return new DevServiceDescriptionBuildItem(buildItem.getName(), toContainerInfo(container), buildItem.getConfig());
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
+                    toContainerInfo(container), buildItem.getConfig());
         }
     }
 

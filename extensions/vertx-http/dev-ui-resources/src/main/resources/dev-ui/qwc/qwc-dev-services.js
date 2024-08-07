@@ -42,6 +42,11 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
         .content {
             padding: 15px;
         }
+    
+        .description {
+            padding-bottom: 10px;
+            color: var(--lumo-contrast-50pct);
+        }
     `;
 
     static properties = {
@@ -76,10 +81,17 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
     _renderCard(devService){
         return html`<qui-card header="${devService.name}">
                         <div slot="content" class="content">
+                            ${this._renderDescription(devService)}
                             ${this._renderContainerDetails(devService)}
                             ${this._renderConfigDetails(devService)}
                         </div>
                     </qui-card>`;
+    }
+
+    _renderDescription(devService){
+        if(devService.description){
+            return html`<div class="description">${devService.description}</div>`;
+        }
     }
 
     _renderContainerDetails(devService){

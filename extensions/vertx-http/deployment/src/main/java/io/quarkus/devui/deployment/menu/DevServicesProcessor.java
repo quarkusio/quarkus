@@ -2,6 +2,8 @@ package io.quarkus.devui.deployment.menu;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,19 +31,24 @@ public class DevServicesProcessor {
                 .icon("font-awesome-solid:wand-magic-sparkles")
                 .componentLink("qwc-dev-services.js"));
 
-        List<DevServiceDescriptionBuildItem> combined = new ArrayList<>();
+        Map<String, DevServiceDescriptionBuildItem> combined = new TreeMap<>();
+        addToMap(combined, devServiceDescriptions);
+        addToMap(combined, otherDevServices);
 
-        if (!devServiceDescriptions.isEmpty()) {
-            combined.addAll(devServiceDescriptions);
-        }
-        if (!otherDevServices.isEmpty()) {
-            combined.addAll(otherDevServices);
-        }
-
-        devServicesPages.addBuildTimeData("devServices", combined);
+        devServicesPages.addBuildTimeData("devServices", combined.values());
 
         return devServicesPages;
 
+    }
+
+    private void addToMap(Map<String, DevServiceDescriptionBuildItem> m, List<DevServiceDescriptionBuildItem> list) {
+        if (!list.isEmpty()) {
+            for (DevServiceDescriptionBuildItem i : list) {
+                if (!m.containsKey(i.getName())) {
+                    m.put(i.getName(), i);
+                }
+            }
+        }
     }
 
     private List<DevServiceDescriptionBuildItem> getOtherDevServices(
@@ -49,7 +56,9 @@ public class DevServicesProcessor {
         List<DevServiceDescriptionBuildItem> devServiceDescriptions = new ArrayList<>();
         for (DevServicesResultBuildItem devServicesResultBuildItem : devServicesResultBuildItems) {
             if (devServicesResultBuildItem.getContainerId() == null) {
-                devServiceDescriptions.add(new DevServiceDescriptionBuildItem(devServicesResultBuildItem.getName(), null,
+                devServiceDescriptions.add(new DevServiceDescriptionBuildItem(devServicesResultBuildItem.getName(),
+                        devServicesResultBuildItem.getDescription(),
+                        null,
                         devServicesResultBuildItem.getConfig()));
             }
         }

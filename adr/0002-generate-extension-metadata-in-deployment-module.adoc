@@ -69,8 +69,9 @@ A secondary benefit of this proposal is reducing the size (slightly) of the exte
 
 We will need to allow a long transition period (probably one major release lifespan), in which
 
-* The registry looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`, and possibly also the new metadata artifact
-* The extension plugin tolerates being invoked from both `runtime` and `deployment` modules (so it's probably simplest to have one 'umbrella' plugin which handles both modules). When invoked, it will look in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
+* The [registry upload](https://github.com/quarkusio/jbang-catalog/blob/main/catalog_publish.java#L318) looks in both the runtime and deployment jars for `META-INF/quarkus-extension.yaml`, and possibly also the new metadata artifact
+* Other tooling which directly reads metadata from binaries without using the registry (plugins, IDEs ... ?) will also need to look in both jars
+* The extension plugin tolerates being invoked from both `runtime` and `deployment` modules. When invoked from the runtime module it will use what's in the runtime module, and if invoked from deployment, it will look in both the runtime and deployment modules for `src/META-INF/quarkus-extension.yaml`.
 * We still package up a (less complete) `quarkus-extension.yaml` into the runtime module, so that back-level tools (such as the CLI, and maybe IDEs) can find it
 
 image::images/0002-transition-flow.svg[a transitional process, with fallbacks]

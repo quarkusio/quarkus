@@ -420,6 +420,7 @@ class VertxHttpProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             HttpBuildTimeConfig httpBuildTimeConfig,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            Optional<RequireSocketHttpBuildItem> requireSocket,
             EventLoopCountBuildItem eventLoopCount,
             List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             Capabilities capabilities,
@@ -430,8 +431,9 @@ class VertxHttpProcessor {
                     .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class)
                             .build());
         }
-        boolean startSocket = (!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
-                && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual());
+        boolean startSocket = requireSocket.isPresent() ||
+                ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
+                        && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual()));
         recorder.startServer(vertx.getVertx(), shutdown,
                 launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),

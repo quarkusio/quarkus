@@ -113,7 +113,7 @@
         <wildfly-elytron.version>2.5.0.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.1.4.SP1</jboss-marshalling.version>
         <jboss-threads.version>3.6.1.Final</jboss-threads.version>
-        <vertx.version>4.5.8</vertx.version>
+        <vertx.version>4.5.9</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -143,7 +143,7 @@
         <kafka3.version>3.7.1</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.5</snappy.version>
-        <strimzi-test-container.version>0.106.0</strimzi-test-container.version>
+        <strimzi-test-container.version>0.107.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.14</scala.version>
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
@@ -160,7 +160,7 @@
         <awaitility.version>4.2.1</awaitility.version>
         <jboss-logmanager.version>3.0.6.Final</jboss-logmanager.version>
         <flyway.version>10.15.2</flyway.version>
-        <yasson.version>3.0.3</yasson.version>
+        <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.27.0</liquibase.version>
         <liquibase-mongodb.version>4.24.0</liquibase-mongodb.version>
@@ -5742,6 +5742,11 @@
                         <artifactId>org.osgi.annotation.versioning</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-zero</artifactId>
+                <version>${mutiny-zero.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

@@ -38,6 +38,10 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
             padding-left: 10px;
             background: var(--lumo-contrast-5pct);
         }
+    
+        .content {
+            padding: 15px;
+        }
     `;
 
     static properties = {
@@ -71,7 +75,7 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
 
     _renderCard(devService){
         return html`<qui-card header="${devService.name}">
-                        <div slot="content">
+                        <div slot="content" class="content">
                             ${this._renderContainerDetails(devService)}
                             ${this._renderConfigDetails(devService)}
                         </div>

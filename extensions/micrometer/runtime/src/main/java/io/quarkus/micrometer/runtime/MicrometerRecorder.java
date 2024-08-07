@@ -229,16 +229,6 @@ public class MicrometerRecorder {
         consumer.accept(factory);
     }
 
-    public static Class<?> getClassForName(String classname) {
-        Class<?> clazz = null;
-        try {
-            clazz = Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException ignored) {
-        }
-        log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname, (clazz != null));
-        return clazz;
-    }
-
     static String getExceptionTag(Throwable throwable) {
         if (throwable == null) {
             return DEFAULT_EXCEPTION_TAG_VALUE;

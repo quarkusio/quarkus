@@ -3,8 +3,8 @@ package io.quarkus.micrometer.deployment.binder;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 public class RedisBinderProcessor {
@@ -12,13 +12,16 @@ public class RedisBinderProcessor {
     static final String OBSERVABLE_CLIENT = "io.quarkus.redis.runtime.client.ObservableRedis";
     static final String METRICS_BEAN_CLASS = "io.quarkus.micrometer.runtime.binder.redis.RedisMetricsBean";
 
-    static final Class<?> OBSERVABLE_CLIENT_CLASS = MicrometerRecorder.getClassForName(OBSERVABLE_CLIENT);
-
     static class RedisMetricsSupportEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        RedisMetricsSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
-            return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.redis);
+            return QuarkusClassLoader.isClassPresentAtRuntime(OBSERVABLE_CLIENT)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.redis);
         }
     }
 

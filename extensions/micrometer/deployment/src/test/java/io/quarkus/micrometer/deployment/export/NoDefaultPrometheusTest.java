@@ -27,7 +27,7 @@ public class NoDefaultPrometheusTest {
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,
-                            PrometheusRegistryProcessor.REGISTRY_CLASS,
+                            PrometheusMeterRegistry.class,
                             SecondPrometheusProvider.class));
 
     @Inject

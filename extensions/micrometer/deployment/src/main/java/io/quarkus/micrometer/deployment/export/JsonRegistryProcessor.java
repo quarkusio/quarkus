@@ -26,7 +26,11 @@ public class JsonRegistryProcessor {
     private static final Logger log = Logger.getLogger(JsonRegistryProcessor.class);
 
     public static class JsonRegistryEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        public JsonRegistryEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return mConfig.checkRegistryEnabledWithDefault(mConfig.export.json);
@@ -47,7 +51,7 @@ public class JsonRegistryProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JsonMeterRegistryProvider.class)
                 .setUnremovable().build());
-        registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
+        registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class.getName()));
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()

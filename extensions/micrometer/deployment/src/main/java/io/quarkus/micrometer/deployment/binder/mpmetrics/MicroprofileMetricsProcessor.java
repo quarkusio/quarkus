@@ -25,6 +25,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -34,7 +35,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.micrometer.deployment.RootMeterRegistryBuildItem;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.mpmetrics.MpMetricsRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
@@ -46,14 +46,13 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 @BuildSteps(onlyIf = MicroprofileMetricsProcessor.MicroprofileMetricsEnabled.class)
 public class MicroprofileMetricsProcessor {
     private static final Logger log = Logger.getLogger(MicroprofileMetricsProcessor.class);
-    static final Class<?> METRIC_ANNOTATION_CLASS = MicrometerRecorder
-            .getClassForName(MetricDotNames.METRIC_ANNOTATION.toString());
 
     static class MicroprofileMetricsEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return METRIC_ANNOTATION_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.mpMetrics);
+            return QuarkusClassLoader.isClassPresentAtRuntime(MetricDotNames.METRIC_ANNOTATION.toString())
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.mpMetrics);
         }
     }
 

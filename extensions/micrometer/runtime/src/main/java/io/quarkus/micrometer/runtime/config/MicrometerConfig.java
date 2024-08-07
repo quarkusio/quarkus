@@ -66,7 +66,10 @@ public final class MicrometerConfig {
     public boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
         if (enabled) {
             Optional<Boolean> configValue = config.getEnabled();
-            return configValue.orElseGet(() -> binderEnabledDefault);
+            if (configValue.isPresent()) {
+                return configValue.get();
+            }
+            return binderEnabledDefault;
         }
         return false;
     }

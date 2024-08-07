@@ -77,14 +77,16 @@ public class MicrometerProcessor {
     private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
     public static class MicrometerEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        public MicrometerEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return mConfig.enabled;
         }
     }
-
-    MicrometerConfig mConfig;
 
     @BuildStep(onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
     MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
@@ -93,7 +95,7 @@ public class MicrometerProcessor {
     }
 
     @BuildStep(onlyIf = { PrometheusRegistryProcessor.PrometheusEnabled.class })
-    MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
+    MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(MicrometerConfig mConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SecondPrometheusTest {
@@ -22,7 +23,7 @@ public class SecondPrometheusTest {
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
-                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS)
+                    .addClass(PrometheusMeterRegistry.class)
                     .addClass(SecondPrometheusProvider.class));
 
     @Inject

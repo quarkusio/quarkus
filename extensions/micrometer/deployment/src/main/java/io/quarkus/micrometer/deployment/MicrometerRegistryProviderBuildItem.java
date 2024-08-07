@@ -2,29 +2,34 @@ package io.quarkus.micrometer.deployment;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 
 @SuppressWarnings("unchecked")
 public final class MicrometerRegistryProviderBuildItem extends MultiBuildItem {
 
-    final Class<? extends MeterRegistry> clazz;
+    final String registryClassName;
 
+    @Deprecated(forRemoval = true)
     public MicrometerRegistryProviderBuildItem(Class<?> providedRegistryClass) {
-        this.clazz = (Class<? extends MeterRegistry>) providedRegistryClass;
+        this.registryClassName = providedRegistryClass.getName();
     }
 
     public MicrometerRegistryProviderBuildItem(String registryClassName) {
-        this.clazz = (Class<? extends MeterRegistry>) MicrometerRecorder.getClassForName(registryClassName);
+        this.registryClassName = registryClassName;
     }
 
     public Class<? extends MeterRegistry> getRegistryClass() {
-        return clazz;
+        try {
+            return (Class<? extends MeterRegistry>) Class.forName(registryClassName, false,
+                    Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
     public String toString() {
         return "MicrometerRegistryProviderBuildItem{"
-                + clazz
+                + registryClassName
                 + '}';
     }
 }

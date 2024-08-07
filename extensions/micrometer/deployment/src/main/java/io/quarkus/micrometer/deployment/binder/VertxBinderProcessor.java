@@ -6,13 +6,13 @@ import jakarta.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
@@ -26,13 +26,17 @@ import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 @BuildSteps(onlyIf = VertxBinderProcessor.VertxBinderEnabled.class)
 public class VertxBinderProcessor {
     static final String METRIC_OPTIONS_CLASS_NAME = "io.vertx.core.metrics.MetricsOptions";
-    static final Class<?> METRIC_OPTIONS_CLASS = MicrometerRecorder.getClassForName(METRIC_OPTIONS_CLASS_NAME);
 
     static class VertxBinderEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        VertxBinderEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
-            return METRIC_OPTIONS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx);
+            return QuarkusClassLoader.isClassPresentAtRuntime(METRIC_OPTIONS_CLASS_NAME)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx);
         }
     }
 

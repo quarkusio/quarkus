@@ -13,7 +13,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerRegistryProviderBuildItem;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.PrometheusConfigGroup;
 import io.quarkus.micrometer.runtime.export.EmptyExemplarSamplerProvider;
@@ -33,13 +32,16 @@ public class PrometheusRegistryProcessor {
     private static final Logger log = Logger.getLogger(PrometheusRegistryProcessor.class);
 
     static final String REGISTRY_CLASS_NAME = "io.micrometer.prometheus.PrometheusMeterRegistry";
-    static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
     public static class PrometheusEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        public PrometheusEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
-            return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
+            return QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
                     && mConfig.checkRegistryEnabledWithDefault(mConfig.export.prometheus);
         }
     }
@@ -65,7 +67,7 @@ public class PrometheusRegistryProcessor {
         additionalBeans.produce(builder.build());
 
         // Include the PrometheusMeterRegistry in a possible CompositeMeterRegistry
-        return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS);
+        return new MicrometerRegistryProviderBuildItem(REGISTRY_CLASS_NAME);
     }
 
     @BuildStep(onlyIf = { TraceEnabled.class })

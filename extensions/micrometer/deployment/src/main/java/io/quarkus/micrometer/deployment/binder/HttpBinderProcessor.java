@@ -39,7 +39,11 @@ public class HttpBinderProcessor {
     private static final String REST_CLIENT_METRICS_FILTER = "io.quarkus.micrometer.runtime.binder.RestClientMetricsFilter";
 
     static class HttpServerBinderEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        HttpServerBinderEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx)
@@ -48,7 +52,11 @@ public class HttpBinderProcessor {
     }
 
     static class HttpClientBinderEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        HttpClientBinderEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(REST_CLIENT_REQUEST_FILTER)

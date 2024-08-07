@@ -23,7 +23,11 @@ public class GrpcBinderProcessor {
     static final String SERVER_INTERCEPTOR = "io.grpc.ServerInterceptor";
 
     static class GrpcClientSupportEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        GrpcClientSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(CLIENT_INTERCEPTOR)
@@ -32,7 +36,11 @@ public class GrpcBinderProcessor {
     }
 
     static class GrpcServerSupportEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        GrpcServerSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(SERVER_INTERCEPTOR)

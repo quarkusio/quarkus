@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.deployment.binder;
 
+import static io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime;
+
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -8,7 +10,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.netty.NettyMetricsProvider;
 import io.quarkus.micrometer.runtime.binder.netty.ReactiveNettyMetricsProvider;
 import io.quarkus.micrometer.runtime.binder.netty.VertxNettyAllocatorMetricsProvider;
@@ -22,41 +23,38 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
  */
 public class NettyBinderProcessor {
     static final String NETTY_ALLOCATOR_METRICS_NAME = "io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics";
-    static final Class<?> NETTY_ALLOCATOR_METRICS_CLASS = MicrometerRecorder.getClassForName(NETTY_ALLOCATOR_METRICS_NAME);
 
     static final String NETTY_EVENT_EXECUTOR_METRICS_NAME = "io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics";
-    static final Class<?> NETTY_EVENT_EXECUTOR_METRICS_CLASS = MicrometerRecorder
-            .getClassForName(NETTY_EVENT_EXECUTOR_METRICS_NAME);
 
     static final String NETTY_BYTE_BUF_ALLOCATOR_NAME = "io.netty.buffer.PooledByteBufAllocator";
-    static final Class<?> NETTY_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(NETTY_BYTE_BUF_ALLOCATOR_NAME);
 
     static final String VERTX_BYTE_BUF_ALLOCATOR_NAME = "io.vertx.core.buffer.impl.VertxByteBufAllocator";
-    static final Class<?> VERTX_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(VERTX_BYTE_BUF_ALLOCATOR_NAME);
 
     static final String REACTIVE_USAGE_NAME = "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload";
-    static final Class<?> REACTIVE_USAGE_CLASS = MicrometerRecorder.getClassForName(REACTIVE_USAGE_NAME);
 
     static final String VERTX_NAME = "io.vertx.core.Vertx";
-    static final Class<?> VERTX_CLASS = MicrometerRecorder.getClassForName(VERTX_NAME);
 
     private static abstract class AbstractSupportEnabled implements BooleanSupplier {
         abstract MicrometerConfig getMicrometerConfig();
 
-        Class<?> metricsClass() {
-            return NETTY_ALLOCATOR_METRICS_CLASS;
+        String metricsClass() {
+            return NETTY_ALLOCATOR_METRICS_NAME;
         }
 
-        abstract Class<?> getCheckClass();
+        abstract String getCheckClass();
 
         public boolean getAsBoolean() {
-            return metricsClass() != null && getCheckClass() != null
+            return isClassPresentAtRuntime(metricsClass()) && isClassPresentAtRuntime(getCheckClass())
                     && getMicrometerConfig().checkBinderEnabledWithDefault(getMicrometerConfig().binder.netty);
         }
     }
 
     static class NettySupportEnabled extends AbstractSupportEnabled {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        NettySupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         @Override
         MicrometerConfig getMicrometerConfig() {
@@ -64,13 +62,17 @@ public class NettyBinderProcessor {
         }
 
         @Override
-        Class<?> getCheckClass() {
-            return NETTY_BYTE_BUF_ALLOCATOR_CLASS;
+        String getCheckClass() {
+            return NETTY_BYTE_BUF_ALLOCATOR_NAME;
         }
     }
 
     static class VertxAllocatorSupportEnabled extends AbstractSupportEnabled {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        VertxAllocatorSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         @Override
         MicrometerConfig getMicrometerConfig() {
@@ -78,13 +80,17 @@ public class NettyBinderProcessor {
         }
 
         @Override
-        Class<?> getCheckClass() {
-            return VERTX_BYTE_BUF_ALLOCATOR_CLASS;
+        String getCheckClass() {
+            return VERTX_BYTE_BUF_ALLOCATOR_NAME;
         }
     }
 
     static class VertxEventExecutorSupportEnabled extends AbstractSupportEnabled {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        VertxEventExecutorSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         @Override
         MicrometerConfig getMicrometerConfig() {
@@ -92,18 +98,22 @@ public class NettyBinderProcessor {
         }
 
         @Override
-        Class<?> metricsClass() {
-            return NETTY_EVENT_EXECUTOR_METRICS_CLASS;
+        String metricsClass() {
+            return NETTY_EVENT_EXECUTOR_METRICS_NAME;
         }
 
         @Override
-        Class<?> getCheckClass() {
-            return VERTX_CLASS;
+        String getCheckClass() {
+            return VERTX_NAME;
         }
     }
 
     static class ReactiveSupportEnabled extends AbstractSupportEnabled {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        ReactiveSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         @Override
         MicrometerConfig getMicrometerConfig() {
@@ -111,8 +121,8 @@ public class NettyBinderProcessor {
         }
 
         @Override
-        Class<?> getCheckClass() {
-            return REACTIVE_USAGE_CLASS;
+        String getCheckClass() {
+            return REACTIVE_USAGE_NAME;
         }
     }
 

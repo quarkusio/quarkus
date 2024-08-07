@@ -3,8 +3,8 @@ package io.quarkus.micrometer.deployment.binder;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
@@ -14,20 +14,23 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
  */
 public class KafkaBinderProcessor {
     static final String KAFKA_CONSUMER_CLASS_NAME = "org.apache.kafka.clients.consumer.Consumer";
-    static final Class<?> KAFKA_CONSUMER_CLASS_CLASS = MicrometerRecorder.getClassForName(KAFKA_CONSUMER_CLASS_NAME);
 
     static final String KAFKA_STREAMS_CLASS_NAME = "org.apache.kafka.streams.KafkaStreams";
-    static final Class<?> KAFKA_STREAMS_CLASS_CLASS = MicrometerRecorder.getClassForName(KAFKA_STREAMS_CLASS_NAME);
 
     static final String KAFKA_EVENT_CONSUMER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.kafka.KafkaEventObserver";
 
     static final String KAFKA_STREAMS_METRICS_PRODUCER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.kafka.KafkaStreamsEventObserver";
 
     static class KafkaSupportEnabled implements BooleanSupplier {
-        MicrometerConfig mConfig;
+        private final MicrometerConfig mConfig;
+
+        KafkaSupportEnabled(MicrometerConfig mConfig) {
+            this.mConfig = mConfig;
+        }
 
         public boolean getAsBoolean() {
-            return KAFKA_CONSUMER_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
+            return QuarkusClassLoader.isClassPresentAtRuntime(KAFKA_CONSUMER_CLASS_NAME)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
         }
     }
 
@@ -35,7 +38,8 @@ public class KafkaBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return KAFKA_STREAMS_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
+            return QuarkusClassLoader.isClassPresentAtRuntime(KAFKA_STREAMS_CLASS_NAME)
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder.kafka);
         }
     }
 

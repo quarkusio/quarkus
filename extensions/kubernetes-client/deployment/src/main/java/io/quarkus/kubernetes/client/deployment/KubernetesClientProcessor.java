@@ -18,7 +18,6 @@ import org.jboss.logging.Logger;
 import io.fabric8.kubernetes.api.builder.VisitableBuilder;
 import io.fabric8.kubernetes.api.model.AnyType;
 import io.fabric8.kubernetes.api.model.IntOrString;
-import io.fabric8.kubernetes.api.model.KubeSchema;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
 import io.fabric8.kubernetes.client.Config;
@@ -65,7 +64,6 @@ public class KubernetesClientProcessor {
     private static final DotName KUBERNETES_RESOURCE = DotName.createSimple(KubernetesResource.class.getName());
     private static final DotName KUBERNETES_RESOURCE_LIST = DotName
             .createSimple(KubernetesResourceList.class.getName());
-    private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
     private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
 
@@ -172,7 +170,6 @@ public class KubernetesClientProcessor {
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(ignoreJsonDeserialization));
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
-        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBE_SCHEMA));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 

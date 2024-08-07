@@ -26,7 +26,7 @@ public class OpenshiftDeployer {
             }
             if (target.getEntry().getName().equals(OPENSHIFT)) {
                 try (var openShiftClient = kubernetesClientBuilder.buildClient().adapt(OpenShiftClient.class)) {
-                    if (openShiftClient.isSupported()) {
+                    if (openShiftClient.hasApiGroup("openshift.io", false)) {
                         deploymentCluster.produce(new KubernetesDeploymentClusterBuildItem(OPENSHIFT));
                     } else {
                         throw new IllegalStateException(

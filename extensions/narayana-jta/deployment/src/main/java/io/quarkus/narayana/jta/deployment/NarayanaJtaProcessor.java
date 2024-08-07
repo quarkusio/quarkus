@@ -204,6 +204,11 @@ class NarayanaJtaProcessor {
     @BuildStep(onlyIf = IsTest.class)
     void testTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        if (!testTransactionOnClassPath()) {
+            return;
+        }
+
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
@@ -217,6 +222,15 @@ class NarayanaJtaProcessor {
         }
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestTransactionInterceptor.class)
                 .addBeanClass(TEST_TRANSACTION).build());
+    }
+
+    private static boolean testTransactionOnClassPath() {
+        try {
+            Class.forName(TEST_TRANSACTION, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
     }
 
     @BuildStep

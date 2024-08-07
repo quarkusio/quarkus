@@ -114,9 +114,18 @@ For platform releases, the registry consumes the generated platform descriptors,
 
 However, for non-platform extensions the metadata source will change and the registry will have to adjust to that. It will need to support both the old and new locations.
 
+==== Extension generation tooling
+
+If we do move the location of the source-controlled `quarkus-extension.yaml`, https://github.com/quarkusio/quarkus/blob/5b7ef46e492d9748cd901bfff60259ccf8ac71a6/independent-projects/tools/devtools-common/src/main/java/io/quarkus/devtools/commands/CreateProjectHelper.java#L81[tooling which generates that content] will need updating.
+
 ==== CLI
 
 We will need to update the parts of the CLI that do not use the registry to get extension metadata.
+
+==== extensions.quarkus.io
+
+The extension details page at http://quarkus.io/extensions links to the extension-metadata.yaml (if it can find it). If we move the source file, it would need to look in both places. 
+
 
 == Decision
 

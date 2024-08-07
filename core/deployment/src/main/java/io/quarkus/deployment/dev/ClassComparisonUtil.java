@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 public class ClassComparisonUtil {
+    private static final Set<DotName> IGNORED_ANNOTATIONS = Set.of(
+            DotName.createSimple("kotlin.jvm.internal.SourceDebugExtension"),
+            DotName.createSimple("kotlin.Metadata"));
+
     static boolean isSameStructure(ClassInfo clazz, ClassInfo old) {
         if (clazz.flags() != old.flags()) {
             return false;
@@ -161,6 +166,9 @@ public class ClassComparisonUtil {
     }
 
     private static boolean compareAnnotation(AnnotationInstance a, AnnotationInstance b) {
+        if (IGNORED_ANNOTATIONS.contains(a.name())) {
+            return true;
+        }
         List<AnnotationValue> valuesA = a.values();
         List<AnnotationValue> valuesB = b.values();
         if (valuesA.size() != valuesB.size()) {

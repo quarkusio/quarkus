@@ -114,7 +114,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configRootAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot));
+                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension, e);
@@ -150,7 +150,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             try {
                 Files.writeString(configRootAdocPath,
-                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot));
+                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
@@ -170,7 +170,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configSectionAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection));
+                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection, false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
                             "Unable to render config section for section: " + generatedConfigSection.getPath()
@@ -193,11 +193,11 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     }
 
     private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
-            ConfigItemCollection configItemCollection) {
+            ConfigItemCollection configItemCollection, boolean searchable) {
         return quteEngine.getTemplate("configReference.qute.adoc")
                 .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
-                .data("searchable", true)
+                .data("searchable", searchable)
                 .data("summaryTableId", summaryTableId)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())

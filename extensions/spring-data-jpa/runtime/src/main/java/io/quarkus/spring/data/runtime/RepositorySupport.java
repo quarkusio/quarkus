@@ -78,6 +78,6 @@ public final class RepositorySupport {
     }
 
     public static void flush(Class<?> clazz) {
-        Panache.getSession(clazz).clear();
+        Panache.getSession(clazz).flush();
     }
 }

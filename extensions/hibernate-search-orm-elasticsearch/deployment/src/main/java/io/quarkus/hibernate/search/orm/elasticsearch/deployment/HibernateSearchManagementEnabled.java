@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
-import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementConfig;
 
 /**
  * Supplier that can be used to only run build steps
@@ -9,17 +8,13 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.Hibernat
  */
 public class HibernateSearchManagementEnabled extends HibernateSearchEnabled {
 
-    private final HibernateSearchManagementConfig config;
-
-    HibernateSearchManagementEnabled(HibernateSearchElasticsearchBuildTimeConfig config,
-            HibernateSearchManagementConfig managementConfig) {
+    HibernateSearchManagementEnabled(HibernateSearchElasticsearchBuildTimeConfig config) {
         super(config);
-        this.config = managementConfig;
     }
 
     @Override
     public boolean getAsBoolean() {
-        return super.getAsBoolean() && config.enabled();
+        return super.getAsBoolean() && config.management().enabled();
     }
 
 }

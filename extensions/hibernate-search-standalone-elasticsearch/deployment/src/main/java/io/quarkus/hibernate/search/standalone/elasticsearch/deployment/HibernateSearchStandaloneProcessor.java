@@ -63,7 +63,6 @@ import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSea
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRecorder;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management.HibernateSearchStandaloneManagementConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
@@ -370,10 +369,12 @@ class HibernateSearchStandaloneProcessor {
     @BuildStep(onlyIf = HibernateSearchStandaloneManagementEnabled.class)
     void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
             HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneManagementConfig managementConfig) {
+            HibernateSearchStandaloneBuildTimeConfig hibernateSearchStandaloneBuildTimeConfig) {
+
+        String managementRootPath = hibernateSearchStandaloneBuildTimeConfig.management().rootPath();
 
         routes.produce(RouteBuildItem.newManagementRoute(
-                managementConfig.rootPath() + (managementConfig.rootPath().endsWith("/") ? "" : "/") + "reindex")
+                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
                 .withRoutePathConfigKey("quarkus.hibernate-search-standalone.management.root-path")
                 .withRequestHandler(recorder.managementHandler())
                 .displayOnNotFoundPage()

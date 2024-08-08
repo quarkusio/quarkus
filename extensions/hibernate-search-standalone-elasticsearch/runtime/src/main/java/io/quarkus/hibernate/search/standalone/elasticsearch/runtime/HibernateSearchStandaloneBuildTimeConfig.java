@@ -69,6 +69,12 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
     Optional<String> backgroundFailureHandler();
 
     /**
+     * Management interface.
+     */
+    @ConfigDocSection
+    HibernateSearchStandaloneBuildTimeConfigManagement management();
+
+    /**
      * Configuration related to the mapping.
      */
     MappingConfig mapping();

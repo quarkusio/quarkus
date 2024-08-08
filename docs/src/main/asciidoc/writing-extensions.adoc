@@ -3015,10 +3015,10 @@ public final class Target_XmlData {
 == Ecosystem integration
 
 Some extensions may be private, and some may wish to be part of the
-broader Quarkus ecosystem, and available for community re-use.
+broader Quarkus ecosystem, and link:https://quarkus.io/extensions/[available for community re-use].
 Inclusion in the Quarkiverse Hub is a convenient mechanism for handling
 continuous testing and publication.
-The link:https://github.com/quarkiverse/quarkiverse/wiki#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
+The link:https://hub.quarkiverse.io/home/#getting-an-extension-onboarded[Quarkiverse Hub wiki] has instructions
 for on-boarding your extension.
 
 Alternatively, continuous testing and publication can be handled manually.

@@ -42,6 +42,8 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 @Recorder
@@ -52,7 +54,7 @@ public class MicrometerRecorder {
     public static String nonApplicationUri = "/q/";
     public static String httpRootUri = "/";
 
-    /* STATIC_INIT */
+    @StaticInit
     public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
         factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
         nonApplicationUri = qUri;
@@ -60,7 +62,7 @@ public class MicrometerRecorder {
         return new RuntimeValue<>(Metrics.globalRegistry);
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public void configureRegistries(MicrometerConfig config,
             Set<Class<? extends MeterRegistry>> registryClasses,
             ShutdownContext context) {
@@ -263,7 +265,7 @@ public class MicrometerRecorder {
         return throwable.getCause().getClass().getSimpleName();
     }
 
-    /* RUNTIME_INIT */
+    @RuntimeInit
     public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
             boolean httpServerMetricsEnabled,
             boolean httpClientMetricsEnabled,

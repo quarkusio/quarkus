@@ -163,6 +163,6 @@ public interface KubernetesClientBuildConfig {
     /**
      * Dev Services
      */
-    @ConfigDocSection
+    @ConfigDocSection(generated = true)
     KubernetesDevServicesBuildTimeConfig devservices();
 }

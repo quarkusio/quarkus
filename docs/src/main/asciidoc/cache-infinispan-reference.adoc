@@ -209,4 +209,4 @@ the cache.
 quarkus.cache.infinispan.my-cache.max-idle=100s
 ----
 
-include::{generated-dir}/config/quarkus-cache-infinispan.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-infinispan-cache.adoc[opts=optional, leveloffset=+1]

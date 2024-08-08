@@ -464,7 +464,7 @@ mp.messaging.incoming.prices.client-options-name=my-named-options
 ----
 
 If you experience frequent disconnections from the broker, the `AmqpClientOptions` can also be used to set a heartbeat if you need to keep the AMQP connection permanently.
-Some brokers might terminate the AMQP connection after a certain idle timeout. 
+Some brokers might terminate the AMQP connection after a certain idle timeout.
 You can provide a heartbeat value which will be used by the Vert.x proton client to advertise the idle timeout when opening transport to a remote peer.
 
 [source, java]
@@ -549,7 +549,7 @@ For more information on sending Cloud Events, see https://smallrye.io/smallrye-r
 
 === Quarkus specific configuration
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-amqp.adoc[opts=optional, leveloffset=+1]
 
 === Incoming channel configuration
 

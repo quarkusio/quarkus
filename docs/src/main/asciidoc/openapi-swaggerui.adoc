@@ -579,4 +579,4 @@ include::{generated-dir}/config/quarkus-smallrye-openapi.adoc[opts=optional, lev
 
 === Swagger UI
 
-include::{generated-dir}/config/quarkus-swaggerui.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-swagger-ui.adoc[opts=optional, leveloffset=+1]

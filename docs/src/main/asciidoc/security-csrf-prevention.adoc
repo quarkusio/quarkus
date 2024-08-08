@@ -322,7 +322,7 @@ quarkus.csrf-reactive.verify-token=false
 [[csrf-reactive-configuration-reference]]
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-csrf-reactive.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-rest-csrf.adoc[leveloffset=+1, opts=optional]
 
 == References
 

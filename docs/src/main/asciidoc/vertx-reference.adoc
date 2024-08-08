@@ -60,7 +60,7 @@ Documentation about the Vert.x Mutiny variant is available on https://smallrye.i
 You can configure the Vert.x instance from the `application.properties` file.
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-vertx-core.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx.adoc[opts=optional, leveloffset=+1]
 
 See <<customizing-the-vert-x-configuration>> to configure the Vert.x instance using a programmatic approach.
 
@@ -529,9 +529,9 @@ public String consume(String name) {
     return name.toLowerCase();
 }
 ----
-<1> Receive the messages sent to the address configured with the `my.consumer.address` key. 
+<1> Receive the messages sent to the address configured with the `my.consumer.address` key.
 
-NOTE: If no config property with the specified key exists and no default value is set then the application startup fails. 
+NOTE: If no config property with the specified key exists and no default value is set then the application startup fails.
 
 === Process events asynchronously
 

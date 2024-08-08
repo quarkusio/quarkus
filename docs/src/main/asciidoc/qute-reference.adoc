@@ -1170,7 +1170,7 @@ NOTE: If an argument does not have a name and the value is a single word string 
 * `_args.skip(String...)` - returns only the arguments that do not match the given names
 * `_args.skipIdenticalKeyValue` - returns only the arguments with the name not equal to the value; typically `bar` from `{#test foo="foo" bar=true /}`
 * `_args.skipIt` - returns all arguments except for the first unnamed argument; typically `bar` from `{#test foo bar=true /}`
-* `_args.asHtmlAttributes` - renders the arguments as HTML attributes; e.g. `foo="true" readonly="readonly"`; the arguments are sorted by name in alphabetical order and the `'`, `"`, `<`, `>`, `&` characters are escaped 
+* `_args.asHtmlAttributes` - renders the arguments as HTML attributes; e.g. `foo="true" readonly="readonly"`; the arguments are sorted by name in alphabetical order and the `'`, `"`, `<`, `>`, `&` characters are escaped
 
 `_args` is also iterable of `java.util.Map.Entry`: `{#each _args}{it.key}={it.value}{/each}`.
 
@@ -2880,7 +2880,7 @@ Then it receives a generated template:
   {#is CONSTANT2}{msg:methodName_CONSTANT2}
 {/when}
 ----
- 
+
 Furthermore, a special message method is generated for each enum constant. Finally, each localized file must contain keys and values for all constant message keys:
 
 [source,poperties]
@@ -2891,7 +2891,7 @@ methodName_CONSTANT2=Value 2
 
 In a template, an enum constant can be localized with a message bundle method like `{msg:methodName(enumConstant)}`.
 
-TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a convenient annotation to access enum constants in a template. 
+TIP: There is also <<convenient-annotation-for-enums,`@TemplateEnum`>> - a convenient annotation to access enum constants in a template.
 
 ==== Message Templates
 

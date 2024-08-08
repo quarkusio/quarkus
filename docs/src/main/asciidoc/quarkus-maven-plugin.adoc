@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus Maven Plugin
 include::_attributes.adoc[]
 :topics: maven,tooling
+:diataxis-type: reference
+:categories: tooling
 
 The Quarkus Maven Plugin builds the Quarkus applications, and provides helpers to launch dev mode or build native executables.
 For more information about how to use the Quarkus Maven Plugin, please refer to the xref:maven-tooling.adoc[Maven Tooling guide].
@@ -24,4 +26,4 @@ It is also possible to print out detailed information about a goal, all its para
 
 Here is the list of all the Quarkus Maven Plugin goals:
 
-include::{generated-dir}/config/quarkus-maven-plugin-goals.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/infra/quarkus-maven-plugin-goals.adoc[opts=optional, leveloffset=+2]

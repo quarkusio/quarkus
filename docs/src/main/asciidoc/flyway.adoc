@@ -166,7 +166,7 @@ implementation("org.flywaydb:flyway-database-derby")
 implementation("org.flywaydb:flyway-database-hsqldb")
 // Informix specific dependencies
 implementation("org.flywaydb:flyway-database-informix")
-// Redshift specific dependencies 
+// Redshift specific dependencies
 implementation("org.flywaydb:flyway-database-redshift")
 // Saphana specific dependencies
 implementation("org.flywaydb:flyway-database-saphana")

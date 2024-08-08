@@ -36,8 +36,8 @@ TIP: The annotation is repeatable so a single method could be scheduled multiple
 
 === Inheritance of metadata
 
-A subclass never inherits the metadata of a `@Scheduled` method declared on a superclass. 
-For example, suppose the class `org.amce.Foo` is extended by the class `org.amce.Bar`. 
+A subclass never inherits the metadata of a `@Scheduled` method declared on a superclass.
+For example, suppose the class `org.amce.Foo` is extended by the class `org.amce.Bar`.
 If `Foo` declares a non-static method annotated with `@Scheduled` then `Bar` does not inherit the metadata of the scheduled method.
 In the following example, the `everySecond()` method is only invoked upon the instance of `Foo`.
 
@@ -286,9 +286,9 @@ NOTE: Note that only executions within the same application instance are conside
 
 You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
 The specified class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
-The class must either represent a CDI bean or declare a public no-args constructor. 
-In case of CDI, there must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails. 
-Furthermore, the scope of the bean must be active during execution of the job. 
+The class must either represent a CDI bean or declare a public no-args constructor.
+In case of CDI, there must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails.
+Furthermore, the scope of the bean must be active during execution of the job.
 If the scope is `@Dependent` then the bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
 
 [source,java]

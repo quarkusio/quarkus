@@ -108,7 +108,7 @@ public class ChatWebSocket {
 Thus, client can connect to this web socket endpoint using `ws://localhost:8080/chat/your-name`.
 If TLS is used, the URL is `wss://localhost:8443/chat/your-name`.
 
-NOTE: The endpoint path is relative to the xref:http-reference.adoc#context-path[root context] configured by the `quarkus.http.root-path` (which is `/` by default). For example, if you add `quarkus.http.root-path=/api` to your `application.properties` then a client can connect to this endpoint using `http://localhost:8080/api/chat/the-name`. 
+NOTE: The endpoint path is relative to the xref:http-reference.adoc#context-path[root context] configured by the `quarkus.http.root-path` (which is `/` by default). For example, if you add `quarkus.http.root-path=/api` to your `application.properties` then a client can connect to this endpoint using `http://localhost:8080/api/chat/the-name`.
 
 [[client-endpoints]]
 === Client endpoints
@@ -194,7 +194,7 @@ A WebSocket endpoint may declare:
 * At most one `@OnPongMessage` method: Handles the pong messages from the connected client/server.
 * At most one `@OnOpen` method: Invoked when a connection is opened.
 * At most one `@OnClose` method: Executed when the connection is closed.
-* Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure. 
+* Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
 
 Only some endpoints need to include all methods.
 However, it must contain at least `@On[Text|Binary]Message` or `@OnOpen`.
@@ -240,7 +240,7 @@ However, it may also accept the following parameters:
  * `WebSocketConnection`/`WebSocketClientConnection`
  * `HandshakeRequest`
  * `String` parameters annotated with `@PathParam`
- 
+
 The message object represents the data sent and can be accessed as either raw content (`String`, `JsonObject`, `JsonArray`, `Buffer` or `byte[]`) or deserialized high-level objects, which is the recommended approach.
 
 When receiving a `Multi`, the method is invoked once per connection, and the provided `Multi` receives the items transmitted by this connection.
@@ -370,7 +370,7 @@ Methods annotated with `@OnOpen` and `@OnClose` may accept the following paramet
  * `WebSocketConnection`/`WebSocketClientConnection`
  * `HandshakeRequest`
  * `String` parameters annotated with `@PathParam`
- 
+
 An endpoint method annotated with `@OnClose` may also accept the `io.quarkus.websockets.next.CloseReason` parameter that may indicate a reason for closing a connection.
 
 ==== Supported return types
@@ -407,7 +407,7 @@ They can only send messages to the other clients by using the `WebSocketConnecti
 === Error handling
 
 WebSocket endpoints can also be notified when an error occurs.
-A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion errors occurs, 
+A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion errors occurs,
 or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
 
 The method must accept exactly one _error_ parameter, i.e. a parameter that is assignable from `java.lang.Throwable`.
@@ -507,7 +507,7 @@ In other words, there is no need for `@OnPingMessage` callback declared on an en
 The server can send ping messages to a connected client.
 `WebSocketConnection`/`WebSocketClientConnection` declare methods to send ping messages; there is a non-blocking variant: `sendPing(Buffer)` and a blocking variant: `sendPingAndAwait(Buffer)`.
 By default, the ping messages are not sent automatically.
-However, the configuration properties `quarkus.websockets-next.server.auto-ping-interval` and `quarkus.websockets-next.client.auto-ping-interval` can be used to set the interval after which, the server/client sends a ping message to a connected client/server automatically. 
+However, the configuration properties `quarkus.websockets-next.server.auto-ping-interval` and `quarkus.websockets-next.client.auto-ping-interval` can be used to set the interval after which, the server/client sends a ping message to a connected client/server automatically.
 
 [source,properties]
 ----
@@ -532,7 +532,7 @@ NOTE: The server/client can also send unsolicited pong messages that may serve a
 [[inbound-processing-mode]]
 === Inbound processing mode
 
-WebSocket endpoints can define the mode used to process incoming events for a specific connection using the `@WebSocket#inboundProcessingMode()`, and `@WebSocketClient.inboundProcessingMode()` respectively. 
+WebSocket endpoints can define the mode used to process incoming events for a specific connection using the `@WebSocket#inboundProcessingMode()`, and `@WebSocketClient.inboundProcessingMode()` respectively.
 An incoming event can represent a message (text, binary, pong), opening connection and closing connection.
 By default, events are processed serially and ordering is guaranteed.
 This means that if an endpoint receives events `A` and `B` (in this particular order) then callback for event `B` will be invoked after the callback for event `A` completed.
@@ -593,7 +593,7 @@ Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@On
 @Inject WebSocketConnection connection;
 ----
 
-NOTE: Note that outside of these methos, the `WebSocketConnection` object is not available. However, it is possible to <<list-open-connections,list all open connections>>. 
+NOTE: Note that outside of these methos, the `WebSocketConnection` object is not available. However, it is possible to <<list-open-connections,list all open connections>>.
 
 The connection can be used to send messages to the client, access the path parameters, broadcast messages to all connected clients, etc.
 
@@ -811,7 +811,7 @@ As a direct consequence of the fact this extension reuses the _main_ HTTP server
 === Client connectors
 
 The `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` is used to configure and create new connections for client endpoints.
-A CDI bean that implements this interface is provided and can be injected in other beans. 
+A CDI bean that implements this interface is provided and can be injected in other beans.
 The actual type argument is used to determine the client endpoint.
 The type is validated during build - if it does not represent a client endpoint the build fails.
 
@@ -909,7 +909,7 @@ Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@On
 @Inject WebSocketClientConnection connection;
 ----
 
-NOTE: Note that outside of these methos, the `WebSocketClientConnection` object is not available. However, it is possible to <<list-open-client-connections,list all open client connections>>. 
+NOTE: Note that outside of these methos, the `WebSocketClientConnection` object is not available. However, it is possible to <<list-open-client-connections,list all open client connections>>.
 
 The connection can be used to send messages to the client, access the path parameters, etc.
 
@@ -995,9 +995,9 @@ The client will not use the default TLS configuration.
 When you configure a _named_ TLS configuration, TLS is enabled by default.
 
 [[traffic-logging]]
-== Traffic logging 
+== Traffic logging
 
-Quarkus can log the messages sent and received for debugging purposes. 
+Quarkus can log the messages sent and received for debugging purposes.
 To enable traffic logging for the server, set the `quarkus.websockets-next.server.traffic-logging.enabled` configuration property to `true`.
 To enable traffic logging for the client, set the `quarkus.websockets-next.client.traffic-logging.enabled` configuration property to `true`.
 The payload of text messages is logged as well.

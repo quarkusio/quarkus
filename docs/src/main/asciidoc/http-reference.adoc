@@ -80,7 +80,7 @@ TIP: Brotli compression is not available by default. You can enable it by settin
 
 Additionally, the index page for static resources can be changed from default `index.html`, the hidden files (e.g. dot files) can be indicated as not served, the range requests can be disabled, and the caching support (e.g. caching headers and file properties cache) can be configured.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-static-resources-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.static-resources.adoc[leveloffset=+1, opts=optional]
 
 [[context-path]]
 == Configuring the Context path
@@ -270,7 +270,7 @@ quarkus.http.header.Pragma.methods=GET,HEAD
 
 This will apply the `Pragma` header only when the `/headers/pragma` resource is called with a `GET` or a `HEAD` method
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-header-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.header.adoc[leveloffset=+1, opts=optional]
 
 === Additional HTTP Headers per path
 
@@ -310,7 +310,7 @@ quarkus.http.filter.any-order.matches=/paths/order.*
 
 Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.adoc[leveloffset=+1, opts=optional]
 
 == Support 100-Continue in vert.x
 
@@ -359,7 +359,7 @@ For more information about the CORS filter that Quarkus provides, see the Quarku
 
 == HTTP Limits Configuration
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]
 
 == Configure traffic shaping
 
@@ -404,7 +404,7 @@ When one of the threshold is reached, no write happens for that period of time.
 You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
 either logging to the standard JBoss logging output, or logging to a dedicated file.
 
-include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.access-log.adoc[opts=optional, leveloffset=+1]
 
 [frame="topbot",options="header"]
 |===

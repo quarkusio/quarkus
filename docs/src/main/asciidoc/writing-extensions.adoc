@@ -1362,7 +1362,7 @@ To include the generated configuration reference documentation in a guide, use:
 To include only a specific config group:
 [source,asciidoc]
 ----
-\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
+\include::{generated-dir}/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
 ----
 
 For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named

@@ -437,7 +437,7 @@ quarkus.tls.hostname-verification-algorithm=NONE
 
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-tls.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-tls-registry.adoc[opts=optional, leveloffset=+1]
 
 == The registry API
 

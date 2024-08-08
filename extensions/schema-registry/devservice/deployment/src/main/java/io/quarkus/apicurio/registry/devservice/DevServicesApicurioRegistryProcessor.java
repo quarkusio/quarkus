@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.apicurio.registry.devservice.ApicurioRegistryBuildTimeConfig.ApicurioRegistryDevServicesBuildTimeConfig;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -59,13 +60,13 @@ public class DevServicesApicurioRegistryProcessor {
     @BuildStep
     public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
-            ApicurioRegistryDevServicesBuildTimeConfig apicurioRegistryDevServices,
+            ApicurioRegistryBuildTimeConfig apicurioRegistryConfiguration,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig devServicesConfig) {
 
-        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryDevServices);
+        ApicurioRegistryDevServiceCfg configuration = getConfiguration(apicurioRegistryConfiguration.devservices);
 
         if (devService != null) {
             boolean restartRequired = !configuration.equals(cfg);

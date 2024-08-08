@@ -114,7 +114,7 @@ You would need to invalidate the values using the `@CacheInvalidateAll` or `@Cac
 
 The following table lists the supported properties:
 
-include::{generated-dir}/config/quarkus-cache-redis.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-cache.adoc[opts=optional, leveloffset=+1]
 
 == Configure the Redis key
 

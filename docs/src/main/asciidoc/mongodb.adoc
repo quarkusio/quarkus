@@ -793,4 +793,4 @@ IMPORTANT: Client-side field level encryption, and feature relying on https://gi
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-mongodb.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-mongodb-client.adoc[opts=optional, leveloffset=+1]

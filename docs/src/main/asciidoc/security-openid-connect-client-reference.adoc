@@ -1418,7 +1418,7 @@ include::{generated-dir}/config/quarkus-oidc-client.adoc[opts=optional, leveloff
 
 === OIDC token propagation
 
-include::{generated-dir}/config/quarkus-oidc-token-propagation-reactive.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-rest-client-oidc-token-propagation.adoc[opts=optional, leveloffset=+1]
 
 == References
 

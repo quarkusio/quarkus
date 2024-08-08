@@ -468,4 +468,4 @@ implementation("io.quarkus:quarkus-smallrye-health")
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-smallrye-health.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-smallrye-health_quarkus.smallrye-health.adoc[opts=optional, leveloffset=+1]

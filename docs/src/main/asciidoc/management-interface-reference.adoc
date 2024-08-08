@@ -162,10 +162,7 @@ More details about the `Router` API can be found on https://vertx.io/docs/vertx-
 
 == Management Interface Configuration
 
-include::{generated-dir}/config/quarkus-management-management-management-interface-build-time-config.adoc[leveloffset=+1, opts=optional]
-
-include::{generated-dir}/config/quarkus-management-management-management-interface-configuration.adoc[leveloffset=+1, opts=optional]
-
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.management.adoc[leveloffset=+1, opts=optional]
 
 [[reverse-proxy]]
 == Running behind a reverse proxy

@@ -54,14 +54,13 @@ in most cases this is not necessary as simply configuring the service will resul
 
 This section lists all the Dev Services available in the Quarkus Platform.
 
-
 === AMQP
 
 The AMQP Dev Service will be enabled when the `quarkus-messaging-amqp` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:amqp-dev-services.adoc[AMQP Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp-config-group-amqp-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-amqp_quarkus.amqp.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Apicurio Registry
 
@@ -69,7 +68,7 @@ The Apicurio Dev Service will be enabled when the `quarkus-apicurio-registry-avr
 address has not been explicitly configured. More information can be found in the
 xref:apicurio-registry-dev-services.adoc[Apicurio Registry Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-devservice-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-schema-registry-devservice_quarkus.apicurio-registry.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Databases
 
@@ -87,7 +86,7 @@ after each run, and can be reused.
 
 N.B. if you opt in for this feature, Quarkus will not reset the state of the database between runs unless you explicitly configure it to.
 
-include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-datasource_quarkus.datasource.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Kafka
 
@@ -95,7 +94,7 @@ The Kafka Dev Service will be enabled when the `quarkus-kafka-client` extension 
 the broker address has not been explicitly configured. More information can be found in the
 xref:kafka-dev-services.adoc[Kafka Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-kafka-client-config-group-kafka-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kafka-client_quarkus.kafka.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Keycloak
 
@@ -103,15 +102,15 @@ The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is pr
 the server address has not been explicitly configured. More information can be found in the
 xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-oidc_quarkus.keycloak.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Kubernetes
 
-The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and
+The Kubernetes Dev Service will be enabled when the `kubernetes-client` extension is present in your application, and
 the API server address has not been explicitly configured. More information can be found in the
 xref:kubernetes-dev-services.adoc[Kubernetes Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-kubernetes-client-config-group-kubernetes-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-kubernetes-client_quarkus.kubernetes-client.devservices.adoc[opts=optional, leveloffset=+1]
 
 === MongoDB
 
@@ -119,7 +118,7 @@ The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extens
 the server address has not been explicitly configured. More information can be found in the
 xref:mongodb-dev-services.adoc[MongoDB Guide].
 
-include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-mongodb-client_quarkus.mongodb.devservices.adoc[opts=optional, leveloffset=+1]
 
 === RabbitMQ
 
@@ -127,7 +126,7 @@ The RabbitMQ Dev Service will be enabled when the `quarkus-messaging-rabbitmq` e
 the broker address has not been explicitly configured. More information can be found in the
 xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-messaging-rabbitmq_quarkus.rabbitmq.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Pulsar
 
@@ -135,13 +134,15 @@ The Pulsar Dev Service will be enabled when the `quarkus-messaging-pulsar` exten
 the broker address has not been explicitly configured. More information can be found in the
 xref:pulsar-dev-services.adoc[Pulsar Dev Services Guide].
 
+include::{generated-dir}/config/quarkus-messaging-pulsar_quarkus.pulsar.devservices.adoc[opts=optional, leveloffset=+1]
+
 === Redis
 
 The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and
 the server address has not been explicitly configured. More information can be found in the
 xref:redis-dev-services.adoc[Redis Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-redis-config-group-client-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-client_quarkus.redis.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Vault
 
@@ -155,7 +156,7 @@ The Infinispan Dev Service will be enabled when the `quarkus-infinispan-client` 
 the server address has not been explicitly configured. More information can be found in the
 xref:infinispan-dev-services.adoc[Infinispan Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-infinispan-client_quarkus.infinispan-client.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Elasticsearch
 
@@ -163,7 +164,7 @@ The Elasticsearch Dev Service will be enabled when one of the Elasticsearch base
 is present in your application, and the server address has not been explicitly configured.
 More information can be found in the xref:elasticsearch-dev-services.adoc[Elasticsearch Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client_quarkus.elasticsearch.devservices.adoc[opts=optional, leveloffset=+1]
 
 === Observability
 
@@ -171,7 +172,7 @@ The Observability Dev Services will be enabled when the `quarkus-observability-d
 there is at least one dev resource on the classpath. More information can be found in the
 xref:observability-devservices.adoc[Observability Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-observability-config-observability-configuration.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-observability-devservices.adoc[opts=optional, leveloffset=+1]
 
 == Dev Services beyond the Quarkus Platform
 

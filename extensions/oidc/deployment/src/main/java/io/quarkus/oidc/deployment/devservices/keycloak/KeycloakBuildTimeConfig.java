@@ -1,5 +1,6 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -9,8 +10,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot
 public class KeycloakBuildTimeConfig {
     /**
-     * Dev services configuration.
+     * Dev Services.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public DevServicesConfig devservices;
 }

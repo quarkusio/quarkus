@@ -37,7 +37,7 @@ Both support storage of this information in properties files.
 
 The following sections detail the specific configuration properties.
 
-include::{generated-dir}/config/quarkus-elytron-security.adoc[opts=optional, leveloffset=+2]
+include::{generated-dir}/config/quarkus-elytron-security-properties-file.adoc[opts=optional, leveloffset=+2]
 
 === Properties Files Realm Configuration
 

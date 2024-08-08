@@ -481,4 +481,4 @@ Accessing an Elasticsearch cluster from the low level REST client or the Elastic
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-elasticsearch-restclient-lowlevel.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-rest-client.adoc[opts=optional, leveloffset=+1]

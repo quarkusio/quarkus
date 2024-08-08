@@ -15,4 +15,4 @@ Here you can find a list of Build Items and the extension that provides them.
 
 icon:building[title=Non-instantiatable Build Item] Build item can't be instantiated directly, but can be extended/inherited from
 
-include::{generated-dir}/config/quarkus-all-build-items.adoc[opts=optional]
+include::{generated-dir}/infra/quarkus-all-build-items.adoc[opts=optional]

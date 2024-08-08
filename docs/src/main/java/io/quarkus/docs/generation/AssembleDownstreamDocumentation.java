@@ -40,7 +40,7 @@ public class AssembleDownstreamDocumentation {
     private static final Path SOURCE_DOC_PATH = Path.of("src", "main", "asciidoc");
     private static final Path DOC_PATH = Path.of("target", "asciidoc", "sources");
     private static final Path INCLUDES_PATH = DOC_PATH.resolve("_includes");
-    private static final Path GENERATED_FILES_PATH = Path.of("..", "target", "asciidoc", "generated");
+    private static final Path GENERATED_DOC_FILES_PATH = Path.of("target", "quarkus-generated-doc");
     private static final Path IMAGES_PATH = DOC_PATH.resolve("images");
     private static final Path TARGET_ROOT_DIRECTORY = Path.of("target", "downstream-tree");
     private static final Path TARGET_IMAGES_DIRECTORY = TARGET_ROOT_DIRECTORY.resolve("images");
@@ -99,8 +99,9 @@ public class AssembleDownstreamDocumentation {
             throw new IllegalStateException(
                     "Transformed AsciiDoc sources directory does not exist. Have you built the documentation?");
         }
-        if (!Files.isDirectory(GENERATED_FILES_PATH)) {
-            throw new IllegalStateException("Generated files directory does not exist. Have you built the documentation?");
+        if (!Files.isDirectory(GENERATED_DOC_FILES_PATH)) {
+            throw new IllegalStateException("Generated files directory `" + GENERATED_DOC_FILES_PATH
+                    + "` does not exist. Have you built the documentation?");
         }
         Path referenceIndexPath = Path.of(args[0]);
         if (!Files.isReadable(Path.of(args[0]))) {
@@ -149,7 +150,7 @@ public class AssembleDownstreamDocumentation {
             Set<Path> guides = new TreeSet<>();
             Set<Path> simpleIncludes = new TreeSet<>();
             Set<Path> includes = new TreeSet<>();
-            Set<Path> generatedFiles = new TreeSet<>();
+            Set<Path> generatedDocFiles = new TreeSet<>();
             Set<Path> images = new TreeSet<>();
 
             Set<Path> allResolvedPaths = new TreeSet<>();
@@ -173,7 +174,7 @@ public class AssembleDownstreamDocumentation {
                 guides.add(guidePath);
                 simpleIncludes.addAll(guideContent.simpleIncludes);
                 includes.addAll(guideContent.includes);
-                generatedFiles.addAll(guideContent.generatedFiles);
+                generatedDocFiles.addAll(guideContent.generatedDocFiles);
                 images.addAll(guideContent.images);
             }
 
@@ -211,19 +212,10 @@ public class AssembleDownstreamDocumentation {
                 Files.createDirectories(targetFile.getParent());
                 copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
             }
-            for (Path generatedFile : generatedFiles) {
-                Path sourceFile = GENERATED_FILES_PATH.resolve(generatedFile);
-                if (EXCLUDED_FILES.contains(sourceFile)) {
-                    continue;
-                }
-                if (!Files.isReadable(sourceFile)) {
-                    LOG.error("Unable to read generated file " + sourceFile);
-                }
-                allResolvedPaths.add(sourceFile);
-                Path targetFile = TARGET_GENERATED_DIRECTORY.resolve(generatedFile);
-                Files.createDirectories(targetFile.getParent());
-                copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
-            }
+
+            copyGeneratedFiles(linkRewritingErrors, titlesByReference, allResolvedPaths,
+                    downstreamGuides, GENERATED_DOC_FILES_PATH, generatedDocFiles);
+
             for (Path image : images) {
                 Path sourceFile = IMAGES_PATH.resolve(image);
                 if (EXCLUDED_FILES.contains(sourceFile)) {
@@ -266,6 +258,25 @@ public class AssembleDownstreamDocumentation {
         }
     }
 
+    private static void copyGeneratedFiles(Map<String, List<String>> linkRewritingErrors, Map<String, String> titlesByReference,
+            Set<Path> allResolvedPaths, Set<String> downstreamGuides, Path generatedSourceFilesDirectory,
+            Set<Path> generatedFiles)
+            throws IOException {
+        for (Path generatedConfigDocFile : generatedFiles) {
+            Path sourceFile = generatedSourceFilesDirectory.resolve(generatedConfigDocFile);
+            if (EXCLUDED_FILES.contains(sourceFile)) {
+                continue;
+            }
+            if (!Files.isReadable(sourceFile)) {
+                LOG.error("Unable to read generated file " + sourceFile);
+            }
+            allResolvedPaths.add(sourceFile);
+            Path targetFile = TARGET_GENERATED_DIRECTORY.resolve(generatedConfigDocFile);
+            Files.createDirectories(targetFile.getParent());
+            copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
+        }
+    }
+
     private static void getFiles(GuideContent guideContent, Path currentFile) throws IOException {
         List<String> lines = Files.readAllLines(currentFile);
 
@@ -276,9 +287,9 @@ public class AssembleDownstreamDocumentation {
                 getFurtherIncludes(guideContent, INCLUDES_PATH.resolve(possibleInclude.get()));
                 continue;
             }
-            Optional<Path> possibleGeneratedFile = extractPath(line, "include::{generated-dir}");
-            if (possibleGeneratedFile.isPresent()) {
-                guideContent.generatedFiles.add(possibleGeneratedFile.get());
+            Optional<Path> possibleGeneratedConfigDocFile = extractPath(line, "include::{generated-dir}");
+            if (possibleGeneratedConfigDocFile.isPresent()) {
+                guideContent.generatedDocFiles.add(possibleGeneratedConfigDocFile.get());
                 continue;
             }
             Optional<Path> possibleSimpleInclude = extractPath(line, "include::");
@@ -536,7 +547,7 @@ public class AssembleDownstreamDocumentation {
         public Set<Path> simpleIncludes = new TreeSet<>();
         public Set<Path> includes = new TreeSet<>();
         public Set<Path> images = new TreeSet<>();
-        public Set<Path> generatedFiles = new TreeSet<>();
+        public Set<Path> generatedDocFiles = new TreeSet<>();
 
         public GuideContent(Path guide) {
             this.guide = guide;

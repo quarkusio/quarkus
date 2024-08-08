@@ -134,7 +134,7 @@ quarkus.micrometer.binder.stork.enabled=false
 [[stork-configuration-reference]]
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-stork.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-smallrye-stork.adoc[opts=optional, leveloffset=+1]
 
 
 

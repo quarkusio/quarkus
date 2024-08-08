@@ -2,6 +2,7 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
@@ -49,10 +50,11 @@ public interface DataSourceBuildTimeConfig {
     Optional<String> dbVersion();
 
     /**
-     * Configuration for Dev Services.
+     * Dev Services.
      * <p>
      * Dev Services allow Quarkus to automatically start a database in dev and test mode.
      */
+    @ConfigDocSection(generated = true)
     DevServicesBuildTimeConfig devservices();
 
     /**

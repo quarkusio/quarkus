@@ -199,13 +199,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
-        ensureOpen();
+        ensureOpen(unsanitisedName);
 
         return getResources(unsanitisedName, false);
     }
 
     public Enumeration<URL> getResources(String unsanitisedName, boolean parentAlreadyFoundResources) throws IOException {
-        ensureOpen();
+        ensureOpen(unsanitisedName);
 
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.enumeratingResourceURLs(unsanitisedName, this.name);
@@ -349,7 +349,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public URL getResource(String unsanitisedName) {
-        ensureOpen();
+        ensureOpen(unsanitisedName);
 
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.gettingURLFromResource(unsanitisedName, this.name);
@@ -399,7 +399,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public InputStream getResourceAsStream(String unsanitisedName) {
-        ensureOpen();
+        ensureOpen(unsanitisedName);
 
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.openResourceStream(unsanitisedName, this.name);
@@ -452,7 +452,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      */
     @Override
     protected Class<?> findClass(String moduleName, String name) {
-        ensureOpen();
+        ensureOpen(moduleName);
 
         try {
             return loadClass(name, false);
@@ -462,28 +462,28 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     protected URL findResource(String name) {
-        ensureOpen();
+        ensureOpen(name);
 
         return getResource(name);
     }
 
     @Override
     protected Enumeration<URL> findResources(String name) throws IOException {
-        ensureOpen();
+        ensureOpen(name);
 
         return getResources(name);
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        ensureOpen();
+        ensureOpen(name);
 
         return loadClass(name, false);
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        ensureOpen();
+        ensureOpen(name);
 
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.loadClass(name, this.name);
@@ -581,13 +581,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public List<ClassPathElement> getElementsWithResource(String name) {
-        ensureOpen();
+        ensureOpen(name);
 
         return getElementsWithResource(name, false);
     }
 
     public List<ClassPathElement> getElementsWithResource(String name, boolean localOnly) {
-        ensureOpen();
+        ensureOpen(name);
 
         List<ClassPathElement> ret = new ArrayList<>();
         if (parent instanceof QuarkusClassLoader && !localOnly) {
@@ -615,7 +615,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
-        ensureOpen();
+        ensureOpen(name);
 
         return super.defineClass(name, b, off, len);
     }
@@ -691,6 +691,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     public boolean isClosed() {
         return status < STATUS_OPEN;
+    }
+
+    private void ensureOpen(String name) {
+        if (LOG_ACCESS_TO_CLOSED_CLASS_LOADERS && status == STATUS_CLOSED) {
+            // we do not use a logger as it might require some class loading
+            System.out.println("Class loader " + this + " has been closed and may not be accessed anymore. Attempted to load '"
+                    + name + "'");
+            Thread.dumpStack();
+        }
     }
 
     private void ensureOpen() {

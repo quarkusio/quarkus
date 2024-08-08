@@ -20,11 +20,11 @@ But the place we create the `quarkus-extension.yaml` is the runtime module. The 
 Because the dependency isn't a code-compilation one, it doesn't break the build, but it does mean the generated metadata is only accurate on the second build.
 
 image::images/0002-circular-dependency.svg[the circular dependency]
-Source: https://excalidraw.com/#json=cTOOltCdWxadxC8QYc93R,AzxQWd7ALVSsk_FbyIuqAg
+https://excalidraw.com/#json=cTOOltCdWxadxC8QYc93R,AzxQWd7ALVSsk_FbyIuqAg[Editable excalidraw source]
 
 === Related problems
 
-We have a similar circularity problem with config javadoc; the config is discovered in the deployment module, but the generation of the final-format data is done elsewhere. A solution here *might* help with that.
+We have a similar circularity problem with config javadoc; the config is discovered in the deployment module, but the generation of the final-format data is done elsewhere. A solution here *might* help with that. See https://github.com/quarkusio/quarkus/pull/42141[#42141] for the current proposed solution.
 
 Although it's not a serious problem, it would also be nice to allow people to use `CapabilityBuildItems` to register capabilities.
 At the moment, if authors do that, the information https://quarkus.io/guides/capabilities#capabilitybuilditem[will not be available to the dev tools], so we need to have lots of warnings in our documentation telling them not to.
@@ -52,9 +52,10 @@ Source: https://excalidraw.com/#json=JMERR95gRufcmnUpWy6A_,Qd9efiR40LR3wv82CxyLK
 So how do we minimise the impact?
 What needs to happen for it to work?
 
-* The registry reads `quarkus-extension.yaml` from the deployment module, not the runtime module. An alternate implementation would be to publish a separate `-metadata` artifact and the tooling could read that artifact.
+* The registry upload tooling reads `quarkus-extension.yaml` from the deployment module, not the runtime module. An alternate implementation would be to publish a separate `-metadata` artifact and the tooling could read that artifact.
 * The build of extensions' deployment module invokes a maven plugin (the existing one, or a new one)
-* (optional) Extension source code refactoring:  the template `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly. We want this refactoring to be optional, so if the yaml template isn't found in the deployment module, tooling would look for it in the runtime module.
+* For cache-friendliness, the generated file has a new name, `quarkus-extension-deployment.yaml`
+* (optional) Extension source code refactoring:  the template `runtime/src/META-INF/quarkus-extension.yaml` moves to `deployment`. This eliminates one of the cross-module dependencies we'd like to avoid to stay cache-friendly. We want this refactoring to be optional, so if the yaml template isn't found in the deployment module, tooling would look for it in the runtime module. On balance, this move probably isn't a good idea since it adds work for a low return, and if the new file has a new name, then needs extra work to delete the 'source' file from the output binary.
 
 The `quarkus-extension.properties` will continue to be generated in the runtime module. We should do an inventory to double-check that nothing in the `quarkus-extension.yaml` needs
 
@@ -75,11 +76,16 @@ We will need to allow a long transition period (probably one major release lifes
 * We still package up a (less complete) `quarkus-extension.yaml` into the runtime module, so that back-level tools (such as the CLI, and maybe IDEs) can find it
 
 image::images/0002-transition-flow.svg[a transitional process, with fallbacks]
-Source::https://excalidraw.com/#json=A7UUcn3Vme98So4xp3jZ6,bemZxMtdn5vLP9MgpZtwJw
+https://excalidraw.com/#json=13-QtM3WzT_trdAeVXpWu,rfAbr5Wn-KMV65ehLkz1iA[Editable excalidraw source]
 
 In other words, the deployment module becomes the new 'best source', but
 (a) not every extension will have the information in the new place, so tools need to look in the old place
 (b) not every tool will know about the new place, so extensions need to also package the information in the old place
+
+The logic is simpler if we keep the runtime module as the 'canonical location' for the source-controlled `quarkus-extension.yaml`:
+
+image::images/0002-transition-flow-no-source-move.svg[a transitional process, with fallbacks, and no change in location of the source file]
+https://excalidraw.com/#json=Cgri7MDIJPyZUup2N4xKn,igdtUzgylmBu60nYK0Hk9A[Editable excalidraw source]
 
 == Consequences
 
@@ -112,7 +118,7 @@ The tooling which generates the platform descriptor JSON will need to be updated
 
 For platform releases, the registry consumes the generated platform descriptors, so assuming that tooling is updated, there won't be much of a change for platform metadata processing on the registry side.
 
-However, for non-platform extensions the metadata source will change and the registry will have to adjust to that. It will need to support both the old and new locations.
+However, for non-platform extensions the metadata source will change and the registry upload tooling will have to adjust to that. It will need to support both the old and new locations.
 
 ==== Extension generation tooling
 
@@ -122,9 +128,13 @@ If we do move the location of the source-controlled `quarkus-extension.yaml`, ht
 
 We will need to update the parts of the CLI that do not use the registry to get extension metadata.
 
+==== Codestarts
+
+Codestarts use the extension metadata file, and will need updating.
+
 ==== extensions.quarkus.io
 
-The extension details page at http://quarkus.io/extensions links to the extension-metadata.yaml (if it can find it). If we move the source file, it would need to look in both places. 
+The extension details page at http://quarkus.io/extensions links to the extension-metadata.yaml (if it can find it). If we move the source file, it would need to look in both places.
 
 
 == Decision

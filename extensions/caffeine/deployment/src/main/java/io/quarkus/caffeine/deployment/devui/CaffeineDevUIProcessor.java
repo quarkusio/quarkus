@@ -1,4 +1,4 @@
-package io.quarkiverse.caffeine.deployment.devui;
+package io.quarkus.caffeine.deployment.devui;
 
 import java.io.InputStream;
 import java.net.URL;

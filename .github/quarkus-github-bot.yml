@@ -171,7 +171,7 @@ triage:
     - id: jackson
       labels: [area/jackson]
       title: "jackson"
-      notify: [geoand, gsmet]
+      notify: [geoand, gsmet, mariofusco]
       directories:
         - extensions/jackson/
         - integration-tests/jackson/

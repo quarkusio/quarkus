@@ -524,7 +524,7 @@ For example:
 quarkus.keycloak.policy-enforcer.enable=true
 
 # Default Tenant
-quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus
 quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.secret=secret
 
@@ -535,7 +535,7 @@ quarkus.keycloak.policy-enforcer.paths.1.claim-information-point.claims.static-c
 
 # Service Tenant
 
-quarkus.oidc.service-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.service-tenant.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus
 quarkus.oidc.service-tenant.client-id=quarkus-app
 quarkus.oidc.service-tenant.credentials.secret=secret
 
@@ -547,7 +547,7 @@ quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.
 
 # WebApp Tenant
 
-quarkus.oidc.webapp-tenant.auth-server-url=${keycloak.url}/realms/quarkus
+quarkus.oidc.webapp-tenant.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus
 quarkus.oidc.webapp-tenant.client-id=quarkus-app
 quarkus.oidc.webapp-tenant.credentials.secret=secret
 quarkus.oidc.webapp-tenant.application-type=web-app

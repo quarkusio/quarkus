@@ -197,6 +197,7 @@ public final class AmazonLambdaProcessor {
             for (Class handleInterface : providedLambda.get().getHandlerClass().getInterfaces()) {
                 if (handleInterface.getName().equals(RequestStreamHandler.class.getName())) {
                     useStreamHandler = true;
+                    break;
                 }
             }
 

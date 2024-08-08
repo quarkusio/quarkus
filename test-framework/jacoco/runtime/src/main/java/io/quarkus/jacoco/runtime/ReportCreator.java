@@ -67,6 +67,7 @@ public class ReportCreator implements Runnable {
                 for (Thread entry : Thread.getAllStackTraces().keySet()) {
                     if (entry.getClass().getName().startsWith("org.jacoco")) {
                         running = true;
+                        break;
                     }
                 }
                 if (!running) {

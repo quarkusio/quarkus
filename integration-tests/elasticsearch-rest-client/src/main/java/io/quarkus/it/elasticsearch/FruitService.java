@@ -3,10 +3,13 @@ package io.quarkus.it.elasticsearch;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -67,5 +70,47 @@ public class FruitService {
             results.add(fruit);
         }
         return results;
+    }
+
+    public void index(List<Fruit> list) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var fruit : list) {
+
+            entityList.add(new JsonObject().put("index", new JsonObject()
+                    .put("_index", "fruits").put("_id", fruit.id)));
+            entityList.add(JsonObject.mapFrom(fruit));
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),
+                ContentType.create("application/x-ndjson")));
+        restClient.performRequest(request);
+    }
+
+    public void delete(List<String> identityList) throws IOException {
+
+        var entityList = new ArrayList<JsonObject>();
+
+        for (var id : identityList) {
+            entityList.add(new JsonObject().put("delete",
+                    new JsonObject().put("_index", "fruits").put("_id", id)));
+        }
+
+        Request request = new Request(
+                "POST", "fruits/_bulk?pretty");
+        request.setEntity(new StringEntity(
+                toNdJsonString(entityList),
+                ContentType.create("application/x-ndjson")));
+        restClient.performRequest(request);
+    }
+
+    private static String toNdJsonString(List<JsonObject> objects) {
+        return objects.stream()
+                .map(JsonObject::encode)
+                .collect(Collectors.joining("\n", "", "\n"));
     }
 }

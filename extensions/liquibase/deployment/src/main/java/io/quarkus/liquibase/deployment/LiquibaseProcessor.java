@@ -4,8 +4,6 @@ import static java.util.function.Predicate.not;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,7 +64,9 @@ import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseFactoryProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
-import io.quarkus.paths.PathTree;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
@@ -91,11 +91,10 @@ class LiquibaseProcessor {
     private static final Logger LOGGER = Logger.getLogger(LiquibaseProcessor.class);
 
     private static final String LIQUIBASE_BEAN_NAME_PREFIX = "liquibase_";
-    private static final String LIQUIBASE_GROUP_ID = "org.liquibase";
-    private static final String LIQUIBASE_ARTIFACT_ID = "liquibase-core";
-    private static final String LIQUIBASE_PROPERTIES_PATH = "";
-    private static final String LIQUIBASE_DB_CHANGELOG_XSD_PATH = "www.liquibase.org/xml/ns/dbchangelog";
-    private static final String LIQUIBASE_SERVICE_PATH = "META-INF/services/";
+    private static final ArtifactCoords LIQUIBASE_ARTIFACT = Dependency.of("org.liquibase", "liquibase-core", "*");
+    private static final PathFilter LIQUIBASE_RESOURCE_FILTER = PathFilter.forIncludes(List.of(
+            "*.properties",
+            "www.liquibase.org/xml/ns/dbchangelog/*.xsd"));
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
@@ -106,7 +105,7 @@ class LiquibaseProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     IndexDependencyBuildItem indexLiquibase() {
-        return new IndexDependencyBuildItem("org.liquibase", "liquibase-core");
+        return new IndexDependencyBuildItem(LIQUIBASE_ARTIFACT.getGroupId(), LIQUIBASE_ARTIFACT.getArtifactId());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -139,7 +138,8 @@ class LiquibaseProcessor {
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.command.CommandFactory.class.getName(),
                 liquibase.database.LiquibaseTableNamesFactory.class.getName(),
-                liquibase.configuration.ConfiguredValueModifierFactory.class.getName())
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -203,7 +203,10 @@ class LiquibaseProcessor {
             }
         });
 
-        resolveLiquibaseResources(curateOutcome, services, reflective, resource);
+        var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
+        resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
+                dependencies, LIQUIBASE_ARTIFACT, LIQUIBASE_RESOURCE_FILTER));
+        services.produce(ServiceProviderBuildItem.allProvidersOfDependency(dependencies, LIQUIBASE_ARTIFACT));
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
@@ -219,85 +222,13 @@ class LiquibaseProcessor {
 
     private void consumeService(String serviceClassName, BiConsumer<String, Collection<String>> consumer) {
         try {
-            String service = LIQUIBASE_SERVICE_PATH + serviceClassName;
+            String service = ServiceProviderBuildItem.SPI_ROOT + serviceClassName;
             Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     service);
             consumer.accept(serviceClassName, implementations);
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }
-    }
-
-    private void resolveLiquibaseResources(
-            CurateOutcomeBuildItem curateOutcome,
-            BuildProducer<ServiceProviderBuildItem> services,
-            BuildProducer<ReflectiveClassBuildItem> reflective,
-            BuildProducer<NativeImageResourceBuildItem> resource) {
-
-        var dependencies = curateOutcome.getApplicationModel().getDependencies();
-        var liquibaseDependency = dependencies.stream()
-                .filter(d -> LIQUIBASE_GROUP_ID.equals(d.getGroupId())
-                        && LIQUIBASE_ARTIFACT_ID.equals(d.getArtifactId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Liquibase dependency not found"));
-
-        var tree = liquibaseDependency.getContentTree();
-        loadLiquibaseRootProperties(tree, resource);
-        loadLiquibaseXsdResources(tree, resource);
-        loadLiquibaseServiceProviderConfig(tree, services, reflective);
-    }
-
-    private List<String> getResourceNames(PathTree pathTree, String basePath, String fileExtension, boolean stripPath) {
-        return pathTree.apply(basePath, visit -> {
-            try (var pathStream = Files.list(visit.getPath())) {
-                return pathStream
-                        .map(p -> stripPath ? p.getFileName() : p.subpath(0, p.getNameCount()))
-                        .map(Path::toString)
-                        .filter(s -> s.endsWith(fileExtension))
-                        .toList();
-            } catch (IOException ex) {
-                throw new IllegalStateException(ex);
-            }
-        });
-    }
-
-    private void loadLiquibaseRootProperties(
-            PathTree tree,
-            BuildProducer<NativeImageResourceBuildItem> resource) {
-
-        var rootProperties = getResourceNames(
-                tree,
-                LIQUIBASE_PROPERTIES_PATH,
-                ".properties",
-                true);
-        resource.produce(new NativeImageResourceBuildItem(rootProperties));
-    }
-
-    private void loadLiquibaseXsdResources(
-            PathTree tree,
-            BuildProducer<NativeImageResourceBuildItem> resource) {
-
-        var xsdResources = getResourceNames(
-                tree,
-                LIQUIBASE_DB_CHANGELOG_XSD_PATH,
-                ".xsd",
-                false);
-        resource.produce(new NativeImageResourceBuildItem(xsdResources));
-    }
-
-    private void loadLiquibaseServiceProviderConfig(
-            PathTree tree,
-            BuildProducer<ServiceProviderBuildItem> services,
-            BuildProducer<ReflectiveClassBuildItem> reflective) {
-
-        getResourceNames(tree, LIQUIBASE_SERVICE_PATH, "", true)
-                .forEach(t -> consumeService(t, (serviceClassName, implementations) -> {
-                    services.produce(new ServiceProviderBuildItem(
-                            serviceClassName,
-                            implementations.toArray(String[]::new)));
-                    reflective.produce(ReflectiveClassBuildItem.builder(implementations.toArray(String[]::new))
-                            .constructors().methods().build());
-                }));
     }
 
     @BuildStep

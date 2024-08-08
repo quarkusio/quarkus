@@ -11,7 +11,11 @@ import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.util.ArtifactResourceResolver;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathFilter;
 
 /**
  * Represents a Service Provider registration.
@@ -21,6 +25,8 @@ import io.quarkus.deployment.util.ServiceUtil;
 public final class ServiceProviderBuildItem extends MultiBuildItem {
 
     public static final String SPI_ROOT = "META-INF/services/";
+    private static final PathFilter SPI_FILTER = PathFilter.forIncludes(List.of(SPI_ROOT + "*"));
+
     private final String serviceInterface;
     private final List<String> providers;
 
@@ -52,7 +58,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
                 line = line.substring(0, commentIndex);
             }
             line = line.trim();
-            if (line.length() != 0) {
+            if (!line.isEmpty()) {
                 classNames.add(line);
             }
         }
@@ -85,6 +91,48 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
         } catch (IOException e) {
             throw new RuntimeException("Could not read class path resources having path '" + resourcePath + "'", e);
         }
+    }
+
+    /**
+     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifact.
+     * It includes all the providers, that are contained in all the service interface descriptor files defined in
+     * {@code "META-INF/services/"} in the selected artifact.
+     *
+     * @param dependencies the resolved dependencies of the build
+     * @param artifactCoordinates the coordinates of the artifact containing the service definitions
+     * @return a {@link Collection} of {@code ServiceProviderBuildItem}s containing all the found service providers
+     */
+    public static Collection<ServiceProviderBuildItem> allProvidersOfDependency(
+            Collection<ResolvedDependency> dependencies,
+            ArtifactCoords artifactCoordinates) {
+
+        return allProvidersOfDependencies(dependencies, List.of(artifactCoordinates));
+    }
+
+    /**
+     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifacts.
+     * It includes all the providers, that are contained in all the service interface descriptor files defined in
+     * {@code "META-INF/services/"} in all the selected artifacts.
+     *
+     * @param dependencies the resolved dependencies of the build
+     * @param artifactCoordinatesCollection a {@link Collection} of coordinates of the artifacts containing the service
+     *        definitions
+     * @return a {@link Collection} of {@code ServiceProviderBuildItem}s containing all the found service providers
+     */
+    public static Collection<ServiceProviderBuildItem> allProvidersOfDependencies(
+            Collection<ResolvedDependency> dependencies,
+            Collection<ArtifactCoords> artifactCoordinatesCollection) {
+
+        var resolver = ArtifactResourceResolver.of(dependencies, artifactCoordinatesCollection);
+        return resolver.resourcePathList(SPI_FILTER).stream()
+                .map(ServiceProviderBuildItem::ofSpiPath)
+                .toList();
+    }
+
+    private static ServiceProviderBuildItem ofSpiPath(Path spiPath) {
+        return new ServiceProviderBuildItem(
+                spiPath.getFileName().toString(),
+                ServiceUtil.classNamesNamedIn(spiPath.toString()));
     }
 
     /**
@@ -136,12 +184,12 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
         this.providers = providers;
 
         // Validation
-        if (serviceInterface.length() == 0) {
+        if (serviceInterface.isEmpty()) {
             throw new IllegalArgumentException("The serviceDescriptorFile interface cannot be blank");
         }
 
         providers.forEach(s -> {
-            if (s == null || s.length() == 0) {
+            if (s == null || s.isEmpty()) {
                 throw new IllegalArgumentException("The provider class name cannot be null or blank");
             }
         });

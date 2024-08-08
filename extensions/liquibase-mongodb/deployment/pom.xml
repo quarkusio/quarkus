@@ -16,6 +16,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-liquibase-mongodb</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.liquibase</groupId>
+                    <artifactId>liquibase-commercial</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

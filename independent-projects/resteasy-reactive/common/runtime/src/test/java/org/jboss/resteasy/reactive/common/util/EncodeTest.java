@@ -15,4 +15,11 @@ class EncodeTest {
         assertEquals(encodedEmoji, Encode.encodePath(emoji));
         assertEquals(encodedEmoji, Encode.encodeQueryParam(emoji));
     }
+
+    @Test
+    void encodeQuestionMarkQueryParameterValue() {
+        String uriQueryValue = "bar?a=b";
+        String encoded = URLEncoder.encode(uriQueryValue, StandardCharsets.UTF_8);
+        assertEquals(encoded, Encode.encodeQueryParam(uriQueryValue));
+    }
 }

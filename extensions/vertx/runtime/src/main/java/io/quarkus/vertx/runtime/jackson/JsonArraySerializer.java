@@ -22,7 +22,7 @@ import io.vertx.core.json.JsonArray;
 /**
  * Copied from {@code io.vertx.core.json.jackson.JsonArraySerializer} as that class is package private
  */
-class JsonArraySerializer extends JsonSerializer<JsonArray> {
+public class JsonArraySerializer extends JsonSerializer<JsonArray> {
     @Override
     public void serialize(JsonArray value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         jgen.writeObject(value.getList());

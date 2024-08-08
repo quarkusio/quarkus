@@ -490,16 +490,19 @@ public class ResteasyReactiveJacksonProcessor {
 
         final boolean hasSecureFields;
         if (currentClassInfo.isInterface()) {
-            // check interface implementors as anyone of them can be returned
-            hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
-                    .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache));
+            if (isExcludedFromSecureFieldLookup(currentClassInfo.name())) {
+                hasSecureFields = false;
+            } else {
+                // check interface implementors as anyone of them can be returned
+                hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
+                        .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache));
+            }
         } else {
             // figure if any field or parent / subclass field is secured
             if (hasSecureFields(currentClassInfo)) {
                 hasSecureFields = true;
             } else {
-                Predicate<DotName> ignoredTypesPredicate = QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE;
-                if (ignoredTypesPredicate.test(currentClassInfo.name())) {
+                if (isExcludedFromSecureFieldLookup(currentClassInfo.name())) {
                     hasSecureFields = false;
                 } else {
                     hasSecureFields = anyFieldHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
@@ -512,6 +515,10 @@ public class ResteasyReactiveJacksonProcessor {
         }
         typeToHasSecureField.put(className, hasSecureFields);
         return hasSecureFields;
+    }
+
+    private static boolean isExcludedFromSecureFieldLookup(DotName name) {
+        return ((Predicate<DotName>) QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE).test(name);
     }
 
     private static boolean hasSecureFields(ClassInfo classInfo) {
@@ -548,7 +555,7 @@ public class ResteasyReactiveJacksonProcessor {
             Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
         // this is the best effort and does not cover every possibility (e.g. type variables, wildcards)
         if (fieldType.kind() == Type.Kind.CLASS) {
-            if (fieldType.name().packagePrefix() != null && fieldType.name().packagePrefix().startsWith("java.")) {
+            if (isExcludedFromSecureFieldLookup(fieldType.name())) {
                 return false;
             }
             final ClassInfo fieldClass = indexView.getClassByName(fieldType.name());

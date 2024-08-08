@@ -50,6 +50,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -87,7 +88,8 @@ public class SmallRyeFaultToleranceProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_FAULT_TOLERANCE));
 
@@ -95,6 +97,8 @@ public class SmallRyeFaultToleranceProcessor {
                 ContextPropagationRequestContextControllerProvider.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(RunnableWrapper.class.getName(),
                 ContextPropagationRunnableWrapper.class.getName()));
+        // make sure this is initialised at runtime, otherwise it will get a non-initialised ContextPropagationManager
+        runtimeInitializedClassBuildItems.produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 

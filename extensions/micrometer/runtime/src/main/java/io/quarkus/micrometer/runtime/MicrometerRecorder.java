@@ -107,15 +107,21 @@ public class MicrometerRecorder {
             }
         }
 
+        List<AutoCloseable> autoCloseables = new ArrayList<>();
+
         // Base JVM Metrics
         if (config.checkBinderEnabledWithDefault(() -> config.binder.jvm)) {
             new ClassLoaderMetrics().bindTo(Metrics.globalRegistry);
-            new JvmHeapPressureMetrics().bindTo(Metrics.globalRegistry);
+            JvmHeapPressureMetrics jvmHeapPressureMetrics = new JvmHeapPressureMetrics();
+            jvmHeapPressureMetrics.bindTo(Metrics.globalRegistry);
+            autoCloseables.add(jvmHeapPressureMetrics);
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
             if (ImageMode.current() == ImageMode.JVM) {
-                new JvmGcMetrics().bindTo(Metrics.globalRegistry);
+                JvmGcMetrics jvmGcMetrics = new JvmGcMetrics();
+                jvmGcMetrics.bindTo(Metrics.globalRegistry);
+                autoCloseables.add(jvmGcMetrics);
             }
         }
 
@@ -148,6 +154,14 @@ public class MicrometerRecorder {
                 for (MeterRegistry meterRegistry : new ArrayList<>(Metrics.globalRegistry.getRegistries())) {
                     meterRegistry.close();
                     Metrics.removeRegistry(meterRegistry);
+                }
+                // iterate over the auto-closeables and close them
+                for (AutoCloseable autoCloseable : autoCloseables) {
+                    try {
+                        autoCloseable.close();
+                    } catch (Exception e) {
+                        log.error("Error closing", e);
+                    }
                 }
             }
         });

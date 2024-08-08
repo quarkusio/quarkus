@@ -180,34 +180,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return name;
     }
 
-    /**
-     * Returns true if the supplied class is a class that would be loaded parent-first
-     */
-    public boolean isParentFirst(String name) {
-        ensureOpen();
-
-        if (isInJdkPackage(name)) {
-            return true;
-        }
-
-        //even if the thread is interrupted we still want to be able to load classes
-        //if the interrupt bit is set then we clear it and restore it at the end
-        boolean interrupted = Thread.interrupted();
-        try {
-            ClassLoaderState state = getState();
-            synchronized (getClassLoadingLock(name)) {
-                String resourceName = fromClassNameToResourceName(name);
-                return parentFirst(resourceName, state);
-            }
-
-        } finally {
-            if (interrupted) {
-                //restore interrupt state
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
     private boolean parentFirst(String name, ClassLoaderState state) {
         return parentFirst || state.parentFirstResources.contains(name);
     }

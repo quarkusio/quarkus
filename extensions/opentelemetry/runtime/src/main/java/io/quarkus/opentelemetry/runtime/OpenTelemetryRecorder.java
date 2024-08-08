@@ -59,12 +59,12 @@ public class OpenTelemetryRecorder {
                         });
 
                 final Map<String, String> oTelConfigs = getOtelConfigs();
-
+                OtelConfigsSupplier propertiesSupplier = new OtelConfigsSupplier(oTelConfigs);
                 if (oTelRuntimeConfig.sdkDisabled()) {
                     return AutoConfiguredOpenTelemetrySdk.builder()
                             .setResultAsGlobal()
                             .disableShutdownHook()
-                            .addPropertiesSupplier(() -> oTelConfigs)
+                            .addPropertiesSupplier(propertiesSupplier)
                             .build()
                             .getOpenTelemetrySdk();
                 }
@@ -72,7 +72,7 @@ public class OpenTelemetryRecorder {
                 var builder = AutoConfiguredOpenTelemetrySdk.builder()
                         .setResultAsGlobal()
                         .disableShutdownHook()
-                        .addPropertiesSupplier(() -> oTelConfigs)
+                        .addPropertiesSupplier(propertiesSupplier)
                         .setServiceClassLoader(Thread.currentThread().getContextClassLoader());
                 for (var customizer : builderCustomizers) {
                     customizer.customize(builder);
@@ -154,6 +154,19 @@ public class OpenTelemetryRecorder {
             } catch (Exception ignored) {
                 return duration.toSeconds() + "s";
             }
+        }
+    }
+
+    private static class OtelConfigsSupplier implements Supplier<Map<String, String>> {
+        private final Map<String, String> oTelConfigs;
+
+        public OtelConfigsSupplier(Map<String, String> oTelConfigs) {
+            this.oTelConfigs = oTelConfigs;
+        }
+
+        @Override
+        public Map<String, String> get() {
+            return oTelConfigs;
         }
     }
 }

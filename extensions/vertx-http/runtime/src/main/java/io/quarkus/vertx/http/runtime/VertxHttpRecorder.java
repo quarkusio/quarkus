@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -46,6 +47,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
@@ -71,7 +73,10 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.http.DomainSocketServerStart;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerStart;
+import io.quarkus.vertx.http.HttpsServerStart;
 import io.quarkus.vertx.http.ManagementInterface;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
@@ -744,8 +749,9 @@ public class VertxHttpRecorder {
                 launchMode, websocketSubProtocols, registry);
 
         // Customize
-        if (Arc.container() != null) {
-            List<InstanceHandle<HttpServerOptionsCustomizer>> instances = Arc.container()
+        ArcContainer container = Arc.container();
+        if (container != null) {
+            List<InstanceHandle<HttpServerOptionsCustomizer>> instances = container
                     .listAll(HttpServerOptionsCustomizer.class);
             for (InstanceHandle<HttpServerOptionsCustomizer> instance : instances) {
                 HttpServerOptionsCustomizer customizer = instance.get();
@@ -784,12 +790,17 @@ public class VertxHttpRecorder {
         CompletableFuture<String> futureResult = new CompletableFuture<>();
 
         AtomicInteger connectionCount = new AtomicInteger();
+
+        // Note that a new HttpServer is created for each IO thread but we only want to fire the events (HttpServerStart etc.) once,
+        // for the first server that started listening
+        // See https://vertx.io/docs/vertx-core/java/#_server_sharing for more information
+        AtomicBoolean startEventsFired = new AtomicBoolean();
+
         vertx.deployVerticle(new Supplier<Verticle>() {
             @Override
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
-                        launchMode,
-                        insecureRequestStrategy, httpConfiguration, connectionCount, registry);
+                        launchMode, insecureRequestStrategy, httpConfiguration, connectionCount, registry, startEventsFired);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -1129,11 +1140,12 @@ public class VertxHttpRecorder {
         private final HttpConfiguration quarkusConfig;
         private final AtomicInteger connectionCount;
         private final List<Long> reloadingTasks = new CopyOnWriteArrayList<>();
+        private final AtomicBoolean startEventsFired;
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
                 InsecureRequests insecureRequests, HttpConfiguration quarkusConfig, AtomicInteger connectionCount,
-                TlsConfigurationRegistry registry) {
+                TlsConfigurationRegistry registry, AtomicBoolean startEventsFired) {
             this.httpOptions = httpOptions;
             this.httpsOptions = httpsOptions;
             this.launchMode = launchMode;
@@ -1142,6 +1154,7 @@ public class VertxHttpRecorder {
             this.quarkusConfig = quarkusConfig;
             this.connectionCount = connectionCount;
             this.registry = registry;
+            this.startEventsFired = startEventsFired;
             org.crac.Core.getGlobalContext().register(this);
         }
 
@@ -1165,6 +1178,9 @@ public class VertxHttpRecorder {
                 startFuture
                         .fail(new IllegalArgumentException("Must configure at least one of http, https or unix domain socket"));
             }
+
+            ArcContainer container = Arc.container();
+            boolean notifyStartObservers = container != null ? startEventsFired.compareAndSet(false, true) : false;
 
             if (httpServerEnabled) {
                 httpServer = vertx.createHttpServer(httpOptions);
@@ -1196,27 +1212,34 @@ public class VertxHttpRecorder {
                         }
                     });
                 }
-                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount);
+                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount, connectionCount,
+                        container, notifyStartObservers);
             }
 
             if (domainSocketOptions != null) {
                 domainSocketServer = vertx.createHttpServer(domainSocketOptions);
                 domainSocketServer.requestHandler(ACTUAL_ROOT);
-                setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketOptions, startFuture, remainingCount);
+                setupUnixDomainSocketHttpServer(domainSocketServer, domainSocketOptions, startFuture, remainingCount,
+                        container, notifyStartObservers);
             }
 
             if (httpsOptions != null) {
                 httpsServer = vertx.createHttpServer(httpsOptions);
                 httpsServer.requestHandler(ACTUAL_ROOT);
-                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount);
+                setupTcpHttpServer(httpsServer, httpsOptions, true, startFuture, remainingCount, connectionCount,
+                        container, notifyStartObservers);
             }
         }
 
         private void setupUnixDomainSocketHttpServer(HttpServer httpServer, HttpServerOptions options,
                 Promise<Void> startFuture,
-                AtomicInteger remainingCount) {
+                AtomicInteger remainingCount, ArcContainer container, boolean notifyStartObservers) {
             httpServer.listen(SocketAddress.domainSocketAddress(options.getHost()), event -> {
                 if (event.succeeded()) {
+                    if (notifyStartObservers) {
+                        container.beanManager().getEvent().select(DomainSocketServerStart.class)
+                                .fireAsync(new DomainSocketServerStart(options));
+                    }
                     if (remainingCount.decrementAndGet() == 0) {
                         startFuture.complete(null);
                     }
@@ -1240,7 +1263,8 @@ public class VertxHttpRecorder {
         }
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
-                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount) {
+                Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount,
+                ArcContainer container, boolean notifyStartObservers) {
 
             if (quarkusConfig.limits.maxConnections.isPresent() && quarkusConfig.limits.maxConnections.getAsInt() > 0) {
                 var tracker = vertx.isMetricsEnabled()
@@ -1315,9 +1339,18 @@ public class VertxHttpRecorder {
                         }
 
                         if (https) {
-                            CDI.current().select(HttpCertificateUpdateEventListener.class).get()
+                            container.instance(HttpCertificateUpdateEventListener.class).get()
                                     .register(event.result(), quarkusConfig.tlsConfigurationName.orElse(TlsConfig.DEFAULT_NAME),
                                             "http server");
+                        }
+
+                        if (notifyStartObservers) {
+                            Event<Object> startEvent = container.beanManager().getEvent();
+                            if (https) {
+                                startEvent.select(HttpsServerStart.class).fireAsync(new HttpsServerStart(options));
+                            } else {
+                                startEvent.select(HttpServerStart.class).fireAsync(new HttpServerStart(options));
+                            }
                         }
 
                         if (remainingCount.decrementAndGet() == 0) {

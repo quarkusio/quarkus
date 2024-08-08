@@ -482,7 +482,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
-            return bindParameters(getSession(DEFAULT_PERSISTENCE_UNIT_NAME).createMutationQuery(updateQuery), params)
+            return bindParameters(getSession(entityClass).createMutationQuery(updateQuery), params)
                     .executeUpdate();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);

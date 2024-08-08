@@ -1,13 +1,10 @@
-package io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management;
+package io.quarkus.hibernate.search.standalone.elasticsearch.runtime;
 
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.ConfigMapping;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.hibernate-search-standalone.management")
-@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public interface HibernateSearchStandaloneManagementConfig {
+@ConfigGroup
+public interface HibernateSearchStandaloneBuildTimeConfigManagement {
 
     /**
      * Root path for reindexing endpoints.

@@ -1034,7 +1034,7 @@ Set `application.properties`, for example:
 [source, properties]
 ----
 # Use the 'keycloak.url' property set by the test KeycloakRealmResourceManager
-quarkus.oidc-client.auth-server-url=${keycloak.url}
+quarkus.oidc-client.auth-server-url=${keycloak.url:replaced-by-test-resource}
 quarkus.oidc-client.discovery-enabled=false
 quarkus.oidc-client.token-path=/tokens
 quarkus.oidc-client.client-id=quarkus-service-app

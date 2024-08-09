@@ -118,14 +118,13 @@ class SmallRyeHealthProcessor {
             "key-files");
 
     static class OpenAPIIncluded implements BooleanSupplier {
-        HealthBuildTimeConfig config;
+        SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig;
+        DeprecatedHealthBuildTimeConfig deprecatedHealthBuildTimeConfig;
 
         public boolean getAsBoolean() {
-            return config.openapiIncluded;
+            return smallryeHealthBuildTimeConfig.openapiIncluded.orElse(deprecatedHealthBuildTimeConfig.openapiIncluded);
         }
     }
-
-    HealthBuildTimeConfig config;
 
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> brandingFiles() {
@@ -140,8 +139,11 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
-            List<HealthBuildItem> healthBuildItems) {
-        boolean extensionsEnabled = config.extensionsEnabled &&
+            List<HealthBuildItem> healthBuildItems,
+            SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig,
+            DeprecatedHealthBuildTimeConfig deprecatedHealthBuildTimeConfig) {
+        boolean extensionsEnabled = smallryeHealthBuildTimeConfig.extensionsEnabled
+                .orElse(deprecatedHealthBuildTimeConfig.extensionsEnabled) &&
                 !ConfigProvider.getConfig().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
                         .orElse(false);
         if (extensionsEnabled) {

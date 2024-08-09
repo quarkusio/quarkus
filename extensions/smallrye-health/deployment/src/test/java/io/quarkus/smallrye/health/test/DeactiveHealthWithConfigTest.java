@@ -15,7 +15,7 @@ class DeactiveHealthWithConfigTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(BasicHealthCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
-            .overrideConfigKey("quarkus.health.enabled", "false");
+            .overrideConfigKey("quarkus.smallrye-health.enabled", "false");
 
     @Test
     void testAdditionalJsonPropertyInclusions() {

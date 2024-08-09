@@ -337,7 +337,10 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T extends Entity> Optional<T> singleResultOptional() {
         SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
-            return hibernateQuery.uniqueResultOptional();
+            // Yes, there's a much nicer hibernateQuery.uniqueResultOptional() BUT
+            //  it throws org.hibernate.NonUniqueResultException instead of a jakarta.persistence.NonUniqueResultException
+            //  and at this point changing it would be a breaking change >_<
+            return Optional.ofNullable((T) hibernateQuery.getSingleResultOrNull());
         }
     }
 

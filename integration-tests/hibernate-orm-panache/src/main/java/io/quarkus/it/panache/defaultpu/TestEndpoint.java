@@ -1860,4 +1860,41 @@ public class TestEndpoint {
         Assertions.assertEquals(1, Person.delete("\r\n  \n\ndelete\nfrom\n Person2\nwhere\nname = ?1", "foo"));
         return "OK";
     }
+
+    @GET
+    @Path("42416")
+    public String testBug42416() {
+        createSomeEntities42416();
+        runSomeTests42416();
+        return "OK";
+    }
+
+    @Transactional
+    public void createSomeEntities42416() {
+        Fruit.deleteAll();
+        Fruit f = new Fruit("apple", "red");
+        f.persist();
+
+        Fruit f2 = new Fruit("apple", "yellow");
+        f2.persist();
+    }
+
+    @Transactional
+    public void runSomeTests42416() {
+        try {
+            Fruit.find("where name = ?1", "apple").singleResult();
+        } catch (jakarta.persistence.NonUniqueResultException e) {
+            // all good let's continue
+        }
+        try {
+            Fruit.find("where name = ?1", "not-a-fruit").singleResult();
+        } catch (jakarta.persistence.NoResultException e) {
+            // all good let's continue
+        }
+        try {
+            Fruit.find("where name = ?1", "apple").singleResultOptional();
+        } catch (jakarta.persistence.NonUniqueResultException e) {
+            // all good let's continue
+        }
+    }
 }

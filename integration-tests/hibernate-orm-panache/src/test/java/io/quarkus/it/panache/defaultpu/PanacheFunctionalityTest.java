@@ -258,4 +258,9 @@ public class PanacheFunctionalityTest {
     public void testBug31117() {
         RestAssured.when().get("/test/31117").then().body(is("OK"));
     }
+
+    @Test
+    public void testBug42416() {
+        RestAssured.when().get("/test/42416").then().body(is("OK"));
+    }
 }

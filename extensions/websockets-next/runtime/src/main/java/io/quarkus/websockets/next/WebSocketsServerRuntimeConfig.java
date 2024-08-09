@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.websockets-next.server")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -68,6 +69,12 @@ public interface WebSocketsServerRuntimeConfig {
      * Traffic logging config.
      */
     TrafficLoggingConfig trafficLogging();
+
+    /**
+     * Telemetry configuration.
+     */
+    @WithParentName
+    TelemetryConfig telemetry();
 
     interface Security {
 

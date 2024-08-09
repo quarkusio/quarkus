@@ -110,7 +110,7 @@ public class DevServicesConfig {
     /**
      * The `JAVA_OPTS` passed to the keycloak JVM
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "-XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90")
     public Optional<String> javaOpts;
 
     /**

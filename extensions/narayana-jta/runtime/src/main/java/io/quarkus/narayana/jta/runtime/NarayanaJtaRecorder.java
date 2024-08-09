@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,15 @@ public class NarayanaJtaRecorder {
                 HASH_ALGORITHM_FOR_SHORTENING);
         final byte[] nodeNameAsBytes = originalNodeName.getBytes();
         MessageDigest messageDigest224 = MessageDigest.getInstance(HASH_ALGORITHM_FOR_SHORTENING);
-        transactions.nodeName = new String(messageDigest224.digest(nodeNameAsBytes), StandardCharsets.UTF_8);
+        byte[] hashedByteArray = messageDigest224.digest(nodeNameAsBytes);
+
+        //Encode the byte array in Base64
+        //encoding the array might result in a longer array
+        byte[] base64Result = Base64.getEncoder().encode(hashedByteArray);
+        //truncate the array
+        byte[] slice = Arrays.copyOfRange(base64Result, 0, 28);
+
+        transactions.nodeName = new String(slice, StandardCharsets.UTF_8);
         log.warnf("New node name is \"%s\"", transactions.nodeName);
     }
 

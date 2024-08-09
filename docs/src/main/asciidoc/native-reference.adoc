@@ -1097,7 +1097,7 @@ First, start a Neo4j instance:
 
 [source,bash]
 ----
-export NEO_PASS=...
+export NEO_PASS=mypassword
 docker run \
     --detach \
     --rm \
@@ -1160,44 +1160,57 @@ Copy and paste the contents of the script into a file called `import.cypher`.
 
 [WARNING]
 ====
-Mandrel 22.0.0 contains a bug where the symbolic links used by the import cypher file are not correctly set when generating reports within a container
-(for more details see link:https://github.com/oracle/graal/issues/4355[here]).
-This can be worked around by copying the following script into a file and executing it:
+Starting with GraalVM for JDK 24 a set of different files is being generated. So the following cypher script needs to be used instead:
 
-[source,bash]
+[source,cypher]
 ----
-set -e
+CREATE CONSTRAINT unique_method_id FOR (m:Method) REQUIRE m.methodId IS UNIQUE;
+CREATE CONSTRAINT unique_invoke_id FOR (i:Invoke) REQUIRE i.id IS UNIQUE;
 
-project="debugging-native"
+LOAD CSV WITH HEADERS FROM 'file:///reports/call_tree_methods.csv' AS row
+CREATE (m:Method {
+    methodId: toInteger(row.Id),
+    name: row.Name,
+    type: row.Type,
+    parameters: row.Parameters,
+    return: row.Return,
+    display: row.Display,
+    flags: row.Flags,
+    isEntryPoint: toBoolean(row.IsEntrypoint)})
+RETURN count(m);
 
-pushd target/*-native-image-source-jar/reports
+LOAD CSV WITH HEADERS FROM 'file:///reports/call_tree_invokes.csv' AS row
+CREATE (i:Invoke {
+    id: toInteger(row.Id),
+    methodId: toInteger(row.MethodId),
+    bytecodeIndexes: row.BytecodeIndexes,
+    targetId: toInteger(row.TargetId),
+    isDirect: toBoolean(row.IsDirect)
+})
+RETURN count(i);
 
-rm -f call_tree_vm.csv
-ln -s call_tree_vm_${project}-* call_tree_vm.csv
+MATCH (i:Invoke {isDirect: true})
+MATCH (caller:Method {methodId: i.methodId})
+MATCH (callee:Method {methodId: i.targetId})
+CREATE (caller)-[:DIRECT {bci: i.BytecodeIndexes}]->(callee)
+RETURN count(*);
 
-rm -f call_tree_direct_edges.csv
-ln -s call_tree_direct_edges_${project}-* call_tree_direct_edges.csv
+MATCH (i:Invoke {isDirect: false})
+MATCH (caller:Method {methodId: i.methodId})
+MATCH (callee:Method {methodId: i.targetId})
+CREATE (caller)-[:VIRTUAL {bci: i.BytecodeIndexes}]->(callee)
+RETURN count(*);
 
-rm -f call_tree_entry_points.csv
-ln -s call_tree_entry_points_${project}-* call_tree_entry_points.csv
-
-rm -f call_tree_methods.csv
-ln -s call_tree_methods_${project}-* call_tree_methods.csv
-
-rm -f call_tree_virtual_edges.csv
-ln -s call_tree_virtual_edges_${project}-* call_tree_virtual_edges.csv
-
-rm -f call_tree_virtual_methods.csv
-ln -s call_tree_virtual_methods_${project}-* call_tree_virtual_methods.csv
-
-rm -f call_tree_override_by_edges.csv
-ln -s call_tree_override_by_edges_${project}-* call_tree_override_by_edges.csv
-
-popd
+LOAD CSV WITH HEADERS FROM 'file:///reports/call_tree_targets.csv' AS row
+MATCH (i:Invoke {id: toInteger(row.InvokeId)})
+MATCH (callee:Method {methodId: toInteger(row.TargetId)})
+MATCH (caller:Method {methodId: i.methodId})
+CREATE (caller)-[:OVERRIDEN_BY]->(callee)
+RETURN count(*);
 ----
 ====
 
-Next, copy the import cypher script and CSV files into Neo4j's import folder:
+Next, copy the CSV files into Neo4j's import folder:
 
 [source,bash]
 ----
@@ -1205,14 +1218,14 @@ docker cp \
     target/*-native-image-source-jar/reports \
     testneo4j:/var/lib/neo4j/import
 
-docker cp import.cypher testneo4j:/var/lib/neo4j
+docker exec -i testneo4j chown -R neo4j:neo4j import/reports
 ----
 
 After copying all the files, invoke the import script:
 
 [source,bash]
 ----
-docker exec testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS} -f import.cypher
+cat import.cypher | docker exec -i testneo4j bin/cypher-shell -u neo4j -p ${NEO_PASS}
 ----
 
 Once the import completes (shouldn't take more than a couple of minutes), go to the link:http://localhost:7474[Neo4j browser],

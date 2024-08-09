@@ -4,9 +4,9 @@ import java.util.function.BooleanSupplier;
 
 public class SmallRyeHealthActive implements BooleanSupplier {
 
-    private final HealthBuildTimeConfig config;
+    private final SmallRyeHealthBuildTimeConfig config;
 
-    SmallRyeHealthActive(HealthBuildTimeConfig config) {
+    SmallRyeHealthActive(SmallRyeHealthBuildTimeConfig config) {
         this.config = config;
     }
 

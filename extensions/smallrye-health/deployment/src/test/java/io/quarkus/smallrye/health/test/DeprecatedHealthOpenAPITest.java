@@ -9,7 +9,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-class HealthOpenAPITest {
+@Deprecated(since = "3.14", forRemoval = true)
+class DeprecatedHealthOpenAPITest {
 
     private static final String OPEN_API_PATH = "/q/openapi";
 
@@ -17,7 +18,7 @@ class HealthOpenAPITest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(BasicHealthCheck.class, OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-health.openapi.included=true\n"
+                    .addAsResource(new StringAsset("quarkus.health.openapi.included=true\n"
                             + "quarkus.smallrye-openapi.store-schema-directory=target"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

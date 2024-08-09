@@ -74,7 +74,7 @@ public class ConfigResolver {
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
-                    configRoot, false, false, false);
+                    configRoot, 0, false, false, false);
             for (DiscoveryConfigProperty discoveryConfigProperty : discoveryConfigRoot.getProperties().values()) {
                 resolveProperty(configRoot, existingRootConfigSections, discoveryConfigRoot.getPhase(), context,
                         discoveryConfigProperty);
@@ -132,16 +132,17 @@ public class ConfigResolver {
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
                             discoveryConfigProperty.getSourceName(), propertyPath, typeQualifiedName,
-                            discoveryConfigProperty.isSectionGenerated(), deprecated);
+                            context.getSectionLevel(), discoveryConfigProperty.isSectionGenerated(), deprecated);
                     context.getItemCollection().addItem(configSection);
                     existingRootConfigSections.put(propertyPath, configSection);
                 }
 
                 configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
-                        configSection, isWithinMap, isWithMapWithUnnamedKey, deprecated);
+                        configSection, context.getSectionLevel() + 1, isWithinMap, isWithMapWithUnnamedKey, deprecated);
             } else {
                 configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
-                        context.getItemCollection(), isWithinMap, isWithMapWithUnnamedKey, deprecated);
+                        context.getItemCollection(), context.getSectionLevel(), isWithinMap, isWithMapWithUnnamedKey,
+                        deprecated);
             }
 
             for (DiscoveryConfigProperty configGroupProperty : discoveryConfigGroup.getProperties().values()) {
@@ -244,13 +245,14 @@ public class ConfigResolver {
         private final List<String> additionalPaths;
         private final DiscoveryRootElement discoveryRootElement;
         private final ConfigItemCollection itemCollection;
+        private final int sectionLevel;
         private final boolean withinMap;
         private final boolean withinMapWithUnnamedKey;
         private final boolean deprecated;
 
         private ResolutionContext(String path, List<String> additionalPaths, DiscoveryRootElement discoveryRootElement,
                 ConfigItemCollection itemCollection,
-                boolean withinMap, boolean withinMapWithUnnamedKey, boolean deprecated) {
+                int sectionLevel, boolean withinMap, boolean withinMapWithUnnamedKey, boolean deprecated) {
             this.path = path;
             this.additionalPaths = additionalPaths;
             this.discoveryRootElement = discoveryRootElement;
@@ -258,6 +260,7 @@ public class ConfigResolver {
             this.withinMap = withinMap;
             this.withinMapWithUnnamedKey = withinMapWithUnnamedKey;
             this.deprecated = deprecated;
+            this.sectionLevel = sectionLevel;
         }
 
         public String getPath() {
@@ -274,6 +277,10 @@ public class ConfigResolver {
 
         public ConfigItemCollection getItemCollection() {
             return itemCollection;
+        }
+
+        public int getSectionLevel() {
+            return sectionLevel;
         }
 
         public boolean isWithinMap() {

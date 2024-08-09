@@ -1,0 +1,44 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import jakarta.ws.rs.core.Response;
+import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.GrpcTranscoding;
+import io.quarkus.grpc.GrpcTranscodingDescriptor;
+import com.google.protobuf.Message;
+import com.google.protobuf.util.JsonFormat;
+import com.google.protobuf.InvalidProtocolBufferException;
+
+@jakarta.annotation.Generated(
+value = "by {{classPrefix}} Grpc generator",
+comments = "Source: {{protoName}}")
+public class {{serviceName}}Marshalling implements GrpcTranscoding {
+
+    @Override
+    public String getGrpcServiceName() {
+        return "{{packageName}}.{{serviceName}}";
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <Req extends Message, Resp extends Message> GrpcTranscodingDescriptor<Req, Resp> findTranscodingDescriptor(String method) {
+        switch (method) {
+        {{#unaryUnaryMethods}}
+            case "{{methodName}}":
+            return (GrpcTranscodingDescriptor<Req, Resp>) {{methodName}}TranscodingDescriptor();
+        {{/unaryUnaryMethods}}
+        default:
+            throw new IllegalArgumentException("Unknown request method: " + method);
+        }
+    }
+
+    {{#unaryUnaryMethods}}
+    @io.quarkus.grpc.GrpcTranscodingMethod(grpcMethodName = "{{methodName}}", httpMethod = "{{httpMethod}}", httpPath = "{{httpPath}}")
+    public io.quarkus.grpc.GrpcTranscodingDescriptor<{{inputType}}, {{outputType}}> {{methodName}}TranscodingDescriptor() {
+        return new io.quarkus.grpc.GrpcTranscodingDescriptor<{{inputType}}, {{outputType}}>(
+            new io.quarkus.grpc.GrpcTranscodingMarshaller<{{inputType}}>({{inputType}}.getDefaultInstance()),
+            new io.quarkus.grpc.GrpcTranscodingMarshaller<{{outputType}}>({{outputType}}.getDefaultInstance()));
+    }
+    {{/unaryUnaryMethods}}
+}

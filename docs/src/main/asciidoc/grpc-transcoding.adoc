@@ -1,0 +1,166 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using gRPC Transcoding
+include::_attributes.adoc[]
+:categories: serialization
+:summary: This page explains how to enable gRPC Transcoding in your Quarkus application for RESTful interactions with gRPC services.
+:topics: grpc, transcoding, rest, json
+:extensions: io.quarkus:quarkus-grpc
+
+gRPC Transcoding lets you expose your gRPC services as RESTful JSON endpoints.
+This is particularly useful in these scenarios:
+
+1. **Client-side limitations:** When you need to interact with gRPC services from environments (like web browsers) that don't directly support gRPC.
+2. **Simplified local development:** While services like Google Cloud Run and Google Cloud Endpoints offer built-in gRPC transcoding, replicating this locally often requires setting up a proxy like Envoy. Transcoding directly within your Quarkus application streamlines your development process.
+
+== Configuring Your Project
+
+First, add the `quarkus-grpc` extension to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-grpc</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-grpc")
+----
+
+== Transcoding configuration
+
+include::{generated-dir}/config/quarkus-grpc-transcoding-config-grpc-transcoding-config.adoc[opts=optional,leveloffset=+1]
+
+== Example
+
+Let's imagine you have a gRPC service defined.
+Here's an example of a simple service:
+
+[source,protobuf]
+----
+syntax = "proto3";
+
+import "google/api/annotations.proto"; //<1>
+
+option java_multiple_files = true;
+option java_package = "examples";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+package helloworld;
+
+// The greeting service definition.
+service Greeter {
+  // RPC with simple path
+  rpc SimplePath (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = { //<2>
+      post: "/v1/simple"
+      body: "*"
+    };
+  }
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+----
+
+<1> We need to import the `google/api/annotations.proto` file so that we can use the `google.api.http` option.
+<2> This option is used to define the RESTful path for the gRPC service.
+
+Now we need to implement the service:
+
+[source,java]
+----
+@GrpcService
+public class HelloWorldNewService implements Greeter {
+
+    @Override
+    public Uni<HelloReply> simplePath(HelloRequest request) {
+        return Uni.createFrom().item(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+    }
+}
+----
+
+To enable gRPC Transcoding, you need to add the following configuration to your `application.properties` file:
+
+[source,properties]
+----
+quarkus.grpc.transcoding.enabled=true
+----
+
+Now you can access the gRPC service through a RESTful JSON interface.
+For example, you can use the following `curl` command:
+
+[source,shell]
+----
+curl -X POST http://localhost:8080/v1/simple -H "Content-Type: application/json" -d '{"name": "World"}'
+----
+
+This command should return response similar to the following:
+
+[source,json]
+----
+{
+  "message": "Hello World"
+}
+----
+
+== Advanced Usage
+
+While the above example demonstrates a simple use case, gRPC Transcoding can be configured in more complex scenarios.
+For example, you can define paths with variables, query parameters, and more.
+
+For example you can define methods with path variables:
+
+[source,protobuf]
+----
+service Greeter {
+  rpc PathWithVariable (HelloRequest) returns (HelloReply) {
+    option (google.api.http) = {
+      post: "/v1/path/{name}" //<1>
+      body: "*"
+    };
+  }
+}
+
+message HelloRequest {
+  string name = 1; //<2>
+}
+----
+
+<1> The path variable is defined using curly braces.
+<2> The `name` field is used to define the path variable.
+
+Now if you send a request to the `/v1/path/World` path, like this:
+
+[source,shell]
+----
+curl -X POST http://localhost:8080/v1/path/World
+----
+
+You should receive a response similar to the following:
+
+[source,json]
+----
+{
+  "message": "Hello World"
+}
+----
+
+**Important Notes:**
+
+* You also should consult https://cloud.google.com/endpoints/docs/grpc/transcoding[google's documentation on gRPC transcoding] for more information.
+*  Consider whether you need a proxy like Envoy for advanced transcoding and routing.

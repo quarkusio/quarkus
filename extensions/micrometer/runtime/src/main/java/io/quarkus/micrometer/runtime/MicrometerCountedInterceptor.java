@@ -1,6 +1,8 @@
 package io.quarkus.micrometer.runtime;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
@@ -33,24 +35,32 @@ public class MicrometerCountedInterceptor {
 
     private final MeterRegistry meterRegistry;
     private final MeterTagsSupport meterTagsSupport;
+    private final Map<String, Counter.Builder> countedBuilderMap;
 
     public MicrometerCountedInterceptor(MeterRegistry meterRegistry, MeterTagsSupport meterTagsSupport) {
         this.meterRegistry = meterRegistry;
         this.meterTagsSupport = meterTagsSupport;
+        this.countedBuilderMap = new HashMap<>();
     }
 
     /**
-     * Intercept methods annotated with the {@link Counted} annotation and expose a few counters about
-     * their execution status. By default, record both failed and successful attempts. If the
+     * Intercept methods annotated with the {@link Counted} annotation and expose a
+     * few counters about
+     * their execution status. By default, record both failed and successful
+     * attempts. If the
      * {@link Counted#recordFailuresOnly()} is set to {@code true}, then record only
-     * failed attempts. In case of a failure, tags the counter with the simple name of the thrown
+     * failed attempts. In case of a failure, tags the counter with the simple name
+     * of the thrown
      * exception.
      *
      * <p>
-     * When the annotated method returns a {@link CompletionStage} or any of its subclasses,
-     * the counters will be incremented only when the {@link CompletionStage} is completed.
+     * When the annotated method returns a {@link CompletionStage} or any of its
+     * subclasses,
+     * the counters will be incremented only when the {@link CompletionStage} is
+     * completed.
      * If completed exceptionally a failure is recorded, otherwise if
-     * {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is recorded.
+     * {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is
+     * recorded.
      *
      * @return Whatever the intercepted method returns.
      * @throws Throwable When the intercepted method throws one.
@@ -58,7 +68,7 @@ public class MicrometerCountedInterceptor {
     @AroundInvoke
     @SuppressWarnings("unchecked")
     Object countedMethod(ArcInvocationContext context) throws Exception {
-        MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
+        MicrometerCounted counted = context.getInterceptorBinding(MicrometerCounted.class);
         if (counted == null) {
             return context.proceed();
         }
@@ -112,7 +122,7 @@ public class MicrometerCountedInterceptor {
     }
 
     private void record(MicrometerCounted counted, Tags commonTags, Throwable throwable) {
-        Counter.Builder builder = Counter.builder(counted.value())
+        Counter.Builder builder = countedBuilderMap.computeIfAbsent(counted.value(), Counter::builder)
                 .tags(commonTags)
                 .tags(counted.extraTags())
                 .tag("exception", MicrometerRecorder.getExceptionTag(throwable))

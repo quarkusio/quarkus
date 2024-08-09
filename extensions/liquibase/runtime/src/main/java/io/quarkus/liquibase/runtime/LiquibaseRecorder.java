@@ -10,7 +10,6 @@ import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
@@ -30,24 +29,21 @@ public class LiquibaseRecorder {
     }
 
     public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(String dataSourceName) {
-        return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
-            @Override
-            public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
-                DataSource dataSource;
-                try {
-                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                    if (dataSource instanceof UnconfiguredDataSource) {
-                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
-                    }
-                } catch (RuntimeException e) {
-                    throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
-                            "Unable to find datasource '%s' for Liquibase: %s",
-                            dataSourceName, e.getMessage()), e);
+        return context -> {
+            DataSource dataSource;
+            try {
+                dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                if (dataSource instanceof UnconfiguredDataSource) {
+                    throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
                 }
-
-                LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
-                return liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
+            } catch (RuntimeException e) {
+                throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
+                        "Unable to find datasource '%s' for Liquibase: %s",
+                        dataSourceName, e.getMessage()), e);
             }
+
+            LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
+            return liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
         };
     }
 
@@ -56,14 +52,20 @@ public class LiquibaseRecorder {
             return;
         }
         // Liquibase is active when the datasource itself is active.
-        if (!Arc.container().instance(DataSources.class).get().getActiveDataSourceNames().contains(dataSourceName)) {
-            return;
+        try (var handle = Arc.container().instance(DataSources.class)) {
+            if (!handle.get().getActiveDataSourceNames().contains(dataSourceName)) {
+                return;
+            }
         }
 
-        InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle = LiquibaseFactoryUtil.getLiquibaseFactory(dataSourceName);
-        try {
-            LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+        try (var liquibaseFactoryHandle = LiquibaseFactoryUtil.getLiquibaseFactory(dataSourceName)) {
+            var liquibaseFactory = liquibaseFactoryHandle.get();
             var config = liquibaseFactory.getConfiguration();
+
+            if (!config.active) {
+                return;
+            }
+
             if (!config.cleanAtStart && !config.migrateAtStart) {
                 return;
             }
@@ -93,5 +95,4 @@ public class LiquibaseRecorder {
             throw new IllegalStateException("Error starting Liquibase", e);
         }
     }
-
 }

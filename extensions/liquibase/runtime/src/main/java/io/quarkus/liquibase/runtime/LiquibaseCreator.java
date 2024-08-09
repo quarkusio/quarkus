@@ -17,22 +17,17 @@ class LiquibaseCreator {
 
     public LiquibaseFactory createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
         LiquibaseConfig config = new LiquibaseConfig();
+        config.active = liquibaseBuildTimeConfig.active;
         config.changeLog = liquibaseBuildTimeConfig.changeLog;
         config.searchPath = liquibaseBuildTimeConfig.searchPath;
         config.changeLogParameters = liquibaseRuntimeConfig.changeLogParameters;
 
-        if (liquibaseRuntimeConfig.labels.isPresent()) {
-            config.labels = liquibaseRuntimeConfig.labels.get();
-        }
-        if (liquibaseRuntimeConfig.contexts.isPresent()) {
-            config.contexts = liquibaseRuntimeConfig.contexts.get();
-        }
-        if (liquibaseRuntimeConfig.databaseChangeLogLockTableName.isPresent()) {
-            config.databaseChangeLogLockTableName = liquibaseRuntimeConfig.databaseChangeLogLockTableName.get();
-        }
-        if (liquibaseRuntimeConfig.databaseChangeLogTableName.isPresent()) {
-            config.databaseChangeLogTableName = liquibaseRuntimeConfig.databaseChangeLogTableName.get();
-        }
+        liquibaseRuntimeConfig.labels.ifPresent(lbls -> config.labels = lbls);
+        liquibaseRuntimeConfig.contexts.ifPresent(ctxs -> config.contexts = ctxs);
+        liquibaseRuntimeConfig.databaseChangeLogLockTableName
+                .ifPresent(name -> config.databaseChangeLogLockTableName = name);
+        liquibaseRuntimeConfig.databaseChangeLogTableName.ifPresent(name -> config.databaseChangeLogTableName = name);
+
         config.password = liquibaseRuntimeConfig.password;
         config.username = liquibaseRuntimeConfig.username;
         config.defaultSchemaName = liquibaseRuntimeConfig.defaultSchemaName;

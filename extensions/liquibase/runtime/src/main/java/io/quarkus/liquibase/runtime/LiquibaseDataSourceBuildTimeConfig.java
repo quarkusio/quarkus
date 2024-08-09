@@ -19,10 +19,11 @@ public final class LiquibaseDataSourceBuildTimeConfig {
      *
      * @return {@link LiquibaseDataSourceBuildTimeConfig}
      */
-    public static final LiquibaseDataSourceBuildTimeConfig defaultConfig() {
+    public static LiquibaseDataSourceBuildTimeConfig defaultConfig() {
         LiquibaseDataSourceBuildTimeConfig defaultConfig = new LiquibaseDataSourceBuildTimeConfig();
         defaultConfig.changeLog = DEFAULT_CHANGE_LOG;
         defaultConfig.searchPath = Optional.empty();
+        defaultConfig.active = true;
         return defaultConfig;
     }
 
@@ -31,6 +32,12 @@ public final class LiquibaseDataSourceBuildTimeConfig {
      */
     @ConfigItem(defaultValue = DEFAULT_CHANGE_LOG)
     public String changeLog;
+
+    /**
+     * {@code true} to enable Liquibase for a specific data source, {@code false} otherwise.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean active;
 
     /**
      * The search path for DirectoryResourceAccessor

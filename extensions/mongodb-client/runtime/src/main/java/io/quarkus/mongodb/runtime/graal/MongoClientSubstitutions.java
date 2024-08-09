@@ -14,16 +14,17 @@ import com.mongodb.MongoClientException;
 import com.mongodb.MongoCompressor;
 import com.mongodb.ServerAddress;
 import com.mongodb.UnixServerAddress;
-import com.mongodb.connection.BufferProvider;
 import com.mongodb.connection.SocketSettings;
-import com.mongodb.connection.SocketStreamFactory;
 import com.mongodb.connection.SslSettings;
-import com.mongodb.connection.Stream;
+import com.mongodb.internal.connection.BufferProvider;
 import com.mongodb.internal.connection.InternalStreamConnection;
 import com.mongodb.internal.connection.ServerAddressHelper;
 import com.mongodb.internal.connection.SocketStream;
+import com.mongodb.internal.connection.SocketStreamFactory;
+import com.mongodb.internal.connection.Stream;
 import com.mongodb.internal.connection.UnixSocketChannelStream;
 import com.mongodb.lang.Nullable;
+import com.mongodb.spi.dns.InetAddressResolver;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
@@ -75,24 +76,23 @@ final class UnixServerAddressSubstitution {
 final class SocketStreamFactorySubstitution {
 
     @Alias
+    private InetAddressResolver inetAddressResolver;
+    @Alias
     private SocketSettings settings;
     @Alias
     private SslSettings sslSettings;
-    @Alias
-    private SocketFactory socketFactory;
     @Alias
     private BufferProvider bufferProvider;
 
     @Substitute
     public Stream create(final ServerAddress serverAddress) {
         Stream stream;
-        if (socketFactory != null) {
-            stream = new SocketStream(serverAddress, settings, sslSettings, socketFactory, bufferProvider);
-        } else if (sslSettings.isEnabled()) {
-            stream = new SocketStream(serverAddress, settings, sslSettings, getSslContext().getSocketFactory(),
-                    bufferProvider);
+        if (sslSettings.isEnabled()) {
+            stream = new SocketStream(serverAddress, inetAddressResolver, settings, sslSettings,
+                    getSslContext().getSocketFactory(), bufferProvider);
         } else {
-            stream = new SocketStream(serverAddress, settings, sslSettings, SocketFactory.getDefault(), bufferProvider);
+            stream = new SocketStream(serverAddress, inetAddressResolver, settings, sslSettings,
+                    SocketFactory.getDefault(), bufferProvider);
         }
         return stream;
     }

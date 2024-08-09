@@ -11,10 +11,10 @@ h|Default
 {#for item in configItemCollection.items}
 {#if !item.deprecated}
 {#if item.isSection}
-{#configSection configSection=item extension=extension /}
+{#configSection configSection=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {#else}
-{#configProperty configProperty=item extension=extension /}
+{#configProperty configProperty=item extension=extension additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
 {/if}

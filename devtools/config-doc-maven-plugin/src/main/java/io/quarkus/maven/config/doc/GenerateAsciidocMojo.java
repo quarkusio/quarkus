@@ -114,7 +114,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configRootAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
+                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension, e);
@@ -150,7 +150,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             try {
                 Files.writeString(configRootAdocPath,
-                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
+                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
@@ -170,7 +170,8 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configSectionAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection, false));
+                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection,
+                                    "_" + generatedConfigSection.getPath(), false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
                             "Unable to render config section for section: " + generatedConfigSection.getPath()
@@ -193,12 +194,13 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     }
 
     private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
-            ConfigItemCollection configItemCollection, boolean searchable) {
+            ConfigItemCollection configItemCollection, String additionalAnchorPrefix, boolean searchable) {
         return quteEngine.getTemplate("configReference.qute.adoc")
                 .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
                 .data("searchable", searchable)
                 .data("summaryTableId", summaryTableId)
+                .data("additionalAnchorPrefix", additionalAnchorPrefix)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
                 .render();
@@ -210,6 +212,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 .data("configRootsByExtensions", configRootsByExtensions)
                 .data("searchable", true)
                 .data("summaryTableId", "all-config")
+                .data("additionalAnchorPrefix", "")
                 .data("includeDurationNote", true)
                 .data("includeMemorySizeNote", true)
                 .render();
@@ -420,21 +423,26 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("toAnchor")
-                        .applyToParameters(1)
-                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
-                                .thenApply(o -> asciidocFormatter.toAnchor(
-                                        ((Extension) o).artifactId() + "_" + ((ConfigProperty) ctx.getBase()).getPath())))
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                                        .artifactId() +
+                                // the additional suffix
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
+                                        "_" + ((ConfigProperty) ctx.getBase()).getPath()))
                         .build())
                 // we need a different anchor for sections as otherwise we can have a conflict
                 // (typically when you have an `enabled` property with parent name just under the section level)
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigSection.class)
                         .applyToName("toAnchor")
-                        .applyToParameters(1)
-                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
-                                .thenApply(o -> asciidocFormatter.toAnchor(
-                                        ((Extension) o).artifactId() + "_section_"
-                                                + ((ConfigSection) ctx.getBase()).getPath())))
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                                        .artifactId() +
+                                // the additional suffix
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
+                                        "_section_" + ((ConfigSection) ctx.getBase()).getPath()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)

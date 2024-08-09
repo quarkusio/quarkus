@@ -13,10 +13,10 @@ h|Default
 {#for item in configRoot.items}
 {#if !item.deprecated}
 {#if item.isSection}
-{#configSection configSection=item extension=extensionConfigRootsEntry.key /}
+{#configSection configSection=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {#else}
-{#configProperty configProperty=item extension=extensionConfigRootsEntry.key /}
+{#configProperty configProperty=item extension=extensionConfigRootsEntry.key additionalAnchorPrefix=additionalAnchorPrefix /}
 
 {/if}
 {/if}

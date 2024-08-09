@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
+import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 
@@ -183,6 +184,14 @@ final class AsciidocFormatter {
         }
 
         return javadoc.substring(0, dotIndex);
+    }
+
+    String formatName(Extension extension) {
+        if (extension.name() == null) {
+            return extension.artifactId();
+        }
+
+        return extension.name();
     }
 
     /**

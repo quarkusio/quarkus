@@ -34,14 +34,12 @@ import com.google.common.cache.CacheBuilder;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.DependencyInfoProvider;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.*;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -125,15 +123,29 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
     }
 
+    public MavenArtifactResolver getArtifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode) throws MojoExecutionException {
+        return bootstrapper(mojo).artifactResolver(mojo, mode);
+    }
+
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode)
             throws MojoExecutionException {
-        return bootstrapApplication(mojo, mode, null);
+        return bootstrapApplication(mojo, mode, (Consumer<QuarkusBootstrap.Builder>) null);
     }
 
     public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
-            Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-            throws MojoExecutionException {
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
         return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer);
+    }
+
+    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+            MavenArtifactResolver artifactResolver) throws MojoExecutionException {
+        return bootstrapper(mojo).bootstrapApplication(mojo, mode, null, artifactResolver);
+    }
+
+    public CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer,
+            MavenArtifactResolver artifactResolver) throws MojoExecutionException {
+        return bootstrapper(mojo).bootstrapApplication(mojo, mode, builderCustomizer, artifactResolver);
     }
 
     public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
@@ -211,10 +223,11 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
 
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode,
-                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-                throws MojoExecutionException {
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer,
+                MavenArtifactResolver artifactResolver) throws MojoExecutionException {
 
-            final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
+            final MavenArtifactResolver ar = artifactResolver == null ? artifactResolver(mojo, mode) : artifactResolver;
+            final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(ar)
                     .setIncubatingModelResolver(
                             IncubatingApplicationModelResolver.isIncubatingEnabled(mojo.mavenProject().getProperties())
                                     || mode == LaunchMode.DEVELOPMENT
@@ -261,7 +274,10 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setBaseName(mojo.finalName())
                     .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
                     .setTargetDirectory(mojo.buildDir().toPath())
-                    .setForcedDependencies(forcedDependencies);
+                    .setForcedDependencies(forcedDependencies)
+                    .setDependencyInfoProvider(() -> DependencyInfoProvider.builder()
+                            .setMavenModelResolver(EffectiveModelResolver.of(ar))
+                            .build());
 
             try {
                 if (builderCustomizer != null) {
@@ -361,15 +377,20 @@ public class QuarkusBootstrapProvider implements Closeable {
         }
 
         protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
-                Consumer<QuarkusBootstrap.Builder> builderCustomizer)
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
+            return bootstrapApplication(mojo, mode, builderCustomizer, null);
+        }
+
+        protected CuratedApplication bootstrapApplication(QuarkusBootstrapMojo mojo, LaunchMode mode,
+                Consumer<QuarkusBootstrap.Builder> builderCustomizer, MavenArtifactResolver artifactResolver)
                 throws MojoExecutionException {
             if (mode == LaunchMode.DEVELOPMENT) {
-                return devApp == null ? devApp = doBootstrap(mojo, mode, builderCustomizer) : devApp;
+                return devApp == null ? devApp = doBootstrap(mojo, mode, builderCustomizer, artifactResolver) : devApp;
             }
             if (mode == LaunchMode.TEST) {
-                return testApp == null ? testApp = doBootstrap(mojo, mode, builderCustomizer) : testApp;
+                return testApp == null ? testApp = doBootstrap(mojo, mode, builderCustomizer, artifactResolver) : testApp;
             }
-            return prodApp == null ? prodApp = doBootstrap(mojo, mode, builderCustomizer) : prodApp;
+            return prodApp == null ? prodApp = doBootstrap(mojo, mode, builderCustomizer, artifactResolver) : prodApp;
         }
 
         protected ArtifactCoords managingProject(QuarkusBootstrapMojo mojo) {

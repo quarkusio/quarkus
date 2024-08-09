@@ -11,9 +11,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.app.DependencyInfoProvider;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.BuildChain;
@@ -55,6 +57,7 @@ public class QuarkusAugmentor {
     private final Properties buildSystemProperties;
     private final Path targetDir;
     private final ApplicationModel effectiveModel;
+    private final Supplier<DependencyInfoProvider> depInfoProvider;
     private final String baseName;
     private final String originalBaseName;
     private final boolean rebuild;
@@ -82,6 +85,7 @@ public class QuarkusAugmentor {
         this.auxiliaryApplication = builder.auxiliaryApplication;
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
         this.test = builder.test;
+        this.depInfoProvider = builder.depInfoProvider;
     }
 
     public BuildResult run() throws Exception {
@@ -152,7 +156,7 @@ public class QuarkusAugmentor {
                             auxiliaryDevModeType, test))
                     .produce(new BuildSystemTargetBuildItem(targetDir, baseName, originalBaseName, rebuild,
                             buildSystemProperties == null ? new Properties() : buildSystemProperties))
-                    .produce(new AppModelProviderBuildItem(effectiveModel));
+                    .produce(new AppModelProviderBuildItem(effectiveModel, depInfoProvider));
             for (PathCollection i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
@@ -214,6 +218,7 @@ public class QuarkusAugmentor {
         DevModeType devModeType;
         boolean test;
         boolean auxiliaryApplication;
+        private Supplier<DependencyInfoProvider> depInfoProvider;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -351,6 +356,11 @@ public class QuarkusAugmentor {
 
         public Builder setDeploymentClassLoader(ClassLoader deploymentClassLoader) {
             this.deploymentClassLoader = deploymentClassLoader;
+            return this;
+        }
+
+        public Builder setDependencyInfoProvider(Supplier<DependencyInfoProvider> depInfoProvider) {
+            this.depInfoProvider = depInfoProvider;
             return this;
         }
     }

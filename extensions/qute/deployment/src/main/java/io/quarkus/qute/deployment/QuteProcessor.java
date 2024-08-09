@@ -435,9 +435,9 @@ public class QuteProcessor {
                 if (!recordClass.isRecord()) {
                     continue;
                 }
-                Type[] componentTypes = recordClass.recordComponents().stream().map(RecordComponentInfo::type)
-                        .toArray(Type[]::new);
-                MethodInfo canonicalConstructor = recordClass.method(MethodDescriptor.INIT, componentTypes);
+                MethodInfo canonicalConstructor = recordClass.method(MethodDescriptor.INIT,
+                        recordClass.unsortedRecordComponents().stream().map(RecordComponentInfo::type)
+                                .toArray(Type[]::new));
 
                 AnnotationInstance checkedTemplateAnnotation = recordClass.declaredAnnotation(Names.CHECKED_TEMPLATE);
                 String fragmentId = getCheckedFragmentId(recordClass, checkedTemplateAnnotation);
@@ -510,7 +510,8 @@ public class QuteProcessor {
                         requireTypeSafeExpressions != null ? requireTypeSafeExpressions.asBoolean() : true));
                 transformers.produce(new BytecodeTransformerBuildItem(recordClass.name().toString(),
                         new TemplateRecordEnhancer(recordInterface, recordClass, templatePath, fragmentId,
-                                canonicalConstructor.parameters(), adaptors.get(recordInterfaceName))));
+                                canonicalConstructor.descriptor(), canonicalConstructor.parameters(),
+                                adaptors.get(recordInterfaceName))));
             }
         }
 

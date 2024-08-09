@@ -161,14 +161,14 @@ Also provides and OTel collector to receive the data.
 
 ==== Logging exporter
 
-You can output all metrics to the console by setting the exporter to `logging` in the `application.properties` file:
+You can output all metrics to the console by setting the exporter to `logs` in the `application.properties` file:
 [source, properties]
 ----
 quarkus.otel.metrics.exporter=logging <1>
 quarkus.otel.metric.export.interval=10000ms <2>
 ----
 
-<1> Set the exporter to `logging`.
+<1> Set the exporter to `logs`.
 Normally you don't need to set this.
 The default is `cdi`.
 <2> Set the interval to export the metrics.

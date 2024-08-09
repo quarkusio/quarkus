@@ -41,6 +41,7 @@ public final class VertxGrpcSender implements GrpcSender {
 
     public static final String GRPC_TRACE_SERVICE_NAME = "opentelemetry.proto.collector.trace.v1.TraceService";
     public static final String GRPC_METRIC_SERVICE_NAME = "opentelemetry.proto.collector.metrics.v1.MetricsService";
+    public static final String GRPC_LOG_SERVICE_NAME = "opentelemetry.proto.collector.logs.v1.LogsService";
     private static final String GRPC_METHOD_NAME = "Export";
 
     private static final String GRPC_STATUS = "grpc-status";

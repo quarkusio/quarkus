@@ -273,7 +273,7 @@ implementation("io.opentelemetry:opentelemetry-exporter-logging")
 ----
 
 
-Then, setting the exporter to `logging` in the `application.properties` file:
+Then, setting the exporter to `logs` in the `application.properties` file:
 [source, properties]
 ----
 quarkus.otel.metrics.exporter=logging <1>
@@ -281,9 +281,9 @@ quarkus.otel.metric.export.interval=10000ms <2>
 quarkus.otel.traces.exporter=logging <3>
 ----
 
-<1> Set the metrics exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
+<1> Set the metrics exporter to `logs`. Normally you don't need to set this. The default is `cdi`.
 <2> Set the interval to export the metrics. The default is `1m`, which is too long for debugging.
-<3> Set the traces exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
+<3> Set the traces exporter to `logs`. Normally you don't need to set this. The default is `cdi`.
 
 == Visualizing the data
 

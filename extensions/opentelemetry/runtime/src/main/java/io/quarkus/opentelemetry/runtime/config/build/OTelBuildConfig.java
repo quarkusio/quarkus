@@ -49,6 +49,11 @@ public interface OTelBuildConfig {
     MetricsBuildConfig metrics();
 
     /**
+     * Logs exporter configurations.
+     */
+    LogsBuildConfig logs();
+
+    /**
      * No Log exporter for now.
      */
     @WithName("logs.exporter")

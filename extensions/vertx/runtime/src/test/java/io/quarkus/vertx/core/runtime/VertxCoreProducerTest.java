@@ -1,5 +1,7 @@
 package io.quarkus.vertx.core.runtime;
 
+import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -219,6 +221,24 @@ public class VertxCoreProducerTest {
                 null,
                 LaunchMode.TEST);
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
+    }
+
+    @Test
+    public void vertxCacheDirectoryBySystemProperty() {
+        final String cacheDir = System.getProperty("user.dir");
+        try {
+            System.setProperty(CACHE_DIR_BASE_PROP_NAME, cacheDir);
+            VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(List.of(
+                    vertxOptions -> {
+                        Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
+                        Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
+                    }));
+            VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, ThreadPoolConfig.empty(),
+                    null,
+                    LaunchMode.TEST);
+        } finally {
+            System.clearProperty(CACHE_DIR_BASE_PROP_NAME);
+        }
     }
 
     private static class DefaultVertxConfiguration implements VertxConfiguration {

@@ -602,7 +602,7 @@ For example:
 [source, properties]
 ----
 # keycloak.url is set by OidcWiremockTestResource
-quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus/
 quarkus.oidc.client-id=quarkus-service-app
 quarkus.oidc.application-type=service
 ----
@@ -914,7 +914,7 @@ Prepare the REST test endpoint and set `application.properties` as outlined in t
 [source, properties]
 ----
 # keycloak.url is set by KeycloakTestResourceLifecycleManager
-quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus/
+quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test-resource}/realms/quarkus/
 quarkus.oidc.client-id=quarkus-service-app
 quarkus.oidc.credentials=secret
 quarkus.oidc.application-type=service

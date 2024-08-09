@@ -426,20 +426,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Assumes the value retrieved from the table/sequence is the lower end of the pool.
          *
          * Upon retrieving value `N`, the new pool of identifiers will go from `N` to `N + <allocation size> - 1`, inclusive.
-         * `pooled`::
-         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
-         * +
-         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
-         * - 1`, inclusive.
-         * +
-         * The first value, `1`, is handled differently to avoid negative identifiers.
-         * +
-         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
-         * `none`::
-         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
-         * +
-         * Not recommended in production environments:
-         * may result in degraded performance and/or frequent gaps in identifier values.
          *
          * @asciidoclet
          */

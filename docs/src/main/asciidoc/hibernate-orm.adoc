@@ -263,7 +263,7 @@ Since we're targeting CockroachDB here, we're passing the CockroachDB version, n
 <2> Set the Hibernate ORM dialect.
 
 [[hibernate-dialect-varying-database]]
-== Varying database
+==== Varying database
 
 When enabling <<database-approach,database multi-tenancy>>,
 Hibernate ORM will use multiple datasources at runtime for the same persistence unit,

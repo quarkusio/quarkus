@@ -334,7 +334,7 @@ public class VertxCoreRecorder {
                 .setClassPathResolvingEnabled(conf.classpathResolving());
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
-        if (fileCacheDir != null) {
+        if (fileCacheDir == null) {
             fileCacheDir = conf.cacheDirectory().orElse(null);
         }
 

@@ -8,8 +8,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 
-import io.quarkus.it.panache.Book;
-import io.quarkus.it.panache.BookDao;
+import io.quarkus.it.panache.defaultpu.Book;
+import io.quarkus.it.panache.defaultpu.BookDao;
 
 @Path("/book")
 public class BookResource {

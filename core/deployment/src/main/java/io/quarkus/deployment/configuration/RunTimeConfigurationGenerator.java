@@ -582,6 +582,22 @@ public final class RunTimeConfigurationGenerator {
                     registeredRoots.add(root.getName());
                 }
             }
+
+            if (BUILD_AND_RUN_TIME_FIXED.equals(configPhase)) {
+                for (ConfigClassWithPrefix mapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
+                    registeredRoots.add(mapping.getPrefix());
+                }
+            }
+
+            if (RUN_TIME.equals(configPhase)) {
+                for (ConfigClassWithPrefix mapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
+                    registeredRoots.add(mapping.getPrefix());
+                }
+                for (ConfigClassWithPrefix mapping : buildTimeConfigResult.getRunTimeMappings()) {
+                    registeredRoots.add(mapping.getPrefix());
+                }
+            }
+
             return registeredRoots;
         }
 

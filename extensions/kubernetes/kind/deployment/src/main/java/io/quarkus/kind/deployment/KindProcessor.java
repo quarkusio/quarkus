@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuilderBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -52,6 +54,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
+
 public class KindProcessor {
 
     private static final int KIND_PRIORITY = DEFAULT_PRIORITY + 30;
@@ -72,8 +75,15 @@ public class KindProcessor {
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
+        boolean managementEnabled = ConfigProvider.getConfig().getOptionalValue("quarkus.management.enabled", Boolean.class).orElse(false);
+        String managementPort = ConfigProvider.getConfig().getOptionalValue("quarkus.management.port", String.class).orElse(null);
+
         config.getAnnotations().forEach((k, v) -> {
-            annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND));
+            if (managementEnabled && "prometheus.io/port".equals(k)) {
+                annotations.produce(new KubernetesAnnotationBuildItem(k, managementPort, KIND));
+            } else {
+                annotations.produce(new KubernetesAnnotationBuildItem(k, v, KIND));
+            }
         });
     }
 

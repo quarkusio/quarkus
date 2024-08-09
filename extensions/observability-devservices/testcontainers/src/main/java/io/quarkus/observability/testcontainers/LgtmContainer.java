@@ -3,6 +3,10 @@ package io.quarkus.observability.testcontainers;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.testcontainers.utility.MountableFile;
+
 import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmConfig;
@@ -17,10 +21,28 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     public LgtmContainer(LgtmConfig config) {
         super(config);
         addExposedPorts(config.otlpPort());
+        withCopyFileToContainer(
+                MountableFile.forClasspathResource("/grafana-dashboard-quarkus-metrics.json"),
+                "/otel-lgtm/grafana-dashboard-jvm-metrics.json");
+        withCopyFileToContainer(
+                MountableFile.forClasspathResource("/grafana-dashboards.yaml"),
+                "/otel-lgtm/grafana-dashboards.yaml");
+        addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
+
     }
 
     public int getOtlpPort() {
         return getMappedPort(config.otlpPort());
+    }
+
+    private String getPrometheusConfig() {
+        Config runtimeConfig = ConfigProvider.getConfig();
+        String rootPath = runtimeConfig.getOptionalValue("quarkus.management.root-path", String.class).orElse("/q");
+        String metricsPath = runtimeConfig.getOptionalValue("quarkus.management.metrics.path", String.class).orElse("/metrics");
+        int httpPort = runtimeConfig.getOptionalValue("quarkus.http.port", Integer.class).orElse(0);
+        PrometheusYamlFile prometheusYamlFile = new PrometheusYamlFile(config.serviceName(), rootPath, metricsPath,
+                "host.docker.internal", httpPort);
+        return prometheusYamlFile.createPrometheusYamlFile();
     }
 
     protected static class LgtmConfigImpl extends AbstractGrafanaConfig implements LgtmConfig {

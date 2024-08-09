@@ -105,7 +105,8 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
                     .forceApplicationClass(forceApplicationClass)
                     .targetPackageName(targetPackageName)
                     .startupPriority(startupPriority)
-                    .interceptionProxy(interceptionProxy);
+                    .interceptionProxy(interceptionProxy)
+                    .isActive(isActiveConsumer);
 
             if (!injectionPoints.isEmpty()) {
                 builder.injections(Collections.singletonList(Injection.forSyntheticBean(injectionPoints)));

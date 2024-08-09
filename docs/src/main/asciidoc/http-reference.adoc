@@ -498,6 +498,27 @@ public class MyCustomizer implements HttpServerOptionsCustomizer {
 <1> By making the class a managed bean, Quarkus will take the customizer into account when it starts the Vert.x servers
 <2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerOptionsCustomizer` allows configuring the HTTPS and Domain Socket servers as well
 
+
+== How to execute logic when HTTP server started
+
+In order to execute some custom action when the HTTP server is started you'll need to declare an _asynchronous_ CDI observer method. 
+Quarkus _asynchronously_ fires CDI events of types `io.quarkus.vertx.http.HttpServerStart`, `io.quarkus.vertx.http.HttpsServerStart` and `io.quarkus.vertx.http.DomainSocketServerStart` when the corresponding HTTP server starts listening on the configured host and port.
+
+.`HttpServerStart` example
+[source,java]
+----
+@ApplicationScoped
+public class MyListener {
+
+   void httpStarted(@ObservesAsync HttpServerStart start) { <1>
+      // ...notified when the HTTP server starts listening
+   }
+}
+----
+<1> An asynchronous `HttpServerStart` observer method may be declared by annotating an `HttpServerStart` parameter with `@jakarta.enterprise.event.ObservesAsync`.
+
+NOTE: It's not possible to use the `StartupEvent` for this particular use case because this CDI event is fired before the HTTP server is started.
+
 [[reverse-proxy]]
 == Running behind a reverse proxy
 

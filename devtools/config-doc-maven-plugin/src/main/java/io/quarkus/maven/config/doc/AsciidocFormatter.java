@@ -78,6 +78,10 @@ final class AsciidocFormatter {
     String formatDefaultValue(ConfigProperty configProperty) {
         String defaultValue = configProperty.getDefaultValue();
 
+        if (defaultValue == null) {
+            return null;
+        }
+
         if (configProperty.isEnum()) {
             Optional<String> enumConstant = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                     .filter(e -> e.getValue().configValue().equals(defaultValue))

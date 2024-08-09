@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
@@ -30,6 +31,7 @@ import org.hibernate.mapping.FetchProfile;
 import org.hibernate.mapping.MappedSuperclass;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
+import org.hibernate.metamodel.mapping.DiscriminatorType;
 import org.hibernate.query.named.NamedObjectRepository;
 import org.hibernate.query.sqm.function.SqmFunctionDescriptor;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
@@ -58,7 +60,6 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
 
     public static PrevalidatedQuarkusMetadata validateAndWrap(final MetadataImpl original) {
         original.validate();
-        original.getBootstrapContext().getReflectionManager().reset();
         return new PrevalidatedQuarkusMetadata(original);
     }
 
@@ -142,7 +143,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public void visitNamedHqlQueryDefinitions(Consumer<NamedHqlQueryDefinition> definitionConsumer) {
+    public void visitNamedHqlQueryDefinitions(Consumer<NamedHqlQueryDefinition<?>> definitionConsumer) {
         metadata.visitNamedHqlQueryDefinitions(definitionConsumer);
     }
 
@@ -152,7 +153,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public void visitNamedNativeQueryDefinitions(Consumer<NamedNativeQueryDefinition> definitionConsumer) {
+    public void visitNamedNativeQueryDefinitions(Consumer<NamedNativeQueryDefinition<?>> definitionConsumer) {
         metadata.visitNamedNativeQueryDefinitions(definitionConsumer);
     }
 
@@ -295,6 +296,12 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return metadata.getGenericComponent(componentClass);
     }
 
+    @Override
+    public DiscriminatorType<?> resolveEmbeddableDiscriminatorType(Class<?> embeddableClass,
+            Supplier<DiscriminatorType<?>> supplier) {
+        return metadata.resolveEmbeddableDiscriminatorType(embeddableClass, supplier);
+    }
+
     public Map<String, PersistentClass> getEntityBindingMap() {
         return metadata.getEntityBindingMap();
     }
@@ -327,11 +334,11 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return metadata.getBootstrapContext();
     }
 
-    public Map<String, NamedHqlQueryDefinition> getNamedQueryMap() {
+    public Map<String, NamedHqlQueryDefinition<?>> getNamedQueryMap() {
         return metadata.getNamedQueryMap();
     }
 
-    public Map<String, NamedNativeQueryDefinition> getNamedNativeQueryMap() {
+    public Map<String, NamedNativeQueryDefinition<?>> getNamedNativeQueryMap() {
         return metadata.getNamedNativeQueryMap();
     }
 

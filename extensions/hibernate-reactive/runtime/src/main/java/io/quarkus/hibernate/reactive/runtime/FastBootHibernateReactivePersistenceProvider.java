@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -197,8 +198,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
 
             return new FastBootReactiveEntityManagerFactoryBuilder(
+                    persistenceUnit,
                     metadata /* Uses the StandardServiceRegistry references by this! */,
-                    persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
@@ -373,6 +374,13 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.
         return getJdbcHibernatePersistenceProviderDelegate().createContainerEntityManagerFactory(info, map);
+    }
+
+    @Override
+    public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration configuration) {
+        //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
+        //checks and possibly reject if it's not a suitable.
+        return getJdbcHibernatePersistenceProviderDelegate().createEntityManagerFactory(configuration);
     }
 
     @Override

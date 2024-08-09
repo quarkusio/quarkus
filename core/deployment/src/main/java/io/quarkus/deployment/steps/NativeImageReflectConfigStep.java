@@ -103,6 +103,9 @@ public class NativeImageReflectConfigStep {
                     extractToJsonArray(info.queriedMethodSet, queriedMethodsArray);
                 }
             }
+            if (info.queryPublicMethods) {
+                json.put("queryAllPublicMethods", true);
+            }
             if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
             }
@@ -188,6 +191,9 @@ public class NativeImageReflectConfigStep {
                 if (classBuildItem.isQueryMethods()) {
                     existing.queryMethods = true;
                 }
+                if (classBuildItem.isQueryPublicMethods()) {
+                    existing.queryPublicMethods = true;
+                }
                 if (classBuildItem.isFields()) {
                     existing.fields = true;
                 }
@@ -218,6 +224,7 @@ public class NativeImageReflectConfigStep {
         boolean queryConstructors;
         boolean methods;
         boolean queryMethods;
+        boolean queryPublicMethods;
         boolean fields;
         boolean classes;
         boolean serialization;
@@ -234,6 +241,7 @@ public class NativeImageReflectConfigStep {
         private ReflectionInfo(ReflectiveClassBuildItem classBuildItem, String typeReachable) {
             this.methods = classBuildItem.isMethods();
             this.queryMethods = classBuildItem.isQueryMethods();
+            this.queryPublicMethods = classBuildItem.isQueryPublicMethods();
             this.fields = classBuildItem.isFields();
             this.classes = classBuildItem.isClasses();
             this.typeReachable = typeReachable;

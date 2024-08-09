@@ -91,6 +91,18 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AlegacyConfigRoot=true</arg>
+                            </compilerArgs>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>java-test-compile</id>
@@ -100,18 +112,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-AlegacyConfigRoot=true</arg>
-                    </compilerArgs>
-                </configuration>
             </plugin>
         </plugins>
     </build>

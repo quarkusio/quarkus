@@ -34,15 +34,17 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
     private final String recordClassName;
     private final String templateId;
     private final String fragmentId;
+    private final String canonicalConstructorDescriptor;
     private final List<MethodParameterInfo> parameters;
     private final CheckedTemplateAdapter adapter;
 
     TemplateRecordEnhancer(ClassInfo interfaceToImplement, ClassInfo recordClass, String templateId, String fragmentId,
-            List<MethodParameterInfo> parameters, CheckedTemplateAdapter adapter) {
+            String canonicalConstructorDescriptor, List<MethodParameterInfo> parameters, CheckedTemplateAdapter adapter) {
         this.interfaceToImplement = interfaceToImplement;
         this.recordClassName = recordClass.name().toString();
         this.templateId = templateId;
         this.fragmentId = fragmentId;
+        this.canonicalConstructorDescriptor = canonicalConstructorDescriptor;
         this.parameters = parameters;
         this.adapter = adapter;
     }
@@ -61,7 +63,7 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
         @Override
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             MethodVisitor ret = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals(MethodDescriptor.INIT)) {
+            if (name.equals(MethodDescriptor.INIT) && descriptor.equals(canonicalConstructorDescriptor)) {
                 return new TemplateRecordConstructorVisitor(ret);
             }
             return ret;
@@ -126,74 +128,69 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
 
         @Override
         public void visitInsn(int opcode) {
-            if (opcode != Opcodes.RETURN) {
+            if (opcode == Opcodes.RETURN) {
+                visitVarInsn(Opcodes.ALOAD, 0);
+
+                MethodDescriptor arcContainer = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
+                MethodDescriptor arcContainerInstance = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
+                        InstanceHandle.class, Class.class, Annotation[].class);
+                MethodDescriptor instanceHandleGet = MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class);
+                MethodDescriptor templateProducerGetInjectableTemplate = MethodDescriptor.ofMethod(TemplateProducer.class,
+                        "getInjectableTemplate", Template.class, String.class);
+                MethodDescriptor templateInstance = MethodDescriptor.ofMethod(Template.class, "instance",
+                        TemplateInstance.class);
+                MethodDescriptor templateGetFragment = MethodDescriptor.ofMethod(Template.class, "getFragment",
+                        Template.Fragment.class, String.class);
+                MethodDescriptor templateInstanceData = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
+                        TemplateInstance.class, String.class, Object.class);
+
+                // Template template = Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate("HelloResource/typedTemplate");
+                visitMethodInsn(Opcodes.INVOKESTATIC, arcContainer.getDeclaringClass(), arcContainer.getName(),
+                        arcContainer.getDescriptor(),
+                        false);
+                visitLdcInsn(org.objectweb.asm.Type.getType(TemplateProducer.class));
+                visitLdcInsn(0);
+                visitTypeInsn(Opcodes.ANEWARRAY, toInternalClassName(Annotation.class));
+                invokeInterface(this, arcContainerInstance);
+                invokeInterface(this, instanceHandleGet);
+                visitTypeInsn(Opcodes.CHECKCAST, toInternalClassName(TemplateProducer.class));
+                visitLdcInsn(templateId);
+                visitMethodInsn(Opcodes.INVOKEVIRTUAL, templateProducerGetInjectableTemplate.getDeclaringClass(),
+                        templateProducerGetInjectableTemplate.getName(),
+                        templateProducerGetInjectableTemplate.getDescriptor(), false);
+                if (fragmentId != null) {
+                    // template = template.getFragment(id);
+                    visitLdcInsn(fragmentId);
+                    invokeInterface(this, templateGetFragment);
+                }
+                // templateInstance = template.instance();
+                invokeInterface(this, templateInstance);
+
+                if (adapter != null) {
+                    adapter.convertTemplateInstance(this);
+                    templateInstanceData = MethodDescriptor.ofMethod(adapter.templateInstanceBinaryName(), "data",
+                            adapter.templateInstanceBinaryName(), String.class, Object.class);
+                }
+
+                int slot = 1;
+                for (int i = 0; i < parameters.size(); i++) {
+                    // instance = instance.data("name", value);
+                    Type paramType = parameters.get(i).type();
+                    visitLdcInsn(parameters.get(i).name());
+                    visitVarInsn(AsmUtil.getLoadOpcode(paramType), slot);
+                    AsmUtil.boxIfRequired(this, paramType);
+                    invokeInterface(this, templateInstanceData);
+                    slot += AsmUtil.getParameterSize(paramType);
+                }
+
+                FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName, "qute$templateInstance",
+                        interfaceToImplement.name().toString());
+                visitFieldInsn(Opcodes.PUTFIELD, quteTemplateInstanceDescriptor.getDeclaringClass(),
+                        quteTemplateInstanceDescriptor.getName(), quteTemplateInstanceDescriptor.getType());
+                super.visitInsn(Opcodes.RETURN);
+            } else {
                 super.visitInsn(opcode);
             }
-        }
-
-        @Override
-        public void visitEnd() {
-            visitCode();
-            visitVarInsn(Opcodes.ALOAD, 0);
-
-            MethodDescriptor arcContainer = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
-            MethodDescriptor arcContainerInstance = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
-                    InstanceHandle.class, Class.class, Annotation[].class);
-            MethodDescriptor instanceHandleGet = MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class);
-            MethodDescriptor templateProducerGetInjectableTemplate = MethodDescriptor.ofMethod(TemplateProducer.class,
-                    "getInjectableTemplate", Template.class, String.class);
-            MethodDescriptor templateInstance = MethodDescriptor.ofMethod(Template.class, "instance", TemplateInstance.class);
-            MethodDescriptor templateGetFragment = MethodDescriptor.ofMethod(Template.class, "getFragment",
-                    Template.Fragment.class, String.class);
-            MethodDescriptor templateInstanceData = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
-                    TemplateInstance.class, String.class, Object.class);
-
-            // Template template = Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate("HelloResource/typedTemplate");
-            visitMethodInsn(Opcodes.INVOKESTATIC, arcContainer.getDeclaringClass(), arcContainer.getName(),
-                    arcContainer.getDescriptor(),
-                    false);
-            visitLdcInsn(org.objectweb.asm.Type.getType(TemplateProducer.class));
-            visitLdcInsn(0);
-            visitTypeInsn(Opcodes.ANEWARRAY, toInternalClassName(Annotation.class));
-            invokeInterface(this, arcContainerInstance);
-            invokeInterface(this, instanceHandleGet);
-            visitTypeInsn(Opcodes.CHECKCAST, toInternalClassName(TemplateProducer.class));
-            visitLdcInsn(templateId);
-            visitMethodInsn(Opcodes.INVOKEVIRTUAL, templateProducerGetInjectableTemplate.getDeclaringClass(),
-                    templateProducerGetInjectableTemplate.getName(),
-                    templateProducerGetInjectableTemplate.getDescriptor(), false);
-            if (fragmentId != null) {
-                // template = template.getFragment(id);
-                visitLdcInsn(fragmentId);
-                invokeInterface(this, templateGetFragment);
-            }
-            // templateInstance = template.instance();
-            invokeInterface(this, templateInstance);
-
-            if (adapter != null) {
-                adapter.convertTemplateInstance(this);
-                templateInstanceData = MethodDescriptor.ofMethod(adapter.templateInstanceBinaryName(), "data",
-                        adapter.templateInstanceBinaryName(), String.class, Object.class);
-            }
-
-            int slot = 1;
-            for (int i = 0; i < parameters.size(); i++) {
-                // instance = instance.data("name", value);
-                Type paramType = parameters.get(i).type();
-                visitLdcInsn(parameters.get(i).name());
-                visitVarInsn(AsmUtil.getLoadOpcode(paramType), slot);
-                AsmUtil.boxIfRequired(this, paramType);
-                invokeInterface(this, templateInstanceData);
-                slot += AsmUtil.getParameterSize(paramType);
-            }
-
-            FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName, "qute$templateInstance",
-                    interfaceToImplement.name().toString());
-            visitFieldInsn(Opcodes.PUTFIELD, quteTemplateInstanceDescriptor.getDeclaringClass(),
-                    quteTemplateInstanceDescriptor.getName(), quteTemplateInstanceDescriptor.getType());
-            super.visitInsn(Opcodes.RETURN);
-            super.visitEnd();
-            visitMaxs(-1, -1);
         }
 
     }

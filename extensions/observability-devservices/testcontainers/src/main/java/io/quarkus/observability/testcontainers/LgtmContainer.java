@@ -3,11 +3,18 @@ package io.quarkus.observability.testcontainers;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmConfig;
 
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
+    /**
+     * Logger which will be used to capture container STDOUT and STDERR.
+     */
+    private static final Logger log = Logger.getLogger(LgtmContainer.class);
+
     protected static final String LGTM_NETWORK_ALIAS = "ltgm.testcontainer.docker";
 
     public LgtmContainer() {
@@ -17,6 +24,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
     public LgtmContainer(LgtmConfig config) {
         super(config);
         addExposedPorts(config.otlpPort());
+        withLogConsumer(new LgtmContainerLogConsumer(log).withPrefix("LGTM"));
     }
 
     public int getOtlpPort() {

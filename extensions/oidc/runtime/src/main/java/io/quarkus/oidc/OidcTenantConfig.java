@@ -505,7 +505,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     @ConfigGroup
     public static class Jwks {
-
         /**
          * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
          * is initialized.
@@ -539,6 +538,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<Duration> cleanUpTimerInterval = Optional.empty();
 
+        /**
+         * In case there is no key identifier ('kid') or certificate thumbprints ('x5t', 'x5t#S256') specified in the JOSE
+         * header and no key could be determined, check all available keys matching the token algorithm ('alg') header value.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean tryAll = false;
+
         public int getCacheSize() {
             return cacheSize;
         }
@@ -569,6 +575,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setResolveEarly(boolean resolveEarly) {
             this.resolveEarly = resolveEarly;
+        }
+
+        public boolean isTryAll() {
+            return tryAll;
+        }
+
+        public void setTryAll(boolean fallbackToTryAll) {
+            this.tryAll = fallbackToTryAll;
         }
     }
 

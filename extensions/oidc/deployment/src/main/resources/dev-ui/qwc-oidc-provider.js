@@ -1,5 +1,6 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import {classMap} from 'lit/directives/class-map.js';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {JsonRpc} from 'jsonrpc';
 import { LitState } from 'lit-element-state';
 import '@vaadin/button';
@@ -231,6 +232,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .half-width {
           width: 50%;
         }
+        .jwt-tooltip {
+          cursor: help;
+          background: rgba(0, 0, 0, .1);
+        }
     `;
 
     jsonRpc = new JsonRpc(this);
@@ -366,7 +371,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _webAppLoginCard() {
         const servicePathForm = this._servicePathForm();
         return html`
-            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
+            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
+                                    ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${servicePathForm}
                 <vaadin-vertical-layout class="margin-left-auto frm-field">
                     <vaadin-button theme="primary success" class="full-width"
@@ -375,6 +381,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-button>
                 </vaadin-vertical-layout>
             </vaadin-vertical-layout>
+            ${this._displayTokenCard()}
         `;
     }
 
@@ -640,8 +647,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     _implicitOrCodeGrantTypeCard() {
         const keycloakRealms = this._keycloakRealmsForm();
-        const servicePathForm = this._servicePathForm();
-        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
 
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
@@ -670,6 +675,14 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-icon>
                 </vaadin-button>
             </vaadin-horizontal-layout>
+            ${this._displayTokenCard()}
+        `;
+    }
+
+    _displayTokenCard() {
+        const servicePathForm = this._servicePathForm();
+        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
+        return html`
             <vaadin-vertical-layout class="full-width" ?hidden="${propertiesState.hideImplicitLoggedIn}">
                 <vaadin-vertical-layout class="height-4xl container">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
@@ -1010,22 +1023,29 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             const state = QwcOidcProvider._getQueryParameter('state');
             QwcOidcProvider._exchangeCodeForTokens(code, state, jsonRpc, onUpdateDone);
         } else {
-            // logged out
-
-            propertiesState.hideImplicitLoggedIn = true;
-            propertiesState.userName = null;
-
-            if (QwcOidcProvider._isErrorInUrl()) {
+            QwcOidcProvider._checkSessionCookie(jsonRpc, () => {
+                // logged in
                 propertiesState.hideImplLoggedOut = true;
-                propertiesState.hideLogInErr = false;
-            } else {
                 propertiesState.hideLogInErr = true;
-                propertiesState.hideImplLoggedOut = false;
-            }
-
-            propertiesState.accessToken = null;
-            propertiesState.idToken = null;
-            onUpdateDone();
+                propertiesState.hideImplicitLoggedIn = false;
+                onUpdateDone();
+            }, () => {
+                // logged out
+                propertiesState.hideImplicitLoggedIn = true;
+                propertiesState.userName = null;
+                
+                if (QwcOidcProvider._isErrorInUrl()) {
+                    propertiesState.hideImplLoggedOut = true;
+                    propertiesState.hideLogInErr = false;
+                } else {
+                    propertiesState.hideLogInErr = true;
+                    propertiesState.hideImplLoggedOut = false;
+                }
+                
+                propertiesState.accessToken = null;
+                propertiesState.idToken = null;
+                onUpdateDone();
+            });
         }
     }
 
@@ -1100,6 +1120,38 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             propertiesState.idToken = null;
             onUpdateDone();
         }
+    }
+
+    static _checkSessionCookie(jsonRpc, onLoggedIn, onLoggedOut) {
+        // FIXME: port, path?
+        fetch("http://localhost:8080/q/io.quarkus.quarkus-oidc/readSessionCookie")
+           .then(response => response.json())
+                .then(result => {
+                    if ("id_token" in result || "access_token" in result) {
+                        const tokens = result;
+                        const hasIdToken = "id_token" in tokens;
+                        propertiesState.userName = QwcOidcProvider._parseUserName(tokens.access_token,
+                            hasIdToken ? tokens.id_token : null);
+
+                        propertiesState.accessToken = tokens.access_token;
+
+                        if (hasIdToken) {
+                            propertiesState.idToken = tokens.id_token;
+                        } else {
+                            propertiesState.idToken = null;
+                        }
+                        propertiesState.logoutUrl = "http://localhost:8080/q/io.quarkus.quarkus-oidc/logout";
+                        propertiesState.postLogoutUriParam = "redirect_uri";
+                        onLoggedIn();
+                    } else {
+                        onLoggedOut();
+                    }
+                })
+                .catch(response => {
+                    notifier.showErrorMessage('Failed to exchange code for tokens. Error message: '
+                        + response?.error?.message, 'top-end');
+                    onLoggedOut();
+                });
     }
 
     static _getTokenForNavigation() {
@@ -1186,18 +1238,73 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html``;
     }
 
+    static _decodeBase64(encoded){
+        function base64ToBytes(base64) {
+            const binString = window.atob(base64);
+            return Uint8Array.from(binString, (m) => m.codePointAt(0));
+        }
+        return new TextDecoder().decode(base64ToBytes(encoded));
+    }
+
+    static _formatJson(jwt) {
+        const tooltips = {
+            "iss": "Issuer",
+            "sub": "Subject",
+            "aud": "Audience",
+            "nbf": "Not Before",
+            "iat": "Issued At",
+            "exp": "Expiration Time",
+            "jti": "JWT ID"
+        };
+        const spaces = 4;
+        var ret = "{";
+        var once = false;
+        for(let k in jwt){
+            if (Object.prototype.hasOwnProperty.call(jwt, k)) {
+                const val = jwt[k];
+                if(once){
+                    ret += ",";
+                }
+                ret += "\n" + " ".repeat(spaces);
+                // decorate key
+                var tooltip = tooltips[k];
+                if(tooltip) {
+                    ret += "<span class='jwt-tooltip' title='"+tooltip+"'>\"" + k + "\"</span>";
+                } else {
+                    ret += "\"" + k + "\"";
+                }
+                // on to values
+                ret += ": ";
+                // decorate values
+                if(k == 'iat' || k == 'nbf' || k == 'exp'){
+                    ret += "<span class='jwt-tooltip' title='" + new Date(val * 1000).toString() + "'>" + val + "</span>";
+                } else {
+                    ret += JSON.stringify(val);
+                }
+                
+            }
+            once = true;
+        }
+        if(once){
+            ret += "\n";
+        }
+        ret += "}";
+        return ret;
+    }
+    
     static _decodeToken(token) {
         if (token) {
             const parts = token.split(".");
             if (parts.length === 3) {
-                const headers = window.atob(parts[0]);
-                const payload = window.atob(parts[1]);
+                const headers = QwcOidcProvider._decodeBase64(parts[0]);
+                const payload = QwcOidcProvider._decodeBase64(parts[1]);
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
+                const json = QwcOidcProvider._formatJson(jsonPayload);
                 return html`
                 <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-payload' title='Claims'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
--                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
+                <pre class='token-payload' title='Claims'>${unsafeHTML(json?.trim())}</pre>
+                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
                 `;
             } else if (parts.length === 5) {
                 const headers = window.atob(parts[0]?.trim());
@@ -1225,7 +1332,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             if (token) {
                 const parts = token.split(".");
                 if (parts.length === 3) {
-                    const payload = window.atob(parts[1]);
+                    const payload = QwcOidcProvider._decodeBase64(parts[1]);
                     const jsonPayload = JSON.parse(payload);
                     if (jsonPayload?.upn) {
                         return jsonPayload.upn;

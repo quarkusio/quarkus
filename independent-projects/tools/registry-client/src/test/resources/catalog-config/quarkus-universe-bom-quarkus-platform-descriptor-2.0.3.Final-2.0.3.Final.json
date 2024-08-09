@@ -7328,7 +7328,7 @@
         "gradle-plugin-version" : "2.0.3.Final",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "3.1.0",
+        "maven-wrapper-version" : "3.3.2",
         "gradle-wrapper-version" : "6.9"
       }
     },

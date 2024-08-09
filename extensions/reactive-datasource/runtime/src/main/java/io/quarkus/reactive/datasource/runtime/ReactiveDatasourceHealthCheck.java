@@ -14,8 +14,6 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.jboss.logging.Logger;
 
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -109,13 +107,12 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         }
     }
 
-    protected String getPoolName(Bean<?> bean) {
-        for (Object qualifier : bean.getQualifiers()) {
-            if (qualifier instanceof ReactiveDataSource) {
-                return ((ReactiveDataSource) qualifier).value();
-            }
-        }
-        return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+    /**
+     * @deprecated Use {@link ReactiveDataSourceUtil#dataSourceName(Bean)} instead.
+     */
+    @Deprecated
+    protected String getPoolName(Bean<? extends Pool> bean) {
+        return ReactiveDataSourceUtil.dataSourceName(bean);
     }
 
 }

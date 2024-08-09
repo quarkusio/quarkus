@@ -27,7 +27,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -155,7 +155,7 @@ public class HibernateOrmCdiProcessor {
                     AnnotationInstance.builder(Any.class).build());
         } else {
             configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple(DataSources.class)) }, null),
+                    new Type[] { ClassType.create(DotName.createSimple(AgroalDataSource.class)) }, null),
                     AnnotationInstance.builder(Any.class).build());
         }
 

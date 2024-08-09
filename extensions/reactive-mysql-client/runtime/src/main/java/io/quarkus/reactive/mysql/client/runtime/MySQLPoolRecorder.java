@@ -2,6 +2,7 @@ package io.quarkus.reactive.mysql.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qualifier;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
@@ -10,7 +11,6 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,18 +18,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
@@ -51,6 +50,26 @@ public class MySQLPoolRecorder {
 
     private static final TypeLiteral<Instance<MySQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
+
+    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+
+    @Inject
+    public MySQLPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public Supplier<ActiveResult> poolActiveSupplier(String dataSourceName) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (!runtimeConfig.getValue().dataSources().get(dataSourceName).active()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
+                } else {
+                    return ActiveResult.active();
+                }
+            }
+        };
+    }
 
     public Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
@@ -82,23 +101,10 @@ public class MySQLPoolRecorder {
             @Override
             @SuppressWarnings("unchecked")
             public io.vertx.mutiny.mysqlclient.MySQLPool apply(SyntheticCreationalContext context) {
-                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
-                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
-                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
-                }
                 return io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(
-                        (MySQLPool) context.getInjectedReference(MySQLPool.class,
-                                getReactiveDataSourceQualifier(dataSourceName)));
+                        (MySQLPool) context.getInjectedReference(MySQLPool.class, qualifier(dataSourceName)));
             }
         };
-    }
-
-    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Default.Literal.INSTANCE;
-        }
-
-        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private MySQLPool initialize(VertxInternal vertx,
@@ -108,9 +114,6 @@ public class MySQLPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
             SyntheticCreationalContext<MySQLPool> context) {
-        if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
-            throw DataSourceUtil.dataSourceInactive(dataSourceName);
-        }
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
         List<MySQLConnectOptions> mySQLConnectOptions = toMySQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
@@ -276,13 +279,8 @@ public class MySQLPoolRecorder {
     private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptionsList,
             String dataSourceName, Supplier<Future<MySQLConnectOptions>> databases,
             SyntheticCreationalContext<MySQLPool> context) {
-        Instance<MySQLPoolCreator> instance;
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
-        } else {
-            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
-                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
-        }
+        Instance<MySQLPoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
+                qualifier(dataSourceName));
         if (instance.isResolvable()) {
             MySQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mySQLConnectOptionsList);
             return instance.get().create(input);

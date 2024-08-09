@@ -2,6 +2,7 @@ package io.quarkus.reactive.pg.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil.qualifier;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
@@ -10,25 +11,23 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
 
+import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
@@ -50,6 +49,26 @@ public class PgPoolRecorder {
 
     private static final TypeLiteral<Instance<PgPoolCreator>> PG_POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
+
+    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
+
+    @Inject
+    public PgPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public Supplier<ActiveResult> poolActiveSupplier(String dataSourceName) {
+        return new Supplier<>() {
+            @Override
+            public ActiveResult get() {
+                if (!runtimeConfig.getValue().dataSources().get(dataSourceName).active()) {
+                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
+                } else {
+                    return ActiveResult.active();
+                }
+            }
+        };
+    }
 
     public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
@@ -81,23 +100,10 @@ public class PgPoolRecorder {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.pgclient.PgPool apply(SyntheticCreationalContext context) {
-                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
-                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
-                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
-                }
-
                 return io.vertx.mutiny.pgclient.PgPool.newInstance(
-                        (PgPool) context.getInjectedReference(PgPool.class, getReactiveDataSourceQualifier(dataSourceName)));
+                        (PgPool) context.getInjectedReference(PgPool.class, qualifier(dataSourceName)));
             }
         };
-    }
-
-    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Default.Literal.INSTANCE;
-        }
-
-        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private PgPool initialize(VertxInternal vertx,
@@ -107,9 +113,6 @@ public class PgPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
             SyntheticCreationalContext<PgPool> context) {
-        if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
-            throw DataSourceUtil.dataSourceInactive(dataSourceName);
-        }
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceName, dataSourceRuntimeConfig,
@@ -265,13 +268,8 @@ public class PgPoolRecorder {
     private PgPool createPool(Vertx vertx, PoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList,
             String dataSourceName, Supplier<Future<PgConnectOptions>> databases,
             SyntheticCreationalContext<PgPool> context) {
-        Instance<PgPoolCreator> instance;
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(PG_POOL_CREATOR_TYPE_LITERAL);
-        } else {
-            instance = context.getInjectedReference(PG_POOL_CREATOR_TYPE_LITERAL,
-                    new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
-        }
+        Instance<PgPoolCreator> instance = context.getInjectedReference(PG_POOL_CREATOR_TYPE_LITERAL,
+                qualifier(dataSourceName));
         if (instance.isResolvable()) {
             PgPoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList);
             return instance.get().create(input);

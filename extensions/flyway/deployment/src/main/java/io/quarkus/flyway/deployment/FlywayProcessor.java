@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.sql.DataSource;
+
 import jakarta.enterprise.inject.Default;
 import jakarta.inject.Singleton;
 
@@ -32,7 +34,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
@@ -210,7 +212,10 @@ class FlywayProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSource.class)),
+                            AgroalDataSourceBuildUtil.qualifier(dataSourceName))
+                    .startup()
+                    .isActive(recorder.flywayContainerActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
 
             AnnotationInstance flywayContainerQualifier;
@@ -244,6 +249,11 @@ class FlywayProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)), flywayContainerQualifier)
+                    // TODO uncomment this once we remove UnconfiguredDataSourceFlywayContainer
+                    //   Right now we can't, because UnconfiguredDataSourceFlywayContainer#getFlyway would throw an exception on startup,
+                    //   and unfortunately this also means we won't detect user beans being injected with Flyway for deactivated datasources...
+                    //.startup()
+                    .isActive(recorder.flywayActiveSupplier(dataSourceName))
                     .createWith(recorder.flywayFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

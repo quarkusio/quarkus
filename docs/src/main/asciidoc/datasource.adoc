@@ -498,27 +498,32 @@ like this:
 ----
 public class MyProducer {
     @Inject
-    DataSourceSupport dataSourceSupport;
-
-    @Inject
     @DataSource("pg")
-    AgroalDataSource pgDataSourceBean;
+    InjectableInstance<AgroalDataSource> pgDataSourceBean; // <1>
 
     @Inject
     @DataSource("oracle")
-    AgroalDataSource oracleDataSourceBean;
+    InjectableInstance<AgroalDataSource> oracleDataSourceBean;
 
-    @Produces
+    @Produces // <2>
     @ApplicationScoped
     public AgroalDataSource dataSource() {
-        if (dataSourceSupport.getInactiveNames().contains("pg")) {
-            return oracleDataSourceBean;
+        if (dataSource1Bean.getHandle().getBean().isActive().result()) { // <3>
+            return dataSource1Bean.get();
+        } else if (dataSource2Bean.getHandle().getBean().isActive().result()) { // <3>
+            return dataSource2Bean.get();
         } else {
-            return pgDataSourceBean;
+            throw new RuntimeException("No active datasource!");
         }
     }
 }
 ----
+<1> Don't inject a `DataSource` or `AgroalDatasource` directly,
+because that would lead to a failure on startup (can't inject inactive beans).
+Instead, inject `InjectableInstance<DataSource>` or `InjectableInstance<AgroalDataSource>`
+<2> Declare a CDI producer method that will define the default datasource
+as either PostgreSQL or Oracle, depending on what is active.
+<3> Check whether beans are active before retrieving them.
 ====
 
 [[datasource-multiple-single-transaction]]

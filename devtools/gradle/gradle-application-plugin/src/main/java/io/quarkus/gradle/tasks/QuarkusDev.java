@@ -671,13 +671,11 @@ public abstract class QuarkusDev extends QuarkusTask {
         final ArtifactSources testSources = project.getWorkspaceModule().getTestSources();
         if (testSources != null) {
             Set<Path> testSourcePaths = new LinkedHashSet<>();
-            Set<Path> testSourceParentPaths = new LinkedHashSet<>();
 
             final Set<Path> testClassesDirs = new HashSet<>(testSources.getSourceDirs().size());
             for (SourceDir src : testSources.getSourceDirs()) {
                 if (Files.exists(src.getDir())) {
                     testSourcePaths.add(src.getDir());
-                    testSourceParentPaths.add(src.getDir().getParent());
                     if (src.getOutputDir() != null) {
                         testClassesDirs.add(src.getOutputDir());
                     }

@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.maven.execution.MavenSession;
@@ -44,7 +43,6 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension.Name
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
-import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -293,15 +291,13 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                         continue;
                     }
 
-                    String topLevelPrefix = getTopLevelPrefix(configRoot.getPrefix());
-
                     Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
                             e -> new HashMap<>());
 
-                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(topLevelPrefix);
+                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(configRoot.getTopLevelPrefix());
 
                     if (existingConfigRoot == null) {
-                        extensionConfigRoots.put(topLevelPrefix, configRoot);
+                        extensionConfigRoots.put(configRoot.getTopLevelPrefix(), configRoot);
                     } else {
                         existingConfigRoot.merge(configRoot);
                     }
@@ -358,16 +354,6 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             collectGeneratedConfigSections(extensionGeneratedConfigSections, configSection);
         }
-    }
-
-    private static String getTopLevelPrefix(String prefix) {
-        String[] prefixSegments = prefix.split(Pattern.quote(Markers.DOT));
-
-        if (prefixSegments.length == 1) {
-            return prefixSegments[0];
-        }
-
-        return prefixSegments[0] + Markers.DOT + prefixSegments[1];
     }
 
     private static List<Path> findTargetDirectories(Path scanDirectory) throws MojoExecutionException {

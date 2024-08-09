@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigDocFilename;
+import io.quarkus.runtime.annotations.ConfigDocPrefix;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -19,7 +19,7 @@ import io.smallrye.config.WithName;
  */
 @ConfigMapping(prefix = "quarkus")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-@ConfigDocFilename("quarkus-core_quarkus-config.adoc")
+@ConfigDocPrefix("quarkus.config")
 public interface ConfigConfig {
     /**
      * A comma separated list of profiles that will be active when Quarkus launches.

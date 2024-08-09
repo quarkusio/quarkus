@@ -163,7 +163,7 @@ public class ConfigAnnotationScanner {
             try {
                 // we need to forge a dummy DiscoveryConfigRoot
                 // it's mostly ignored in the listeners, except for checking if it's a config mapping (for mixed modules)
-                DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy",
+                DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy", "dummy",
                         utils.element().getBinaryName(configMappingWithoutConfigRoot),
                         configMappingWithoutConfigRoot.getQualifiedName().toString(),
                         ConfigPhase.BUILD_TIME, null, true);

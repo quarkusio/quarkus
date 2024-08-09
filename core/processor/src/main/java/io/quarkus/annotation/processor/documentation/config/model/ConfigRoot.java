@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+
+import io.quarkus.annotation.processor.documentation.config.util.Markers;
 
 /**
  * At this stage, a config root is actually a prefix: we merged all the config roots with the same prefix.
@@ -17,14 +20,19 @@ public class ConfigRoot implements ConfigItemCollection {
 
     private final Extension extension;
     private final String prefix;
+    // used by the doc generation to classify config roots
+    private final String topLevelPrefix;
 
-    private String overriddenDocFileName;
+    private final String overriddenDocFileName;
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final Set<String> qualifiedNames = new HashSet<>();
 
-    public ConfigRoot(Extension extension, String prefix) {
+    public ConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String overriddenDocFileName) {
         this.extension = extension;
         this.prefix = prefix;
+        this.overriddenDocFileName = overriddenDocFileName;
+        this.topLevelPrefix = overriddenDocPrefix != null ? buildTopLevelPrefix(overriddenDocPrefix)
+                : buildTopLevelPrefix(prefix);
     }
 
     public Extension getExtension() {
@@ -37,13 +45,6 @@ public class ConfigRoot implements ConfigItemCollection {
 
     public String getOverriddenDocFileName() {
         return overriddenDocFileName;
-    }
-
-    public void setOverriddenDocFileName(String overriddenDocFileName) {
-        if (this.overriddenDocFileName != null) {
-            return;
-        }
-        this.overriddenDocFileName = overriddenDocFileName;
     }
 
     public void addQualifiedName(String qualifiedName) {
@@ -62,6 +63,10 @@ public class ConfigRoot implements ConfigItemCollection {
     @Override
     public List<AbstractConfigItem> getItems() {
         return Collections.unmodifiableList(items);
+    }
+
+    public String getTopLevelPrefix() {
+        return topLevelPrefix;
     }
 
     public void merge(ConfigRoot other) {
@@ -115,5 +120,15 @@ public class ConfigRoot implements ConfigItemCollection {
             }
         }
         return false;
+    }
+
+    private static String buildTopLevelPrefix(String prefix) {
+        String[] prefixSegments = prefix.split(Pattern.quote(Markers.DOT));
+
+        if (prefixSegments.length == 1) {
+            return prefixSegments[0];
+        }
+
+        return prefixSegments[0] + Markers.DOT + prefixSegments[1];
     }
 }

@@ -67,10 +67,10 @@ public class ConfigResolver {
         List<ConfigRoot> configRoots = new ArrayList<>();
 
         for (DiscoveryConfigRoot discoveryConfigRoot : configCollector.getConfigRoots()) {
-            ConfigRoot configRoot = new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix());
+            ConfigRoot configRoot = new ConfigRoot(discoveryConfigRoot.getExtension(), discoveryConfigRoot.getPrefix(),
+                    discoveryConfigRoot.getOverriddenDocPrefix(), discoveryConfigRoot.getOverriddenDocFileName());
             Map<String, ConfigSection> existingRootConfigSections = new HashMap<>();
 
-            configRoot.setOverriddenDocFileName(discoveryConfigRoot.getOverriddenDocFileName());
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
 
             ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,

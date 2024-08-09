@@ -168,7 +168,7 @@
         <snakeyaml.version>2.2</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.11.1</mongo-client.version>
-        <mongo-crypt.version>1.8.0</mongo-crypt.version>
+        <mongo-crypt.version>1.11.0</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.1</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>

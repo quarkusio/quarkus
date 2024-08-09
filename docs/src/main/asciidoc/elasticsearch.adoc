@@ -151,13 +151,20 @@ public class FruitService {
         restClient.performRequest(request); //<4>
     }
 
+    public void indexBulk(InputStream is) throws IOException { //<5>
+        Request request = new Request("POST", "fruits/_bulk?pretty");
+        request.setEntity(new ByteArrayEntity(
+            is.readAllBytes(), ContentType.create("application/x-ndjson")));
+        restClient.performRequest(request);
+    }
+
     public Fruit get(String id) throws IOException {
         Request request = new Request(
                 "GET",
                 "/fruits/_doc/" + id);
         Response response = restClient.performRequest(request);
         String responseBody = EntityUtils.toString(response.getEntity());
-        JsonObject json = new JsonObject(responseBody); //<5>
+        JsonObject json = new JsonObject(responseBody); //<6>
         return json.getJsonObject("_source").mapTo(Fruit.class);
     }
 
@@ -197,7 +204,9 @@ public class FruitService {
 <2> We create an Elasticsearch request.
 <3> We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize your objects to JSON.
 <4> We send the request (indexing request here) to Elasticsearch.
-<5> In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
+<5> We demonstrate `Bulk API` usage via low level `RestClient`. Method operates with `InputStream`, because file provided by call is not valid json.
+Read https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-desc[description] to get how input file should be structured.
+<6> In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
 
 Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 
@@ -231,6 +240,14 @@ public class FruitResource {
         }
         fruitService.index(fruit);
         return Response.created(URI.create("/fruits/" + fruit.id)).build();
+    }
+
+    @Path("index/bulk")
+    @POST
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    @ResponseStatus(200)
+    public void indexBulk(InputStream is) throws IOException {
+        fruitService.indexBulk(is);
     }
 
     @GET

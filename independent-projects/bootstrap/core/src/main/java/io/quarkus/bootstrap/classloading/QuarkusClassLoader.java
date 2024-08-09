@@ -511,8 +511,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        ensureOpen();
-
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.loadClass(name, this.name);
         }
@@ -529,6 +527,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 if (c != null) {
                     return c;
                 }
+
+                ensureOpen();
+
                 String resourceName = fromClassNameToResourceName(name);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
@@ -643,8 +644,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
-        ensureOpen();
-
         return super.defineClass(name, b, off, len);
     }
 
@@ -692,29 +691,38 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.debug("Failed to clean up DB drivers");
             }
         }
-        for (ClassPathElement element : elements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
-        }
-        for (ClassPathElement element : bannedElements) {
-            //note that this is a 'soft' close
-            //all resources are closed, however the CL can still be used
-            //but after close no resources will be held past the scope of an operation
-            try (ClassPathElement ignored = element) {
-                //the close() operation is implied by the try-with syntax
-            } catch (Exception e) {
-                log.error("Failed to close " + element, e);
-            }
-        }
-        ResourceBundle.clearCache(this);
 
         status = STATUS_CLOSED;
+
+        closeClassPathElements(elements);
+        closeClassPathElements(bannedElements);
+        closeClassPathElements(parentFirstElements);
+        closeClassPathElements(lesserPriorityElements);
+
+        definedPackages.clear();
+        resettableElement = null;
+        transformedClasses = null;
+        if (state != null) {
+            state.clear();
+        }
+        closeTasks.clear();
+        classLoaderEventListeners.clear();
+
+        ResourceBundle.clearCache(this);
+    }
+
+    private static void closeClassPathElements(List<ClassPathElement> classPathElements) {
+        for (ClassPathElement element : classPathElements) {
+            //note that this is a 'soft' close
+            //all resources are closed, however the CL can still be used
+            //but after close no resources will be held past the scope of an operation
+            try (ClassPathElement ignored = element) {
+                //the close() operation is implied by the try-with syntax
+            } catch (Exception e) {
+                log.error("Failed to close " + element, e);
+            }
+        }
+        classPathElements.clear();
     }
 
     public boolean isClosed() {
@@ -722,11 +730,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private void ensureOpen() {
-        if (LOG_ACCESS_TO_CLOSED_CLASS_LOADERS && status == STATUS_CLOSED) {
+        if (status != STATUS_CLOSED) {
+            return;
+        }
+
+        if (LOG_ACCESS_TO_CLOSED_CLASS_LOADERS) {
             // we do not use a logger as it might require some class loading
             System.out.println("Class loader " + this + " has been closed and may not be accessed anymore");
             Thread.dumpStack();
         }
+
+        throw new IllegalStateException("Class loader " + this + " has been closed and may not be accessed anymore");
     }
 
     @Override
@@ -899,6 +913,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             this.loadableResources = loadableResources;
             this.bannedResources = bannedResources;
             this.parentFirstResources = parentFirstResources;
+        }
+
+        void clear() {
+            // when the CL is closed, we make sure the resources are not loadable anymore
+            loadableResources.clear();
         }
     }
 

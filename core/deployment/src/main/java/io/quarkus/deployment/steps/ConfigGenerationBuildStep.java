@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
@@ -391,6 +392,17 @@ public class ConfigGenerationBuildStep {
 
     @BuildStep
     public void watchConfigFiles(BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) {
+        for (String configWatchedFile : getConfigFiles()) {
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
+        }
+    }
+
+    @BuildStep
+    public NativeImageResourceBuildItem nativeConfigFiles() {
+        return new NativeImageResourceBuildItem(getConfigFiles());
+    }
+
+    private List<String> getConfigFiles() {
         List<String> configWatchedFiles = new ArrayList<>();
 
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -432,10 +444,7 @@ public class ConfigGenerationBuildStep {
                 }
             }
         });
-
-        for (String configWatchedFile : configWatchedFiles) {
-            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
-        }
+        return configWatchedFiles;
     }
 
     @BuildStep
@@ -676,7 +685,6 @@ public class ConfigGenerationBuildStep {
             // The discovery includes deployment modules, so we only include services available at runtime
             if (QuarkusClassLoader.isClassPresentAtRuntime(service)) {
                 services.add(service);
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(service).build());
             }
         }
         return services;

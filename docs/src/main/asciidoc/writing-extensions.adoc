@@ -331,6 +331,10 @@ Too flexible to benefit from the build time boot promoted by Quarkus.
 Most extension we have seen do not make use of these extreme flexibility capabilities.
 The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parlance).
 
+=== Levels of capability
+
+Quarkus extensions can do lots of things. The xref:extension-maturity-matrix.adoc[extension maturity matrix] lays out a path through the various capabilities, with a suggested implementation order.
+
 == Technical aspect
 
 [[bootstrap-three-phases]]

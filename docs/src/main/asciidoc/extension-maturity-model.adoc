@@ -1,0 +1,93 @@
+
+[id="extension-maturity-model"]
+= A maturity model for Quarkus extensions
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: writing-extensions
+:topics: extensions
+:summary: Quarkus extensions can do a lot, or a little. This guide explains some of the capabilities extension authors may wish to include.
+////
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide?
+
+* It actually works
+** Works in JVM mode
+** Works in dev mode
+** Works in native
+* Dev service (if there is an external service dependency)
+* Developer joy
+** Configuration support
+** Use build-time application knowledge to remove boilerplate
+* Dev UI
+* Supersonic subatomic performance
+** Use build-time application knowledge to eliminate wasteful runtime code paths
+* Codestart application template
+
+The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
+Also, not every step will apply to every extension. For example, you don't need a dev service if your extension doesn't depend on external services.
+
+Also note that this list only includes the technical features of your extension.
+You might also want to think about how you share your extension.
+The link:https://hub.quarkiverse.io/checklistfornewprojects/[new extension checklist] on the Quarkiverse Hub has a useful list of ways extensions can participate in the ecosystem.
+
+Here are some pointers on how to achieve those capabilities.
+
+== It actually works
+
+=== Works in JVM mode
+
+For most extensions, this is the minimum expectation.
+When wrapping an existing library, this is usually trivial to achieve; if an extension is providing net-new capability, it might be a bit more work. Quarkus provides tools for xref:writing-extensions.adoc#testing-extensions[unit testing and integration testing] extensions.
+
+=== Works in dev mode
+
+In some cases, extra work may be needed to ensure any wrapped libraries can tolerate
+dev mode, since the classloading is different and hot reloading can break some assumptions. Extensions may also wish to add some
+xref:writing-extensions.adoc#integrating-with-development-mode[special handling for dev mode].
+To add automated tests which validate dev mode, you can xref:writing-extensions.adoc#testing-hot-reload[add tests which extend the `QuarkusDevModeTest`].
+
+=== Works as a native application
+
+For many libraries, native mode support is the motivation for creating an extension. See xref:writing-extensions.adoc#native-executable-support[the guide on native executable support] for more discussion about some of the adaptations that might be needed.
+
+== Developer joy
+
+Developer joy is an important part of the Quarkus philosophy.
+Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[exponents components via CDI], so that they can be consumed in a frictionless way by user applications.
+
+=== Configuration
+
+Extensions should support Quarkus's unified configuration, by xref:writing-extensions.adoc#configuration[integrating with the Quarkus configuration model].
+The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#how-to-expose-configuration[the Quarkus configuration philosophy].
+
+=== Use build-time application knowledge to remove boilerplate
+
+Many Quarkus extensions take advantage of being able to inspect the application at build-time to eliminate boilerplate and improve the developer experience.
+xref:writing-extensions.adoc#scanning-deployments-using-jandex[Jandex] allows user code to be scanned for annotations and other markers.
+
+For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
+
+== Dev service
+
+To provide a dev service, use the `DevServicesResultBuildItem` build item.
+
+== Dev UI
+
+Extensions can take advantage of the Dev UI to present extra information to users. See the xref:dev-ui.adoc[Dev UI for extension developers] guide.
+
+== Supersonic subatomic performance
+
+Because Quarkus moves work to the build stage, Quarkus applications should have fast startup, high throughput, and low memory requirements. Performance tuning is a large subject, but extensions should use build-time application knowledge to eliminate wasteful runtime code paths at runtime.
+
+== Codestart application template
+
+Codestarts are templates which can be used to generate applications for users.
+Extensions can xref:extension-codestart.adoc[provide their own codestart templates].
+
+== References
+
+- xref:writing-extensions.adoc[Writing your own extension] guide
+- xref:building-my-first-extension.adoc[Building your first extension]
+- link:https://hub.quarkiverse.io.adoc[The Quarkiverse Hub documentation]

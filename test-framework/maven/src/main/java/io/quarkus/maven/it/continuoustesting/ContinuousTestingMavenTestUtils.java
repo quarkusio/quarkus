@@ -69,7 +69,7 @@ public class ContinuousTestingMavenTestUtils {
     }
 
     public static String appProperties(String... props) {
-        return "quarkus.test.continuous-testing=enabled\nquarkus.test.display-test-output=true\nquarkus.console.basic=true\nquarkus.test.disable-console-input=true\n"
+        return "quarkus.test.continuous-testing=enabled\nquarkus.test.display-test-output=true\nquarkus.console.basic=true\nquarkus.console.disable-input=true\n"
                 + String.join("\n", Arrays.asList(props));
     }
 

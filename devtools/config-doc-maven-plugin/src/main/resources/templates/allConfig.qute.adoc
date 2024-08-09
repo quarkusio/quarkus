@@ -5,7 +5,7 @@ icon:lock[title=Fixed at build time] Configuration property fixed at build time 
 |===
 {#for extensionConfigRootsEntry in configRootsByExtensions}
 
-h|{extensionConfigRootsEntry.key.formatName.escapeCellContent}
+h|[.extension-name]##{extensionConfigRootsEntry.key.formatName.escapeCellContent}##
 h|Type
 h|Default
 

@@ -1,4 +1,4 @@
-h|[[{configSection.toAnchor(extension)}]] {configSection.formatTitle.escapeCellContent}
+h|[[{configSection.toAnchor(extension)}]] [.section-name]##{configSection.formatTitle.escapeCellContent}##
 h|Type
 h|Default
 

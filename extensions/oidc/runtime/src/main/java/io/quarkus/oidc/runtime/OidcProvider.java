@@ -72,7 +72,7 @@ public class OidcProvider implements Closeable {
     final RefreshableVerificationKeyResolver asymmetricKeyResolver;
     final DynamicVerificationKeyResolver keyResolverProvider;
     final OidcTenantConfig oidcConfig;
-    final TokenCustomizer tokenCustomizer;
+    final List<TokenCustomizer> tokenCustomizers;
     final String issuer;
     final String[] audience;
     final Map<String, String> requiredClaims;
@@ -85,10 +85,10 @@ public class OidcProvider implements Closeable {
     }
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
-            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey, List<Validator> customValidators) {
+            List<TokenCustomizer> tokenCustomizers, Key tokenDecryptionKey, List<Validator> customValidators) {
         this.client = client;
         this.oidcConfig = oidcConfig;
-        this.tokenCustomizer = tokenCustomizer;
+        this.tokenCustomizers = tokenCustomizers;
         if (jwks != null) {
             this.asymmetricKeyResolver = new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
         } else if (oidcConfig != null && oidcConfig.certificateChain.trustStoreFile.isPresent()) {
@@ -113,7 +113,7 @@ public class OidcProvider implements Closeable {
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
         this.client = null;
         this.oidcConfig = oidcConfig;
-        this.tokenCustomizer = TenantFeatureFinder.find(oidcConfig);
+        this.tokenCustomizers = TenantFeatureFinder.find(oidcConfig);
         if (publicKeyEnc != null) {
             this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         } else if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
@@ -274,17 +274,18 @@ public class OidcProvider implements Closeable {
     }
 
     private String customizeJwtToken(String token) {
-        if (tokenCustomizer != null) {
-            JsonObject headers = AbstractJsonObjectResponse.toJsonObject(
-                    OidcUtils.decodeJwtHeadersAsString(token));
-            headers = tokenCustomizer.customizeHeaders(headers);
-            if (headers != null) {
-                String newHeaders = new String(
-                        Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
-                        StandardCharsets.UTF_8);
-                int dotIndex = token.indexOf('.');
-                String newToken = newHeaders + token.substring(dotIndex);
-                return newToken;
+        if (tokenCustomizers != null) {
+            for (TokenCustomizer tokenCustomizer : tokenCustomizers) {
+                JsonObject headers = AbstractJsonObjectResponse.toJsonObject(OidcUtils.decodeJwtHeadersAsString(token));
+                headers = tokenCustomizer.customizeHeaders(headers);
+                if (headers != null) {
+                    String newHeaders = new String(
+                            Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
+                            StandardCharsets.UTF_8);
+                    int dotIndex = token.indexOf('.');
+                    String newToken = newHeaders + token.substring(dotIndex);
+                    return newToken;
+                }
             }
         }
         return token;

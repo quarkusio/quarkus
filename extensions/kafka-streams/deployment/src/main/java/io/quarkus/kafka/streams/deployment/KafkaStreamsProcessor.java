@@ -96,6 +96,12 @@ class KafkaStreamsProcessor {
         reflectiveClasses.produce(ReflectiveClassBuildItem
                 .builder("org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile")
                 .methods().fields().build());
+
+        // Listed in BuiltInDslStoreSuppliers
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("org.apache.kafka.streams.state.BuiltInDslStoreSuppliers$RocksDBDslStoreSuppliers",
+                        "org.apache.kafka.streams.state.BuiltInDslStoreSuppliers$InMemoryDslStoreSuppliers")
+                .build());
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -103,6 +109,16 @@ class KafkaStreamsProcessor {
         Properties properties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
         registerExceptionHandler(reflectiveClasses, properties);
         registerDefaultSerdes(reflectiveClasses, properties);
+        registerDslStoreSupplier(reflectiveClasses, properties);
+    }
+
+    private void registerDslStoreSupplier(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            Properties kafkaStreamsProperties) {
+        String dlsStoreSupplierClassName = kafkaStreamsProperties.getProperty("dsl.store.suppliers.class");
+
+        if (dlsStoreSupplierClassName != null) {
+            registerClassName(reflectiveClasses, dlsStoreSupplierClassName);
+        }
     }
 
     private void registerExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,

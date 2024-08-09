@@ -11,13 +11,18 @@ import java.util.Map;
 import io.quarkus.test.common.WithTestResource.List;
 
 /**
- * Used to define a test resource.
- *
+ * Used to define a test resource, which can affect various aspects of the application lifecycle.
+ * <p>
+ * Note: When using the {@code restrictToAnnotatedClass=true} (which is the default), each test that is annotated
+ * with {@code @WithTestResource} will result in the application being re-augmented and restarted (in a similar fashion
+ * as happens in dev-mode when a change is detected) in order to incorporate the settings configured by the annotation.
+ * If there are many instances of the annotation used throughout the testsuite, this could result in slow test execution.
+ * <p>
  * <b>All</b> {@code WithTestResource} annotations in the test module
  * are discovered (regardless of the test which contains the annotation)
  * and their corresponding {@code QuarkusTestResourceLifecycleManager}
  * started <b>before</b> <b>any</b> test is run.
- *
+ * <p>
  * Note that test resources are never restarted when running {@code @Nested} test classes.
  * <p>
  * This replaces {@link QuarkusTestResource}. The only difference is that the default value for
@@ -55,6 +60,10 @@ public @interface WithTestResource {
      * Whether this annotation should only be enabled if it is placed on the currently running test class or test profile.
      * Note that this defaults to true for meta-annotations since meta-annotations are only considered
      * for the current test class or test profile.
+     * <p>
+     * Note: When this is set to {@code true} (which is the default), the annotation {@code @WithTestResource} will result
+     * in the application being re-augmented and restarted (in a similar fashion as happens in dev-mode when a change is
+     * detected) in order to incorporate the settings configured by the annotation.
      */
     boolean restrictToAnnotatedClass() default true;
 

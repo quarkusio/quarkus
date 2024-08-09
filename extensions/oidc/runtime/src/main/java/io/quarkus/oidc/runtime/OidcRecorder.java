@@ -604,8 +604,9 @@ public class OidcRecorder {
         String jwksUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.jwksPath);
         String userInfoUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.userInfoPath);
         String endSessionUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.endSessionPath);
+        String registrationUri = OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.registrationPath);
         return new OidcConfigurationMetadata(tokenUri,
-                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
+                introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri, registrationUri,
                 oidcConfig.token.issuer.orElse(null));
     }
 

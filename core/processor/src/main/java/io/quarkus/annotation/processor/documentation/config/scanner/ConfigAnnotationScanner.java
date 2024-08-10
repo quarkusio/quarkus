@@ -75,7 +75,7 @@ public class ConfigAnnotationScanner {
                 configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
             } else {
                 configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-                configRootListeners.add(new LegacyConfigListener(config, utils, configCollector));
+                configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
             }
         } else {
             // TODO #42114 remove once fixed
@@ -84,7 +84,7 @@ public class ConfigAnnotationScanner {
                 configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
                 configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
                 configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
-                configRootListeners.add(new LegacyConfigListener(config, utils, configCollector));
+                configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
 
                 configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
             }

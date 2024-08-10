@@ -23,9 +23,9 @@ import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Strings;
 import io.quarkus.annotation.processor.util.Utils;
 
-public class LegacyConfigListener extends AbstractConfigListener {
+public class LegacyConfigRootListener extends AbstractConfigListener {
 
-    LegacyConfigListener(Config config, Utils utils, ConfigCollector configCollector) {
+    LegacyConfigRootListener(Config config, Utils utils, ConfigCollector configCollector) {
         super(config, utils, configCollector);
     }
 

@@ -139,6 +139,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public Object getIdentifier(Object entity) {
+        return delegate.get().getIdentifier(entity);
+    }
+
+    @Override
     public String getTenantIdentifier() {
         return delegate.get().getTenantIdentifier();
     }

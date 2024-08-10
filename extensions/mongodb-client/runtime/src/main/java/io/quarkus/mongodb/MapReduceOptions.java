@@ -25,8 +25,6 @@ public class MapReduceOptions {
     private long maxTime;
     private MapReduceAction action;
     private String databaseName;
-    private boolean sharded;
-    private boolean nonAtomic;
     private boolean bypassDocumentValidation;
     private Collation collation;
 
@@ -160,30 +158,6 @@ public class MapReduceOptions {
     }
 
     /**
-     * Sets if the output database is sharded
-     *
-     * @param sharded if the output database is sharded
-     * @return this
-     */
-    public MapReduceOptions sharded(boolean sharded) {
-        this.sharded = sharded;
-        return this;
-    }
-
-    /**
-     * Sets if the post-processing step will prevent MongoDB from locking the database.
-     * <p>
-     * Valid only with the {@code MapReduceAction.MERGE} or {@code MapReduceAction.REDUCE} actions.
-     *
-     * @param nonAtomic if the post-processing step will prevent MongoDB from locking the database.
-     * @return this
-     */
-    public MapReduceOptions nonAtomic(boolean nonAtomic) {
-        this.nonAtomic = nonAtomic;
-        return this;
-    }
-
-    /**
      * Sets the bypass document level validation flag.
      *
      * <p>
@@ -246,8 +220,6 @@ public class MapReduceOptions {
         if (databaseName != null) {
             publisher = publisher.databaseName(databaseName);
         }
-        publisher = publisher.sharded(sharded);
-        publisher = publisher.nonAtomic(nonAtomic);
         publisher = publisher.bypassDocumentValidation(bypassDocumentValidation);
         if (collation != null) {
             publisher = publisher.collation(collation);

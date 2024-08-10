@@ -1,4 +1,4 @@
-package io.quarkus.maven.config.doc;
+package io.quarkus.annotation.processor.documentation.config.merger;
 
 import java.util.Map;
 import java.util.Optional;
@@ -6,7 +6,7 @@ import java.util.Optional;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 
-final class JavadocRepository {
+public final class JavadocRepository {
 
     private final Map<String, JavadocElement> javadocElementsMap;
 

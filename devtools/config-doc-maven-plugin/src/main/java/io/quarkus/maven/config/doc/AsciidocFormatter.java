@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;

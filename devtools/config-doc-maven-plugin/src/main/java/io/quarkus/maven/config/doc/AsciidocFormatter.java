@@ -18,9 +18,11 @@ final class AsciidocFormatter {
     private static final String MORE_INFO_ABOUT_TYPE_FORMAT = "link:#%s[icon:question-circle[title=More information about the %s format]]";
 
     private final JavadocRepository javadocRepository;
+    private final boolean enableEnumTooltips;
 
-    AsciidocFormatter(JavadocRepository javadocRepository) {
+    AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
         this.javadocRepository = javadocRepository;
+        this.enableEnumTooltips = enableEnumTooltips;
     }
 
     String formatDescription(ConfigProperty configProperty) {
@@ -42,7 +44,7 @@ final class AsciidocFormatter {
     String formatTypeDescription(ConfigProperty configProperty) {
         String typeContent = "";
 
-        if (configProperty.isEnum()) {
+        if (configProperty.isEnum() && enableEnumTooltips) {
             typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                     .map(e -> {
                         Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
@@ -83,7 +85,7 @@ final class AsciidocFormatter {
             return null;
         }
 
-        if (configProperty.isEnum()) {
+        if (configProperty.isEnum() && enableEnumTooltips) {
             Optional<String> enumConstant = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                     .filter(e -> e.getValue().configValue().equals(defaultValue))
                     .map(e -> e.getKey())

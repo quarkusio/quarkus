@@ -62,6 +62,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     private boolean generateAllConfig;
 
     @Parameter(defaultValue = "false")
+    private boolean enableEnumTooltips;
+
+    @Parameter(defaultValue = "false")
     private boolean skip;
 
     @Override
@@ -81,7 +84,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
         MergedModel mergedModel = ModelMerger.mergeModel(targetDirectories);
 
-        AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository);
+        AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository, enableEnumTooltips);
         Engine quteEngine = initializeQuteEngine(asciidocFormatter);
 
         // we generate a file per extension + top level prefix

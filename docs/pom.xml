@@ -3189,6 +3189,7 @@
                         <configuration>
                             <skip>${skipDocs}</skip>
                             <generateAllConfig>true</generateAllConfig>
+                            <enableEnumTooltips>true</enableEnumTooltips>
                         </configuration>
                     </execution>
                 </executions>

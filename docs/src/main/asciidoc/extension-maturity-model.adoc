@@ -12,17 +12,15 @@ The document header ends at the first blank line. Do not remove the blank line b
 
 What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide?
 
-* It actually works
+* Runtime actually works
 ** Works in JVM mode
 ** Works in dev mode
 ** Works in native
+* Configuration support
 * Dev service (if there is an external service dependency)
-* Developer joy
-** Configuration support
-** Use build-time application knowledge to remove boilerplate
 * Dev UI
-* Supersonic subatomic performance
-** Use build-time application knowledge to eliminate wasteful runtime code paths
+* Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance)
+* Use build-time application knowledge to remove boilerplate
 * Codestart application template
 
 The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
@@ -34,7 +32,7 @@ The link:https://hub.quarkiverse.io/checklistfornewprojects/[new extension check
 
 Here are some pointers on how to achieve those capabilities.
 
-== It actually works
+== Runtime actually works
 
 === Works in JVM mode
 
@@ -52,22 +50,10 @@ To add automated tests which validate dev mode, you can xref:writing-extensions.
 
 For many libraries, native mode support is the motivation for creating an extension. See xref:writing-extensions.adoc#native-executable-support[the guide on native executable support] for more discussion about some of the adaptations that might be needed.
 
-== Developer joy
-
-Developer joy is an important part of the Quarkus philosophy.
-Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[exponents components via CDI], so that they can be consumed in a frictionless way by user applications.
-
-=== Configuration
+== Configuration support
 
 Extensions should support Quarkus's unified configuration, by xref:writing-extensions.adoc#configuration[integrating with the Quarkus configuration model].
 The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#how-to-expose-configuration[the Quarkus configuration philosophy].
-
-=== Use build-time application knowledge to remove boilerplate
-
-Many Quarkus extensions take advantage of being able to inspect the application at build-time to eliminate boilerplate and improve the developer experience.
-xref:writing-extensions.adoc#scanning-deployments-using-jandex[Jandex] allows user code to be scanned for annotations and other markers.
-
-For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
 
 == Dev service
 
@@ -80,6 +66,16 @@ Extensions can take advantage of the Dev UI to present extra information to user
 == Supersonic subatomic performance
 
 Because Quarkus moves work to the build stage, Quarkus applications should have fast startup, high throughput, and low memory requirements. Performance tuning is a large subject, but extensions should use build-time application knowledge to eliminate wasteful runtime code paths at runtime.
+
+== Use build-time application knowledge to remove boilerplate
+
+Develop Joy is an important part of the Quarkus philosophy.
+At a minimum, Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[exponents components via CDI], so that they can be consumed in a frictionless way by user applications. But they can do much more.
+
+Many Quarkus extensions take advantage of being able to inspect the application at build-time to eliminate boilerplate and improve the developer experience.
+xref:writing-extensions.adoc#scanning-deployments-using-jandex[Jandex] allows user code to be scanned for annotations and other markers.
+
+For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
 
 == Codestart application template
 

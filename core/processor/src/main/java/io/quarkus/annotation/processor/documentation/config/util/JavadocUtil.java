@@ -6,8 +6,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.processing.ProcessingEnvironment;
-
 public final class JavadocUtil {
 
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
@@ -24,7 +22,7 @@ public final class JavadocUtil {
         EXTENSION_JAVA_DOC_LINK.put("io.agroal.", AGROAL_API_JAVA_DOC_SITE);
     }
 
-    private JavadocUtil(ProcessingEnvironment processingEnv) {
+    private JavadocUtil() {
     }
 
     /**

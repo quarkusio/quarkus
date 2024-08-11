@@ -9,11 +9,13 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
 
     private boolean generated;
     private final List<AbstractConfigItem> items = new ArrayList<>();
+    private final int level;
 
-    public ConfigSection(String sourceClass, String sourceName, String path, String type, boolean generated,
-            boolean deprecated) {
+    public ConfigSection(String sourceClass, String sourceName, String path, String type, int level,
+            boolean generated, boolean deprecated) {
         super(sourceClass, sourceName, path, type, deprecated);
         this.generated = generated;
+        this.level = level;
     }
 
     @Override
@@ -41,6 +43,10 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
 
     public boolean isGenerated() {
         return generated;
+    }
+
+    public int getLevel() {
+        return level;
     }
 
     /**

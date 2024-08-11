@@ -13,13 +13,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -29,22 +25,15 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-
-import io.quarkus.annotation.processor.Outputs;
-import io.quarkus.annotation.processor.documentation.config.model.AbstractConfigItem;
+import io.quarkus.annotation.processor.documentation.config.merger.JavadocMerger;
+import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
+import io.quarkus.annotation.processor.documentation.config.merger.MergedModel;
+import io.quarkus.annotation.processor.documentation.config.merger.ModelMerger;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
-import io.quarkus.annotation.processor.documentation.config.model.Extension.NameSource;
-import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
-import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
-import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
-import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -53,8 +42,6 @@ import io.quarkus.qute.ValueResolver;
 @Mojo(name = "generate-asciidoc", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, threadSafe = true)
 public class GenerateAsciidocMojo extends AbstractMojo {
 
-    private static final ObjectMapper YAML_OBJECT_MAPPER = new ObjectMapper(new YAMLFactory())
-            .registerModule(new ParameterNamesModule());
     private static final String TARGET = "target";
 
     private static final String ADOC_SUFFIX = ".adoc";
@@ -75,6 +62,9 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     private boolean generateAllConfig;
 
     @Parameter(defaultValue = "false")
+    private boolean enableEnumTooltips;
+
+    @Parameter(defaultValue = "false")
     private boolean skip;
 
     @Override
@@ -91,10 +81,10 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
         List<Path> targetDirectories = findTargetDirectories(resolvedScanDirectory);
 
-        JavadocRepository javadocRepository = findJavadocElements(targetDirectories);
-        MergedModel mergedModel = mergeModel(targetDirectories);
+        JavadocRepository javadocRepository = JavadocMerger.mergeJavadocElements(targetDirectories);
+        MergedModel mergedModel = ModelMerger.mergeModel(targetDirectories);
 
-        AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository);
+        AsciidocFormatter asciidocFormatter = new AsciidocFormatter(javadocRepository, enableEnumTooltips);
         Engine quteEngine = initializeQuteEngine(asciidocFormatter);
 
         // we generate a file per extension + top level prefix
@@ -114,7 +104,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configRootAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
+                            generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
                             + " in extension: " + extension, e);
@@ -150,7 +140,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             try {
                 Files.writeString(configRootAdocPath,
-                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, true));
+                        generateConfigReference(quteEngine, summaryTableId, extension, configRoot, "", true));
             } catch (Exception e) {
                 throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
                         + " in extension: " + extension, e);
@@ -170,7 +160,8 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
                 try {
                     Files.writeString(configSectionAdocPath,
-                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection, false));
+                            generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection,
+                                    "_" + generatedConfigSection.getPath(), false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
                             "Unable to render config section for section: " + generatedConfigSection.getPath()
@@ -193,12 +184,13 @@ public class GenerateAsciidocMojo extends AbstractMojo {
     }
 
     private static String generateConfigReference(Engine quteEngine, String summaryTableId, Extension extension,
-            ConfigItemCollection configItemCollection, boolean searchable) {
+            ConfigItemCollection configItemCollection, String additionalAnchorPrefix, boolean searchable) {
         return quteEngine.getTemplate("configReference.qute.adoc")
                 .data("extension", extension)
                 .data("configItemCollection", configItemCollection)
                 .data("searchable", searchable)
                 .data("summaryTableId", summaryTableId)
+                .data("additionalAnchorPrefix", additionalAnchorPrefix)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
                 .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
                 .render();
@@ -210,6 +202,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 .data("configRootsByExtensions", configRootsByExtensions)
                 .data("searchable", true)
                 .data("summaryTableId", "all-config")
+                .data("additionalAnchorPrefix", "")
                 .data("includeDurationNote", true)
                 .data("includeMemorySizeNote", true)
                 .render();
@@ -221,150 +214,6 @@ public class GenerateAsciidocMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to create directory: " + resolvedTargetDirectory, e);
         }
-    }
-
-    private static JavadocRepository findJavadocElements(List<Path> targetDirectories) throws MojoExecutionException {
-        Map<String, JavadocElement> javadocElementsMap = new HashMap<>();
-
-        for (Path targetDirectory : targetDirectories) {
-            Path javadocPath = targetDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_JAVADOC);
-            if (!Files.isReadable(javadocPath)) {
-                continue;
-            }
-
-            try {
-                JavadocElements javadocElements = YAML_OBJECT_MAPPER.readValue(javadocPath.toFile(), JavadocElements.class);
-
-                if (javadocElements.elements() == null || javadocElements.elements().isEmpty()) {
-                    continue;
-                }
-
-                javadocElementsMap.putAll(javadocElements.elements());
-            } catch (IOException e) {
-                throw new MojoExecutionException("Unable to parse: " + javadocPath, e);
-            }
-        }
-
-        return new JavadocRepository(javadocElementsMap);
-    }
-
-    private static MergedModel mergeModel(List<Path> targetDirectories) throws MojoExecutionException {
-        // keyed on extension and then top level prefix
-        Map<Extension, Map<String, ConfigRoot>> configRoots = new HashMap<>();
-        // keyed on file name
-        Map<String, ConfigRoot> configRootsInSpecificFile = new TreeMap<>();
-        // keyed on extension
-        Map<Extension, List<ConfigSection>> generatedConfigSections = new TreeMap<>();
-
-        for (Path targetDirectory : targetDirectories) {
-            Path javadocPath = targetDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_MODEL);
-            if (!Files.isReadable(javadocPath)) {
-                continue;
-            }
-
-            try {
-                ResolvedModel resolvedModel = YAML_OBJECT_MAPPER.readValue(javadocPath.toFile(), ResolvedModel.class);
-
-                if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {
-                    continue;
-                }
-
-                for (ConfigRoot configRoot : resolvedModel.getConfigRoots()) {
-                    if (configRoot.getOverriddenDocFileName() != null) {
-                        ConfigRoot existingConfigRootInSpecificFile = configRootsInSpecificFile
-                                .get(configRoot.getOverriddenDocFileName());
-
-                        if (existingConfigRootInSpecificFile == null) {
-                            configRootsInSpecificFile.put(configRoot.getOverriddenDocFileName(), configRoot);
-                        } else {
-                            if (!existingConfigRootInSpecificFile.getExtension().equals(configRoot.getExtension())
-                                    || !existingConfigRootInSpecificFile.getPrefix().equals(configRoot.getPrefix())) {
-                                throw new MojoExecutionException(
-                                        "Two config roots with different extensions or prefixes cannot be merged in the same specific config file: "
-                                                + configRoot.getOverriddenDocFileName());
-                            }
-
-                            existingConfigRootInSpecificFile.merge(configRoot);
-                        }
-
-                        continue;
-                    }
-
-                    String topLevelPrefix = getTopLevelPrefix(configRoot.getPrefix());
-
-                    Map<String, ConfigRoot> extensionConfigRoots = configRoots.computeIfAbsent(configRoot.getExtension(),
-                            e -> new HashMap<>());
-
-                    ConfigRoot existingConfigRoot = extensionConfigRoots.get(topLevelPrefix);
-
-                    if (existingConfigRoot == null) {
-                        extensionConfigRoots.put(topLevelPrefix, configRoot);
-                    } else {
-                        existingConfigRoot.merge(configRoot);
-                    }
-                }
-            } catch (IOException e) {
-                throw new MojoExecutionException("Unable to parse: " + javadocPath, e);
-            }
-        }
-
-        configRoots = retainBestExtensionKey(configRoots);
-
-        for (Entry<Extension, Map<String, ConfigRoot>> extensionConfigRootsEntry : configRoots.entrySet()) {
-            List<ConfigSection> extensionGeneratedConfigSections = generatedConfigSections
-                    .computeIfAbsent(extensionConfigRootsEntry.getKey(), e -> new ArrayList<>());
-
-            for (ConfigRoot configRoot : extensionConfigRootsEntry.getValue().values()) {
-                collectGeneratedConfigSections(extensionGeneratedConfigSections, configRoot);
-            }
-        }
-
-        return new MergedModel(configRoots, configRootsInSpecificFile, generatedConfigSections);
-    }
-
-    private static Map<Extension, Map<String, ConfigRoot>> retainBestExtensionKey(
-            Map<Extension, Map<String, ConfigRoot>> configRoots) {
-        return configRoots.entrySet().stream().collect(Collectors.toMap(e -> {
-            Extension extension = e.getKey();
-
-            for (ConfigRoot configRoot : e.getValue().values()) {
-                if (configRoot.getExtension().nameSource().isBetterThan(extension.nameSource())) {
-                    extension = configRoot.getExtension();
-                }
-                if (NameSource.EXTENSION_METADATA.equals(extension.nameSource())) {
-                    // we won't find any better
-                    break;
-                }
-            }
-
-            return extension;
-        }, e -> e.getValue(), (k1, k2) -> k1, TreeMap::new));
-    }
-
-    private static void collectGeneratedConfigSections(List<ConfigSection> extensionGeneratedConfigSections,
-            ConfigItemCollection configItemCollection) {
-        for (AbstractConfigItem configItem : configItemCollection.getItems()) {
-            if (!configItem.isSection()) {
-                continue;
-            }
-
-            ConfigSection configSection = (ConfigSection) configItem;
-            if (configSection.isGenerated()) {
-                extensionGeneratedConfigSections.add(configSection);
-            }
-
-            collectGeneratedConfigSections(extensionGeneratedConfigSections, configSection);
-        }
-    }
-
-    private static String getTopLevelPrefix(String prefix) {
-        String[] prefixSegments = prefix.split(Pattern.quote(Markers.DOT));
-
-        if (prefixSegments.length == 1) {
-            return prefixSegments[0];
-        }
-
-        return prefixSegments[0] + Markers.DOT + prefixSegments[1];
     }
 
     private static List<Path> findTargetDirectories(Path scanDirectory) throws MojoExecutionException {
@@ -420,39 +269,56 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
                         .applyToName("toAnchor")
-                        .applyToParameters(1)
-                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
-                                .thenApply(o -> asciidocFormatter.toAnchor(
-                                        ((Extension) o).artifactId() + "_" + ((ConfigProperty) ctx.getBase()).getPath())))
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                                        .artifactId() +
+                                // the additional suffix
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
+                                        "_" + ((ConfigProperty) ctx.getBase()).getPath()))
                         .build())
                 // we need a different anchor for sections as otherwise we can have a conflict
                 // (typically when you have an `enabled` property with parent name just under the section level)
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigSection.class)
                         .applyToName("toAnchor")
-                        .applyToParameters(1)
-                        .resolveAsync(ctx -> ctx.evaluate(ctx.getParams().get(0))
-                                .thenApply(o -> asciidocFormatter.toAnchor(
-                                        ((Extension) o).artifactId() + "_section_"
-                                                + ((ConfigSection) ctx.getBase()).getPath())))
+                        .applyToParameters(2)
+                        .resolveSync(ctx -> asciidocFormatter
+                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                                        .artifactId() +
+                                // the additional suffix
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
+                                        "_section_" + ((ConfigSection) ctx.getBase()).getPath()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("typeDescription")
+                        .applyToName("formatTypeDescription")
                         .applyToNoParameters()
                         .resolveSync(ctx -> asciidocFormatter.formatTypeDescription((ConfigProperty) ctx.getBase()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("description")
+                        .applyToName("formatDescription")
                         .applyToNoParameters()
                         .resolveSync(ctx -> asciidocFormatter.formatDescription((ConfigProperty) ctx.getBase()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDefaultValue")
+                        .applyToNoParameters()
+                        .resolveSync(ctx -> asciidocFormatter.formatDefaultValue((ConfigProperty) ctx.getBase()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigSection.class)
-                        .applyToName("title")
+                        .applyToName("formatTitle")
                         .applyToNoParameters()
                         .resolveSync(ctx -> asciidocFormatter.formatSectionTitle((ConfigSection) ctx.getBase()))
+                        .build())
+                .addValueResolver(ValueResolver.builder()
+                        .applyToBaseClass(Extension.class)
+                        .applyToName("formatName")
+                        .applyToNoParameters()
+                        .resolveSync(ctx -> asciidocFormatter.formatName((Extension) ctx.getBase()))
                         .build())
                 .build();
 

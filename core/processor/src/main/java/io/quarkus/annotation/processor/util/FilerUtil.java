@@ -21,27 +21,10 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
+import io.quarkus.annotation.processor.documentation.config.util.JacksonMappers;
 import io.quarkus.bootstrap.util.PropertyUtils;
 
 public class FilerUtil {
-
-    private static final ObjectWriter JSON_OBJECT_WRITER;
-    private static final ObjectMapper YAML_OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
-
-    static {
-    }
-
-    static {
-        ObjectMapper jsonObjectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-        JSON_OBJECT_WRITER = jsonObjectMapper.writerWithDefaultPrettyPrinter();
-
-        YAML_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-    }
 
     private final ProcessingEnvironment processingEnv;
 
@@ -109,7 +92,7 @@ public class FilerUtil {
                     filePath.toString());
 
             try (OutputStream os = jsonResource.openOutputStream()) {
-                JSON_OBJECT_WRITER.writeValue(os, value);
+                JacksonMappers.jsonObjectWriter().writeValue(os, value);
             }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
@@ -126,7 +109,7 @@ public class FilerUtil {
         Path yamlModelPath = getTargetPath().resolve(filePath);
         try {
             Files.createDirectories(yamlModelPath.getParent());
-            YAML_OBJECT_MAPPER.writeValue(yamlModelPath.toFile(), value);
+            JacksonMappers.yamlObjectWriter().writeValue(yamlModelPath.toFile(), value);
 
             return yamlModelPath;
         } catch (IOException e) {
@@ -171,7 +154,7 @@ public class FilerUtil {
 
             try (InputStream is = fileObject.openInputStream()) {
                 String yamlMetadata = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                Map<String, Object> extensionMetadata = YAML_OBJECT_MAPPER.readValue(yamlMetadata, Map.class);
+                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().readValue(yamlMetadata, Map.class);
 
                 return Optional.of(extensionMetadata);
             }

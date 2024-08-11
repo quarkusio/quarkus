@@ -11,20 +11,27 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension;
 public final class DiscoveryConfigRoot extends DiscoveryRootElement {
 
     private final String prefix;
+    private final String overriddenDocPrefix;
     private final ConfigPhase phase;
     private final String overriddenDocFileName;
 
-    public DiscoveryConfigRoot(Extension extension, String prefix, String binaryName, String qualifiedName,
+    public DiscoveryConfigRoot(Extension extension, String prefix, String overriddenDocPrefix,
+            String binaryName, String qualifiedName,
             ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping) {
         super(extension, binaryName, qualifiedName, configMapping);
 
         this.prefix = prefix;
+        this.overriddenDocPrefix = overriddenDocPrefix;
         this.phase = configPhase;
         this.overriddenDocFileName = overriddenDocFileName;
     }
 
     public String getPrefix() {
         return prefix;
+    }
+
+    public String getOverriddenDocPrefix() {
+        return overriddenDocPrefix;
     }
 
     public ConfigPhase getPhase() {

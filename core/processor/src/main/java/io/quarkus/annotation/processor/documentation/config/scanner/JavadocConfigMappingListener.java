@@ -7,6 +7,7 @@ import javax.lang.model.element.TypeElement;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
 import io.quarkus.annotation.processor.documentation.config.formatter.JavadocToAsciidocTransformer;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
@@ -38,20 +39,30 @@ public class JavadocConfigMappingListener extends AbstractJavadocConfigListener 
         }
 
         Optional<String> rawJavadoc = utils.element().getJavadoc(method);
+        boolean isSection = utils.element().isAnnotationPresent(method, Types.ANNOTATION_CONFIG_DOC_SECTION);
 
         if (rawJavadoc.isEmpty()) {
             // We require a Javadoc for config items that are not config groups except if they are a section
-            if (!resolvedType.isConfigGroup()
-                    || utils.element().isAnnotationPresent(method, Types.ANNOTATION_CONFIG_DOC_SECTION)) {
+            if (!resolvedType.isConfigGroup() || isSection) {
                 utils.element().addMissingJavadocError(method);
             }
             return;
         }
 
-        ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc.get());
+        if (isSection) {
+            // for sections, we only keep the title
+            ParsedJavadocSection parsedJavadocSection = JavadocToAsciidocTransformer.INSTANCE
+                    .parseConfigSectionJavadoc(rawJavadoc.get());
 
-        configCollector.addJavadocElement(
-                clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
-                new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc.get()));
+            configCollector.addJavadocElement(
+                    clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
+                    new JavadocElement(parsedJavadocSection.title(), null, rawJavadoc.get()));
+        } else {
+            ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc.get());
+
+            configCollector.addJavadocElement(
+                    clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc.get()));
+        }
     }
 }

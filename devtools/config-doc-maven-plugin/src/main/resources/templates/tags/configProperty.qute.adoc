@@ -1,4 +1,4 @@
-a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension)}]] `{configProperty.path}`
+a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##`{configProperty.path}`##
 {#for additionalPath in configProperty.additionalPaths}
 
 `{additionalPath}`
@@ -6,8 +6,8 @@ a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time
 
 [.description]
 --
-{configProperty.description.escapeCellContent.or("")}
+{configProperty.formatDescription.escapeCellContent.or("")}
 {#envVar configProperty /}
 --
-{#if configProperty.enum}a{/if}|{configProperty.typeDescription}
-|{#if configProperty.defaultValue}`{configProperty.defaultValue.escapeCellContent}`{#else if !configProperty.optional}required icon:exclamation-circle[title=Configuration property is required]{/if}
+{#if configProperty.enum}a{/if}|{configProperty.formatTypeDescription.escapeCellContent.or("")}
+|{#if configProperty.defaultValue}{configProperty.formatDefaultValue.escapeCellContent}{#else if !configProperty.optional}required icon:exclamation-circle[title=Configuration property is required]{/if}

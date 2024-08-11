@@ -38,6 +38,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
 
         AnnotationMirror configRootAnnotation = null;
         AnnotationMirror configMappingAnnotion = null;
+        AnnotationMirror configDocPrefixAnnotation = null;
         AnnotationMirror configDocFileNameAnnotation = null;
 
         for (AnnotationMirror annotationMirror : configRoot.getAnnotationMirrors()) {
@@ -49,6 +50,10 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
             if (annotationName.equals(Types.ANNOTATION_CONFIG_MAPPING)) {
                 configMappingAnnotion = annotationMirror;
+                continue;
+            }
+            if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_PREFIX)) {
+                configDocPrefixAnnotation = annotationMirror;
                 continue;
             }
             if (annotationName.equals(Types.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
@@ -76,6 +81,18 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
         }
 
+        String overriddenDocPrefix = null;
+        if (configDocPrefixAnnotation != null) {
+            for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
+                    .getElementValues()
+                    .entrySet()) {
+                if ("value()".equals(entry.getKey().toString())) {
+                    overriddenDocPrefix = entry.getValue().getValue().toString();
+                    break;
+                }
+            }
+        }
+
         String overriddenDocFileName = null;
         if (configDocFileNameAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocFileNameAnnotation
@@ -91,7 +108,8 @@ public class ConfigMappingListener extends AbstractConfigListener {
         String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, "", configRoot.getSimpleName().toString(), configPhase);
         String binaryName = utils.element().getBinaryName(configRoot);
 
-        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), rootPrefix,
+        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(),
+                rootPrefix, overriddenDocPrefix,
                 binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);

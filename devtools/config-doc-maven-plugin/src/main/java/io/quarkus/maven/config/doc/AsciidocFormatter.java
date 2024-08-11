@@ -5,8 +5,10 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.quarkus.annotation.processor.documentation.config.merger.JavadocRepository;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
+import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 
@@ -16,9 +18,11 @@ final class AsciidocFormatter {
     private static final String MORE_INFO_ABOUT_TYPE_FORMAT = "link:#%s[icon:question-circle[title=More information about the %s format]]";
 
     private final JavadocRepository javadocRepository;
+    private final boolean enableEnumTooltips;
 
-    AsciidocFormatter(JavadocRepository javadocRepository) {
+    AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
         this.javadocRepository = javadocRepository;
+        this.enableEnumTooltips = enableEnumTooltips;
     }
 
     String formatDescription(ConfigProperty configProperty) {
@@ -40,7 +44,7 @@ final class AsciidocFormatter {
     String formatTypeDescription(ConfigProperty configProperty) {
         String typeContent = "";
 
-        if (configProperty.isEnum()) {
+        if (configProperty.isEnum() && enableEnumTooltips) {
             typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                     .map(e -> {
                         Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
@@ -77,7 +81,11 @@ final class AsciidocFormatter {
     String formatDefaultValue(ConfigProperty configProperty) {
         String defaultValue = configProperty.getDefaultValue();
 
-        if (configProperty.isEnum()) {
+        if (defaultValue == null) {
+            return null;
+        }
+
+        if (configProperty.isEnum() && enableEnumTooltips) {
             Optional<String> enumConstant = configProperty.getEnumAcceptedValues().values().entrySet().stream()
                     .filter(e -> e.getValue().configValue().equals(defaultValue))
                     .map(e -> e.getKey())
@@ -183,6 +191,14 @@ final class AsciidocFormatter {
         }
 
         return javadoc.substring(0, dotIndex);
+    }
+
+    String formatName(Extension extension) {
+        if (extension.name() == null) {
+            return extension.artifactId();
+        }
+
+        return extension.name();
     }
 
     /**

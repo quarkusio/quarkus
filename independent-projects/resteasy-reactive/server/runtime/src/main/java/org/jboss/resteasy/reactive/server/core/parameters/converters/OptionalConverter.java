@@ -20,7 +20,15 @@ public class OptionalConverter implements ParameterConverter {
         if (parameter == null) {
             return Optional.empty();
         } else if (delegate != null) {
-            Object converted = delegate.convert(parameter);
+            Object converted = null;
+            if (parameter instanceof String && ((String) parameter).isEmpty()) {
+                try {
+                    converted = delegate.convert(parameter);
+                } catch (Exception e) {
+                }
+            } else {
+                converted = delegate.convert(parameter);
+            }
             if (converted != null
                     && converted instanceof Collection
                     && ((Collection) converted).isEmpty()) {

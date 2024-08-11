@@ -115,7 +115,7 @@ jobs:
 
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.23.1 ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
         env:
           PR_ID: ${{ steps.pr.outputs.id }}
 

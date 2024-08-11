@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
-      # this should be enough to maintain comments as commenting on pull requests is done through an issues API
       issues: write
-      pull-requests: read
+      # this is unfortunately needed to be able to write comments on pull requests
+      pull-requests: write
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v4
@@ -118,10 +118,13 @@ jobs:
         run: npx surge ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
         env:
           PR_ID: ${{ steps.pr.outputs.id }}
+
       - name: Update PR status comment on success
-        uses: actions-cool/maintain-one-comment@v3.2.0
+        uses: quarkusio/action-helpers@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ steps.pr.outputs.id }}
           body: |
             🎊 PR Preview ${{ github.sha }} has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
 
@@ -129,17 +132,15 @@ jobs:
             - Newsletters older than 3 months are not available.
 
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png">
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          body-marker: <!-- Preview status comment marker -->
       - name: Update PR status comment on failure
+        uses: quarkusio/action-helpers@main
         if: ${{ failure() }}
-        uses: actions-cool/maintain-one-comment@v3.2.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          action: maintain-one-comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ steps.pr.outputs.id }}
           body: |
             😭 Deploy PR Preview failed.
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png">
-            <!-- Sticky Pull Request Comment -->
-          body-include: '<!-- Sticky Pull Request Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          body-marker: <!-- Preview status comment marker -->

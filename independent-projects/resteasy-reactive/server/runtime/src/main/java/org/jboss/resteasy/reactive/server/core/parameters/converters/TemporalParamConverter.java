@@ -23,7 +23,6 @@ public abstract class TemporalParamConverter<T extends Temporal> implements Para
     @Override
     public Object convert(Object parameter) {
         String strValue = String.valueOf(parameter);
-
         if (formatter == null) {
             return convert(strValue);
         }

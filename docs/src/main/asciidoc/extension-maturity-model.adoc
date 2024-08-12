@@ -48,7 +48,7 @@ To add automated tests which validate dev mode, you can xref:writing-extensions.
 
 === Works as a native application
 
-For many libraries, native mode support is the motivation for creating an extension. See xref:writing-extensions.adoc#native-executable-support[the guide on native executable support] for more discussion about some of the adaptations that might be needed.
+For many libraries, native mode support is the primary motivation for creating an extension. See xref:writing-extensions.adoc#native-executable-support[the guide on native executable support] for more discussion about some of the adaptations that might be needed.
 
 == Configuration support
 

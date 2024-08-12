@@ -14,7 +14,7 @@ then
   echo ''
   echo 'Building bom-descriptor-json...'
   echo ''
-  ./mvnw -q -e -Dscan=false clean package -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
+  ./mvnw -q -e -Dscan=false clean package -Dno-build-cache -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
 else
   read -n1 -p 'Build the entire project with relocations? [y/n] ' ANSWER
   echo ''
@@ -23,7 +23,7 @@ else
     echo ''
     echo 'Building entire project with relocations...'
     echo ''
-    ./mvnw -q -e -Dscan=false -Dquickly -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
+    ./mvnw -q -e -Dscan=false -Dquickly -Dno-build-cache -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
   else
     echo ''
     echo 'Aborted!'
@@ -60,8 +60,9 @@ export LANG="C"
 
 # note: quarkus-amazon-common was removed from this repo without a relocation
 ARTIFACT_IDS=$(cd "${PRG_PATH}" && grep '^    "artifact"' devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-*.json \
-    | grep -Eo 'quarkus-[a-z0-9-]+' | grep -v quarkus-amazon-common | sort)
+    | grep -Eo 'quarkus-[a-z0-9-]+' | grep -v quarkus-amazon-common | sort -u)
 set -o pipefail
+
 if [ -z "${ARTIFACT_IDS}" ]
 then
   echo -e '\033[0;31mError:\033[0m Could not find any artifact-ids. Please check the grep command. ' 1>&2

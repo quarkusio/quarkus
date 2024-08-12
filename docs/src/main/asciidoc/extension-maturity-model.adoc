@@ -1,4 +1,8 @@
-
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 [id="extension-maturity-model"]
 = A maturity model for Quarkus extensions
 include::_attributes.adoc[]
@@ -12,19 +16,11 @@ The document header ends at the first blank line. Do not remove the blank line b
 
 What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide?
 
-* Runtime actually works
-** Works in JVM mode
-** Works in dev mode
-** Works in native
-* Configuration support
-* Dev service (if there is an external service dependency)
-* Dev UI
-* Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance)
-* Use build-time application knowledge to remove boilerplate
-* Codestart application template
+image::extension-maturity-model.png[A maturity model: Runtime actually works,Works in JVM mode,Works in dev mode, Works in native,Configuration support,Dev service,Dev UI, Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance),Use build-time application knowledge to remove boilerplate,Codestart application template]
 
 The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
 Also, not every step will apply to every extension. For example, you don't need a dev service if your extension doesn't depend on external services.
+It's completely OK to publish a first version of an extension that doesn't handle everything. In fact, it's ok if your extension _never_ gets to the more advanced features. This is a suggested pathway, not a minimum feature set.
 
 Also note that this list only includes the technical features of your extension.
 You might also want to think about how you share your extension.
@@ -55,17 +51,13 @@ For many libraries, native mode support is the primary motivation for creating a
 Extensions should support Quarkus's unified configuration, by xref:writing-extensions.adoc#configuration[integrating with the Quarkus configuration model].
 The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#how-to-expose-configuration[the Quarkus configuration philosophy].
 
-== Dev service
+== Dev service (if there is an external service)
 
 To provide a dev service, use the `DevServicesResultBuildItem` build item.
 
 == Dev UI
 
 Extensions can take advantage of the Dev UI to present extra information to users. See the xref:dev-ui.adoc[Dev UI for extension developers] guide.
-
-== Supersonic subatomic performance
-
-Because Quarkus moves work to the build stage, Quarkus applications should have fast startup, high throughput, and low memory requirements. Performance tuning is a large subject, but extensions should use build-time application knowledge to eliminate wasteful runtime code paths at runtime.
 
 == Use build-time application knowledge to remove boilerplate
 
@@ -76,6 +68,12 @@ Many Quarkus extensions take advantage of being able to inspect the application 
 xref:writing-extensions.adoc#scanning-deployments-using-jandex[Jandex] allows user code to be scanned for annotations and other markers.
 
 For some inspiration in this area, have a look at xref:logging#simplified-logging[simplified logging], xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache], the xref:rest-client.adoc#query-parameters[`@RestQuery` annotation], or the way Quarkus allows test containers to be used xref:getting-started-dev-services.adoc[without any configuration].
+
+
+== Supersonic subatomic performance
+
+Extensions should use build-time application knowledge to eliminate wasteful runtime code paths. We call this supersonic subatomic performance.
+Because Quarkus moves work to the build stage, Quarkus applications should have fast startup, high throughput, and low memory requirements. Performance tuning is a large subject, but extensions should use build-time application knowledge to eliminate wasteful runtime code paths at runtime.
 
 == Codestart application template
 

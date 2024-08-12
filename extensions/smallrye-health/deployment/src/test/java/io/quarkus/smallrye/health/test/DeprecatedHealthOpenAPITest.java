@@ -29,11 +29,21 @@ class DeprecatedHealthOpenAPITest {
                 .when().get(OPEN_API_PATH)
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
+
                 .body("paths", Matchers.hasKey("/q/health/ready"))
                 .body("paths", Matchers.hasKey("/q/health/live"))
                 .body("paths", Matchers.hasKey("/q/health/started"))
                 .body("paths", Matchers.hasKey("/q/health"))
-                .body("components.schemas.HealthCheckResponse.type", Matchers.equalTo("object"));
+
+                .body("components.schemas.HealthResponse.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthResponse.properties.status.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthResponse.properties.checks.type", Matchers.equalTo("array"))
+
+                .body("components.schemas.HealthCheck.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthCheck.properties.status.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthCheck.properties.name.type", Matchers.equalTo("string"))
+                .body("components.schemas.HealthCheck.properties.data.type", Matchers.equalTo("object"))
+                .body("components.schemas.HealthCheck.properties.data.nullable", Matchers.is(true));
 
     }
 

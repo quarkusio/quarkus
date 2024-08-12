@@ -224,15 +224,30 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                 && manifestEnabled == other.manifestEnabled;
     }
 
-    protected class OpenArchivePathTree extends DirectoryPathTree {
+    protected class OpenArchivePathTree extends OpenContainerPathTree {
 
-        // we don't make the field final as we want to nullify it on close
-        private volatile FileSystem fs;
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+        // we don't make these fields final as we want to nullify them on close
+        private FileSystem fs;
+        private Path rootPath;
+
+        private volatile boolean open = true;
+
         protected OpenArchivePathTree(FileSystem fs) {
-            super(fs.getPath("/"), pathFilter, ArchivePathTree.this);
+            super(ArchivePathTree.this.pathFilter, ArchivePathTree.this);
             this.fs = fs;
+            this.rootPath = fs.getPath("/");
+        }
+
+        @Override
+        protected Path getContainerPath() {
+            return ArchivePathTree.this.archive;
+        }
+
+        @Override
+        protected Path getRootPath() {
+            return rootPath;
         }
 
         protected ReentrantReadWriteLock.ReadLock readLock() {
@@ -272,7 +287,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         public boolean isOpen() {
             lock.readLock().lock();
             try {
-                return fs != null && fs.isOpen();
+                return open;
             } finally {
                 lock.readLock().unlock();
             }
@@ -349,7 +364,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
          */
         private void ensureOpen() {
             // let's not use isOpen() as ensureOpen() is always used inside a read lock
-            if (fs != null && fs.isOpen()) {
+            if (open) {
                 return;
             }
             throw new RuntimeException("Failed to access " + ArchivePathTree.this.getRoots()
@@ -358,28 +373,19 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
         @Override
         public void close() throws IOException {
-            Throwable t = null;
             lock.writeLock().lock();
             try {
-                super.close();
-            } catch (Throwable e) {
-                t = e;
+                open = false;
+                rootPath = null;
+                fs.close();
+            } catch (IOException e) {
                 throw e;
             } finally {
-                try {
-                    fs.close();
-                } catch (IOException e) {
-                    if (t != null) {
-                        e.addSuppressed(t);
-                    }
-                    throw e;
-                } finally {
-                    // even when we close the fs, everything is kept as is in the fs instance
-                    // and typically the cen, which is quite large
-                    // let's make sure the fs is nullified for it to be garbage collected
-                    fs = null;
-                    lock.writeLock().unlock();
-                }
+                // even when we close the fs, everything is kept as is in the fs instance
+                // and typically the cen, which is quite large
+                // let's make sure the fs is nullified for it to be garbage collected
+                fs = null;
+                lock.writeLock().unlock();
             }
         }
 

@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public class CachingPathTree implements OpenPathTree {
 
@@ -30,8 +29,8 @@ public class CachingPathTree implements OpenPathTree {
     }
 
     @Override
-    public Manifest getManifest() {
-        return delegate.getManifest();
+    public ManifestAttributes getManifestAttributes() {
+        return delegate.getManifestAttributes();
     }
 
     @Override

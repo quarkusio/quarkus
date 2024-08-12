@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
@@ -27,6 +26,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 
@@ -499,8 +499,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
 
         @Override
-        public Manifest getManifest() {
-            return delegate.getManifest();
+        public ManifestAttributes getManifestAttributes() {
+            return delegate.getManifestAttributes();
         }
 
         @Override

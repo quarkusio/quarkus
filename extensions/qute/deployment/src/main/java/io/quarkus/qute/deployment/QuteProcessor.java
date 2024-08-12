@@ -487,7 +487,6 @@ public class QuteProcessor {
 
                 Map<String, String> bindings = new HashMap<>();
                 List<Type> parameters = canonicalConstructor.parameterTypes();
-                List<String> parameterNames = new ArrayList<>(parameters.size());
                 for (int i = 0; i < parameters.size(); i++) {
                     Type type = parameters.get(i);
                     String name = canonicalConstructor.parameterName(i);
@@ -500,7 +499,6 @@ public class QuteProcessor {
                                 + "] conflicts with an interface method of " + recordInterface);
                     }
                     bindings.put(name, getCheckedTemplateParameterTypeName(type));
-                    parameterNames.add(name);
                 }
                 AnnotationValue requireTypeSafeExpressions = checkedTemplateAnnotation != null
                         ? checkedTemplateAnnotation.value(CHECKED_TEMPLATE_REQUIRE_TYPE_SAFE)

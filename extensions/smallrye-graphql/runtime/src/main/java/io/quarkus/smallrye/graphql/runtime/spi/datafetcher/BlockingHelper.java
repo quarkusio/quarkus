@@ -25,6 +25,6 @@ public final class BlockingHelper {
     @SuppressWarnings("unchecked")
     public static void runBlocking(Context vc, Callable<Object> contextualCallable, Promise result) {
         // Here call blocking with context
-        vc.executeBlocking(contextualCallable).onComplete(result);
+        vc.executeBlocking(contextualCallable, false).onComplete(result);
     }
 }

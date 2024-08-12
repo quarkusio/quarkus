@@ -69,7 +69,7 @@ Because Quarkus moves work to the build stage, Quarkus applications should have 
 
 == Use build-time application knowledge to remove boilerplate
 
-Develop Joy is an important part of the Quarkus philosophy.
+Developer Joy is an important part of the Quarkus philosophy.
 At a minimum, Quarkus extensions should aim to xref:writing-extensions.adoc#expose-your-components-via-cdi[exponents components via CDI], so that they can be consumed in a frictionless way by user applications. But they can do much more.
 
 Many Quarkus extensions take advantage of being able to inspect the application at build-time to eliminate boilerplate and improve the developer experience.

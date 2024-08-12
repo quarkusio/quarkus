@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 /**
  * While {@link ArchivePathTree} implementation is thread-safe, this implementation
@@ -144,8 +143,8 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
-        public Manifest getManifest() {
-            return delegate.getManifest();
+        public ManifestAttributes getManifestAttributes() {
+            return delegate.getManifestAttributes();
         }
 
         @Override

@@ -21,11 +21,11 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
@@ -176,8 +176,8 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    protected Manifest readManifest() {
-        return apply(OpenPathTree::getManifest);
+    protected ManifestAttributes readManifest() {
+        return apply(OpenPathTree::getManifestAttributes);
     }
 
     @Override

@@ -540,15 +540,20 @@ public class JibProcessor {
 
                 FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder().setName("fast-jar-boot-libs");
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
-                try (Stream<Path> boolLibPaths = Files.list(bootLibPath)) {
-                    boolLibPaths.forEach(lib -> {
+                try (Stream<Path> bootLibPaths = Files.list(bootLibPath)) {
+                    bootLibPaths.forEach(lib -> {
                         try {
                             AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
                                     .resolve(JarResultBuildStep.BOOT_LIB)
                                     .resolve(lib.getFileName());
-                            // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
-                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer,
-                                    Files.getLastModifiedTime(lib).toInstant());
+                            Instant bootLibModificationTime;
+                            if (appCDSResult.isPresent()) {
+                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                                bootLibModificationTime = Files.getLastModifiedTime(lib).toInstant();
+                            } else {
+                                bootLibModificationTime = modificationTime;
+                            }
+                            bootLibsLayerBuilder.addEntry(lib, libPathInContainer, bootLibModificationTime);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }

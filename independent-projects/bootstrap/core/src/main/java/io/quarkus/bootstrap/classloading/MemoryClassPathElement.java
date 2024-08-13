@@ -114,6 +114,11 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return true;
+    }
+
+    @Override
     public ProtectionDomain getProtectionDomain() {
         // we used to include the class bytes in the ProtectionDomain
         // but it is not a good idea

@@ -340,7 +340,7 @@ public class CodeGenerator {
             final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
                     deploymentClassLoader, false);
             if (!allowedConfigServices.isEmpty()) {
-                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigServices, true));
+                configClBuilder.addNormalPriorityElement(new MemoryClassPathElement(allowedConfigServices, true));
             }
             if (!bannedConfigServices.isEmpty()) {
                 configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigServices, true));

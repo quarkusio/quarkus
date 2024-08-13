@@ -37,6 +37,11 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return true;
+    }
+
+    @Override
     protected Path getRootPath() {
         return dir;
     }

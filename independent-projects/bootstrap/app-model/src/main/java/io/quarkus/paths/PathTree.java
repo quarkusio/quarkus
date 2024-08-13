@@ -81,6 +81,13 @@ public interface PathTree {
     }
 
     /**
+     * Whether the PathTree provides local resources.
+     * <p>
+     * For instance a directory or a file provides local resources. A jar does not.
+     */
+    boolean providesLocalResources();
+
+    /**
      * The roots of the path tree.
      * <p>
      * Note that you shouldn't use these roots for browsing except if the PathTree is open.

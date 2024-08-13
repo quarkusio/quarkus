@@ -25,7 +25,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
@@ -155,13 +154,8 @@ public class TestTracingProcessor {
         return null;
     }
 
-    public boolean isAppClass(String theClassName) {
-        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                .getContextClassLoader();
-        //if the class file is present in this (and not the parent) CL then it is an application class
-        List<ClassPathElement> res = cl
-                .getElementsWithResource(theClassName.replace(".", "/") + ".class", true);
-        return !res.isEmpty();
+    public boolean isAppClass(String className) {
+        return QuarkusClassLoader.isApplicationClass(className);
     }
 
     public static class TracingClassVisitor extends ClassVisitor {

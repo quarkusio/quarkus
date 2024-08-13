@@ -23,6 +23,11 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return true;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return Collections.singletonList(file);
     }

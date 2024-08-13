@@ -16,6 +16,11 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return false;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return Collections.emptyList();
     }

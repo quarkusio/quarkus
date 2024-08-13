@@ -18,6 +18,11 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return original.providesLocalResources();
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return original.getRoots();
     }

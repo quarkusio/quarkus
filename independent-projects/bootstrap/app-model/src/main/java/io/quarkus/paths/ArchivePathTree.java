@@ -87,6 +87,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return false;
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return List.of(archive);
     }
@@ -238,6 +243,11 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
             super(ArchivePathTree.this.pathFilter, ArchivePathTree.this);
             this.fs = fs;
             this.rootPath = fs.getPath("/");
+        }
+
+        @Override
+        public boolean providesLocalResources() {
+            return false;
         }
 
         @Override

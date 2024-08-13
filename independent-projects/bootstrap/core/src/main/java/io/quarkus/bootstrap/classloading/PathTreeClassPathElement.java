@@ -176,6 +176,11 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
+    public boolean providesLocalResources() {
+        return pathTree.providesLocalResources();
+    }
+
+    @Override
     protected ManifestAttributes readManifest() {
         return apply(OpenPathTree::getManifestAttributes);
     }

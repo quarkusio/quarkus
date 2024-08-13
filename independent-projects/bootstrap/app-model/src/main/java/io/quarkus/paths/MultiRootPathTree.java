@@ -25,6 +25,20 @@ public class MultiRootPathTree implements OpenPathTree {
         roots = tmp;
     }
 
+    /**
+     * If at least one of the PathTrees contains local resources, we return true.
+     */
+    @Override
+    public boolean providesLocalResources() {
+        for (PathTree tree : trees) {
+            if (tree.providesLocalResources()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public Collection<Path> getRoots() {
         return roots;

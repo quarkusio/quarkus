@@ -14,12 +14,15 @@ import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
 
-    final ClassPathElement delegate;
-    final Set<String> removed;
+    private final ClassPathElement delegate;
+    private final Set<String> removed;
+    private final Set<String> resources;
 
     public FilteredClassPathElement(ClassPathElement delegate, Collection<String> removed) {
         this.delegate = delegate;
         this.removed = new HashSet<>(removed);
+        this.resources = new HashSet<>(delegate.getProvidedResources());
+        this.resources.removeAll(this.removed);
     }
 
     @Override
@@ -52,9 +55,12 @@ public class FilteredClassPathElement implements ClassPathElement {
 
     @Override
     public Set<String> getProvidedResources() {
-        Set<String> ret = new HashSet<>(delegate.getProvidedResources());
-        ret.removeAll(removed);
-        return ret;
+        return resources;
+    }
+
+    @Override
+    public boolean providesLocalResources() {
+        return delegate.providesLocalResources();
     }
 
     @Override

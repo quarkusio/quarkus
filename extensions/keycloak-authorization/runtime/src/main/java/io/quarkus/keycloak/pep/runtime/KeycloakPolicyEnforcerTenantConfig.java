@@ -152,13 +152,13 @@ public interface KeycloakPolicyEnforcerTenantConfig {
         interface ClaimInformationPointConfig {
 
             /**
-             *
+             * Complex config.
              */
             @WithParentName
             Map<String, Map<String, Map<String, String>>> complexConfig();
 
             /**
-             *
+             * Simple config.
              */
             @WithParentName
             Map<String, Map<String, String>> simpleConfig();

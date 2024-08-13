@@ -45,13 +45,9 @@ triage:
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda
-    - id: persistence
-      labels: [area/persistence]
-      title: "persistence"
-      directories:
-        - extensions/jdbc/
     - id: db2
-      labels: [area/persistence]
+      # There's no label for DB2, and JDBC/reactive-clients are handled elsewhere.
+      labels: []
       title: "db2"
       notify: [mswatosh]
       directories:
@@ -109,7 +105,7 @@ triage:
         - devtools/platform-descriptor-json/src/main/resources/codestarts/
         - devtools/platform-descriptor-json/src/main/resources/templates/
     - id: hibernate-reactive
-      labels: [area/hibernate-reactive, area/persistence]
+      labels: [area/hibernate-reactive]
       title: "hibernate.reactive"
       expression: |
         matches("hibernate", title) && matches("reactive", title)
@@ -119,7 +115,7 @@ triage:
       directories:
         - extensions/hibernate-reactive
     - id: hibernate-orm
-      labels: [area/hibernate-orm, area/persistence]
+      labels: [area/hibernate-orm]
       expression: |
         matches("hibernate", title) && !matches("reactive", title)
         && !matches("hibernate.validator", title)
@@ -732,6 +728,12 @@ triage:
       labels: [area/devservices]
       title: "dev.?services?"
       notify: [stuartwdouglas, geoand]
+    - id: jdbc
+      labels: [area/jdbc]
+      title: "jdbc"
+      notify: [barreiro,yrodiere]
+      directories:
+        - extensions/jdbc/
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"

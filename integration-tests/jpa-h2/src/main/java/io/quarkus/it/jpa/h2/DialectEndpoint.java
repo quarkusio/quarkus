@@ -1,6 +1,9 @@
 package io.quarkus.it.jpa.h2;
 
 import java.io.IOException;
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -13,16 +16,27 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 
-@Path("/dialect/version")
+@Path("/dialect/")
 @Produces(MediaType.TEXT_PLAIN)
 public class DialectEndpoint {
     @Inject
     SessionFactory sessionFactory;
+    @Inject
+    DataSource dataSource;
 
     @GET
-    public String test() throws IOException {
+    @Path("version")
+    public String version() throws IOException {
         var version = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
         return DialectVersions.toString(version);
+    }
+
+    @GET
+    @Path("actual-db-version")
+    public String actualDbVersion() throws IOException, SQLException {
+        try (var conn = dataSource.getConnection()) {
+            return conn.getMetaData().getDatabaseProductVersion();
+        }
     }
 
 }

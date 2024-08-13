@@ -477,7 +477,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 resolvedContext.oidcConfig.token.isSubjectRequired(), nonce));
             } catch (Throwable t) {
                 if (t.getCause() instanceof UnresolvableKeyException) {
-                    LOG.debug("No matching JWK key is found, refreshing and repeating the verification");
+                    LOG.debug("No matching JWK key is found, refreshing and repeating the token verification");
                     return refreshJwksAndVerifyTokenUni(resolvedContext, token, enforceAudienceVerification,
                             resolvedContext.oidcConfig.token.isSubjectRequired(), nonce);
                 } else {

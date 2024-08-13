@@ -15,7 +15,6 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
-import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
@@ -36,7 +35,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcProviderClient implements Closeable {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
-    private static final String TENANT_ID_ATTRIBUTE = "oidc-tenant-id";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
     private static final String ACCEPT_HEADER = String.valueOf(HttpHeaders.ACCEPT);
@@ -93,7 +91,7 @@ public class OidcProviderClient implements Closeable {
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
-    public Uni<UserInfo> getUserInfo(String token) {
+    public Uni<UserInfoResponse> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
         return OidcCommonUtils
                 .sendRequest(vertx,
@@ -221,8 +219,8 @@ public class OidcProviderClient implements Closeable {
         return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn);
     }
 
-    private UserInfo getUserInfo(HttpResponse<Buffer> resp) {
-        return new UserInfo(getString(metadata.getUserInfoUri(), resp));
+    private UserInfoResponse getUserInfo(HttpResponse<Buffer> resp) {
+        return new UserInfoResponse(resp.getHeader(CONTENT_TYPE_HEADER), getString(metadata.getUserInfoUri(), resp));
     }
 
     private TokenIntrospection getTokenIntrospection(HttpResponse<Buffer> resp) {
@@ -290,4 +288,7 @@ public class OidcProviderClient implements Closeable {
     public WebClient getWebClient() {
         return client;
     }
+
+    static record UserInfoResponse(String contentType, String data) {
+    };
 }

@@ -7,23 +7,33 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.util.Date;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKey;
 
+import org.awaitility.core.ThrowingRunnable;
 import org.hamcrest.Matchers;
 import org.htmlunit.SilentCssErrorHandler;
 import org.htmlunit.TextPage;
@@ -33,6 +43,7 @@ import org.htmlunit.WebResponse;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlPage;
 import org.htmlunit.util.Cookie;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +60,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
@@ -361,6 +373,43 @@ public class CodeFlowAuthorizationTest {
                 .body(Matchers.equalTo("alice:alice:alice-certificate, cache size: 0, TenantConfigResolver: false"));
 
         clearCache();
+        checkSignedUserInfoRecordInLog();
+    }
+
+    private void checkSignedUserInfoRecordInLog() {
+        final Path logDirectory = Paths.get(".", "target");
+        given().await().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(new ThrowingRunnable() {
+                    @Override
+                    public void run() throws Throwable {
+                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        boolean fileExists = Files.exists(accessLogFilePath);
+                        if (!fileExists) {
+                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
+                            fileExists = Files.exists(accessLogFilePath);
+                        }
+                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                                "quarkus log file " + accessLogFilePath + " is missing");
+
+                        boolean signedUserInfoLogDetected = false;
+
+                        try (BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
+                                        StandardCharsets.UTF_8))) {
+                            String line = null;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains("Verifying the signed UserInfo with the local JWK keys: ey")) {
+                                    signedUserInfoLogDetected = true;
+                                    break;
+                                }
+                            }
+                        }
+                        assertTrue(signedUserInfoLogDetected,
+                                "Log file must contain a record confirming that signed UserInfo is returned");
+
+                    }
+                });
     }
 
     @Test
@@ -563,6 +612,18 @@ public class CodeFlowAuthorizationTest {
                                         + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\","
                                         + "\"expires_in\": 305"
                                         + "}")));
+
+        wireMockServer.stubFor(
+                get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/signeduserinfo"))
+                        .withHeader("Authorization", containing("Bearer ey"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "application/jwt")
+                                .withBody(
+                                        Jwt.preferredUserName("alice")
+                                                .issuer("https://server.example.com")
+                                                .audience("quarkus-web-app")
+                                                .jws()
+                                                .keyId("1").sign("privateKey.jwk"))));
 
     }
 

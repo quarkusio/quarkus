@@ -41,6 +41,7 @@ import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.OidcProviderClient.UserInfoResponse;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -65,6 +66,7 @@ public class OidcProvider implements Closeable {
             AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
+    private static final String APPLICATION_JWT_CONTENT_TYPE = "application/jwt";
     static final String ANY_ISSUER = "any";
 
     private final List<Validator> customValidators;
@@ -407,7 +409,40 @@ public class OidcProvider implements Closeable {
     }
 
     public Uni<UserInfo> getUserInfo(String accessToken) {
-        return client.getUserInfo(accessToken);
+        return client.getUserInfo(accessToken).onItem()
+                .transformToUni(new Function<UserInfoResponse, Uni<? extends UserInfo>>() {
+
+                    @Override
+                    public Uni<UserInfo> apply(UserInfoResponse response) {
+                        if (APPLICATION_JWT_CONTENT_TYPE.equals(response.contentType())) {
+                            if (oidcConfig.jwks.resolveEarly) {
+                                try {
+                                    LOG.debugf("Verifying the signed UserInfo with the local JWK keys: %s", response.data());
+                                    return Uni.createFrom().item(
+                                            new UserInfo(
+                                                    verifyJwtToken(response.data(), true, false, null).localVerificationResult
+                                                            .encode()));
+                                } catch (Throwable t) {
+                                    if (t.getCause() instanceof UnresolvableKeyException) {
+                                        LOG.debug(
+                                                "No matching JWK key is found, refreshing and repeating the signed UserInfo verification");
+                                        return refreshJwksAndVerifyJwtToken(response.data(), true, false, null)
+                                                .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                                    } else {
+                                        LOG.debugf("Signed UserInfo verification has failed: %s", t.getMessage());
+                                        return Uni.createFrom().failure(t);
+                                    }
+                                }
+                            } else {
+                                return getKeyResolverAndVerifyJwtToken(new TokenCredential(response.data(), "userinfo"), true,
+                                        false, null, true)
+                                        .onItem().transform(v -> new UserInfo(v.localVerificationResult.encode()));
+                            }
+                        } else {
+                            return Uni.createFrom().item(new UserInfo(response.data()));
+                        }
+                    }
+                });
     }
 
     public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri, String codeVerifier) {

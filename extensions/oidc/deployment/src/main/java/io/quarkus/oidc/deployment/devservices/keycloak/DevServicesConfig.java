@@ -87,6 +87,9 @@ public class DevServicesConfig {
      * A comma-separated list of class or file system paths to Keycloak realm files.
      * This list is used to initialize Keycloak.
      * The first value in this list is used to initialize default tenant connection properties.
+     * <p>
+     * To learn more about Keycloak realm files, consult the <a href="https://www.keycloak.org/server/importExport">Importing
+     * and Exporting Keycloak Realms documentation</a>.
      */
     @ConfigItem
     public Optional<List<String>> realmPath;

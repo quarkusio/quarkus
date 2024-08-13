@@ -117,13 +117,12 @@ public class ElementUtil {
      */
     public boolean isLocalClass(TypeElement clazz) {
         try {
-            TypeElement topLevelClass = clazz;
-            if (clazz.getNestingKind().isNested()) {
-                topLevelClass = (TypeElement) clazz.getEnclosingElement();
+            while (clazz.getNestingKind().isNested()) {
+                clazz = (TypeElement) clazz.getEnclosingElement();
             }
 
             processingEnv.getFiler().getResource(StandardLocation.SOURCE_PATH, "",
-                    topLevelClass.getQualifiedName().toString().replace('.', '/') + ".java");
+                    clazz.getQualifiedName().toString().replace('.', '/') + ".java");
             return true;
         } catch (Exception e) {
             return false;

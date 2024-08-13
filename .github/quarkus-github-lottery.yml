@@ -28,7 +28,7 @@ participants:
       days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch"]
+      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch", "area/jdbc"]
       days: ["WEDNESDAY"]
       feedback:
         needed:

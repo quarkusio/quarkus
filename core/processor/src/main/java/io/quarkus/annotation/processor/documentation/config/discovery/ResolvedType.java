@@ -4,6 +4,8 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
+import io.quarkus.annotation.processor.documentation.config.util.TypeUtil;
+
 public record ResolvedType(
         TypeMirror wrapperType,
         TypeMirror unwrappedType,
@@ -73,7 +75,11 @@ public record ResolvedType(
                 unwrappedResolvedType.binaryName, unwrappedResolvedType.qualifiedName, unwrappedResolvedType.simplifiedName,
                 unwrappedResolvedType.isPrimitive,
                 true, unwrappedResolvedType.isList,
-                unwrappedResolvedType.isOptional,
+                unwrappedResolvedType.isOptional
+                        // backwards compatibility with versions before Quarkus 3.14
+                        // see https://github.com/quarkusio/quarkus/issues/42505
+                        || "java.lang.String".equals(unwrappedResolvedType.qualifiedName)
+                        || TypeUtil.isPrimitiveWrapper(unwrappedResolvedType.qualifiedName),
                 unwrappedResolvedType.isDeclared, unwrappedResolvedType.isInterface, unwrappedResolvedType.isClass,
                 unwrappedResolvedType.isEnum, unwrappedResolvedType.isDuration, unwrappedResolvedType.isConfigGroup);
     }

@@ -176,16 +176,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        AnnotationMirror configDocSectionAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
-        if (configDocSectionAnnotation != null) {
-            Boolean sectionGenerated = (Boolean) utils.element().getAnnotationValues(configDocSectionAnnotation)
-                    .get("generated");
-            if (sectionGenerated != null && sectionGenerated) {
-                builder.section(true);
-            } else {
-                builder.section(false);
-            }
-        }
+        handleCommonPropertyAnnotations(builder, fieldAnnotations, resolvedType, sourceName);
 
         discoveryRootElement.addProperty(builder.build());
     }

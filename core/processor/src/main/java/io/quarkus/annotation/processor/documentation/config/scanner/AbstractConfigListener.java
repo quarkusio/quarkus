@@ -10,8 +10,10 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigGroup;
+import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigProperty;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition;
 import io.quarkus.annotation.processor.documentation.config.discovery.EnumDefinition.EnumConstant;
+import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 import io.quarkus.annotation.processor.util.Config;
 import io.quarkus.annotation.processor.util.Utils;
@@ -62,5 +64,29 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
         EnumDefinition enumDefinition = new EnumDefinition(enumTypeElement.getQualifiedName().toString(),
                 enumConstants);
         configCollector.addResolvedEnum(enumDefinition);
+    }
+
+    protected void handleCommonPropertyAnnotations(DiscoveryConfigProperty.Builder builder,
+            Map<String, AnnotationMirror> propertyAnnotations, ResolvedType resolvedType, String sourceName) {
+
+        AnnotationMirror configDocSectionAnnotation = propertyAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
+        if (configDocSectionAnnotation != null) {
+            Boolean sectionGenerated = (Boolean) utils.element().getAnnotationValues(configDocSectionAnnotation)
+                    .get("generated");
+            if (sectionGenerated != null && sectionGenerated) {
+                builder.section(true);
+            } else {
+                builder.section(false);
+            }
+        }
+
+        AnnotationMirror configDocEnum = propertyAnnotations.get(Types.ANNOTATION_CONFIG_DOC_ENUM);
+        if (configDocEnum != null) {
+            Boolean enforceHyphenateValues = (Boolean) utils.element().getAnnotationValues(configDocEnum)
+                    .get("enforceHyphenateValues");
+            if (enforceHyphenateValues != null && enforceHyphenateValues) {
+                builder.enforceHyphenateEnumValues();
+            }
+        }
     }
 }

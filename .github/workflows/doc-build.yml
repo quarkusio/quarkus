@@ -7,12 +7,15 @@ on:
       - '3.0'
     paths:
       - 'core/processor/**'
-      - 'docs/src/main/asciidoc/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
       - '.github/workflows/doc-build.yml'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'docs/src/main/asciidoc/**'
+      - 'core/processor/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
       - '.github/workflows/doc-build.yml'
 
 concurrency:

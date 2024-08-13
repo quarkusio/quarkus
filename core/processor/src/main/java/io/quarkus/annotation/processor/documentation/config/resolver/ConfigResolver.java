@@ -172,9 +172,11 @@ public class ConfigResolver {
             }
 
             String potentiallyMappedPath = propertyPath;
+            boolean optional = discoveryConfigProperty.getType().isOptional();
 
             if (discoveryConfigProperty.getType().isMap()) {
-                // it is a leaf pass through map
+                // it is a leaf pass through map, it is always optional
+                optional = true;
                 typeQualifiedName = discoveryConfigProperty.getType().wrapperType().toString();
                 typeSimplifiedName = utils.element().simplifyGenericType(discoveryConfigProperty.getType().wrapperType());
 
@@ -192,7 +194,7 @@ public class ConfigResolver {
                     discoveryConfigProperty.getSourceName(), potentiallyMappedPath, additionalPaths,
                     ConfigNamingUtil.toEnvVarName(potentiallyMappedPath), typeQualifiedName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),
-                    discoveryConfigProperty.getType().isOptional(), discoveryConfigProperty.getMapKey(),
+                    optional, discoveryConfigProperty.getMapKey(),
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),
                     discoveryConfigProperty.isConverted(),
                     discoveryConfigProperty.getType().isEnum(),

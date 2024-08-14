@@ -7,7 +7,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public interface PathTree {
 
@@ -83,6 +82,9 @@ public interface PathTree {
 
     /**
      * The roots of the path tree.
+     * <p>
+     * Note that for archives, it will return the path to the archive itself,
+     * not a path that you can browse.
      *
      * @return roots of the path tree
      */
@@ -98,12 +100,12 @@ public interface PathTree {
     }
 
     /**
-     * If {@code META-INF/MANIFEST.MF} found, reads it and returns an instance of {@link java.util.jar.Manifest},
-     * otherwise returns null.
+     * If {@code META-INF/MANIFEST.MF} found, reads it and returns an instance of {@link ManifestAttributes},
+     * a trimmed down version of the Manifest, otherwise returns null.
      *
      * @return parsed {@code META-INF/MANIFEST.MF} if it's found, otherwise {@code null}
      */
-    Manifest getManifest();
+    ManifestAttributes getManifestAttributes();
 
     /**
      * Walks the tree.

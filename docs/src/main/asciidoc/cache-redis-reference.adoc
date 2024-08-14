@@ -20,7 +20,7 @@ include::{includes}/extension-status.adoc[]
 
 When using Redis as the backend for Quarkus cache, each cached item will be stored in Redis:
 
-- The backend uses the _<default>_ Redis client (if not configured otherwise), so make sure it's configured (or use the xref:redis-dev-services.adoc[redis dev service])
+- The backend uses the _<default>_ Redis client (if not configured otherwise), so make sure it's configured (or use the xref:redis-dev-services.adoc[Redis Dev Service])
 - the Redis key is built as follows: `cache:$cache-name:$cache-key`, where `cache-key` is the key the application uses.
 - the value is encoded to JSON if needed
 

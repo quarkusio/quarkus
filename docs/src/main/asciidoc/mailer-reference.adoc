@@ -673,6 +673,27 @@ quarkus.mailer.tls=true
 quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
 ----
 
+=== Office 365
+
+==== Prerequisites
+
+1. Enable SMTP Access to your Office 365 mailbox, you can do it from the administration console (see link:https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission[this guide] for more information)
+
+==== Configuration
+
+[source, properties]
+----
+quarkus.mailer.from=NAME<YOUREMAIL@YOURDOMAIN.COM>
+quarkus.mailer.host=smtp.office365.com
+quarkus.mailer.port=587
+quarkus.mailer.username=YOUREMAIL@YOURDOMAIN.COM
+quarkus.mailer.password=YOURPASSWORD
+quarkus.mailer.auth-methods=LOGIN
+quarkus.mailer.login=REQUIRED
+
+quarkus.mailer.mock=false # In dev mode, prevent from using the mock SMTP server
+----
+
 
 [[configuration-reference]]
 == Mailer Configuration Reference

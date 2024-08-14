@@ -19,6 +19,7 @@ class CodestartProcessorTest {
         Map<String, String> spec = new HashMap<>();
         spec.put("test/foo.tt", "forbidden");
         spec.put("*", "replace");
+        spec.put("docker-compose-include-test.yml", "docker-compose-includes");
 
         final CodestartProcessor processor = new CodestartProcessor(
                 MessageWriter.info(),
@@ -29,6 +30,8 @@ class CodestartProcessorTest {
 
         assertThat(processor.getSelectedDefaultStrategy()).isEqualTo(CodestartFileStrategyHandler.BY_NAME.get("replace"));
         assertThat(processor.getStrategy("test/foo.tt")).hasValue(CodestartFileStrategyHandler.BY_NAME.get("forbidden"));
+        assertThat(processor.getStrategy("docker-compose-include-test.yml"))
+                .hasValue(CodestartFileStrategyHandler.BY_NAME.get("docker-compose-includes"));
     }
 
     @Test

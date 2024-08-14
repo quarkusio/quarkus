@@ -207,7 +207,7 @@ In order to set up OIDC for GitHub you need to create a new OAuth application in
 
 image::oidc-github-1.png[role="thumb"]
 
-Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/_renarde/security/github-success`
+Make sure to fill in the appropriate details, but more importantly the Authorization Callback URL, set to `http://localhost:8080/_renarde/security/oidc-success`
 (if you intend to test this using the Quarkus dev mode).
 
 Now click on `Register application` and you'll be shown your application page:

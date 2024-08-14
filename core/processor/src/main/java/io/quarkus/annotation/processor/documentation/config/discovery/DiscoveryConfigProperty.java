@@ -15,12 +15,13 @@ public class DiscoveryConfigProperty {
     private final boolean unnamedMapKey;
     private final ResolvedType type;
     private final boolean converted;
+    private final boolean enforceHyphenateEnumValue;
     private final boolean section;
     private final boolean sectionGenerated;
 
     public DiscoveryConfigProperty(String path, String sourceClass, String sourceName, String defaultValue,
             String defaultValueForDoc, boolean deprecated, String mapKey, boolean unnamedMapKey,
-            ResolvedType type, boolean converted,
+            ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
             boolean section, boolean sectionGenerated) {
         this.path = path;
         this.sourceClass = sourceClass;
@@ -32,6 +33,7 @@ public class DiscoveryConfigProperty {
         this.unnamedMapKey = unnamedMapKey;
         this.type = type;
         this.converted = converted;
+        this.enforceHyphenateEnumValue = enforceHyphenateEnumValue;
         this.section = section;
         this.sectionGenerated = sectionGenerated;
     }
@@ -74,6 +76,10 @@ public class DiscoveryConfigProperty {
 
     public boolean isConverted() {
         return converted;
+    }
+
+    public boolean isEnforceHyphenateEnumValue() {
+        return enforceHyphenateEnumValue;
     }
 
     public boolean isSection() {
@@ -132,6 +138,7 @@ public class DiscoveryConfigProperty {
         private String mapKey;
         private boolean unnamedMapKey = false;
         private boolean converted = false;
+        private boolean enforceHyphenateEnumValue = false;
         private boolean section = false;
         private boolean sectionGenerated = false;
 
@@ -176,6 +183,11 @@ public class DiscoveryConfigProperty {
             return this;
         }
 
+        public Builder enforceHyphenateEnumValues() {
+            this.enforceHyphenateEnumValue = true;
+            return this;
+        }
+
         public Builder section(boolean generated) {
             this.section = true;
             this.sectionGenerated = generated;
@@ -191,7 +203,7 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceClass, sourceName, defaultValue, defaultValueForDoc, deprecated,
-                    mapKey, unnamedMapKey, type, converted, section, sectionGenerated);
+                    mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
         }
     }
 }

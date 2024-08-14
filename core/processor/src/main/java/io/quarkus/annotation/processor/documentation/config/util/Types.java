@@ -31,6 +31,7 @@ public final class Types {
     public static final String ANNOTATION_CONFIG_DOC_DEFAULT = "io.quarkus.runtime.annotations.ConfigDocDefault";
     public static final String ANNOTATION_CONFIG_DOC_FILE_NAME = "io.quarkus.runtime.annotations.ConfigDocFilename";
     public static final String ANNOTATION_CONFIG_DOC_PREFIX = "io.quarkus.runtime.annotations.ConfigDocPrefix";
+    public static final String ANNOTATION_CONFIG_DOC_ENUM = "io.quarkus.runtime.annotations.ConfigDocEnum";
 
     public static final String ANNOTATION_CONFIG_WITH_CONVERTER = "io.smallrye.config.WithConverter";
     public static final String ANNOTATION_CONFIG_WITH_NAME = "io.smallrye.config.WithName";

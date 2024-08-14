@@ -174,16 +174,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
             builder.converted();
         }
 
-        AnnotationMirror configDocSectionAnnotation = methodAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
-        if (configDocSectionAnnotation != null) {
-            Boolean sectionGenerated = (Boolean) utils.element().getAnnotationValues(configDocSectionAnnotation)
-                    .get("generated");
-            if (sectionGenerated != null && sectionGenerated) {
-                builder.section(true);
-            } else {
-                builder.section(false);
-            }
-        }
+        handleCommonPropertyAnnotations(builder, methodAnnotations, resolvedType, sourceName);
 
         discoveryRootElement.addProperty(builder.build());
     }

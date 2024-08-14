@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -158,9 +159,14 @@ public class FilerUtil {
 
                 return Optional.of(extensionMetadata);
             }
+        } catch (NoSuchFileException e) {
+            // ignore
+            // we could get the URI, create a Path and check that the path exists but it seems a bit overkill
+            return Optional.empty();
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Kind.WARNING,
-                    "Unable to read extension metadata file: " + extensionMetadataDescriptor + " because of " + e.getMessage());
+                    "Unable to read extension metadata file: " + extensionMetadataDescriptor + " because of "
+                            + e.getClass().getName() + ": " + e.getMessage());
             return Optional.empty();
         }
     }

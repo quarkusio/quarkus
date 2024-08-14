@@ -1155,7 +1155,7 @@ quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=exchange
 quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 
-quarkus.oidc-token-propagation.exchange-token=true <1>
+quarkus.resteasy-client-oidc-token-propagation.exchange-token=true <1>
 ----
 <1> Please note that the `exchange-token` configuration property is ignored when the OidcClient name is set with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 
@@ -1173,10 +1173,10 @@ quarkus.oidc-client.grant.type=jwt
 quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
 quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 
-quarkus.oidc-token-propagation.exchange-token=true
+quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 ----
 
-`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation-reactive.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
+`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-token-propagation.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 
 [[token-propagation]]
 == Token Propagation
@@ -1231,7 +1231,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.oidc-token-propagation.register-filter` property is set to `true` and `quarkus.oidc-token-propagation.json-web-token` property is set to `false` (which is a default value).
+Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.resteasy-client-oidc-token-propagation.register-filter` property is set to `true` and `quarkus.resteasy-client-oidc-token-propagation.json-web-token` property is set to `false` (which is a default value).
 
 ==== Exchange token before propagation
 
@@ -1245,7 +1245,7 @@ quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=exchange
 quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 
-quarkus.oidc-token-propagation.exchange-token=true
+quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 ----
 
 If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token, then you can configure `AccessTokenRequestFilter` to exchange the token like this:
@@ -1260,12 +1260,12 @@ quarkus.oidc-client.grant.type=jwt
 quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
 quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 
-quarkus.oidc-token-propagation.exchange-token=true
+quarkus.resteasy-client-oidc-token-propagation.exchange-token=true
 ----
 
 Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
-`AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation.client-name` configuration property.
+`AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.resteasy-client-oidc-token-propagation.client-name` configuration property.
 
 === RestClient JsonWebTokenRequestFilter
 
@@ -1307,7 +1307,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MicroProfile REST or Jakarta REST clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.resteasy-client-oidc-token-propagation.json-web-token` properties are set to `true`.
+Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MicroProfile REST or Jakarta REST clients if both `quarkus.resteasy-client-oidc-token-propagation.register-filter` and `quarkus.resteasy-client-oidc-token-propagation.json-web-token` properties are set to `true`.
 
 ==== Update token before propagation
 

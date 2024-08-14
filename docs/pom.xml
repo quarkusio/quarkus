@@ -3477,8 +3477,6 @@
                         <goals>
                             <goal>dot</goal>
                         </goals>
-                        <configuration>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -3521,6 +3519,16 @@
                         <executions>
                             <execution>
                                 <id>default-install</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>us.bryon</groupId>
+                        <artifactId>graphviz-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>dot-files</id>
                                 <phase>none</phase>
                             </execution>
                         </executions>

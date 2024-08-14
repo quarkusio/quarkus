@@ -7,12 +7,31 @@ on:
       - '3.0'
     paths:
       - 'core/processor/**'
-      - 'docs/src/main/asciidoc/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
+      - 'extensions/**/pom.xml'
+      - 'extensions/**/*Config*.java'
+      - 'extensions/core/runtime/pom.xml'
+      - 'extensions/core/runtime/**/*Config*.java'
+      - 'extensions/core/deployment/pom.xml'
+      - 'extensions/core/deployment/**/*Config*.java'
+      - 'test-framework/jacoco/**/pom.xml'
+      - 'test-framework/jacoco/**/*Config*.java'
       - '.github/workflows/doc-build.yml'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'docs/src/main/asciidoc/**'
+      - 'core/processor/**'
+      - 'devtools/config-doc-maven-plugin/**'
+      - 'docs/**'
+      - 'extensions/**/pom.xml'
+      - 'extensions/**/*Config*.java'
+      - 'extensions/core/runtime/pom.xml'
+      - 'extensions/core/runtime/**/*Config*.java'
+      - 'extensions/core/deployment/pom.xml'
+      - 'extensions/core/deployment/**/*Config*.java'
+      - 'test-framework/jacoco/**/pom.xml'
+      - 'test-framework/jacoco/**/*Config*.java'
       - '.github/workflows/doc-build.yml'
 
 concurrency:

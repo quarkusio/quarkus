@@ -54,6 +54,9 @@ public class ClassPathResourceIndex {
     // let's go with default max segments + 3 for the META-INF/versions/<version> part
     private static final int MAX_SEGMENTS_META_INF_VERSIONS = MAX_SEGMENTS_DEFAULT + 3;
 
+    private static final char SLASH = '/';
+    private static final char DOT = '.';
+
     /**
      * This map is mapped by prefixes.
      */
@@ -148,7 +151,7 @@ public class ClassPathResourceIndex {
      * <p>
      * Probably something we will have to tweak for corner cases but let's try to keep it fast.
      */
-    private static String getResourceKey(String resource) {
+    static String getResourceKey(String resource) {
         // we don't really care about this part, it can be slower
         if (resource.startsWith(META_INF_MAVEN)) {
             return META_INF_MAVEN;
@@ -157,7 +160,6 @@ public class ClassPathResourceIndex {
             // for services, we want to reference the full path
             return resource;
         }
-        StringBuilder prefix = new StringBuilder();
 
         int maxSegments;
         if (resource.startsWith(IO_QUARKUS)) {
@@ -168,27 +170,21 @@ public class ClassPathResourceIndex {
             maxSegments = MAX_SEGMENTS_DEFAULT;
         }
 
-        char[] charArray = resource.toCharArray();
-        int segmentCount = 0;
-        for (char c : charArray) {
-            if (c == '/') {
-                segmentCount++;
-                if (segmentCount == maxSegments) {
-                    return prefix.toString();
+        int position = 0;
+        for (int i = 0; i < maxSegments; i++) {
+            int slashPosition = resource.indexOf(SLASH, position);
+            if (slashPosition > 0) {
+                position = slashPosition + 1;
+            } else {
+                if (i > 0 && resource.substring(position).indexOf(DOT) >= 0) {
+                    break;
+                } else {
+                    return resource;
                 }
             }
-            prefix.append(c);
         }
 
-        // let's drop the file name if we haven't truncated anything and we detect it's a file
-        if (segmentCount > 0 && segmentCount < maxSegments) {
-            int lastSlash = prefix.lastIndexOf("/");
-            if (prefix.substring(lastSlash).contains(".")) {
-                prefix.setLength(lastSlash);
-            }
-        }
-
-        return prefix.toString();
+        return resource.substring(0, position - 1);
     }
 
     public static class Builder {

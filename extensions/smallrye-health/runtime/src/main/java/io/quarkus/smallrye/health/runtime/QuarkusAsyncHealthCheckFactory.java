@@ -1,14 +1,19 @@
 package io.quarkus.smallrye.health.runtime;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.api.AsyncHealthCheck;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.MutinyHelper;
+import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 /**
@@ -27,7 +32,19 @@ public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
     @Override
     public Uni<HealthCheckResponse> callSync(HealthCheck healthCheck) {
         Uni<HealthCheckResponse> healthCheckResponseUni = super.callSync(healthCheck);
-        return healthCheckResponseUni.runSubscriptionOn(MutinyHelper.blockingExecutor(vertx, false));
+        return healthCheckResponseUni.runSubscriptionOn(new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                Context duplicatedContext = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
+                duplicatedContext.executeBlocking(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        command.run();
+                        return null;
+                    }
+                }, false);
+            }
+        });
     }
 
     @Override

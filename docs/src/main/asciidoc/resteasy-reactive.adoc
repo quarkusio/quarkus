@@ -1302,10 +1302,11 @@ public class Person {
     @SecureField(rolesAllowed = "${role:admin}")                 <1>
     private String address;
 
-    public Person(Long id, String first, String last) {
+    public Person(Long id, String first, String last, String address) {
         this.id = id;
         this.first = first;
         this.last = last;
+        this.address = address;
     }
 
     public Long getId() {
@@ -1348,7 +1349,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
 @Path("person")
-public class Person {
+public class PersonResource {
 
     @Path("{id}")
     @GET
@@ -2746,6 +2747,65 @@ public class Endpoint {
     }
 }
 ----
+
+==== Separating Query parameter values
+
+Normally a collection of `String` values is used to capture the values used in multiple occurrences of the same query parameter.
+For example, for the following resource method:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and the following request:
+
+[source,http]
+----
+GET /hello?name=foo&name=bar HTTP/1.1
+----
+
+the `names` variable will contain both `foo` and `bar` and the response will be `hello foo bar`.
+
+It is not uncommon however to need to convert a single query parameter into a collection of values based on some delimiting character. That is where the `@org.jboss.resteasy.reactive.Separator` annotation comes into play.
+
+If we update the resource method to:
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery("name") @Separator(",") List<String> names) {
+        if (names.isEmpty()) {
+            return "hello world";
+        } else {
+            return "hello " + String.join(" ", names);
+        }
+    }
+}
+----
+
+and use the following request:
+
+[source,http]
+----
+GET /hello?name=foo,bar HTTP/1.1
+----
+
+then the response will be `hello foo bar`.
 
 ==== Handling dates
 

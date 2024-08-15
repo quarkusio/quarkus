@@ -443,7 +443,7 @@ public class DevMojo extends AbstractMojo {
             })) {
                 return scanner.nextLine();
             } catch (Exception e) {
-                getLog().warn("Failed to collect user input for analytics", e);
+                getLog().debug("Failed to collect user input for analytics", e);
                 return "";
             }
         });

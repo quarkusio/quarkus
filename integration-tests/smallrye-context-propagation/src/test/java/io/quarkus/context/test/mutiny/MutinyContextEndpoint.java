@@ -1,6 +1,7 @@
 package io.quarkus.context.test.mutiny;
 
 import java.net.MalformedURLException;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -460,5 +461,22 @@ public class MutinyContextEndpoint {
         // now delete both entities
         Assertions.assertEquals(2, Person.deleteAll());
         return ret;
+    }
+
+    @GET
+    @Path("/bug40852")
+    public String bug40852() {
+        var futureW = Uni
+                .createFrom()
+                .item("item")
+                .onItem()
+                .delayIt()
+                .by(Duration.ofMillis(100))
+                .subscribeAsCompletionStage();
+
+        futureW.whenComplete((result, error) -> {
+            Assertions.assertEquals(true, futureW.isDone());
+        }).join();
+        return "OK";
     }
 }

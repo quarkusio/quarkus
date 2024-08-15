@@ -342,7 +342,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             })) {
                 return scanner.nextLine();
             } catch (Exception e) {
-                getLogger().warn("Failed to collect user input for analytics", e);
+                getLogger().debug("Failed to collect user input for analytics", e);
                 return "";
             }
         });

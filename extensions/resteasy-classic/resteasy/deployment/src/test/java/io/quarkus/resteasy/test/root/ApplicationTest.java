@@ -42,7 +42,7 @@ class ApplicationTest {
                             ResponseFilter1.class, ResponseFilter2.class,
                             ResponseFilter3.class, ResponseFilter4.class, ResponseFilter5.class, ResponseFilter6.class,
                             Feature1.class, Feature2.class, DynamicFeature1.class, DynamicFeature2.class,
-                            ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class));
+                            ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class, AppTest2.class));
 
     @DisplayName("Should access to ok of resource 1 and provide a response with the expected headers")
     @Test
@@ -308,5 +308,9 @@ class ApplicationTest {
                     Arrays.asList(
                             new ResponseFilter1(), new DynamicFeature1()));
         }
+    }
+
+    public static abstract class AppTest2 extends Application {
+
     }
 }

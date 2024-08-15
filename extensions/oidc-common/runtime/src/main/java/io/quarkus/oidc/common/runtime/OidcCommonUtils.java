@@ -156,8 +156,8 @@ public class OidcCommonUtils {
                 }
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
-                        "OIDC truststore file does not exist or can not be read",
-                        oidcConfig.tls.trustStoreFile.get().toString()), ex);
+                        "OIDC truststore file %s does not exist or can not be read",
+                        oidcConfig.tls.trustStoreFile.get()), ex);
             }
         }
         if (oidcConfig.tls.keyStoreFile.isPresent()) {
@@ -178,8 +178,8 @@ public class OidcCommonUtils {
 
             } catch (IOException ex) {
                 throw new ConfigurationException(String.format(
-                        "OIDC keystore file does not exist or can not be read",
-                        oidcConfig.tls.keyStoreFile.get().toString()), ex);
+                        "OIDC keystore file %s does not exist or can not be read",
+                        oidcConfig.tls.keyStoreFile.get()), ex);
             }
         }
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());

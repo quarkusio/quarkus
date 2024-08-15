@@ -83,7 +83,7 @@ public class CheckCrossReferences {
 
         if (!Files.exists(referenceIndexPath) || !Files.isReadable(referenceIndexPath)) {
             throw new IllegalStateException(
-                    String.format("Reference index does not exist or is not readable", referenceIndexPath.toAbsolutePath()));
+                    String.format("Reference index %s does not exist or is not readable", referenceIndexPath.toAbsolutePath()));
         }
 
         ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));

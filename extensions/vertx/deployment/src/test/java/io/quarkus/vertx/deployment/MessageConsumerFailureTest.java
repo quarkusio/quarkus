@@ -46,14 +46,14 @@ public class MessageConsumerFailureTest {
         verifyFailure("foo-completion-stage", "java.lang.NullPointerException: Something is null", false);
         verifyFailure("foo-completion-stage-failure", "boom", true);
         verifyFailure("foo-uni", "java.lang.NullPointerException: Something is null", false);
-        verifyFailure("foo-uni-failure", "boom", true);
+        verifyFailure("foo-uni-failure", "java.io.IOException: boom", true);
 
         verifyFailure("foo-blocking", "java.lang.IllegalStateException: Red is dead", false);
         verifyFailure("foo-message-blocking", "java.lang.NullPointerException", false);
         verifyFailure("foo-completion-stage-blocking", "java.lang.NullPointerException: Something is null", false);
         verifyFailure("foo-completion-stage-failure-blocking", "boom", true);
         verifyFailure("foo-uni-blocking", "java.lang.NullPointerException: Something is null", false);
-        verifyFailure("foo-uni-failure-blocking", "boom", true);
+        verifyFailure("foo-uni-failure-blocking", "java.io.IOException: boom", true);
     }
 
     @Test

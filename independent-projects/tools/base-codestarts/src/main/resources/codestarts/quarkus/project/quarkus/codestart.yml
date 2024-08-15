@@ -10,8 +10,10 @@ output-strategy:
   ".gitignore": append
   "src/main/resources/META-INF/resources/index.html": content-merge
   "src/main/resources/application.yml": smart-config-merge
+  "src/main/resources/application-*.yml": smart-config-merge
   "src/main/resources/application.properties": forbidden
   "src/test/resources/application.yml": smart-config-merge
+  "src/test/resources/application-*.yml": smart-config-merge
   "src/test/resources/application.properties": forbidden
   "*.java": smart-package
   "*.kt": smart-package

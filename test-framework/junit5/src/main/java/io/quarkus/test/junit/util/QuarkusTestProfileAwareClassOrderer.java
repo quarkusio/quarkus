@@ -71,10 +71,28 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     @Override
     public void orderClasses(ClassOrdererContext context) {
+        // The heavy lifting of understanding profiles and resources has been done elsewhere; we just need to group tests by classloader
+        // TODO need to honour the secondary orderer?
+        context.getClassDescriptors().sort(comparator);
+    }
+
+    // TODO condense this
+    private static final Comparator<ClassDescriptor> comparator = new Comparator<ClassDescriptor>() {
+        @Override
+        public int compare(ClassDescriptor o1, ClassDescriptor o2) {
+            return o1.getTestClass().getClassLoader().getName().compareTo(o2.getTestClass().getClassLoader().getName());
+        }
+    };
+
+    public void oldOrderClasses(ClassOrdererContext context) {
+
         // don't do anything if there is just one test class or the current order request is for @Nested tests
         if (context.getClassDescriptors().size() <= 1 || context.getClassDescriptors().get(0).isAnnotated(Nested.class)) {
             return;
         }
+
+        // TODO delete all this
+
         var prefixQuarkusTest = getConfigParam(
                 CFGKEY_ORDER_PREFIX_QUARKUS_TEST,
                 DEFAULT_ORDER_PREFIX_QUARKUS_TEST,

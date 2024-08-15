@@ -54,6 +54,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected QuarkusTestExtensionState getState(ExtensionContext context) {
         ExtensionContext.Store store = getStoreFromContext(context);
+        Object o = store.get(QuarkusTestExtensionState.class.getName(), Object.class);
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
         if (state != null) {
             Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
@@ -76,13 +77,17 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
     }
 
     protected void setState(ExtensionContext context, QuarkusTestExtensionState state) {
+        System.out.println("HOLLY setting state " + state.getClass() + " cl:" + state.getClass().getClassLoader());
         ExtensionContext.Store store = getStoreFromContext(context);
         store.put(QuarkusTestExtensionState.class.getName(), state);
         store.put(IO_QUARKUS_TESTING_TYPE, this.getClass());
     }
 
     protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {
+        System.out.println("HOLLY getting store " + this.getClass().getClassLoader());
         ExtensionContext root = context.getRoot();
+        System.out.println("HOLLY root " + root);
+        System.out.println("HOLLY store " + root.getStore(ExtensionContext.Namespace.GLOBAL));
         return root.getStore(ExtensionContext.Namespace.GLOBAL);
     }
 

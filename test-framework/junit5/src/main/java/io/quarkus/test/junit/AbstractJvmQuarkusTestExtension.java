@@ -233,7 +233,8 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         // TODO
         System.out.println(
-                "HOLLY checking is new " + runningQuarkusApplication);
+                "HOLLY checking is new for " + currentJUnitTestClass + " with running app " + runningQuarkusApplication);
+        System.out.println("HOLLY abstract cl for is new check " + this.getClass().getClassLoader());
         if (runningQuarkusApplication != null) {
             System.out.println(
                     "HOLLY checking is new " + runningQuarkusApplication.getClassLoader()

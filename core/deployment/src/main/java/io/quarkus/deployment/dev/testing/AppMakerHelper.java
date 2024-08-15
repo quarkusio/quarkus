@@ -543,7 +543,7 @@ public class AppMakerHelper {
     // Note that curated application cannot be re-used between restarts, so this application
     // should have been freshly created
     // TODO maybe don't even accept one?
-    public QuarkusClassLoader getStartupAction(Class testClass, CuratedApplication curatedApplication,
+    public DumbHolder getStartupAction(Class testClass, CuratedApplication curatedApplication,
             boolean isContinuousTesting, Class ignoredProfile)
             throws Exception {
 
@@ -557,14 +557,26 @@ public class AppMakerHelper {
 
         testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
-        System.out.println("HOLLY about to make app for " + testClass);
-        StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
+        try {
+            System.out.println("HOLLY about to make app for " + testClass);
+            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
 
-        // TODO this seems to be safe to do because the classloaders are the same
-        // TODO not doing it startupAction.store();
-        System.out.println("HOLLY did store " + startupAction);
-        return (QuarkusClassLoader) startupAction.getClassLoader();
+            // TODO this seems to be safe to do because the classloaders are the same
+            // TODO not doing it startupAction.store();
+            System.out.println("HOLLY did store " + startupAction);
+            return new DumbHolder(startupAction, result);
+        } catch (RuntimeException e) {
+            // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
+            // Give a little help to debuggers
+            System.out.println("HOLLY IT ALL WENT WRONG + + e" + e);
+            e.printStackTrace();
+            throw e;
 
+        }
+
+    }
+
+    record DumbHolder(StartupAction startupAction, PrepareResult prepareResult) {
     }
 
     //    public QuarkusClassLoader doJavaStart(PathList location, CuratedApplication curatedApplication, boolean isContinuousTesting)

@@ -3,15 +3,20 @@ package io.quarkus.deployment.dev.testing;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -21,6 +26,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.junit.QuarkusTestProfile;
 
 /**
  * JUnit has many interceptors and listeners, but it does not allow us to intercept test discovery in a fine-grained way that
@@ -51,7 +57,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
 
     // TODO does this need to be a thread safe maps?
     private final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
-    private final Map<String, QuarkusClassLoader> runtimeClassLoaders = new HashMap<>();
+    private final Map<String, AppMakerHelper.DumbHolder> runtimeClassLoaders = new HashMap<>();
     private final ClassLoader parent;
 
     /*
@@ -162,7 +168,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                 }
             }
 
-            System.out.println("HOLLY yay! did load " + name);
+            System.out.println("HOLLY canary did load " + name);
             System.out.println("ANNOTATIONS " + Arrays.toString(fromCanary.getAnnotations()));
             Arrays.stream(fromCanary.getAnnotations())
                     .map(Annotation::annotationType)
@@ -173,6 +179,7 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
             if (profiles != null) {
                 // TODO the good is that we're re-using what JUnitRunner already worked out, the bad is that this is seriously clunky with multiple code paths, brittle information sharing ...
                 // TODO at the very least, should we have a test landscape holder class?
+                // TODO and what if JUnitRunner wasn't invoked, because this wasn't dev mode?!
                 isMainTest = quarkusMainTestClasses.contains(name);
                 // The JUnitRunner counts main tests as quarkus tests
                 isQuarkusTest = quarkusTestClasses.contains(name) && !isMainTest;
@@ -243,6 +250,13 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
                         .getParent());
                 Class thing = runtimeClassLoader.loadClass(name);
                 System.out.println("HOLLY did load " + thing);
+                System.out.println(
+                        "HOLLY after cl TCCL is " + Thread.currentThread().getContextClassLoader() + " loaded " + name);
+                if (Thread.currentThread().getContextClassLoader() != this) {
+                    // TODO this should not be needed, sort it out?
+                    // TODO or is this actually a sensible tidy up at the end of creating the application? is leaving itself on the TCCL a sensible thing for create app to do?
+                    Thread.currentThread().setContextClassLoader(this);
+                }
                 return thing;
             } else {
                 System.out.println("HOLLY sending to " + super.getName());
@@ -268,23 +282,114 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         //  boolean reloadTestResources = isNewTestClass && (hasPerTestResources || hasPerTestResources(extensionContext));
         //  if ((state == null && !failedBoot)) { //  TODO never reload, as it will not work || wrongProfile || reloadTestResources) {
 
-        QuarkusClassLoader runtimeClassLoader = runtimeClassLoaders.get(key);
-        if (runtimeClassLoader == null) {
-            try {
-                runtimeClassLoader = makeClassLoader(key, requiredTestClass, profile);
-                // TODO diagnostic, assume everything is a per-test resource
-                boolean hasPerTestResources = profile != null;
-                if (!hasPerTestResources) {
-                    runtimeClassLoaders.put(key, runtimeClassLoader);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        try {
+
+            AppMakerHelper.DumbHolder holder = runtimeClassLoaders.get(key);
+            if (holder == null) {
+                holder = makeClassLoader(key, requiredTestClass, profile);
+
+                runtimeClassLoaders.put(key, holder);
+
             }
+
+            // TODO hack
+            // Once we've made the loader, we know that we have a startup action
+
+            // should be
+            //            getAdditionalTestResources(profileInstance, startupAction.getClassLoader()),
+            //                    profileInstance != null && profileInstance.disableGlobalTestResources(),
+            //                    startupAction.getDevServicesProperties(), Optional.empty(), result.testClassLocation);
+
+            AppMakerHelper.PrepareResult result = holder.prepareResult();
+            QuarkusTestProfile profileInstance = holder.prepareResult().profileInstance;
+
+            System.out.println("HOLLY TCCL is " + Thread.currentThread().getContextClassLoader());
+
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            // TODO do we need to set the TCCL, or just make 	at io.quarkus.test.common.TestResourceManager.getUniqueTestResourceClassEntries(TestResourceManager.java:281) not use the TCCL?
+
+            // TODO as a general safety thing for  java.lang.ClassCircularityError should we take ourselves off the TCCL while creating the runtime?
+
+            Thread.currentThread().setContextClassLoader(holder.startupAction().getClassLoader());
+            boolean hasPerTestResources;
+            try {
+                Closeable testResourceManager = (Closeable) holder.startupAction()
+                        .getClassLoader()
+                        .loadClass("io.quarkus.test.common.TestResourceManager")// TODO use class, not string
+                        .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class,
+                                Path.class)
+                        .newInstance(requiredTestClass,
+                                profile != null ? profile : null,
+                                getAdditionalTestResources(profileInstance, holder.startupAction()
+                                        .getClassLoader()),
+                                profileInstance != null && profileInstance.disableGlobalTestResources(),
+                                holder.startupAction()
+                                        .getDevServicesProperties(),
+                                Optional.empty(), result.testClassLocation);
+                testResourceManager.getClass()
+                        .getMethod("init", String.class)
+                        .invoke(testResourceManager,
+                                profile != null ? profile.getName() : null);
+
+                hasPerTestResources = (boolean) testResourceManager.getClass()
+                        .getMethod("hasPerTestResources")
+                        .invoke(testResourceManager);
+
+                System.out.println(
+                        "HOLLY has per test resources " + requiredTestClass.getName() + ": " + hasPerTestResources);
+            } finally {
+                Thread.currentThread().setContextClassLoader(old); // Which is most likely 'this'
+            }
+
+            if (hasPerTestResources) {
+                return (QuarkusClassLoader) makeClassLoader(key, requiredTestClass, profile).startupAction().getClassLoader();
+            } else {
+                return (QuarkusClassLoader) holder.startupAction().getClassLoader();
+            }
+
+        } catch (Exception e) {
+            // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
+            // TODO what's the best way to do this?
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return runtimeClassLoader;
     }
 
-    private QuarkusClassLoader makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
+    // TODO copied from IntegrationTestUtil - if this was in that module, could just use directly
+    // TODO javadoc does not compile
+    /*
+     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
+     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
+     * {@link TestResourceManager.TestResourceClassEntry}
+     * that are loaded from that ClassLoader
+     */
+    static <T> List<T> getAdditionalTestResources(
+            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
+        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            Constructor<?> testResourceClassEntryConstructor = Class
+                    .forName("io.quarkus.test.common.TestResourceManager$TestResourceClassEntry", true, classLoader) // TODO use class, not string
+                    .getConstructor(Class.class, Map.class, Annotation.class, boolean.class);
+
+            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
+            List<T> result = new ArrayList<>(testResources.size());
+            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
+                T instance = (T) testResourceClassEntryConstructor.newInstance(
+                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs(),
+                        null, testResource.isParallel());
+                result.add(instance);
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass(), e);
+        }
+    }
+
+    private AppMakerHelper.DumbHolder makeClassLoader(String key, Class requiredTestClass, Class profile) throws Exception {
 
         // This interception is only actually needed in limited circumstances; when
         // - running in normal mode
@@ -442,15 +547,17 @@ public class FacadeClassLoader extends ClassLoader implements Closeable {
         //                .getMode();
         // TODO are all these args used?
         // TODO we are hardcoding is continuous testing to the wrong value!
-        QuarkusClassLoader loader = appMakerHelper.getStartupAction(requiredTestClass,
+        AppMakerHelper.DumbHolder holder = appMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, false, profile);
+
+        QuarkusClassLoader loader = (QuarkusClassLoader) holder.startupAction().getClassLoader();
 
         // TODO is this a good idea?
         // TODO without this, the parameter dev mode tests regress, but it feels kind of wrong - is there some use of TCCL in JUnitRunner we need to find
         currentThread.setContextClassLoader(loader);
 
         System.out.println("HOLLY did make a " + currentThread.getContextClassLoader());
-        return loader;
+        return holder;
 
     }
 

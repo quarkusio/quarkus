@@ -122,7 +122,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static Class<?> quarkusTestMethodContextClass;
-    private static boolean hasPerTestResources;
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static List<Object> testMethodInvokers;
@@ -184,6 +183,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        System.out.println("HOLLY doing java start " + " test us " + context.getRequiredTestClass().getName()
+                + " and test cl is " + context.getRequiredTestClass().getClassLoader() + " and MY cl us "
+                + this.getClass().getClassLoader());
+        System.out.println("TCCL check 187 " + Thread.currentThread().getContextClassLoader());
         JBossVersion.disableVersionLogging();
 
         // TODO we should do much less of this, because it's being done upfront by the interceptor
@@ -225,6 +228,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             StartupAction startupAction = ((QuarkusClassLoader) requiredTestClass.getClassLoader()).getStartupAction();
 
             System.out.println("HOLLY made initial app");
+            // TODO this might be a good idea, but if so, we'd need to undo it
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
             //   populateDeepCloneField(startupAction);
 
@@ -256,8 +260,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     .invoke(testResourceManager);
             startupAction.overrideConfig(properties);
             startupAction.addRuntimeCloseTask(testResourceManager);
-            hasPerTestResources = (boolean) testResourceManager.getClass().getMethod("hasPerTestResources")
-                    .invoke(testResourceManager);
 
             // make sure that we start over every time we populate the callbacks
             // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
@@ -278,6 +280,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 runningQuarkusApplication = startupAction
                         .runMainClass(profileInstance.commandLineParameters());
             }
+
+            System.out.println("HOLLY did make an app which affects is new " + runningQuarkusApplication
+                    + " and the parent cl I set it on is " + AbstractJvmQuarkusTestExtension.class.getClassLoader());
 
             TracingHandler.quarkusStarted();
 
@@ -300,6 +305,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 @Override
                 public void close() throws IOException {
                     TracingHandler.quarkusStopping();
+                    System.out.println("HOLLY shutting down");
                     try {
                         runningQuarkusApplication.close();
                     } catch (Exception e) {
@@ -343,7 +349,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
+            System.out.println(
+                    "TCCL check 348 " + Thread.currentThread().getContextClassLoader() + " ( original is " + originalCl);
         }
+
     }
 
     private Throwable determineEffectiveException(Throwable e) {
@@ -384,6 +393,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
+        System.out.println("TCCL check 392 " + Thread.currentThread().getContextClassLoader());
         if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || isBeforeTestCallbacksEmpty()) {
             return;
         }
@@ -403,6 +413,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        System.out.println("TCCL check 412 " + Thread.currentThread().getContextClassLoader());
         if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
             return;
         }
@@ -502,6 +513,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
+        System.out.println("TCCL check 512 " + Thread.currentThread().getContextClassLoader());
         if (isNativeOrIntegrationTest(context.getRequiredTestClass()) || isAfterTestCallbacksEmpty()) {
             return;
         }
@@ -514,10 +526,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 setCCL(original);
             }
         }
+        System.out.println("TCCL check 525 " + Thread.currentThread().getContextClassLoader());
+
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
+        System.out.println("TCCL check 531 " + Thread.currentThread().getContextClassLoader());
         if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
             return;
         }
@@ -535,6 +550,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             } finally {
                 setCCL(original);
             }
+            System.out.println("TCCL check 549 " + Thread.currentThread().getContextClassLoader());
         }
     }
 
@@ -595,22 +611,34 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         System.out.println("HOLLY ensure started for " + extensionContext.getRequiredTestClass() + ".");
         QuarkusTestExtensionState state = getState(extensionContext);
+        System.out.println("HOLLY got state " + state);
+        if (state != null) {
+            System.out.println(" , and state cl is " + state.getClass()
+                    .getClassLoader());
+        }
+
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
 
         // TODO all this check should go to the facade classloader, and we just need to know if it's started or not, and close the previous one if not
         // TODO we also need to hope the tests are in the right order, and re-order them so we don't rely on luck (will that be ok? def better doc it)
-        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reset the failed state if we changed test class and the new test class is not a nested class
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
                 && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass());
+        System.out.println("HOLLY reasons current class equals static var: "
+                + Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass) + " "
+                + extensionContext.getRequiredTestClass() + " cuurr" + currentJUnitTestClass);
         if (isNewTestClass && state != null) {
             state.setTestFailed(null);
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
+        System.out.println("HOLLY about to check " + extensionContext.getRequiredTestClass() + " is new app");
         boolean isNewApplication = isNewApplication(state, currentJUnitTestClass);
-        System.out.println("HOLLY " + extensionContext.getRequiredTestClass() + " is new " + isNewApplication);
-        System.out.println("HOLLY reasons " + Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
-                + extensionContext.getRequiredTestClass() + " cuurr" + currentJUnitTestClass);
+
+        // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
+        // we could try to start and application which has already been started, and fail with a mysterious error about
+        // null shutdown contexts; we should try and detect that case, and give a friendlier error message
+        // TODO we could either keep track of applications we've already seen, or just detect the null shutdown context and explain a likely cause
+        System.out.println("HOLLY " + extensionContext.getRequiredTestClass() + " is new app " + isNewApplication);
 
         if ((state == null && !failedBoot) || isNewApplication) {
             if (isNewApplication) {
@@ -625,10 +653,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
             PropertyTestUtil.setLogFileProperty();
             try {
+                System.out.println("doing java start for " + extensionContext.getRequiredTestClass());
+                //TODO done later, and better, act of desperation
+                Thread.currentThread().setContextClassLoader(extensionContext.getRequiredTestClass().getClassLoader());
                 state = doJavaStart(extensionContext, selectedProfile);
                 setState(extensionContext, state);
 
             } catch (Throwable e) {
+                System.out.println("OHH NOOO failed java start for " + extensionContext.getRequiredTestClass() + " e is " + e);
+                e.printStackTrace();
                 failedBoot = true;
                 markTestAsFailed(extensionContext, e);
                 firstException = e;
@@ -666,6 +699,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        // TODO this originalCl logic is half in here and half in the parent class
+        originalCl = Thread.currentThread().getContextClassLoader();
+        System.out.println("TCCL before all grabbed " + originalCl);
         Class<?> requiredTestClass = context.getRequiredTestClass();
         GroovyClassValue.disable();
         currentTestClassStack.push(requiredTestClass);
@@ -750,6 +786,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
 
         try {
+            System.out.println("QTE setting TCCL to " + requiredTestClass.getClassLoader());
             Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());
             result = invocation.proceed();
         } catch (NullPointerException e) {
@@ -758,6 +795,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             + requiredTestClass,
                     e);
         } finally {
+            System.out.println("<<< QTE setting TCCL back to " + old);
             Thread.currentThread().setContextClassLoader(old);
         }
 
@@ -1074,6 +1112,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             if (!isNativeOrIntegrationTest(context.getRequiredTestClass()) && (runningQuarkusApplication != null)) {
                 popMockContext();
             }
+            System.out.println("afterAll HOLLY TCCL will reset " + originalCl);
             if (originalCl != null) {
                 setCCL(originalCl);
             }
@@ -1220,6 +1259,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
         @Override
         protected void doClose() throws IOException {
+            System.out.println("HOLLY is doing close for " + currentJUnitTestClass);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             if (runningQuarkusApplication != null) {
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());

@@ -526,6 +526,40 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (name.startsWith(JAVA)) {
             return parent.loadClass(name);
         }
+
+        //
+        //        || name.contains("io.quarkus.test.junit.QuarkusTestExtension")
+        // TODO this is a big hack, can we find another way?
+        // Test support classes will be loaded by the runtime, we want them to be loaded by the base runtime
+        // Otherwise they can't share state classes
+        // TODO would it work for the jar to configure them as parent first?
+        // TODO not sure the specific class extension helped, undo it - the extension the test sees gets loaded with the app classloader
+
+        // TODO needed to work around static variables in AbstractJvmQuarkusTestExtension
+
+        //        if (name.equals("io.quarkus.test.junit.AbstractJvmQuarkusTestExtension")) {
+        //            System.out.println("BOOM dumping " + name + " to system");
+        //            return getSystemClassLoader().loadClass(name);
+        //        }
+        //
+        //        if (name.equals("io.quarkus.test.junit.QuarkusTestExtension")) {
+        //            System.out.println("SPLAT dumping " + name + " to system");
+        //            return getSystemClassLoader().loadClass(name);
+        //        }
+
+        //
+        //                && !name.equals("io.quarkus.test.junit.QuarkusTestExtension")
+        //                && !name.equals("io.quarkus.test.junit.AbstractJvmQuarkusTestExtension")
+
+        // The Quarkus test extensions put classes into the JUnit store to communicate between instances
+        // If the test classes are loaded with the runtime classloader, some of these state classes will be as well,
+        // and so they cannot be shared. Hackily work around the problem by hardcoding an exception to child-first
+        if ((name.contains("io.quarkus.test.junit"))
+                && this.getParent().getName().contains("Base Runtime")) {
+            System.out.println("Wheeeeee! dumping " + name + " to parent " + getParent());
+            return getParent().loadClass(name);
+        }
+
         //even if the thread is interrupted we still want to be able to load classes
         //if the interrupt bit is set then we clear it and restore it at the end
         boolean interrupted = Thread.interrupted();

@@ -1,0 +1,8 @@
+
+    <dependencyManagement>
+        <dependencies>
+            {#each boms}
+            {#include pom-dependency-management-dep dep=it /}
+            {/each}
+        </dependencies>
+    </dependencyManagement>

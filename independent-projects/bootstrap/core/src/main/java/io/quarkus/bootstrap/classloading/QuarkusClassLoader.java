@@ -49,12 +49,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     public static List<ClassPathElement> getElements(String resourceName, boolean onlyFromCurrentClassLoader) {
-        final ClassLoader ccl = Thread.currentThread().getContextClassLoader();
-        if (!(ccl instanceof QuarkusClassLoader)) {
-            throw new IllegalStateException("The current classloader is not an instance of "
-                    + QuarkusClassLoader.class.getName() + " but " + ccl.getClass().getName());
+        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
+            return classLoader.getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
         }
-        return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
+
+        throw new IllegalStateException("The current classloader is not an instance of "
+                + QuarkusClassLoader.class.getName() + " but "
+                + Thread.currentThread().getContextClassLoader().getClass().getName());
     }
 
     /**
@@ -71,9 +72,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      * Indicates if a given class is considered an application class.
      */
     public static boolean isApplicationClass(String className) {
-        String resourceName = fromClassNameToResourceName(className);
-        List<ClassPathElement> res = getElements(resourceName, true);
-        return !res.isEmpty();
+        if (Thread.currentThread().getContextClassLoader() instanceof QuarkusClassLoader classLoader) {
+            String resourceName = fromClassNameToResourceName(className);
+            ClassPathResourceIndex classPathResourceIndex = classLoader.getClassPathResourceIndex();
+
+            return classPathResourceIndex.getFirstClassPathElement(resourceName) != null;
+        }
+
+        throw new IllegalStateException("The current classloader is not an instance of "
+                + QuarkusClassLoader.class.getName() + " but "
+                + Thread.currentThread().getContextClassLoader().getClass().getName());
     }
 
     /**

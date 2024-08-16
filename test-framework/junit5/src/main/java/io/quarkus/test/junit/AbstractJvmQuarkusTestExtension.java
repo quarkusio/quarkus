@@ -176,7 +176,15 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             }
 
             // Creates a temporary application.properties file for the test with a high ordinal (build and runtime)
-            Path tempDirectory = Files.createTempDirectory(testClassLocation, requiredTestClass.getSimpleName());
+            // Note that in the case of the Quarkus Platform, the testClassLocation is actually a jar so we can't
+            // create a temp directory in it.
+            Path tempDirectory;
+            if (Files.isDirectory(testClassLocation) && Files.isWritable(testClassLocation)) {
+                tempDirectory = Files.createTempDirectory(testClassLocation, requiredTestClass.getSimpleName());
+            } else {
+                tempDirectory = Files.createTempDirectory(requiredTestClass.getSimpleName());
+            }
+
             Path propertiesFile = tempDirectory.resolve("application.properties");
             Files.createFile(propertiesFile);
             Properties properties = new Properties();

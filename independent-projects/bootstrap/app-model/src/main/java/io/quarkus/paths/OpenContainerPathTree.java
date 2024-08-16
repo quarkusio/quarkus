@@ -93,7 +93,7 @@ public abstract class OpenContainerPathTree extends PathTreeWithManifest impleme
 
     @Override
     public Collection<Path> getRoots() {
-        return List.of(getContainerPath());
+        return List.of(getRootPath());
     }
 
     @Override

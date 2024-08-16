@@ -127,6 +127,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                         return handleProvider(pos + 1, providers, request);
                     }
                 });
+        if (pos > 0) {
+            return cs;
+        }
         return cs.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {

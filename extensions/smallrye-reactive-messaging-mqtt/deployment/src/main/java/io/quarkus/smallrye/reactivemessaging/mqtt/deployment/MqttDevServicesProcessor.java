@@ -164,7 +164,7 @@ public class MqttDevServicesProcessor {
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
             container.withEnv(config.containerEnv);
-            container.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(container::start);
             return getRunningDevService(
                     container.getContainerId(),
                     container::close,

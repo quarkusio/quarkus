@@ -20,6 +20,7 @@ import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -212,7 +213,7 @@ public class InfinispanDevServiceProcessor {
                     useSharedNetwork);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
             infinispanContainer.withEnv(devServicesConfig.containerEnv);
-            infinispanContainer.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(infinispanContainer::start);
 
             return getRunningDevService(clientName, infinispanContainer.getContainerId(), infinispanContainer::close,
                     infinispanContainer.getHost() + ":" + infinispanContainer.getPort(),

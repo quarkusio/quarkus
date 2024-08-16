@@ -41,6 +41,7 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.fabric8.kubernetes.client.Config;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -229,7 +230,7 @@ public class DevServicesKubernetesProcessor {
 
             container.withEnv(config.containerEnv);
 
-            container.start();
+            QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
             KubeConfig kubeConfig = KubeConfigUtils.parseKubeConfig(container.getKubeconfig());
 

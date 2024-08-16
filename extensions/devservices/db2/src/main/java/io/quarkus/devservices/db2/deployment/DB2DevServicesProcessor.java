@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.Db2Container;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
@@ -65,7 +66,7 @@ public class DB2DevServicesProcessor {
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
-                container.start();
+                QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
                 LOG.info("Dev Services for IBM Db2 started.");
 

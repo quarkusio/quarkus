@@ -95,6 +95,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return false;
     }
 
+    public static void runWithPlatformClassLoader(Runnable runnable) {
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(PLATFORM_CLASS_LOADER);
+            runnable.run();
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
+    }
+
     private final String name;
     private final List<ClassPathElement> elements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();

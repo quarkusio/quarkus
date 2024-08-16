@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
@@ -74,7 +75,7 @@ public class MySQLDevServicesProcessor {
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
 
-                container.start();
+                QuarkusClassLoader.runWithPlatformClassLoader(container::start);
 
                 LOG.info("Dev Services for MySQL started.");
 

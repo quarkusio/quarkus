@@ -24,6 +24,8 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(
             HttpResponseStatus.UNAUTHORIZED.code(),
             HttpHeaderNames.WWW_AUTHENTICATE,
@@ -42,15 +44,17 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         String authHeader = context.request().headers().get("Authorization");
-        String bearerToken = authHeader != null ? authHeader.substring(7) : null;
-        if (bearerToken != null) {
-            // Install the OAuth2 principal as the caller
-            return identityProviderManager
-                    .authenticate(new TokenAuthenticationRequest(new TokenCredential(bearerToken, "bearer")));
 
+        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+            // No suitable bearer token has been found in this request,
+            return Uni.createFrom().nullItem();
         }
-        // No suitable header has been found in this request,
-        return Uni.createFrom().nullItem();
+
+        String bearerToken = authHeader.substring(BEARER_PREFIX.length());
+
+        // Install the OAuth2 principal as the caller
+        return identityProviderManager
+                .authenticate(new TokenAuthenticationRequest(new TokenCredential(bearerToken, "bearer")));
     }
 
     @Override

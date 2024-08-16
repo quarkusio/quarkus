@@ -1,7 +1,5 @@
-{#include Dockerfile-layout type='legacy-jar'}
-    {#quarkusbuild}{buildtool.cli} {buildtool.cmd.package-legacy-jar}{/quarkusbuild}
-    {#copy}
-COPY {buildtool.build-dir}/lib/* /deployments/lib/
-COPY {buildtool.build-dir}/*-runner.jar /deployments/quarkus-run.jar
-    {/copy}
-{/include}
+{#include Dockerfile-jar-header type='legacy-jar' cmd=buildtool.cmd.package-legacy-jar /}
+{#include Dockerfile-jar-from /}
+{#include Dockerfile-jar-env /}
+{#include Dockerfile-jar-copy type='legacy-jar' /}
+{#include Dockerfile-jar-entrypoint /}

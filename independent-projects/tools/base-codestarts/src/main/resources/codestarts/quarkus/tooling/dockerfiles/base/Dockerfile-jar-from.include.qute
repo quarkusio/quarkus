@@ -1,0 +1,5 @@
+{#if dockerfile.jvm.from}
+FROM {dockerfile.jvm.from}
+{#else}
+FROM registry.access.redhat.com/ubi8/openjdk-{java.version}:1.20
+{/if}

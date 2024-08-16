@@ -83,8 +83,7 @@ public interface PathTree {
     /**
      * The roots of the path tree.
      * <p>
-     * Note that for archives, it will return the path to the archive itself,
-     * not a path that you can browse.
+     * Note that you shouldn't use these roots for browsing except if the PathTree is open.
      *
      * @return roots of the path tree
      */

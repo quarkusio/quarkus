@@ -22,6 +22,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -33,7 +34,7 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
 
     @Inject
     public QuarkusShowEffectiveConfig() {
-        super("Collect dependencies for the Quarkus application, prefer the 'quarkusBuild' task");
+        super("Collect dependencies for the Quarkus application, prefer the 'quarkusBuild' task", true);
         this.saveConfigProperties = getProject().getObjects().property(Boolean.class).convention(Boolean.FALSE);
     }
 
@@ -46,8 +47,9 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
     @TaskAction
     public void dumpEffectiveConfiguration() {
         try {
-            EffectiveConfig effectiveConfig = extension()
-                    .buildEffectiveConfiguration(extension().getApplicationModel().getAppArtifact());
+            ApplicationModel appModel = resolveAppModelForBuild();
+            EffectiveConfig effectiveConfig = getExtensionView()
+                    .buildEffectiveConfiguration(appModel.getAppArtifact(), additionalForcedProperties);
             SmallRyeConfig config = effectiveConfig.getConfig();
             List<String> sourceNames = new ArrayList<>();
             config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
@@ -64,7 +66,7 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
                     .collect(Collectors.joining("\n    ", "\n    ", "\n"));
             getLogger().lifecycle("Effective Quarkus configuration options: {}", quarkusConfig);
 
-            String finalName = extension().finalName();
+            String finalName = getExtensionView().getFinalName().get();
             String jarType = config.getOptionalValue("quarkus.package.jar.type", String.class).orElse("fast-jar");
             File fastJar = fastJar();
             getLogger().lifecycle("""

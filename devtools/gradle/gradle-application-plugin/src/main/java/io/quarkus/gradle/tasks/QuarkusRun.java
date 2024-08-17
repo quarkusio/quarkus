@@ -48,7 +48,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     }
 
     public QuarkusRun(String description) {
-        super(description);
+        super(description, false);
         final ObjectFactory objectFactory = getProject().getObjects();
         mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);

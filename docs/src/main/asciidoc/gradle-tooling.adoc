@@ -814,5 +814,33 @@ action must be declared as an input of the task.
 
 The Quarkus Gradle plugin works with builds that have the
 link:https://docs.gradle.org/current/userguide/configuration_cache.html[Gradle's configuration cache] enabled, but
-the configuration cache is disabled for the Quarkus tasks. This means, that the Quarkus plugin does not break such
+the configuration cache is disabled for some of the Quarkus tasks. This means, that the Quarkus plugin does not break such
 Gradle builds.
+The current state of compatibility is shown in the following table:
+
+[cols="2","4"]
+|====
+|Quarkus task|Configuration Cache Compatibility
+|`quarkusGenerateCode` |✅
+|`quarkusGenerateCodeDev`|✅
+|`quarkusGenerateCodeTests`|✅
+|`quarkusDependenciesBuild`|✅
+|`quarkusAppPartsBuild`|✅
+|`quarkusShowEffectiveConfig`|✅
+|`quarkusBuild`|✅
+|`quarkusDev`|❌
+|`quarkusRun`|❌
+|`quarkusRemoteDev`|❌
+|`quarkusTest`|❌
+|`quarkusGoOffline`|❌
+|`quarkusInfo`|❌
+|`quarkusUpdate`|❌
+|`imageBuild`|❌
+|`imagePush`|❌
+|`deploy`|❌
+|`listExtensions`|❌
+|`listCategories`|❌
+|`listPlatforms`|❌
+|`addExtension`|❌
+|`removeExtension`|❌
+|====

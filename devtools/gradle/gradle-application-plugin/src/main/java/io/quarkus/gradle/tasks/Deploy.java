@@ -84,7 +84,7 @@ public abstract class Deploy extends QuarkusBuildTask {
 
     @Inject
     public Deploy() {
-        super("Deploy");
+        super("Deploy", false);
     }
 
     @TaskAction

@@ -16,7 +16,7 @@ The document header ends at the first blank line. Do not remove the blank line b
 
 What makes a good Quarkus extension? What capabilities is a Quarkus extension expected to provide?
 
-image::extension-maturity-model.png[A maturity model: Runtime actually works,Works in JVM mode,Works in dev mode, Works in native,Configuration support,Dev service,Dev UI, Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance),Use build-time application knowledge to remove boilerplate,Codestart application template]
+image::extension-maturity-model.svg[A maturity model: Runtime actually works,Works in JVM mode,Works in dev mode, Works in native,Configuration support,Dev service,Dev UI, Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance),Use build-time application knowledge to remove boilerplate,Codestart application template]
 
 The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
 Also, not every step will apply to every extension. For example, you don't need a dev service if your extension doesn't depend on external services.

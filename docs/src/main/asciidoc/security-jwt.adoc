@@ -1049,8 +1049,9 @@ include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, levelof
 |Property Name|Default|Description
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in the <<supported-public-key-formats>> section.
 |mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see xref:native-and-ssl.adoc[Using SSL With Native Executables] for more details.
-|mp.jwt.verify.publickey.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
+|mp.jwt.verify.publickey.algorithm|`RS256`|List of signature algorithms. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |mp.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified.
+|mp.jwt.decrypt.key.algorithm|`RSA-OAEP`,`RSA-OAEP-256`|List of decryption algorithms. Set it to `RSA-OAEP-256` to support RSA-OAEP with SHA-256 only.
 |mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer) claim of the JWT that the server will accept as valid.
 |mp.jwt.verify.audiences|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |mp.jwt.verify.clock.skew|`60`|Clock skew in seconds used during the token expiration and age verification. An expired token is accepted if the current time is within the number of seconds specified by this property after the token expiration time. The default value is 60 seconds.
@@ -1066,6 +1067,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
+|smallrye.jwt.verify.secretkey|none|Secret key supplied as a string.
 |smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
 |smallrye.jwt.verify.algorithm||Signature algorithm. This property should only be used for setting a required symmetric algorithm such as `HS256`. It is deprecated for setting asymmetric algorithms such as `ES256` - use 'mp.jwt.verify.publickey.algorithm' instead.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.

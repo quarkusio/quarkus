@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
@@ -91,6 +92,7 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean assertionsEnabled;
     private final boolean defaultFlatTestClassPath;
     private final Collection<ArtifactKey> parentFirstArtifacts;
+    private final Supplier<DependencyInfoProvider> depInfoProvider;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -123,6 +125,7 @@ public class QuarkusBootstrap implements Serializable {
         this.hostApplicationIsTestOnly = builder.hostApplicationIsTestOnly;
         this.defaultFlatTestClassPath = builder.flatClassPath;
         this.parentFirstArtifacts = builder.parentFirstArtifacts;
+        this.depInfoProvider = builder.depInfoProvider;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -295,6 +298,10 @@ public class QuarkusBootstrap implements Serializable {
         return test;
     }
 
+    public Supplier<DependencyInfoProvider> getDependencyInfoProvider() {
+        return depInfoProvider;
+    }
+
     public static class Builder {
         public List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
         public boolean hostApplicationIsTestOnly;
@@ -326,6 +333,7 @@ public class QuarkusBootstrap implements Serializable {
         final Set<ArtifactKey> localArtifacts = new HashSet<>();
         boolean auxiliaryApplication;
         List<ArtifactKey> parentFirstArtifacts = new ArrayList<>();
+        Supplier<DependencyInfoProvider> depInfoProvider;
 
         public Builder() {
         }
@@ -535,6 +543,11 @@ public class QuarkusBootstrap implements Serializable {
             boolean result = false;
             assert result = true;
             return result;
+        }
+
+        public Builder setDependencyInfoProvider(Supplier<DependencyInfoProvider> depInfoProvider) {
+            this.depInfoProvider = depInfoProvider;
+            return this;
         }
 
         public QuarkusBootstrap build() {

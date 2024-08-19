@@ -28,7 +28,7 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
-          CURRENT_BRANCH="${{ github.base_ref || github.ref_name }}"
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
           CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
           ROOT_CACHE_KEY="m2-cache"
           echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT

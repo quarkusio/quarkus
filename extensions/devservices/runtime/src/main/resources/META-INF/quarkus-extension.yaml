@@ -1,0 +1,11 @@
+name: Dev Services
+description: Any devservice via config
+metadata:
+  short-name: "DevServices"
+  keywords:
+  - dev services
+  categories:
+  - "miscellaneous"
+  status: "stable"
+  config:
+  - "quarkus.devservices."

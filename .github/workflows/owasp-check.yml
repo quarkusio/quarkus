@@ -26,6 +26,23 @@ jobs:
         distribution: temurin
         java-version: 17
 
+    - name: Generate cache key
+      id: cache-key
+      run: |
+        CURRENT_BRANCH="${{ github.base_ref || github.ref_name }}"
+        CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+        ROOT_CACHE_KEY="m2-cache"
+        echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+        echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+    - name: Restore Maven Repository
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.m2/repository
+        # This will always fail but we will default to the best matching restore keys
+        key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+        restore-keys: |
+          ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+          ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
 
     - name: Build Java
       run: ./mvnw -B --settings .github/mvn-settings.xml -Dquickly-ci install

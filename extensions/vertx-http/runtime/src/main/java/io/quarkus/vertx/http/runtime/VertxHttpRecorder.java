@@ -688,7 +688,9 @@ public class VertxHttpRecorder {
                     .listen(ar -> {
                         if (ar.failed()) {
                             managementInterfaceFuture.completeExceptionally(
-                                    new IllegalStateException("Unable to start the management interface", ar.cause()));
+                                    new IllegalStateException("Unable to start the management interface on "
+                                            + httpManagementServerOptions.getHost() + ":"
+                                            + httpManagementServerOptions.getPort(), ar.cause()));
                         } else {
                             if (httpManagementServerOptions.isSsl()
                                     && (managementConfig.ssl.certificate.reloadPeriod.isPresent())) {

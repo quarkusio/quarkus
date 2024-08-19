@@ -58,17 +58,23 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Get Date
-        id: get-date
+      - name: Generate cache key
+        id: cache-key
         run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
-      - name: Cache Maven Repository
-        id: cache-maven
-        uses: actions/cache@v4
+          CURRENT_BRANCH="${{ github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every month to avoid unlimited growth
-          key: q2maven-doc-${{ steps.get-date.outputs.date }}
+          # This will always fail but we will default to the best matching restore keys
+          key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Build
         run: |
           ./mvnw -DquicklyDocs -B --settings .github/mvn-settings.xml

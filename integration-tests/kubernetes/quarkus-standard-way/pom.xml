@@ -57,7 +57,6 @@
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-model-core</artifactId>
-            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>javax.annotation</groupId>

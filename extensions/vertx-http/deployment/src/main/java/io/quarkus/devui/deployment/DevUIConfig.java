@@ -26,6 +26,7 @@ public class DevUIConfig {
      * More hosts allowed for Dev UI
      *
      * Comma separated list of valid URLs, e.g.: www.quarkus.io, myhost.com
+     * (This can also be a regex)
      * By default localhost and 127.0.0.1 will always be allowed
      */
     @ConfigItem

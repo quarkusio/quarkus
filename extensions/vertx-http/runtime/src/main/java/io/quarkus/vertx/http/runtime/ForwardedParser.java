@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
@@ -52,6 +51,11 @@ class ForwardedParser {
     private final HttpServerRequest delegate;
     private final ForwardingProxyOptions forwardingProxyOptions;
     private final TrustedProxyCheck trustedProxyCheck;
+
+    /**
+     * Does not use the Netty constant (`host`) to enforce the header name convention.
+     */
+    private final static AsciiString HOST_HEADER = AsciiString.cached("Host");
 
     private boolean calculated;
     private String host;
@@ -188,7 +192,7 @@ class ForwardedParser {
 
         authority = HostAndPort.create(host, port >= 0 ? port : -1);
         host = host + (port >= 0 ? ":" + port : "");
-        delegate.headers().set(HttpHeaders.HOST, host);
+        delegate.headers().set(HOST_HEADER, host);
         absoluteURI = scheme + "://" + host + uri;
         log.debug("Recalculated absoluteURI to " + absoluteURI);
     }
@@ -199,7 +203,7 @@ class ForwardedParser {
         }
         String[] hostAndPort = parseHostAndPort(hostToParse);
         host = hostAndPort[0];
-        delegate.headers().set(HttpHeaders.HOST, host);
+        delegate.headers().set(HOST_HEADER, host);
         port = parsePort(hostAndPort[1], defaultPort);
     }
 

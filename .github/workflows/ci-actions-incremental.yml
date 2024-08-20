@@ -221,7 +221,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Initial JDK 17 Build"
+          name: "build-reports-${{ github.run_attempt }}-Initial JDK 17 Build"
           path: |
             build-reports.zip
           retention-days: 7
@@ -413,7 +413,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-JVM Tests - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -525,7 +525,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Maven Tests - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -613,7 +613,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -707,7 +707,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Devtools Tests - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -801,7 +801,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Kubernetes Tests - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -887,7 +887,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
+          name: "build-reports-${{ github.run_attempt }}-Quickstarts Compilation - JDK ${{matrix.java.name}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -962,7 +962,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
+          name: "build-reports-${{ github.run_attempt }}-Virtual Thread Support Tests Native - ${{matrix.category}}"
           path: |
             build-reports.zip
           retention-days: 7
@@ -1045,7 +1045,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-MicroProfile TCKs Tests"
+          name: "build-reports-${{ github.run_attempt }}-MicroProfile TCKs Tests"
           path: |
             build-reports.zip
           retention-days: 7
@@ -1161,7 +1161,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: "build-reports-Native Tests - ${{matrix.category}}"
+          name: "build-reports-${{ github.run_attempt }}-Native Tests - ${{matrix.category}}"
           path: |
             build-reports.zip
           retention-days: 7

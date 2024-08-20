@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :topics: security,csrf,http
-:extensions: io.quarkus:quarkus-csrf-reactive
+:extensions: io.quarkus:quarkus-rest-csrf
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
@@ -24,15 +24,15 @@ First, we need a new project.
 Create a new project with the following command:
 
 :create-app-artifact-id: security-csrf-prevention
-:create-app-extensions: csrf-reactive
+:create-app-extensions: rest-csrf
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project which imports the `csrf-reactive` extension.
+This command generates a project which imports the `rest-csrf` extension.
 
-If you already have your Quarkus project configured, you can add the `csrf-reactive` extension
+If you already have your Quarkus project configured, you can add the `rest-csrf` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: csrf-reactive
+:add-extension-extensions: rest-csrf
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -42,14 +42,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-csrf-reactive</artifactId>
+    <artifactId>quarkus-rest-csrf</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-csrf-reactive")
+implementation("io.quarkus:quarkus-rest-csrf")
 ----
 
 Next, let's add a `csrfToken.html` Qute template producing an HTML form in the `src/main/resources/templates` folder:
@@ -126,8 +126,8 @@ At this stage no additional configuration is needed - by default the CSRF form f
 
 [source,properties]
 ----
-quarkus.csrf-reactive.form-field-name=csrftoken
-quarkus.csrf-reactive.cookie-name=csrftoken
+quarkus.rest-csrf.form-field-name=csrftoken
+quarkus.rest-csrf.cookie-name=csrftoken
 ----
 
 == Sign CSRF token
@@ -136,7 +136,7 @@ You can get `HMAC` signatures created for the generated CSRF tokens and have the
 
 [source,properties]
 ----
-quarkus.csrf-reactive.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
+quarkus.rest-csrf.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
 
 [[csrf-request-header]]
@@ -151,18 +151,18 @@ If HTML `form` tags are not used and you need to pass CSRF token as a header, th
 ----
 <1> This expression is used to inject a CSRF token header and token. This token will be verified by the CSRF filter against a CSRF cookie.
 
-Default header name is `X-CSRF-TOKEN`, you can customize it with `quarkus.csrf-reactive.token-header-name`, for example:
+Default header name is `X-CSRF-TOKEN`, you can customize it with `quarkus.rest-csrf.token-header-name`, for example:
 
 [source,properties]
 ----
-quarkus.csrf-reactive.token-header-name=CUSTOM-X-CSRF-TOKEN
+quarkus.rest-csrf.token-header-name=CUSTOM-X-CSRF-TOKEN
 ----
 
 If you need to access the CSRF cookie from JavaScript in order to pass its value as a header, use `{inject:csrf.cookieName}` and `{inject:csrf.headerName}` to inject the cookie name which has to be read as a CSRF header value and allow accessing this cookie:
 
 [source,properties]
 ----
-quarkus.csrf-reactive.cookie-http-only=false
+quarkus.rest-csrf.cookie-http-only=false
 ----
 
 == Cross-origin resource sharing
@@ -255,11 +255,11 @@ As you can see a CSRF token verification will be required at the `/service/user`
 [source,properties]
 ----
 # Verify CSRF token only for the `/service/user` path, ignore other paths such as `/service/users`
-quarkus.csrf-reactive.create-token-path=/service/user
+quarkus.rest-csrf.create-token-path=/service/user
 
 # If `/service/user` path accepts not only `application/x-www-form-urlencoded` payloads but also other ones such as JSON then allow them
 # Setting this property is not necessary when the token is submitted as a header value
-quarkus.csrf-reactive.require-form-url-encoded=false
+quarkus.rest-csrf.require-form-url-encoded=false
 ----
 
 == Verify CSRF token in the application code
@@ -316,7 +316,7 @@ Also disable the token verification in the filter:
 
 [source,properties]
 ----
-quarkus.csrf-reactive.verify-token=false
+quarkus.rest-csrf.verify-token=false
 ----
 
 [[csrf-reactive-configuration-reference]]

@@ -25,10 +25,10 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.paths.ManifestAttributes;
 
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode).
@@ -578,15 +578,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if ((pkgName != null) && definedPackages.get(pkgName) == null) {
             synchronized (getClassLoadingLock(pkgName)) {
                 if (definedPackages.get(pkgName) == null) {
-                    Manifest mf = classPathElement.getManifest();
-                    if (mf != null) {
-                        Attributes ma = mf.getMainAttributes();
-                        definedPackages.put(pkgName, definePackage(pkgName, ma.getValue(Attributes.Name.SPECIFICATION_TITLE),
-                                ma.getValue(Attributes.Name.SPECIFICATION_VERSION),
-                                ma.getValue(Attributes.Name.SPECIFICATION_VENDOR),
-                                ma.getValue(Attributes.Name.IMPLEMENTATION_TITLE),
-                                ma.getValue(Attributes.Name.IMPLEMENTATION_VERSION),
-                                ma.getValue(Attributes.Name.IMPLEMENTATION_VENDOR), null));
+                    ManifestAttributes manifest = classPathElement.getManifestAttributes();
+                    if (manifest != null) {
+                        definedPackages.put(pkgName, definePackage(pkgName, manifest.getSpecificationTitle(),
+                                manifest.getSpecificationVersion(),
+                                manifest.getSpecificationVendor(),
+                                manifest.getImplementationTitle(),
+                                manifest.getImplementationVersion(),
+                                manifest.getImplementationVendor(), null));
                         return;
                     }
 

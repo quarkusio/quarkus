@@ -1088,10 +1088,15 @@ If you are using Quarkus Security, check out the xref:security-testing.adoc[Test
 
 A very common need is to start some services on which your Quarkus application depends, before the Quarkus application starts for testing. To address this need, Quarkus provides `@io.quarkus.test.common.WithTestResource` and `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
 
-By simply annotating any test in the test suite with `@WithTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before any tests are run.
-A test suite is also free to utilize multiple `@WithTestResource` annotations, in which case all the corresponding `QuarkusTestResourceLifecycleManager` objects will be run before the tests. When using multiple test resources they can be started concurrently. For that you need to set `@WithTestResource(parallel = true)`.
+When a test annotated with `@WithTestResource`, Quarkus will run the corresponding `QuarkusTestResourceLifecycleManager` before the test.
+
+IMPORTANT: By default, `@WithTestResource` applies only to the test on which the annotation is placed. Each test that is annotated with `@WithTestResource`  will result in the application being re-augmented and restarted
+(in a similar fashion as happens in dev-mode when a change is detected) in order to incorporate the settings configured by the annotation. This means that if there are many instances of the annotation used throughout the testsuite,
+test execution speed will be impacted by these restarts.
 
 NOTE: Test resources are applied for a given test class or custom profile. To activate for all tests you can use `@WithTestResource(restrictToAnnotatedClass = false)`.
+
+NOTE: When using multiple test resources they can be started concurrently. For that you need to set `@WithTestResource(parallel = true)`.
 
 Quarkus provides a few implementations of `QuarkusTestResourceLifecycleManager` out of the box (see `io.quarkus.test.h2.H2DatabaseTestResource` which starts an H2 database, or `io.quarkus.test.kubernetes.client.KubernetesServerTestResource` which starts a mock Kubernetes API server),
 but it is common to create custom implementations to address specific application needs.

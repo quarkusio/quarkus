@@ -593,7 +593,7 @@ Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@On
 @Inject WebSocketConnection connection;
 ----
 
-NOTE: Note that outside of these methos, the `WebSocketConnection` object is not available. However, it is possible to <<list-open-connections,list all open connections>>. 
+NOTE: Note that outside of these methods, the `WebSocketConnection` object is not available. However, it is possible to <<list-open-connections,list all open connections>>.
 
 The connection can be used to send messages to the client, access the path parameters, broadcast messages to all connected clients, etc.
 
@@ -909,7 +909,7 @@ Methods annotated with `@OnOpen`, `@OnTextMessage`, `@OnBinaryMessage`, and `@On
 @Inject WebSocketClientConnection connection;
 ----
 
-NOTE: Note that outside of these methos, the `WebSocketClientConnection` object is not available. However, it is possible to <<list-open-client-connections,list all open client connections>>. 
+NOTE: Note that outside of these methods, the `WebSocketClientConnection` object is not available. However, it is possible to <<list-open-client-connections,list all open client connections>>.
 
 The connection can be used to send messages to the client, access the path parameters, etc.
 

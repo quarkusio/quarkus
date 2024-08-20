@@ -141,7 +141,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                 public V get() {
                     return valueLoader.apply(key);
                 }
-            }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+            }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
         } else {
             return Uni.createFrom().item(valueLoader.apply(key));
         }
@@ -205,8 +205,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                                 result = set(connection, encodedKey, encodedValue).replaceWith(value);
                                             }
                                             if (isWorkerThread) {
-                                                return result
-                                                        .runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+                                                return result.runSubscriptionOn(
+                                                        MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
                                             }
                                             return result;
                                         }

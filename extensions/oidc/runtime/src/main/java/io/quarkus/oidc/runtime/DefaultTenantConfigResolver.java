@@ -51,6 +51,7 @@ public class DefaultTenantConfigResolver {
     private final TenantConfigBean tenantConfigBean;
     private final TenantResolver[] staticTenantResolvers;
     private final boolean annotationBasedTenantResolutionEnabled;
+    private final String rootPath;
 
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
@@ -86,6 +87,7 @@ public class DefaultTenantConfigResolver {
         this.staticTenantResolvers = prepareStaticTenantResolvers(tenantConfigBean, rootPath, tenantResolverInstance,
                 resolveTenantsWithIssuer, new DefaultStaticTenantResolver());
         this.annotationBasedTenantResolutionEnabled = Boolean.getBoolean(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED);
+        this.rootPath = rootPath;
     }
 
     @PostConstruct
@@ -412,6 +414,10 @@ public class DefaultTenantConfigResolver {
             return tenantConfigBean.getDynamicTenantsConfig().get(sessionTenantId).getOidcTenantConfig();
         }
         return null;
+    }
+
+    public String getRootPath() {
+        return rootPath;
     }
 
     private static final class IssuerBasedTenantResolver implements TenantResolver {

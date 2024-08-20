@@ -178,7 +178,7 @@ public class DevServicesMongoProcessor {
         }
 
         Supplier<RunningDevService> defaultMongoServerSupplier = () -> {
-            MongoDBContainer mongoDBContainer;
+            QuarkusMongoDBContainer mongoDBContainer;
             if (capturedProperties.imageName != null) {
                 mongoDBContainer = new QuarkusMongoDBContainer(
                         DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
@@ -189,8 +189,9 @@ public class DevServicesMongoProcessor {
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
             mongoDBContainer.start();
-            final String effectiveUrl = getEffectiveUrl(configPrefix, mongoDBContainer.getHost(),
-                    mongoDBContainer.getMappedPort(MONGO_EXPOSED_PORT), capturedProperties);
+
+            final String effectiveUrl = getEffectiveUrl(configPrefix, mongoDBContainer.getEffectiveHost(),
+                    mongoDBContainer.getEffectivePort(), capturedProperties);
             return new RunningDevService(Feature.MONGODB_CLIENT.getName(), mongoDBContainer.getContainerId(),
                     mongoDBContainer::close, getConfigPrefix(connectionName) + "connection-string", effectiveUrl);
         };
@@ -314,9 +315,12 @@ public class DevServicesMongoProcessor {
             }
         }
 
-        @Override
-        public String getHost() {
+        public String getEffectiveHost() {
             return useSharedNetwork ? hostName : super.getHost();
+        }
+
+        public Integer getEffectivePort() {
+            return useSharedNetwork ? MONGODB_INTERNAL_PORT : getMappedPort(MONGO_EXPOSED_PORT);
         }
     }
 }

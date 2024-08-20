@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 class FilePathTree implements OpenPathTree {
 
@@ -29,7 +28,7 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         return null;
     }
 

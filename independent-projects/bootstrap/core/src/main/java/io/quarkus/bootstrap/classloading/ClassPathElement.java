@@ -7,11 +7,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.EmptyPathTree;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 
@@ -80,7 +80,7 @@ public interface ClassPathElement extends Closeable {
      */
     ProtectionDomain getProtectionDomain();
 
-    Manifest getManifest();
+    ManifestAttributes getManifestAttributes();
 
     /**
      * Checks whether this is a runtime classpath element
@@ -133,7 +133,7 @@ public interface ClassPathElement extends Closeable {
         }
 
         @Override
-        public Manifest getManifest() {
+        public ManifestAttributes getManifestAttributes() {
             return null;
         }
 

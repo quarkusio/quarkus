@@ -8,6 +8,7 @@
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-{extension.id}.git</developerConnection>
         <url>https://github.com/quarkiverse/quarkus-{extension.id}</url>
     </scm>
+    {#if quarkus.version.or(quarkus.bom.version).compareVersionTo("3.14") >= 0}
     <build>
         <pluginManagement>
             <plugins>
@@ -19,6 +20,7 @@
             </plugins>
         </pluginManagement>
     </build>
+    {/if}
     <profiles>
         <profile>
             <id>it</id>

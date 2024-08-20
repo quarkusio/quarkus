@@ -15,6 +15,9 @@ import io.quarkus.arc.Subclass;
  */
 public class ArcProxyBeanMetaDataClassNormalizer implements BeanMetaDataClassNormalizer {
 
+    private static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
+
+    @SuppressWarnings("unchecked")
     @Override
     public <T> Class<? super T> normalize(Class<T> beanClass) {
         Class<? super T> targetClass = beanClass;
@@ -23,6 +26,14 @@ public class ArcProxyBeanMetaDataClassNormalizer implements BeanMetaDataClassNor
         }
         while (ClientProxy.class.isAssignableFrom(targetClass)) {
             targetClass = targetClass.getSuperclass();
+        }
+        if (beanClass.isSynthetic() && beanClass.getSimpleName().endsWith(CDI_WRAPPER_SUFFIX)) {
+            String nameToFind = beanClass.getName().substring(0, beanClass.getName().length() - (CDI_WRAPPER_SUFFIX.length()));
+            for (Class<?> anInterface : targetClass.getInterfaces()) {
+                if (nameToFind.equals(anInterface.getName())) {
+                    return (Class<? super T>) anInterface;
+                }
+            }
         }
         return targetClass;
     }

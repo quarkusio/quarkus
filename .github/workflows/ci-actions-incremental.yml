@@ -107,6 +107,7 @@ jobs:
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
+      m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
       quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
       quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
     steps:
@@ -132,9 +133,11 @@ jobs:
         run: |
           CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
           CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
           ROOT_CACHE_KEY="m2-cache"
           echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
           echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
           CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
@@ -143,10 +146,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          # This will never work but it should fallback to the restore key below and get the latest cache for this branch.
-          # The cache is dropped monthly to prevent unlimited growth.
-          # The cache is per branch.
-          key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          # A new cache will be stored daily. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.
+          # The whole cache is dropped monthly to prevent unlimited growth.
+          # The cache is per branch but in case we don't find a branch for a given branch, we will get a cache from another branch.
+          key: ${{ steps.cache-key.outputs.m2-cache-key }}
           restore-keys: |
             ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
             ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
@@ -375,7 +378,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -482,7 +485,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -584,7 +587,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -676,7 +679,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -772,7 +775,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -855,7 +858,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -939,7 +942,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -1023,7 +1026,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
@@ -1136,7 +1139,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          key: ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-${{ github.run_id }}
+          key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
           restore-keys: |
             ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
             ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-

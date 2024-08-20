@@ -77,24 +77,41 @@ final class CustomResourceProducersGenerator {
      *  &#64;Singleton
      * public class ResourcesWithParamProducer {
      *
-     *    &#64;Inject
-     *    CurrentVertxRequest currentVertxRequest;
+     *    private String getHeaderParam(String name) {
+     *      return (String)new HeaderParamExtractor(name, true).extractParameter(getContext());
+     *    }
+     *
+     *    private String getQueryParam(String name) {
+     *      return (String)new QueryParamExtractor(name, true, false, null).extractParameter(getContext());
+     *    }
+     *
+     *    private String getPathParam(int index) {
+     *      return (String)new PathParamExtractor(index, false, true).extractParameter(getContext());
+     *    }
+     *
+     *    private String getMatrixParam(String name) {
+     *      return (String)new MatrixParamExtractor(name, true, false).extractParameter(getContext());
+     *    }
+     *
+     *    private String getCookieParam(String name) {
+     *      return (String)new CookieParamExtractor(name, null).extractParameter(getContext());
+     *    }
      *
      *    &#64;Produces
      *    &#64;RequestScoped
      *    public QueryParamResource producer_QueryParamResource_somehash(UriInfo uriInfo) {
-     * 		return new QueryParamResource(getContext().getContext().queryParams().get("p1"), uriInfo);
+     * 		return new QueryParamResource(getQueryParam("p1"), uriInfo);
      *    }
      *
-     * 	private QuarkusRestRequestContext getContext() {
-     * 		return (QuarkusRestRequestContext) currentVertxRequest.getOtherHttpContextObject();
+     * 	private ResteasyReactiveRequestContext getContext() {
+     * 		return CurrentRequestManager.get();
      *    }
      * }
      *
      *  </pre></code>
      */
     public static void generate(Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Set<String> beanParamsThatNeedCustomProducer,
+            Set<DotName> parameterContainersThatNeedCustomProducer,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer);
@@ -307,7 +324,8 @@ final class CustomResourceProducersGenerator {
             }
             // FIXME: support constructors for bean params too
             additionalBeanBuildItemBuildProducer
-                    .produce(AdditionalBeanBuildItem.builder().addBeanClasses(beanParamsThatNeedCustomProducer)
+                    .produce(AdditionalBeanBuildItem.builder()
+                            .addBeanClasses(parameterContainersThatNeedCustomProducer.stream().map(DotName::toString).toList())
                             // FIXME: we should add this, but for that we also need to make the resource class request-scoped
                             //                                                         .setDefaultScope(DOTNAME_REQUEST_SCOPED)
                             //                                                         .setUnremovable()

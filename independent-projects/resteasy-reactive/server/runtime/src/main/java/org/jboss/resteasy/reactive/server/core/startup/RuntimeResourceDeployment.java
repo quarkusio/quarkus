@@ -60,6 +60,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.NullParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.PathParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.QueryParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.RecordBeanParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.serialization.DynamicEntityWriter;
@@ -715,7 +716,12 @@ public class RuntimeResourceDeployment {
                 return extractor;
             case BEAN:
             case MULTI_PART_FORM:
-                return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(loadClass(param.type)));
+                Class<?> paramClass = loadClass(param.type);
+                if (paramClass.isRecord()) {
+                    return new RecordBeanParamExtractor(paramClass);
+                } else {
+                    return new InjectParamExtractor((BeanFactory<Object>) info.getFactoryCreator().apply(paramClass));
+                }
             case MULTI_PART_DATA_INPUT:
                 return MultipartDataInputExtractor.INSTANCE;
             case CUSTOM:

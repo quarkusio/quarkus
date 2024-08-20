@@ -5,12 +5,15 @@ import static org.awaitility.Awaitility.await;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.datagram.DatagramSocket;
@@ -24,6 +27,18 @@ public class VertxUdpMetricsTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(ParticipantA.class, ParticipantB.class));
 
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void setRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll()
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
+
     @Inject
     ParticipantA clientA;
 
@@ -31,7 +46,7 @@ public class VertxUdpMetricsTest {
     ParticipantB clientB;
 
     private Search getMeter(String name) {
-        return Metrics.globalRegistry.find(name);
+        return registry.find(name);
     }
 
     @Test
@@ -40,14 +55,14 @@ public class VertxUdpMetricsTest {
         clientB.start();
         try {
             await().until(clientB::isDone);
-            Assertions.assertTrue(Metrics.globalRegistry.find("udp.bytes.read").tags("address", "127.0.0.1:8888").summary()
+            Assertions.assertTrue(registry.find("udp.bytes.read").tags("address", "127.0.0.1:8888").summary()
                     .totalAmount() > 0);
-            Assertions.assertTrue(Metrics.globalRegistry.find("udp.bytes.read").tags("address", "127.0.0.1:8889").summary()
+            Assertions.assertTrue(registry.find("udp.bytes.read").tags("address", "127.0.0.1:8889").summary()
                     .totalAmount() > 0);
             Assertions.assertNotNull(
-                    Metrics.globalRegistry.find("udp.bytes.written").tags("address", "127.0.0.1:8889").summary());
+                    registry.find("udp.bytes.written").tags("address", "127.0.0.1:8889").summary());
             Assertions.assertNotNull(
-                    Metrics.globalRegistry.find("udp.bytes.written").tags("address", "127.0.0.1:8888").summary());
+                    registry.find("udp.bytes.written").tags("address", "127.0.0.1:8888").summary());
         } finally {
             clientA.stop();
             clientB.stop();

@@ -10,7 +10,6 @@ import jakarta.enterprise.inject.Typed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -23,7 +22,6 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkObservationCollectorBean implements ObservationCollector, StorkEventHandler {
 
     public static final String METRICS_SUFFIX = "-metrics";
-    final MeterRegistry registry = Metrics.globalRegistry;
     public final static Map<String, StorkObservation> STORK_METRICS = new ConcurrentHashMap<>();
     private final Meter.MeterProvider<Counter> instanceCounter;
     private final Meter.MeterProvider<Timer> serviceDiscoveryTimer;
@@ -31,7 +29,7 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
     private final Meter.MeterProvider<Counter> serviceDiscoveryFailures;
     private final Meter.MeterProvider<Counter> serviceSelectionFailures;
 
-    public StorkObservationCollectorBean() {
+    public StorkObservationCollectorBean(final MeterRegistry registry) {
 
         this.instanceCounter = Counter
                 .builder("stork.service-discovery.instances.count")
@@ -45,7 +43,7 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
 
         this.serviceSelectionTimer = Timer
                 .builder("stork.service-selection.duration")
-                .description("The duration of the selection operation ")
+                .description("The duration of the selection operation")
                 .withRegistry(registry);
 
         this.serviceDiscoveryFailures = Counter
@@ -55,7 +53,7 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
 
         this.serviceSelectionFailures = Counter
                 .builder("stork.service-selection.failures")
-                .description("The number of failures during service selection.")
+                .description("The number of failures during service selection")
                 .withRegistry(registry);
     }
 
@@ -71,18 +69,27 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
     public void complete(StorkObservation observation) {
         Tags tags = Tags.of(Tag.of("service-name", observation.getServiceName()));
 
-        this.instanceCounter.withTags(tags).increment(observation.getDiscoveredInstancesCount());
+        int count = observation.getDiscoveredInstancesCount();
+        this.instanceCounter.withTags(tags).increment(Math.max(count, 0));
         this.serviceDiscoveryTimer.withTags(tags).record(observation.getServiceDiscoveryDuration().getNano(),
                 TimeUnit.NANOSECONDS);
         this.serviceSelectionTimer.withTags(tags).record(observation.getServiceSelectionDuration().getNano(),
                 TimeUnit.NANOSECONDS);
 
+        Counter ssf = this.serviceSelectionFailures.withTags(tags);
+        Counter sdf = this.serviceDiscoveryFailures.withTags(tags);
         if (observation.failure() != null) {
             if (observation.isServiceDiscoverySuccessful()) {
-                this.serviceSelectionFailures.withTags(tags).increment();
+                ssf.increment();
             } else {// SD failure
-                this.serviceDiscoveryFailures.withTags(tags).increment();
+                sdf.increment();
+                // This forces the creation of the counter if it does not exist.
+                ssf.increment(0);
             }
+        } else {
+            // This forces the creation of the counters if they do not exist.
+            ssf.increment(0);
+            sdf.increment(0);
         }
 
     }

@@ -36,8 +36,8 @@
         <opentelemetry-alpha.version>2.5.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.25.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.1</quarkus-http.version>
-        <micrometer.version>1.12.5</micrometer.version><!-- keep in sync with hdrhistogram -->
-        <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
+        <micrometer.version>1.13.3</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.1</microprofile-config-api.version>

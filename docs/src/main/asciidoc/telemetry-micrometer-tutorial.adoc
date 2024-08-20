@@ -40,6 +40,8 @@ include::{includes}/devtools/create-app.adoc[]
 This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
 This extension will load the core `micrometer` extension as well as additional library dependencies required to support prometheus.
 
+NOTE: To maintain backwards compatibility, the extension uses the Prometheus client v0.x from Micrometer 1.13+, instead of their default v1.x client.
+
 == Create a REST endpoint
 
 Let's first add a simple endpoint that calculates prime numbers.

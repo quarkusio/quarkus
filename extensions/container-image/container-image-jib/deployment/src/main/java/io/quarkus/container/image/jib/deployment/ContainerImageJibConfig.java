@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -30,7 +31,7 @@ public class ContainerImageJibConfig {
      * "registry.access.redhat.com/ubi8/ubi-minimal" which is a bigger base image, but provide more built-in utilities
      * such as the microdnf package manager.
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/quarkus-micro-image:2.0")
+    @ConfigItem(defaultValue = ContainerImages.QUARKUS_MICRO_IMAGE)
     public String baseNativeImage;
 
     /**

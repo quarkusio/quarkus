@@ -15,6 +15,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.container.image.docker.common.deployment.DockerFileBaseInformationProvider.DockerFileBaseInformation;
+import io.quarkus.deployment.images.ContainerImages;
 
 class UbiMinimalBaseProviderTest {
 
@@ -39,10 +40,10 @@ class UbiMinimalBaseProviderTest {
 
     static Stream<Arguments> imageCombinations() {
         return Stream.of(
-                Arguments.of(8, 17, "8.10"),
-                Arguments.of(8, 21, "8.10"),
-                Arguments.of(9, 17, "9.4"),
-                Arguments.of(9, 21, "9.4"));
+                Arguments.of(8, 17, ContainerImages.UBI8_MINIMAL_VERSION),
+                Arguments.of(8, 21, ContainerImages.UBI8_MINIMAL_VERSION),
+                Arguments.of(9, 17, ContainerImages.UBI9_MINIMAL_VERSION),
+                Arguments.of(9, 21, ContainerImages.UBI9_MINIMAL_VERSION));
     }
 
     @Test

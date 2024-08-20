@@ -68,6 +68,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
@@ -93,15 +94,6 @@ public class JibProcessor {
     public static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
-
-    private static final String UBI8_PREFIX = "registry.access.redhat.com/ubi8";
-    private static final String OPENJDK_PREFIX = "openjdk";
-    private static final String RUNTIME_SUFFIX = "runtime";
-
-    private static final String JAVA_21_BASE_IMAGE = String.format("%s/%s-21-%s:1.20", UBI8_PREFIX, OPENJDK_PREFIX,
-            RUNTIME_SUFFIX);
-    private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.20", UBI8_PREFIX, OPENJDK_PREFIX,
-            RUNTIME_SUFFIX);
 
     // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi8/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
     // A list of env vars that affect this script can be found at https://jboss-container-images.github.io/openjdk/ubi8/ubi8-openjdk-17.html
@@ -146,11 +138,7 @@ public class JibProcessor {
             return jibConfig.baseJvmImage.get();
         }
 
-        var javaVersion = compiledJavaVersion.getJavaVersion();
-        if (javaVersion.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return JAVA_21_BASE_IMAGE;
-        }
-        return JAVA_17_BASE_IMAGE;
+        return ContainerImages.getDefaultJvmImage(compiledJavaVersion.getJavaVersion());
     }
 
     @SuppressWarnings("deprecation") // legacy JAR
@@ -658,8 +646,10 @@ public class JibProcessor {
 
     // TODO: this needs to be a lot more sophisticated
     private boolean containsRunJava(String baseJvmImage) {
-        return baseJvmImage.startsWith(UBI8_PREFIX) && baseJvmImage.contains(OPENJDK_PREFIX)
-                && baseJvmImage.contains(RUNTIME_SUFFIX);
+        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME) ||
+                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,

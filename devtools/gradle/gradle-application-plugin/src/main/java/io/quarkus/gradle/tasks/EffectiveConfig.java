@@ -5,10 +5,13 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableMap;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +78,6 @@ public final class EffectiveConfig {
                 .withMapping(PackageConfig.class)
                 .withMapping(NativeConfig.class)
                 .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
-                .setAddDiscoveredSecretKeysHandlers(false)
                 .build();
         this.values = generateFullConfigMap(config);
     }
@@ -168,6 +170,17 @@ public final class EffectiveConfig {
         }
     }
 
+    /**
+     * Builds a specific {@link ClassLoader} for {@link SmallRyeConfig} to include potential configuration files in
+     * the application source paths. The {@link ClassLoader} excludes the path <code>META-INF/services</code> because
+     * in most cases, the ServiceLoader files will reference service implementations that are not yet compiled. It is
+     * possible that the service files reference implementations from dependencies, which are valid and, in this case,
+     * wrongly excluded, but most likely only required for the application and not the Gradle build. We will rewrite
+     * the implementation to cover that case if this becomes an issue.
+     *
+     * @param sourceDirectories a Set of source directories specified by the Gradle build.
+     * @return a {@link ClassLoader} with the source paths
+     */
     private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
         List<URL> urls = new ArrayList<>();
         for (File sourceDirectory : sourceDirectories) {
@@ -177,6 +190,23 @@ public final class EffectiveConfig {
                 throw new RuntimeException(e);
             }
         }
-        return new URLClassLoader(urls.toArray(new URL[0]));
+
+        return new URLClassLoader(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader()) {
+            @Override
+            public URL getResource(String name) {
+                if (name.startsWith("META-INF/services/")) {
+                    return null;
+                }
+                return super.getResource(name);
+            }
+
+            @Override
+            public Enumeration<URL> getResources(String name) throws IOException {
+                if (name.startsWith("META-INF/services/")) {
+                    return Collections.emptyEnumeration();
+                }
+                return super.getResources(name);
+            }
+        };
     }
 }

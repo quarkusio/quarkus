@@ -8,8 +8,8 @@ See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/t
 
 You can also use a simplified format, starting with a number:
 
-* If the value is only a number, it represents time in seconds.\n
-* If the value is a number followed by `ms`, it represents time in milliseconds.\n
+* If the value is only a number, it represents time in seconds.
+* If the value is a number followed by `ms`, it represents time in milliseconds.
 
 In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:
 

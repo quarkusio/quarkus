@@ -34,7 +34,7 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.39.0</opentelemetry.version>
         <opentelemetry-alpha.version>2.5.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-semconv.version>1.25.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-semconv.version>1.26.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.1</quarkus-http.version>
         <micrometer.version>1.12.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->

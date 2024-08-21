@@ -4,6 +4,8 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.NEW_AUTHENTICATION;
 import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_RESPONSE;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
@@ -940,7 +942,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             Authentication authentication = configContext.oidcConfig.authentication;
             boolean pkceRequired = authentication.pkceRequired.orElse(false);
             if (!pkceRequired && !authentication.nonceRequired) {
-                bean.setRestorePath(parsedStateCookieValue[1]);
+                bean.setRestorePath(URLDecoder.decode(parsedStateCookieValue[1], StandardCharsets.UTF_8));
                 return bean;
             }
 
@@ -1177,7 +1179,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 throw new AuthenticationCompletionException(ex);
             }
         } else {
-            return extraStateValue.getRestorePath();
+            return URLEncoder.encode(extraStateValue.getRestorePath(), StandardCharsets.UTF_8);
         }
 
     }

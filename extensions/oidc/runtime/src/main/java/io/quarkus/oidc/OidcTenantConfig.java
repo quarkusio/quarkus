@@ -424,6 +424,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public static class Backchannel {
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
+         * It must start with the forward slash '/', for example, '/back-channel-logout'.
+         * This value is always resolved relative to 'quarkus.http.root-path'.
          */
         @ConfigItem
         public Optional<String> path = Optional.empty();

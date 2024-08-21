@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public class MultiRootPathTree implements OpenPathTree {
 
@@ -32,9 +31,9 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         for (PathTree tree : trees) {
-            final Manifest m = tree.getManifest();
+            final ManifestAttributes m = tree.getManifestAttributes();
             if (m != null) {
                 return m;
             }

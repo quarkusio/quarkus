@@ -52,6 +52,8 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+      m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
+      m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
       m2-cache-key: ${{ steps.cache-key.outputs.m2-cache-key }}
       quarkus-metadata-cache-key: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key }}
       quarkus-metadata-cache-key-default: ${{ steps.cache-key.outputs.quarkus-metadata-cache-key-default }}
@@ -77,17 +79,25 @@ jobs:
       - name: Generate cache key
         id: cache-key
         run: |
+          CURRENT_BRANCH="${{ github.repository != 'quarkusio/quarkus' && 'fork' || github.base_ref || github.ref_name }}"
+          CURRENT_MONTH=$(/bin/date -u "+%Y-%m")
+          CURRENT_DAY=$(/bin/date -u "+%d")
+          ROOT_CACHE_KEY="m2-cache"
+          echo "m2-monthly-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}" >> $GITHUB_OUTPUT
+          echo "m2-monthly-branch-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}" >> $GITHUB_OUTPUT
+          echo "m2-cache-key=${ROOT_CACHE_KEY}-${CURRENT_MONTH}-${CURRENT_BRANCH}-${CURRENT_DAY}" >> $GITHUB_OUTPUT
           CURRENT_WEEK=$(/bin/date -u "+%Y-%U")
-          echo "m2-cache-key=m2-cache-${CURRENT_WEEK}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "quarkus-metadata-cache-key-default=quarkus-metadata-cache-${CURRENT_WEEK}-${{ github.event.repository.default_branch }}" >> $GITHUB_OUTPUT
-      - name: Cache Maven Repository
-        id: cache-maven
-        uses: actions/cache@v4
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
+          # This will always fail but we will default to the best matching restore keys
           key: ${{ steps.cache-key.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}-
+            ${{ steps.cache-key.outputs.m2-monthly-cache-key }}-
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
@@ -226,8 +236,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v4
         with:
@@ -329,8 +341,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
-          # refresh cache every week to avoid unlimited growth
           key: ${{ needs.build-jdk17.outputs.m2-cache-key }}
+          restore-keys: |
+            ${{ needs.build-jdk17.outputs.m2-monthly-branch-cache-key }}-
+            ${{ needs.build-jdk17.outputs.m2-monthly-cache-key }}-
       - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v4
         with:

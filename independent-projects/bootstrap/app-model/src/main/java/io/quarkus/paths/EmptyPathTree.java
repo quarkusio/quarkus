@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 public class EmptyPathTree implements OpenPathTree {
 
@@ -22,7 +21,7 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         return null;
     }
 

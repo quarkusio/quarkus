@@ -7,9 +7,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
@@ -63,9 +63,9 @@ public class FilteredClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         //we don't support filtering the manifest
-        return delegate.getManifest();
+        return delegate.getManifestAttributes();
     }
 
     @Override

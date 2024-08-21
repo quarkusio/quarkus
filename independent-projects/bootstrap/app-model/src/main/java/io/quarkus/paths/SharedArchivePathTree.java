@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.jar.Manifest;
 
 /**
  * While {@link ArchivePathTree} implementation is thread-safe, this implementation
@@ -58,7 +57,7 @@ class SharedArchivePathTree extends ArchivePathTree {
             return new CallerOpenPathTree(lastOpen);
         }
         try {
-            this.lastOpen = new SharedOpenArchivePathTree(openFs());
+            this.lastOpen = new SharedOpenArchivePathTree(archive, openFs());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -69,7 +68,7 @@ class SharedArchivePathTree extends ArchivePathTree {
 
         private final AtomicInteger users = new AtomicInteger(1);
 
-        protected SharedOpenArchivePathTree(FileSystem fs) {
+        protected SharedOpenArchivePathTree(Path archivePath, FileSystem fs) {
             super(fs);
             openCount.incrementAndGet();
         }
@@ -144,8 +143,8 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
-        public Manifest getManifest() {
-            return delegate.getManifest();
+        public ManifestAttributes getManifestAttributes() {
+            return delegate.getManifestAttributes();
         }
 
         @Override

@@ -11,6 +11,6 @@ public interface OpenTelemetryLogConfig {
     /**
      * Determine whether to enable the OpenTelemetry logging handler
      */
-    @WithDefault("false")
+    @WithDefault("true")
     boolean enabled();
 }

@@ -1,5 +1,7 @@
 package io.quarkus.mailer.runtime;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,15 +16,20 @@ import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
@@ -34,6 +41,10 @@ import io.vertx.ext.mail.LoginOption;
 import io.vertx.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.StartTLSOptions;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 
 /**
  * This class is a sort of producer for mailer instances.
@@ -135,7 +146,7 @@ public class Mailers {
 
     private MailClient createMailClient(Vertx vertx, String name, MailerRuntimeConfig config,
             TlsConfigurationRegistry tlsRegistry) {
-        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(name, config, tlsRegistry);
+        io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(vertx, name, config, tlsRegistry);
         // Do not create a shared instance, as we want separated connection pool for each SMTP servers.
         return MailClient.create(vertx, cfg);
     }
@@ -202,11 +213,34 @@ public class Mailers {
         return vertxDkimOptions;
     }
 
-    private io.vertx.ext.mail.MailConfig toVertxMailConfig(String name, MailerRuntimeConfig config,
+    private io.vertx.ext.mail.MailConfig toVertxMailConfig(Vertx vertx, String name, MailerRuntimeConfig config,
             TlsConfigurationRegistry tlsRegistry) {
         io.vertx.ext.mail.MailConfig cfg = new io.vertx.ext.mail.MailConfig();
+
         if (config.authMethods.isPresent()) {
             cfg.setAuthMethods(config.authMethods.get());
+            if ("XOAUTH2".equals(config.authMethods.get())) {
+                if (config.oauth2TokenEndpoint.isPresent()) {
+                    WebClientOptions options = new WebClientOptions()
+                            .setSsl(true).setTrustAll(true).setVerifyHost(false);
+                    WebClient webClient = WebClient.create(vertx, options);
+                    Buffer encodedParams = urlEncodeOAuth2Params(config.oauth2Params);
+                    HttpRequest<Buffer> request = webClient.getAbs(config.oauth2TokenEndpoint.get());
+                    request.putHeader("Content-Type", "application/x-www-form-urlencode");
+                    request.putHeader("Accept", "application/json");
+                    HttpResponse<Buffer> response = awaitHttpResponse(request.sendBuffer(encodedParams));
+                    JsonObject json = response.bodyAsJsonObject();
+                    cfg.setPassword(json.getString("access_token"));
+                } else if (!config.password.isPresent()) {
+                    // It is not clear right now what it means if XOAuth2 is set and the password is set.
+                    // For example, this password may be set in devmode to a token acquired out of band
+                    // Therefore we avoid picking up an authentication token if the password is set.
+                    InstanceHandle<TokenCredential> token = Arc.container().instance(TokenCredential.class);
+                    if (token.isAvailable()) {
+                        cfg.setPassword(token.get().getToken());
+                    }
+                }
+            }
         }
         cfg.setDisableEsmtp(config.disableEsmtp);
         cfg.setHostname(config.host);
@@ -221,6 +255,7 @@ public class Mailers {
         if (config.username.isPresent()) {
             cfg.setUsername(config.username.get());
         }
+
         if (config.password.isPresent()) {
             cfg.setPassword(config.password.get());
         }
@@ -253,6 +288,35 @@ public class Mailers {
         cfg.setMetricsName("mail");
 
         return cfg;
+    }
+
+    private <T> T awaitHttpResponse(Future<T> future) {
+        try {
+            return future.toCompletionStage().toCompletableFuture().get(30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Buffer urlEncodeOAuth2Params(Map<String, String> form) {
+        Buffer buffer = Buffer.buffer();
+        for (Map.Entry<String, String> entry : form.entrySet()) {
+            if (buffer.length() != 0) {
+                buffer.appendByte((byte) '&');
+            }
+            buffer.appendString(entry.getKey());
+            buffer.appendByte((byte) '=');
+            buffer.appendString(urlEncode(entry.getValue()));
+        }
+        return buffer;
+    }
+
+    private static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private void configureTLS(String name, MailerRuntimeConfig config, TlsConfigurationRegistry tlsRegistry, MailConfig cfg) {

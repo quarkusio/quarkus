@@ -273,6 +273,10 @@ public class InfinispanClientProducer {
             properties.put(ConfigurationProperties.SNI_HOST_NAME, infinispanClientRuntimeConfig.sniHostName.get());
         }
 
+        if (infinispanClientRuntimeConfig.socketTimeout.isPresent()) {
+            properties.put(ConfigurationProperties.SO_TIMEOUT, infinispanClientRuntimeConfig.socketTimeout.get());
+        }
+
         builder.withProperties(properties);
 
         if (infinispanClientRuntimeConfig.tracingPropagationEnabled.isPresent()) {

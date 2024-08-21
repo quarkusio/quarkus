@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
@@ -1561,12 +1562,12 @@ public class CodeFlowTest {
 
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
         String[] parts = getStateCookie(webClient, tenantId).getValue().split("\\|");
-        return parts.length == 2 ? parts[1] : null;
+        return parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : null;
     }
 
     private String getStateCookieSavedPath(Cookie stateCookie) {
         String[] parts = stateCookie.getValue().split("\\|");
-        return parts.length == 2 ? parts[1] : null;
+        return parts.length == 2 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : null;
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {

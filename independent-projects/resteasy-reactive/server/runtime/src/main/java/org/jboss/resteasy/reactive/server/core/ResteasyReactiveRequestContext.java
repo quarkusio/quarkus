@@ -821,13 +821,25 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public Object getHeader(String name, boolean single) {
         if (httpHeaders == null) {
-            if (single)
-                return serverRequest().getRequestHeader(name);
+            if (single) {
+                String header = serverRequest().getRequestHeader(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
             return serverRequest().getAllRequestHeaders(name);
         } else {
-            if (single)
-                return httpHeaders.getMutableHeaders().getFirst(name);
+            if (single) {
+                String header = httpHeaders.getMutableHeaders().getFirst(name);
+                if (header == null || header.isEmpty()) {
+                    return null;
+                } else {
+                    return header;
+                }
+            }
             // empty collections must not be turned to null
             List<String> list = httpHeaders.getMutableHeaders().get(name);
             if (list == null) {
@@ -846,6 +858,9 @@ public abstract class ResteasyReactiveRequestContext
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
+            if (val != null && val.isEmpty()) {
+                return null;
+            }
             if (encoded && val != null) {
                 val = Encode.encodeQueryParam(val);
             }
@@ -909,7 +924,7 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public String getCookieParameter(String name) {
         Cookie cookie = getHttpHeaders().getCookies().get(name);
-        return cookie != null ? cookie.getValue() : null;
+        return cookie != null && !cookie.getValue().isEmpty() ? cookie.getValue() : null;
     }
 
     @Override
@@ -919,7 +934,7 @@ public abstract class ResteasyReactiveRequestContext
         }
         if (single) {
             FormValue val = formData.getFirst(name);
-            if (val == null || val.isFileItem()) {
+            if (val == null || val.isFileItem() || val.getValue().isEmpty()) {
                 return null;
             }
             if (encoded) {

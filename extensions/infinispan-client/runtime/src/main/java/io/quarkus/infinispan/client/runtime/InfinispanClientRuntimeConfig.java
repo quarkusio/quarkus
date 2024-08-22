@@ -125,6 +125,33 @@ public class InfinispanClientRuntimeConfig {
     Optional<String> saslMechanism;
 
     /**
+     * Specifies the filename of a keystore to use to create the {@link SSLContext}.
+     * You also need to specify a keyStorePassword.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> keyStore;
+
+    /**
+     * Specifies the password needed to open the keystore. You also need to specify a keyStore.
+     * Setting this property implicitly enables SSL/TLS.
+     */
+    @ConfigItem
+    Optional<String> keyStorePassword;
+
+    /**
+     * Specifies the type of the keyStore, such as PKCS12.
+     */
+    @ConfigItem
+    Optional<String> keyStoreType;
+
+    /**
+     * Sets the unique name used to identify a specific key pair in a keystore for secure connections.
+     */
+    @ConfigItem
+    Optional<String> keyAlias;
+
+    /**
      * Specifies the filename of a truststore to use to create the {@link SSLContext}.
      * You also need to specify a trustStorePassword.
      * Setting this property implicitly enables SSL/TLS.

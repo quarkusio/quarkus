@@ -1,6 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.merger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -44,8 +45,8 @@ public final class ModelMerger {
                 continue;
             }
 
-            try {
-                ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().readValue(resolvedModelPath.toFile(),
+            try (InputStream resolvedModelIs = Files.newInputStream(resolvedModelPath)) {
+                ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().readValue(resolvedModelIs,
                         ResolvedModel.class);
 
                 if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {

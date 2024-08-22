@@ -152,9 +152,9 @@ class MongoParserVisitor extends HqlParserBaseVisitor<String> {
     @Override
     public String visitInPredicate(HqlParser.InPredicateContext ctx) {
         StringBuilder sb = new StringBuilder(ctx.expression().accept(this))
-                .append(":{'$in':[")
+                .append(":{'$in':")
                 .append(ctx.inList().accept(this))
-                .append("]}");
+                .append("}");
         return sb.toString();
     }
 

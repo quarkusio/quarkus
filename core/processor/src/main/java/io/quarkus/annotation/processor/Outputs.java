@@ -7,24 +7,27 @@ package io.quarkus.annotation.processor;
  */
 public final class Outputs {
 
-    public static final String META_INF_QUARKUS_BUILD_STEPS = "META-INF/quarkus-build-steps.list";
-    public static final String META_INF_QUARKUS_CONFIG_ROOTS = "META-INF/quarkus-config-roots.list";
+    public static final String META_INF = "META-INF";
+
+    public static final String META_INF_QUARKUS_BUILD_STEPS = META_INF + "/quarkus-build-steps.list";
+    public static final String META_INF_QUARKUS_CONFIG_ROOTS = META_INF + "/quarkus-config-roots.list";
 
     private static final String QUARKUS_CONFIG_DOC = "quarkus-config-doc";
     public static final String QUARKUS_CONFIG_DOC_JAVADOC = QUARKUS_CONFIG_DOC + "/quarkus-config-javadoc.yaml";
     public static final String QUARKUS_CONFIG_DOC_MODEL = QUARKUS_CONFIG_DOC + "/quarkus-config-model.yaml";
 
-    public static final String META_INF_QUARKUS_CONFIG = "META-INF/" + QUARKUS_CONFIG_DOC;
-    public static final String META_INF_QUARKUS_CONFIG_JAVADOC_JSON = META_INF_QUARKUS_CONFIG + "/quarkus-config-javadoc.json";
-    public static final String META_INF_QUARKUS_CONFIG_MODEL_JSON = META_INF_QUARKUS_CONFIG + "/quarkus-config-model.json";
-    public static final String META_INF_QUARKUS_CONFIG_MODEL_VERSION = META_INF_QUARKUS_CONFIG
+    public static final String META_INF_QUARKUS_CONFIG_JAVADOC_JSON = META_INF + "/" + QUARKUS_CONFIG_DOC
+            + "/quarkus-config-javadoc.json";
+    public static final String META_INF_QUARKUS_CONFIG_MODEL_JSON = META_INF + "/" + QUARKUS_CONFIG_DOC
+            + "/quarkus-config-model.json";
+    public static final String META_INF_QUARKUS_CONFIG_MODEL_VERSION = META_INF + "/" + QUARKUS_CONFIG_DOC
             + "/quarkus-config-model-version";
 
     /**
      * Ideally, we should remove this file at some point.
      */
     @Deprecated(forRemoval = true)
-    public static final String META_INF_QUARKUS_JAVADOC = "META-INF/quarkus-javadoc.properties";
+    public static final String META_INF_QUARKUS_JAVADOC = META_INF + "/quarkus-javadoc.properties";
 
     private Outputs() {
     }

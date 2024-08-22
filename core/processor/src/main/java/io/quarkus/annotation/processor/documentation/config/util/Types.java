@@ -7,6 +7,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class Types {
 
@@ -53,7 +54,9 @@ public final class Types {
 
     static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();
 
-    static final Map<String, String> PRIMITIVE_WRAPPERS = new HashMap<>();
+    static final Map<String, String> WRAPPERS_TO_PRIMITIVES = new HashMap<>();
+
+    static final Map<String, String> PRIMITIVES_TO_WRAPPERS;
 
     static {
         PRIMITIVE_DEFAULT_VALUES.put("int", "0");
@@ -65,13 +68,16 @@ public final class Types {
         PRIMITIVE_DEFAULT_VALUES.put("double", "0d");
         PRIMITIVE_DEFAULT_VALUES.put("boolean", "false");
 
-        PRIMITIVE_WRAPPERS.put("java.lang.Character", "char");
-        PRIMITIVE_WRAPPERS.put("java.lang.Boolean", "boolean");
-        PRIMITIVE_WRAPPERS.put("java.lang.Byte", "byte");
-        PRIMITIVE_WRAPPERS.put("java.lang.Short", "short");
-        PRIMITIVE_WRAPPERS.put("java.lang.Integer", "int");
-        PRIMITIVE_WRAPPERS.put("java.lang.Long", "long");
-        PRIMITIVE_WRAPPERS.put("java.lang.Float", "float");
-        PRIMITIVE_WRAPPERS.put("java.lang.Double", "double");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Character", "char");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Boolean", "boolean");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Byte", "byte");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Short", "short");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Integer", "int");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Long", "long");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Float", "float");
+        WRAPPERS_TO_PRIMITIVES.put("java.lang.Double", "double");
+
+        PRIMITIVES_TO_WRAPPERS = WRAPPERS_TO_PRIMITIVES.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 }

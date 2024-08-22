@@ -14,8 +14,11 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.WildcardType;
 import javax.tools.Diagnostic;
 import javax.tools.StandardLocation;
 
@@ -59,6 +62,65 @@ public class ElementUtil {
 
     public String getBinaryName(TypeElement clazz) {
         return processingEnv.getElementUtils().getBinaryName(clazz).toString();
+    }
+
+    public String getBinaryName(TypeMirror mirror) {
+        switch (mirror.getKind()) {
+            case DECLARED:
+                DeclaredType declared = (DeclaredType) mirror;
+                TypeElement element = (TypeElement) declared.asElement();
+                String binaryName = processingEnv.getElementUtils().getBinaryName(element).toString();
+
+                if (declared.getTypeArguments().isEmpty()) {
+                    return binaryName;
+                }
+
+                StringBuilder sb = new StringBuilder(binaryName);
+                sb.append("<");
+                boolean first = true;
+                for (TypeMirror arg : declared.getTypeArguments()) {
+                    if (!first) {
+                        sb.append(", ");
+                    }
+                    sb.append(getBinaryName(arg));
+                    first = false;
+                }
+                sb.append(">");
+                return sb.toString();
+
+            case ARRAY:
+                ArrayType array = (ArrayType) mirror;
+                return getBinaryName(array.getComponentType()) + "[]";
+
+            case TYPEVAR:
+                TypeVariable typeVar = (TypeVariable) mirror;
+                return typeVar.toString(); // usually T or generic param
+
+            case WILDCARD:
+                WildcardType wildcard = (WildcardType) mirror;
+                StringBuilder wildcardSb = new StringBuilder("?");
+                if (wildcard.getExtendsBound() != null) {
+                    wildcardSb.append(" extends ").append(getBinaryName(wildcard.getExtendsBound()));
+                } else if (wildcard.getSuperBound() != null) {
+                    wildcardSb.append(" super ").append(getBinaryName(wildcard.getSuperBound()));
+                }
+                return wildcardSb.toString();
+
+            // we return the toString() for primitive types
+            case BOOLEAN:
+            case BYTE:
+            case SHORT:
+            case INT:
+            case LONG:
+            case CHAR:
+            case FLOAT:
+            case DOUBLE:
+            case VOID:
+                return mirror.toString();
+
+            default:
+                return mirror.toString(); // fallback
+        }
     }
 
     public String getRelativeBinaryName(TypeElement typeElement) {

@@ -13,6 +13,7 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 
 public class OpenTelemetryLogHandler extends Handler {
@@ -20,7 +21,12 @@ public class OpenTelemetryLogHandler extends Handler {
 
     @Override
     public void publish(LogRecord record) {
-        try (InstanceHandle<OpenTelemetry> openTelemetry = Arc.container().instance(OpenTelemetry.class)) {
+        ArcContainer container = Arc.container();
+        if (container == null || !container.instance(OpenTelemetry.class).isAvailable()) {
+            // "quarkus-opentelemetry-deployment stopped in Xs" will never be sent.
+            return; // evaluate to perform cache of log entries here and replay them later.
+        }
+        try (InstanceHandle<OpenTelemetry> openTelemetry = container.instance(OpenTelemetry.class)) {
             if (openTelemetry.isAvailable()) {
                 LogRecordBuilder logRecordBuilder = openTelemetry.get().getLogsBridge().loggerBuilder(INSTRUMENTATION_NAME)
                         .build().logRecordBuilder()

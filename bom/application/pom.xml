@@ -181,7 +181,7 @@
         <mockito.version>5.12.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <quarkus-security.version>2.1.0</quarkus-security.version>
-        <keycloak.version>25.0.2</keycloak.version>
+        <keycloak.version>25.0.4</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.46.0</checker-qual.version>
         <error-prone-annotations.version>2.30.0</error-prone-annotations.version>

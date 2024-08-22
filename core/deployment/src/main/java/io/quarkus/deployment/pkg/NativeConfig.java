@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -19,9 +20,6 @@ import io.smallrye.config.WithParentName;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.native")
 public interface NativeConfig {
-
-    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-21";
-    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21";
 
     /**
      * Set to enable native-image building using GraalVM.
@@ -275,9 +273,9 @@ public interface NativeConfig {
         default String getEffectiveImage() {
             final String builderImageName = this.image().toUpperCase();
             if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-                return DEFAULT_GRAALVM_BUILDER_IMAGE;
+                return ContainerImages.GRAALVM_BUILDER;
             } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-                return DEFAULT_MANDREL_BUILDER_IMAGE;
+                return ContainerImages.MANDREL_BUILDER;
             } else {
                 return this.image();
             }

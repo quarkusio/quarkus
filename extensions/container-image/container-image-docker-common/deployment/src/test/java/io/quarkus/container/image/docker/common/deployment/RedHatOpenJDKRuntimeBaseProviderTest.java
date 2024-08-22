@@ -15,6 +15,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.container.image.docker.common.deployment.DockerFileBaseInformationProvider.DockerFileBaseInformation;
+import io.quarkus.deployment.images.ContainerImages;
 
 class RedHatOpenJDKRuntimeBaseProviderTest {
 
@@ -40,10 +41,10 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
 
     static Stream<Arguments> imageCombinations() {
         return Stream.of(
-                Arguments.of(17, 8, "1.20"),
-                Arguments.of(21, 8, "1.20"),
-                Arguments.of(17, 9, "1.20"),
-                Arguments.of(21, 9, "1.20"));
+                Arguments.of(17, 8, ContainerImages.UBI8_JAVA_VERSION),
+                Arguments.of(21, 8, ContainerImages.UBI8_JAVA_VERSION),
+                Arguments.of(17, 9, ContainerImages.UBI8_JAVA_VERSION),
+                Arguments.of(21, 9, ContainerImages.UBI8_JAVA_VERSION));
     }
 
     @Test

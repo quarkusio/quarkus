@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -15,10 +16,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "openshift", phase = ConfigPhase.BUILD_TIME)
 public class ContainerImageOpenshiftConfig {
 
-    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.20";
-    public static final String DEFAULT_BASE_JVM_JDK21_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21:1.20";
-
-    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:2.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
     public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";
@@ -31,9 +28,9 @@ public class ContainerImageOpenshiftConfig {
 
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return DEFAULT_BASE_JVM_JDK21_IMAGE;
+            return ContainerImages.S2I_JAVA_21;
         }
-        return DEFAULT_BASE_JVM_JDK17_IMAGE;
+        return ContainerImages.S2I_JAVA_17;
     }
 
     /**
@@ -60,7 +57,7 @@ public class ContainerImageOpenshiftConfig {
      * When it references images already available in the internal Openshift registry, the corresponding streams are used
      * instead.
      */
-    @ConfigItem(defaultValue = DEFAULT_BASE_NATIVE_IMAGE)
+    @ConfigItem(defaultValue = ContainerImages.QUARKUS_BINARY_S2I)
     public String baseNativeImage;
 
     /**
@@ -149,7 +146,7 @@ public class ContainerImageOpenshiftConfig {
      * @returns true if baseNativeImage is the default
      */
     public boolean hasDefaultBaseNativeImage() {
-        return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
+        return baseNativeImage.equals(ContainerImages.QUARKUS_BINARY_S2I);
     }
 
     /**

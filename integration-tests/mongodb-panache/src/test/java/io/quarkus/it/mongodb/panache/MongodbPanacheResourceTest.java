@@ -183,6 +183,21 @@ class MongodbPanacheResourceTest {
         book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
         Assertions.assertNotNull(book);
 
+        // update categories list using HQL
+        response = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .put(endpoint + "/update-categories/" + book.getId())
+                .andReturn();
+        Assertions.assertEquals(202, response.statusCode());
+
+        //check that the title and categories have been updated and the transient description ignored
+        book = get(endpoint + "/" + book.getId().toString()).as(BookDTO.class);
+        Assertions.assertNotNull(book);
+        Assertions.assertEquals("Notre-Dame de Paris 2", book.getTitle());
+        Assertions.assertNull(book.getTransientDescription());
+        Assertions.assertEquals(List.of("novel", "fiction"), book.getCategories());
+
         //delete a book
         response = RestAssured
                 .given()

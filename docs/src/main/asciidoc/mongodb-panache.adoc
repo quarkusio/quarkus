@@ -572,11 +572,13 @@ Here are some query examples:
 - `amount > ?1 and firstname != ?2` will be mapped to `{'amount': {'$gt': ?1}, 'firstname': {'$ne': ?2}}`
 - `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern.
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
-- `status in ?1` will be mapped to `{'status':{$in: [?1]}}`
+- `status in ?1` will be mapped to `{'status':{$in: ?1}}`
 
 WARNING: MongoDB queries must be valid JSON documents,
 using the same field multiple times in a query is not allowed using PanacheQL as it would generate an invalid JSON
 (see link:https://github.com/quarkusio/quarkus/issues/12086[this issue on GitHub]).
+
+WARNING: Prior to Quarkus 3.16, when using `$in` with a list, you had to write your query with `{'status':{$in: [?1]}}`. Starting with Quarkus 3.16, make sure you use `{'status':{$in: ?1}}` instead. The list will be properly expanded with surrounding square brackets.
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
 link:https://docs.mongodb.com/manual/reference/bson-types/#date[BSON Date] using the `ISODate` type (UTC datetime).

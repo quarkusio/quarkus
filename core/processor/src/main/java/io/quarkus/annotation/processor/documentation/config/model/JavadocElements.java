@@ -8,4 +8,8 @@ public record JavadocElements(Extension extension, Map<String, JavadocElement> e
 
     public record JavadocElement(String description, String since, @JsonIgnore String rawJavadoc) {
     }
+
+    public boolean isEmpty() {
+        return elements.isEmpty();
+    }
 }

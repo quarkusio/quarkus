@@ -145,4 +145,9 @@ public final class ConfigProperty extends AbstractConfigItem {
     public boolean hasMemorySizeType() {
         return Types.MEMORY_SIZE_TYPE.equals(type);
     }
+
+    @Override
+    protected void walk(ConfigItemVisitor visitor) {
+        visitor.visit(this);
+    }
 }

@@ -67,7 +67,7 @@ public class ConsoleProcessor {
             return ConsoleInstalledBuildItem.INSTANCE;
         }
         consoleInstalled = true;
-        if (config.console.orElse(consoleConfig.enabled)) {
+        if (config.console().orElse(consoleConfig.enabled)) {
             //this is a bit of a hack, but we can't just inject this normally
             //this is a runtime property value, but also a build time property value
             //as when running in dev mode they are both basically equivalent
@@ -80,8 +80,8 @@ public class ConsoleProcessor {
                     launchModeBuildItem.isTest());
             ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
             //note that this bit needs to be refactored so it is no longer tied to continuous testing
-            if (TestSupport.instance().isEmpty() || config.continuousTesting == TestConfig.Mode.DISABLED
-                    || config.flatClassPath) {
+            if (TestSupport.instance().isEmpty() || config.continuousTesting() == TestConfig.Mode.DISABLED
+                    || config.flatClassPath()) {
                 return ConsoleInstalledBuildItem.INSTANCE;
             }
             TestConsoleHandler consoleHandler = new TestConsoleHandler(launchModeBuildItem.getDevModeType().get());

@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.bson.Document;
 import org.bson.codecs.pojo.annotations.BsonProperty;
+import org.bson.conversions.Bson;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -39,12 +39,12 @@ class MongoOperationsTest {
         }
 
         @Override
-        protected Object createUpdate(MongoCollection collection, Class entityClass, Document docUpdate) {
+        protected Object createUpdate(MongoCollection collection, Class entityClass, Bson docUpdate) {
             return null;
         }
 
         @Override
-        protected Object createQuery(MongoCollection collection, ClientSession session, Document query, Document sortDoc) {
+        protected Object createQuery(MongoCollection collection, ClientSession session, Bson query, Bson sortDoc) {
             return null;
         }
     };

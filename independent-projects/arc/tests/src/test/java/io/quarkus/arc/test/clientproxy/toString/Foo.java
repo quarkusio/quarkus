@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.clientproxy.toString;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class Foo {

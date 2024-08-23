@@ -2,14 +2,16 @@ package io.quarkus.devtools.codestarts.extension;
 
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 
-import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
-import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusExtensionCodestartGenerationTest {
 
@@ -29,7 +31,8 @@ class QuarkusExtensionCodestartGenerationTest {
                 .putData(QuarkusExtensionData.EXTENSION_NAME, "My Extension")
                 .putData(QuarkusExtensionData.VERSION, "1.0.0-SNAPSHOT")
                 .putData(QuarkusExtensionData.PACKAGE_NAME, "org.extension")
-                .putData(QuarkusExtensionData.CLASS_NAME_BASE, "MyExtension");
+                .putData(QuarkusExtensionData.CLASS_NAME_BASE, "MyExtension")
+                .putData(QuarkusExtensionData.JAVA_VERSION, "11");
     }
 
     @Test

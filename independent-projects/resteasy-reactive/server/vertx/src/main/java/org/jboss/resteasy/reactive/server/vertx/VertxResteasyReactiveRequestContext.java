@@ -1,17 +1,5 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
-import io.netty.buffer.Unpooled;
-import io.netty.channel.EventLoop;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.util.concurrent.ScheduledFuture;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.net.impl.ConnectionBase;
-import io.vertx.ext.web.RoutingContext;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,21 +8,45 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.ws.rs.core.HttpHeaders;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.util.concurrent.ScheduledFuture;
+import io.quarkus.vertx.utils.VertxJavaIoContext;
+import io.quarkus.vertx.utils.VertxOutputStream;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.Http1xServerResponse;
+import io.vertx.core.net.impl.ConnectionBase;
+import io.vertx.ext.web.RoutingContext;
 
 public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
         implements ServerHttpRequest, ServerHttpResponse, Handler<Void> {
@@ -48,25 +60,25 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
-    public VertxResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public VertxResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             ClassLoader devModeTccl) {
-        super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
+        super(deployment, requestContext, handlerChain, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();
         this.devModeTccl = devModeTccl;
         context.addHeadersEndHandler(this);
         String expect = request.getHeader(HttpHeaderNames.EXPECT);
-        ContextInternal internal = ((ConnectionBase) context.request().connection()).getContext();
+        Context current = Vertx.currentContext();
         if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
             continueState = ContinueState.REQUIRED;
         }
         this.contextExecutor = new Executor() {
             @Override
             public void execute(Runnable command) {
-                internal.runOnContext(new Handler<Void>() {
+                current.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void unused) {
                         command.run();
@@ -100,6 +112,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse serverResponse() {
         return this;
+    }
+
+    @Override
+    protected void setQueryParamsFrom(String uri) {
+        MultiMap map = context.queryParams();
+        map.clear();
+        Map<String, List<String>> decodedParams = new QueryStringDecoder(uri).parameters();
+        for (Map.Entry<String, List<String>> entry : decodedParams.entrySet()) {
+            map.add(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
@@ -175,12 +197,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestHost() {
-        return request.host();
+        return request.authority().toString();
     }
 
     @Override
     public void closeConnection() {
-        response.close();
+        request.connection().close();
     }
 
     @Override
@@ -224,7 +246,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             context.getBody().getBytes(data);
             return new ByteArrayInputStream(data);
         }
-        return new VertxInputStream(context, 10000, this);
+        return new VertxInputStream(context, getDeployment().getRuntimeConfiguration().readTimeout().toMillis(), this);
     }
 
     @Override
@@ -327,7 +349,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse end() {
         if (!response.ended()) {
-            response.end();
+            if (response instanceof Http1xServerResponse) {
+                // Http1xServerResponse correctly handles a null handler
+                response.end((Handler<AsyncResult<Void>>) null);
+            } else {
+                // we don't know if other instances handle a null handler so just use the future form
+                response.end();
+            }
         }
         return this;
     }
@@ -339,13 +367,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse end(byte[] data) {
-        response.end(Buffer.buffer(data));
+        response.end(Buffer.buffer(data), null);
         return this;
     }
 
     @Override
     public ServerHttpResponse end(String data) {
-        response.end(data);
+        response.end(Buffer.buffer(data), null);
         return this;
     }
 
@@ -378,8 +406,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
+    public void removeResponseHeader(String name) {
+        response.headers().remove(name);
+    }
+
+    @Override
     public boolean closed() {
-        return response.closed();
+        return response.ended() || response.closed();
     }
 
     @Override
@@ -427,7 +460,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public OutputStream createResponseOutputStream() {
-        return new ResteasyReactiveOutputStream(this);
+        final ResteasyReactiveConfig config = getDeployment().getResteasyReactiveConfig();
+        return new VertxOutputStream(
+                new ResteasyVertxJavaIoContext(
+                        context,
+                        config.getMinChunkSize(),
+                        config.getOutputBufferSize()));
     }
 
     @Override
@@ -470,5 +508,34 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         NONE,
         REQUIRED,
         SENT;
+    }
+
+    final class ResteasyVertxJavaIoContext extends VertxJavaIoContext {
+
+        public ResteasyVertxJavaIoContext(RoutingContext context, int minChunkSize, int outputBufferSize) {
+            super(context, minChunkSize, outputBufferSize);
+        }
+
+        @Override
+        public Optional<String> getContentLength() {
+            if (getRoutingContext().request().response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                return Optional.empty();
+            }
+            final LazyResponse lazyResponse = VertxResteasyReactiveRequestContext.this.getResponse();
+            if (!lazyResponse.isCreated()) {
+                return Optional.empty();
+            }
+            MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
+            if (responseHeaders != null) {
+                // we need to make sure the content-length header is copied to Vert.x headers
+                // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
+                Object contentLength = responseHeaders.getFirst(HttpHeaders.CONTENT_LENGTH);
+                if (contentLength != null) {
+                    return Optional.of(contentLength.toString());
+                }
+            }
+            return Optional.empty();
+        }
+
     }
 }

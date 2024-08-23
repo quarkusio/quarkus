@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -11,9 +7,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
+
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 
 /**
  *
@@ -48,6 +49,22 @@ public class TsArtifact {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
     }
 
+    public static TsArtifact jar(String groupId, String artifactId, String version) {
+        return new TsArtifact(groupId, artifactId, EMPTY, TYPE_JAR, version);
+    }
+
+    public static TsArtifact pom(String artifactId) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_POM, DEFAULT_VERSION);
+    }
+
+    public static TsArtifact pom(String artifactId, String version) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_POM, version);
+    }
+
+    public static TsArtifact pom(String groupId, String artifactId, String version) {
+        return new TsArtifact(groupId, artifactId, EMPTY, TYPE_POM, version);
+    }
+
     public interface ContentProvider {
         Path getPath(Path workDir) throws IOException;
     }
@@ -65,7 +82,7 @@ public class TsArtifact {
     protected ContentProvider content;
 
     protected Properties pomProps;
-    protected List<Profile> pomProfiles = Collections.emptyList();
+    protected List<Profile> pomProfiles = List.of();
 
     private boolean installed;
 
@@ -130,8 +147,16 @@ public class TsArtifact {
         return addDependency(dep, false);
     }
 
+    public TsArtifact addDependency(TsQuarkusExt dep, String scope) {
+        return addDependency(dep, scope, false);
+    }
+
     public TsArtifact addDependency(TsQuarkusExt dep, boolean optional) {
         return addDependency(dep, () -> new TsDependency(dep.getRuntime(), optional));
+    }
+
+    public TsArtifact addDependency(TsQuarkusExt dep, String scope, boolean optional) {
+        return addDependency(dep, () -> new TsDependency(dep.getRuntime(), scope, optional));
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep, TsArtifact... excludes) {
@@ -152,6 +177,10 @@ public class TsArtifact {
         }
         deps.add(dep);
         return this;
+    }
+
+    public TsArtifact addManagedDependency(TsArtifact a) {
+        return addManagedDependency(new TsDependency(a));
     }
 
     public TsArtifact addManagedDependency(TsDependency dep) {
@@ -213,9 +242,10 @@ public class TsArtifact {
         }
 
         if (!managedDeps.isEmpty()) {
-            model.setDependencyManagement(new DependencyManagement());
+            var dm = new DependencyManagement();
+            model.setDependencyManagement(dm);
             for (TsDependency dep : managedDeps) {
-                model.getDependencyManagement().addDependency(dep.toPomDependency());
+                dm.addDependency(dep.toPomDependency());
             }
         }
 
@@ -226,7 +256,7 @@ public class TsArtifact {
     }
 
     public ArtifactCoords toArtifact() {
-        return new GACTV(groupId, artifactId, classifier, type, version);
+        return ArtifactCoords.of(groupId, artifactId, classifier, type, version);
     }
 
     /**

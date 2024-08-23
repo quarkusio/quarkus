@@ -13,13 +13,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.CookieParser;
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
@@ -28,9 +30,10 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
 /**
  * These work for MultivaluedMap with String and Object
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
 
-    private static final ClassValue<RuntimeDelegate.HeaderDelegate> HEADER_DELEGATE_CACHE = new ClassValue() {
+    private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override
         protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
             return RuntimeDelegate.getInstance().createHeaderDelegate(type);
@@ -41,7 +44,11 @@ public class HeaderUtil {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            return HEADER_DELEGATE_CACHE.get(obj.getClass()).toString(obj);
+            RuntimeDelegate.HeaderDelegate delegate = HEADER_DELEGATE_CACHE.get(obj.getClass());
+            if (delegate != null) {
+                return delegate.toString(obj);
+            }
+            return obj.toString();
         }
     }
 
@@ -107,8 +114,7 @@ public class HeaderUtil {
 
     public static MediaType getMediaType(MultivaluedMap<String, ? extends Object> headers) {
         Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (first instanceof String) {
-            String contentType = (String) first;
+        if (first instanceof String contentType) {
             return MediaType.valueOf(contentType);
         } else {
             return (MediaType) first;
@@ -143,8 +149,7 @@ public class HeaderUtil {
             return Collections.emptyMap();
         Map<String, Cookie> cookies = new HashMap<String, Cookie>();
         for (Object obj : list) {
-            if (obj instanceof Cookie) {
-                Cookie cookie = (Cookie) obj;
+            if (obj instanceof Cookie cookie) {
                 cookies.put(cookie.getName(), cookie);
             } else {
                 String str = headerToString(obj);
@@ -163,8 +168,7 @@ public class HeaderUtil {
         }
         Map<String, NewCookie> cookies = new HashMap<>();
         for (Object obj : list) {
-            if (obj instanceof NewCookie) {
-                NewCookie cookie = (NewCookie) obj;
+            if (obj instanceof NewCookie cookie) {
                 cookies.put(cookie.getName(), cookie);
             } else {
                 String str = HeaderUtil.headerToString(obj);
@@ -196,7 +200,7 @@ public class HeaderUtil {
         }
         StringBuilder sb = new StringBuilder();
         for (Object s : list) {
-            if (sb.length() > 0) {
+            if (!sb.isEmpty()) {
                 sb.append(",");
             }
             sb.append(headerToString(s));
@@ -260,13 +264,13 @@ public class HeaderUtil {
         if (accepts == null || accepts.isEmpty()) {
             return Collections.singletonList(MediaType.WILDCARD_TYPE);
         }
-        List<MediaType> list = new ArrayList<MediaType>();
+        List<MediaType> list = new ArrayList<>();
         for (Object obj : accepts) {
             if (obj instanceof MediaType) {
                 list.add((MediaType) obj);
                 continue;
             }
-            String accept = null;
+            String accept;
             if (obj instanceof String) {
                 accept = (String) obj;
             } else {
@@ -308,7 +312,7 @@ public class HeaderUtil {
             }
         }
         Collections.sort(languages);
-        List<Locale> list = new ArrayList<Locale>(languages.size());
+        List<Locale> list = new ArrayList<>(languages.size());
         for (WeightedLanguage language : languages)
             list.add(language.getLocale());
         return list;

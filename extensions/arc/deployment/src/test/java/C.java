@@ -1,6 +1,6 @@
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-@javax.inject.Singleton
+@jakarta.inject.Singleton
 public class C {
 
     private B b;

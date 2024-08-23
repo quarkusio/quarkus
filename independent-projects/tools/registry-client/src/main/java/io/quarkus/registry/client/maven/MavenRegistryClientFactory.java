@@ -1,10 +1,31 @@
 package io.quarkus.registry.client.maven;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+
+import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.transfer.TransferCancelledException;
+import org.eclipse.aether.transfer.TransferEvent;
+import org.eclipse.aether.transfer.TransferListener;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.client.RegistryClientDispatcher;
@@ -18,24 +39,6 @@ import io.quarkus.registry.config.RegistryMavenConfig;
 import io.quarkus.registry.config.RegistryMavenRepoConfig;
 import io.quarkus.registry.config.RegistryNonPlatformExtensionsConfig;
 import io.quarkus.registry.config.RegistryPlatformsConfig;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.repository.RepositoryPolicy;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.transfer.TransferCancelledException;
-import org.eclipse.aether.transfer.TransferEvent;
-import org.eclipse.aether.transfer.TransferListener;
 
 public class MavenRegistryClientFactory implements RegistryClientFactory {
 
@@ -159,7 +162,6 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         } else {
             platformsResolver = new MavenPlatformsResolver(platformsConfig, defaultResolver, log);
         }
-
         return new RegistryClientDispatcher(config, platformsResolver,
                 Boolean.TRUE.equals(platformsConfig == null ? Boolean.FALSE : platformsConfig.getExtensionCatalogsIncluded())
                         ? new MavenPlatformExtensionsResolver(defaultResolver, log)
@@ -179,7 +181,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         return new MavenRegistryArtifactResolverWithCleanup(resolver, cleanupTimestampedArtifacts);
     }
 
-    private static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig original, RegistryConfig descriptor) {
+    static RegistryConfig.Mutable completeRegistryConfig(RegistryConfig original, RegistryConfig descriptor) {
         RegistryConfig.Mutable complete = RegistryConfig.builder();
 
         complete.setId(original.getId() == null ? descriptor.getId() : original.getId());
@@ -218,6 +220,15 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             complete.setQuarkusVersions(descriptor.getQuarkusVersions());
         }
 
+        if (original.getExtra().isEmpty()) {
+            complete.setExtra(descriptor.getExtra());
+        } else if (descriptor.getExtra().isEmpty()) {
+            complete.setExtra(original.getExtra());
+        } else {
+            var extra = new HashMap<>(descriptor.getExtra());
+            extra.putAll(original.getExtra());
+            complete.setExtra(extra);
+        }
         return complete;
     }
 
@@ -226,7 +237,7 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
         if (client == null) {
             return descriptor;
         }
-        if (isComplete(client)) {
+        if (isComplete(client, descriptor)) {
             return client;
         }
 

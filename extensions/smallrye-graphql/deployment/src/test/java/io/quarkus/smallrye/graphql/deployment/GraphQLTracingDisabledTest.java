@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test that the GraphQL extension does not activate OpenTracing capability within SmallRye GraphQL
+ * Test that the GraphQL extension does not activate OpenTelemetry capability within SmallRye GraphQL
  * when there is no tracer enabled.
  */
 public class GraphQLTracingDisabledTest extends AbstractGraphQLTest {
@@ -17,7 +17,7 @@ public class GraphQLTracingDisabledTest extends AbstractGraphQLTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            BusinessException.class, TestUnion.class, TestUnionMember.class)
                     .addAsResource(new StringAsset("quarkus.jaeger.enabled=false"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

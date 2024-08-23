@@ -1,9 +1,12 @@
 package io.quarkus.jackson.deployment;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -25,7 +28,8 @@ public class JacksonTimeZonePropertiesTest {
 
     @Test
     public void testTimezone() throws JsonProcessingException {
-        Assertions.assertThat(objectMapper.writeValueAsString(new Pojo(new Date(2021, Calendar.MARCH, 3, 11, 5))))
+        Assertions.assertThat(objectMapper.writeValueAsString(new Pojo(Date.from(
+                ZonedDateTime.of(LocalDateTime.of(2021, Month.MARCH, 3, 11, 5), ZoneId.of("GMT")).toInstant()))))
                 .contains("+07");
     }
 

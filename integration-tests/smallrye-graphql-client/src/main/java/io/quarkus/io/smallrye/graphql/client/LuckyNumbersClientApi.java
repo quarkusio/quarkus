@@ -1,5 +1,6 @@
 package io.quarkus.io.smallrye.graphql.client;
 
+import java.io.Closeable;
 import java.util.List;
 
 import org.eclipse.microprofile.graphql.Mutation;
@@ -9,7 +10,7 @@ import org.eclipse.microprofile.graphql.Query;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 @GraphQLClientApi
-public interface LuckyNumbersClientApi {
+public interface LuckyNumbersClientApi extends Closeable {
 
     @Query(value = "get")
     Integer luckyNumber();

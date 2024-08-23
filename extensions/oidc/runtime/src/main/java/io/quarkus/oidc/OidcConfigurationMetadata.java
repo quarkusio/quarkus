@@ -8,15 +8,16 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
-    private static final String ISSUER = "issuer";
-    private static final String TOKEN_ENDPOINT = "token_endpoint";
-    private static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
-    private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
-    private static final String JWKS_ENDPOINT = "jwks_uri";
-    private static final String USERINFO_ENDPOINT = "userinfo_endpoint";
-    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
-    private static final String SCOPES_SUPPORTED = "scopes_supported";
+    public static final String ISSUER = "issuer";
+    public static final String TOKEN_ENDPOINT = "token_endpoint";
+    public static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
+    public static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
+    public static final String JWKS_ENDPOINT = "jwks_uri";
+    public static final String USERINFO_ENDPOINT = "userinfo_endpoint";
+    public static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+    public static final String SCOPES_SUPPORTED = "scopes_supported";
 
+    private final String discoveryUri;
     private final String tokenUri;
     private final String introspectionUri;
     private final String authorizationUri;
@@ -33,6 +34,7 @@ public class OidcConfigurationMetadata {
             String userInfoUri,
             String endSessionUri,
             String issuer) {
+        this.discoveryUri = null;
         this.tokenUri = tokenUri;
         this.introspectionUri = introspectionUri;
         this.authorizationUri = authorizationUri;
@@ -44,29 +46,35 @@ public class OidcConfigurationMetadata {
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this(wellKnownConfig, null);
+        this(wellKnownConfig, null, null);
     }
 
-    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata fallbackConfig) {
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig,
+            String discoveryUri) {
+        this.discoveryUri = discoveryUri;
         this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.tokenUri);
+                localMetadataConfig == null ? null : localMetadataConfig.tokenUri);
         this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.introspectionUri);
+                localMetadataConfig == null ? null : localMetadataConfig.introspectionUri);
         this.authorizationUri = getMetadataValue(wellKnownConfig, AUTHORIZATION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.authorizationUri);
+                localMetadataConfig == null ? null : localMetadataConfig.authorizationUri);
         this.jsonWebKeySetUri = getMetadataValue(wellKnownConfig, JWKS_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.jsonWebKeySetUri);
+                localMetadataConfig == null ? null : localMetadataConfig.jsonWebKeySetUri);
         this.userInfoUri = getMetadataValue(wellKnownConfig, USERINFO_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.userInfoUri);
+                localMetadataConfig == null ? null : localMetadataConfig.userInfoUri);
         this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
-                fallbackConfig == null ? null : fallbackConfig.endSessionUri);
-        this.issuer = getMetadataValue(wellKnownConfig, ISSUER, fallbackConfig == null ? null : fallbackConfig.issuer);
+                localMetadataConfig == null ? null : localMetadataConfig.endSessionUri);
+        this.issuer = getMetadataValue(wellKnownConfig, ISSUER,
+                localMetadataConfig == null ? null : localMetadataConfig.issuer);
         this.json = wellKnownConfig;
     }
 
-    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String fallbackValue) {
-        String value = wellKnownConfig.getString(propertyName);
-        return value != null ? value : fallbackValue;
+    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String localValue) {
+        return localValue != null ? localValue : wellKnownConfig.getString(propertyName);
+    }
+
+    public String getDiscoveryUri() {
+        return discoveryUri;
     }
 
     public String getTokenUri() {

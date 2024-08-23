@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.spi;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 public interface AsyncExceptionMapperContext {
 

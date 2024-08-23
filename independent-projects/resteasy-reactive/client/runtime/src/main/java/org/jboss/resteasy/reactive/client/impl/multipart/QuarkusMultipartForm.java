@@ -1,92 +1,28 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
-import io.smallrye.mutiny.Multi;
-import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
+import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.impl.ClientSerialisers;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
+import io.vertx.core.buffer.Buffer;
+
 /**
  * based on {@link io.vertx.ext.web.multipart.MultipartForm} and {@link io.vertx.ext.web.multipart.impl.MultipartFormImpl}
  */
-public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPart> {
-
-    private Charset charset = StandardCharsets.UTF_8;
-    private final List<QuarkusMultipartFormDataPart> parts = new ArrayList<>();
-    private final List<PojoFieldData> pojos = new ArrayList<>();
-
-    public QuarkusMultipartForm setCharset(String charset) {
-        return setCharset(charset != null ? Charset.forName(charset) : null);
-    }
-
-    public QuarkusMultipartForm setCharset(Charset charset) {
-        this.charset = charset;
-        return this;
-    }
-
-    public Charset getCharset() {
-        return charset;
-    }
-
-    public QuarkusMultipartForm attribute(String name, String value) {
-        parts.add(new QuarkusMultipartFormDataPart(name, value));
-        return this;
-    }
-
-    public QuarkusMultipartForm entity(String name, Object entity, String mediaType, Class<?> type) {
-        pojos.add(new PojoFieldData(name, entity, mediaType, type, parts.size()));
-        parts.add(null); // make place for ^
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm textFileUpload(String name, String filename, String pathname, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, pathname, mediaType, true));
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm textFileUpload(String name, String filename, Buffer content, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, true));
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm binaryFileUpload(String name, String filename, String pathname, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, pathname, mediaType, false));
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm binaryFileUpload(String name, String filename, Buffer content, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, false));
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm multiAsBinaryFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, false));
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public QuarkusMultipartForm multiAsTextFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
-        parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, true));
-        return this;
-    }
+public class QuarkusMultipartForm extends ClientMultipartForm implements Iterable<QuarkusMultipartFormDataPart> {
 
     @Override
     public Iterator<QuarkusMultipartFormDataPart> iterator() {
@@ -118,26 +54,28 @@ public class QuarkusMultipartForm implements Iterable<QuarkusMultipartFormDataPa
             for (MessageBodyWriter<?> w : writers) {
                 Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headers, w,
                         context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR),
-                        context.getProperties(),
-                        serialisers, context.getConfiguration());
+                        context.getProperties(), context, serialisers, context.getConfiguration());
                 if (ret != null) {
                     value = ret;
                     break;
                 }
             }
-            parts.set(pojo.position, new QuarkusMultipartFormDataPart(pojo.name, value, pojo.mediaType, pojo.type));
+            parts.set(pojo.position,
+                    new QuarkusMultipartFormDataPart(pojo.name, pojo.filename, value, pojo.mediaType, pojo.type));
         }
     }
 
     public static class PojoFieldData {
         private final String name;
+        private final String filename;
         private final Object entity;
         private final String mediaType;
         private final Class<?> type;
         private final int position;
 
-        public PojoFieldData(String name, Object entity, String mediaType, Class<?> type, int position) {
+        public PojoFieldData(String name, String filename, Object entity, String mediaType, Class<?> type, int position) {
             this.name = name;
+            this.filename = filename;
             this.entity = entity;
             this.mediaType = mediaType;
             this.type = type;

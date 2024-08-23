@@ -1,11 +1,11 @@
 package io.quarkus.security.runtime.interceptor;
 
-import javax.annotation.Priority;
-import javax.annotation.security.DenyAll;
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.annotation.security.DenyAll;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.security.spi.runtime.AuthorizationController;
 

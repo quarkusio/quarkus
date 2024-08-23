@@ -59,7 +59,7 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
         Instance<TestResult> testResult;
 
         @Inject
-        Instance<ClassLoader> classLoaderInstance;
+        Instance<QuarkusDeployment> deployment;
 
         @Override
         public TestResult invoke(TestMethodExecutor testMethodExecutor) {
@@ -70,7 +70,7 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
                 public void invoke(Object... parameters) throws Throwable {
                     ClassLoader loader = Thread.currentThread().getContextClassLoader();
                     try {
-                        Thread.currentThread().setContextClassLoader(classLoaderInstance.get());
+                        Thread.currentThread().setContextClassLoader(deployment.get().getAppClassLoader());
 
                         Object actualTestInstance = QuarkusDeployableContainer.testInstance;
                         Method actualMethod = null;

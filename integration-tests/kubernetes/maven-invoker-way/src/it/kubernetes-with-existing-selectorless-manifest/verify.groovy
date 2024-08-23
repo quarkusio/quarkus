@@ -13,12 +13,14 @@ kubernetesYml.withInputStream { stream ->
     KubernetesList list = Serialization.unmarshalAsList(stream)
     assert list != null
 
+    String version = "0.1-SNAPSHOT"
+
     Deployment deployment = list.items.find{r -> r.kind == "Deployment" && r.metadata.name == "kubernetes-with-existing-selectorless-manifest"}
     assert deployment != null
     assert deployment.metadata.labels.get("app.kubernetes.io/name") == "kubernetes-with-existing-selectorless-manifest"
-    assert deployment.metadata.labels.get("app.kubernetes.io/version") == "0.1-SNAPSHOT"
+    assert deployment.metadata.labels.get("app.kubernetes.io/version") == version
     assert deployment.spec.replicas == 3
 
     assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/name") == "kubernetes-with-existing-selectorless-manifest"
-    assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/version") == "0.1-SNAPSHOT"
+    assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/version") == version
 }

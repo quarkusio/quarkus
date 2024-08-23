@@ -10,10 +10,10 @@ import static org.hamcrest.Matchers.is;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ public class SimpleRouteTest {
         when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
         when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
         when().get("/bar").then().statusCode(200).body(is("Hello bar!"));
-        when().get("/delete").then().statusCode(405);
+        when().post("/delete").then().statusCode(405);
         when().delete("/delete").then().statusCode(200).body(is("deleted"));
         when().get("/routes").then().statusCode(200)
                 .body(Matchers.containsString("/hello-event-bus"));

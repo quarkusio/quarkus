@@ -2,7 +2,7 @@ package io.quarkus.arc.test.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;

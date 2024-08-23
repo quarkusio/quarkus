@@ -10,7 +10,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -124,7 +124,7 @@ public abstract class AbstractMethodsAdder {
             if (customResultType == null) {
                 ResultHandle casted = tryBlock.checkCast(singleResult, entityClassInfo.name().toString());
                 ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                         casted);
                 tryBlock.returnValue(optional);
             } else {
@@ -134,7 +134,7 @@ public abstract class AbstractMethodsAdder {
                                 originalResultType),
                         singleResult);
                 ResultHandle optional = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                        MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class),
                         customResult);
                 tryBlock.returnValue(optional);
             }
@@ -298,7 +298,7 @@ public abstract class AbstractMethodsAdder {
             return t;
         }
         if (t.kind() == Type.Kind.ARRAY) {
-            return verifyQueryResultType(t.asArrayType().component(), index);
+            return verifyQueryResultType(t.asArrayType().constituent(), index);
         } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             final List<Type> types = t.asParameterizedType().arguments();
             if (types.size() == 1) {
@@ -317,7 +317,7 @@ public abstract class AbstractMethodsAdder {
         return t;
     }
 
-    protected DotName createSimpleInterfaceImpl(DotName ifaceName) {
+    protected DotName createSimpleInterfaceImpl(DotName ifaceName, DotName entityName) {
         String fullName = ifaceName.toString();
 
         // package name: must be in the same package as the interface
@@ -329,7 +329,7 @@ public abstract class AbstractMethodsAdder {
 
         return DotName.createSimple(packageName
                 + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
-                + HashUtil.sha1(ifaceName.toString()));
+                + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(entityName.toString()));
     }
 
     protected DotName getPrimitiveTypeName(DotName returnTypeName) {

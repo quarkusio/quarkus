@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.db2;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
 }

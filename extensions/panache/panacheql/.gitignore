@@ -1,0 +1,3 @@
+gen/**
+**/internal/gen/**
+/src/main/antlr4/io/quarkus/panacheql/internal/HqlLexer.tokens

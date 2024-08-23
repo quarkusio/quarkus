@@ -12,10 +12,10 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 
 import io.quarkus.hibernate.orm.PersistenceUnit.List;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;

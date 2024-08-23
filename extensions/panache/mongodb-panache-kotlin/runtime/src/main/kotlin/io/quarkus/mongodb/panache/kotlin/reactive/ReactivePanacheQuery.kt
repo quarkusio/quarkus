@@ -7,20 +7,22 @@ import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 
 /**
- * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
- * operating on [List] or [Stream].
+ * Interface representing an entity query, which abstracts the use of paging, getting the number of
+ * results, and operating on [List] or [Stream].
  *
- * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
- * modified, and instances of this interface can be reused to obtain multiple pages of results.
+ * Instances of this interface cannot mutate the query itself or its parameters: only paging
+ * information can be modified, and instances of this interface can be reused to obtain multiple
+ * pages of results.
  *
  * @param Entity The entity type being queried
  */
 interface ReactivePanacheQuery<Entity> {
     /**
-     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
-     * retrieved from the database.
+     * Defines a projection class: the getters, and the public fields, will be used to restrict
+     * which fields should be retrieved from the database.
      *
-     * @return @return a new query with the same state as the previous one (params, page, range, ...).
+     * @return @return a new query with the same state as the previous one (params, page, range,
+     *   ...).
      */
     fun <NewEntity> project(type: Class<NewEntity>): ReactivePanacheQuery<NewEntity>
 
@@ -36,7 +38,7 @@ interface ReactivePanacheQuery<Entity> {
     /**
      * Sets the current page.
      *
-     * @param pageIndex the page index
+     * @param pageIndex the page index (0-based)
      * @param pageSize the page size
      * @return this query, modified
      * @see [page]
@@ -81,8 +83,8 @@ interface ReactivePanacheQuery<Entity> {
     fun lastPage(): Uni<ReactivePanacheQuery<Entity>>
 
     /**
-     * Returns true if there is another page to read after the current one.
-     * This will cause reading of the entity count.
+     * Returns true if there is another page to read after the current one. This will cause reading
+     * of the entity count.
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
@@ -101,8 +103,8 @@ interface ReactivePanacheQuery<Entity> {
     fun hasPreviousPage(): Boolean
 
     /**
-     * Returns the total number of pages to be read using the current page size.
-     * This will cause reading of the entity count.
+     * Returns the total number of pages to be read using the current page size. This will cause
+     * reading of the entity count.
      *
      * @return the total number of pages to be read using the current page size.
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
@@ -119,8 +121,8 @@ interface ReactivePanacheQuery<Entity> {
     fun page(): Page
 
     /**
-     * Switch the query to use a fixed range (start index - last index) instead of a page.
-     * As the range is fixed, subsequent pagination of the query is not possible.
+     * Switch the query to use a fixed range (start index - last index) instead of a page. As the
+     * range is fixed, subsequent pagination of the query is not possible.
      *
      * @param startIndex the index of the first element, starting at 0
      * @param lastIndex the index of the last element
@@ -145,9 +147,16 @@ interface ReactivePanacheQuery<Entity> {
     fun withReadPreference(readPreference: ReadPreference): ReactivePanacheQuery<Entity>
 
     /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    fun withBatchSize(batchSize: Int): ReactivePanacheQuery<Entity>
+
+    /**
      * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
-     * ordering.
+     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus ordering.
      *
      * @return the total number of entities this query operates on, cached.
      */
@@ -171,8 +180,8 @@ interface ReactivePanacheQuery<Entity> {
     fun stream(): Multi<Entity>
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to
+     * fetch a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
      * @see [singleResult]
@@ -183,7 +192,8 @@ interface ReactivePanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return the single result.
-     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there are more than one result.
+     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there are more than one
+     *   result.
      * @see [firstResult]
      */
     fun singleResult(): Uni<Entity?>

@@ -3,15 +3,20 @@ package io.quarkus.smallrye.graphql.client.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.graphql.Input;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -25,16 +30,22 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientConfigurationMergerBean;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.smallrye.graphql.client.model.ClientModelBuilder;
+import io.smallrye.graphql.client.model.ClientModels;
 
 public class SmallRyeGraphQLClientProcessor {
 
@@ -49,15 +60,27 @@ public class SmallRyeGraphQLClientProcessor {
     }
 
     @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(Feature.SMALLRYE_GRAPHQL_CLIENT);
+    }
+
+    @BuildStep
     void setupServiceProviders(BuildProducer<ServiceProviderBuildItem> services) {
         services.produce(ServiceProviderBuildItem
                 .allProvidersFromClassPath("io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder"));
         services.produce(ServiceProviderBuildItem
                 .allProvidersFromClassPath("io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder"));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Argument"));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Directive"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.DirectiveArgument"));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Document"));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Enum"));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Field"));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.Fragment"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.FragmentReference"));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InlineFragment"));
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InputObject"));
         services.produce(
                 ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.core.InputObjectField"));
@@ -88,14 +111,15 @@ public class SmallRyeGraphQLClientProcessor {
             proxies.produce(new NativeImageProxyDefinitionBuildItem(apiClass.getName()));
 
             // register the api class and all classes that it references for reflection
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, apiClassInfo.name().toString()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(apiClassInfo.name().toString()).build());
             for (MethodInfo method : apiClassInfo.methods()) {
-                reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                        .type(method.returnType())
+                reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                        .builder(method.returnType())
                         .build());
-                for (Type parameter : method.parameters()) {
-                    reflectiveHierarchies.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(parameter)
+                for (Type parameter : method.parameterTypes()) {
+                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
+                            .builder(parameter)
                             .build());
                 }
             }
@@ -103,16 +127,17 @@ public class SmallRyeGraphQLClientProcessor {
             // an equivalent of io.smallrye.graphql.client.typesafe.impl.cdi.GraphQlClientBean that produces typesafe client instances
             SyntheticBeanBuildItem bean = SyntheticBeanBuildItem.configure(apiClassInfo.name())
                     .addType(apiClassInfo.name())
-                    .scope(Singleton.class)
-                    .supplier(recorder.typesafeClientSupplier(apiClass))
+                    .scope(ApplicationScoped.class)
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(ClientModels.class)))
+                    .createWith(recorder.typesafeClientSupplier(apiClass))
                     .unremovable()
                     .done();
             syntheticBeans.produce(bean);
         }
         // needed to be able to convert config values to URI (performed by the GraphQL client code)
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods(true).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods(true).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods(true).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.net.URI").methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.List").methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.Collection").methods().build());
     }
 
     /**
@@ -140,47 +165,80 @@ public class SmallRyeGraphQLClientProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void shortNamesToQualifiedNames(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    GraphQLClientConfigInitializedBuildItem mergeClientConfigurations(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             GraphQLClientsConfig quarkusConfig,
             BeanArchiveIndexBuildItem index) {
+        // to store config keys of all clients found in the application code
+        List<String> knownConfigKeys = new ArrayList<>();
+
         Map<String, String> shortNamesToQualifiedNames = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
             ClassInfo clazz = annotation.target().asClass();
             shortNamesToQualifiedNames.put(clazz.name().withoutPackagePrefix(), clazz.name().toString());
+            AnnotationValue configKeyValue = annotation.value("configKey");
+            String configKey = configKeyValue != null ? configKeyValue.asString() : null;
+            String actualConfigKey = (configKey != null && !configKey.equals("")) ? configKey : clazz.name().toString();
+            knownConfigKeys.add(actualConfigKey);
         }
 
-        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames);
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT)) {
+            String configKey = annotation.value().asString();
+            if (configKey == null) {
+                configKey = "default";
+            }
+            knownConfigKeys.add(configKey);
+        }
 
-        DotName supportClassName = DotName.createSimple(GraphQLClientSupport.class.getName());
-        SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
-                .configure(supportClassName)
-                .addType(supportClassName)
-                .scope(Singleton.class)
-                .runtimeValue(support)
-                .setRuntimeInit()
-                .unremovable()
-                .done();
-        syntheticBeans.produce(bean);
+        GraphQLClientSupport support = new GraphQLClientSupport();
+        support.setShortNamesToQualifiedNamesMapping(shortNamesToQualifiedNames);
+        support.setKnownConfigKeys(knownConfigKeys);
+
+        recorder.mergeClientConfigurations(support, quarkusConfig);
+        return new GraphQLClientConfigInitializedBuildItem();
     }
 
-    @BuildStep
-    AdditionalBeanBuildItem configurationMergerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(GraphQLClientConfigurationMergerBean.class);
-    }
-
-    // FIXME: this seems unnecessary, but is needed to make sure that the GraphQLClientConfigurationMergerBean
-    // gets initialized, can this be done differently?
     @BuildStep
     @Record(RUNTIME_INIT)
-    void initializeConfigMergerBean(BeanContainerBuildItem containerBuildItem,
-            SmallRyeGraphQLClientRecorder recorder) {
-        recorder.initializeConfigurationMergerBean();
+    void buildClientModel(CombinedIndexBuildItem index, SmallRyeGraphQLClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, GraphQLClientBuildConfig quarkusConfig) {
+        if (!index.getIndex().getAnnotations(GRAPHQL_CLIENT_API).isEmpty()) {
+            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning) ? ClientModelBuilder.build(index.getIndex())
+                    : new ClientModels(); // empty Client Model(s)
+            RuntimeValue<ClientModels> modelRuntimeClientModel = recorder.getRuntimeClientModel(clientModels);
+            DotName supportClassName = DotName.createSimple(ClientModels.class.getName());
+            SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
+                    .configure(supportClassName)
+                    .addType(supportClassName)
+                    .scope(Singleton.class)
+                    .runtimeValue(modelRuntimeClientModel)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .done();
+            syntheticBeans.produce(bean);
+        }
     }
 
     @BuildStep
     ServiceProviderBuildItem overrideErrorMessageProvider() {
         return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.impl.ErrorMessageProvider");
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void setGlobalVertxInstance(CoreVertxBuildItem vertxBuildItem,
+            SmallRyeGraphQLClientRecorder recorder) {
+        recorder.setGlobalVertxInstance(vertxBuildItem.getVertx());
+    }
+
+    @BuildStep
+    void setAdditionalClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalClassesToIndex,
+            GraphQLClientBuildConfig quarkusConfig) {
+        if (quarkusConfig.enableBuildTimeScanning) {
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Closeable.class.getName()));
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(AutoCloseable.class.getName()));
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Input.class.getName()));
+        }
     }
 
 }

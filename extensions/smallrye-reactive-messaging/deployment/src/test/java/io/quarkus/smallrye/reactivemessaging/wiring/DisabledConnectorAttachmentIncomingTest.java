@@ -6,8 +6,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public class DisabledConnectorAttachmentIncomingTest {
 
@@ -30,7 +31,7 @@ public class DisabledConnectorAttachmentIncomingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyDummyConnector.class, MySink.class))
-            .overrideConfigKey("quarkus.reactive-messaging.auto-connector-attachment", "false");
+            .overrideConfigKey("quarkus.messaging.auto-connector-attachment", "false");
 
     @Inject
     MySink sink;
@@ -48,7 +49,8 @@ public class DisabledConnectorAttachmentIncomingTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams.fromPublisher(Multi.createFrom().range(0, 5).map(Message::of));
+            return ReactiveStreams
+                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 

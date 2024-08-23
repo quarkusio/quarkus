@@ -19,17 +19,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class OidcClientFilterDevModeTest {
 
-    private static Class<?>[] testClasses = {
+    private static final Class<?>[] testClasses = {
             FrontendResource.class,
             ProtectedResource.class,
-            ProtectedResourceService.class
+            ProtectedResourceService.class,
+            ProtectedResourceServiceNamedOidcClient.class,
+            NamedOidcClientResource.class
     };
 
     @RegisterExtension
@@ -54,12 +56,19 @@ public class OidcClientFilterDevModeTest {
         test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.oidc-client.auth-server-url",
                 "quarkus.oidc-client.auth-server-url"));
 
-        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately 
+        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately
         RestAssured.when().get("/frontend/user-after-registering-provider")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
         checkLog();
+
+        // here we test that user can optionally select named OidcClient like this @OidcClient("clientName")
+        // even though 'quarkus.oidc-client-filter.register-filter' is enabled
+        RestAssured.when().get("/named-oidc-client/user-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
     }
 
     private void checkLog() {

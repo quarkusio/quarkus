@@ -3,9 +3,10 @@ package io.quarkus.cache.test.runtime;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -66,12 +67,22 @@ public class SpecializedCacheTest {
         }
 
         @Override
+        public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
         public Uni<Void> invalidate(Object key) {
             throw new UnsupportedOperationException("This method is not tested here");
         }
 
         @Override
         public Uni<Void> invalidateAll() {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
+        public Uni<Void> invalidateIf(Predicate<Object> predicate) {
             throw new UnsupportedOperationException("This method is not tested here");
         }
 

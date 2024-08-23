@@ -7,29 +7,24 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Inject;
-import javax.inject.Qualifier;
-import javax.inject.Singleton;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Singleton;
+
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
@@ -38,6 +33,20 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.processor.BeanConfigurator;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 public class BeanRegistrarTest {
 
@@ -83,7 +92,7 @@ public class BeanRegistrarTest {
         @SuppressWarnings({ "resource" })
         List<String> list = Arc.container().instance(ListConsumer.class).get().list;
         assertEquals(1, list.size());
-        assertEquals("foo", list.get(0));
+        assertEquals("Hello Frantisek!", list.get(0));
 
         InjectableInstance<Long> instance = Arc.container().select(Long.class);
         // test configurator with higher priority
@@ -93,6 +102,42 @@ public class BeanRegistrarTest {
             val += v;
         }
         assertEquals(64l, val);
+    }
+
+    @SuppressWarnings("serial")
+    @Test
+    public void testSyntheticBeanType() {
+        InjectableBean<Integer> integerBean = Arc.container().instance(Integer.class).getBean();
+        assertBeanTypes(integerBean, Object.class, Integer.class);
+
+        InjectableBean<String> stringBean = Arc.container().instance(String.class).getBean();
+        assertBeanTypes(stringBean, Object.class, String.class);
+
+        InjectableBean<String> stringNextBean = Arc.container().instance(String.class, new NextQualifierLiteral()).getBean();
+        assertBeanTypes(stringNextBean, Object.class, String.class);
+
+        InjectableBean<List> listBean = Arc.container().instance(List.class).getBean();
+        assertBeanTypes(listBean, Object.class, List.class, new TypeLiteral<List<String>>() {
+        }.getType());
+
+        InjectableInstance<Long> longInstance = Arc.container().select(Long.class);
+        for (InstanceHandle<Long> longHandle : longInstance.handles()) {
+            InjectableBean<Long> longBean = longHandle.getBean();
+            if (longBean.getPriority() == 10) {
+                assertBeanTypes(longBean, Object.class, Long.class);
+            } else if (longBean.getPriority() == 5) {
+                assertBeanTypes(longBean, Object.class, Long.class, Double.class);
+            } else {
+                fail();
+            }
+        }
+    }
+
+    private static void assertBeanTypes(InjectableBean<?> bean, java.lang.reflect.Type... expectedTypes) {
+        assertEquals(expectedTypes.length, bean.getTypes().size());
+        for (java.lang.reflect.Type expectedType : expectedTypes) {
+            assertTrue(bean.getTypes().contains(expectedType));
+        }
     }
 
     @Singleton
@@ -150,6 +195,8 @@ public class BeanRegistrarTest {
                     .addType(ParameterizedType.create(DotName.createSimple(List.class.getName()),
                             new Type[] { Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS) }, null))
                     .creator(ListCreator.class)
+                    // @Inject String
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(String.class)))
                     .unremovable()
                     .done();
 
@@ -190,8 +237,8 @@ public class BeanRegistrarTest {
     public static class ListCreator implements BeanCreator<List<String>> {
 
         @Override
-        public List<String> create(CreationalContext<List<String>> creationalContext, Map<String, Object> params) {
-            return List.of("foo");
+        public List<String> create(SyntheticCreationalContext<List<String>> context) {
+            return List.of(context.getInjectedReference(String.class));
         }
 
     }

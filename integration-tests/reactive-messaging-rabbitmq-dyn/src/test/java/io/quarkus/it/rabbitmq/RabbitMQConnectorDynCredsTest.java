@@ -7,24 +7,24 @@ import static org.awaitility.Awaitility.await;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.it.rabbitmq.RabbitMQConnectorDynCredsTest.VaultResource;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.it.rabbitmq.RabbitMQConnectorDynCredsTest.RabbitMQResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(VaultResource.class)
+@WithTestResource(value = RabbitMQResource.class, restrictToAnnotatedClass = false)
 public class RabbitMQConnectorDynCredsTest {
 
-    public static class VaultResource implements QuarkusTestResourceLifecycleManager {
+    public static class RabbitMQResource implements QuarkusTestResourceLifecycleManager {
 
         RabbitMQContainer rabbit;
 
@@ -33,7 +33,7 @@ public class RabbitMQConnectorDynCredsTest {
             String username = "tester";
             String password = RandomStringUtils.random(10);
 
-            rabbit = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.9-management"))
+            rabbit = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.12-management"))
                     .withNetwork(Network.SHARED)
                     .withNetworkAliases("rabbitmq")
                     .withUser(username, password)

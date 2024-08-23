@@ -2,8 +2,8 @@ package io.quarkus.undertow.test.sessioncontext;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.SessionScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.SessionScoped;
 
 @SessionScoped
 class Foo {

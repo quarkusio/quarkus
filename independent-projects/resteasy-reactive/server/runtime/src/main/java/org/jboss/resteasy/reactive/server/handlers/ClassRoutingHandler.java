@@ -7,34 +7,39 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.NotAcceptableException;
-import javax.ws.rs.NotAllowedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.NotSupportedException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.NotAcceptableException;
+import jakarta.ws.rs.NotAllowedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ClassRoutingHandler implements ServerRestHandler {
     private static final String INVALID_ACCEPT_HEADER_MESSAGE = "The accept header value did not match the value in @Produces";
 
     private final Map<String, RequestMapper<RuntimeResource>> mappers;
     private final int parameterOffset;
-    final boolean resumeOn404;
+    final boolean servletPresent;
 
-    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset, boolean resumeOn404) {
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset,
+            boolean servletPresent) {
         this.mappers = mappers;
         this.parameterOffset = parameterOffset;
-        this.resumeOn404 = resumeOn404;
+        this.servletPresent = servletPresent;
     }
 
     @Override
@@ -45,7 +50,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
             if (requestMethod.equals(HttpMethod.HEAD)) {
                 mapper = mappers.get(HttpMethod.GET);
             } else if (requestMethod.equals(HttpMethod.OPTIONS)) {
-                Set<CharSequence> allowedMethods = new HashSet<>();
+                Set<String> allowedMethods = new HashSet<>();
                 for (String method : mappers.keySet()) {
                     if (method == null) {
                         continue;
@@ -54,7 +59,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 }
                 allowedMethods.add(HttpMethod.OPTIONS);
                 allowedMethods.add(HttpMethod.HEAD);
-                requestContext.serverResponse().setResponseHeader(HttpHeaders.ALLOW, allowedMethods).end();
+                requestContext.abortWith(Response.ok().allow(allowedMethods).build());
                 return;
             }
             if (mapper == null) {
@@ -102,14 +107,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
             }
         }
 
-        // use vert.x headers wherever we need header checking because we really don't want to
-        // copy headers as it's a performance killer
-        ServerHttpRequest serverRequest = requestContext.serverRequest();
-
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
-
         if (!target.value.getConsumes().isEmpty()) {
-            String contentType = serverRequest.getRequestHeader(HttpHeaders.CONTENT_TYPE);
+            String contentType = (String) requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
             if (contentType != null) {
                 try {
                     if (MediaTypeHelper.getFirstMatch(
@@ -126,20 +126,26 @@ public class ClassRoutingHandler implements ServerRestHandler {
         if (target.value.getProduces() != null) {
             // there could potentially be multiple Accept headers and we need to response with 406
             // if none match the method's @Produces
-            List<String> accepts = serverRequest.getAllRequestHeaders(HttpHeaders.ACCEPT);
+            List<String> accepts = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);
             if (!accepts.isEmpty()) {
                 boolean hasAtLeastOneMatch = false;
                 for (int i = 0; i < accepts.size(); i++) {
-                    boolean matches = acceptHeaderMatches(target, accepts.get(i));
-                    if (matches) {
-                        hasAtLeastOneMatch = true;
-                        break;
+                    try {
+                        boolean matches = acceptHeaderMatches(target, accepts.get(i));
+                        if (matches) {
+                            hasAtLeastOneMatch = true;
+                            break;
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // the provided header was not valid
                     }
                 }
                 if (!hasAtLeastOneMatch) {
                     throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                 }
             }
+
+            requestContext.setProducesChecked(true);
         }
 
         requestContext.restart(target.value);
@@ -153,6 +159,10 @@ public class ClassRoutingHandler implements ServerRestHandler {
         }
     }
 
+    /**
+     * @return {@code true} if the provided string matches one of the {@code @Produces} values of the resource method
+     * @throws IllegalArgumentException if the provided string cannot be parsed into a {@link MediaType}
+     */
     private boolean acceptHeaderMatches(RequestMapper.RequestMatch<RuntimeResource> target, String accepts) {
         if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
             int commaIndex = accepts.indexOf(',');
@@ -160,9 +170,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
             MediaType[] producesMediaTypes = target.value.getProduces().getSortedOriginalMediaTypes();
             if (!multipleAcceptsValues && (producesMediaTypes.length == 1)) {
                 // the point of this branch is to eliminate any list creation or string indexing as none is needed
-                MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());
                 MediaType providedMediaType = producesMediaTypes[0];
-                return providedMediaType.isCompatible(acceptsMediaType);
+                return providedMediaType.isCompatible(toMediaType(accepts.trim()));
             } else if (multipleAcceptsValues && (producesMediaTypes.length == 1)) {
                 // this is fairly common case, so we want it to be as fast as possible
                 // we do that by manually splitting the accepts header and immediately checking
@@ -217,7 +226,10 @@ public class ClassRoutingHandler implements ServerRestHandler {
     }
 
     private void throwNotFound(ResteasyReactiveRequestContext requestContext) {
-        if (resumeOn404) {
+        ProvidersImpl providers = requestContext.getProviders();
+        ExceptionMapper<NotFoundException> exceptionMapper = providers.getExceptionMapper(NotFoundException.class);
+
+        if (exceptionMapper == null || servletPresent) {
             if (requestContext.resumeExternalProcessing()) {
                 return;
             }

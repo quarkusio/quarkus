@@ -1,9 +1,12 @@
 package io.quarkus.deployment.console;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -50,10 +53,10 @@ public class AeshConsole extends QuarkusConsole {
      * <p>
      * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
      * <p>
-     * Because Aesh can log deadlocks are possible on windows if a write fails, unless care
+     * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care
      * is taken.
      */
-    private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();
+    private final ConcurrentLinkedQueue<String> writeQueue = new ConcurrentLinkedQueue<>();
     private final Lock connectionLock = new ReentrantLock();
     private static final ThreadLocal<Boolean> IN_WRITE = new ThreadLocal<>() {
         @Override
@@ -70,6 +73,7 @@ public class AeshConsole extends QuarkusConsole {
     private final StatusLine prompt;
 
     private volatile boolean pauseOutput;
+    private volatile boolean firstConsoleRun = true;
     private DelegateConnection delegateConnection;
     private ReadlineConsole aeshConsole;
 
@@ -85,6 +89,7 @@ public class AeshConsole extends QuarkusConsole {
             }
         }, "Console Shutdown Hook"));
         prompt = registerStatusLine(0);
+
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -221,14 +226,40 @@ public class AeshConsole extends QuarkusConsole {
             });
             // Keyboard handling
             conn.setStdinHandler(keys -> {
+
+                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                // redirectIn might have not been initialized yet
+                if (redirectIn == null) {
+                    return;
+                }
+                //see if the users application wants to read the keystrokes:
+                int pos = 0;
+                while (pos < keys.length) {
+                    if (!redirectIn.acceptInput(keys[pos])) {
+                        break;
+                    }
+                    ++pos;
+                }
+                if (pos > 0) {
+                    if (pos == keys.length) {
+                        return;
+                    }
+                    //the app only consumed some keys
+                    //stick the rest in a new array
+                    int[] newKeys = new int[keys.length - pos];
+                    System.arraycopy(keys, pos, newKeys, 0, newKeys.length);
+                    keys = newKeys;
+                }
                 try {
                     if (delegateConnection != null) {
                         //console mode
                         //just sent the input to the delegate
-                        for (var k : keys) {
-                            if (k == 27) { // escape key
-                                exitCliMode();
-                                return;
+                        if (keys.length == 1) {
+                            for (var k : keys) {
+                                if (k == 27) { // escape key
+                                    exitCliMode();
+                                    return;
+                                }
                             }
                         }
                         if (delegateConnection.getStdinHandler() != null) {
@@ -526,8 +557,14 @@ public class AeshConsole extends QuarkusConsole {
             pauseOutput = true;
             delegateConnection = new DelegateConnection(connection);
             connection.write(ALTERNATE_SCREEN_BUFFER);
+            if (firstConsoleRun) {
+                connection.write(
+                        "You are now in Quarkus Terminal. Your app is still running. Use `help` or tab completion to explore, `quit` or `q` to return to your application.\n");
+                firstConsoleRun = false;
+            }
             AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
             ConsoleCliManager.commands.forEach(commandBuilder::command);
+
             CommandRegistry registry = commandBuilder
                     .create();
             Settings settings = SettingsBuilder
@@ -555,11 +592,51 @@ public class AeshConsole extends QuarkusConsole {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
 
+    @Override
+    public Map<Character, String> singleLetterAliases() {
+        try {
+            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            Map<Character, String> ret = new HashMap<>();
+            for (String alias : manager.getAllNames()) {
+                if (alias.length() == 1) {
+                    ret.put(alias.charAt(0), manager.getAlias(alias).get().getValue());
+                }
+            }
+            return ret;
+        } catch (IOException e) {
+            return Map.of();
+        }
+    }
+
+    @Override
+    public void runAlias(char alias) {
+        try {
+            AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
+            ConsoleCliManager.commands.forEach(commandBuilder::command);
+
+            CommandRegistry registry = commandBuilder
+                    .create();
+            Settings settings = SettingsBuilder
+                    .builder()
+                    .enableExport(false)
+                    .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
+                    .enableAlias(true)
+                    .aliasManager(
+                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection)
+                    .commandRegistry(registry)
+                    .build();
+            aeshConsole = new ReadlineConsole(settings);
+            aeshConsole.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void exitCliMode() {
-        if (aeshConsole == null) {
+        if (aeshConsole == null || delegateConnection == null) {
             return;
         }
         aeshConsole.stop();

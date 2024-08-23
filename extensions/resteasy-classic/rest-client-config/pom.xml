@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-config-parent</artifactId>
-    <name>Quarkus - REST Client Config</name>
+    <name>Quarkus - REST Clients Config</name>
     <packaging>pom</packaging>
     <modules>
         <module>runtime</module>

@@ -1,7 +1,7 @@
 ---
 name: Ecosystem CI Participant issue
-about: Used for quarkus extensions participating in https://github.com/quarkusio/quarkus-ecosystem-ci
-title: "[CI] - <participant> failed to build against <something>"
+about: Used for Quarkus extensions participating in https://github.com/quarkusio/quarkus-ecosystem-ci
+title: "[CI] - <participant> - Quarkus <branch>"
 labels: triage/ci-participant
 assignees: ''
 

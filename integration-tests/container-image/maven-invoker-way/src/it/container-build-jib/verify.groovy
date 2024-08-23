@@ -5,14 +5,14 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 try {
-    ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")
+    ExecUtil.execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {
     println "Docker not found"
     return
 }
 
-assert ExecUtil.exec("docker", "images", "container-build-jib")
-assert ExecUtil.exec("docker", "rmi", "container-build-jib:0.1-SNAPSHOT")
+assert ExecUtil.execWithSystemLogging("docker", "images", "container-build-jib")
+assert ExecUtil.execWithSystemLogging("docker", "rmi", "container-build-jib:0.1-SNAPSHOT")
 
 
 Path pathInIT = Paths.get("target", "it", "container-build-jib", "target")

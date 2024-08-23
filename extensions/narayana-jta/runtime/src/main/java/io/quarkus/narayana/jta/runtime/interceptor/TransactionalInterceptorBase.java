@@ -9,15 +9,16 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
 import java.util.function.Function;
 
-import javax.inject.Inject;
-import javax.interceptor.InvocationContext;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -27,11 +28,14 @@ import org.reactivestreams.Publisher;
 import com.arjuna.ats.jta.logging.jtaLogger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
-import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
+import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public abstract class TransactionalInterceptorBase implements Serializable {
 
@@ -109,7 +113,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
 
-        int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
+        int currentTmTimeout = ((NotifyingTransactionManager) transactionManager).getTransactionTimeout();
 
         if (timeoutConfiguredForMethod > 0) {
             tm.setTransactionTimeout(timeoutConfiguredForMethod);
@@ -137,8 +141,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             // handle asynchronously if not throwing
             if (!throwing && ret != null) {
                 ReactiveTypeConverter<Object> converter = null;
-                if (ret instanceof CompletionStage == false
-                        && (ret instanceof Publisher == false || ic.getMethod().getReturnType() != Publisher.class)) {
+                if (!isCompletionStage(ret) && !isSomePublisher(ic, ret)) {
                     @SuppressWarnings({ "rawtypes", "unchecked" })
                     Optional<ReactiveTypeConverter<Object>> lookup = Registry.lookup((Class) ret.getClass());
                     if (lookup.isPresent()) {
@@ -150,12 +153,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         }
                     }
                 }
-                if (ret instanceof CompletionStage) {
+                if (isCompletionStage(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
                         ret = converter.fromCompletionStage((CompletionStage<?>) ret);
-                } else if (ret instanceof Publisher) {
+                } else if (isFlowPublisher(ret)) {
+                    // FIXME this needs to be tested
+                    ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
+                } else if (isLegacyPublisher(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
@@ -170,6 +176,23 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             }
         }
         return ret;
+    }
+
+    private static boolean isLegacyPublisher(Object ret) {
+        return ret instanceof Publisher;
+    }
+
+    private boolean isSomePublisher(InvocationContext ic, Object ret) {
+        return isLegacyPublisher(ret) || (ic.getMethod().getReturnType() == Publisher.class)
+                || isFlowPublisher(ret) || (ic.getMethod().getReturnType() == Flow.Publisher.class);
+    }
+
+    private static boolean isFlowPublisher(Object ret) {
+        return ret instanceof Flow.Publisher;
+    }
+
+    private boolean isCompletionStage(Object ret) {
+        return ret instanceof CompletionStage;
     }
 
     private int getTransactionTimeoutFromAnnotation(InvocationContext ic) {
@@ -222,7 +245,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         // Suspend the transaction to remove it from the main request thread
         tm.suspend();
         afterEndTransaction.run();
-        if (ret instanceof CompletionStage) {
+        if (isCompletionStage(ret)) {
             return ((CompletionStage<?>) ret).handle((v, t) -> {
                 try {
                     doInTransaction(tm, tx, () -> {
@@ -248,8 +271,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                     throw new CompletionException(t);
                 return v;
             });
-        } else if (ret instanceof Publisher) {
-            ret = Multi.createFrom().publisher((Publisher<?>) ret)
+        } else if (isLegacyPublisher(ret) || isFlowPublisher(ret)) {
+            Flow.Publisher<?> pub;
+            boolean isLegacyRS = !isFlowPublisher(ret);
+            if (isLegacyRS) {
+                pub = AdaptersToFlow.publisher((Publisher<?>) ret);
+            } else {
+                pub = (Flow.Publisher<?>) ret;
+            }
+            ret = Multi.createFrom().publisher(pub)
                     .onFailure().invoke(t -> {
                         try {
                             doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
@@ -275,6 +305,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                             throw new RuntimeException(e);
                         }
                     });
+            if (isLegacyRS) {
+                ret = AdaptersToReactiveStreams.publisher((Multi<?>) ret);
+            }
         }
         return ret;
     }
@@ -323,7 +356,6 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void handleExceptionNoThrow(InvocationContext ic, Throwable t, Transaction tx)
             throws IllegalStateException, SystemException {
-
         Transactional transactional = getTransactional(ic);
 
         for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
@@ -337,6 +369,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 tx.setRollbackOnly();
                 return;
             }
+        }
+
+        Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
+        if (rollbackAnnotation != null) {
+            if (rollbackAnnotation.value()) {
+                tx.setRollbackOnly();
+            }
+            // in both cases, behaviour is specified by the annotation
+            return;
         }
 
         // RuntimeException and Error are un-checked exceptions and rollback is expected
@@ -382,7 +423,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     /**
-     * An utility method to throw any exception as a {@link RuntimeException}.
+     * A utility method to throw any exception as a {@link RuntimeException}.
      * We may throw a checked exception (subtype of {@code Throwable} or {@code Exception}) as un-checked exception.
      * This considers the Java 8 inference rule that states that a {@code throws E} is inferred as {@code RuntimeException}.
      * <p>

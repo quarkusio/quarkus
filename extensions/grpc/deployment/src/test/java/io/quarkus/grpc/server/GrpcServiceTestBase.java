@@ -30,7 +30,7 @@ import io.grpc.testing.integration.TestServiceGrpc;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public class GrpcServiceTestBase {
+public abstract class GrpcServiceTestBase {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
     protected ManagedChannel channel;
@@ -160,15 +160,16 @@ public class GrpcServiceTestBase {
     public void testUnimplementedMethodWithBlockingClient() {
         assertThatThrownBy(
                 () -> TestServiceGrpc.newBlockingStub(channel).unimplementedCall(EmptyProtos.Empty.newBuilder().build()))
-                        .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
+                .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
     }
 
     @Test
     public void testUnimplementedMethodWithMutinyClient() {
         assertThatThrownBy(
                 () -> MutinyTestServiceGrpc.newMutinyStub(channel).unimplementedCall(EmptyProtos.Empty.newBuilder().build())
-                        .await().atMost(TIMEOUT)).isInstanceOf(StatusRuntimeException.class)
-                                .hasMessageContaining("UNIMPLEMENTED");
+                        .await().atMost(TIMEOUT))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasMessageContaining("UNIMPLEMENTED");
     }
 
     @Test

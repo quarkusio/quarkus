@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -75,7 +75,7 @@ public class VertxHttpResponse implements HttpResponse {
 
     @Override
     public void addNewCookie(NewCookie cookie) {
-        outputHeaders.add(javax.ws.rs.core.HttpHeaders.SET_COOKIE, cookie);
+        outputHeaders.add(jakarta.ws.rs.core.HttpHeaders.SET_COOKIE, cookie);
     }
 
     void checkException() throws IOException {
@@ -192,12 +192,13 @@ public class VertxHttpResponse implements HttpResponse {
                 boolean explicitChunked = "chunked".equalsIgnoreCase(response.headers().get("transfer-encoding"));
                 if (!explicitChunked) {
                     if (buffer == null) {
-                        getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "0");
+                        getOutputHeaders().putSingle(jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "0");
                     } else {
-                        getOutputHeaders().putSingle(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH, "" + buffer.readableBytes());
+                        getOutputHeaders().putSingle(jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH,
+                                "" + buffer.readableBytes());
                     }
                 }
-            } else if (!response.headers().contains(javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH)) {
+            } else if (!response.headers().contains(jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH)) {
                 response.setChunked(true);
             }
         }

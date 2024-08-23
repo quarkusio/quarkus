@@ -3,10 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-
 = Compressing native executables using UPX
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: core
+:topics: tooling,native,compression,upx
 
 https://upx.github.io/[Ultimate Packer for eXecutables (UPX)] is a compression tool reducing the size of executables.
 Quarkus can compress the produced native executable to reduce its size.
@@ -35,7 +35,7 @@ If you are not in one of these cases, the compression fails.
 [IMPORTANT]
 .upx is cross-platform.
 ====
-`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a MacOS X machine can compress a Linux 64bits executables.
+`upx` can compress executables using a different architecture and OS than your host machine. For example, `upx` on a macOS machine can compress a Linux 64-bits executables.
 ====
 
 == Configuring the UPX compression

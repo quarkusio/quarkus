@@ -1,16 +1,5 @@
 package io.quarkus.bootstrap.jbang;
 
-import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactDependency;
-import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.maven.dependency.GACTV;
-import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -29,6 +18,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
 
 /**
  * JBang Dev mode entry point.
@@ -98,7 +100,7 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     .setMode(QuarkusBootstrap.Mode.DEV)
                     .setTargetDirectory(targetClasses)
                     .setAppArtifact(appArtifact)
-                    .setManagingProject(new GACTV("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
+                    .setManagingProject(ArtifactCoords.pom("io.quarkus", "quarkus-bom", getQuarkusVersion()))
                     .setForcedDependencies(deps.entrySet().stream().map(s -> {
                         String[] parts = s.getKey().split(":");
                         Dependency artifact;
@@ -126,7 +128,8 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     BootstrapMavenContext.config().setCurrentProject(currentProject));
             final MavenArtifactResolver mvnResolver = new MavenArtifactResolver(mvnCtx);
             builder.setMavenArtifactResolver(mvnResolver);
-            currentProject.getAppArtifact("jar").setPath(targetClasses);
+            ((ResolvedArtifactDependency) currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
+                    .setResolvedPaths(PathList.of(targetClasses));
 
             final CuratedApplication curatedApp = builder.build().bootstrap();
             final Object appInstance = curatedApp.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);

@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 public final class Expressions {
 
@@ -37,14 +38,17 @@ public final class Expressions {
             String params = value.substring(start + 1, value.length() - 1);
             return splitParts(params, PARAMS_SPLIT_CONFIG);
         }
-        throw Parser.parserError("invalid virtual method in {" + exprValue + "}", origin);
+        throw Parser.error(ParserError.INVALID_VIRTUAL_METHOD, "invalid virtual method in \\{{exprValue}}", origin)
+                .argument("exprValue", exprValue).build();
     }
 
     public static String parseBracketContent(String value, Origin origin, String exprValue) {
         if (value.endsWith(SQUARE_RIGHT_BRACKET)) {
             return value.substring(1, value.length() - 1);
         }
-        throw Parser.parserError("invalid bracket notation expression in {" + exprValue + "}", origin);
+        throw Parser.error(ParserError.INVALID_BRACKET_EXPRESSION,
+                "invalid bracket notation expression in \\{{exprValue}}", origin)
+                .argument("exprValue", exprValue).build();
     }
 
     public static String buildVirtualMethodSignature(String name, List<String> params) {
@@ -56,7 +60,7 @@ public final class Expressions {
     }
 
     /**
-     * 
+     *
      * @param value
      * @return the parts
      */
@@ -100,10 +104,20 @@ public final class Expressions {
                 }
                 // Non-separator char
                 if (!literal) {
-                    if (splitConfig.isInfixNotationSupported() && brackets == 0 && c == ' ') {
-                        // Not inside a virtual method
-                        if (infix == 1) {
-                            // The second space after the infix method
+                    // Not inside a string/type literal
+                    if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
+                        // Infix supported, blank space and not inside a virtual method
+                        if (separator == 0
+                                && (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) == '(')) {
+                            // Skip redundant blank space:
+                            // 1. before the infix method
+                            // foo  or bar
+                            // ----^
+                            // 2. before an infix method parameter
+                            // foo or  bar
+                            // -------^
+                        } else if (infix == 1) {
+                            // The space after the infix method
                             // foo or bar
                             // ------^
                             buffer.append(LEFT_BRACKET);
@@ -155,7 +169,7 @@ public final class Expressions {
     }
 
     /**
-     * 
+     *
      * @param buffer
      * @param parts
      * @return true if a new buffer should be created
@@ -182,6 +196,24 @@ public final class Expressions {
 
         public boolean isInfixNotationSupported() {
             return false;
+        }
+
+    };
+
+    static final SplitConfig PARAM_DECLARATION_SPLIT_CONFIG = new SplitConfig() {
+
+        @Override
+        public boolean isSeparator(char candidate) {
+            return ' ' == candidate;
+        }
+
+        public boolean isInfixNotationSupported() {
+            return false;
+        }
+
+        @Override
+        public boolean isLiteralSeparator(char candidate) {
+            return SplitConfig.super.isLiteralSeparator(candidate) || candidate == '<' || candidate == '>';
         }
 
     };
@@ -213,7 +245,7 @@ public final class Expressions {
 
     }
 
-    interface SplitConfig {
+    public interface SplitConfig {
 
         boolean isSeparator(char candidate);
 

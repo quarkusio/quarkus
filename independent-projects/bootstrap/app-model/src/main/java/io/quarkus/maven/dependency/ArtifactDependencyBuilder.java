@@ -1,14 +1,19 @@
 package io.quarkus.maven.dependency;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, T>, T> {
 
     String groupId;
     String artifactId;
-    String classifier = "";
-    String type = GACTV.TYPE_JAR;
+    String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
+    String type = ArtifactCoords.TYPE_JAR;
     String version;
-    String scope = "compile";
+    String scope = Dependency.SCOPE_COMPILE;
     int flags;
+    Collection<ArtifactKey> exclusions = List.of();
 
     @SuppressWarnings("unchecked")
     public B setCoords(ArtifactCoords coords) {
@@ -124,6 +129,19 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
         }
     }
 
+    public B addExclusion(String groupId, String artifactId) {
+        return addExclusion(ArtifactKey.ga(groupId, artifactId));
+    }
+
+    @SuppressWarnings("unchecked")
+    public B addExclusion(ArtifactKey key) {
+        if (exclusions.isEmpty()) {
+            exclusions = new ArrayList<>();
+        }
+        exclusions.add(key);
+        return (B) this;
+    }
+
     public String getGroupId() {
         return groupId;
     }
@@ -148,12 +166,12 @@ abstract class AbstractDependencyBuilder<B extends AbstractDependencyBuilder<B, 
         return scope;
     }
 
-    public String toGACTVString() {
-        return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
+    public ArtifactKey getKey() {
+        return ArtifactKey.of(groupId, artifactId, classifier, type);
     }
 
-    public ArtifactKey getKey() {
-        return new GACT(groupId, artifactId, classifier, type);
+    public String toGACTVString() {
+        return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
     }
 
     public abstract T build();

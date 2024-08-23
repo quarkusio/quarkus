@@ -24,4 +24,11 @@ class ClassPropertiesTest {
                 .then()
                 .body(is(equalTo("true")));
     }
+
+    @Test
+    void shouldInterfaceNotBePopulated() {
+        when().get("/class/interface")
+                .then()
+                .body(is(equalTo("true")));
+    }
 }

@@ -1,10 +1,10 @@
 package org.jboss.resteasy.reactive.common.providers.serialisers;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.core.MediaType;
 
 public class MessageReaderUtil {
 
@@ -22,13 +22,7 @@ public class MessageReaderUtil {
     }
 
     public static byte[] readBytes(InputStream entityStream) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024]; //TODO: fix, needs a pure vert.x async read model
-        int r;
-        while ((r = entityStream.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        return out.toByteArray();
+        return entityStream.readAllBytes();
     }
 
     public static String readString(InputStream entityStream, MediaType mediaType) throws IOException {

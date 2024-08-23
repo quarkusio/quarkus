@@ -2,6 +2,8 @@ package io.quarkus.devtools.project;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -12,7 +14,6 @@ import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.config.RegistriesConfig;
-import java.nio.file.Path;
 
 public class QuarkusProjectHelper {
 
@@ -22,6 +23,7 @@ public class QuarkusProjectHelper {
     private static ExtensionCatalogResolver catalogResolver;
 
     private static boolean registryClientEnabled;
+
     static {
         initRegistryClientEnabled();
     }
@@ -65,7 +67,8 @@ public class QuarkusProjectHelper {
         // TODO remove this method once the default registry becomes available
         return QuarkusProjectHelper.getProject(projectDir,
                 getExtensionCatalog(quarkusVersion),
-                buildTool);
+                buildTool,
+                JavaVersion.NA);
     }
 
     @Deprecated
@@ -99,21 +102,27 @@ public class QuarkusProjectHelper {
             throw new RuntimeException("Failed to resolve the Quarkus extension catalog", e);
         }
 
-        return getProject(projectDir, catalog, buildTool, messageWriter());
-    }
-
-    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool) {
-        return getProject(projectDir, catalog, buildTool, messageWriter());
+        return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
+            JavaVersion javaVersion) {
+        return getProject(projectDir, catalog, buildTool, javaVersion, messageWriter());
+    }
+
+    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool) {
+        return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
+    }
+
+    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
+            JavaVersion javaVersion,
             MessageWriter log) {
         return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, buildTool);
+                log, buildTool, javaVersion);
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionManager extManager) throws RegistryResolutionException {
-        return getProject(projectDir, resolveExtensionCatalog(), extManager, messageWriter());
+        return getProject(projectDir, resolveExtensionCatalog(), extManager, JavaVersion.NA, messageWriter());
     }
 
     public static ExtensionCatalog resolveExtensionCatalog() throws RegistryResolutionException {
@@ -121,9 +130,10 @@ public class QuarkusProjectHelper {
     }
 
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, ExtensionManager extManager,
+            JavaVersion javaVersion,
             MessageWriter log) {
         return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
-                log, extManager);
+                log, extManager, javaVersion);
     }
 
     public static ExtensionCatalogResolver getCatalogResolver() throws RegistryResolutionException {

@@ -1,6 +1,9 @@
 package io.quarkus.paths;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public interface PathCollection extends Iterable<Path> {
 
@@ -26,4 +29,12 @@ public interface PathCollection extends Iterable<Path> {
     PathCollection addAllFirst(Iterable<Path> i);
 
     Path resolveExistingOrNull(String path);
+
+    default Stream<Path> stream() {
+        final List<Path> list = new ArrayList<>(size());
+        for (Path p : this) {
+            list.add(p);
+        }
+        return list.stream();
+    }
 }

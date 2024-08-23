@@ -11,8 +11,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.function.Consumer;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
+
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Path;
+
 import org.hamcrest.Matchers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -36,7 +38,7 @@ public class AnnotationTransformationTest {
             .addScanCustomizer(new Consumer<ResteasyReactiveDeploymentManager.ScanStep>() {
                 @Override
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
-                    scanStep.addAnnotationsTransformer(new AnnotationsTransformer() {
+                    scanStep.addAnnotationTransformation(new AnnotationsTransformer() {
                         @Override
                         public boolean appliesTo(AnnotationTarget.Kind kind) {
                             return kind == AnnotationTarget.Kind.METHOD;

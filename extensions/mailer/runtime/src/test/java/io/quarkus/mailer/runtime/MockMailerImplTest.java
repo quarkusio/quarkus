@@ -19,6 +19,7 @@ class MockMailerImplTest {
     private static final String TO = "foo@quarkus.io";
 
     private static Vertx vertx;
+    private MockMailboxImpl mockMailbox;
     private MutinyMailerImpl mailer;
 
     @BeforeAll
@@ -33,11 +34,8 @@ class MockMailerImplTest {
 
     @BeforeEach
     void init() {
-        mailer = new MutinyMailerImpl();
-        mailer.mailerSupport = new MailerSupport(FROM, null, true);
-        mailer.vertx = vertx;
-        mailer.mockMailbox = new MockMailboxImpl();
-        mailer.mockMailbox.clear();
+        mockMailbox = new MockMailboxImpl();
+        mailer = new MutinyMailerImpl(vertx, null, mockMailbox, FROM, null, true, List.of(), false);
     }
 
     @Test
@@ -45,7 +43,7 @@ class MockMailerImplTest {
         String content = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", content)).await().indefinitely();
 
-        List<Mail> sent = mailer.mockMailbox.getMessagesSentTo(TO);
+        List<Mail> sent = mockMailbox.getMessagesSentTo(TO);
         assertThat(sent).hasSize(1);
         Mail actual = sent.get(0);
         assertThat(actual.getText()).contains(content);
@@ -58,7 +56,7 @@ class MockMailerImplTest {
         Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io")
                 .addBcc("bcc2@quarkus.io");
         mailer.send(mail1, mail2).await().indefinitely();
-        assertThat(mailer.mockMailbox.getTotalMessagesSent()).isEqualTo(6);
+        assertThat(mockMailbox.getTotalMessagesSent()).isEqualTo(6);
     }
 
 }

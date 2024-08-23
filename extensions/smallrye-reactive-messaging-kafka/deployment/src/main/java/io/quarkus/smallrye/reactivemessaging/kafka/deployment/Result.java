@@ -4,14 +4,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 final class Result {
+    // false when a result is known to not exist (unlike unknown, which is represented as null Result)
+    final boolean exists;
     final String value; // serializer/deserializer type
     final Map<String, String> additionalProperties;
 
     static Result of(String result) {
-        return new Result(result, new HashMap<>());
+        return new Result(true, result, new HashMap<>());
     }
 
-    private Result(String value, Map<String, String> additionalProperties) {
+    static Result nonexistent() {
+        return new Result(false, null, new HashMap<>());
+    }
+
+    private Result(boolean exists, String value, Map<String, String> additionalProperties) {
+        this.exists = exists;
         this.value = value;
         this.additionalProperties = additionalProperties;
     }
@@ -27,6 +34,6 @@ final class Result {
 
         Map<String, String> additionalProperties = new HashMap<>(this.additionalProperties);
         additionalProperties.put(key, value);
-        return new Result(this.value, additionalProperties);
+        return new Result(this.exists, this.value, additionalProperties);
     }
 }

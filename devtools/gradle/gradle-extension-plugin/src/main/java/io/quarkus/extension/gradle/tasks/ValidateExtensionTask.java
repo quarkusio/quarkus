@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.Configuration;
@@ -15,31 +17,33 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.gradle.tooling.dependency.ArtifactExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
 
 public class ValidateExtensionTask extends DefaultTask {
 
-    private QuarkusExtensionConfiguration extensionConfiguration;
     private Configuration runtimeModuleClasspath;
     private Configuration deploymentModuleClasspath;
 
-    public ValidateExtensionTask() {
+    @Inject
+    public ValidateExtensionTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration,
+            Configuration runtimeModuleClasspath) {
         setDescription("Validate extension dependencies");
         setGroup("quarkus");
-    }
 
-    public void setQuarkusExtensionConfiguration(QuarkusExtensionConfiguration extensionConfiguration) {
-        this.extensionConfiguration = extensionConfiguration;
+        this.runtimeModuleClasspath = runtimeModuleClasspath;
+        this.onlyIf(t -> !quarkusExtensionConfiguration.isValidationDisabled().get());
+
+        // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
+        // cache will be at least degraded, but the build will not fail.
+        notCompatibleWithConfigurationCache("The Quarkus Extension Plugin isn't compatible with the configuration cache");
     }
 
     @Internal
     public Configuration getRuntimeModuleClasspath() {
         return this.runtimeModuleClasspath;
-    }
-
-    public void setRuntimeModuleClasspath(Configuration runtimeModuleClasspath) {
-        this.runtimeModuleClasspath = runtimeModuleClasspath;
     }
 
     @Internal
@@ -80,10 +84,20 @@ public class ValidateExtensionTask extends DefaultTask {
     private List<AppArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
         List<AppArtifactKey> runtimeExtensions = new ArrayList<>();
         for (ResolvedArtifact resolvedArtifact : runtimeArtifacts) {
-            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
+            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
             if (extension != null) {
-                runtimeExtensions.add(new AppArtifactKey(extension.getDeploymentModule().getGroupId(),
-                        extension.getDeploymentModule().getArtifactId()));
+                if (extension instanceof ProjectExtensionDependency) {
+                    final ProjectExtensionDependency ped = (ProjectExtensionDependency) extension;
+
+                    runtimeExtensions
+                            .add(new AppArtifactKey(ped.getDeploymentModule().getGroup().toString(),
+                                    ped.getDeploymentModule().getName()));
+                } else if (extension instanceof ArtifactExtensionDependency) {
+                    final ArtifactExtensionDependency aed = (ArtifactExtensionDependency) extension;
+
+                    runtimeExtensions.add(new AppArtifactKey(aed.getDeploymentModule().getGroupId(),
+                            aed.getDeploymentModule().getArtifactId()));
+                }
             }
         }
         return runtimeExtensions;

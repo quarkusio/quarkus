@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -14,24 +13,27 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.dekorate.servicebinding.model.ServiceBinding;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.openshift.api.model.DeploymentConfig;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
 public class OpenshiftWithServiceBindingTest {
 
+    private static final String APP_NAME = "openshift-with-service-binding";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-service-binding")
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-service-binding.properties")
+            .withConfigurationResource(APP_NAME + ".properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setLogFileName("k8s.log")
-            .setForcedDependencies(
-                    Arrays.asList(new AppArtifact("io.quarkus", "quarkus-openshift", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-kubernetes-service-binding", Version.getVersion())));
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-kubernetes-service-binding", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -48,7 +50,7 @@ public class OpenshiftWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "DeploymentConfig".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(DeploymentConfig.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-service-binding");
+                    assertThat(m.getName()).isEqualTo(APP_NAME);
                 });
             });
         });
@@ -56,7 +58,7 @@ public class OpenshiftWithServiceBindingTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceBinding".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(ServiceBinding.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("openshift-with-service-binding");
+                    assertThat(m.getName()).isEqualTo(APP_NAME + "-my-db");
                 });
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getApplication()).satisfies(a -> {

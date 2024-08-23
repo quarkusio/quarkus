@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -49,8 +52,8 @@ class TypeResolver {
             if (resolvedType instanceof TypeVariable<?>) {
                 resolvedType = resolveType((TypeVariable<?>) resolvedType);
             }
-            if (resolvedType instanceof ParameterizedType) {
-                resolvedType = resolveType((ParameterizedType) resolvedType);
+            if (isParameterizedType(resolvedType)) {
+                resolvedType = resolveType(asParameterizedType(resolvedType));
             }
             resolvedTypeArguments[i] = resolvedType;
             // This identity check is intentional. A different identity indicates that the type argument was resolved within #resolveType().
@@ -73,8 +76,8 @@ class TypeResolver {
         if (genericComponentType instanceof TypeVariable<?>) {
             resolvedType = resolveType((TypeVariable<?>) genericComponentType);
         }
-        if (genericComponentType instanceof ParameterizedType) {
-            resolvedType = resolveType((ParameterizedType) genericComponentType);
+        if (isParameterizedType(genericComponentType)) {
+            resolvedType = resolveType(asParameterizedType(genericComponentType));
         }
         if (genericComponentType instanceof GenericArrayType) {
             resolvedType = resolveType((GenericArrayType) genericComponentType);
@@ -101,8 +104,8 @@ class TypeResolver {
     }
 
     public Type resolveType(Type type) {
-        if (type instanceof ParameterizedType) {
-            return resolveType((ParameterizedType) type);
+        if (isParameterizedType(type)) {
+            return resolveType(asParameterizedType(type));
         }
         if (type instanceof TypeVariable<?>) {
             return resolveType((TypeVariable<?>) type);

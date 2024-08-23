@@ -26,12 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
-import javax.json.JsonWriter;
-import javax.json.spi.JsonProvider;
-import javax.json.stream.JsonGenerator;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonWriter;
+import jakarta.json.spi.JsonProvider;
+import jakarta.json.stream.JsonGenerator;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;

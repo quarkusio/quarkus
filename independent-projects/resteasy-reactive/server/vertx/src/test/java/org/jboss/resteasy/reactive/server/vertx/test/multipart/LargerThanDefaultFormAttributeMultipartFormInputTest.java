@@ -3,20 +3,20 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
-import io.restassured.http.ContentType;
-import io.vertx.core.http.HttpServerOptions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.function.Supplier;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.MultipartForm;
+
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -25,12 +25,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.restassured.http.ContentType;
+import io.vertx.core.http.HttpServerOptions;
+
 public class LargerThanDefaultFormAttributeMultipartFormInputTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setMaxFormAttributeSize(120000)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -67,7 +70,7 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @Produces(MediaType.TEXT_PLAIN)
-        public String hello(@MultipartForm Data data) {
+        public String hello(@BeanParam Data data) {
             return data.getText();
         }
     }

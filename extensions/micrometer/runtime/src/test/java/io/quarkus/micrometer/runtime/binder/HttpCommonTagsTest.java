@@ -21,17 +21,21 @@ public class HttpCommonTagsTest {
 
     @Test
     public void testUriRedirect() {
-        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", 301));
-        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", 302));
-        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", 304));
+        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", null, 301));
+        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", null, 302));
+        Assertions.assertEquals(HttpCommonTags.URI_REDIRECTION, HttpCommonTags.uri("/moved", null, 304));
+        Assertions.assertEquals(Tag.of("uri", "/moved/{id}"), HttpCommonTags.uri("/moved/{id}", "/moved/111", 304));
+        Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", null, 304));
     }
 
     @Test
     public void testUriDefaults() {
-        Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", 200));
-        Assertions.assertEquals(Tag.of("uri", "/known/ok"), HttpCommonTags.uri("/known/ok", 200));
-        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", 404));
-        Assertions.assertEquals(Tag.of("uri", "/known/bad/request"), HttpCommonTags.uri("/known/bad/request", 400));
-        Assertions.assertEquals(Tag.of("uri", "/known/server/error"), HttpCommonTags.uri("/known/server/error", 500));
+        Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", null, 200));
+        Assertions.assertEquals(HttpCommonTags.URI_ROOT, HttpCommonTags.uri("/", null, 404));
+        Assertions.assertEquals(Tag.of("uri", "/known/ok"), HttpCommonTags.uri("/known/ok", null, 200));
+        Assertions.assertEquals(HttpCommonTags.URI_NOT_FOUND, HttpCommonTags.uri("/invalid", null, 404));
+        Assertions.assertEquals(Tag.of("uri", "/invalid/{id}"), HttpCommonTags.uri("/invalid/{id}", "/invalid/111", 404));
+        Assertions.assertEquals(Tag.of("uri", "/known/bad/request"), HttpCommonTags.uri("/known/bad/request", null, 400));
+        Assertions.assertEquals(Tag.of("uri", "/known/server/error"), HttpCommonTags.uri("/known/server/error", null, 500));
     }
 }

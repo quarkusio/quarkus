@@ -1,55 +1,55 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.BootstrapConstants;
+import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
+import static io.quarkus.bootstrap.util.DependencyUtils.toAppArtifact;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.graph.Exclusion;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.VersionRangeResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
+import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
+import org.eclipse.aether.version.Version;
+
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.model.PlatformImportsImpl;
+import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyTreeResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
-import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
-import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
+import io.quarkus.bootstrap.resolver.maven.DependencyLoggingConfig;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
-import io.quarkus.bootstrap.workspace.ProcessedSources;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.DependencyFlags;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvableDependency;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
-import org.eclipse.aether.RepositoryException;
-import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.collection.DependencyGraphTransformationContext;
-import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyNode;
-import org.eclipse.aether.graph.DependencyVisitor;
-import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.resolution.VersionRangeResult;
-import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
-import org.eclipse.aether.util.graph.transformer.ConflictMarker;
-import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
-import org.eclipse.aether.version.Version;
 
 /**
  * @author Alexey Loubyansky
@@ -57,17 +57,34 @@ import org.eclipse.aether.version.Version;
 public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;
-    protected Consumer<String> buildTreeConsumer;
+    private DependencyLoggingConfig depLogConfig;
     protected boolean devmode;
     protected boolean test;
     private boolean collectReloadableDeps = true;
+    private boolean incubatingModelResolver;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) {
         this.mvn = mvn;
     }
 
+    /**
+     * Temporary method that will be removed once the incubating implementation becomes the default.
+     *
+     * @return this application model resolver
+     */
+    public BootstrapAppModelResolver setIncubatingModelResolver(boolean incubatingModelResolver) {
+        this.incubatingModelResolver = incubatingModelResolver;
+        return this;
+    }
+
     public void setBuildTreeLogger(Consumer<String> buildTreeConsumer) {
-        this.buildTreeConsumer = buildTreeConsumer;
+        if (buildTreeConsumer != null) {
+            depLogConfig = DependencyLoggingConfig.builder().setMessageConsumer(buildTreeConsumer).build();
+        }
+    }
+
+    public void setDepLogConfig(DependencyLoggingConfig depLogConfig) {
+        this.depLogConfig = depLogConfig;
     }
 
     /**
@@ -110,8 +127,21 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     @Override
-    public ResolvedDependency resolve(ArtifactCoords artifact) throws AppModelResolverException {
-        return resolve(artifact, toAetherArtifact(artifact), Collections.emptyList());
+    public ResolvedDependency resolve(ArtifactCoords coords) throws AppModelResolverException {
+        final ResolvedDependency resolvedArtifact = ResolvedDependency.class.isAssignableFrom(coords.getClass())
+                ? (ResolvedDependency) coords
+                : null;
+        if (resolvedArtifact != null
+                && (resolvedArtifact.getWorkspaceModule() != null || mvn.getProjectModuleResolver() == null)) {
+            return resolvedArtifact;
+        }
+        final WorkspaceModule resolvedModule = mvn.getProjectModuleResolver() == null ? null
+                : mvn.getProjectModuleResolver().getProjectModule(coords.getGroupId(), coords.getArtifactId(),
+                        coords.getVersion());
+        if (resolvedArtifact != null && resolvedModule == null) {
+            return resolvedArtifact;
+        }
+        return resolve(coords, toAetherArtifact(coords), mvn.getRepositories()).build();
     }
 
     @Override
@@ -120,7 +150,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throws AppModelResolverException {
         final List<Dependency> mvnDeps;
         if (deps.isEmpty()) {
-            mvnDeps = Collections.emptyList();
+            mvnDeps = List.of();
         } else {
             mvnDeps = new ArrayList<>(deps.size());
             for (io.quarkus.maven.dependency.Dependency dep : deps) {
@@ -138,7 +168,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             public boolean visitLeave(DependencyNode node) {
                 final Dependency dep = node.getDependency();
                 if (dep != null) {
-                    result.add(toAppArtifact(dep.getArtifact()).setScope(dep.getScope()).setOptional(dep.isOptional()).build());
+                    result.add(toAppArtifact(dep.getArtifact(), null).setScope(dep.getScope()).setOptional(dep.isOptional())
+                            .build());
                 }
                 return true;
             }
@@ -150,15 +181,14 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, Collections.emptyList(), null, Collections.emptySet());
+        return resolveManagedModel(appArtifact, List.of(), null, Set.of());
     }
 
     @Override
     public ApplicationModel resolveModel(ArtifactCoords appArtifact,
             Collection<io.quarkus.maven.dependency.Dependency> directDeps)
             throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, directDeps,
-                null, Collections.emptySet());
+        return resolveManagedModel(appArtifact, directDeps, null, Set.of());
     }
 
     @Override
@@ -170,6 +200,75 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         return doResolveModel(appArtifact, toAetherDeps(directDeps), managingProject, reloadableModules);
     }
 
+    /**
+     * Resolve application mode for the main application module that might not have a POM file on disk.
+     *
+     * @param module main application module
+     * @return resolved application model
+     * @throws AppModelResolverException in case application model could not be resolved
+     */
+    public ApplicationModel resolveModel(WorkspaceModule module)
+            throws AppModelResolverException {
+        final PathList.Builder resolvedPaths = PathList.builder();
+        if (module.hasMainSources()) {
+            if (!module.getMainSources().isOutputAvailable()) {
+                throw new AppModelResolverException("The application module hasn't been built yet");
+            }
+            module.getMainSources().getSourceDirs().forEach(s -> {
+                if (!resolvedPaths.contains(s.getOutputDir())) {
+                    resolvedPaths.add(s.getOutputDir());
+                }
+            });
+            module.getMainSources().getResourceDirs().forEach(s -> {
+                if (!resolvedPaths.contains(s.getOutputDir())) {
+                    resolvedPaths.add(s.getOutputDir());
+                }
+            });
+        }
+        final Artifact mainArtifact = new DefaultArtifact(module.getId().getGroupId(), module.getId().getArtifactId(), null,
+                ArtifactCoords.TYPE_JAR,
+                module.getId().getVersion());
+        final ResolvedDependencyBuilder mainDep = ResolvedDependencyBuilder.newInstance()
+                .setGroupId(mainArtifact.getGroupId())
+                .setArtifactId(mainArtifact.getArtifactId())
+                .setClassifier(mainArtifact.getClassifier())
+                .setType(mainArtifact.getExtension())
+                .setVersion(mainArtifact.getVersion())
+                .setResolvedPaths(resolvedPaths.build())
+                .setWorkspaceModule(module);
+
+        final Map<ArtifactKey, Dependency> managedMap = new HashMap<>();
+        for (io.quarkus.maven.dependency.Dependency d : module.getDirectDependencyConstraints()) {
+            if (io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT.equals(d.getScope())) {
+                mvn.resolveDescriptor(toAetherArtifact(d)).getManagedDependencies()
+                        .forEach(dep -> managedMap.putIfAbsent(getKey(dep.getArtifact()), dep));
+            } else {
+                managedMap.put(d.getKey(), new Dependency(toAetherArtifact(d), d.getScope(), d.isOptional(),
+                        toAetherExclusions(d.getExclusions())));
+            }
+        }
+        final List<Dependency> directDeps = new ArrayList<>(module.getDirectDependencies().size());
+        for (io.quarkus.maven.dependency.Dependency d : module.getDirectDependencies()) {
+            String version = d.getVersion();
+            if (version == null) {
+                final Dependency constraint = managedMap.get(d.getKey());
+                if (constraint == null) {
+                    throw new AppModelResolverException(
+                            d.toCompactCoords() + " is missing version and is not found among the dependency constraints");
+                }
+                version = constraint.getArtifact().getVersion();
+            }
+            directDeps.add(new Dependency(
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), version),
+                    d.getScope(), d.isOptional(), toAetherExclusions(d.getExclusions())));
+        }
+        final List<Dependency> constraints = managedMap.isEmpty() ? List.of() : new ArrayList<>(managedMap.values());
+
+        return buildAppModel(mainDep,
+                mainArtifact, directDeps, mvn.getRepositories(),
+                Set.of(), constraints);
+    }
+
     private ApplicationModel doResolveModel(ArtifactCoords coords,
             List<Dependency> directMvnDeps,
             ArtifactCoords managingProject,
@@ -178,222 +277,171 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         if (coords == null) {
             throw new IllegalArgumentException("Application artifact is null");
         }
-        final Artifact mvnArtifact = toAetherArtifact(coords);
+        Artifact mvnArtifact = toAetherArtifact(coords);
 
-        List<Dependency> managedDeps = Collections.emptyList();
-        List<RemoteRepository> managedRepos = Collections.emptyList();
+        List<Dependency> managedDeps = List.of();
+        List<RemoteRepository> managedRepos = List.of();
         if (managingProject != null) {
             final ArtifactDescriptorResult managingDescr = mvn.resolveDescriptor(toAetherArtifact(managingProject));
             managedDeps = managingDescr.getManagedDependencies();
             managedRepos = mvn.newResolutionRepositories(managingDescr.getRepositories());
         }
-        List<String> excludedScopes = new ArrayList<>();
-        if (!test) {
-            excludedScopes.add("test");
-        }
-        if (!devmode) {
-            excludedScopes.add("provided");
+
+        List<RemoteRepository> aggregatedRepos = mvn.aggregateRepositories(managedRepos, mvn.getRepositories());
+        final ResolvedDependencyBuilder appArtifact = resolve(coords, mvnArtifact, aggregatedRepos).setRuntimeCp();
+        mvnArtifact = toAetherArtifact(appArtifact);
+        final ArtifactDescriptorResult appArtifactDescr = resolveDescriptor(mvnArtifact, aggregatedRepos);
+
+        Map<ArtifactKey, String> managedVersions = Map.of();
+        if (!managedDeps.isEmpty()) {
+            final List<Dependency> mergedManagedDeps = new ArrayList<>(
+                    managedDeps.size() + appArtifactDescr.getManagedDependencies().size());
+            managedVersions = new HashMap<>(managedDeps.size());
+            for (Dependency dep : managedDeps) {
+                managedVersions.put(getKey(dep.getArtifact()), dep.getArtifact().getVersion());
+                mergedManagedDeps.add(dep);
+            }
+            for (Dependency dep : appArtifactDescr.getManagedDependencies()) {
+                final ArtifactKey key = getKey(dep.getArtifact());
+                if (!managedVersions.containsKey(key)) {
+                    mergedManagedDeps.add(dep);
+                }
+            }
+            managedDeps = mergedManagedDeps;
+        } else {
+            managedDeps = appArtifactDescr.getManagedDependencies();
         }
 
-        final ResolvedDependency appArtifact = resolve(coords, mvnArtifact, managedRepos);
-        final boolean preferWorkspacePaths = !containsExtensionMetadata(appArtifact) && (devmode || test);
+        directMvnDeps = DependencyUtils.mergeDeps(directMvnDeps, appArtifactDescr.getDependencies(), managedVersions, Set.of());
+        aggregatedRepos = mvn.aggregateRepositories(aggregatedRepos,
+                mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
+
+        return buildAppModel(appArtifact,
+                mvnArtifact, directMvnDeps, aggregatedRepos,
+                reloadableModules, managedDeps);
+    }
+
+    private Set<String> getExcludedScopes() {
+        if (test) {
+            return Set.of();
+        }
+        if (devmode) {
+            return Set.of(JavaScopes.TEST);
+        }
+        return Set.of(JavaScopes.PROVIDED, JavaScopes.TEST);
+    }
+
+    private ApplicationModel buildAppModel(ResolvedDependencyBuilder appArtifact,
+            Artifact artifact, List<Dependency> directDeps, List<RemoteRepository> repos,
+            Set<ArtifactKey> reloadableModules, List<Dependency> managedDeps)
+            throws AppModelResolverException {
 
         final ApplicationModelBuilder appBuilder = new ApplicationModelBuilder().setAppArtifact(appArtifact);
         if (appArtifact.getWorkspaceModule() != null) {
-            appBuilder.addReloadableWorkspaceModule(new GACT(appArtifact.getGroupId(), appArtifact.getArtifactId()));
+            appBuilder.addReloadableWorkspaceModule(appArtifact.getKey());
         }
         if (!reloadableModules.isEmpty()) {
             appBuilder.addReloadableWorkspaceModules(reloadableModules);
         }
 
-        DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
-                directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
-
-        ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
-        if (managingProject == null) {
-            managedDeps = appArtifactDescr.getManagedDependencies();
-        } else {
-            final List<Dependency> mergedManagedDeps = new ArrayList<>(managedDeps.size());
-            final Set<ArtifactKey> mergedKeys = new HashSet<>(managedDeps.size());
-            for (Dependency dep : managedDeps) {
-                mergedKeys.add(getKey(dep.getArtifact()));
-                mergedManagedDeps.add(dep);
-            }
-            for (Dependency dep : appArtifactDescr.getManagedDependencies()) {
-                final Artifact artifact = dep.getArtifact();
-                if (!mergedKeys.contains(getKey(artifact))) {
-                    mergedManagedDeps.add(dep);
+        var filteredProvidedDeps = new ArrayList<Dependency>(0);
+        var excludedScopes = getExcludedScopes();
+        if (!excludedScopes.isEmpty()) {
+            var filtered = new ArrayList<Dependency>(directDeps.size());
+            for (var d : directDeps) {
+                if (!excludedScopes.contains(d.getScope())) {
+                    filtered.add(d);
+                } else if (JavaScopes.PROVIDED.equals(d.getScope())) {
+                    filteredProvidedDeps.add(d);
                 }
             }
-            managedDeps = mergedManagedDeps;
+            directDeps = filtered;
         }
-
-        final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
-                mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
-
-        final DeploymentInjectingDependencyVisitor deploymentInjector;
+        var collectRtDepsRequest = MavenArtifactResolver.newCollectRequest(artifact, directDeps, managedDeps, List.of(), repos);
         try {
-            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn, managedDeps, repos, appBuilder,
-                    preferWorkspacePaths,
-                    collectReloadableDeps && reloadableModules.isEmpty());
-            deploymentInjector.injectDeploymentDependencies(resolvedDeps);
+            long start = 0;
+            boolean logTime = false;
+            if (logTime) {
+                start = System.currentTimeMillis();
+            }
+            if (incubatingModelResolver) {
+                IncubatingApplicationModelResolver.newInstance()
+                        .setArtifactResolver(mvn)
+                        .setApplicationModelBuilder(appBuilder)
+                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
+                        .setCollectCompileOnly(filteredProvidedDeps)
+                        .setDependencyLogging(depLogConfig)
+                        .resolve(collectRtDepsRequest);
+            } else {
+                ApplicationDependencyTreeResolver.newInstance()
+                        .setArtifactResolver(mvn)
+                        .setApplicationModelBuilder(appBuilder)
+                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
+                        .setCollectCompileOnly(filteredProvidedDeps)
+                        .setBuildTreeConsumer(depLogConfig == null ? null : depLogConfig.getMessageConsumer())
+                        .resolve(collectRtDepsRequest);
+            }
+            if (logTime) {
+                System.err.println(
+                        "Application model resolved in " + (System.currentTimeMillis() - start) + "ms, incubating="
+                                + incubatingModelResolver);
+            }
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(
-                    "Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e);
+                    "Failed to inject extension deployment dependencies for " + appArtifact.toCompactCoords(), e);
         }
-
-        if (deploymentInjector.isInjectedDeps()) {
-            final DependencyGraphTransformationContext context = new SimpleDependencyGraphTransformationContext(
-                    mvn.getSession());
-            try {
-                // add conflict IDs to the added deployments
-                resolvedDeps = new ConflictMarker().transformGraph(resolvedDeps, context);
-                // resolves version conflicts
-                resolvedDeps = new ConflictIdSorter().transformGraph(resolvedDeps, context);
-                resolvedDeps = mvn.getSession().getDependencyGraphTransformer().transformGraph(resolvedDeps, context);
-            } catch (RepositoryException e) {
-                throw new AppModelResolverException("Failed to normalize the dependency graph", e);
-            }
-            final BuildDependencyGraphVisitor buildDepsVisitor = new BuildDependencyGraphVisitor(
-                    deploymentInjector.allRuntimeDeps,
-                    buildTreeConsumer);
-            buildDepsVisitor.visit(resolvedDeps);
-            final List<ArtifactRequest> requests = buildDepsVisitor.getArtifactRequests();
-            if (!requests.isEmpty()) {
-                final List<ArtifactResult> results = mvn.resolve(requests);
-                // update the artifacts in the graph
-                for (ArtifactResult result : results) {
-                    final Artifact artifact = result.getArtifact();
-                    if (artifact != null) {
-                        result.getRequest().getDependencyNode().setArtifact(artifact);
-                    }
-                }
-                final List<DependencyNode> deploymentDepNodes = buildDepsVisitor.getDeploymentNodes();
-                for (DependencyNode dep : deploymentDepNodes) {
-                    int flags = DependencyFlags.DEPLOYMENT_CP;
-                    if (dep.getDependency().isOptional()) {
-                        flags |= DependencyFlags.OPTIONAL;
-                    }
-                    WorkspaceModule module = null;
-                    if (mvn.getProjectModuleResolver() != null) {
-                        module = mvn.getProjectModuleResolver().getProjectModule(dep.getArtifact().getGroupId(),
-                                dep.getArtifact().getArtifactId());
-                        if (module != null) {
-                            flags |= DependencyFlags.WORKSPACE_MODULE;
-                        }
-                    }
-                    appBuilder.addDependency(
-                            toAppArtifact(dep.getArtifact(), module, false)
-                                    .setScope(dep.getDependency().getScope())
-                                    .setFlags(flags).build());
-                }
-            }
-        }
-
-        collectPlatformProperties(appBuilder, managedDeps);
 
         return appBuilder.build();
     }
 
-    private static boolean containsExtensionMetadata(ResolvedDependency dep) {
-        if (!ArtifactCoords.TYPE_JAR.equals(dep.getType())) {
-            return false;
-        }
-        for (Path path : dep.getResolvedPaths()) {
-            if (!Files.exists(path)) {
-                continue;
-            }
-            if (Files.isDirectory(path)) {
-                if (containsExtensionMetadata(path)) {
-                    return true;
-                }
-            } else {
-                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    if (containsExtensionMetadata(artifactFs.getPath(""))) {
-                        return true;
-                    }
-                } catch (IOException e) {
-                    throw new DeploymentInjectionException("Failed to read " + path, e);
-                }
+    private io.quarkus.maven.dependency.ResolvedDependencyBuilder resolve(ArtifactCoords coords, Artifact artifact,
+            List<RemoteRepository> aggregatedRepos) throws BootstrapMavenException {
+
+        final ResolvedDependencyBuilder depBuilder;
+        if (ResolvedDependencyBuilder.class.isAssignableFrom(coords.getClass())) {
+            depBuilder = (ResolvedDependencyBuilder) coords;
+        } else {
+            depBuilder = ResolvedDependencyBuilder.newInstance().setCoords(coords);
+            if (coords instanceof ResolvedDependency resolved) {
+                depBuilder.setResolvedPaths(resolved.getResolvedPaths());
             }
         }
-        return false;
+
+        WorkspaceModule wsModule = depBuilder.getWorkspaceModule();
+        if (wsModule == null && mvn.getProjectModuleResolver() != null) {
+            wsModule = mvn.getProjectModuleResolver().getProjectModule(coords.getGroupId(), coords.getArtifactId(),
+                    coords.getVersion());
+            depBuilder.setWorkspaceModule(wsModule);
+        }
+
+        PathCollection resolvedPaths = depBuilder.getResolvedPaths();
+        if ((devmode || test) && wsModule != null) {
+            final ArtifactSources artifactSources = wsModule.getSources(coords.getClassifier());
+            if (artifactSources != null) {
+                final PathList.Builder pathBuilder = PathList.builder();
+                collectSourceDirs(pathBuilder, artifactSources.getSourceDirs());
+                collectSourceDirs(pathBuilder, artifactSources.getResourceDirs());
+                if (!pathBuilder.isEmpty()) {
+                    resolvedPaths = pathBuilder.build();
+                    depBuilder.setResolvedPaths(resolvedPaths);
+                }
+            }
+        }
+        if (resolvedPaths == null || resolvedPaths.isEmpty()) {
+            depBuilder.setResolvedPaths(PathList.of(resolve(artifact, aggregatedRepos).getArtifact().getFile().toPath()));
+        }
+        return depBuilder;
     }
 
-    private static boolean containsExtensionMetadata(final Path path) {
-        return Files.exists(path.resolve(BootstrapConstants.BUILD_STEPS_PATH))
-                || Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH));
-    }
-
-    private io.quarkus.maven.dependency.ResolvedDependency resolve(ArtifactCoords appArtifact, Artifact mvnArtifact,
-            List<RemoteRepository> managedRepos) throws BootstrapMavenException {
-
-        final ResolvedDependency resolvedArtifact = ResolvedDependency.class.isAssignableFrom(appArtifact.getClass())
-                ? (ResolvedDependency) appArtifact
-                : null;
-        if (resolvedArtifact != null
-                && (resolvedArtifact.getWorkspaceModule() != null || mvn.getProjectModuleResolver() == null)) {
-            return resolvedArtifact;
-        }
-
-        final WorkspaceModule resolvedModule = mvn.getProjectModuleResolver() == null ? null
-                : mvn.getProjectModuleResolver().getProjectModule(appArtifact.getGroupId(), appArtifact.getArtifactId());
-        if (resolvedArtifact != null && resolvedModule == null) {
-            return resolvedArtifact;
-        }
-
-        PathCollection resolvedPaths = null;
-        if ((devmode || test) && resolvedModule != null) {
-            final PathList.Builder pathBuilder = PathList.builder();
-            for (ProcessedSources src : resolvedModule.getMainSources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
+    private static void collectSourceDirs(final PathList.Builder pathBuilder, Collection<SourceDir> resources) {
+        for (SourceDir src : resources) {
+            if (Files.exists(src.getOutputDir())) {
+                final Path p = src.getOutputDir();
+                if (!pathBuilder.contains(p)) {
+                    pathBuilder.add(p);
                 }
             }
-            for (ProcessedSources src : resolvedModule.getMainResources()) {
-                if (src.getDestinationDir().exists()) {
-                    final Path p = src.getDestinationDir().toPath();
-                    if (!pathBuilder.contains(p)) {
-                        pathBuilder.add(p);
-                    }
-                }
-            }
-            if (!pathBuilder.isEmpty()) {
-                resolvedPaths = pathBuilder.build();
-            }
         }
-        if (resolvedPaths == null) {
-            if (resolvedArtifact == null || resolvedArtifact.getResolvedPaths() == null) {
-                resolvedPaths = PathList.of(mvn.resolve(mvnArtifact, managedRepos).getArtifact().getFile().toPath());
-            } else {
-                resolvedPaths = resolvedArtifact.getResolvedPaths();
-            }
-        }
-        return ResolvedDependencyBuilder.newInstance().setCoords(appArtifact).setWorkspaceModule(resolvedModule)
-                .setResolvedPaths(resolvedPaths).build();
-    }
-
-    private void collectPlatformProperties(ApplicationModelBuilder appBuilder, List<Dependency> managedDeps)
-            throws AppModelResolverException {
-        final PlatformImportsImpl platformReleases = new PlatformImportsImpl();
-        for (Dependency d : managedDeps) {
-            final Artifact artifact = d.getArtifact();
-            final String extension = artifact.getExtension();
-            final String artifactId = artifact.getArtifactId();
-            if ("json".equals(extension)
-                    && artifactId.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
-                platformReleases.addPlatformDescriptor(artifact.getGroupId(), artifactId, artifact.getClassifier(), extension,
-                        artifact.getVersion());
-            } else if ("properties".equals(artifact.getExtension())
-                    && artifactId.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
-                platformReleases.addPlatformProperties(artifact.getGroupId(), artifactId, artifact.getClassifier(), extension,
-                        artifact.getVersion(), mvn.resolve(artifact).getArtifact().getFile().toPath());
-            }
-        }
-        appBuilder.setPlatformImports(platformReleases);
     }
 
     @Override
@@ -445,11 +493,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             throws AppModelResolverException {
         mvn.install(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
                 artifact.getType(),
-                artifact.getVersion(), Collections.emptyMap(), localPath.toFile()));
-    }
-
-    private static ArtifactKey getKey(Artifact artifact) {
-        return DeploymentInjectingDependencyVisitor.getKey(artifact);
+                artifact.getVersion(), Map.of(), localPath.toFile()));
     }
 
     private String getEarliest(final VersionRangeResult rangeResult) {
@@ -503,22 +547,50 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 artifact.getClassifier(), artifact.getType(), artifact.getVersion());
     }
 
-    private ResolvedDependencyBuilder toAppArtifact(Artifact artifact) {
-        return toAppArtifact(artifact, null, false);
-    }
-
-    private ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module, boolean preferWorkspacePaths) {
-        return DeploymentInjectingDependencyVisitor.toAppArtifact(artifact, module, preferWorkspacePaths);
-    }
-
     private static List<Dependency> toAetherDeps(Collection<io.quarkus.maven.dependency.Dependency> directDeps) {
         if (directDeps.isEmpty()) {
-            return Collections.emptyList();
+            return List.of();
         }
         final List<Dependency> directMvnDeps = new ArrayList<>(directDeps.size());
         for (io.quarkus.maven.dependency.Dependency dep : directDeps) {
             directMvnDeps.add(new Dependency(toAetherArtifact(dep), dep.getScope()));
         }
         return directMvnDeps;
+    }
+
+    private static List<Exclusion> toAetherExclusions(Collection<ArtifactKey> keys) {
+        if (keys.isEmpty()) {
+            return List.of();
+        }
+        var result = new ArrayList<Exclusion>(keys.size());
+        for (ArtifactKey key : keys) {
+            result.add(new Exclusion(key.getGroupId(), key.getArtifactId(), key.getClassifier(),
+                    key.getType() == null || key.getType().isBlank() ? ArtifactCoords.TYPE_JAR : key.getType()));
+        }
+        return result;
+    }
+
+    private ArtifactResult resolve(Artifact artifact, List<RemoteRepository> aggregatedRepos)
+            throws BootstrapMavenException {
+        try {
+            return mvn.getSystem().resolveArtifact(mvn.getSession(),
+                    new ArtifactRequest()
+                            .setArtifact(artifact)
+                            .setRepositories(aggregatedRepos));
+        } catch (ArtifactResolutionException e) {
+            throw new BootstrapMavenException("Failed to resolve artifact " + artifact, e);
+        }
+    }
+
+    private ArtifactDescriptorResult resolveDescriptor(Artifact artifact, List<RemoteRepository> aggregatedRepos)
+            throws BootstrapMavenException {
+        try {
+            return mvn.getSystem().readArtifactDescriptor(mvn.getSession(),
+                    new ArtifactDescriptorRequest()
+                            .setArtifact(artifact)
+                            .setRepositories(aggregatedRepos));
+        } catch (ArtifactDescriptorException e) {
+            throw new BootstrapMavenException("Failed to read descriptor of " + artifact, e);
+        }
     }
 }

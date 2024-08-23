@@ -2,12 +2,11 @@ package io.quarkus.arc.test.buildextension.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
@@ -17,11 +16,15 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.test.ArcTestContainer;
+
 public class AddObservesTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(IWantToObserve.class)
-            .annotationsTransformers(new AnnotationsTransformer() {
+            .annotationTransformations(new AnnotationsTransformer() {
 
                 @Override
                 public boolean appliesTo(Kind kind) {

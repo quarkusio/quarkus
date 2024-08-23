@@ -4,14 +4,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.MultiTenancyStrategy;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
 /**
  * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds
@@ -21,31 +22,29 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStati
  */
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
-    private final ParsedPersistenceXmlDescriptor descriptor;
-    private final Optional<String> dataSource;
-    private final MultiTenancyStrategy multiTenancyStrategy;
+    private final QuarkusPersistenceUnitDescriptor descriptor;
+
+    private final RecordedConfig config;
     private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final Optional<FormatMapperKind> jsonMapper;
+    private final Optional<FormatMapperKind> xmlMapper;
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
-            List<RecordableXmlMapping> xmlMappings, boolean isReactive, boolean fromPersistenceXml) {
-        this(descriptor, Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), MultiTenancyStrategy.NONE, null,
-                xmlMappings, isReactive, fromPersistenceXml);
-    }
-
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, Optional<String> dataSource,
-            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSource,
+    public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
+            RecordedConfig config,
+            String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
-            boolean isReactive, boolean fromPersistenceXml) {
+            boolean isReactive, boolean fromPersistenceXml, Capabilities capabilities) {
         this.descriptor = descriptor;
-        this.dataSource = dataSource;
-        this.multiTenancyStrategy = multiTenancyStrategy;
+        this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.jsonMapper = json(capabilities);
+        this.xmlMapper = xml(capabilities);
     }
 
     public Collection<String> getManagedClassNames() {
@@ -53,19 +52,19 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     }
 
     public String getExplicitSqlImportScriptResourceName() {
-        return descriptor.getProperties().getProperty("javax.persistence.sql-load-script-source");
+        return descriptor.getProperties().getProperty("jakarta.persistence.sql-load-script-source");
     }
 
     public String getPersistenceUnitName() {
         return descriptor.getName();
     }
 
-    public Optional<String> getDataSource() {
-        return dataSource;
+    public String getConfigurationName() {
+        return descriptor.getConfigurationName();
     }
 
-    public MultiTenancyStrategy getMultiTenancyStrategy() {
-        return multiTenancyStrategy;
+    public RecordedConfig getConfig() {
+        return config;
     }
 
     public String getMultiTenancySchemaDataSource() {
@@ -76,9 +75,30 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return !xmlMappings.isEmpty();
     }
 
+    public boolean isFromPersistenceXml() {
+        return fromPersistenceXml;
+    }
+
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        return new QuarkusPersistenceUnitDefinition(descriptor, dataSource, multiTenancyStrategy, xmlMappings,
-                isReactive, fromPersistenceXml, integrationStaticDescriptors);
+        return new QuarkusPersistenceUnitDefinition(descriptor, config,
+                xmlMappings, isReactive, fromPersistenceXml, jsonMapper, xmlMapper, integrationStaticDescriptors);
+    }
+
+    private Optional<FormatMapperKind> json(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            return Optional.of(FormatMapperKind.JACKSON);
+        }
+        if (capabilities.isPresent(Capability.JSONB)) {
+            return Optional.of(FormatMapperKind.JSONB);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<FormatMapperKind> xml(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JAXB)) {
+            return Optional.of(FormatMapperKind.JAXB);
+        }
+        return Optional.empty();
     }
 }

@@ -11,6 +11,10 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * @deprecated as part of the removal of the old Dev UI
+ */
+@Deprecated
 public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
 
     @Override
@@ -75,7 +79,7 @@ public abstract class DevConsolePostHandler implements Handler<RoutingContext> {
     protected void actionSuccess(RoutingContext event) {
         if (!event.response().ended()) {
             event.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
-                    .set(HttpHeaderNames.LOCATION, event.request().absoluteURI());
+                    .set(HttpHeaderNames.LOCATION, event.request().uri());
             event.response().end();
         }
     }

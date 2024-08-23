@@ -29,7 +29,7 @@ public class NoHibernatePropertiesTest {
                     .addClass(MyEntity.class)
                     .addAsResource(new StringAsset(""), "hibernate.properties"))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.datasource.devservices", "false");
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Test
     public void testInvalidConfiguration() {

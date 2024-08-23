@@ -24,9 +24,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

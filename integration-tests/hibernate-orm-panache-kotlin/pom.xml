@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -169,7 +169,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -224,7 +224,7 @@
                         <plugin>all-open</plugin>
                     </compilerPlugins>
                     <pluginOptions>
-                        <option>all-open:annotation=javax.ws.rs.Path</option>
+                        <option>all-open:annotation=jakarta.ws.rs.Path</option>
                     </pluginOptions>
                 </configuration>
             </plugin>

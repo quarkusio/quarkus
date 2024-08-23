@@ -1,19 +1,22 @@
 package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
 import java.io.IOException;
 import java.nio.file.Files;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import org.jboss.resteasy.reactive.MultipartForm;
+
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/multipart")
 public class MultipartResource {
@@ -23,7 +26,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/simple/{times}")
     @NonBlocking
-    public String simple(@MultipartForm FormData formData, Integer times) {
+    public String simple(@BeanParam FormData formData, Integer times) {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
@@ -69,7 +72,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/optional")
     @NonBlocking
-    public String optional(@MultipartForm FormData formData) {
+    public String optional(@BeanParam FormData formData) {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }

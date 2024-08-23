@@ -7,13 +7,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.server.ServerApplicationConfig;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerApplicationConfig;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -32,11 +32,14 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
+import io.quarkus.websockets.client.runtime.DisableLoggingFeature;
 import io.quarkus.websockets.client.runtime.WebsocketCoreRecorder;
 import io.undertow.websockets.DefaultContainerConfigurator;
 import io.undertow.websockets.ServerWebSocketContainer;
@@ -48,6 +51,11 @@ public class WebsocketClientProcessor {
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
     private static final DotName SERVER_APPLICATION_CONFIG = DotName.createSimple(ServerApplicationConfig.class.getName());
     private static final DotName ENDPOINT = DotName.createSimple(Endpoint.class.getName());
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(DisableLoggingFeature.class);
+    }
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature) {
@@ -112,12 +120,14 @@ public class WebsocketClientProcessor {
             annotated.add(i.className);
         }
         reflection.produce(
-                new ReflectiveClassBuildItem(true, false, annotated.toArray(new String[annotated.size()])));
+                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()])).methods()
+                        .build());
 
         registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
 
         reflection.produce(
-                new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
+                ReflectiveClassBuildItem.builder(ClientEndpointConfig.Configurator.class.getName()).methods().fields()
+                        .build());
 
         RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints, config,
                 websocketConfig.maxFrameSize,
@@ -149,7 +159,8 @@ public class WebsocketClientProcessor {
     static void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
         if (types != null && types.asClassArray() != null) {
             for (Type type : types.asClassArray()) {
-                reflection.produce(new ReflectiveClassBuildItem(true, false, type.name().toString()));
+                reflection
+                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
     }

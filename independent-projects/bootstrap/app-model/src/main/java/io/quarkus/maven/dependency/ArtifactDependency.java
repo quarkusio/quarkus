@@ -1,21 +1,40 @@
 package io.quarkus.maven.dependency;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 public class ArtifactDependency extends GACTV implements Dependency, Serializable {
 
+    private static final long serialVersionUID = 5669341172899612719L;
+
+    @Deprecated(forRemoval = true)
+    public static Dependency of(String groupId, String artifactId, String version) {
+        return new ArtifactDependency(groupId, artifactId, null, ArtifactCoords.TYPE_JAR, version);
+    }
+
     private final String scope;
-    private int flags;
+    private final int flags;
+    private final Collection<ArtifactKey> exclusions;
 
     public ArtifactDependency(String groupId, String artifactId, String classifier, String type, String version) {
         super(groupId, artifactId, classifier, type, version);
-        this.scope = "copmpile";
+        this.scope = SCOPE_COMPILE;
         flags = 0;
+        this.exclusions = List.of();
+    }
+
+    public ArtifactDependency(String groupId, String artifactId, String classifier, String type, String version, String scope,
+            boolean optional) {
+        super(groupId, artifactId, classifier, type, version);
+        this.scope = scope;
+        flags = optional ? DependencyFlags.OPTIONAL : 0;
+        this.exclusions = List.of();
     }
 
     public ArtifactDependency(ArtifactCoords coords, int... flags) {
-        this(coords, "compile", flags);
+        this(coords, SCOPE_COMPILE, flags);
     }
 
     public ArtifactDependency(ArtifactCoords coords, String scope, int... flags) {
@@ -27,18 +46,21 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
             allFlags |= f;
         }
         this.flags = allFlags;
+        this.exclusions = List.of();
     }
 
     public ArtifactDependency(Dependency d) {
         super(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion());
         this.scope = d.getScope();
         this.flags = d.getFlags();
+        this.exclusions = d.getExclusions();
     }
 
     public ArtifactDependency(AbstractDependencyBuilder<?, ?> builder) {
         super(builder.getGroupId(), builder.getArtifactId(), builder.getClassifier(), builder.getType(), builder.getVersion());
         this.scope = builder.getScope();
         this.flags = builder.getFlags();
+        this.exclusions = builder.exclusions.isEmpty() ? builder.exclusions : List.copyOf(builder.exclusions);
     }
 
     @Override
@@ -51,21 +73,16 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
         return flags;
     }
 
-    public void setFlag(int flag) {
-        flags |= flag;
-    }
-
-    public void clearFlag(int flag) {
-        if ((flags & flag) > 0) {
-            flags ^= flag;
-        }
+    @Override
+    public Collection<ArtifactKey> getExclusions() {
+        return exclusions;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + Objects.hash(flags, scope);
+        result = prime * result + Objects.hash(exclusions, flags, scope);
         return result;
     }
 
@@ -75,14 +92,14 @@ public class ArtifactDependency extends GACTV implements Dependency, Serializabl
             return true;
         if (!super.equals(obj))
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof ArtifactDependency))
             return false;
         ArtifactDependency other = (ArtifactDependency) obj;
-        return flags == other.flags && Objects.equals(scope, other.scope);
+        return flags == other.flags && Objects.equals(scope, other.scope) && exclusions.equals(other.exclusions);
     }
 
     @Override
     public String toString() {
-        return "[" + toGACTVString() + " " + scope + "]";
+        return "[" + toGACTVString() + " " + scope + " " + flags + "]";
     }
 }

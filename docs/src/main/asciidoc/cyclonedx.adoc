@@ -1,0 +1,198 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="cyclonedx"]
+= Generating CycloneDX BOMs
+include::_attributes.adoc[]
+:categories: tooling
+:summary: This guide explains how to generate SBOMs for Quarkus applications in the CycloneDX format.
+:topics: sbom
+:extensions: io.quarkus:quarkus-cyclonedx
+
+An SBOM (Software Bill of Material) is a manifest that describes what a given software distribution consists of in terms of components. In addition to that, it may include a lot more information such as relationships between those components, licenses, provenance, etc.
+SBOMs would typically be used by software security and software supply chain risk management tools to perform vulnerability and compliance related analysis.
+
+This guide describes Quarkus SBOM generation capabilities following https://cyclonedx.org/[CycloneDX] specification.
+
+== Why Quarkus-specific tooling?
+
+While Quarkus integrates with build tools such as https://maven.apache.org/[Maven] and https://gradle.org/[Gradle], it could itself be categorized as a build tool with its own component and dependency model, build steps, and build outcomes. One of the essential component types of a Quarkus application is a Quarkus extension, which consists of a runtime and a build time artifacts, and their dependencies.
+
+To properly resolve Quarkus extension and other application dependencies Quarkus uses its own dependency resolver, which is implemented on top of the dependency resolver provided by the underlying build tool: Maven or Gradle.
+
+As a consequence, in case of Maven, for example, the results of `dependency:tree` will not include all the dependencies Quarkus will use to build an application. A similar issue will affect other dependency analysis tools that assume a project adheres to the standard Maven dependency model: they will not be able to capture the effective Quarkus application dependency graph. Unfortunately, that includes the implementation of the https://github.com/CycloneDX/cyclonedx-maven-plugin[CycloneDX Maven plugin].
+
+Besides the dependencies, that are an input to a build process, there is also an outcome of the build that is the final distribution of an application. Users of an application may request an SBOM manifesting not only the dependencies (the input to a build) but also the final distribution (the outcome of the build) before they agree to deploy the application. Quarkus allows application developers to choose various packaging types for their applications, some of which are Quarkus-specific. Providing certain Quarkus-specific details about components included in a distribution may help better evaluate the impact of potential security-related issues.
+
+== Dependency SBOMs
+
+This chapter describes how to generate SBOMs manifesting only the dependencies of an application before it is built. In other words, these SBOMs will manifest the input into a build. These SBOMs could be used to perform vulnerability and compliance related analysis before building applications.
+
+=== Maven Dependency SBOMs
+
+For Quarkus Maven projects dependency SBOMs can be generated with the `quarkus:dependency-sbom` goal. The outcome of the goal will be saved in a `target/<artifactId>-<version>-dependency-cyclonedx.json` file (which can be changed by setting the `outputFile` goal parameter or the `quarkus.dependency.sbom.output-file` property). The complete Quarkus build and runtime dependency graphs will be recorded in the https://cyclonedx.org/[CycloneDX] `JSON` format.
+
+`XML` format can be requested by setting `format` goal parameter (or `quarkus.dependency.sbom.format` property) to `xml`.
+
+Each component in the generated SBOM will include the `quarkus:component:scope` property that will indicate whether this component is used at runtime or only development/build time.
+[source,json]
+----
+        {
+          "name" : "quarkus:component:scope",
+          "value" : "runtime"
+        }
+----
+
+By default, `quarkus:dependency-sbom` captures the dependencies of a production build. Quarkus supports three application bootstrap modes: normal (production), test, and dev. In all three modes, an application may have different dependency graphs. The `mode` parameter can be used to indicate which dependency graph should be recorded. If the `mode` is set to `test` or `dev`, the target file name will become `target/<artifactId>-<version>-<mode>-dependency-cyclonedx.json`.
+
+The complete set of parameters and their description can be obtained by executing `mvn help:describe -Dcmd=quarkus:dependency-sbom -Ddetail`.
+
+=== Gradle Dependency SBOMs
+
+Unlike Maven, the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle CycloneDX plugin implementation] can be used in Quarkus projects to generate dependency SBOMs, since the implementation manifests dependency configurations registered by configured plugins.
+
+Please, refer to the https://github.com/CycloneDX/cyclonedx-gradle-plugin[Gradle CycloneDX plugin] documentation for its configuration options. Here is a list of Quarkus dependency configurations that would be relevant for manifesting:
+
+* `quarkusProdRuntimeClasspathConfiguration` - Quarkus application production runtime dependencies;
+* `quarkusProdRuntimeClasspathConfigurationDeployment` - Quarkus application production runtime and build time dependencies;
+* `quarkusTestRuntimeClasspathConfiguration` - Quarkus application test runtime dependencies;
+* `quarkusTestRuntimeClasspathConfigurationDeployment` - Quarkus application test runtime and build time dependencies;
+* `quarkusDevRuntimeClasspathConfiguration` - Quarkus application dev mode runtime dependencies;
+* `quarkusDevRuntimeClasspathConfigurationDeployment` - Quarkus application dev mode runtime and build time dependencies.
+
+Given that the plugin is not aware of how Quarkus uses these dependencies, it will not be able to set the `quarkus:component:scope` property for components. On the other hand, the requested configuration name can be used indicate which scope to target.
+
+== Distribution SBOMs
+
+This chapter describes SBOMs that manifest outcomes of Quarkus builds that are final application distributions.
+
+During an application build and package assembly process, Quarkus captures certain details about the produced distribution and then allows an SBOM generator to consume and record that information in an SBOM format.
+
+At this point, the only SBOM generator available for Quarkus users that can manifest application distributions is `io.quarkus:quarkus-cyclonedx`. Once it's added as a project dependency it will generate SBOMs every time an application is built. SBOMs will be saved in the project's build output directory under `<executable-name>-cyclonedx.<format>` name, where
+
+* `<executable-name>` is the base file name (without the extension) of the executable that launches an application;
+* `<format>` is either `json` (the default) or `xml`, which can be configured using `quarkus.cyclonedx.format` property. If both formats are desired `quarkus.cyclonedx.format` can be set to `all`.
+
+=== Fast JAR
+
+Fast JAR packaging uses a Quarkus-specific filesystem directory layout that contains files generated by Quarkus and Maven artifacts that are runtime dependencies of an application.
+
+SBOMs for Fast JAR packaging type will use the executable JAR file as their main component and record both runtime and build time Quarkus application dependencies.
+
+==== Runtime Components
+
+Every file in the resulting Fast JAR distribution will appear in the SBOM with the `quarkus:component:scope` property set to `runtime` and `evidence.occurrences.location` field pointing to the location of the component in the application distribution directory, for example
+
+[source,json]
+----
+      "purl" : "pkg:maven/org.jboss.slf4j/slf4j-jboss-logmanager@2.0.0.Final?type=jar",
+      "properties" : [
+        {
+          "name" : "quarkus:component:scope",
+          "value" : "runtime"
+        }
+      ],
+      "evidence" : {
+        "occurrences" : [
+          {
+            "location" : "lib/main/org.jboss.slf4j.slf4j-jboss-logmanager-2.0.0.Final.jar"
+          }
+        ]
+      }
+----
+
+NOTE: `evidence.occurrences.location` was introduced in CycloneDX schema version 1.5, for older versions the location will be indicated using the `quarkus:component:location` property.
+
+==== Pedigree
+
+Pedigree is a way to provide information that certain patches, or changes in general, have been applied to a certain component.
+
+In certain cases, Quarkus may copy modified versions of dependency artifacts to an application distribution. Manipulating the original content of a component will change its hash sums which may get highlighted as suspicious by the tools comparing original component hash sums to those found in the distribution.
+
+When Quarkus applies modifications to artifacts resolved from Maven repositories, it can manifest these changes as pedigree notes in the generated SBOM.
+For example, if an application developer decided to remove certain classpath resources from a dependency, such as
+
+[source,properties]
+----
+quarkus.class-loading.removed-resources."jakarta.transaction\:jakarta.transaction-api"=META-INF/NOTICE.md,jakarta/transaction/package.html
+----
+
+The resulting SBOM will include
+[source,json]
+----
+      "purl" : "pkg:maven/jakarta.transaction/jakarta.transaction-api@2.0.1?type=jar",
+      "pedigree" : {
+        "notes" : "Removed META-INF/NOTICE.md,jakarta/transaction/package.html"
+      },
+----
+
+==== Build time dependencies
+
+Build time dependencies will be recorded with the `quarkus:component:scope` property set to `development`:
+
+[source,json]
+----
+      "purl" : "pkg:maven/org.apache.httpcomponents/httpclient@4.5.14?type=jar",
+      "properties" : [
+        {
+          "name" : "quarkus:component:scope",
+          "value" : "development"
+        }
+      ]
+----
+
+They will not include `evidence.occurrences.location` since they will not be found in the distribution.
+
+=== Uber JAR
+
+SBOMs for Uber JARs will use the Uber JAR Maven artifact as their main component.
+
+Since an Uber JAR is published as a Maven artifact itself, SBOMs generated for Uber JARs will also be automatically published as Maven artifacts. This, however, can be disabled by setting the `attachSboms` parameter of the `quarkus:build` goal to `false`.
+
+Gradle users will have to explicitly configure a publishing plugin to deploy SBOMs as Maven artifacts.
+
+Runtime components in an SBOM generated for an Uber JAR will not include `evidence.occurrences.location` since their content is merged in a single JAR file.
+
+=== Native image
+
+SBOMs for native images will use the native executable file as their main component.
+
+Since native executables are not currently attached to projects as Maven artifacts, their SBOMs will not be attached as Maven artifacts either.
+
+As in the case of an Uber JAR, runtime components in an SBOM generated for an native executable will not include `evidence.occurrences.location` since their corresponding code and resources are included in a single native executable file.
+
+=== Mutable JAR
+
+Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.
+
+SBOMs generated for Mutable JAR distributions will also record locations of components that will be used during re-augmentation process using `evidence.occurrences.location` but keeping their `quarkus:component:scope` property set to `development`. For example:
+
+[source,json]
+----
+      "purl" : "pkg:maven/org.apache.httpcomponents/httpcore@4.4.16?type=jar",
+      "properties" : [
+        {
+          "name" : "quarkus:component:scope",
+          "value" : "development"
+        }
+      ],
+      "evidence" : {
+        "occurrences" : [
+          {
+            "location" : "lib/deployment/org.apache.httpcomponents.httpcore-4.4.16.jar"
+          }
+        ]
+      }
+----
+
+== Quarkus Property Taxonomy
+
+[cols="1,1,1"]
+|===
+|Name |Value range |Description
+
+|`quarkus:component:scope` |`runtime` or `development` |Indicates whether a component is a runtime or a build/development time dependency of an application.
+|`quarkus:component:location` |String representing a file system path using `/` as a path element |Used in SBOMs with schema versions 1.4 or older. Starting from schema 1.5, `evidence.occurrences.location` is used instead. This property is used only if a component is found in the distribution. The value is a relative path to a file pointing to the location of a component in a distribution using `/` as a path element separator.
+|===

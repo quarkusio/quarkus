@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver.maven;
 import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
+
 import org.eclipse.aether.version.Version;
 import org.eclipse.aether.version.VersionConstraint;
 import org.eclipse.aether.version.VersionRange;

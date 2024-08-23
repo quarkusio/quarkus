@@ -192,7 +192,7 @@
       "keywords" : [ "config", "configuration", "yaml" ],
       "categories" : [ "core" ],
       "status" : "stable",
-      "guide" : "https://quarkus.io/guides/config#yaml",
+      "guide" : "https://quarkus.io/guides/config-yaml",
       "codestart" : {
         "name" : "config-yaml",
         "languages" : [ "java", "kotlin" ],
@@ -245,23 +245,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
     },
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "config" : [ "quarkus.elasticsearch." ],
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.elasticsearch-rest-high-level-client" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
     "name" : "Security",
@@ -1040,7 +1023,7 @@
       "guide" : "https://quarkus.io/guides/kafka-reactive-getting-started",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.kafka." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.kafka." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-kafka-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty" ]
     },
@@ -1055,7 +1038,7 @@
       "guide" : "https://quarkus.io/guides/amqp",
       "categories" : [ "messaging" ],
       "status" : "stable",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.amqp." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging.", "quarkus.amqp." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },
@@ -1068,7 +1051,7 @@
       "keywords" : [ "mqtt", "reactive-mqtt" ],
       "categories" : [ "messaging" ],
       "status" : "preview",
-      "config" : [ "mp.messaging.", "quarkus.reactive-messaging." ],
+      "config" : [ "mp.messaging.", "quarkus.messaging." ],
       "built-with-quarkus-core" : "999-SNAPSHOT",
       "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
     },
@@ -2099,7 +2082,7 @@
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
     "name" : "RESTEasy Reactive",
-    "description" : "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "description" : "A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
     "metadata" : {
       "short-name" : "resteasy-reactive",
       "keywords" : [ "jaxrs", "web", "rest" ],
@@ -3086,7 +3069,7 @@
         "doc-root" : "https://quarkus.io",
         "rest-assured-version" : "${rest-assured.version}",
         "compiler-plugin-version" : "3.8.1",
-        "surefire-plugin-version" : "3.0.0-M5",
+        "surefire-plugin-version" : "3.0.0",
         "kotlin-version" : "1.5.31",
         "scala-version" : "2.12.13",
         "scala-plugin-version" : "4.4.0",
@@ -3098,7 +3081,7 @@
         "gradle-plugin-version" : "999-SNAPSHOT",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "0.7.7",
+        "maven-wrapper-version" : "3.3.2",
         "gradle-wrapper-version" : "7.2"
       }
     },

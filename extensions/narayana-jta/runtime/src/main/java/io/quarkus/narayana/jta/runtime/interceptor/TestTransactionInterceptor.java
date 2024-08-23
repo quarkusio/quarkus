@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.InvocationContext;
-import javax.transaction.Status;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.Status;
+import jakarta.transaction.UserTransaction;
 
 import io.quarkus.narayana.jta.runtime.test.TestTransactionCallback;
 
@@ -35,7 +35,7 @@ public class TestTransactionInterceptor {
             return context.proceed();
         }
 
-        // an exception from proceed() has to be captured to avoid shadowing it in finally() with a exception from rollback()
+        // an exception from proceed() has to be captured to avoid shadowing it in finally() with an exception from rollback()
         Throwable caught = null;
         try {
             userTransaction.begin();

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+ARCHITECTURE=$(arch)
+JAVA_MAJOR_VERSION_NUM=$(echo 'var rt_version = Runtime.class.getMethod("version"); var version = rt_version.invoke(null); System.out.println(rt_version.getReturnType().getMethod("major").invoke(version))' | jshell -)
+LAMBDA_NATIVE_RUNTIME="provided.al2023" # The current runtimes available are available within AWS lambda documentation
+
 function cmd_create() {
   echo Creating function
   set -x
@@ -11,6 +15,7 @@ function cmd_create() {
     --role ${LAMBDA_ROLE_ARN} \
     --timeout 15 \
     --memory-size 256 \
+    --architectures "${ARCHITECTURE}" \
     ${LAMBDA_META}
 # Enable and move this param above ${LAMBDA_META}, if using AWS X-Ray
 #    --tracing-config Mode=Active \
@@ -51,7 +56,7 @@ function cmd_update() {
 
 FUNCTION_NAME=${lambdaName}
 HANDLER=${handler}
-RUNTIME=java11
+RUNTIME=java${JAVA_MAJOR_VERSION_NUM}
 ZIP_FILE=${targetUri}
 
 function usage() {
@@ -70,7 +75,7 @@ fi
 
 if [ "$1" == "native" ]
 then
-  RUNTIME=provided
+  RUNTIME=${LAMBDA_NATIVE_RUNTIME}
   ZIP_FILE=${targetUri}
   FUNCTION_NAME=${lambdaName}Native
   LAMBDA_META="--environment Variables={DISABLE_SIGNAL_HANDLERS=true}"

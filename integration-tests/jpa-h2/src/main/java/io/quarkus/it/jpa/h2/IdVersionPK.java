@@ -3,7 +3,7 @@ package io.quarkus.it.jpa.h2;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 /**
  * This entity isn't directly referenced: its mere presence is

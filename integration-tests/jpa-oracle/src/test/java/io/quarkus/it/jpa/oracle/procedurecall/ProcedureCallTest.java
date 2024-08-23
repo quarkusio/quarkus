@@ -19,7 +19,7 @@ public class ProcedureCallTest {
 
     @Test
     public void test() {
-        String response = given().param("pattern", "prefix%")
+        String response = given().queryParam("pattern", "prefix%")
                 .when().get("/jpa-oracle/procedure-call/").then()
                 .statusCode(200)
                 .extract().body().asString();

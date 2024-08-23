@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.spi;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 /**
  * Allow ExceptionMapper classes that can use resume and suspend when attempting to convert

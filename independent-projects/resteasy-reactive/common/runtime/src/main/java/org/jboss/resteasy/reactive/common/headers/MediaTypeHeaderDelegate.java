@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.common.headers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.HeaderParameterParser;
 
 /**
@@ -78,6 +80,9 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         } else {
             major = type.substring(0, typeIndex);
             if (paramIndex > -1) {
+                if (typeIndex + 1 > paramIndex) {
+                    throw new IllegalArgumentException("Failed to parse media type " + type);
+                }
                 subtype = type.substring(typeIndex + 1, paramIndex);
             } else {
                 subtype = type.substring(typeIndex + 1);

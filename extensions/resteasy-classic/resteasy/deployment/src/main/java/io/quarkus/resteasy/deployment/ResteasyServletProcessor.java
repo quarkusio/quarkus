@@ -1,14 +1,11 @@
 package io.quarkus.resteasy.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.Application;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;
@@ -17,14 +14,11 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
-import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.runtime.ResteasyServlet;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
@@ -106,12 +100,14 @@ public class ResteasyServletProcessor {
                         .addFilterServletNameMapping("default", DispatcherType.FORWARD)
                         .addFilterServletNameMapping("default", DispatcherType.INCLUDE).setAsyncSupported(true)
                         .build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(ResteasyFilter.class.getName()).build());
             } else {
                 String mappingPath = getMappingPath(path);
                 servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(HttpServlet30Dispatcher.class.getName())
+                        .build());
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {
@@ -119,13 +115,6 @@ public class ResteasyServletProcessor {
                         .produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
             }
         }
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(STATIC_INIT)
-    void addServletsToExceptionMapper(List<ServletBuildItem> servlets, ExceptionMapperRecorder recorder) {
-        recorder.setServlets(servlets.stream().filter(s -> !JAX_RS_SERVLET_NAME.equals(s.getName()))
-                .collect(Collectors.toMap(s -> s.getName(), s -> s.getMappings())));
     }
 
     private String getMappingPath(String path) {

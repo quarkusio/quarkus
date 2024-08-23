@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -17,10 +19,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClass;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClassOutput;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 
 public class FilterGeneration {
     public static List<GeneratedFilter> generate(IndexView index, Set<DotName> unwrappableTypes,
-            Set<String> additionalBeanAnnotations) {
+            Set<String> additionalBeanAnnotations, Predicate<MethodInfo> isOptionalFilter) {
         List<GeneratedFilter> ret = new ArrayList<>();
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_REQUEST_FILTER)) {
@@ -29,11 +32,13 @@ public class FilterGeneration {
             }
             MethodInfo methodInfo = instance.target().asMethod();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerRequestFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations, isOptionalFilter)
+                    .generateContainerRequestFilter(methodInfo, output);
             Integer priority = null;
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
+            boolean readBody = false;
+            boolean withFormRead = methodInfo.hasAnnotation(ResteasyReactiveServerDotNames.WITH_FORM_READ);
             Set<String> nameBindingNames = new HashSet<>();
 
             AnnotationValue priorityValue = instance.value("priority");
@@ -48,6 +53,23 @@ public class FilterGeneration {
             if (nonBlockingRequiredValue != null) {
                 nonBlockingRequired = nonBlockingRequiredValue.asBoolean();
             }
+            AnnotationValue readBodyValue = instance.value("readBody");
+            if (readBodyValue != null) {
+                readBody = readBodyValue.asBoolean();
+            }
+
+            if (preMatching) {
+                if (readBody) {
+                    throw new IllegalStateException(
+                            "Setting both 'readBody' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                }
+                if (withFormRead) {
+                    throw new IllegalStateException(
+                            "Setting both '@WithFormRead' and 'preMatching' to 'true' on '@ServerRequestFilter' is invalid. Offending method is '"
+                                    + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
+                }
+            }
 
             List<AnnotationInstance> annotations = methodInfo.annotations();
             for (AnnotationInstance annotation : annotations) {
@@ -59,13 +81,13 @@ public class FilterGeneration {
                 if (annotationClassInfo == null) {
                     continue;
                 }
-                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
+                if ((annotationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
                     nameBindingNames.add(annotationDotName.toString());
                 }
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    true, priority, preMatching, nonBlockingRequired, nameBindingNames));
+                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, withFormRead || readBody, methodInfo));
         }
         for (AnnotationInstance instance : index
                 .getAnnotations(SERVER_RESPONSE_FILTER)) {
@@ -76,8 +98,9 @@ public class FilterGeneration {
             Integer priority = null;
             Set<String> nameBindingNames = new HashSet<>();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = CustomFilterGenerator.generateContainerResponseFilter(methodInfo, output,
-                    unwrappableTypes, additionalBeanAnnotations);
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations,
+                    isOptionalFilter)
+                    .generateContainerResponseFilter(methodInfo, output);
 
             AnnotationValue priorityValue = instance.value("priority");
             if (priorityValue != null) {
@@ -93,13 +116,13 @@ public class FilterGeneration {
                 if (annotationClassInfo == null) {
                     continue;
                 }
-                if ((annotationClassInfo.classAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
+                if ((annotationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NAME_BINDING) != null)) {
                     nameBindingNames.add(annotationDotName.toString());
                 }
             }
 
             ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    false, priority, false, false, nameBindingNames));
+                    false, priority, false, false, nameBindingNames, false, methodInfo));
 
         }
         return ret;
@@ -114,10 +137,14 @@ public class FilterGeneration {
         final boolean preMatching;
         final boolean nonBlocking;
         final Set<String> nameBindingNames;
+        final boolean withFormRead;
 
-        public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName, String declaringClassName,
+        final MethodInfo filterSourceMethod;
+
+        public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
+                String declaringClassName,
                 boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
-                Set<String> nameBindingNames) {
+                Set<String> nameBindingNames, boolean withFormRead, MethodInfo filterSourceMethod) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;
@@ -126,6 +153,8 @@ public class FilterGeneration {
             this.preMatching = preMatching;
             this.nonBlocking = nonBlocking;
             this.nameBindingNames = nameBindingNames;
+            this.withFormRead = withFormRead;
+            this.filterSourceMethod = filterSourceMethod;
         }
 
         public String getGeneratedClassName() {
@@ -158,6 +187,14 @@ public class FilterGeneration {
 
         public Set<String> getNameBindingNames() {
             return nameBindingNames;
+        }
+
+        public boolean isWithFormRead() {
+            return withFormRead;
+        }
+
+        public MethodInfo getFilterSourceMethod() {
+            return filterSourceMethod;
         }
     }
 

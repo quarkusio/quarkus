@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,21 +28,48 @@ import io.restassured.RestAssured;
 public class OidcClientTest {
 
     @Test
-    public void testGetUserNameCustomFilter() {
-        RestAssured.given().header("Accept", "text/plain")
-                .when().get("/frontend/userNameCustomFilter")
-                .then()
-                .statusCode(200)
-                .body(equalTo("alice"));
-    }
-
-    @Test
     public void testGetUserNameReactive() {
         RestAssured.given().header("Accept", "text/plain")
                 .when().get("/frontend/userNameReactive")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
+    }
+
+    @Test
+    public void testGetUserNameCustomFilter() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameCustomFilter")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
+    }
+
+    @Test
+    public void testGetUserNameNamedFilter() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameNamedFilter")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
+    }
+
+    @Test
+    public void testGetUserNameDisabledClient() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameDisabledClient")
+                .then()
+                .statusCode(200)
+                .body(containsString("Unauthorized, status code 401"));
+    }
+
+    @Test
+    public void testGetUserNameMisconfiguredClientFilter() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameMisconfiguredClientFilter")
+                .then()
+                .statusCode(200)
+                .body(containsString("invalid_grant"));
     }
 
     @Test

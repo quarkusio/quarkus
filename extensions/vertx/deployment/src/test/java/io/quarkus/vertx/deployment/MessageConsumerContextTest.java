@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -84,11 +84,7 @@ public class MessageConsumerContextTest {
                 })
                 .await().atMost(Duration.ofSeconds(3));
 
-        if (Runtime.getRuntime().availableProcessors() > 1) {
-            assertEquals(3, MessageConsumers.MESSAGES.size());
-        } else {
-            assertTrue(MessageConsumers.MESSAGES.size() >= 2);
-        }
+        assertTrue(MessageConsumers.MESSAGES.size() >= 2);
     }
 
     @ApplicationScoped

@@ -1,7 +1,7 @@
 package io.quarkus.spring.security.deployment;
 
-import javax.annotation.security.PermitAll;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.PermitAll;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

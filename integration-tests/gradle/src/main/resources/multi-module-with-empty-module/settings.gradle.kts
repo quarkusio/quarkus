@@ -1,10 +1,11 @@
 pluginManagement {
     val quarkusPluginVersion: String by settings
     repositories {
-        if (System.getProperties().containsKey("maven.repo.local")) {
-            maven(url = System.getProperties().get("maven.repo.local")!!)
-        } else {
-            mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
+            }
         }
         mavenCentral()
         gradlePluginPortal()

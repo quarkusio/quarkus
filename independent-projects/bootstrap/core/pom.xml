@@ -35,19 +35,21 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-classloader-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-app-model</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-fs-util</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.smallrye.common</groupId>

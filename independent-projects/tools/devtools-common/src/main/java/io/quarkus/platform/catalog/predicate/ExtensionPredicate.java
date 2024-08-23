@@ -2,13 +2,14 @@ package io.quarkus.platform.catalog.predicate;
 
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 
-import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.registry.catalog.Extension;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.registry.catalog.Extension;
 
 /**
  * A {@link Predicate} implementation that will test a keyword against an {@link Extension}

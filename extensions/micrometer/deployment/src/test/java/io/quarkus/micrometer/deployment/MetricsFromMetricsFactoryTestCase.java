@@ -2,7 +2,7 @@ package io.quarkus.micrometer.deployment;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,6 +28,7 @@ public class MetricsFromMetricsFactoryTestCase {
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClass(MeasureThis.class));
 

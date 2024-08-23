@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.assertj.core.api.Condition;
@@ -16,8 +15,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.PodSpec;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -28,10 +27,14 @@ public class OpenshiftWithUberJarTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-uberjar").setApplicationVersion("0.1-SNAPSHOT").setRun(true)
-            .setLogFileName("k8s.log").withConfigurationResource("openshift-with-uberjar.properties")
+            .setApplicationName("openshift-uberjar")
+            .setApplicationVersion("0.1-SNAPSHOT")
+            .setRun(true)
+            .setLogFileName("k8s.log")
+            .withConfigurationResource("openshift-with-uberjar.properties")
             .setForcedDependencies(
-                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-openshift", Version.getVersion())));
+                    List.of(
+                            Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -54,7 +57,7 @@ public class OpenshiftWithUberJarTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-uberjar");
             });

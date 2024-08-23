@@ -2,12 +2,12 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import io.restassured.RestAssured;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.multipart.other.OtherPackageFormDataBase;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.restassured.RestAssured;
+
 public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
 
     private static final Path uploadDir = Paths.get("file-uploads");
@@ -26,7 +28,7 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setDeleteUploadedFilesOnEnd(false)
             .setUploadPath(uploadDir)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

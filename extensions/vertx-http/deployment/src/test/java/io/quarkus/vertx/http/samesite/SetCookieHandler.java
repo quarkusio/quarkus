@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.samesite;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.impl.CookieImpl;

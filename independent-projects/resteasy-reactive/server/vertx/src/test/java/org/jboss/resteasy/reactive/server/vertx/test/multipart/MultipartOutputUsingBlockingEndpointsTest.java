@@ -3,15 +3,18 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.multipart.other.OtherPackageFormDataBase;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
 
 public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipartTest {
 
@@ -40,6 +43,24 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
         assertContainsValue(response, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
         assertContainsValue(response, "values", MediaType.TEXT_PLAIN, "[one, two]");
         assertContainsValue(response, "num", MediaType.TEXT_PLAIN, "0");
+    }
+
+    @Test
+    public void testWithFormData() {
+        ExtractableResponse<?> extractable = RestAssured.get("/multipart/output/with-form-data")
+                .then()
+                .contentType(ContentType.MULTIPART)
+                .statusCode(200)
+                .extract();
+
+        String body = extractable.asString();
+        assertContainsValue(body, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
+        assertContainsValue(body, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
+        assertContainsValue(body, "custom-status", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_STATUS);
+        assertContainsValue(body, "active", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_ACTIVE);
+        assertContainsValue(body, "values", MediaType.TEXT_PLAIN, "[one, two]");
+
+        assertThat(extractable.header("Content-Type")).contains("boundary=");
     }
 
     @Test

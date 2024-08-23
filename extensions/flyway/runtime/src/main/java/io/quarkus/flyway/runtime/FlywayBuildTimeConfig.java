@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -22,14 +24,26 @@ public final class FlywayBuildTimeConfig {
     }
 
     /**
+     * Whether Flyway is enabled *during the build*.
+     *
+     * If Flyway is disabled, the Flyway beans won't be created and Flyway won't be usable.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Flyway configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public FlywayDataSourceBuildTimeConfig defaultDataSource;
 
     /**
-     * Flyway configurations for named datasources.
+     * Named datasources.
      */
     @ConfigItem(name = ConfigItem.PARENT)
+    @ConfigDocMapKey("datasource-name")
+    @ConfigDocSection
     public Map<String, FlywayDataSourceBuildTimeConfig> namedDataSources = Collections.emptyMap();
 }

@@ -1,7 +1,7 @@
 package io.quarkus.it.main;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Alternative;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 
 import io.quarkus.it.rest.GreetingService;
 

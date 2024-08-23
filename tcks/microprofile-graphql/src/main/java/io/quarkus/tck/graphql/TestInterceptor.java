@@ -20,9 +20,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import org.eclipse.microprofile.graphql.tck.dynamic.ExecutionDynamicTest;
 import org.eclipse.microprofile.graphql.tck.dynamic.SchemaDynamicValidityTest;
@@ -33,7 +33,7 @@ import org.testng.TestListenerAdapter;
 /**
  * This allows us to override the input and output of the spec's TCK.
  * Sometimes this is needed when the spec should be updated but can not yet
- * 
+ *
  */
 public class TestInterceptor extends TestListenerAdapter {
     private static final Logger LOG = Logger.getLogger(TestInterceptor.class.getName());
@@ -60,10 +60,12 @@ public class TestInterceptor extends TestListenerAdapter {
     }
 
     private void loadSchemaOverride() {
+        Path folderPath = Paths.get(OVERRIDES);
+        if (!Files.isDirectory(folderPath)) {
+            return;
+        }
         // Get all csv files
-        try {
-            Path folderPath = Paths.get(OVERRIDES);
-            DirectoryStream<Path> overrides = Files.newDirectoryStream(folderPath);
+        try (DirectoryStream<Path> overrides = Files.newDirectoryStream(folderPath)) {
             List<Path> overrideFiles = toListOfPathsForSchema(overrides);
             List<org.eclipse.microprofile.graphql.tck.dynamic.schema.TestData> testDataList = toListOfTestDataForSchema(
                     overrideFiles);
@@ -78,9 +80,11 @@ public class TestInterceptor extends TestListenerAdapter {
     }
 
     private void loadExecutionOverride() {
-        try {
-            Path folderPath = Paths.get(OVERRIDES);
-            DirectoryStream<Path> overrides = Files.newDirectoryStream(folderPath);
+        Path folderPath = Paths.get(OVERRIDES);
+        if (!Files.isDirectory(folderPath)) {
+            return;
+        }
+        try (DirectoryStream<Path> overrides = Files.newDirectoryStream(folderPath)) {
             Set<Path> overrideFolders = toListOfPathsForExecution(overrides);
             executionTestDataMap.putAll(toMapOfTestDataForExecution(overrideFolders));
         } catch (IOException ex) {

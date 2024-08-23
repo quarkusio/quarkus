@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.server.processor.util;
 
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.core.Context;
+
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
+import org.jboss.resteasy.reactive.server.WithFormRead;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -24,5 +26,6 @@ public class ResteasyReactiveServerDotNames {
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_CONTEXT = DotName
             .createSimple(ResteasyReactiveContainerRequestContext.class.getName());
     public static final DotName SIMPLIFIED_RESOURCE_INFO = DotName.createSimple(SimpleResourceInfo.class.getName());
-
+    public static final DotName WITH_FORM_READ = DotName
+            .createSimple(WithFormRead.class.getName());
 }

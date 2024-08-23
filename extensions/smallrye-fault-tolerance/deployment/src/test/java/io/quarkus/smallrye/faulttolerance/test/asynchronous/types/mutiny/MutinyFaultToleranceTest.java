@@ -2,7 +2,7 @@ package io.quarkus.smallrye.faulttolerance.test.asynchronous.types.mutiny;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,15 +46,22 @@ public class MutinyFaultToleranceTest {
     }
 
     @Test
-    public void asynchronousNonblocking() {
-        Uni<String> hello = service.helloAsynchronousNonblocking();
+    public void asynchronousNonBlocking() {
+        Uni<String> hello = service.helloAsynchronousNonBlocking();
         assertThat(hello.await().indefinitely()).isEqualTo("hello");
         assertThat(MutinyHelloService.COUNTER).hasValue(4);
     }
 
     @Test
-    public void asynchronousBlocking() {
-        Uni<String> hello = service.helloAsynchronousBlocking();
+    public void asynchronousNonblockingCombined() {
+        Uni<String> hello = service.helloAsynchronousNonblockingCombined();
+        assertThat(hello.await().indefinitely()).isEqualTo("hello");
+        assertThat(MutinyHelloService.COUNTER).hasValue(4);
+    }
+
+    @Test
+    public void asynchronousBlockingCombined() {
+        Uni<String> hello = service.helloAsynchronousBlockingCombined();
         assertThat(hello.await().indefinitely()).isEqualTo("hello");
         assertThat(MutinyHelloService.COUNTER).hasValue(4);
     }

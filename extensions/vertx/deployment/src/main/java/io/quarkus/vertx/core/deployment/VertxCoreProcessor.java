@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Filter;
@@ -14,20 +15,28 @@ import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 import org.jboss.logmanager.LogManager;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
@@ -38,25 +47,47 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.ThreadPoolConfig;
+import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
+import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
+import io.quarkus.vertx.deployment.VertxBuildConfig;
+import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.impl.BlockedThreadChecker;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 class VertxCoreProcessor {
 
     private static final Logger log = Logger.getLogger(VertxCoreProcessor.class);
 
+    private static final Set<String> BLOCKED_THREAD_LOGGER_NAMES = Set.of(
+            "io.vertx.core.impl.BlockedThreadChecker", // Vert.x 4.2-
+            "io.vertx.core.impl.btc.BlockedThreadChecker" // Vert.x 4.3+
+    );
+
     @BuildStep
-    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, VertxLogDelegateFactory.class.getName()));
+    AdditionalBeanBuildItem registerSafeDuplicatedContextInterceptor() {
+        return new AdditionalBeanBuildItem(SafeVertxContextInterceptor.class.getName());
+    }
+
+    @BuildStep
+    NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(VertxLogDelegateFactory.class.getName()).methods().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(LateBoundMDCProvider.class.getName()).methods().fields().build());
+        nativeImageResources.produce(new NativeImageResourceBuildItem("META-INF/services/org.jboss.logmanager.MDCProvider"));
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.VertxByteBufAllocator")
                 .addRuntimeInitializedClass("io.vertx.core.buffer.impl.PartialPooledByteBufAllocator")
@@ -81,10 +112,101 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
+    void overrideContextInternalInterfaceToAddSafeGuards(BuildProducer<BytecodeTransformerBuildItem> transformer) {
+        List<String> classes = List.of(
+                "io.vertx.core.impl.ContextInternal", "io.vertx.core.impl.AbstractContext");
+
+        for (String name : classes) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(name)) {
+                final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
+                        .setClassToTransform(name)
+                        .setCacheable(true)
+                        .setVisitorFunction(
+                                (className, classVisitor) -> new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                                    @Override
+                                    public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                            String signature,
+                                            String[] exceptions) {
+                                        MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature,
+                                                exceptions);
+
+                                        if (name.equals("get") || name.equals("put") || name.equals("remove")) {
+                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                                @Override
+                                                public void visitCode() {
+                                                    super.visitCode();
+                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                            VertxLocalsHelper.class.getName().replace('.', '/'),
+                                                            "throwOnRootContextAccess",
+                                                            "()V", false);
+                                                }
+                                            };
+                                        }
+
+                                        if (name.equals("getLocal")
+                                                && descriptor.equals("(Ljava/lang/Object;)Ljava/lang/Object;")) {
+                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                                @Override
+                                                public void visitCode() {
+                                                    super.visitCode();
+                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "getLocal",
+                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Ljava/lang/Object;",
+                                                            false);
+                                                    visitInsn(Opcodes.ARETURN);
+                                                }
+                                            };
+                                        }
+
+                                        if (name.equals("putLocal")
+                                                && descriptor.equals("(Ljava/lang/Object;Ljava/lang/Object;)V")) {
+                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                                @Override
+                                                public void visitCode() {
+                                                    super.visitCode();
+                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                                    visitVarInsn(Opcodes.ALOAD, 2); // second param (object)
+                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "putLocal",
+                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;Ljava/lang/Object;)V",
+                                                            false);
+                                                    visitInsn(Opcodes.RETURN);
+                                                }
+                                            };
+                                        }
+
+                                        if (name.equals("removeLocal") && descriptor.equals("(Ljava/lang/Object;)Z")) {
+                                            return new MethodVisitor(Gizmo.ASM_API_VERSION, visitor) {
+                                                @Override
+                                                public void visitCode() {
+                                                    super.visitCode();
+                                                    visitVarInsn(Opcodes.ALOAD, 0); // this
+                                                    visitVarInsn(Opcodes.ALOAD, 1); // first param (object)
+                                                    visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                            VertxLocalsHelper.class.getName().replace('.', '/'), "removeLocal",
+                                                            "(Lio/vertx/core/impl/ContextInternal;Ljava/lang/Object;)Z", false);
+                                                    visitInsn(Type.getType(Boolean.TYPE).getOpcode(Opcodes.IRETURN));
+                                                }
+                                            };
+                                        }
+
+                                        return visitor;
+                                    }
+                                })
+                        .build();
+                transformer.produce(transformation);
+            }
+        }
+    }
+
+    @BuildStep
     LogCategoryBuildItem preventLoggerContention() {
         //Prevent the Logging warning about the TCCL checks being disabled to be logged;
         //this is similar to #cleanupVertxWarnings but prevents it by changing the level:
-        // it takes advantage of the fact that there is a single other log in thi class,
+        // it takes advantage of the fact that there is a single other log in this class,
         // and it happens to be at error level.
         //This is more effective than the LogCleanupFilterBuildItem as we otherwise have
         //contention since this message could be logged very frequently.
@@ -103,6 +225,7 @@ class VertxCoreProcessor {
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
+            ThreadPoolConfig threadPoolConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem) {
@@ -113,7 +236,7 @@ class VertxCoreProcessor {
             consumers.add(x.getConsumer());
         }
 
-        Supplier<Vertx> vertx = recorder.configureVertx(config,
+        Supplier<Vertx> vertx = recorder.configureVertx(config, threadPoolConfig,
                 launchMode.getLaunchMode(), shutdown, consumers, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
@@ -142,8 +265,13 @@ class VertxCoreProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         for (ClassInfo ci : indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
         }
+    }
+
+    @BuildStep
+    void doNotRemoveVertxOptionsCustomizers(BuildProducer<UnremovableBeanBuildItem> unremovable) {
+        unremovable.produce(UnremovableBeanBuildItem.beanTypes(VertxOptionsCustomizer.class));
     }
 
     @BuildStep
@@ -154,15 +282,15 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder) {
-        return new ContextHandlerBuildItem(recorder.executionContextHandler());
+    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
+        return new ContextHandlerBuildItem(recorder.executionContextHandler(buildConfig.customizeArcContext()));
     }
 
     private void handleBlockingWarningsInDevOrTestMode() {
         try {
             Filter debuggerFilter = createDebuggerFilter();
             LogManager logManager = (LogManager) LogManager.getLogManager();
-            logManager.getLogger(BlockedThreadChecker.class.getName()).setFilter(new Filter() {
+            Filter filter = new Filter() {
 
                 volatile StackTraceElement last;
 
@@ -187,7 +315,11 @@ class VertxCoreProcessor {
                     last = element;
                     return true;
                 }
-            });
+            };
+
+            for (String classname : BLOCKED_THREAD_LOGGER_NAMES) {
+                logManager.getLogger(classname).setFilter(filter);
+            }
         } catch (Throwable t) {
             log.debug("Failed to filter blocked thread checker", t);
         }
@@ -226,7 +358,7 @@ class VertxCoreProcessor {
                     }
                     if (client) {
                         //for client mode we assume the debugger is always attached
-                        //this is how IDE's run tests etc, so the debugger is attached right from the start
+                        //this is how IDE's run tests etc., so the debugger is attached right from the start
                         //in this mode we will never print the blocked thread warnings
                         alwaysFilter = true;
                         break;
@@ -237,7 +369,7 @@ class VertxCoreProcessor {
                         debugPort = Integer.parseInt(m.group(2));
                         String host = m.group(1);
                         if (host.equals("*")) {
-                            host.equals("localhost");
+                            host = "localhost";
                         }
                         bindAddress = InetAddress.getByName(host);
                     }

@@ -9,7 +9,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * We only support byte[] by default for marshalling
- * 
+ *
  * @author William Burns
  */
 @TargetClass(ConfigurationBuilder.class)

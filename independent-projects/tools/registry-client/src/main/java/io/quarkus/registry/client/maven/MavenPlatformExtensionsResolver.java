@@ -1,19 +1,21 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.client.RegistryPlatformExtensionsResolver;
-import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.transfer.ArtifactNotFoundException;
+
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.client.RegistryPlatformExtensionsResolver;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensionsResolver {
 
@@ -56,9 +58,10 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
                 t = t.getCause();
             }
             final StringBuilder buf = new StringBuilder();
-            buf.append("Failed to resolve Quarkus extension catalog ").append(catalogArtifact);
+            buf.append("Failed to resolve extension catalog of ")
+                    .append(PlatformArtifacts.ensureBomArtifact(platformCoords).toCompactCoords());
             if (repo != null) {
-                buf.append(" from ").append(repo.getId()).append(" (").append(repo.getUrl()).append(")");
+                buf.append(" from Maven repository ").append(repo.getId()).append(" (").append(repo.getUrl()).append(")");
                 final List<RemoteRepository> mirrored = repo.getMirroredRepositories();
                 if (!mirrored.isEmpty()) {
                     buf.append(" which is a mirror of ");

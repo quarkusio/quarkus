@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -31,7 +33,7 @@ public class AdditionalClassLoaderResourcesBuildStep {
 
                     collected.put(entry.getKey(), entry.getValue());
                     // add it also as resources to allow index to work properly
-                    collected.put(entry.getKey().replace('.', '/') + ".class", entry.getValue());
+                    collected.put(fromClassNameToResourceName(entry.getKey()), entry.getValue());
 
                 }
             }

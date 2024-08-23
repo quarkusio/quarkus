@@ -6,15 +6,21 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTest
 public class BearerTokenOidcRecoveredTest {
 
+    @Order(1)
     @Test
     public void testOidcRecoveredWithDiscovery() {
         String token = getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")));
@@ -39,6 +45,7 @@ public class BearerTokenOidcRecoveredTest {
         }
     }
 
+    @Order(2)
     @Test
     public void testOidcRecoveredWithNoDiscovery() {
         String token = getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")));
@@ -71,5 +78,16 @@ public class BearerTokenOidcRecoveredTest {
                 .jws()
                 .keyId("1")
                 .sign();
+    }
+
+    @Order(3)
+    @Test
+    public void assertOidcServerAvailabilityReported() {
+        String expectAuthServerUrl = RestAssured.get("/oidc-event/expected-auth-server-url").then().statusCode(200).extract()
+                .asString();
+        RestAssured.given().get("/oidc-event/unavailable-auth-server-urls").then().statusCode(200)
+                .body(Matchers.is(expectAuthServerUrl));
+        RestAssured.given().get("/oidc-event/available-auth-server-urls").then().statusCode(200)
+                .body(Matchers.is(expectAuthServerUrl));
     }
 }

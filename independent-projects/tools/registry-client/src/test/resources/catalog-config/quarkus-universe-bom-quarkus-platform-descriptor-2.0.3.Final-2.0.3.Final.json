@@ -504,7 +504,7 @@
       "keywords" : [ "config", "configuration", "yaml" ],
       "categories" : [ "core" ],
       "status" : "stable",
-      "guide" : "https://quarkus.io/guides/config#yaml",
+      "guide" : "https://quarkus.io/guides/config-yaml",
       "codestart" : {
         "name" : "config-yaml",
         "languages" : [ "java", "kotlin" ],
@@ -650,19 +650,6 @@
       "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
     },
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "Elytron Security Common",
@@ -2306,7 +2293,7 @@
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "RESTEasy Reactive",
-    "description" : "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "description" : "A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
     "metadata" : {
       "short-name" : "resteasy-reactive",
       "keywords" : [ "jaxrs", "web", "rest" ],
@@ -4043,7 +4030,7 @@
       "categories" : [ "integration" ],
       "status" : [ "stable" ],
       "built-with-quarkus-core" : "2.0.0.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
+      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
     },
     "artifact" : "org.apache.camel.quarkus:camel-quarkus-elasticsearch-rest::jar:2.0.0",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
@@ -7329,7 +7316,7 @@
         "doc-root" : "https://quarkus.io",
         "rest-assured-version" : "4.3.2",
         "compiler-plugin-version" : "3.8.1",
-        "surefire-plugin-version" : "3.0.0-M5",
+        "surefire-plugin-version" : "3.0.0",
         "kotlin-version" : "1.4.32",
         "scala-version" : "2.12.13",
         "scala-plugin-version" : "4.4.0",
@@ -7341,7 +7328,7 @@
         "gradle-plugin-version" : "2.0.3.Final",
         "supported-maven-versions" : "[3.6.2,)",
         "proposed-maven-version" : "3.8.1",
-        "maven-wrapper-version" : "0.7.7",
+        "maven-wrapper-version" : "3.3.2",
         "gradle-wrapper-version" : "6.9"
       }
     },

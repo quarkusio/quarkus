@@ -1,5 +1,6 @@
 package io.quarkus.it.hibernate.reactive.postgresql;
 
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -17,6 +18,15 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestHTTPEndpoint(HibernateReactiveTestEndpoint.class)
 public class HibernateReactiveTest {
+
+    @Test
+    public void reactiveFindNativeQuery() {
+        RestAssured.given().when()
+                .auth().preemptive().basic("scott", "jb0ss")
+                .get("/reactiveFindNativeQuery")
+                .then()
+                .statusCode(anyOf(is(200), is(204)));
+    }
 
     @Test
     public void reactiveCowPersist() {

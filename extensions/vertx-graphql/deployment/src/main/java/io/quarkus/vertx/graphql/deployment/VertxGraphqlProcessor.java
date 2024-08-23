@@ -12,9 +12,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.*;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -23,7 +23,6 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
-// import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
@@ -35,29 +34,48 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
-    WebsocketSubProtocolsBuildItem websocketSubProtocols() {
+    WebsocketSubProtocolsBuildItem graphQLWSProtocol() {
+        return new WebsocketSubProtocolsBuildItem("graphql-transport-ws");
+    }
+
+    @BuildStep
+    WebsocketSubProtocolsBuildItem appoloWSProtocol() {
         return new WebsocketSubProtocolsBuildItem("graphql-ws");
     }
 
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
-                //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
+                ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
+                ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
+    }
+
+    @BuildStep
+    void registerI18nResources(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Execution"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/General"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Parsing"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Validation"));
+    }
+
+    @BuildStep
+    NativeImageResourceDirectoryBuildItem produceNativeResourceDirectory(LaunchModeBuildItem launchMode,
+            VertxGraphqlConfig config) {
+        if (doNotIncludeVertxGraphqlUi(launchMode, config)) {
+            return null;
+        }
+        return new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql");
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
-            BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
-            LaunchModeBuildItem launchMode,
+    void registerVertxGraphqlUI(VertxGraphqlRecorder recorder, VertxGraphqlConfig config,
+            LaunchModeBuildItem launchMode, CoreVertxBuildItem coreVertxBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<RouteBuildItem> routes,
             BodyHandlerBuildItem bodyHandler) {
 
-        boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
-        if (!includeVertxGraphqlUi) {
+        if (doNotIncludeVertxGraphqlUi(launchMode, config)) {
             return;
         }
 
@@ -69,7 +87,7 @@ class VertxGraphqlProcessor {
                             + "\", this is not allowed as it blocks the application from serving anything else.");
         }
 
-        Handler<RoutingContext> handler = recorder.handler();
+        Handler<RoutingContext> handler = recorder.handler(coreVertxBuildItem.getVertx());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .route(path)
                 .handler(handler)
@@ -80,7 +98,14 @@ class VertxGraphqlProcessor {
                         .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler()))
                         .handler(handler)
                         .build());
+    }
 
-        nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
+    private static boolean doNotIncludeVertxGraphqlUi(LaunchModeBuildItem launchMode, VertxGraphqlConfig config) {
+        return !launchMode.getLaunchMode().isDevOrTest() && !config.ui.alwaysInclude;
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("graphql.util.IdGenerator"));
     }
 }

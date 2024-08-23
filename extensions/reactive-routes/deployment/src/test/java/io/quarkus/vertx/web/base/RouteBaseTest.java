@@ -22,6 +22,8 @@ public class RouteBaseTest {
     public void testPath() {
         when().get("/hello").then().statusCode(200).body(is("Hello world!"));
         when().get("/simple/hello").then().statusCode(200).body(is("Hello another world!"));
+        when().get("/simple").then().statusCode(200).body(is("Hello root!"));
+        when().get("/simple/").then().statusCode(200).body(is("Hello root!"));
         when().get("/some/foo").then().statusCode(200).body(is("Hello foo!"));
     }
 
@@ -34,7 +36,7 @@ public class RouteBaseTest {
     @RouteBase
     static class SimpleBean {
 
-        @Route(path = "hello") // -> "/simple-bean/hello"
+        @Route(path = "hello") // -> "/hello"
         void hello(RoutingContext context) {
             context.response().end("Hello world!");
         }
@@ -43,6 +45,11 @@ public class RouteBaseTest {
 
     @RouteBase(path = "simple")
     static class AnotherBean {
+
+        @Route(path = "") // -> "/simple"
+        void root(RoutingContext context) {
+            context.response().end("Hello root!");
+        }
 
         @Route // path is derived from the method name -> "/simple/hello"
         void hello(RoutingContext context) {

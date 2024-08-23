@@ -9,7 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -40,7 +40,7 @@ public class FlywayExtensionCallbackTest {
             .setAfterAllCustomizer(customizer::stopH2)
             .withApplicationRoot((jar) -> jar
                     .addClasses(FlywayH2TestCustomizer.class,
-                            FlywayExtensionCallback.class, FlywayExtensionCallback2.class)
+                            FlywayExtensionCallback.class, FlywayExtensionCallback2.class, FlywayExtensionCDICallback.class)
                     .addAsResource("db/migration/V1.0.3__Quarkus_Callback.sql")
                     .addAsResource("callback-config.properties", "application.properties"));
 

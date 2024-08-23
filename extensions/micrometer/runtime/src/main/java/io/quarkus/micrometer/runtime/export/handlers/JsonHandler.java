@@ -1,8 +1,8 @@
 package io.quarkus.micrometer.runtime.export.handlers;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 

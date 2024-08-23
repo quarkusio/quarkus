@@ -1,14 +1,17 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.InstanceHandle;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InstanceHandle;
 
 /**
  *
@@ -21,6 +24,9 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
     private final Contextual<T> contextual;
     private final CreationalContextImpl<?> parent;
     private List<InstanceHandle<?>> dependentInstances;
+
+    private InjectionPoint currentInjectionPoint;
+    private Object currentDecoratorDelegate;
 
     public CreationalContextImpl(Contextual<T> contextual) {
         this(contextual, null);
@@ -47,16 +53,17 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
         return dependentInstances != null && !dependentInstances.isEmpty();
     }
 
-    boolean destroyDependentInstance(Object dependentInstance) {
-        synchronized (this) {
-            if (dependentInstances != null) {
-                for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {
-                    InstanceHandle<?> instanceHandle = iterator.next();
-                    if (instanceHandle.get() == dependentInstance) {
-                        instanceHandle.destroy();
-                        iterator.remove();
-                        return true;
+    public synchronized boolean removeDependentInstance(Object dependentInstance, boolean destroy) {
+        if (dependentInstances != null) {
+            for (Iterator<InstanceHandle<?>> it = dependentInstances.iterator(); it.hasNext();) {
+                InstanceHandle<?> handle = it.next();
+                // The reference equality is used on purpose!
+                if (handle.get() == dependentInstance) {
+                    if (destroy) {
+                        handle.destroy();
                     }
+                    it.remove();
+                    return true;
                 }
             }
         }
@@ -102,6 +109,8 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
     public static <T> CreationalContextImpl<T> unwrap(CreationalContext<T> ctx) {
         if (ctx instanceof CreationalContextImpl) {
             return (CreationalContextImpl<T>) ctx;
+        } else if (ctx instanceof SyntheticCreationalContextImpl) {
+            return unwrap(((SyntheticCreationalContextImpl<T>) ctx).creationalContext);
         } else {
             throw new IllegalArgumentException("Failed to unwrap CreationalContextImpl: " + ctx);
         }
@@ -121,6 +130,52 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
         CreationalContextImpl<?> parent = unwrap(ctx).getParent();
         if (parent != null) {
             parent.addDependentInstance(bean, instance, ctx);
+        }
+    }
+
+    static <T> InjectionPoint getCurrentInjectionPoint(CreationalContext<T> ctx) {
+        CreationalContextImpl<?> instance = unwrap(ctx);
+        while (instance != null) {
+            synchronized (instance) {
+                InjectionPoint result = instance.currentInjectionPoint;
+                if (result != null) {
+                    return result;
+                }
+            }
+            instance = instance.parent;
+        }
+        return null;
+    }
+
+    static <T> InjectionPoint setCurrentInjectionPoint(CreationalContext<T> ctx, InjectionPoint injectionPoint) {
+        CreationalContextImpl<T> instance = unwrap(ctx);
+        synchronized (instance) {
+            InjectionPoint previous = instance.currentInjectionPoint;
+            instance.currentInjectionPoint = injectionPoint;
+            return previous;
+        }
+    }
+
+    static <T> Object getCurrentDecoratorDelegate(CreationalContext<T> ctx) {
+        CreationalContextImpl<?> instance = unwrap(ctx);
+        while (instance != null) {
+            synchronized (instance) {
+                Object result = instance.currentDecoratorDelegate;
+                if (result != null) {
+                    return result;
+                }
+            }
+            instance = instance.parent;
+        }
+        return null;
+    }
+
+    static <T> Object setCurrentDecoratorDelegate(CreationalContext<T> ctx, Object decoratorDelegate) {
+        CreationalContextImpl<T> instance = unwrap(ctx);
+        synchronized (instance) {
+            Object previous = instance.currentDecoratorDelegate;
+            instance.currentDecoratorDelegate = decoratorDelegate;
+            return previous;
         }
     }
 

@@ -1,15 +1,15 @@
 package io.quarkus.smallrye.reactivemessaging.devmode;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import io.smallrye.reactive.messaging.annotations.Channel;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 

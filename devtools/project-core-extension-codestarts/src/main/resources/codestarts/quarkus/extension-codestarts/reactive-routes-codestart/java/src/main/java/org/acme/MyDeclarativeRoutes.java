@@ -1,6 +1,6 @@
 package org.acme;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;

@@ -1,0 +1,75 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="..."]
+= Title using sentence capitalization
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+How-to guides are goal-oriented and should help the reader accomplish a task (where there may be forks in the path).
+
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Prerequisites
+
+////
+TODO: If this tutorial will use dev tools, use the following common include:
+include::{includes}/devtools/prerequisites.adoc[]
+This file offers a few different variables that can be used to tweak what is shown.
+////
+
+- Materials, software, ...
+- Whatever they should already have in hand to complete this set of steps
+- See the link:https://quarkus.io/version/main/guides/doc-contribute-docs-howto#add-prerequisites[Add a prerequisites section] in the "Contribute to Quarkus Documentation" guide.
+
+== Define the problem
+
+Your user will also be in the middle of something: define the starting-point that they know how to reach and a conclusion that answers a real question.
+
+== Resources
+
+- xref:../doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
+- xref:../doc-concept.adoc#howto-guide[Quarkus documentation content types: How-to guides]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:../doc-reference.adoc#cross-references[Cross-references]
+
+== Guidelines for good How-To guides
+
+- Don’t explain concepts; link to a related concept/explainer.
+- Be flexible; a how-to guide needs to be adaptable to real-world use cases.
+- Omit the unnecessary; practical usability is more helpful than completeness.
+- A how-to guide can include multiple tasks, each with its own H2 heading.
+- For suggestions on how to write a good how-to guide, see https://diataxis.fr/how-to-guides/#writing-a-good-how-to-guide.
+
+== Examples
+
+Baeldung tutorials provide solid examples of How-To guides.
+For example, "How to use Jackson annotations" is answered (with variations) here: https://www.baeldung.com/jackson-annotations
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

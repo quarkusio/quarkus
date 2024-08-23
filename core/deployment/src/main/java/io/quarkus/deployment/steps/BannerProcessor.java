@@ -1,17 +1,17 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.jar.JarFile;
 
 import org.jboss.logging.Logger;
 
@@ -81,7 +81,7 @@ public class BannerProcessor {
     }
 
     /**
-     * @return an entry containing the text of the banner as the key and whether or not the default banner is being used as the
+     * @return an entry containing the text of the banner as the key and whether the default banner is being used as the
      *         value. The default banner is used as a last report
      */
     private Map.Entry<URL, Boolean> getBanner(BannerConfig config) throws IOException {
@@ -103,20 +103,22 @@ public class BannerProcessor {
         }
     }
 
-    private boolean isQuarkusCoreBanner(URL url) throws IOException {
+    protected boolean isQuarkusCoreBanner(URL url) {
         if (!"jar".equals(url.getProtocol())) {
             return false;
         }
 
         String thisClassName = this.getClass().getName();
-        String jarPath = url.getPath().substring(0, url.getPath().lastIndexOf('!'));
 
-        // We determine whether the banner is the default by checking to see if the jar that contains it also
-        // contains this class. This way although somewhat complicated guarantees that any rename of artifacts
-        // won't affect the check
-        try (JarFile jarFile = new JarFile(Paths.get(new URI(jarPath)).toFile())) {
-            return jarFile.getJarEntry(thisClassName.replace('.', '/') + ".class") != null;
-        } catch (URISyntaxException e) {
+        try {
+            return ClassPathUtils.processAsPath(url, p -> {
+                // We determine whether the banner is the default by checking to see if the jar that contains it also
+                // contains this class. This way although somewhat complicated guarantees that any rename of artifacts
+                // won't affect the check
+                Path resolved = p.resolve("/" + fromClassNameToResourceName(thisClassName));
+                return Files.exists(resolved);
+            });
+        } catch (UncheckedIOException ex) {
             return false;
         }
     }

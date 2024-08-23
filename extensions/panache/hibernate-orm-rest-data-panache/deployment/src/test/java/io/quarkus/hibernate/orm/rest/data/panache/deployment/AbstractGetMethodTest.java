@@ -11,9 +11,11 @@ import static org.hamcrest.Matchers.is;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.ws.rs.core.Link;
+import jakarta.ws.rs.core.Link;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import io.restassured.http.Header;
 import io.restassured.response.Response;
@@ -87,6 +89,61 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListWithPrimitiveFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("type", 100)
+                .get("/collections")
+                .then().statusCode(200)
+                .and().body("id", contains("empty", "full"));
+    }
+
+    @Test
+    void shouldListWithPrimitiveFilterAndNoResults() {
+        given().accept("application/json")
+                .when()
+                .queryParam("type", 99)
+                .get("/collections")
+                .then().statusCode(200)
+                .and().body("id", empty());
+    }
+
+    @Test
+    void shouldListWithFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "first")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
+    }
+
+    @Test
+    void shouldListWithManyFilters() {
+        given().accept("application/json")
+                .when()
+                .queryParam("id", 1)
+                .queryParam("name", "first")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
+    }
+
+    @Test
+    void shouldListWithNamedQuery() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "s")
+                .queryParam("namedQuery", "Item.containsInName")
+                .get("/items")
+                .then().statusCode(200)
+                .and().body("id", contains(1, 2))
+                .and().body("name", contains("first", "second"));
+    }
+
+    @Test
     void shouldListSimpleHalObjects() {
         given().accept("application/hal+json")
                 .when().get("/items")
@@ -118,6 +175,17 @@ public abstract class AbstractGetMethodTest {
                 .then().statusCode(200)
                 .and().body("id", contains(2, 1))
                 .and().body("name", contains("second", "first"));
+    }
+
+    @Test
+    void shouldListSimpleDescendingObjectsAndFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("name", "first")
+                .get("/items?sort=-name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(1))
+                .and().body("name", contains("first"));
     }
 
     @Test
@@ -228,6 +296,19 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldGetFirstPageWithFilter() {
+        Response response = given().accept("application/json")
+                .and().queryParam("page", 0)
+                .and().queryParam("size", 1)
+                .and().queryParam("name", "second")
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("id")).containsOnly(2);
+        assertThat(response.body().jsonPath().getList("name")).containsOnly("second");
+    }
+
+    @Test
     void shouldGetFirstHalPage() {
         Response response = given().accept("application/hal+json")
                 .and().queryParam("page", 0)
@@ -326,6 +407,80 @@ public abstract class AbstractGetMethodTest {
         assertThat(links).anySatisfy(link -> {
             assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
             assertThat(link.getRel()).isEqualTo("previous");
+        });
+    }
+
+    @Test
+    void shouldListEmptyTables() {
+        given().accept("application/hal+json")
+                .and().queryParam("page", 1)
+                .and().queryParam("size", 1)
+                .when().get("/empty-list-items")
+                .then().statusCode(200);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "page,0",
+            "size,1",
+            "name,first",
+            "collection.id,full"
+    })
+    void shouldShowSpecificParameterInLinkHeaders(String queryParamName, String queryParamValue) {
+        Response response = given().accept("application/json")
+                .when()
+                .queryParam(queryParamName, queryParamValue)
+                .get("/items")
+                .thenReturn();
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        List<Link> links = response.getHeaders().getList("Link")
+                .stream()
+                .map(header -> Link.valueOf(header.getValue()))
+                .toList();
+        assertThat(links).allMatch(link -> link.getUri().getQuery()
+                .contains(String.format("%s=%s", queryParamName, queryParamValue)));
+    }
+
+    @Test
+    void shouldShowAllPaginationAndCustomQueryParametersInLinkHeaders() {
+        Response response = given().accept("application/json")
+                .when()
+                .queryParam("page", "0")
+                .queryParam("size", "3")
+                .queryParam("name", "first")
+                .queryParam("namedQuery", "Item.containsInName")
+                .get("/items")
+                .thenReturn();
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        List<Link> links = response.getHeaders().getList("Link")
+                .stream()
+                .map(header -> Link.valueOf(header.getValue()))
+                .toList();
+        assertThat(links).allMatch(link -> link.getUri().getQuery()
+                .contains("page=0&size=3&namedQuery=Item.containsInName&name=first"));
+    }
+
+    @Test
+    void shouldShowAllPaginationAndFilteringParametersInLinkHeaders() {
+        Response response = given().accept("application/json")
+                .when()
+                .queryParam("page", "0")
+                .queryParam("size", "1")
+                .queryParam("name", "first")
+                .queryParam("collection.id", "full")
+                .get("/items")
+                .thenReturn();
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        List<Link> links = response.getHeaders().getList("Link")
+                .stream()
+                .map(header -> Link.valueOf(header.getValue()))
+                .toList();
+        assertThat(links).allMatch(link -> {
+            var query = link.getUri().getQuery();
+            return query.contains("page=0&size=1") && query.contains("name=first") && query.contains("collection.id=full");
         });
     }
 }

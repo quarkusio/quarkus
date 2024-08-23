@@ -4,8 +4,9 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.enterprise.util.Nonbinding;
-import javax.inject.Qualifier;
+
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.inject.Qualifier;
 
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)
@@ -13,7 +14,7 @@ import javax.inject.Qualifier;
 public @interface Claim {
     /**
      * The value specifies the id name the claim to inject
-     * 
+     *
      * @return the claim name
      */
     @Nonbinding

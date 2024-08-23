@@ -4,13 +4,15 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
 import java.util.function.Supplier;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResouce;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
@@ -58,7 +60,7 @@ public class ResourceLocatorTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
@@ -149,6 +151,14 @@ public class ResourceLocatorTest {
     @DisplayName("Test @BeanParam annotation in Subresources")
     public void testBeanParamsInSubresource() {
         given().get("/sub3/first/resources/subresource3?value=second")
+                .then()
+                .body(is("first and second"));
+    }
+
+    @Test
+    @DisplayName("Test @BeanParam annotation using generics in Subresources")
+    public void testBeanParamsWithGenericsInSubresource() {
+        given().get("/sub3/first/resources/subresource4?value=second")
                 .then()
                 .body(is("first and second"));
     }

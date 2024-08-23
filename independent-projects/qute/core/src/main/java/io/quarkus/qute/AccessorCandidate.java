@@ -4,7 +4,7 @@ package io.quarkus.qute;
 interface AccessorCandidate {
 
     /**
-     * 
+     *
      * @param context
      * @return an accessor, is never null
      */

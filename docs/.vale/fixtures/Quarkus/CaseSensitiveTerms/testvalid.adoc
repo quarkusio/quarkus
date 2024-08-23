@@ -1,0 +1,163 @@
+AssertJ
+AsciiDoc
+Asciidoctor
+/var
+BIND
+bind
+BIOS
+Btrfs
+CapEx
+CD #1
+CDs
+cgroup
+ConfigMap
+CSV
+Ctrl
+Cygmon
+denial of service
+denial-of-service
+DevOps
+dev mode
+Disk Druid
+DNS
+DVD writer
+Exec-Shield
+Exif
+FAQ
+Fedora™ Project
+Fortran
+Fluentd
+FQDN
+GB
+Gbps
+GID
+GIMP
+Git
+GNOME
+GNOME Classic
+GNU
+GPL
+GraalVM
+Gradle
+Graylog
+gRPC
+GRUB
+GTK+
+Hibernate ORM
+HP ProLiant
+Hyper-Threading
+hypervisor
+IBM eServer System p
+IBM S 390
+IBM S 390
+IBM Z
+Ignition config
+InfiniBand
+Insight
+Intel Virtualization Technology
+Intel(R) EP80579 Integrated Processor
+IOPS
+IP
+IPsec
+ISeries
+ISO
+ISO image
+Istio service mesh
+Itanium
+Itanium 2
+JBoss Community
+JBoss Logging
+JetBrains
+JUnit
+JVM
+Kernel-based Virtual Machine
+Knowledgebase
+Kickstart
+KVM
+LAN
+Linux
+Logstash
+Mandrel
+MicroProfile
+Microsoft
+MongoDB
+ms
+MS-DOS
+mutual TLS
+mTLS
+MySQL
+Node.js
+Objective C
+OpenID Connect
+operating environment
+operating system
+OperatorHub
+OpEx
+Podman
+pop-up
+POSIX
+PostScript
+PowerPC
+PowerShell
+PPP
+PROM
+Prometheus
+Proof Key for Code Exchange
+Q and A
+QCOW2
+qeth
+RAM
+RAM disk
+raw
+Red Hat Network Proxy Server
+Red Hat Satellite
+Red Hat Satellite Server
+Red Hat Satellite Capsule Server
+Red Hat Network Satellite Server
+RedBoot
+RESTEasy
+ROM
+RPM
+S-record
+Samba
+SELinux
+shadow passwords
+shadow utilities
+Shadowman
+SOCKS
+Software Collection
+Spring Boot
+SR-IOV
+SSH
+SSL/TLS
+StarOffice
+startx
+su
+systemd
+SysV
+TTL
+UID
+UltraSPARC
+Unix socket
+URL
+VAR
+VDSM
+vi
+Vim
+virtual console
+Visual Studio Code
+VLAN
+vNIC
+vNUMA node
+VPN
+WAN
+WCA
+web UI
+WebAuthn
+WebSocket
+Window Maker
+xDS
+XEmacs
+xterm
+YAML
+File extension example.yaml must pass.

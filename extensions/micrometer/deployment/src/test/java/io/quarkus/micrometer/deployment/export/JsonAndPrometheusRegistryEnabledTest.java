@@ -4,7 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,6 +26,7 @@ public class JsonAndPrometheusRegistryEnabledTest {
             .overrideConfigKey("quarkus.micrometer.export.json.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();
 
     @Inject

@@ -1,17 +1,19 @@
 package io.quarkus.registry.catalog;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.json.JsonBuilder;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Asymmetric data manipulation:
@@ -27,7 +29,8 @@ import java.util.Map;
  * @see JsonBuilder.JsonBuilderSerializer for building a builder before serializing it.
  */
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-@JsonPropertyOrder({ "id", "platform", "bom", "quarkus-core-version", "extensions", "categories", "metadata" })
+@JsonPropertyOrder({ "id", "platform", "bom", "quarkus-core-version", "upstream-quarkus-core-version", "extensions",
+        "categories", "metadata" })
 public class ExtensionCatalogImpl extends ExtensionOriginImpl implements ExtensionCatalog {
 
     private final String quarkusCoreVersion;

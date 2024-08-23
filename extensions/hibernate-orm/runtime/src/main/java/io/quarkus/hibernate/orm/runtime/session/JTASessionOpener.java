@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
-import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.SessionBuilder;
 import org.hibernate.SessionFactory;
@@ -27,24 +26,23 @@ public class JTASessionOpener {
         }
     }
 
-    private static SessionBuilder<?> createOptions(SessionFactory sessionFactory) {
+    private static SessionBuilder createOptions(SessionFactory sessionFactory) {
         return sessionFactory.withOptions()
                 .autoClose(true) // .owner() is deprecated as well, so it looks like we need to rely on deprecated code...
                 .connectionHandlingMode(
-                        PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION)
-                .flushMode(FlushMode.ALWAYS);
+                        PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
     }
 
     private final SessionFactory sessionFactory;
-    private final SessionBuilder<?> cachedOptions;
+    private final SessionBuilder cachedOptions;
 
-    public JTASessionOpener(SessionFactory sessionFactory, SessionBuilder<?> cachedOptions) {
+    public JTASessionOpener(SessionFactory sessionFactory, SessionBuilder cachedOptions) {
         this.sessionFactory = sessionFactory;
         this.cachedOptions = cachedOptions;
     }
 
     public Session openSession() {
-        SessionBuilder<?> options = cachedOptions != null ? cachedOptions : createOptions(sessionFactory);
+        SessionBuilder options = cachedOptions != null ? cachedOptions : createOptions(sessionFactory);
         return options.openSession();
     }
 }

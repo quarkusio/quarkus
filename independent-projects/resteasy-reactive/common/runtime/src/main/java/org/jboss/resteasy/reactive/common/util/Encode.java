@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.ws.rs.core.MultivaluedMap;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -30,7 +31,7 @@ public class Encode {
 
     static {
         /*
-         * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
          *
          * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
          * sub-delims = "!" / "$" / "&" / "'" / "(" / ")"
@@ -76,7 +77,7 @@ public class Encode {
         System.arraycopy(pathEncoding, 0, pathSegmentEncoding, 0, pathEncoding.length);
         pathSegmentEncoding['/'] = "%2F";
         /*
-         * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
+         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
          *
          * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
          * space encoded as '+'
@@ -94,7 +95,9 @@ public class Encode {
                 case '.':
                 case '_':
                 case '~':
+                    continue;
                 case '?':
+                    queryNameValueEncoding[i] = "%3F";
                     continue;
                 case ' ':
                     queryNameValueEncoding[i] = "+";
@@ -301,7 +304,7 @@ public class Encode {
     }
 
     /**
-     * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
      * <p>
      * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
@@ -328,7 +331,7 @@ public class Encode {
     }
 
     /**
-     * Encode via <a href="http://ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
+     * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
      * <p>
      * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
      * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
@@ -386,6 +389,12 @@ public class Encode {
             char currentChar = segment.charAt(i);
             if (!encodePercent && currentChar == '%') {
                 result.append(currentChar);
+                continue;
+            }
+            if (Character.isHighSurrogate(currentChar)) {
+                String part = segment.substring(i, i + 2);
+                result.append(URLEncoder.encode(part, StandardCharsets.UTF_8));
+                ++i;
                 continue;
             }
             String encoding = encode(currentChar, encodingMap);

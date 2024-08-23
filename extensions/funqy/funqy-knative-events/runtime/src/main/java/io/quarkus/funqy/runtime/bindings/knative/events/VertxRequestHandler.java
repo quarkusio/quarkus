@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
@@ -128,7 +128,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         final HttpServerResponse httpResponse = routingContext.response();
         final boolean binaryCE = httpRequest.headers().contains("ce-id");
 
-        httpRequest.bodyHandler(bodyBuff -> executor.execute(() -> {
+        final Buffer bodyBuff = routingContext.body().buffer();
+        executor.execute(() -> {
             try {
                 final String ceType;
                 final String ceSpecVersion;
@@ -261,6 +262,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             outputCloudEvent = (CloudEvent<?>) output;
                         }
 
+                        if (outputCloudEvent == null) {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                            return;
+                        }
+
                         String id = outputCloudEvent.id();
                         if (id == null) {
                             id = getResponseId();
@@ -306,8 +313,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             outputCloudEvent.extensions()
-                                    .entrySet()
-                                    .forEach(e -> httpResponse.putHeader("ce-" + e.getKey(), e.getValue()));
+                                    .forEach((key, value) -> httpResponse.putHeader("ce-" + key, value));
 
                             String dataContentType = outputCloudEvent.dataContentType();
                             if (dataContentType != null) {
@@ -404,7 +410,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             } catch (Throwable t) {
                 routingContext.fail(t);
             }
-        }));
+        });
 
     }
 
@@ -476,26 +482,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 routingContext.fail(500, t);
             }
         } else if (routingContext.request().method() == HttpMethod.POST) {
-            routingContext.request().bodyHandler(buff -> {
-                try {
-                    Object input = null;
-                    if (buff.length() > 0) {
-                        ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                        ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
-                        try {
-                            input = reader.readValue((InputStream) in);
-                        } catch (JsonProcessingException e) {
-                            log.error("Failed to unmarshal input", e);
-                            routingContext.fail(400);
-                            return;
-                        }
+            Buffer buff = routingContext.body().buffer();
+            try {
+                Object input = null;
+                if (buff.length() > 0) {
+                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                    ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
+                    try {
+                        input = reader.readValue((InputStream) in);
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to unmarshal input", e);
+                        routingContext.fail(400);
+                        return;
                     }
-                    execute(event, routingContext, invoker, input);
-                } catch (Throwable t) {
-                    log.error(t);
-                    routingContext.fail(500, t);
                 }
-            });
+                execute(event, routingContext, invoker, input);
+            } catch (Throwable t) {
+                log.error(t);
+                routingContext.fail(500, t);
+            }
         } else {
             routingContext.fail(405);
             log.error("Must be POST or GET for: " + invoker.getName());
@@ -557,19 +562,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }
         currentVertxRequest.setCurrent(routingContext);
-        try {
-            RequestContextImpl funqContext = new RequestContextImpl();
-            if (event != null) {
-                funqContext.setContextData(CloudEvent.class, event);
-            }
-            FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
-            FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
-            invoker.invoke(funqyRequest, funqyResponse);
-            return funqyResponse;
-        } finally {
-            if (requestContext.isActive()) {
-                requestContext.terminate();
-            }
+        RequestContextImpl funqContext = new RequestContextImpl();
+        if (event != null) {
+            funqContext.setContextData(CloudEvent.class, event);
         }
+        FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
+        FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
+        invoker.invoke(funqyRequest, funqyResponse);
+
+        // The invoker set the output, but we need to extend that output (a Uni) with a termination block deactivating the
+        // request context if activated.
+        funqyResponse.setOutput(funqyResponse.getOutput()
+                .onTermination().invoke(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (requestContext.isActive()) {
+                            requestContext.terminate();
+                        }
+                    }
+                }));
+        return funqyResponse;
     }
 }

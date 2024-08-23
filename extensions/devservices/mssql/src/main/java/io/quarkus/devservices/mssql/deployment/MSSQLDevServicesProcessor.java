@@ -1,10 +1,9 @@
 package io.quarkus.devservices.mssql.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_STRONG_PASSWORD;
+
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -13,11 +12,16 @@ import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
@@ -25,37 +29,53 @@ public class MSSQLDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(MSSQLDevServicesProcessor.class);
 
     /**
-     * If you update this remember to update the container-license-acceptance.txt in the tests
+     * Using SA doesn't work with all collations so let's use the lowercase version instead.
      */
-    public static final String TAG = "2019-CU10-ubuntu-20.04";
+    private static final String DEFAULT_USERNAME = "sa";
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
+            @SuppressWarnings("unchecked")
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
-                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(imageName, fixedExposedPort,
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                        devServicesSharedNetworkBuildItem);
+                QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
                         !devServicesSharedNetworkBuildItem.isEmpty());
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("Quarkuspassword1"));
-                additionalProperties.forEach(container::withUrlParam);
+
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
+
+                // Defining the database name and the username is not supported by this container yet
+                container.withPassword(effectivePassword)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
+
+                container.withEnv(containerConfig.getContainerEnv());
+
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
+
                 container.start();
 
                 LOG.info("Dev Services for Microsoft SQL Server started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
+                        DEFAULT_USERNAME,
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for Microsoft SQL Server shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
             }
         });
     }
@@ -68,7 +88,7 @@ public class MSSQLDevServicesProcessor {
 
         public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName
-                    .parse(imageName.orElse(MSSQLServerContainer.IMAGE + ":" + MSSQLDevServicesProcessor.TAG))
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")))
                     .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -102,6 +122,16 @@ public class MSSQLDevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            StringBuilder url = new StringBuilder("vertx-reactive:sqlserver://");
+            if (useSharedNetwork) {
+                url.append(hostName).append(":").append(MS_SQL_SERVER_PORT);
+            } else {
+                url.append(this.getHost()).append(":").append(this.getMappedPort(MS_SQL_SERVER_PORT));
+            }
+            return url.toString();
         }
     }
 }

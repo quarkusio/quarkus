@@ -1,0 +1,13 @@
+name: tooling-maven-wrapper
+type: tooling
+output-strategy:
+  "mvnw": "executable"
+language:
+  base:
+    data:
+      maven:
+        version: ${proposed-maven-version}
+        wrapper-version: ${maven-wrapper.version}
+    shared-data:
+      buildtool:
+        cli: ./mvnw

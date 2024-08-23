@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.WebClient;
+import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -30,7 +29,7 @@ public class SecurityDisabledTestCase {
         try (final WebClient webClient = createWebClient()) {
 
             HtmlPage page = webClient.getPage("http://localhost:8081/unprotected");
-            assertEquals("unprotected", page.getBody().asText());
+            assertEquals("unprotected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }

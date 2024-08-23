@@ -7,11 +7,11 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.server.ServerApplicationConfig;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.enterprise.inject.Instance;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerApplicationConfig;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
 
@@ -125,7 +125,7 @@ public class WebsocketCoreRecorder {
         ServerWebSocketContainer container = serverContainerFactory.create(new ObjectIntrospecter() {
             @Override
             public <T> ObjectFactory<T> createInstanceFactory(Class<T> clazz) {
-                BeanContainer.Factory<T> factory = beanContainer.instanceFactory(clazz);
+                BeanContainer.Factory<T> factory = beanContainer.beanInstanceFactory(clazz);
                 return new ObjectFactory<T>() {
                     @Override
                     public ObjectHandle<T> createInstance() {
@@ -169,12 +169,12 @@ public class WebsocketCoreRecorder {
                                 boolean required = !requestContext.isActive();
                                 if (required) {
                                     requestContext.activate();
-                                    Principal p = session.getUserPrincipal();
-                                    if (p instanceof WebSocketPrincipal) {
-                                        var current = getCurrentIdentityAssociation();
-                                        if (current != null) {
-                                            current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
-                                        }
+                                }
+                                Principal p = session.getUserPrincipal();
+                                if (p instanceof WebSocketPrincipal) {
+                                    var current = getCurrentIdentityAssociation();
+                                    if (current != null) {
+                                        current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
                                     }
                                 }
                                 try {

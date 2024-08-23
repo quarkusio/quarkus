@@ -1,11 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
 import java.net.URI;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
 import org.junit.jupiter.api.Assertions;
@@ -16,7 +18,7 @@ public class ResponseInfoResource {
 
     @Path("/simple")
     @GET
-    public String get(@QueryParam("abs") String abs) {
+    public boolean get(@QueryParam("abs") String abs) {
         LOG.debug("abs query: " + abs);
         URI base;
         if (abs == null) {
@@ -28,6 +30,6 @@ public class ResponseInfoResource {
         URI uri = (URI) response.getMetadata().getFirst(HttpHeaders.LOCATION);
         LOG.debug("Location uri: " + uri);
         Assertions.assertEquals(base.getPath(), uri.getPath());
-        return "CONTENT";
+        return true;
     }
 }

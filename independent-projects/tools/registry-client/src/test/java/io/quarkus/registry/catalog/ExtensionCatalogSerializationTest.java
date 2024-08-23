@@ -2,7 +2,6 @@ package io.quarkus.registry.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.maven.ArtifactCoords;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,9 +11,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class ExtensionCatalogSerializationTest {
     static Path baseDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
@@ -65,7 +67,7 @@ public class ExtensionCatalogSerializationTest {
         });
 
         final ArtifactCoords bom = ArtifactCoords.pom("io.quarkus", "quarkus-bom", "999-FAKE");
-        final ArtifactCoords fakeBom = new ArtifactCoords("io.quarkus", "quarkus-fake-bom", "999-FAKE", "json", "999-FAKE");
+        final ArtifactCoords fakeBom = ArtifactCoords.of("io.quarkus", "quarkus-fake-bom", "999-FAKE", "json", "999-FAKE");
         ExtensionCatalog catalog = ExtensionCatalog.builder()
                 .setId(fakeBom.toString())
                 .setBom(bom)
@@ -75,7 +77,7 @@ public class ExtensionCatalogSerializationTest {
                         .setName("RESTEasy Reactive")
                         .setDescription("Description")
                         .setArtifact(
-                                new ArtifactCoords("io.quarkus", "quarkus-resteasy-reactive", null, "jar", "999-FAKE"))
+                                ArtifactCoords.jar("io.quarkus", "quarkus-resteasy-reactive", "999-FAKE"))
                         .setOrigins(Arrays.asList(ExtensionOrigin.builder()
                                 .setId(fakeBom.toString())))
                         .setMetadata("categories", Arrays.asList("web", "reactive")))

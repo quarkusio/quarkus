@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -10,6 +11,7 @@ import com.mongodb.client.model.CreateCollectionOptions;
 import com.mongodb.client.model.CreateViewOptions;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.reactivestreams.client.AggregatePublisher;
+import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
 import com.mongodb.reactivestreams.client.ClientSession;
 import com.mongodb.reactivestreams.client.ListCollectionsPublisher;
 import com.mongodb.reactivestreams.client.MongoDatabase;
@@ -21,6 +23,7 @@ import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
@@ -126,12 +129,11 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
         return Multi.createFrom().publisher(apply(options, database.listCollections(clazz)));
     }
 
-    private <T> ListCollectionsPublisher<T> apply(CollectionListOptions options,
-            ListCollectionsPublisher<T> collections) {
+    private <T> Flow.Publisher<T> apply(CollectionListOptions options, ListCollectionsPublisher<T> collections) {
         if (options == null) {
-            return collections;
+            return AdaptersToFlow.publisher(collections);
         } else {
-            return options.apply(collections);
+            return AdaptersToFlow.publisher(options.apply(collections));
         }
     }
 
@@ -207,7 +209,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch()));
     }
 
     @Override
@@ -217,7 +219,14 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz, ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(clazz)));
+    }
+
+    private <D> ChangeStreamPublisher<D> apply(ChangeStreamOptions options, ChangeStreamPublisher<D> watch) {
+        if (options == null) {
+            return watch;
+        }
+        return options.apply(watch);
     }
 
     @Override
@@ -227,7 +236,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(pipeline)));
     }
 
     @Override
@@ -238,7 +247,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     @Override
     public <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz,
             ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(pipeline, clazz)));
     }
 
     @Override
@@ -248,7 +257,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(clientSession)));
     }
 
     @Override
@@ -259,7 +268,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     @Override
     public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz,
             ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(clientSession, clazz)));
     }
 
     @Override
@@ -270,7 +279,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     @Override
     public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(clientSession, pipeline)));
     }
 
     @Override
@@ -282,7 +291,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     @Override
     public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             Class<T> clazz, ChangeStreamOptions options) {
-        return null;
+        return Wrappers.toMulti(apply(options, database.watch(clientSession, pipeline, clazz)));
     }
 
     @Override

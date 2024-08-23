@@ -1,6 +1,7 @@
 package io.quarkus.logging.gelf;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -38,7 +39,7 @@ public class GelfConfig {
 
     /**
      * Whether to post Stack-Trace to StackTrace field.
-     * 
+     *
      * @see #stackTraceThrowableReference to customize the way the Stack-Trace is handled.
      */
     @ConfigItem(defaultValue = "true")
@@ -82,7 +83,7 @@ public class GelfConfig {
     /**
      * Post additional fields.
      * You can add static fields to each log event in the following form:
-     * 
+     *
      * <pre>
      * quarkus.log.handler.gelf.additional-field.field1.value=value1
      * quarkus.log.handler.gelf.additional-field.field1.type=String
@@ -98,6 +99,27 @@ public class GelfConfig {
      */
     @ConfigItem
     public boolean includeFullMdc;
+
+    /**
+     * Send additional fields whose values are obtained from MDC. Name of the Fields are comma-separated. Example:
+     * mdcFields=Application,Version,SomeOtherFieldName
+     */
+    @ConfigItem()
+    public Optional<String> mdcFields;
+
+    /**
+     * Dynamic MDC Fields allows you to extract MDC values based on one or more regular expressions. Multiple regexes are
+     * comma-separated. The name of the MDC entry is used as GELF field name.
+     */
+    @ConfigItem
+    public Optional<String> dynamicMdcFields;
+
+    /**
+     * Pattern-based type specification for additional and MDC fields. Key-value pairs are comma-separated. Example:
+     * my_field.*=String,business\..*\.field=double
+     */
+    @ConfigItem
+    public Optional<String> dynamicMdcFieldTypes;
 
     /**
      * Maximum message size (in bytes).
@@ -117,4 +139,17 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean includeLocation;
+
+    /**
+     * Origin hostname
+     */
+    @ConfigItem
+    public Optional<String> originHost;
+
+    /**
+     * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the value
+     * “unknown” will be used as hostname
+     */
+    @ConfigItem
+    public boolean skipHostnameResolution;
 }

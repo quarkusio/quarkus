@@ -2,11 +2,12 @@ package io.quarkus.devtools.commands.data;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.util.HashMap;
-import java.util.Map;
 
 public final class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvocation> {
 

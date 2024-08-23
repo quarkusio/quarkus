@@ -48,7 +48,7 @@ public class ValidationFailuresTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (10)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (10)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.foo"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.getName('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.findService(age)"), te.getMessage());

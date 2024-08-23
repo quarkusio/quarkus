@@ -1,0 +1,189 @@
+= Using the TLS registry for clients
+
+* Status: accepted
+* Date: 2024-06-12 by @cescoffier, @geoand, @gsmet
+// * Revised:
+
+== Context and Problem Statement
+
+With https://github.com/quarkusio/quarkus/pull/39825[#39825], we introduced the concept of a TLS registry in Quarkus.
+The TLS registry is a way to configure TLS settings in a central place and reuse them across the application and extensions.
+This is particularly useful when an application needs to connect to multiple services using TLS.
+
+Until now, each extension has _maintained_ its own way to configure TLS settings. This leads to a lot of duplication and inconsistencies.
+It's also difficult for the user to understand how to configure TLS settings in Quarkus.
+The TLS registry is a way to solve this problem.
+
+The goal of this ADR is to explain how the registry should be used by client establishing a connection to a server using TLS.
+
+It should be noted that TLS is a sensitive and complex topic.
+The TLS registry is not a silver bullet and does not solve all the problems related to TLS.
+It is a way to simplify the configuration of TLS settings in Quarkus applications.
+
+== The TLS registry
+
+The TLS registry is an extension processing the `quarkus.tls` configuration and proposing a runtime API to access it.
+Note that the configuration and the runtime API are different.
+The configuration is used to define the TLS settings, while the runtime API is used to access these pre-processed settings.
+
+hen using the options directly under `quarkus.tls.`, one configures the default (_unamed_) configuration, while using options under `quarkus.tls.<name>.` configures a _named_ configuration.
+For each configuration, trust stores and key stores can be defined, as well as the default protocol, cipher suites, etc.
+More details can be found in the https://quarkus.io/version/main/guides/tls-registry-reference[documentation] and in the https://github.com/quarkusio/quarkus/blob/main/extensions/tls-registry/runtime/src/main/java/io/quarkus/tls/runtime/config/TlsBucketConfig.java[code].
+
+At runtime, the https://github.com/quarkusio/quarkus/blob/main/extensions/tls-registry/runtime/src/main/java/io/quarkus/tls/TlsConfigurationRegistry.java[TlsConfigurationRegistry] CDI bean gives access to the default and named _TlsConfiguration_.
+These configurations have been verified during the application startup (password, alias, validity...) and are ready to be used.
+https://github.com/quarkusio/quarkus/blob/main/extensions/tls-registry/runtime/src/main/java/io/quarkus/tls/TlsConfiguration.java[TLSConfiguration] gives access to the key store, trust store, Vert.x options, tailored `SSLContext`...
+It also supports reloading the certificates.
+
+== Configuring clients with the TLS registry
+
+When configuring a _client_ establishing a connection to a server using TLS, the TLS registry should be used to configure the TLS settings.
+The TLS settings must be defined in the `quarkus.tls.<name>.` configuration.
+
+WARNING: Using the default configuration is going to create conflict with the server configuration, and it's is generally not a good idea to use the same configuration for the client and the server.
+
+The client extension should use the TLS registry to retrieve the _TlsConfiguration_ and use it to configure the connection.
+
+Thus, the client configuration must be extended with a new configuration item: `tlsConfigurationName`:
+
+[source, java]
+----
+/**
+ * The name of the TLS configuration to use.
+ * <p>
+ * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+ * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+ * <p>
+ * The default TLS configuration is <strong>not</strong> used by default.
+ */
+Optional<String> tlsConfigurationName();
+----
+
+Clients must not use the default TLS configuration, except for one case.
+For backward compatibility purpose, `quarkus.tls.trust-all` should be honored when configuring clients.
+
+== Using the TLS registry from client extensions
+
+=== Retrieving the registry from an extension
+
+The TLS registry is a CDI bean and can be injected in other beans.
+The TLS registry is a _singleton_ CDI bean.
+
+However, before configuring the client, you need to make sure the TLS registry is properly initialized.
+The recommended approach is to inject the `TlsConfigurationRegistry tlsConfigurationRegistry` bean in a `recorder`:
+
+[source, java]
+----
+BasicWebSocketConnectorImpl(Vertx vertx, Codecs codecs, ClientConnectionManager connectionManager,
+     WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry) {
+    // ...
+}
+----
+
+Another approach is to use the `TlsRegistryBuildItem` in a _processor_:
+
+[source, java]
+----
+@Record(ExecutionTime.RUNTIME_INIT)
+@BuildStep
+public SyntheticBeanBuildItem setup(OidcBuildTimeConfig oidcBuildTimeConfig, OidcConfig oidcRunTimeConfig,
+        KeycloakPolicyEnforcerConfig keycloakConfig, KeycloakPolicyEnforcerRecorder recorder,
+        HttpConfiguration httpConfiguration, TlsRegistryBuildItem tlsRegistryBuildItem) {
+        if (oidcBuildTimeConfig.enabled) {
+            return SyntheticBeanBuildItem.configure(PolicyEnforcerResolver.class).unremovable()
+                    .types(PolicyEnforcerResolver.class)
+                    .supplier(recorder.setup(oidcRunTimeConfig, keycloakConfig, httpConfiguration,
+                            tlsRegistryBuildItem.registry())) // Get the registry runtime value
+                    .scope(Singleton.class)
+                    .setRuntimeInit()
+                    .done();
+        }
+        return null;
+}
+----
+
+=== Finding the named TLS configuration
+
+Once the TLS registry is properly passed, the client extension can use it to retrieve the named TLS configuration:
+
+[source, java]
+----
+TlsConfiguration configuration = null;
+Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
+                config.tlsConfigurationName());
+if (config.tlsConfigurationName.isPresent()) {
+    configuration = maybeConfiguration.get();
+} else if (tlsRegistry.getDefault().isPresent() && tlsRegistry.getDefault().get().isTrustAll()) {
+    defaultTrustAll = tlsRegistry.getDefault().get().isTrustAll();
+    if (defaultTrustAll) {
+        LOGGER.warn("The default TLS configuration is set to trust all certificates. This is a security risk."
+                + "Please use a named TLS configuration for the mailer " + name + " to avoid this warning.");
+    }
+}
+----
+
+Also, using the _default_ `trust-all` should be avoided, and a warning should be logged if it's used.
+
+=== Configuring a Vert.x client
+
+When configuring a Vert.x client (HTTP client, SMTP client, gRPC client, etc.), the `TlsConfiguration` should be used to configure the client:
+
+- The `trustStore` and `keyStore` should be set on the `options.setTrustOptions(config.getTrustStoreOptions())` and `options.setKeyCertOptions(config.getKeyStoreOptions())`. Setting the keystore enables mutual TLS (`mTLS`).
+- `trustAll` can be set using `options.setTrustAll(true)`.
+- The hostname verification algorithm should be configured to a sensible default (`HTTPS` for every HTTP based protocol).
+To disable the hostname verification, the `NONE` value should be used.
+- `TlsConfigure.getSSLOptions()` allows configuring various TLS aspect like the protocol, cipher suites, handshake, ALPN, certificate revocation lists, etc:
+
+[source, java]
+----
+ SSLOptions sslOptions = configuration.getSSLOptions();
+if (sslOptions != null) {
+    cfg.setSslHandshakeTimeout(sslOptions.getSslHandshakeTimeout());
+    cfg.setSslHandshakeTimeoutUnit(sslOptions.getSslHandshakeTimeoutUnit());
+    for (String suite : sslOptions.getEnabledCipherSuites()) {
+        cfg.addEnabledCipherSuite(suite);
+    }
+    for (Buffer buffer : sslOptions.getCrlValues()) {
+        cfg.addCrlValue(buffer);
+    }
+    cfg.setEnabledSecureTransportProtocols(sslOptions.getEnabledSecureTransportProtocols());
+
+}
+----
+
+- For protocol supporting SNI, the SNI should be configured using `options.setSNI(tlsConfiguration.usesSNI())`.
+
+
+=== Configuring non-Vert.x clients
+
+When configuring a non-Vert.x client, the `TLSConfiguration` provides:
+
+- `KeyStore` objects for the key store and trust store
+- A `SSLContext` object to configure the SSL context.
+
+== Considered options
+
+=== Continuing with the current approach
+
+The current approach is to let each extension manage its TLS settings.
+This approach leads to a lot of duplication and inconsistencies.
+It's also difficult for the user to understand how to configure TLS settings in Quarkus.
+
+Note that the TLS registry does **NOT** replace the extension-specific configuration.
+It's a way to simplify the configuration of TLS settings in Quarkus applications.
+The extension-specific configuration should be considered _deprecated_ and users should be invited to use the TLS registry.
+
+== Consequences
+
+=== Positive
+
+* A centralized way to configure TLS settings in Quarkus applications.
+* A homogenization of the TLS configuration across Quarkus extensions.
+* A more complete and consistent TLS configuration.
+
+=== Negative
+
+* Dealing with 2 different ways to configure TLS settings in Quarkus applications until the extension-specific configurations are removed.
+
+
+

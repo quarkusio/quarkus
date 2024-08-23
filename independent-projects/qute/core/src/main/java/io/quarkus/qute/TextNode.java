@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 /**
  * Static text.
  */
-public class TextNode implements TemplateNode, ResultNode {
+public class TextNode extends ResultNode implements TemplateNode {
 
     private final CompletedStage<ResultNode> result;
     private final String value;
@@ -23,8 +23,14 @@ public class TextNode implements TemplateNode, ResultNode {
         return result;
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
+    }
+
+    @Override
+    public Kind kind() {
+        return Kind.TEXT;
     }
 
     @Override
@@ -39,6 +45,11 @@ public class TextNode implements TemplateNode, ResultNode {
     @Override
     public void process(Consumer<String> consumer) {
         consumer.accept(value);
+    }
+
+    @Override
+    public TextNode asText() {
+        return this;
     }
 
     @Override

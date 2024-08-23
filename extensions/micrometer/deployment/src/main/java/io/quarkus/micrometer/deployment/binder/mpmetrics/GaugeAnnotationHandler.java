@@ -4,10 +4,10 @@ import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -112,7 +112,8 @@ public class GaugeAnnotationHandler {
                 .superClass(gaugeAdapterImpl)
                 .interfaces(gaugeAdapter)
                 .build()) {
-            if (classInfo.annotations().containsKey("Singleton")) {
+            // TODO this is wrong, the map is keyed by `DotName`s
+            if (classInfo.annotationsMap().containsKey("Singleton")) {
                 classCreator.addAnnotation(Singleton.class);
             } else {
                 classCreator.addAnnotation(ApplicationScoped.class);

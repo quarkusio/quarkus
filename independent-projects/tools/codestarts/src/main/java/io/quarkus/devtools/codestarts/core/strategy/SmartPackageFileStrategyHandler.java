@@ -1,9 +1,5 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.CodestartData;
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.core.CodestartData;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 final class SmartPackageFileStrategyHandler implements CodestartFileStrategyHandler {
 
@@ -42,6 +43,13 @@ final class SmartPackageFileStrategyHandler implements CodestartFileStrategyHand
             final boolean isMaven = CodestartData.getBuildtool(data).filter(b -> Objects.equals(b, "maven")).isPresent();
             if (isMaven) {
                 modifiedRelativePath = modifiedRelativePath.replace("/native-test/", "/test/");
+            }
+        }
+
+        if (modifiedRelativePath.contains("/integrationTest/")) {
+            final boolean isMaven = CodestartData.getBuildtool(data).filter(b -> Objects.equals(b, "maven")).isPresent();
+            if (isMaven) {
+                modifiedRelativePath = modifiedRelativePath.replace("/integrationTest/", "/test/");
             }
         }
 

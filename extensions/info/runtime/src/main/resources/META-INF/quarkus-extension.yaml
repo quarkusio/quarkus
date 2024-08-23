@@ -1,0 +1,11 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Info"
+metadata:
+  keywords:
+  - "info"
+  categories:
+  - "observability"
+  status: "stable"
+  config:
+  - "quarkus.info."

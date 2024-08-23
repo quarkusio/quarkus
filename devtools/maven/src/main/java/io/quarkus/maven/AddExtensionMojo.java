@@ -32,7 +32,7 @@ public class AddExtensionMojo extends QuarkusProjectMojoBase {
     Set<String> extensions;
 
     /**
-     * For usability reason, this parameter allow adding a single extension.
+     * For usability reason, this parameter allows adding a single extension.
      */
     @Parameter(property = "extension")
     String extension;

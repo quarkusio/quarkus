@@ -8,7 +8,6 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.Operation;
 import org.eclipse.microprofile.openapi.models.PathItem;
 import org.eclipse.microprofile.openapi.models.Paths;
-import org.jboss.logging.Logger;
 
 import io.smallrye.openapi.api.models.OperationImpl;
 
@@ -16,8 +15,6 @@ import io.smallrye.openapi.api.models.OperationImpl;
  * Automatically tag operations based on the class name.
  */
 public class AutoTagFilter implements OASFilter {
-    private static final Logger log = Logger.getLogger(AutoTagFilter.class);
-
     private Map<String, String> classNameMap;
 
     public AutoTagFilter() {

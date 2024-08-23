@@ -1,13 +1,11 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import javax.enterprise.context.Dependent;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorFactory;
+import jakarta.enterprise.context.Dependent;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 
 import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
 
@@ -34,7 +32,7 @@ public class ArcConstraintValidatorFactoryImpl implements ConstraintValidatorFac
             }
             return instance;
         }
-        return run(NewInstance.action(key, "ConstraintValidator"));
+        return NewInstance.action(key, "ConstraintValidator").run();
     }
 
     @Override
@@ -45,13 +43,4 @@ public class ArcConstraintValidatorFactoryImpl implements ConstraintValidatorFac
         }
     }
 
-    /**
-     * Runs the given privileged action, using a privileged block if required.
-     * <p>
-     * <b>NOTE:</b> This must never be changed into a publicly available method to avoid execution of arbitrary
-     * privileged actions within HV's protection domain.
-     */
-    private <T> T run(PrivilegedAction<T> action) {
-        return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
-    }
 }

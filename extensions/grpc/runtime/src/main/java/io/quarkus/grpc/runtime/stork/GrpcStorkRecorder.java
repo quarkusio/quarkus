@@ -6,8 +6,8 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class GrpcStorkRecorder {
-    public void init() {
+    public void init(boolean proactiveConnections) {
         NameResolverRegistry.getDefaultRegistry().register(new GrpcStorkServiceDiscovery());
-        LoadBalancerRegistry.getDefaultRegistry().register(new GrpcLoadBalancerProvider());
+        LoadBalancerRegistry.getDefaultRegistry().register(new GrpcLoadBalancerProvider(proactiveConnections));
     }
 }

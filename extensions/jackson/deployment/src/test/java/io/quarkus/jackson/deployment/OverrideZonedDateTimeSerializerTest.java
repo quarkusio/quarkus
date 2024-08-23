@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,7 +33,7 @@ public class OverrideZonedDateTimeSerializerTest {
     @Test
     public void test() throws JsonProcessingException {
         assertThat(new ArrayList<>(objectMapper.getRegisteredModuleIds())).asList()
-                .contains("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule");
+                .contains("jackson-datatype-jsr310");
         assertThat(objectMapper.writeValueAsString(ZonedDateTime.now())).isEqualTo("\"dummy\"");
     }
 

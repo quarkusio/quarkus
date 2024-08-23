@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ public class InjectionFailedTest {
                     assertTrue(s.getMessage().contains(
                             "No template found for path [foo] defined at io.quarkus.qute.deployment.inject.InjectionFailedTest#foo")
                             || s.getMessage().contains(
-                                    "No template found for path [alpha] defined at io.quarkus.qute.deployment.inject.InjectionFailedTest$Client().alpha"),
+                                    "No template found for path [alpha] defined at parameter 'alpha' of io.quarkus.qute.deployment.inject.InjectionFailedTest$Client constructor"),
                             s.getMessage());
                 }
             });

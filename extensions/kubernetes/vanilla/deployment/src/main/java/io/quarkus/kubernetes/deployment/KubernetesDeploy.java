@@ -1,19 +1,15 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
-
 import java.util.Optional;
 
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.VersionInfo;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
+import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 
 public class KubernetesDeploy {
 
@@ -26,14 +22,13 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} iff @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
+     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable,
+     *         {@code false} otherwise
      *
-     *         It follows that this can only return {@code false} if the if @{code quarkus.kubernetes.deploy=false}
-     *
-     * @throws RuntimeException if communication to the Kubernetes API server errored
+     * @throws RuntimeException if there was an error while communicating with the Kubernetes API server
      */
-    public boolean check() {
-        Result result = doCheck();
+    public boolean check(KubernetesClientBuildItem clientBuilder) {
+        Result result = doCheck(clientBuilder);
 
         if (result.getException().isPresent()) {
             throw result.getException().get();
@@ -43,19 +38,15 @@ public class KubernetesDeploy {
     }
 
     /**
-     * @return {@code true} iff @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
-     *
-     *         Never throws an exception even in the face of a communication error with the API server, just returns
-     *         {@code false}
-     *         in that case
+     * @return {@code true} if @{code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable
+     *         {@code false} otherwise or if there was an error while communicating with the Kubernetes API server
      */
-    public boolean checkSilently() {
-        return doCheck().isAllowed();
+    public boolean checkSilently(KubernetesClientBuildItem clientBuilder) {
+        return doCheck(clientBuilder).isAllowed();
     }
 
-    private Result doCheck() {
-        Config config = ConfigProvider.getConfig();
-        if (!config.getOptionalValue(DEPLOY, Boolean.class).orElse(false)) {
+    private Result doCheck(KubernetesClientBuildItem clientBuilder) {
+        if (!KubernetesConfigUtil.isDeploymentEnabled()) {
             return Result.notConfigured();
         }
 
@@ -64,9 +55,8 @@ public class KubernetesDeploy {
             return Result.enabled();
         }
 
-        KubernetesClient client = KubernetesClientUtils.createClient();
-        String masterURL = client.getConfiguration().getMasterUrl();
-        try {
+        String masterURL = clientBuilder.getConfig().getMasterUrl();
+        try (KubernetesClient client = clientBuilder.buildClient()) {
             //Let's check if we can connect.
             VersionInfo version = client.getVersion();
             if (version == null) {
@@ -75,7 +65,7 @@ public class KubernetesDeploy {
                                 + masterURL + "' could not be determined. Please ensure that a valid token is being used."));
             }
 
-            log.info("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
+            log.debugf("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
             log.debugf("Kubernetes Version: %s.%s", version.getMajor(), version.getMinor());
             serverFound = true;
             return Result.enabled();
@@ -84,7 +74,7 @@ public class KubernetesDeploy {
                 return Result.exceptional(new RuntimeException(
                         "Although a Kubernetes deployment was requested, it however cannot take place because the API Server (at '"
                                 + masterURL
-                                + "') certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)",
+                                + "') certificates are not trusted. The certificates can be configured using the relevant configuration properties under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)",
                         e));
             } else {
                 return Result.exceptional(new RuntimeException(
@@ -92,8 +82,6 @@ public class KubernetesDeploy {
                                 + masterURL + "'",
                         e));
             }
-        } finally {
-            client.close();
         }
     }
 

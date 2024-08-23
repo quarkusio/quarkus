@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.model;
 
+import java.util.Set;
+
 /**
  * Class that represents information about injectable beans as we scan them, such as
  * resource endpoint beans, or BeanParam classes.
@@ -25,4 +27,8 @@ public interface InjectableBean {
     int getFieldExtractorsCount();
 
     void setFieldExtractorsCount(int fieldExtractorsCount);
+
+    Set<String> getFileFormNames();
+
+    void setFileFormNames(Set<String> fileFormNames);
 }

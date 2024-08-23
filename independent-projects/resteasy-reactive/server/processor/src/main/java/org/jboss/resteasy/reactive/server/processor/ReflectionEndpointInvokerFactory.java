@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Supplier;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
@@ -23,7 +24,7 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                 try {
                     Class<?> clazz = Class.forName(currentMethod.declaringClass().name().toString(), false,
                             Thread.currentThread().getContextClassLoader());
-                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameters()));
+                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameterTypes()));
                     return new EndpointInvoker() {
                         @Override
                         public Object invoke(Object instance, Object[] parameters) throws Exception {

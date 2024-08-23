@@ -18,7 +18,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
  * item,
  * otherwise it could be ignored or processed at the wrong time, e.g. after
  * {@link ArcProcessor#validate(ObserverRegistrationPhaseBuildItem, List)}.
- * 
+ *
  * @see ObserverConfiguratorBuildItem
  * @see ObserverRegistrar
  */

@@ -2,8 +2,11 @@ package org.jboss.resteasy.reactive.server.spi;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.core.ResteasyReactiveCallbackContext;
 
 public interface ServerRequestContext extends ResteasyReactiveCallbackContext {
@@ -19,6 +22,8 @@ public interface ServerRequestContext extends ResteasyReactiveCallbackContext {
     OutputStream getOrCreateOutputStream();
 
     ResteasyReactiveResourceInfo getResteasyReactiveResourceInfo();
+
+    HttpHeaders getRequestHeaders();
 
     void abortWith(Response response);
 }

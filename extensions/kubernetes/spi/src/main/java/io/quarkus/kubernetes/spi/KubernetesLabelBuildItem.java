@@ -25,4 +25,9 @@ public final class KubernetesLabelBuildItem extends MultiBuildItem {
     public String getTarget() {
         return this.target;
     }
+
+    public static class CommonLabels {
+
+        public static final String MANAGED_BY = "app.kubernetes.io/managed-by";
+    }
 }

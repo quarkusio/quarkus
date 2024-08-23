@@ -81,6 +81,18 @@ public class ExposedCloudEventTest {
                 .body(equalTo("6"));
     }
 
+    @Test
+    public void testNullResponse() {
+        RestAssured.given().contentType("application/json")
+                .header("ce-id", "test-id")
+                .header("ce-specversion", "1.0")
+                .header("ce-type", "test-null-response")
+                .header("ce-source", "test-source")
+                .post()
+                .then()
+                .statusCode(204);
+    }
+
     @ParameterizedTest
     @MethodSource("provideBinaryEncodingTestArgs")
     public void testBinaryEncoding(Map<String, String> headers, String specversion, String dataSchemaHdrName) {
@@ -182,7 +194,6 @@ public class ExposedCloudEventTest {
             "  \"type\": \"test-type\", " +
             "  \"extclient\": \"ext-client-val\", " +
             "  \"dataschema\": \"test-dataschema-client\", " +
-            "  \"datacontenttype\": \"application/json\", " +
             "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
             "}";
 

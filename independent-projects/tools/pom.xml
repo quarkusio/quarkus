@@ -1,15 +1,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+    child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>39</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
-    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-tools-parent</artifactId>
     <name>Quarkus - Dev tools - Parent</name>
+    <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
     <version>999-SNAPSHOT</version>
     <licenses>
@@ -19,45 +21,48 @@
             <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
         </license>
     </licenses>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <url>https://github.com/quarkusio/quarkus</url>
+        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
     <properties>
+        <angus-activation.version>1.0.0</angus-activation.version>
+        <expressly.version>5.0.0</expressly.version>
+        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+        <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.8.4</proposed-maven-version>
-        <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>7.3.1</gradle-wrapper.version>
+        <proposed-maven-version>3.9.8</proposed-maven-version>
+        <maven-wrapper.version>3.3.2</maven-wrapper.version>
+        <gradle-wrapper.version>8.9</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <kotlin.version>1.6.0</kotlin.version>
-        <scala.version>2.12.13</scala.version>
+        <scala.version>2.13.12</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
 
         <!-- Versions -->
-        <assertj.version>3.21.0</assertj.version>
-        <jackson.version>2.12.5</jackson.version>
-        <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
-        <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
-        <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <junit.version>5.8.2</junit.version>
-        <commons-compress.version>1.20</commons-compress.version>
-        <jboss-logging.version>3.4.2.Final</jboss-logging.version>
-        <maven-core.version>3.8.4</maven-core.version>
-        <mockito.version>4.1.0</mockito.version>
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <maven-model-helper.version>18</maven-model-helper.version>
-        <commons-io.version>2.11.0</commons-io.version>
-        <smallrye-common.version>1.8.0</smallrye-common.version>
-        <jandex-maven-plugin.version>1.2.1</jandex-maven-plugin.version>
+        <assertj.version>3.26.3</assertj.version>
+        <jackson-bom.version>2.17.2</jackson-bom.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+        <junit.version>5.11.0</junit.version>
+        <commons-compress.version>1.27.1</commons-compress.version>
+        <jboss-logging.version>3.6.0.Final</jboss-logging.version>
+        <mockito.version>5.12.0</mockito.version>
+        <quarkus.version>${project.version}</quarkus.version>
+        <maven-model-helper.version>37</maven-model-helper.version>
+        <jandex.version>3.2.2</jandex.version>
+        <system-stubs-jupiter.version>2.1.6</system-stubs-jupiter.version>
+        <awaitility.version>4.2.2</awaitility.version>
+        <java-properties.version>0.0.7</java-properties.version>
     </properties>
     <modules>
-        <module>artifact-api</module>
         <module>registry-client</module>
         <module>message-writer</module>
         <module>devtools-testing</module>
@@ -65,14 +70,36 @@
         <module>base-codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
+        <module>analytics-common</module>
     </modules>
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-artifact-api</artifactId>
+                <artifactId>quarkus-bootstrap-bom</artifactId>
                 <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
+
+            <!-- Jackson dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- Mockito BOM -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-base-codestarts</artifactId>
@@ -93,16 +120,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-app-model</artifactId>
-                <version>${quarkus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
-                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus.qute</groupId>
@@ -130,29 +147,9 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>${commons-io.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>maven-model-helper</artifactId>
                 <version>${maven-model-helper.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-plugin-api</artifactId>
-                <version>${maven-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.enterprise</groupId>
@@ -160,19 +157,14 @@
                 <version>${jakarta.enterprise.cdi-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-core</artifactId>
-                <version>${maven-core.version}</version>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax.annotation-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-model</artifactId>
-                <version>${maven-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito.version}</version>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax.inject.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
@@ -183,6 +175,11 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codejive</groupId>
+                <artifactId>java-properties</artifactId>
+                <version>${java-properties.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -196,21 +193,6 @@
                 <type>test-jar</type>
                 <scope>test</scope>
                 <version>${quarkus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-            <!-- Jackson dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -231,81 +213,28 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-enforcer-rules</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>enforce</id>
+                        <phase>${maven-enforcer-plugin.phase}</phase>
                         <configuration>
                             <rules>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <!-- Use Jakarta artifacts instead of JBoss specific ones -->
-                                        <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</exclude>
-                                        <!-- except for these 2 for now as most of the RESTEasy optional artifacts depend on them
-                                        <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
-                                        <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
-                                        -->
-                                        <exclude>jakarta.xml.bind:jakarta.xml.bind-api</exclude>
-                                        <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
-                                        <!-- Exclude javax dependencies in favor of Jakarta -->
-                                        <exclude>javax.activation:activation</exclude>
-                                        <exclude>javax.activation:javax.activation-api</exclude>
-                                        <exclude>javax.annotation:javax.annotation-api</exclude>
-                                        <exclude>javax.enterprise:cdi-api</exclude>
-                                        <exclude>javax.inject:javax.inject</exclude>
-                                        <exclude>javax.json:javax.json-api</exclude>
-                                        <exclude>javax.json.bind:javax.json.bind-api</exclude>
-                                        <exclude>org.glassfish:javax.json</exclude>
-                                        <exclude>org.glassfish:javax.el</exclude>
-                                        <exclude>javax.persistence:javax.persistence-api</exclude>
-                                        <exclude>javax.persistence:persistence-api</exclude>
-                                        <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
-                                        <exclude>javax.servlet:servlet-api</exclude>
-                                        <exclude>javax.servlet:javax.servlet-api</exclude>
-                                        <exclude>javax.transaction:jta</exclude>
-                                        <exclude>javax.transaction:javax.transaction-api</exclude>
-                                        <exclude>javax.validation:validation-api</exclude>
-                                        <exclude>javax.xml.bind:jaxb-api</exclude>
-                                        <exclude>javax.websocket:javax.websocket-api</exclude>
-                                        <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
-                                        <!-- use our jboss-logmanager -->
-                                        <exclude>org.jboss.logging:jboss-logmanager</exclude>
-                                        <!-- We don't want all the API's in one jar-->
-                                        <exclude>javax:javaee-api</exclude>
-                                        <!-- Prevent incompatible config from coming in -->
-                                        <exclude>org.wildfly.client:wildfly-client-config</exclude>
-                                        <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
-                                        <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
-                                        <!-- The API is packaged by the implementation-->
-                                        <exclude>jakarta.json:jakarta.json-api</exclude>
-                                        <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
-                                        <exclude>io.netty:netty-all</exclude>
-                                        <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
-                                        <exclude>log4j:log4j</exclude>
-                                        <exclude>org.apache.logging.log4j:log4j-api</exclude>
-                                        <exclude>org.apache.logging.log4j:log4j-core</exclude>
-                                        <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
-                                        <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->
-                                        <exclude>commons-logging:commons-logging</exclude>
-                                        <exclude>commons-logging:commons-logging-api</exclude>
-                                        <exclude>org.springframework:spring-jcl</exclude>
-                                        <exclude>org.slf4j:jcl-over-slf4j</exclude>
-                                        <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
-                                        <exclude>org.jboss.slf4j:slf4j-jboss-logging</exclude>
-                                        <exclude>org.slf4j:slf4j-simple</exclude>
-                                        <exclude>org.slf4j:slf4j-nop</exclude>
-                                        <exclude>org.slf4j:slf4j-jdk14</exclude>
-                                        <exclude>org.slf4j:slf4j-log4j12</exclude>
-                                        <exclude>org.slf4j:slf4j-log4j13</exclude>
-                                    </excludes>
-                                </bannedDependencies>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
                             </rules>
                         </configuration>
                         <goals>
@@ -316,43 +245,12 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${version.surefire.plugin}</version>
                 <configuration>
                     <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                     <systemPropertyVariables combine.self="override"/>
                     <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
                     <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
                     <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code.formatter</groupId>
-                <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.17.1</version>
-                <dependencies>
-                    <dependency>
-                        <artifactId>quarkus-ide-config</artifactId>
-                        <groupId>io.quarkus</groupId>
-                        <version>${project.version}</version>
-                    </dependency>
-                  </dependencies>
-                <configuration>
-                    <!-- store outside of target to speed up formatting when mvn clean is used -->
-                    <cachedir>.cache</cachedir>
-                    <configFile>eclipse-format.xml</configFile>
-                    <lineEnding>LF</lineEnding>
-                    <skip>${format.skip}</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code</groupId>
-                <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.6.2</version>
-                <configuration>
-                    <!-- store outside of target to speed up formatting when mvn clean is used -->
-                    <cachedir>.cache</cachedir>
-                    <removeUnused>true</removeUnused>
-                    <skip>${format.skip}</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -364,6 +262,22 @@
             <activation>
                 <property>
                     <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>quick-build-docs</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
                 </property>
             </activation>
             <properties>
@@ -389,73 +303,6 @@
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
             </properties>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!-- ## IMPORTANT ## In your ~/.m2/settings.xml you
-                            need to add and edit the following profile:
-                            <profile>
-                                <id>release</id>
-                                <properties>
-                                    <gpg.useagent>false</gpg.useagent>
-                                    <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                    <gpg.homedir>~/.gnupg</gpg.homedir> <- Update to your own directory <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                                </properties>
-                            </profile>
-                        -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>format</id>

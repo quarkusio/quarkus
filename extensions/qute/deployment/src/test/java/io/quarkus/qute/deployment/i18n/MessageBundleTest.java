@@ -1,16 +1,18 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.MessageBundles;
@@ -49,9 +51,21 @@ public class MessageBundleTest {
     Engine engine;
 
     @Test
-    public void testMessages() {
+    public void testMessageBundles() {
         assertEquals("Hello Jachym!", MessageBundles.get(AppMessages.class).hello_name("Jachym"));
         assertEquals("Hello you guy!", MessageBundles.get(AppMessages.class, Localized.Literal.of("cs")).helloWithIfSection(1));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(String.class))
+                .withMessage(
+                        "Not a message bundle interface: java.lang.String");
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(Engine.class))
+                .withMessage(
+                        "Message bundle interface must be annotated either with @MessageBundle or with @Localized: io.quarkus.qute.Engine");
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> MessageBundles.get(AppMessages.class, Localized.Literal.of("hu")))
+                .withMessage(
+                        "Unable to obtain a message bundle for interface [io.quarkus.qute.deployment.i18n.AppMessages] and locale [hu]");
     }
 
     @Test
@@ -69,8 +83,8 @@ public class MessageBundleTest {
                 foo.instance().render());
         assertEquals("Hello world! Ahoj Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
-        assertEquals("Hallo Welt! Hallo Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
-                foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.GERMAN).render());
+        assertEquals("Hallo Welt! Hallo Jachym! Hallo you guys! Hello alpha! Hello! Hello foo from alpha!",
+                foo.instance().setLocale(Locale.GERMAN).render());
         assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
         assertEquals("Hello world! Hello Malachi Constant!",
                 engine.getTemplate("dynamic").data("key", "hello_fullname").data("surname", "Constant").render());
@@ -82,6 +96,9 @@ public class MessageBundleTest {
         assertEquals("There are 100 files on E.",
                 engine.parse("{msg:files(100,'E')}").render());
 
+        // Test the convenient Qute class
+        assertEquals("There are no files on C.", Qute.fmt("{msg:files(0,'C')}").render());
+        assertEquals("Hallo Welt!", Qute.fmt("{msg:hello}").attribute("locale", Locale.GERMAN).render());
     }
 
 }

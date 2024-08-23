@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.common.headers;
 
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>

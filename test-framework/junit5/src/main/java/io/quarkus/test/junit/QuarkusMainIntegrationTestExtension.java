@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
 
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -25,7 +26,10 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
@@ -33,7 +37,8 @@ import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
 import io.quarkus.test.junit.util.CloseAdaptor;
 
-public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
+public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
+        implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
     public static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
             .create("io.quarkus.test.main.integration");
@@ -57,6 +62,8 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
     }
 
     private LaunchResult doLaunch(ExtensionContext context, String[] arguments) throws Exception {
+        JBossVersion.disableVersionLogging();
+
         if (quarkusArtifactProperties == null) {
             prepare(context);
         }
@@ -119,10 +126,25 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.testProfile != null
                                 && testProfileAndProperties.testProfile.disableGlobalTestResources());
-                testResourceManager.init();
-                Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-                additionalProperties.putAll(QuarkusMainIntegrationTestExtension.devServicesProps);
-                Map<String, String> resourceManagerProps = testResourceManager.start();
+                testResourceManager.init(
+                        testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
+                                : null);
+
+                Map<String, String> additionalProperties = new HashMap<>();
+
+                // propagate Quarkus properties set from the build tool
+                Properties existingSysProps = System.getProperties();
+                for (String name : existingSysProps.stringPropertyNames()) {
+                    if (name.startsWith("quarkus.")) {
+                        additionalProperties.put(name, existingSysProps.getProperty(name));
+                    }
+                }
+
+                additionalProperties.putAll(testProfileAndProperties.properties);
+                //also make the dev services props accessible from the test
+                Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
+                // Allow override of dev services props by integration test extensions
+                resourceManagerProps.putAll(testResourceManager.start());
                 for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                     old.put(i.getKey(), System.getProperty(i.getKey()));
                     if (i.getValue() == null) {
@@ -133,10 +155,15 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                 }
                 additionalProperties.putAll(resourceManagerProps);
 
+                testResourceManager.inject(context.getRequiredTestInstance());
+
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                String testProfile = TestConfigUtil.integrationTestProfile(config);
+
                 ArtifactLauncher<?> launcher = null;
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType)) {
+                    if (launcherProvider.supportsArtifactType(artifactType, testProfile)) {
                         launcher = launcherProvider.create(
                                 new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
                                         devServicesLaunchResult));
@@ -162,8 +189,12 @@ public class QuarkusMainIntegrationTestExtension implements BeforeEachCallback, 
                         System.setProperty(i.getKey(), i.getValue());
                     }
                 }
-                if (testResourceManager != null) {
-                    testResourceManager.close();
+                try {
+                    if (testResourceManager != null) {
+                        testResourceManager.close();
+                    }
+                } catch (Exception e) {
+                    System.err.println("Unable to shutdown resource: " + e.getMessage());
                 }
             }
         } catch (Exception e) {

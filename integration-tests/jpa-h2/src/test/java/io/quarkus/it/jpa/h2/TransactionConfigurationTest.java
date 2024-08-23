@@ -2,8 +2,8 @@ package io.quarkus.it.jpa.h2;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.inject.Inject;
-import javax.transaction.RollbackException;
+import jakarta.inject.Inject;
+import jakarta.transaction.RollbackException;
 
 import org.junit.jupiter.api.Test;
 

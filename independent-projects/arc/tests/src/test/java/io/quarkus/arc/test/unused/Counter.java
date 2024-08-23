@@ -1,7 +1,8 @@
 package io.quarkus.arc.test.unused;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.inject.Singleton;
+
+import jakarta.inject.Singleton;
 
 @Bravo // Intercepted by Bravo, injected in Alpha!
 @Singleton

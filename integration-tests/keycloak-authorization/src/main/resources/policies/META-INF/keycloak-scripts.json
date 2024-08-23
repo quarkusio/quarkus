@@ -1,0 +1,25 @@
+{
+  "policies": [
+    {
+      "fileName": "admin-policy.js"
+    },
+    {
+      "fileName": "always-grant.js"
+    },
+    {
+      "fileName": "body-claim-based-policy.js"
+    },
+    {
+      "fileName": "claim-based-policy.js"
+    },
+    {
+      "fileName": "confidential-policy.js"
+    },
+    {
+      "fileName": "http-claim-based-policy.js"
+    },
+    {
+      "fileName": "superuser-policy.js"
+    }
+  ]
+}

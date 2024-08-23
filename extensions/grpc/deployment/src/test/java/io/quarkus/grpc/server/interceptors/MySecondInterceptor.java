@@ -1,7 +1,7 @@
 package io.quarkus.grpc.server.interceptors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;

@@ -3,7 +3,7 @@ package io.quarkus.hibernate.orm.runtime.boot.xml;
 import org.hibernate.boot.jaxb.Origin;
 import org.hibernate.boot.jaxb.SourceType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
 import org.hibernate.boot.jaxb.spi.Binding;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;

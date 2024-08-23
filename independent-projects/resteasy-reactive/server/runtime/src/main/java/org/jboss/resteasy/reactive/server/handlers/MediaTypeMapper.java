@@ -6,15 +6,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
@@ -26,6 +28,9 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  */
 public class MediaTypeMapper implements ServerRestHandler {
 
+    private static final MediaType[] DEFAULT_MEDIA_TYPES = new MediaType[] { MediaType.WILDCARD_TYPE };
+    private static final List<MediaType> DEFAULT_MEDIA_TYPES_LIST = List.of(DEFAULT_MEDIA_TYPES);
+
     final Map<MediaType, Holder> resourcesByConsumes;
     final List<MediaType> consumesTypes;
 
@@ -33,20 +38,17 @@ public class MediaTypeMapper implements ServerRestHandler {
         resourcesByConsumes = new HashMap<>();
         consumesTypes = new ArrayList<>();
         for (RuntimeResource runtimeResource : runtimeResources) {
-            MediaType consumesMT = runtimeResource.getConsumes().isEmpty() ? MediaType.WILDCARD_TYPE
-                    : runtimeResource.getConsumes().get(0);
-            if (!resourcesByConsumes.containsKey(consumesMT)) {
-                consumesTypes.add(consumesMT);
-                resourcesByConsumes.put(consumesMT, new Holder());
+            List<MediaType> consumesMediaTypes = getConsumesMediaTypes(runtimeResource);
+            for (MediaType consumedMediaType : consumesMediaTypes) {
+                if (!resourcesByConsumes.containsKey(consumedMediaType)) {
+                    consumesTypes.add(consumedMediaType);
+                    resourcesByConsumes.put(consumedMediaType, new Holder());
+                }
             }
-            MediaType[] produces = runtimeResource.getProduces() != null
-                    ? runtimeResource.getProduces().getSortedOriginalMediaTypes()
-                    : null;
-            if (produces == null) {
-                produces = new MediaType[] { MediaType.WILDCARD_TYPE };
-            }
-            for (MediaType producesMT : produces) {
-                resourcesByConsumes.get(consumesMT).setResource(runtimeResource, producesMT);
+            for (MediaType producesMT : getProducesMediaTypes(runtimeResource)) {
+                for (MediaType consumedMediaType : consumesMediaTypes) {
+                    resourcesByConsumes.get(consumedMediaType).setResource(runtimeResource, producesMT);
+                }
             }
         }
         for (Holder holder : resourcesByConsumes.values()) {
@@ -71,7 +73,7 @@ public class MediaTypeMapper implements ServerRestHandler {
             selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
         }
         if (selectedHolder == null) {
-            throw new WebApplicationException(Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build());
+            throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
         }
         RuntimeResource selectedResource;
         if (selectedHolder.mtWithoutParamsToResource.size() == 1) {
@@ -97,12 +99,13 @@ public class MediaTypeMapper implements ServerRestHandler {
 
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {
         MediaType selected = null;
-        ServerHttpRequest httpServerRequest = requestContext.serverRequest();
-        if (httpServerRequest.containsRequestHeader(HttpHeaders.ACCEPT)) {
+        List<String> accepts = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
+        for (String accept : accepts) {
             Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
-                    .negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT), null);
+                    .negotiateProduces(accept, null);
             if (entry.getValue() != null) {
                 selected = entry.getValue();
+                break;
             }
         }
         if (selected == null) {
@@ -112,6 +115,17 @@ public class MediaTypeMapper implements ServerRestHandler {
             return MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         return selected;
+    }
+
+    private MediaType[] getProducesMediaTypes(RuntimeResource runtimeResource) {
+        return runtimeResource.getProduces() == null
+                ? DEFAULT_MEDIA_TYPES
+                : runtimeResource.getProduces().getSortedOriginalMediaTypes();
+    }
+
+    private List<MediaType> getConsumesMediaTypes(RuntimeResource runtimeResource) {
+        return runtimeResource.getConsumes().isEmpty() ? DEFAULT_MEDIA_TYPES_LIST
+                : runtimeResource.getConsumes();
     }
 
     private static final class Holder {
@@ -131,8 +145,9 @@ public class MediaTypeMapper implements ServerRestHandler {
         }
 
         public void setupServerMediaType() {
-            MediaTypeHelper.sortByQSWeight(mtsWithParams); // TODO: this isn't completely correct as we are supposed to take q and then qs into account...
-            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true, false);
+            // TODO: this isn't completely correct as we are supposed to take q and then qs into account...
+            MediaTypeHelper.sortByQSWeight(mtsWithParams);
+            serverMediaType = new ServerMediaType(mtsWithParams, StandardCharsets.UTF_8.name(), true);
         }
     }
 }

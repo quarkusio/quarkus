@@ -2,22 +2,24 @@ package io.quarkus.kubernetes.service.binding.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "kubernetes-service-binding", phase = ConfigPhase.BOOTSTRAP)
-public class KubernetesServiceBindingConfig {
+@ConfigMapping(prefix = "quarkus.kubernetes-service-binding")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface KubernetesServiceBindingConfig {
 
     /**
      * If enabled, Service Bindings will be looked in the file system
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * The bindings file system root. Specified by the Kubernetes Service ServiceBinding Specification.
      */
-    @ConfigItem(defaultValue = "${SERVICE_BINDING_ROOT:}")
-    public Optional<String> root;
+    @WithDefault("${SERVICE_BINDING_ROOT:}")
+    Optional<String> root();
 }

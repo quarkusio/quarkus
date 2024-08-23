@@ -21,10 +21,6 @@
       - the tests for Confluent schema registry.
       -->
 
-    <properties>
-        <apicurio.version>2.1.3.Final</apicurio.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -44,10 +40,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
-        </dependency>
 
         <!-- Kafka -->
         <dependency>
@@ -65,22 +57,26 @@
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-avro-serializer</artifactId>
-            <version>7.0.0</version>
+            <version>7.5.1</version>
             <exclusions>
-                <exclusion>
-                    <groupId>jakarta.ws.rs</groupId>
-                    <artifactId>jakarta.ws.rs-api</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.checkerframework</groupId>
                     <artifactId>checker-qual</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- Apicurio -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+        </dependency>
+        <!-- Apicurio & Confluent -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apicurio-registry-avro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-confluent-registry-avro</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -185,7 +181,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <artifactId>quarkus-apicurio-registry-avro-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -198,7 +194,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apicurio-registry-avro-deployment</artifactId>
+            <artifactId>quarkus-confluent-registry-avro-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

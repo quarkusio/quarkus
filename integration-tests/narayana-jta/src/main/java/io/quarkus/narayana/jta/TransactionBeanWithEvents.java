@@ -1,23 +1,26 @@
 package io.quarkus.narayana.jta;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionScoped;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier;
 
 @ApplicationScoped
 public class TransactionBeanWithEvents {
@@ -63,6 +66,18 @@ public class TransactionBeanWithEvents {
         log.debug("Running transactional bean method");
 
         try {
+            listenToCommitRollback();
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot get transaction to register synchronization on bean call", e);
+        }
+
+        if (!isCommit) {
+            throw new RuntimeException("Rollback here!");
+        }
+    }
+
+    void listenToCommitRollback() {
+        try {
             tm.getTransaction().registerSynchronization(new Synchronization() {
                 @Override
                 public void beforeCompletion() {
@@ -82,18 +97,14 @@ public class TransactionBeanWithEvents {
         } catch (Exception e) {
             throw new IllegalStateException("Cannot get transaction to register synchronization on bean call", e);
         }
-
-        if (!isCommit) {
-            throw new RuntimeException("Rollback here!");
-        }
     }
 
     void transactionScopeActivated(@Observes @Initialized(TransactionScoped.class) final Object event,
             final BeanManager beanManager) throws SystemException {
         Transaction tx = tm.getTransaction();
         if (tx == null) {
-            log.error("@Intialized expects an active transaction");
-            throw new IllegalStateException("@Intialized expects an active transaction");
+            log.error("@Initialized expects an active transaction");
+            throw new IllegalStateException("@Initialized expects an active transaction");
         }
         if (tx.getStatus() != Status.STATUS_ACTIVE) {
             log.error("@Initialized expects transaction is Status.STATUS_ACTIVE");
@@ -110,9 +121,15 @@ public class TransactionBeanWithEvents {
             log.error("Context on @Initialized has to be active");
             throw new IllegalStateException("Context on @Initialized has to be active");
         }
-        if (!(event instanceof Transaction)) {
-            log.error("@Intialized scope expects event payload being the " + Transaction.class.getName());
-            throw new IllegalStateException("@Intialized scope expects event payload being the " + Transaction.class.getName());
+        if (!(event instanceof TransactionScopedNotifier.TransactionId)) {
+            log.error(
+                    "@Initialized scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
+            throw new IllegalStateException(
+                    "@Initialized scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
         }
 
         initializedCount++;
@@ -129,18 +146,23 @@ public class TransactionBeanWithEvents {
         try {
             ctx = beanManager.getContext(TransactionScoped.class);
         } catch (Exception e) {
-            log.error("Context on @Initialized is not available");
+            log.error("Context on @BeforeDestroyed is not available");
             throw e;
         }
         if (!ctx.isActive()) {
             log.error("Context on @BeforeDestroyed has to be active");
             throw new IllegalStateException("Context on @BeforeDestroyed has to be active");
         }
-        if (!(event instanceof Transaction)) {
-            log.error("@Intialized scope expects event payload being the " + Transaction.class.getName());
-            throw new IllegalStateException("@Intialized scope expects event payload being the " + Transaction.class.getName());
+        if (!(event instanceof TransactionScopedNotifier.TransactionId)) {
+            log.error(
+                    "@BeforeDestroyed scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
+            throw new IllegalStateException(
+                    "@BeforeDestroyed scope expects event payload being the "
+                            + TransactionScopedNotifier.TransactionId.class.getName() + " or "
+                            + UserTransaction.class.getName());
         }
-
         beforeDestroyedCount++;
     }
 

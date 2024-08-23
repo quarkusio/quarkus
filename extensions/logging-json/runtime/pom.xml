@@ -28,7 +28,7 @@
 
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
         </dependency>
     </dependencies>
 
@@ -36,25 +36,34 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <runnerParentFirstArtifacts>
                         <!-- Needed because org.jboss.logmanager.formatters.JsonFormatter loads javax.json.Json in its constructor -->
-                        <runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AlegacyConfigRoot=true</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

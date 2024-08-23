@@ -3,6 +3,7 @@ package io.quarkus.mongodb.panache.common.runtime;
 import java.util.Map;
 
 import org.bson.BsonDocument;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.ClientSession;
@@ -46,12 +47,17 @@ public class PanacheUpdateImpl implements PanacheUpdate {
     }
 
     @Override
+    public long where(Document query) {
+        return executeUpdate(query);
+    }
+
+    @Override
     public long all() {
         BsonDocument all = new BsonDocument();
         return executeUpdate(all);
     }
 
-    private long executeUpdate(BsonDocument query) {
+    private long executeUpdate(Bson query) {
         return session == null ? collection.updateMany(query, update).getModifiedCount()
                 : collection.updateMany(session, query, update).getModifiedCount();
     }

@@ -6,13 +6,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 
-final class Interceptors {
+public final class Interceptors {
+
+    public static final int DUPLICATE_CONTEXT = Integer.MAX_VALUE - 5;
+    public static final int REQUEST_CONTEXT = Integer.MAX_VALUE - 50;
+    public static final int BLOCKING_HANDLER = Integer.MAX_VALUE - 60;
+    public static final int EXCEPTION_HANDLER = Integer.MAX_VALUE - 70;
 
     static <T> List<T> getSortedPerServiceInterceptors(String name, Set<Class<?>> interceptorClasses) {
         if (interceptorClasses.isEmpty()) {

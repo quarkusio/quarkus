@@ -1,24 +1,36 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * A HTTP Security policy, that controls which requests are allowed to proceeed.
- *
- * There are two different ways these policies can be installed. The easiest is to just create a CDI bean, in which
- * case the policy will be invoked on every request.
- *
- * Alternatively HttpSecurityPolicyBuildItem can be used to create a named policy. This policy can then be referenced
- * in the application.properties path matching rules, which allows this policy to be applied to specific requests.
+ * An HTTP Security policy, that controls which requests are allowed to proceed.
+ * CDI beans implementing this interface are invoked on every request unless they define {@link #name()}.
+ * The policy with {@link #name()} can then be referenced in the application.properties path matching rules,
+ * which allows this policy to be applied only to specific requests.
  */
 public interface HttpSecurityPolicy {
 
     Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext);
+
+    /**
+     * HTTP Security policy name referenced in the application.properties path matching rules, which allows this
+     * policy to be applied to specific requests. The name must not be blank. When the name is {@code null}, policy
+     * will be applied to every request.
+     *
+     * @return policy name
+     */
+    default String name() {
+        // null == global policy
+        return null;
+    }
 
     /**
      * The results of a permission check
@@ -61,7 +73,7 @@ public interface HttpSecurityPolicy {
     /**
      * A context object that can be used to run blocking tasks
      * <p>
-     * Blocking identity providers should used this context object to run blocking tasks, to prevent excessive and
+     * Blocking identity providers should use this context object to run blocking tasks, to prevent excessive and
      * unnecessary delegation to thread pools
      */
     interface AuthorizationRequestContext {
@@ -71,4 +83,28 @@ public interface HttpSecurityPolicy {
 
     }
 
+    class DefaultAuthorizationRequestContext implements AuthorizationRequestContext {
+        private final BlockingSecurityExecutor blockingExecutor;
+
+        public DefaultAuthorizationRequestContext(BlockingSecurityExecutor blockingExecutor) {
+            this.blockingExecutor = blockingExecutor;
+        }
+
+        @Override
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
+                BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
+            return identityUni
+                    .flatMap(new Function<SecurityIdentity, Uni<? extends CheckResult>>() {
+                        @Override
+                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
+                            return blockingExecutor.executeBlocking(new Supplier<CheckResult>() {
+                                @Override
+                                public HttpSecurityPolicy.CheckResult get() {
+                                    return function.apply(context, identity);
+                                }
+                            });
+                        }
+                    });
+        }
+    }
 }

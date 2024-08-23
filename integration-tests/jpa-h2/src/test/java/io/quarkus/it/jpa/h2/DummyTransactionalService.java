@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.h2;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.narayana.jta.runtime.interceptor.RunnableWithException;

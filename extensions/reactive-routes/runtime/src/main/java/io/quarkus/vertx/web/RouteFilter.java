@@ -24,7 +24,7 @@ public @interface RouteFilter {
 
     /**
      * Filters with higher priority are called first.
-     * 
+     *
      * @return the priority
      * @see Filter#getPriority()
      */

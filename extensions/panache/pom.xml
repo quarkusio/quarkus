@@ -23,6 +23,8 @@
         <module>mongodb-panache-common</module>
         <module>hibernate-reactive-panache-common</module>
         <module>hibernate-reactive-panache</module>
+        <module>hibernate-reactive-rest-data-panache</module>
+        <module>hibernate-reactive-panache-kotlin</module>
         <module>mongodb-panache</module>
         <module>mongodb-panache-kotlin</module>
         <module>panacheql</module>

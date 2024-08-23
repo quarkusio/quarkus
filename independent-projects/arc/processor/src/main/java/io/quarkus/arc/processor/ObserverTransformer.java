@@ -2,8 +2,10 @@ package io.quarkus.arc.processor;
 
 import java.util.Collection;
 import java.util.Set;
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
+
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -37,13 +39,13 @@ public interface ObserverTransformer extends BuildExtension {
     interface TransformationContext extends BuildExtension.BuildContext {
 
         /**
-         * 
+         *
          * @return the corresponding observer method or null in case of synthetic observer
          */
         MethodInfo getMethod();
 
         /**
-         * 
+         *
          * @return the observed type
          */
         Type getObservedType();
@@ -55,19 +57,19 @@ public interface ObserverTransformer extends BuildExtension {
         Set<AnnotationInstance> getQualifiers();
 
         /**
-         * 
+         *
          * @return the reception
          */
         Reception getReception();
 
         /**
-         * 
+         *
          * @return the transaction phase
          */
         TransactionPhase getTransactionPhase();
 
         /**
-         * 
+         *
          * @return true if the observer is asynchronous
          */
         boolean isAsync();
@@ -76,7 +78,7 @@ public interface ObserverTransformer extends BuildExtension {
          * Retrieves all annotations declared on the observer method. This method is preferred to manual inspection
          * of {@link #getMethod()} which may, in some corner cases, hold outdated information.
          * <p>
-         * The resulting set of annotations contains contains annotations that belong to the method itself
+         * The resulting set of annotations contains annotations that belong to the method itself
          * as well as to its parameters.
          *
          * @return collection of all annotations or an empty list in case of synthetic observer
@@ -85,7 +87,7 @@ public interface ObserverTransformer extends BuildExtension {
 
         /**
          * Instruct the container to ignore the observer method.
-         * 
+         *
          * @return self
          */
         void veto();
@@ -102,28 +104,28 @@ public interface ObserverTransformer extends BuildExtension {
     interface ObserverTransformation extends AnnotationsTransformation<ObserverTransformation> {
 
         /**
-         * 
+         *
          * @param priority
          * @return self
          */
         ObserverTransformation priority(int priority);
 
         /**
-         * 
+         *
          * @param reception
          * @return self
          */
         ObserverTransformation reception(Reception reception);
 
         /**
-         * 
-         * @param reception
+         *
+         * @param transactionPhase
          * @return self
          */
         ObserverTransformation transactionPhase(TransactionPhase transactionPhase);
 
         /**
-         * 
+         *
          * @param value
          * @return
          */

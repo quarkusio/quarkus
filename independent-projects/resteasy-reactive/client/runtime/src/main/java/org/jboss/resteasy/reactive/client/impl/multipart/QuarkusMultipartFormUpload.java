@@ -1,5 +1,8 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.io.File;
+import java.nio.charset.Charset;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -7,6 +10,7 @@ import io.netty.handler.codec.http.HttpConstants;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.MemoryFileUpload;
@@ -18,9 +22,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.impl.headers.HeadersAdaptor;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
-import java.io.File;
-import java.nio.charset.Charset;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * based on {@link io.vertx.ext.web.client.impl.MultipartFormUpload}
@@ -41,6 +42,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     public QuarkusMultipartFormUpload(Context context,
             QuarkusMultipartForm parts,
             boolean multipart,
+            int maxChunkSize,
             PausableHttpPostRequestEncoder.EncoderMode encoderMode) throws Exception {
         this.context = context;
         this.pending = new InboundBuffer<>(context)
@@ -51,7 +53,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 io.netty.handler.codec.http.HttpMethod.POST,
                 "/");
         Charset charset = parts.getCharset() != null ? parts.getCharset() : HttpConstants.DEFAULT_CHARSET;
-        DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE, charset) {
+        DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(-1, charset) {
             @Override
             public FileUpload createFileUpload(HttpRequest request, String name, String filename, String contentType,
                     String contentTransferEncoding, Charset _charset, long size) {
@@ -62,13 +64,18 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                         size);
             }
         };
-        this.encoder = new PausableHttpPostRequestEncoder(httpDataFactory, request, multipart, charset, encoderMode);
+        this.encoder = new PausableHttpPostRequestEncoder(httpDataFactory, request, multipart, maxChunkSize, charset,
+                encoderMode);
         for (QuarkusMultipartFormDataPart formDataPart : parts) {
             if (formDataPart.isAttribute()) {
                 encoder.addBodyAttribute(formDataPart.name(), formDataPart.value());
             } else if (formDataPart.isObject()) {
-                MemoryFileUpload data = new MemoryFileUpload(formDataPart.name(), "", formDataPart.mediaType(),
-                        formDataPart.isText() ? null : "binary", null, formDataPart.content().length());
+                MemoryFileUpload data = new MemoryFileUpload(formDataPart.name(),
+                        formDataPart.filename() != null ? formDataPart.filename() : "",
+                        formDataPart.mediaType(),
+                        formDataPart.isText() ? null : "binary",
+                        null,
+                        formDataPart.content().length());
                 data.setContent(formDataPart.content().getByteBuf());
                 encoder.addBodyHttpData(data);
             } else if (formDataPart.multiByteContent() != null) {
@@ -141,31 +148,38 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
         handler.handle(item);
     }
 
+    private void clearEncoder() {
+        if (encoder == null) {
+            return;
+        }
+        encoder.cleanFiles();
+        encoder = null;
+    }
+
     @Override
     public void run() {
         if (Vertx.currentContext() != context) {
             throw new IllegalArgumentException("Wrong Vert.x context used for multipart upload. Expected: " + context +
                     ", actual: " + Vertx.currentContext());
         }
-        AtomicInteger counter = new AtomicInteger();
         while (!ended) {
             if (encoder.isChunked()) {
                 try {
                     HttpContent chunk = encoder.readChunk(ALLOC);
                     if (chunk == PausableHttpPostRequestEncoder.WAIT_MARKER) {
                         return; // resumption will be scheduled by encoder
-                    }
-                    ByteBuf content = chunk.content();
-                    Buffer buff = Buffer.buffer(content);
-                    counter.incrementAndGet();
-                    boolean writable = pending.write(buff);
-                    if (encoder.isEndOfInput()) {
+                    } else if (chunk == LastHttpContent.EMPTY_LAST_CONTENT || encoder.isEndOfInput()) {
                         ended = true;
                         request = null;
-                        encoder = null;
+                        clearEncoder();
                         pending.write(InboundBuffer.END_SENTINEL);
-                    } else if (!writable) {
-                        break;
+                    } else {
+                        ByteBuf content = chunk.content();
+                        Buffer buff = Buffer.buffer(content);
+                        boolean writable = pending.write(buff);
+                        if (!writable) {
+                            break;
+                        }
                     }
                 } catch (Exception e) {
                     handleError(e);
@@ -175,7 +189,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 ByteBuf content = request.content();
                 Buffer buffer = Buffer.buffer(content);
                 request = null;
-                encoder = null;
+                clearEncoder();
                 pending.write(buffer);
                 ended = true;
                 pending.write(InboundBuffer.END_SENTINEL);
@@ -183,10 +197,14 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
         }
     }
 
+    public boolean isChunked() {
+        return encoder.isChunked();
+    }
+
     private void handleError(Throwable e) {
         ended = true;
         request = null;
-        encoder = null;
+        clearEncoder();
         pending.write(e);
     }
 

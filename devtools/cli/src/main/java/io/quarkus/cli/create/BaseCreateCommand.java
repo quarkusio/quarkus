@@ -1,6 +1,9 @@
 package io.quarkus.cli.create;
 
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
+
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -10,20 +13,17 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.registry.ToggleRegistryClientMixin;
-import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
-import io.quarkus.devtools.project.codegen.ProjectGenerator;
-import io.quarkus.devtools.project.codegen.SourceType;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 public class BaseCreateCommand implements Callable<Integer> {
     @CommandLine.Mixin
@@ -52,14 +52,14 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Output path. Computed from {@link #targetDirectory} parameter.
-     * 
+     *
      * @see #outputDirectory()
      */
     private Path outputPath;
 
     /**
      * Project root directory. Computed from/within Output path.
-     * 
+     *
      * @see #checkProjectRootAlreadyExists(boolean)
      * @see #projectRoot()
      */
@@ -68,7 +68,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     /**
      * Project directory name, used with {@link #outputPath} to
      * compute {@link #projectRootPath}.
-     * 
+     *
      * @see #setExtensionId(String)
      * @see #setSingleProjectGAV(TargetGAVGroup)
      */
@@ -88,7 +88,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Resolve (and create, if necessary) the target output directory.
-     * 
+     *
      * @return the output directory path
      */
     public Path outputDirectory() {
@@ -105,9 +105,9 @@ public class BaseCreateCommand implements Callable<Integer> {
     public void setSingleProjectGAV(TargetGAVGroup targetGav) {
         projectDirName = targetGav.getArtifactId();
 
-        setValue(ProjectGenerator.PROJECT_GROUP_ID, targetGav.getGroupId());
-        setValue(ProjectGenerator.PROJECT_ARTIFACT_ID, targetGav.getArtifactId());
-        setValue(ProjectGenerator.PROJECT_VERSION, targetGav.getVersion());
+        setValue(CreateProjectKey.PROJECT_GROUP_ID, targetGav.getGroupId());
+        setValue(CreateProjectKey.PROJECT_ARTIFACT_ID, targetGav.getArtifactId());
+        setValue(CreateProjectKey.PROJECT_VERSION, targetGav.getVersion());
     }
 
     /**
@@ -145,7 +145,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Resolve the target output directory. Will throw if the target directory exists
-     * 
+     *
      * @return the project root path
      */
     public Path projectRoot() {
@@ -157,32 +157,36 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Add explicitly specified and sourceType-implied extensions
-     * 
+     *
      * @param extensions Explicitly specified extensions
      * @param sourceType Type of source (Kotlin, Java, Scala)
      */
     public void setSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {
         extensions = CreateProjectHelper.sanitizeExtensions(extensions);
         CreateProjectHelper.addSourceTypeExtensions(extensions, sourceType);
+        setValue(CreateProjectKey.EXTENSIONS, extensions);
+    }
 
-        setValue(ProjectGenerator.SOURCE_TYPE, sourceType);
-        setValue(ProjectGenerator.EXTENSIONS, extensions);
+    /** Set Java source level */
+    public void setJavaVersion(SourceType sourceType, String javaVersion) {
+        values.put(CreateProjectKey.JAVA_VERSION, computeJavaVersion(sourceType, javaVersion));
     }
 
     /**
      * Process code generation options (save values)
-     * 
+     *
      * @param codeGeneration
      */
     public void setCodegenOptions(CodeGenerationGroup codeGeneration) {
-        setValue(ProjectGenerator.PACKAGE_NAME, codeGeneration.packageName);
-        setValue(ProjectGenerator.APP_CONFIG, codeGeneration.getAppConfig());
+        setValue(CreateProjectKey.PACKAGE_NAME, codeGeneration.packageName);
+        setValue(CreateProjectKey.APP_CONFIG, codeGeneration.getAppConfig());
 
-        setValue(CreateProject.NO_CODE, !codeGeneration.includeCode);
-        setValue(CreateProject.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
+        setValue(CreateProjectKey.NO_CODE, !codeGeneration.includeCode);
+        setValue(CreateProjectKey.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
+        setValue(CreateProjectKey.NO_DOCKERFILES, !codeGeneration.includeDockerfiles);
     }
 
-    private void setValue(String name, Object value) {
+    protected void setValue(String name, Object value) {
         if (value != null) {
             values.put(name, value);
         }
@@ -190,23 +194,20 @@ public class BaseCreateCommand implements Callable<Integer> {
 
     /**
      * Create a new single-module project.
-     * 
+     *
      * @param buildTool The build tool the project should use (maven, gradle, jbang)
      * @param targetVersion The target quarkus version
-     * @param properties Additional properties that should be used whiel creating the properties
+     * @param properties Additional properties that should be used while creating the properties
+     * @param extensions requested extensions
      * @return Quarkus command invocation that can be printed (dry-run) or run to create the project
      * @throws RegistryResolutionException
      */
-    public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion,
-            Map<String, String> properties)
+    public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion,
+            Map<String, String> properties, Collection<String> extensions)
             throws RegistryResolutionException {
 
-        // TODO: Allow the Java version to be configured? infer from active Java version?
-        CreateProjectHelper.setJavaVersion(values, null);
         CreateProjectHelper.handleSpringConfiguration(values);
         output.debug("Creating an app using the following settings: %s", values);
-
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output);
 
         // TODO: knock on effect with properties.. here?
         properties.entrySet().forEach(x -> {
@@ -218,6 +219,9 @@ public class BaseCreateCommand implements Callable<Integer> {
                 output.info("property: %s", x.getKey());
             }
         });
+
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output, extensions);
+
         return new QuarkusCommandInvocation(qp, values);
     }
 
@@ -227,7 +231,7 @@ public class BaseCreateCommand implements Callable<Integer> {
      * @return Resolved QuarkusProject for the given build tool and target quarkus version
      * @throws RegistryResolutionException
      */
-    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusVersionGroup targetVersion)
+    public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion)
             throws RegistryResolutionException {
         return registryClient.createQuarkusProject(outputDirectory(), targetVersion, buildTool, output);
     }
@@ -241,7 +245,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     public String toString() {
         return "BaseCreateCommand ["
                 + "outputPath=" + outputPath
-                + ", registryClient" + registryClient
+                + ", registryClient=" + registryClient
                 + ", projectDirName=" + projectDirName
                 + ", projectRootPath=" + projectRootPath
                 + ", targetDirectory=" + targetDirectory
@@ -265,7 +269,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     public String prettyName(String key) {
-        if (CreateProject.NO_BUILDTOOL_WRAPPER.equals(key)) {
+        if (CreateProjectKey.NO_BUILDTOOL_WRAPPER.equals(key)) {
             return "Omit build tool wrapper";
         }
 
@@ -273,7 +277,8 @@ public class BaseCreateCommand implements Callable<Integer> {
         StringBuilder builder = new StringBuilder(key);
         for (int i = 0; i < builder.length(); i++) {
             // Check char is underscore
-            if (builder.charAt(i) == '_') {
+            final char c = builder.charAt(i);
+            if (c == '-' || c == '.') {
                 builder.replace(i, i + 1, " ");
                 builder.replace(i + 1, i + 2,
                         String.valueOf(Character.toUpperCase(builder.charAt(i + 1))));

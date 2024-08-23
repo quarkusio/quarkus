@@ -2,7 +2,7 @@ package io.quarkus.runtime.test;
 
 public interface TestScopeSetup {
 
-    void setup(boolean isNativeImageTest);
+    void setup(boolean isIntegrationTest);
 
-    void tearDown(boolean isNativeImageTest);
+    void tearDown(boolean isIntegrationTest);
 }

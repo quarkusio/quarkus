@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 @Path("/hello")
 public class WiderMappingResource {

@@ -1,14 +1,13 @@
 package io.quarkus.micrometer.runtime;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
 
 import org.jboss.logging.Logger;
 
@@ -18,6 +17,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.quarkus.arc.ArcInvocationContext;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Functions;
 
 /**
  * Quarkus defined interceptor for types or methods annotated with {@link Timed @Timed}.
@@ -31,32 +32,44 @@ public class MicrometerTimedInterceptor {
     public static final String DEFAULT_METRIC_NAME = "method.timed";
 
     private final MeterRegistry meterRegistry;
+    private final MeterTagsSupport meterTagsSupport;
 
-    public MicrometerTimedInterceptor(MeterRegistry meterRegistry) {
+    public MicrometerTimedInterceptor(MeterRegistry meterRegistry, MeterTagsSupport meterTagsSupport) {
         this.meterRegistry = meterRegistry;
+        this.meterTagsSupport = meterTagsSupport;
     }
 
     @AroundInvoke
+    @SuppressWarnings("unchecked")
     Object timedMethod(ArcInvocationContext context) throws Exception {
-        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(context.getMethod().getReturnType());
         final List<Sample> samples = getSamples(context);
 
         if (samples.isEmpty()) {
-            // This should never happen - at least one @Timed binding must be present  
+            // This should never happen - at least one @Timed binding must be present
             return context.proceed();
         }
 
-        if (stopWhenCompleted) {
+        Class<?> returnType = context.getMethod().getReturnType();
+        if (TypesUtil.isCompletionStage(returnType)) {
             try {
                 return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    for (Sample sample : samples) {
-                        sample.stop(MicrometerRecorder.getExceptionTag(throwable));
-                    }
+                    stop(samples, MicrometerRecorder.getExceptionTag(throwable));
                 });
             } catch (Exception ex) {
-                for (Sample sample : samples) {
-                    sample.stop(MicrometerRecorder.getExceptionTag(ex));
-                }
+                stop(samples, MicrometerRecorder.getExceptionTag(ex));
+                throw ex;
+            }
+        } else if (TypesUtil.isUni(returnType)) {
+            try {
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(
+                        new Functions.TriConsumer<>() {
+                            @Override
+                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                                stop(samples, MicrometerRecorder.getExceptionTag(throwable));
+                            }
+                        });
+            } catch (Exception ex) {
+                stop(samples, MicrometerRecorder.getExceptionTag(ex));
                 throw ex;
             }
         }
@@ -68,28 +81,31 @@ public class MicrometerTimedInterceptor {
             exceptionClass = MicrometerRecorder.getExceptionTag(ex);
             throw ex;
         } finally {
-            for (Sample sample : samples) {
-                sample.stop(exceptionClass);
-            }
+            stop(samples, exceptionClass);
         }
     }
 
     private List<Sample> getSamples(ArcInvocationContext context) {
-        Method method = context.getMethod();
-        Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
         List<Timed> timed = context.findIterceptorBindings(Timed.class);
         if (timed.isEmpty()) {
             return Collections.emptyList();
         }
+        Tags tags = meterTagsSupport.getTags(context);
         List<Sample> samples = new ArrayList<>(timed.size());
         for (Timed t : timed) {
             if (t.longTask()) {
-                samples.add(new LongTimerSample(t, commonTags));
+                samples.add(new LongTimerSample(t, tags));
             } else {
-                samples.add(new TimerSample(t, commonTags));
+                samples.add(new TimerSample(t, tags));
             }
         }
         return samples;
+    }
+
+    private void stop(List<Sample> samples, String throwableClassName) {
+        for (Sample sample : samples) {
+            sample.stop(throwableClassName);
+        }
     }
 
     private void record(Timed timed, Timer.Sample sample, String exceptionClass, Tags timerTags) {
@@ -141,7 +157,7 @@ public class MicrometerTimedInterceptor {
         return Tags.of("class", className, "method", methodName);
     }
 
-    abstract class Sample {
+    abstract static class Sample {
 
         protected final Timed timed;
         protected final Tags commonTags;

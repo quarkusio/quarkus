@@ -2,13 +2,13 @@ package io.quarkus.hibernate.orm.envers;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.resource.spi.IllegalStateException;
-import javax.transaction.UserTransaction;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.resource.spi.IllegalStateException;
+import jakarta.transaction.UserTransaction;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;
@@ -41,7 +41,7 @@ public class EnversTestValidationResource {
             AuditReader auditReader = AuditReaderFactory.get(em);
             List<Number> revisions = auditReader.getRevisions(MyAuditedEntity.class, entity.getId());
             if (revisions.size() != 2) {
-                throw new IllegalStateException(String.format("found {} revisions", revisions.size()));
+                throw new IllegalStateException(String.format("found %d revisions", revisions.size()));
             }
 
             MyRevisionEntity revEntity = auditReader.findRevision(MyRevisionEntity.class, revisions.get(0));

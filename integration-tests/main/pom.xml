@@ -18,6 +18,14 @@
         <datasource.url>jdbc:h2:tcp://localhost/mem:test</datasource.url>
         <datasource.username></datasource.username>
         <datasource.password></datasource.password>
+
+        <hibernate-orm.dialect>org.hibernate.dialect.H2Dialect</hibernate-orm.dialect>
+
+        <!-- do not update this dependency, it is only used for testing -->
+        <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
+
+        <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 
     <dependencies>
@@ -107,11 +115,15 @@
                     <groupId>jakarta.activation</groupId>
                     <artifactId>jakarta.activation-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_3.0_spec</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -147,6 +159,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-component</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-h2</artifactId>
             <scope>test</scope>
         </dependency>
@@ -162,8 +179,8 @@
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <version>${webjar.bootstrap.version}</version>
+            <artifactId>jquery-ui</artifactId>
+            <version>${webjar.jquery-ui.version}</version>
         </dependency>
         <!-- Issue 2707: used to test if web-fragments.xml is being read properly -->
         <dependency>
@@ -299,7 +316,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -494,6 +511,16 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>track-config-changes</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>track-config-changes</goal>
+                        </goals>
+                        <configuration>
+                            <dumpCurrentWhenRecordedUnavailable>true</dumpCurrentWhenRecordedUnavailable>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <goals>
                             <goal>build</goal>
                         </goals>
@@ -523,6 +550,8 @@
                 <datasource.url>${postgres.url}</datasource.url>
                 <datasource.username>hibernate_orm_test</datasource.username>
                 <datasource.password>hibernate_orm_test</datasource.password>
+
+                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQLDialect</hibernate-orm.dialect>
             </properties>
             <dependencies>
                 <dependency>
@@ -570,7 +599,7 @@
             <!-- these properties must not be defined in the general properties,
                  otherwise the native profile in the parent pom is not able to override them -->
             <properties>
-                <quarkus.package.type>uber-jar</quarkus.package.type>
+                <quarkus.package.jar.type>uber-jar</quarkus.package.jar.type>
             </properties>
         </profile>
 
@@ -592,7 +621,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>postgres:14.1</name>
+                                    <name>${postgres.image}</name>
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
@@ -604,13 +633,13 @@
                                             <port>5431:5432</port>
                                         </ports>
                                         <wait>
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>5432</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
+                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
+                                            and that's the truth the second time only.
+                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
+                                            See also how the condition is configured in testcontainers:
+                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
+                                            <time>20000</time>
+                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
                                         </wait>
                                     </run>
                                 </image>

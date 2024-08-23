@@ -7,11 +7,10 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-public class FunqyTest {
-
+class FunqyTest {
     @Test
-    public void testFunqyLambda() throws Exception {
-        // you test your lambas by invoking on http://localhost:8081
+    void testFunqyLambda() throws Exception {
+        // you test your lambdas by invoking on http://localhost:8081
         // this works in dev mode too
 
         Person in = new Person();

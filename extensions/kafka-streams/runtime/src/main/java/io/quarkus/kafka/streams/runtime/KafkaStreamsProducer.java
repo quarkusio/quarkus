@@ -15,18 +15,17 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
@@ -44,10 +43,9 @@ import org.apache.kafka.streams.processor.StateRestoreListener;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.Identifier;
 
 /**
@@ -64,12 +62,16 @@ public class KafkaStreamsProducer {
     private static volatile boolean shutdown = false;
 
     private final ExecutorService executorService;
+    private final StreamsConfig streamsConfig;
     private final KafkaStreams kafkaStreams;
     private final KafkaStreamsTopologyManager kafkaStreamsTopologyManager;
     private final Admin kafkaAdminClient;
+    private final Duration topicsTimeout;
+    private final List<String> trimmedTopics;
 
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
+            ExecutorService executorService,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
             @Identifier("default-kafka-broker") Instance<Map<String, Object>> defaultConfiguration,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
@@ -79,9 +81,12 @@ public class KafkaStreamsProducer {
         if (topology.isUnsatisfied()) {
             LOGGER.warn("No Topology producer; Kafka Streams will not be started");
             this.executorService = null;
+            this.streamsConfig = null;
             this.kafkaStreams = null;
             this.kafkaStreamsTopologyManager = null;
             this.kafkaAdminClient = null;
+            this.topicsTimeout = null;
+            this.trimmedTopics = null;
             return;
         }
 
@@ -101,25 +106,43 @@ public class KafkaStreamsProducer {
                 runtimeConfig);
         this.kafkaAdminClient = Admin.create(getAdminClientConfig(kafkaStreamsProperties));
 
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = executorService;
 
-        this.kafkaStreams = initializeKafkaStreams(kafkaStreamsProperties, runtimeConfig, kafkaAdminClient, topology.get(),
-                kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener,
-                executorService);
+        this.topicsTimeout = runtimeConfig.topicsTimeout;
+        this.trimmedTopics = isTopicsCheckEnabled() ? runtimeConfig.getTrimmedTopics() : Collections.emptyList();
+        this.streamsConfig = new StreamsConfig(kafkaStreamsProperties);
+        this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(),
+                kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener);
         this.kafkaStreamsTopologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient);
     }
 
-    @PostConstruct
-    public void postConstruct() {
+    private boolean isTopicsCheckEnabled() {
+        return topicsTimeout.compareTo(Duration.ZERO) > 0;
+    }
+
+    public void onStartup(@Observes StartupEvent event, Event<KafkaStreams> kafkaStreamsEvent) {
         if (kafkaStreams != null) {
-            Arc.container().beanManager().getEvent().select(KafkaStreams.class).fire(kafkaStreams);
+            kafkaStreamsEvent.fire(kafkaStreams);
+            executorService.execute(() -> {
+                if (isTopicsCheckEnabled()) {
+                    try {
+                        waitForTopicsToBeCreated(kafkaAdminClient, trimmedTopics, topicsTimeout);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+                if (!shutdown) {
+                    LOGGER.debug("Starting Kafka Streams pipeline");
+                    kafkaStreams.start();
+                }
+            });
         }
     }
 
     @Produces
     @Singleton
     @Unremovable
-    @Startup
     public KafkaStreams getKafkaStreams() {
         return kafkaStreams;
     }
@@ -127,7 +150,13 @@ public class KafkaStreamsProducer {
     @Produces
     @Singleton
     @Unremovable
-    @Startup
+    public StreamsConfig getStreamsConfig() {
+        return streamsConfig;
+    }
+
+    @Produces
+    @Singleton
+    @Unremovable
     public KafkaStreamsTopologyManager kafkaStreamsTopologyManager() {
         return kafkaStreamsTopologyManager;
     }
@@ -146,16 +175,15 @@ public class KafkaStreamsProducer {
         }
     }
 
-    private static KafkaStreams initializeKafkaStreams(Properties kafkaStreamsProperties,
-            KafkaStreamsRuntimeConfig runtimeConfig, Admin adminClient, Topology topology,
+    private static KafkaStreams initializeKafkaStreams(StreamsConfig streamsConfig, Topology topology,
             Instance<KafkaClientSupplier> kafkaClientSupplier,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
-            Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener, ExecutorService executorService) {
+            Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener) {
         KafkaStreams kafkaStreams;
         if (kafkaClientSupplier.isUnsatisfied()) {
-            kafkaStreams = new KafkaStreams(topology, kafkaStreamsProperties);
+            kafkaStreams = new KafkaStreams(topology, streamsConfig);
         } else {
-            kafkaStreams = new KafkaStreams(topology, kafkaStreamsProperties, kafkaClientSupplier.get());
+            kafkaStreams = new KafkaStreams(topology, streamsConfig, kafkaClientSupplier.get());
         }
 
         if (!stateListener.isUnsatisfied()) {
@@ -167,23 +195,6 @@ public class KafkaStreamsProducer {
         if (!uncaughtExceptionHandlerListener.isUnsatisfied()) {
             kafkaStreams.setUncaughtExceptionHandler(uncaughtExceptionHandlerListener.get());
         }
-
-        executorService.execute(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                if (!shutdown) {
-                    LOGGER.debug("Starting Kafka Streams pipeline");
-                    kafkaStreams.start();
-                }
-            }
-        });
 
         return kafkaStreams;
     }
@@ -318,13 +329,13 @@ public class KafkaStreamsProducer {
         return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
-    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait)
+    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait, Duration timeout)
             throws InterruptedException {
         Set<String> lastMissingTopics = null;
         while (!shutdown) {
             try {
                 ListTopicsResult topics = adminClient.listTopics();
-                Set<String> existingTopics = topics.names().get(10, TimeUnit.SECONDS);
+                Set<String> existingTopics = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
                 if (existingTopics.containsAll(topicsToAwait)) {
                     LOGGER.debug("All expected topics created: " + topicsToAwait);

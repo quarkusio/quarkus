@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.entitylistener;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class EntityListenerInGraalITCase extends EntityListenerTest {
 }

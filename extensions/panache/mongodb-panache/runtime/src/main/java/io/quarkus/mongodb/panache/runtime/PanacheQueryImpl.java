@@ -106,6 +106,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return (PanacheQuery<T>) this;
     }
 
+    @Override
+    public <T extends Entity> PanacheQuery<T> withBatchSize(int batchSize) {
+        delegate.withBatchSize(batchSize);
+        return (PanacheQuery<T>) this;
+    }
+
     // Results
 
     @Override

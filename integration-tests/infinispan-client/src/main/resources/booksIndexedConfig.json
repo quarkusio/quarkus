@@ -1,0 +1,16 @@
+{
+    "distributed-cache": {
+        "statistics": true,
+        "encoding": {
+            "media-type": "application/x-protostream"
+        },
+        "indexing": {
+            "enabled": true,
+            "storage": "filesystem",
+            "startup-mode": "Purge",
+            "indexed-entities": [
+                "book_sample.Book"
+            ]
+        }
+    }
+}

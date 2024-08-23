@@ -1,7 +1,6 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
@@ -19,8 +17,7 @@ public class TestHTTPResourceManager {
 
     public static String getUri() {
         try {
-            Config config = ConfigProvider.getConfig();
-            return config.getValue("test.url", String.class);
+            return ConfigProvider.getConfig().getValue("test.url", String.class);
         } catch (IllegalStateException e) {
             //massive hack for dev mode tests, dev mode has not started yet
             //so we don't have any way to load this correctly from config
@@ -28,8 +25,22 @@ public class TestHTTPResourceManager {
         }
     }
 
+    public static String getManagementUri() {
+        try {
+            return ConfigProvider.getConfig().getValue("test.management.url", String.class);
+        } catch (IllegalStateException e) {
+            //massive hack for dev mode tests, dev mode has not started yet
+            //so we don't have any way to load this correctly from config
+            return "http://localhost:9000";
+        }
+    }
+
     public static String getSslUri() {
         return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
+    }
+
+    public static String getManagementSslUri() {
+        return ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class);
     }
 
     public static String getUri(RunningQuarkusApplication application) {
@@ -58,6 +69,7 @@ public class TestHTTPResourceManager {
                     }
                     String path = resource.value();
                     String endpointPath = null;
+                    boolean management = resource.management();
                     TestHTTPEndpoint endpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
                     if (endpointAnnotation != null) {
                         for (Function<Class<?>, String> func : endpointProviders) {
@@ -82,22 +94,38 @@ public class TestHTTPResourceManager {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource.ssl()) {
-                        if (path.startsWith("/")) {
-                            val = getSslUri() + path;
+                    if (resource.ssl() || resource.tls()) {
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementSslUri() + path;
+                            } else {
+                                val = getManagementSslUri() + "/" + path;
+                            }
                         } else {
-                            val = getSslUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getSslUri() + path;
+                            } else {
+                                val = getSslUri() + "/" + path;
+                            }
                         }
                     } else {
-                        if (path.startsWith("/")) {
-                            val = getUri() + path;
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementUri() + path;
+                            } else {
+                                val = getManagementUri() + "/" + path;
+                            }
                         } else {
-                            val = getUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getUri() + path;
+                            } else {
+                                val = getUri() + "/" + path;
+                            }
                         }
                     }
                     f.setAccessible(true);
                     try {
-                        f.set(testCase, provider.provide(new URI(val), f));
+                        f.set(testCase, provider.provide(val, f));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

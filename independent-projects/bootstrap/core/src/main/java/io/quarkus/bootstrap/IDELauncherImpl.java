@@ -1,18 +1,25 @@
 package io.quarkus.bootstrap;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import java.io.Closeable;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Map;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * IDE entry point.
@@ -26,7 +33,7 @@ public class IDELauncherImpl implements Closeable {
 
     public static Closeable launch(Path classesDir, Map<String, Object> context) {
         System.setProperty(FORCE_COLOR_SUPPORT, "true");
-        System.setProperty("quarkus.test.basic-console", "true"); //IDE's don't support raw mode
+        System.setProperty("quarkus.console.basic", "true"); //IDE's don't support raw mode
         final Path projectDir = BuildToolHelper.getProjectDir(classesDir);
         if (projectDir == null) {
             throw new IllegalStateException("Failed to locate project dir for " + classesDir);
@@ -42,25 +49,34 @@ public class IDELauncherImpl implements Closeable {
                 final ApplicationModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(classesDir);
                 context.put(BootstrapConstants.SERIALIZED_APP_MODEL, BootstrapUtils.serializeAppModel(quarkusModel, false));
 
-                final Path launchingModulePath = quarkusModel.getApplicationModule().getMainSources().iterator().next()
-                        .getDestinationDir().toPath();
+                ArtifactSources mainSources = quarkusModel.getApplicationModule().getMainSources();
+
+                final Path launchingModulePath = mainSources.getSourceDirs().iterator()
+                        .next().getOutputDir();
+
+                List<Path> applicationRoots = new ArrayList<>();
+                applicationRoots.add(launchingModulePath);
+                for (SourceDir resourceDir : mainSources.getResourceDirs()) {
+                    applicationRoots.add(resourceDir.getOutputDir());
+                }
 
                 // Gradle uses a different output directory for classes, we override the one used by the IDE
                 builder.setProjectRoot(launchingModulePath)
-                        .setApplicationRoot(launchingModulePath)
+                        .setApplicationRoot(PathsCollection.from(applicationRoots))
                         .setTargetDirectory(quarkusModel.getApplicationModule().getBuildDir().toPath());
 
-                for (WorkspaceModule additionalModule : quarkusModel.getWorkspaceModules()) {
-                    additionalModule.getMainSources().forEach(src -> {
-                        builder.addAdditionalApplicationArchive(
-                                new AdditionalDependency(src.getDestinationDir().toPath(), true, false));
-
-                    });
-                    additionalModule.getMainResources().forEach(src -> {
-                        builder.addAdditionalApplicationArchive(
-                                new AdditionalDependency(src.getDestinationDir().toPath(), true, false));
-
-                    });
+                for (ResolvedDependency dep : quarkusModel.getDependencies()) {
+                    final WorkspaceModule module = dep.getWorkspaceModule();
+                    if (module == null) {
+                        continue;
+                    }
+                    final ArtifactSources sources = module.getSources(dep.getClassifier());
+                    for (SourceDir dir : sources.getSourceDirs()) {
+                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
+                    }
+                    for (SourceDir dir : sources.getResourceDirs()) {
+                        builder.addAdditionalApplicationArchive(new AdditionalDependency(dir.getOutputDir(), true, false));
+                    }
                 }
             } else {
                 builder.setApplicationRoot(classesDir)

@@ -16,6 +16,11 @@
       <name>Other POM repo</name>
       <url>https://pom.other</url>
     </repository>
+    <repository>
+      <id>common-repo</id>
+      <name>Common Repo</name>
+      <url>https://common.pom</url>
+    </repository>
   </repositories>
 </project>
 

@@ -32,13 +32,13 @@ If you have specific requirements, you can define a specific connection URL with
 To run the MySQL server "manually" via command line for testing, the following command line could be useful:
 
 ```
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test_mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -p 3306:3306 mysql:8.0.22
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test_mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -p 3308:3306 mysql:8.0.22
 ```
 
 Alternatively to docker, with podman:
 
 ```
-podman run -it --rm=true --name quarkus_test_mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -p 3306:3306 mysql:8.0.22
+podman run -it --rm=true --name quarkus_test_mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -p 3308:3306 mysql:8.0.22
 ```
 
 To connect with a CLI client and inspect the database content:

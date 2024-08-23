@@ -1,0 +1,141 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Stork Reference Guide
+:extension-status: preview
+include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery,load-balancing,stork
+:extensions: io.quarkus:quarkus-smallrye-stork
+
+This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
+It explains the configuration and usage of SmallRye Stork integration in Quarkus.
+
+include::{includes}/extension-status.adoc[]
+
+== Supported clients
+
+The current integration of Stork supports:
+
+* the REST Client
+* the gRPC clients (using the Vert.x gRPC client is recommended)
+
+Warning: The gRPC client integration does not support statistic-based load balancers.
+
+== Available service discovery and selection
+
+Check the https://smallrye.io/smallrye-stork[SmallRye Stork website] to find more about the provided service discovery and selection.
+
+== Using Stork in Kubernetes
+
+Stork provides a service discovery support for Kubernetes, which goes beyond what Kubernetes provides by default.
+It looks for all the pods backing up a Kubernetes service, but instead of applying a round-robin (as Kubernetes would do), it gives you the option to select the pod using a Stork load-balancer.
+
+To use this feature, add the following dependency to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-service-discovery-kubernetes</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-service-discovery-kubernetes")
+----
+
+For each service expected to be exposed as a Kubernetes Service, configure the lookup:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=kubernetes
+quarkus.stork.my-service.service-discovery.k8s-namespace=my-namespace
+----
+
+Stork looks for the Kubernetes Service with the given name (`my-service` in the previous example) in the specified namespace.
+Instead of using the Kubernetes Service IP directly and let Kubernetes handle the selection and balancing, Stork inspects the service and retrieves the list of pods providing the service. Then, it can select the instance.
+
+For a full example of using Stork with Kubernetes, please read the xref:stork-kubernetes.adoc[Using Stork with Kubernetes guide].
+
+== Extending Stork
+
+Stork is extensible.
+You can implement your own service discovery or service selection provider.
+
+To learn about custom service discovery and service selection, check:
+
+- https://smallrye.io/smallrye-stork/latest/service-discovery/custom-service-discovery/[Implement a custom service discover provider]
+- https://smallrye.io/smallrye-stork/latest/load-balancer/custom-load-balancer/[Implement a custom service selection provider]
+
+== Configure Stork observability
+
+=== Enable metrics
+
+Stork metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
+
+Micrometer collects the metrics of rest/grpc clients using Stork and the client using Stork programmatically.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source,text]
+----
+# HELP stork_service_selection_failures_total The number of failures during service selection.
+# TYPE stork_service_selection_failures_total counter
+stork_service_selection_failures_total{service_name="hello-service",} 0.0
+# HELP stork_service_selection_duration_seconds The duration of the selection operation
+# TYPE stork_service_selection_duration_seconds summary
+stork_service_selection_duration_seconds_count{service_name="hello-service",} 13.0
+stork_service_selection_duration_seconds_sum{service_name="hello-service",} 0.001049291
+# HELP stork_service_selection_duration_seconds_max The duration of the selection operation
+# TYPE stork_service_selection_duration_seconds_max gauge
+stork_service_selection_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_overall_duration_seconds_max The total duration of the Stork service discovery and selection operations
+# TYPE stork_overall_duration_seconds_max gauge
+stork_overall_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_overall_duration_seconds The total duration of the Stork service discovery and selection operations
+# TYPE stork_overall_duration_seconds summary
+stork_overall_duration_seconds_count{service_name="hello-service",} 13.0
+stork_overall_duration_seconds_sum{service_name="hello-service",} 0.001049291
+# HELP stork_service_discovery_failures_total The number of failures during service discovery
+# TYPE stork_service_discovery_failures_total counter
+stork_service_discovery_failures_total{service_name="hello-service",} 0.0
+# HELP stork_service_discovery_duration_seconds_max The duration of the discovery operation
+# TYPE stork_service_discovery_duration_seconds_max gauge
+stork_service_discovery_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_service_discovery_duration_seconds The duration of the discovery operation
+# TYPE stork_service_discovery_duration_seconds summary
+stork_service_discovery_duration_seconds_count{service_name="hello-service",} 13.0
+stork_service_discovery_duration_seconds_sum{service_name="hello-service",} 6.585046209
+# HELP stork_service_discovery_instances_count_total The number of service instances discovered
+# TYPE stork_service_discovery_instances_count_total counter
+stork_service_discovery_instances_count_total{service_name="hello-service",} 26.0
+----
+
+The Stork service name can be found in the _tags_.
+
+The metrics contain both the service discovery (`stork_service_discovery_*`) and the metrics about the service selection (`stork_service_selection_*`) such as the number of service instances, failures, and durations.
+
+=== Disable metrics
+
+To disable the Stork metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source,properties]
+----
+quarkus.micrometer.binder.stork.enabled=false
+----
+
+
+[[stork-configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-smallrye-stork.adoc[opts=optional, leveloffset=+1]
+
+
+
+

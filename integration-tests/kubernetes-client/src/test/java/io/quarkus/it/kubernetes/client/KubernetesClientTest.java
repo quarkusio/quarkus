@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.interfaces.ECPrivateKey;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodListBuilder;
 import io.fabric8.kubernetes.client.internal.CertUtils;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kubernetes.client.MockServer;
 import io.restassured.RestAssured;
@@ -26,7 +27,7 @@ import io.restassured.RestAssured;
  * KubernetesClientTest.TestResource contains the entire process of setting up the Mock Kubernetes API Server
  * It has to live there otherwise the Kubernetes client in native mode won't be able to locate the mock API Server
  */
-@QuarkusTestResource(value = CustomKubernetesMockServerTestResource.class, restrictToAnnotatedClass = true)
+@WithTestResource(CustomKubernetesMockServerTestResource.class)
 @QuarkusTest
 public class KubernetesClientTest {
 
@@ -48,6 +49,9 @@ public class KubernetesClientTest {
 
         RestAssured.when().post("/pod/test").then()
                 .body(containsString("54321"));
+
+        RestAssured.when().get("/version").then()
+                .statusCode(200);
     }
 
     @Test
@@ -93,7 +97,8 @@ public class KubernetesClientTest {
                 .times(2);
 
         mockServer.expect().delete().withPath("/api/v1/namespaces/test/pods/pod1")
-                .andReturn(200, "{}")
+                .andReturn(200, new PodBuilder(pod1)
+                        .editMetadata().withDeletionTimestamp(Instant.now().toString()).endMetadata().build())
                 .once();
 
         // PUT on /pod/test will createOrReplace, which attempts a POST first, then a PUT if receiving a 409

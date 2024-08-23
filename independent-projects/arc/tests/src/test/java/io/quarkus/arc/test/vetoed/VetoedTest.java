@@ -4,24 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.AbstractList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.AbstractList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Priority;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Vetoed;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import io.quarkus.arc.test.vetoed.subpkg.PackageVetoed;
 
 public class VetoedTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class, VetoedInterceptor.class, Logging.class);
+    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class, VetoedInterceptor.class, Logging.class,
+            PackageVetoed.class);
 
     @Test
     public void testVetoed() {
@@ -33,6 +38,9 @@ public class VetoedTest {
         assertEquals(Integer.valueOf(7), Integer.valueOf(arc.instance(Seven.class).get().size()));
         // Interceptor is vetoed
         assertFalse(VetoedInterceptor.INTERCEPTED.get());
+
+        // vetoed by package annotation
+        assertFalse(arc.instance(PackageVetoed.class).isAvailable());
     }
 
     @Logging

@@ -37,4 +37,10 @@ public class SupplierRolesAllowedCheck implements SecurityCheck {
         }
         RolesAllowedCheck.doApply(identity, allowedRoles);
     }
+
+    public void resolveAllowedRoles() {
+        if (allowedRoles == null) {
+            allowedRoles = allowedRolesSupplier.get();
+        }
+    }
 }

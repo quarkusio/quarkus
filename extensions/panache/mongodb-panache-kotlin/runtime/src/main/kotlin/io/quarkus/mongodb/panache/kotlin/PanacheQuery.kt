@@ -7,41 +7,38 @@ import io.quarkus.panache.common.exception.PanacheQueryException
 import java.util.stream.Stream
 
 /**
- * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
- * operating on [List] or [Stream].
+ * Interface representing an entity query, which abstracts the use of paging, getting the number of
+ * results, and operating on [List] or [Stream].
  *
- * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
- * modified, and instances of this interface can be reused to obtain multiple pages of results.
+ * Instances of this interface cannot mutate the query itself or its parameters: only paging
+ * information can be modified, and instances of this interface can be reused to obtain multiple
+ * pages of results.
  *
  * @param Entity The entity type being queried
  */
-interface PanacheQuery<Entity: Any> {
+interface PanacheQuery<Entity : Any> {
     /**
-     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
-     * retrieved from the database.
+     * Defines a projection class: the getters, and the public fields, will be used to restrict
+     * which fields should be retrieved from the database.
      *
      * @return a new query with the same state as the previous one (params, page, range, ...).
      */
-    fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
+    fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.
      *
      * @param page the new page
      * @return this query, modified
-     * @see .page
-     * @see .page
      */
     fun page(page: Page): PanacheQuery<Entity>
 
     /**
      * Sets the current page.
      *
-     * @param pageIndex the page index
+     * @param pageIndex the page index (0-based)
      * @param pageSize the page size
      * @return this query, modified
-     * @see .page
-     * @see .page
      */
     fun page(pageIndex: Int, pageSize: Int): PanacheQuery<Entity>
 
@@ -50,7 +47,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .previousPage
+     * @see [previousPage]
      */
     fun nextPage(): PanacheQuery<Entity>
 
@@ -59,7 +56,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .nextPage
+     * @see [nextPage]
      */
     fun previousPage(): PanacheQuery<Entity>
 
@@ -68,7 +65,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .lastPage
+     * @see [lastPage]
      */
     fun firstPage(): PanacheQuery<Entity>
 
@@ -77,19 +74,19 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .firstPage
-     * @see .count
+     * @see [firstPage]
+     * @see [count]
      */
     fun lastPage(): PanacheQuery<Entity>
 
     /**
-     * Returns true if there is another page to read after the current one.
-     * This will cause reading of the entity count.
+     * Returns true if there is another page to read after the current one. This will cause reading
+     * of the entity count.
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasPreviousPage
-     * @see .count
+     * @see [hasPreviousPage]
+     * @see [count]
      */
     fun hasNextPage(): Boolean
 
@@ -98,13 +95,13 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return true if there is a previous page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasNextPage
+     * @see [hasNextPage]
      */
     fun hasPreviousPage(): Boolean
 
     /**
-     * Returns the total number of pages to be read using the current page size.
-     * This will cause reading of the entity count.
+     * Returns the total number of pages to be read using the current page size. This will cause
+     * reading of the entity count.
      *
      * @return the total number of pages to be read using the current page size.
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
@@ -116,14 +113,12 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return the current page
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .page
-     * @see .page
      */
     fun page(): Page
 
     /**
-     * Switch the query to use a fixed range (start index - last index) instead of a page.
-     * As the range is fixed, subsequent pagination of the query is not possible.
+     * Switch the query to use a fixed range (start index - last index) instead of a page. As the
+     * range is fixed, subsequent pagination of the query is not possible.
      *
      * @param startIndex the index of the first element, starting at 0
      * @param lastIndex the index of the last element
@@ -147,11 +142,18 @@ interface PanacheQuery<Entity: Any> {
      */
     fun withReadPreference(readPreference: ReadPreference?): PanacheQuery<Entity>
 
+    /**
+     * Define the batch size for this query.
+     *
+     * @param batchSize the batch size to be used for this query.
+     * @return this query, modified
+     */
+    fun withBatchSize(batchSize: Int): PanacheQuery<Entity>
+
     // Results
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
-     * ordering.
+     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus ordering.
      *
      * @return the total number of entities this query operates on, cached.
      */
@@ -161,9 +163,8 @@ interface PanacheQuery<Entity: Any> {
      * Returns the current page of results as a [List].
      *
      * @return the current page of results as a [List].
-     * @see .stream
-     * @see .page
-     * @see .page
+     * @see [stream]
+     * @see [page]
      */
     fun list(): List<Entity>
 
@@ -171,18 +172,17 @@ interface PanacheQuery<Entity: Any> {
      * Returns the current page of results as a [Stream].
      *
      * @return the current page of results as a [Stream].
-     * @see .list
-     * @see .page
-     * @see .page
+     * @see [list]
+     * @see [page]
      */
     fun stream(): Stream<Entity>
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to
+     * fetch a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
-     * @see .singleResult
+     * @see [singleResult]
      */
     fun firstResult(): Entity?
 
@@ -191,7 +191,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return the single result
      * @throws PanacheQueryException if there is not exactly one result.
-     * @see .firstResult
+     * @see [firstResult]
      */
     fun singleResult(): Entity?
 }

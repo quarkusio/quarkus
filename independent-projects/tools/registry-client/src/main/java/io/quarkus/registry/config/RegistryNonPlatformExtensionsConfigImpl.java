@@ -2,7 +2,8 @@ package io.quarkus.registry.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.quarkus.maven.ArtifactCoords;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
 
 /**

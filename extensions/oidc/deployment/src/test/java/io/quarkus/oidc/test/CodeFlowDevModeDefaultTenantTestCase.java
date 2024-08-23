@@ -5,20 +5,19 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
+import org.htmlunit.FailingHttpStatusCodeException;
+import org.htmlunit.SilentCssErrorHandler;
+import org.htmlunit.WebClient;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class CodeFlowDevModeDefaultTenantTestCase {
 
     private static Class<?>[] testClasses = {
@@ -59,7 +58,7 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }

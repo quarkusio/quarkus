@@ -6,7 +6,11 @@ import java.security.ProtectionDomain;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.jar.Manifest;
+import java.util.function.Function;
+
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.ManifestAttributes;
+import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
 
@@ -16,6 +20,21 @@ public class FilteredClassPathElement implements ClassPathElement {
     public FilteredClassPathElement(ClassPathElement delegate, Collection<String> removed) {
         this.delegate = delegate;
         this.removed = new HashSet<>(removed);
+    }
+
+    @Override
+    public ResolvedDependency getResolvedDependency() {
+        return delegate.getResolvedDependency();
+    }
+
+    @Override
+    public boolean isRuntime() {
+        return delegate.isRuntime();
+    }
+
+    @Override
+    public <T> T apply(Function<OpenPathTree, T> func) {
+        return delegate.apply(func);
     }
 
     @Override
@@ -39,14 +58,14 @@ public class FilteredClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        return delegate.getProtectionDomain(classLoader);
+    public ProtectionDomain getProtectionDomain() {
+        return delegate.getProtectionDomain();
     }
 
     @Override
-    public Manifest getManifest() {
+    public ManifestAttributes getManifestAttributes() {
         //we don't support filtering the manifest
-        return delegate.getManifest();
+        return delegate.getManifestAttributes();
     }
 
     @Override

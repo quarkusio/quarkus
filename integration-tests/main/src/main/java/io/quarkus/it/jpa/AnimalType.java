@@ -14,21 +14,22 @@ public class AnimalType extends AbstractCustomUserType<Animal> {
     }
 
     @Override
-    public int[] sqlTypes() {
-        return new int[] { Types.DOUBLE };
+    public int getSqlType() {
+        return Types.DOUBLE;
     }
 
     @Override
-    public Animal get(ResultSet result, String[] names, SharedSessionContractImplementor session, Object owner)
+    public Animal nullSafeGet(ResultSet result, int position, SharedSessionContractImplementor session, Object owner)
             throws SQLException {
-        double weight = result.getDouble(names[0]);
+        double weight = result.getDouble(position);
         Animal animal = new Animal();
         animal.setWeight(weight);
         return animal;
     }
 
     @Override
-    public void set(PreparedStatement preparedStatement, Animal value, int index, SharedSessionContractImplementor session)
+    public void nullSafeSet(PreparedStatement preparedStatement, Animal value, int index,
+            SharedSessionContractImplementor session)
             throws SQLException {
         if (value == null) {
             preparedStatement.setNull(index, Types.BIGINT);
@@ -36,5 +37,4 @@ public class AnimalType extends AbstractCustomUserType<Animal> {
             preparedStatement.setDouble(index, value.getWeight());
         }
     }
-
 }

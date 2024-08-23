@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.envers;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.junit.jupiter.api.Test;

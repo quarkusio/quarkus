@@ -13,7 +13,7 @@ import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.devtools.commands.AddExtensions;
 
-public class QuarkusAddExtension extends QuarkusPlatformTask {
+public abstract class QuarkusAddExtension extends QuarkusPlatformTask {
 
     public QuarkusAddExtension() {
         super("Adds Quarkus extensions specified by the user to the project.");

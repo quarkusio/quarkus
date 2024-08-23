@@ -23,13 +23,13 @@ public class AddPortToOpenshiftConfig extends Configurator<OpenshiftConfigFluent
 
     /**
      * Check if the {@link OpenshiftConfig} already has port.
-     * 
+     *
      * @param config The port.
      * @return True if port with same container port exists.
      */
     private boolean hasPort(OpenshiftConfigFluent<?> config) {
-        for (Port p : config.getPorts()) {
-            if (p.getContainerPort() == port.getContainerPort()) {
+        for (Port p : config.buildPorts()) {
+            if (Objects.equals(p.getContainerPort(), port.getContainerPort())) {
                 return true;
             }
         }

@@ -10,4 +10,9 @@ public interface SecurityCheckStorage {
 
     SecurityCheck getSecurityCheck(MethodDescription methodDescription);
 
+    /**
+     * {@link SecurityCheck} that should be applied when there is no other check applied on incoming request.
+     */
+    SecurityCheck getDefaultSecurityCheck();
+
 }

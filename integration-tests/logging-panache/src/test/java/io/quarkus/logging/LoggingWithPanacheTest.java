@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.logging.Formatter;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
@@ -17,11 +17,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LoggingWithPanacheTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(LoggingBean.class, NoStackTraceTestException.class))
+            .withApplicationRoot((jar) -> jar.addClasses(LoggingBean.class, LoggingInterface.class, LoggingEntity.class,
+                    NoStackTraceTestException.class))
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".min-level", "TRACE")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.logging\".level", "TRACE")
-            .setLogRecordPredicate(record -> "io.quarkus.logging.LoggingBean".equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> record.getLoggerName().startsWith("io.quarkus.logging.Logging"))
             .assertLogRecords(records -> {
                 Formatter formatter = new PatternFormatter("[%p] %m");
                 List<String> lines = records.stream().map(formatter::format).map(String::trim).collect(Collectors.toList());
@@ -29,6 +29,7 @@ public class LoggingWithPanacheTest {
                 assertThat(lines).containsExactly(
                         "[INFO] Heya!",
                         "[TRACE] LoggingBean created",
+                        "[INFO] Default method from interface: abc",
                         "[DEBUG] starting massive computation",
                         "[DEBUG] one: 42",
                         "[TRACE] two: 42 | 13",
@@ -38,7 +39,10 @@ public class LoggingWithPanacheTest {
                         "[WARN] three: foo | bar | baz",
                         "[ERROR] four: foo | bar | baz | quux",
                         "[WARN] foo | bar | baz | quux: io.quarkus.logging.NoStackTraceTestException",
-                        "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException");
+                        "[ERROR] Hello Error: io.quarkus.logging.NoStackTraceTestException",
+                        "[INFO] Hi!",
+                        "[INFO] number 42",
+                        "[INFO] string now");
             });
 
     @Inject
@@ -47,5 +51,8 @@ public class LoggingWithPanacheTest {
     @Test
     public void test() {
         bean.doSomething();
+        new LoggingEntity().something();
+
+        bean.reproduceStackDisciplineIssue();
     }
 }

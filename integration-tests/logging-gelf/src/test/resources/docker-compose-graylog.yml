@@ -2,10 +2,22 @@ version: '3.2'
 
 services:
   elasticsearch:
-    # Graylog 3 only works with Elasticsearch 6
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
+    image: docker.io/elastic/elasticsearch:7.16.3
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: false
+      # Disable some features that are not needed in our tests and just slow down startup -->
+      xpack.profiling.enabled: "false"
+      xpack.monitoring.templates.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.watcher.enabled: "false"
+      xpack.ent_search.enabled: "false"
+      stack.templates.enabled: "false"
+      cluster.deprecation_indexing.enabled: "false"
+      indices.lifecycle.history_index_enabled: "false"
+      slm.history_index_enabled: "false"
     networks:
       - graylog
 
@@ -15,13 +27,16 @@ services:
       - graylog
 
   graylog:
-    image: graylog/graylog:3.3.8
+    image: graylog/graylog:4.3.0
     ports:
       - "9000:9000"
       - "12201:12201/udp"
       - "1514:1514"
     environment:
-      GRAYLOG_HTTP_EXTERNAL_URI: "http://127.0.0.1:9000/"
+      # CHANGE ME (must be at least 16 characters)!
+      GRAYLOG_PASSWORD_SECRET: "forpasswordencryptionEXAMPLE"
+      # Password: admin
+      GRAYLOG_ROOT_PASSWORD_SHA2: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
     networks:
       - graylog
     depends_on:

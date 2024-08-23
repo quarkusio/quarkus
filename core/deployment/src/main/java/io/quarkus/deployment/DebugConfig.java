@@ -25,4 +25,24 @@ public class DebugConfig {
      */
     @ConfigItem
     Optional<String> generatedClassesDir;
+
+    /**
+     * If set to a directory, all transformed classes (e.g. Panache entities) will be written into that directory
+     */
+    @ConfigItem
+    Optional<String> transformedClassesDir;
+
+    /**
+     * If set to a directory, ZIG files for generated code will be written into that directory.
+     * <p>
+     * A ZIG file is a textual representation of the generated code that is referenced in the stacktraces.
+     */
+    @ConfigItem
+    Optional<String> generatedSourcesDir;
+
+    /**
+     * If set to true then dump the build metrics to a JSON file in the build directory.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean dumpBuildMetrics;
 }

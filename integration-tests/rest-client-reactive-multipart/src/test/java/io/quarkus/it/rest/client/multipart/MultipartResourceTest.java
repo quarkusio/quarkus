@@ -6,7 +6,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +29,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -42,6 +48,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -54,6 +67,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -67,6 +86,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -79,6 +105,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -91,6 +123,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/multi-byte-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -104,6 +142,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -116,6 +161,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,nameOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true"));
         // @formatter:on
     }
 
@@ -129,6 +180,13 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:null,nameOk:true"));
+        given()
+        .queryParam("nullFile", "true")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-binary-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:null,nameOk:true"));
         // @formatter:on
     }
 
@@ -141,6 +199,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -153,6 +217,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/buffer-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -165,6 +235,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/file-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -177,6 +253,12 @@ public class MultipartResourceTest {
         .then()
                 .statusCode(200)
                 .body(equalTo("fileOk:true,numberOk:true"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/path-as-text-file")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,numberOk:true"));
         // @formatter:on
     }
 
@@ -188,7 +270,13 @@ public class MultipartResourceTest {
         .when().get("/client/byte-array-as-binary-file-with-pojo")
         .then()
                 .statusCode(200)
-                .body(equalTo("fileOk:true,nameOk:true,pojoOk:true"));
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:true,uuidNull:false"));
+        given()
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file-with-pojo")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:true,uuidNull:true"));
         // @formatter:on
     }
 
@@ -201,7 +289,14 @@ public class MultipartResourceTest {
         .when().get("/client/byte-array-as-binary-file-with-pojo")
         .then()
                 .statusCode(200)
-                .body(equalTo("fileOk:true,nameOk:true,pojoOk:null"));
+                .body(equalTo("fileOk:true,nameOk:true,pojoOk:null,uuidNull:false"));
+        given()
+        .queryParam("withPojo", "false")
+        .header("Content-Type", "text/plain")
+.when().get("/client/params/byte-array-as-binary-file-with-pojo")
+.then()
+        .statusCode(200)
+        .body(equalTo("fileOk:true,nameOk:true,pojoOk:null,uuidNull:true"));
         // @formatter:on
     }
 
@@ -215,6 +310,51 @@ public class MultipartResourceTest {
 
         assertMultipartResponseContains(response, "number", MediaType.TEXT_PLAIN, NUMBER);
         assertMultipartResponseContains(response, "file", MediaType.TEXT_PLAIN, HELLO_WORLD);
+    }
+
+    @Test
+    public void shouldProperlyHandleOctetStreamFile() {
+        // @formatter:off
+        given()
+                .header("Content-Type", "text/plain")
+                .when().get("/client/octet-stream")
+                .then()
+                .statusCode(200)
+                .body(equalTo("test"));
+        // @formatter:on
+    }
+
+    @Test
+    public void shouldProducesInputStreamRestResponse() {
+        RestAssured.get("/produces/input-stream-rest-response")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("HELLO WORLD"));
+    }
+
+    @Test
+    public void shouldSendSingleChunk() {
+        RestAssured.given()
+                .queryParam("size", 1)
+                .when()
+                .get("/client/chunked")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("transfer-encodingOk:false"));
+    }
+
+    @Test
+    public void shouldSendMultipleChunks() {
+        RestAssured.given()
+                .queryParam("size", 1000)
+                .when()
+                .get("/client/chunked")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("transfer-encodingOk:true"));
     }
 
     private void assertMultipartResponseContains(String response, String name, String contentType, Object value) {

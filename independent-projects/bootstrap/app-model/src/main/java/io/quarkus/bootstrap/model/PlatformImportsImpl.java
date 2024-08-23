@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,8 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 public class PlatformImportsImpl implements PlatformImports, Serializable {
 
+    private static final long serialVersionUID = -1722573527738064746L;
     public static final String PROPERTY_PREFIX = "platform.release-info@";
 
     public static final char PLATFORM_KEY_STREAM_SEPARATOR = '$';
@@ -76,10 +77,9 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     public void addPlatformDescriptor(String groupId, String artifactId, String classifier, String type, String version) {
-        final ArtifactCoords bomCoords = new GACTV(groupId,
+        final ArtifactCoords bomCoords = ArtifactCoords.pom(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
-                null, "pom",
                 version);
         platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport()).descriptorFound = true;
         platformBoms.add(bomCoords);
@@ -87,10 +87,9 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
 
     public void addPlatformProperties(String groupId, String artifactId, String classifier, String type, String version,
             Path propsPath) throws AppModelResolverException {
-        final ArtifactCoords bomCoords = new GACTV(groupId,
+        final ArtifactCoords bomCoords = ArtifactCoords.pom(groupId,
                 artifactId.substring(0,
                         artifactId.length() - BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX.length()),
-                null, "pom",
                 version);
         platformImports.computeIfAbsent(bomCoords, c -> new PlatformImport());
         importedPlatformBoms.computeIfAbsent(groupId, g -> new ArrayList<>()).add(bomCoords);
@@ -212,6 +211,8 @@ public class PlatformImportsImpl implements PlatformImports, Serializable {
     }
 
     private static class PlatformImport implements Serializable {
+
+        private static final long serialVersionUID = -400741166176498944L;
         boolean descriptorFound;
     }
 }

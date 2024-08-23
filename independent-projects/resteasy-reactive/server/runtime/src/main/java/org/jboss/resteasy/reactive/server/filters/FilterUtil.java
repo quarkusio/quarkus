@@ -1,14 +1,17 @@
 package org.jboss.resteasy.reactive.server.filters;
 
-import io.smallrye.mutiny.Uni;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
+
+import io.smallrye.mutiny.Uni;
 
 /**
  * This class is used by the filters that are generated as a result of the use of {@link ServerRequestFilter} or
@@ -29,7 +32,7 @@ public final class FilterUtil {
         }
     }
 
-    public static void handleOptionalRestResponse(Optional<RestResponse> optional,
+    public static void handleOptionalRestResponse(Optional<RestResponse<?>> optional,
             ResteasyReactiveContainerRequestContext context) {
         if ((optional != null) && optional.isPresent()) {
             context.abortWith(optional.get().toResponse());
@@ -43,7 +46,7 @@ public final class FilterUtil {
         }
     }
 
-    public static void handleRestResponse(RestResponse response,
+    public static void handleRestResponse(RestResponse<?> response,
             ResteasyReactiveContainerRequestContext context) {
         if (response != null) {
             context.abortWith(response.toResponse());
@@ -55,17 +58,12 @@ public final class FilterUtil {
             return;
         }
         context.suspend();
-        uni.subscribe().with(new Consumer<Object>() {
+        uni.subscribe().with(new Consumer<>() {
             @Override
-            public void accept(Object unused) {
+            public void accept(Object o) {
                 context.resume();
             }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) {
-                context.resume(throwable);
-            }
-        });
+        }, new ResumeThrowableConsumer(context));
     }
 
     public static void handleUniResponse(Uni<Response> uni, ResteasyReactiveContainerRequestContext context) {
@@ -73,7 +71,7 @@ public final class FilterUtil {
             return;
         }
         context.suspend();
-        uni.subscribe().with(new Consumer<Response>() {
+        uni.subscribe().with(new Consumer<>() {
             @Override
             public void accept(Response response) {
                 if (response != null) {
@@ -82,12 +80,7 @@ public final class FilterUtil {
                     context.resume();
                 }
             }
-        }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) {
-                context.resume(throwable);
-            }
-        });
+        }, new ResumeThrowableConsumer(context));
     }
 
     public static void handleUniRestResponse(Uni<? extends RestResponse<?>> uni,
@@ -101,5 +94,18 @@ public final class FilterUtil {
                 return t != null ? t.toResponse() : null;
             }
         }), context);
+    }
+
+    private static class ResumeThrowableConsumer implements Consumer<Throwable> {
+        private final ResteasyReactiveContainerRequestContext context;
+
+        public ResumeThrowableConsumer(ResteasyReactiveContainerRequestContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public void accept(Throwable throwable) {
+            context.resume(throwable);
+        }
     }
 }

@@ -19,7 +19,7 @@ public class LocalServerNameAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return exchange.request().host();
+        return exchange.request().authority().toString();
     }
 
     @Override

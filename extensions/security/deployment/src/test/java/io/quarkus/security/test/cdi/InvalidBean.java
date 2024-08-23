@@ -1,7 +1,7 @@
 package io.quarkus.security.test.cdi;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.security.Authenticated;
 

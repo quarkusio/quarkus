@@ -21,6 +21,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
@@ -38,6 +39,8 @@ import io.vertx.ext.web.RoutingContext;
  * The authentication handler responsible for mTLS client authentication
  */
 public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism {
+    private static final String ROLES_MAPPER_ATTRIBUTE = "roles_mapper";
+    private Function<X509Certificate, Set<String>> certificateToRoles = null;
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -55,10 +58,13 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         } catch (SSLPeerUnverifiedException e) {
             return Uni.createFrom().nullItem();
         }
+        context.put(HttpAuthenticationMechanism.class.getName(), this);
 
+        AuthenticationRequest authRequest = new CertificateAuthenticationRequest(
+                new CertificateCredential(X509Certificate.class.cast(certificate)));
+        authRequest.setAttribute(ROLES_MAPPER_ATTRIBUTE, certificateToRoles);
         return identityProviderManager
-                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new CertificateAuthenticationRequest(
-                        new CertificateCredential(X509Certificate.class.cast(certificate))), context));
+                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(authRequest, context));
     }
 
     @Override
@@ -73,7 +79,11 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509");
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509"));
+    }
+
+    void setCertificateToRolesMapper(Function<X509Certificate, Set<String>> certificateToRoles) {
+        this.certificateToRoles = certificateToRoles;
     }
 }

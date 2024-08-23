@@ -4,10 +4,10 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
@@ -108,6 +108,13 @@ public class BookRepositoryResource {
 
         return bookRepository.find("{'creationDate': {$gte: :dateFrom}, 'creationDate': {$lte: :dateTo}}",
                 Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))).firstResult();
+    }
+
+    @PUT
+    @Path("/update-categories/{id}")
+    public Response updateCategories(@PathParam("id") String id) {
+        bookRepository.update("categories = ?1", List.of("novel", "fiction")).where("_id", new ObjectId(id));
+        return Response.accepted().build();
     }
 
     @DELETE

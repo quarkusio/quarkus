@@ -7,16 +7,18 @@ import java.util.OptionalInt;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -81,17 +83,20 @@ class NettyProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
+                .build());
         reflectiveClass
-                .produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioServerSocketChannel"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioDatagramChannel"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "sun.nio.ch.SelectorImpl"));
+                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioServerSocketChannel")
+                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioDatagramChannel")
+                .build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
-                //.addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 // Use small chunks to avoid a lot of wasted space. Default is 16mb * arenas (derived from core count)
                 // Since buffers are cached to threads, the malloc overhead is temporary anyway
                 .addNativeImageSystemProperty("io.netty.allocator.maxOrder", maxOrder)
@@ -100,67 +105,80 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslClientContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslServerContext")
+                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkSslClientContext")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil$HexUtil")
                 .addRuntimeInitializedClass("io.netty.buffer.PooledByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufAllocator")
                 .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil")
+                // The default channel id uses the process id, it should not be cached in the native image.
+                .addRuntimeInitializedClass("io.netty.channel.DefaultChannelId")
                 .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED");
 
-        try {
-            Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http.HttpObjectEncoder")) {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
-        } catch (ClassNotFoundException e) {
-            //ignore
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdOptions")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.ZstdConstants")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.compression.BrotliOptions");
+        } else {
             log.debug("Not registering Netty HTTP classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.handler.codec.http2.Http2CodecUtil");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.handler.codec.http2.Http2CodecUtil")) {
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty HTTP2 classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.unix.UnixChannel");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.unix.UnixChannel")) {
             builder.addRuntimeInitializedClass("io.netty.channel.unix.Errors")
                     .addRuntimeInitializedClass("io.netty.channel.unix.FileDescriptor")
                     .addRuntimeInitializedClass("io.netty.channel.unix.IovArray")
                     .addRuntimeInitializedClass("io.netty.channel.unix.Limits");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native unix classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.epoll.EpollMode");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.epoll.EpollMode")) {
             builder.addRuntimeInitializedClass("io.netty.channel.epoll.Epoll")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.EpollEventLoop")
                     .addRuntimeInitializedClass("io.netty.channel.epoll.Native");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native epoll classes as they were not found");
         }
 
-        try {
-            Class.forName("io.netty.channel.kqueue.AcceptFilter");
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.kqueue.AcceptFilter")) {
             builder.addRuntimeInitializedClass("io.netty.channel.kqueue.KQueue")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventArray")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.KQueueEventLoop")
                     .addRuntimeInitializedClass("io.netty.channel.kqueue.Native");
-        } catch (ClassNotFoundException e) {
-            //ignore
+        } else {
             log.debug("Not registering Netty native kqueue classes as they were not found");
+        }
+
+        builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
+            builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")
+                    .addRuntimeReinitializedClass("io.netty.buffer.Unpooled")
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.http.HttpObjectAggregator")
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.ReplayingDecoderByteBuf");
+
+            if (QuarkusClassLoader
+                    .isClassPresentAtRuntime("org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload")) {
+                builder.addRuntimeReinitializedClass(
+                        "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload");
+            }
         }
 
         return builder //TODO: make configurable
@@ -181,9 +199,10 @@ class NettyProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
-            NettyRecorder recorder) {
-        Supplier<Object> boss;
-        Supplier<Object> main;
+            NettyRecorder recorder,
+            BuildProducer<EventLoopGroupBuildItem> eventLoopGroups) {
+        Supplier<EventLoopGroup> boss;
+        Supplier<EventLoopGroup> main;
         if (loopSupplierBuildItem.isPresent()) {
             boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
             main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
@@ -193,9 +212,9 @@ class NettyProcessor {
         }
 
         // IMPLEMENTATION NOTE:
-        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next() 
-        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method 
-        // is not generated and the invocation upon the client proxy results in an AbstractMethodError 
+        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
+        // is not generated and the invocation upon the client proxy results in an AbstractMethodError
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(boss)
                 .scope(Singleton.class)
@@ -210,6 +229,8 @@ class NettyProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .done());
+
+        eventLoopGroups.produce(new EventLoopGroupBuildItem(boss, main));
     }
 
     @BuildStep
@@ -230,23 +251,8 @@ class NettyProcessor {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
-
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField", "producerIndex"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField", "producerLimit"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField", "consumerIndex"),
-
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
-                        "producerIndex"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
-                        "producerLimit"),
-                new UnsafeAccessedFieldBuildItem(
-                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
-                        "consumerIndex"));
+                new UnsafeAccessedFieldBuildItem("io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess",
+                        "REF_ELEMENT_SHIFT"));
     }
 
     @BuildStep
@@ -258,9 +264,21 @@ class NettyProcessor {
     //if debug logging is enabled netty logs lots of exceptions
     //see https://github.com/quarkusio/quarkus/issues/5213
     @BuildStep
-    LogCleanupFilterBuildItem cleanup() {
+    LogCleanupFilterBuildItem cleanupUnsafeLog() {
         return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE, "direct buffer constructor",
                 "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
+    }
+
+    /**
+     * On mac, if you do not have the `MacOSDnsServerAddressStreamProvider` class, Netty prints a warning saying it
+     * falls back to the default system DNS provider. This is not a problem and generates tons of questions.
+     *
+     * @return the log cleanup item removing the message
+     */
+    @BuildStep
+    LogCleanupFilterBuildItem cleanupMacDNSInLog() {
+        return new LogCleanupFilterBuildItem(DnsServerAddressStreamProviders.class.getName(), Level.WARN,
+                "Can not find io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider in the classpath");
     }
 
     private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,

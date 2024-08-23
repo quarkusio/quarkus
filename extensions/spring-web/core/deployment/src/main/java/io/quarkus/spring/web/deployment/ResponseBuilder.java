@@ -2,8 +2,8 @@ package io.quarkus.spring.web.deployment;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;

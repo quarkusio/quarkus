@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -28,14 +28,27 @@
         </dependency>
         <!-- test dependencies -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-keycloak-server</artifactId>
-            <scope>test</scope>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-security-oidc</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -77,7 +90,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -146,7 +159,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.version>${keycloak.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -155,7 +168,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.version>${keycloak.version}</keycloak.version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -173,7 +186,6 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 
 </project>

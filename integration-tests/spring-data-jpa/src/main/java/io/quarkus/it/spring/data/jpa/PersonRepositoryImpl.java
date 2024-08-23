@@ -2,8 +2,8 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 public class PersonRepositoryImpl implements PersonFragment, PersonFragment2 {
 

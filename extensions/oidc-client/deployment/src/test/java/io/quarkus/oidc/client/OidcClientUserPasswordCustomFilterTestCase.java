@@ -11,10 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakRealmUserPasswordCustomFilterManager.class)
+@WithTestResource(value = KeycloakRealmUserPasswordCustomFilterManager.class, restrictToAnnotatedClass = false)
 public class OidcClientUserPasswordCustomFilterTestCase {
 
     private static Class<?>[] testClasses = {

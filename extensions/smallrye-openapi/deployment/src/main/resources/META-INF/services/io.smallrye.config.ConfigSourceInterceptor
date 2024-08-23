@@ -1,1 +1,1 @@
-io.quarkus.smallrye.openapi.deployment.OpenApiConfigMapping
+io.quarkus.smallrye.openapi.runtime.OpenApiConfigMapping

@@ -1,11 +1,20 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
-import javax.ws.rs.Path;
+import java.util.List;
 
-@Path("/address")
-public class AutoTagResource implements AbstractAutoTagResource<String> {
+import jakarta.ws.rs.Path;
+
+@Path("/tagged")
+public class AutoTagResource extends AutoTagFetchableResource<String> {
+
     @Override
     public String getById(long id) {
         return "Disney Land, Gate " + id;
     }
+
+    @Override
+    public List<String> getAll() {
+        return null;
+    }
+
 }

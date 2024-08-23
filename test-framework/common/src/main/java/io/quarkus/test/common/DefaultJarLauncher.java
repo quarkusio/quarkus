@@ -41,6 +41,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     private long waitTimeSeconds;
     private String testProfile;
     private List<String> argLine;
+    private Map<String, String> env;
     private Path jarPath;
 
     private final Map<String, String> systemProps = new HashMap<>();
@@ -55,6 +56,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
+        this.env = initContext.env();
         this.jarPath = initContext.jarPath();
     }
 
@@ -110,6 +112,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         Path logFile = PropertyTestUtil.getLogFilePath();
         args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
         args.add("-Dquarkus.log.file.enable=true");
+        args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
             args.add("-Dquarkus.profile=" + testProfile);
         }
@@ -126,9 +129,9 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         Files.createDirectories(logFile.getParent());
 
         if (handleIo) {
-            quarkusProcess = LauncherUtil.launchProcess(args);
+            quarkusProcess = LauncherUtil.launchProcessAndDrainIO(args, env);
         } else {
-            quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
+            quarkusProcess = LauncherUtil.launchProcess(args, env);
         }
 
     }
@@ -165,6 +168,6 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
 
     @Override
     public void close() {
-        quarkusProcess.destroy();
+        LauncherUtil.destroyProcess(quarkusProcess);
     }
 }

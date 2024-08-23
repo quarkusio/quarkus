@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import io.quarkus.qute.TemplateExtension;
 
@@ -22,6 +22,10 @@ import io.quarkus.qute.TemplateExtension;
 public class TimeTemplateExtensions {
 
     private static final Map<Key, DateTimeFormatter> FORMATTER_CACHE = new ConcurrentHashMap<>();
+
+    public static void clearCache() {
+        FORMATTER_CACHE.clear();
+    }
 
     static String format(TemporalAccessor temporal, String pattern) {
         return FORMATTER_CACHE.computeIfAbsent(new Key(pattern, null, null), TimeTemplateExtensions::formatterForKey)
@@ -89,21 +93,23 @@ public class TimeTemplateExtensions {
         private final String pattern;
         private final Locale locale;
         private final ZoneId timeZone;
+        private final int hashCode;
 
         public Key(String pattern, Locale locale, ZoneId timeZone) {
             this.pattern = pattern;
             this.locale = locale;
             this.timeZone = timeZone;
-        }
-
-        @Override
-        public int hashCode() {
             final int prime = 31;
             int result = 1;
             result = prime * result + ((locale == null) ? 0 : locale.hashCode());
             result = prime * result + ((pattern == null) ? 0 : pattern.hashCode());
             result = prime * result + ((timeZone == null) ? 0 : timeZone.hashCode());
-            return result;
+            this.hashCode = result;
+        }
+
+        @Override
+        public int hashCode() {
+            return hashCode;
         }
 
         @Override

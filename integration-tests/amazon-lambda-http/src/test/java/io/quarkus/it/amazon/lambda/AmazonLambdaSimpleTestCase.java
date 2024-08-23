@@ -7,7 +7,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,10 +23,25 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AmazonLambdaSimpleTestCase {
 
     @Test
+    public void testComma() throws Exception {
+        given()
+                .when()
+                .header("Access-Control-Request-Headers", "foo, bar, yello")
+                .get("/hello/comma")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
     public void testContext() throws Exception {
         given()
                 .when()
                 .get("/hello/context")
+                .then()
+                .statusCode(204);
+        given()
+                .when()
+                .get("/hello/inject-event")
                 .then()
                 .statusCode(204);
     }
@@ -48,6 +63,47 @@ public class AmazonLambdaSimpleTestCase {
                 .then()
                 .statusCode(200)
                 .body("body", equalTo("Bill"));
+    }
+
+    @Test
+    public void testJaxrsCognitoJWTGoodRole() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/roles");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:groups", "[ admin user ]");
+
+        given()
+                .contentType("application/json")
+                .accept("text/plain")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(200))
+                .body("body", equalTo("true"));
+    }
+
+    @Test
+    public void testJaxrsCognitoJWTBadRole() throws Exception {
+        APIGatewayV2HTTPEvent request = request("/security/roles");
+        request.getRequestContext().setAuthorizer(new APIGatewayV2HTTPEvent.RequestContext.Authorizer());
+        request.getRequestContext().getAuthorizer().setJwt(new APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT());
+        request.getRequestContext().getAuthorizer().getJwt().setClaims(new HashMap<>());
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:username", "Bill");
+        request.getRequestContext().getAuthorizer().getJwt().getClaims().put("cognito:groups", "[ attacker ]");
+
+        given()
+                .contentType("application/json")
+                .accept("text/plain")
+                .body(request)
+                .when()
+                .post(AmazonLambdaApi.API_BASE_PATH_TEST)
+                .then()
+                .statusCode(200)
+                .body("statusCode", equalTo(403));
     }
 
     @Test

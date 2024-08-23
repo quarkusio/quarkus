@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.HttpHeaders;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -120,7 +120,7 @@ public class SpringWebProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+                    "Spring Web can only work if 'quarkus-resteasy-jackson' or 'quarkus-rest-jackson' is present");
         }
 
         TypesUtil typesUtil = new TypesUtil(Thread.currentThread().getContextClassLoader());
@@ -196,7 +196,8 @@ public class SpringWebProcessor {
             }
 
             if (!RESPONSE_ENTITY.equals(returnTypeDotName)) {
-                reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, returnTypeDotName.toString()));
+                reflectiveClassProducer.produce(
+                        ReflectiveClassBuildItem.builder(returnTypeDotName.toString()).methods().fields().build());
             }
 
             // we need to generate one JAX-RS ExceptionMapper per Exception type

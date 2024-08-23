@@ -4,19 +4,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.injection.superclass.foo.FooHarvester;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.injection.superclass.foo.FooHarvester;
 
 public class SuperclassInjectionTest {
 

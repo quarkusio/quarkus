@@ -12,6 +12,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class LogCategoryBuildItem extends MultiBuildItem {
     private final String category;
     private final Level level;
+    private final boolean setMinLevelDefault;
 
     /**
      * Construct a new instance.
@@ -20,11 +21,23 @@ public final class LogCategoryBuildItem extends MultiBuildItem {
      * @param level the level (must not be {@code null})
      */
     public LogCategoryBuildItem(final String category, final Level level) {
+        this(category, level, false);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param category the category (must not be {@code null} or empty)
+     * @param level the level (must not be {@code null})
+     * @param setMinLevelDefault if the default minimum level for the category should be set
+     */
+    public LogCategoryBuildItem(final String category, final Level level, boolean setMinLevelDefault) {
         Assert.checkNotNullParam("category", category);
         Assert.checkNotEmptyParam("category", category);
         Assert.checkNotNullParam("level", level);
         this.category = category;
         this.level = level;
+        this.setMinLevelDefault = setMinLevelDefault;
     }
 
     /**
@@ -43,5 +56,12 @@ public final class LogCategoryBuildItem extends MultiBuildItem {
      */
     public Level getLevel() {
         return level;
+    }
+
+    /**
+     * @return {@code true} if the default min-level for the category should also be set.
+     */
+    public boolean isSetMinLevelDefault() {
+        return setMinLevelDefault;
     }
 }

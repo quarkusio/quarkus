@@ -3,8 +3,9 @@ package io.quarkus.arc;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  * It can be used by synthetic {@link InjectableBean} definitions to destroy a contextual instance.
@@ -28,6 +29,18 @@ public interface BeanDestroyer<T> {
             try {
                 instance.close();
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    class AutoCloseableDestroyer implements BeanDestroyer<AutoCloseable> {
+        @Override
+        public void destroy(AutoCloseable instance, CreationalContext<AutoCloseable> creationalContext,
+                Map<String, Object> params) {
+            try {
+                instance.close();
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }

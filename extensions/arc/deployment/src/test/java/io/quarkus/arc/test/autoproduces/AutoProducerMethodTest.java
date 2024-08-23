@@ -14,11 +14,11 @@ import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.List;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.enterprise.inject.Model;
-import javax.inject.Inject;
-import javax.inject.Qualifier;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.inject.Model;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

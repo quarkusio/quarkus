@@ -1,13 +1,17 @@
 package io.quarkus.arc.impl;
 
+import java.util.function.Consumer;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
-import java.util.function.Consumer;
-import javax.enterprise.context.spi.CreationalContext;
 
 /**
+ * Instance handle that is initialized eagerly when created.
  *
  * @param <T>
+ * @see LazyInstanceHandle
  */
 class EagerInstanceHandle<T> extends AbstractInstanceHandle<T> {
 
@@ -32,7 +36,7 @@ class EagerInstanceHandle<T> extends AbstractInstanceHandle<T> {
 
     @Override
     protected boolean isInstanceCreated() {
-        return true;
+        return instance != null;
     }
 
     @Override

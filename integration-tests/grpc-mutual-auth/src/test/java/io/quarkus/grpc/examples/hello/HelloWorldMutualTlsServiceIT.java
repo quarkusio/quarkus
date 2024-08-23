@@ -3,6 +3,6 @@ package io.quarkus.grpc.examples.hello;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-class HelloWorldMutualTlsServiceIT extends HelloWorldMutualTlsEndpointTest {
+class HelloWorldMutualTlsServiceIT extends HelloWorldMutualTlsServiceTest {
 
 }

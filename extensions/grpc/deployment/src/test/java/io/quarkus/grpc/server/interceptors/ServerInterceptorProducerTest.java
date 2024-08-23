@@ -3,9 +3,9 @@ package io.quarkus.grpc.server.interceptors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -76,6 +76,11 @@ public class ServerInterceptorProducerTest {
         @Override
         public Uni<HelloReply> sayHello(HelloRequest request) {
             return Uni.createFrom().item(HelloReply.newBuilder().setMessage("Hello, " + request.getName()).build());
+        }
+
+        @Override
+        public Uni<HelloReply> wEIRD(HelloRequest request) {
+            return sayHello(request);
         }
     }
 

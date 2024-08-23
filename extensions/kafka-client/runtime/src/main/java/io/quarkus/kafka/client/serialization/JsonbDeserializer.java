@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.apache.kafka.common.serialization.Deserializer;
 

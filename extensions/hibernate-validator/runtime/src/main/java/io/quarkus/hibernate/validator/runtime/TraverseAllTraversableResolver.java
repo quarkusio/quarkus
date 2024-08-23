@@ -2,9 +2,9 @@ package io.quarkus.hibernate.validator.runtime;
 
 import java.lang.annotation.ElementType;
 
-import javax.validation.Path;
-import javax.validation.Path.Node;
-import javax.validation.TraversableResolver;
+import jakarta.validation.Path;
+import jakarta.validation.Path.Node;
+import jakarta.validation.TraversableResolver;
 
 class TraverseAllTraversableResolver implements TraversableResolver {
 

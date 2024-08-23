@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -35,7 +38,7 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -61,6 +64,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
 
@@ -71,7 +75,7 @@ import io.quarkus.utilities.JavaBinFinder;
 public class QuarkusProdModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, TestWatcher, InvocationInterceptor {
 
-    private static final String EXPECTED_OUTPUT_FROM_SUCCESSFULLY_STARTED = "features";
+    private static final String EXPECTED_OUTPUT_FROM_SUCCESSFULLY_STARTED = "Installed features";
     private static final int DEFAULT_HTTP_PORT_INT = 8081;
     private static final String DEFAULT_HTTP_PORT = "" + DEFAULT_HTTP_PORT_INT;
     private static final String QUARKUS_HTTP_PORT_PROPERTY = "quarkus.http.port";
@@ -108,7 +112,7 @@ public class QuarkusProdModeTest
     private String logFileName;
     private Map<String, String> runtimeProperties;
     // by default, we use these lower heap settings
-    private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
+    private List<String> jvmArgs = Collections.singletonList("-Xmx192m");
     private Map<String, String> testResourceProperties = new HashMap<>();
     // these will be used to create a directory that can then be obtained by the buildChainCustomizersProducer function
     // values are meant to be resources that exist on the test classpath
@@ -124,12 +128,14 @@ public class QuarkusProdModeTest
     private Path logfilePath;
     private Optional<Field> logfileField = Optional.empty();
     private List<Dependency> forcedDependencies = Collections.emptyList();
-    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
+    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler(r -> false);
     private boolean expectExit;
     private String startupConsoleOutput;
     private Integer exitCode;
     private Consumer<Throwable> assertBuildException;
     private String[] commandLineParameters = new String[0];
+
+    private boolean clearRestAssuredURL;
 
     public QuarkusProdModeTest() {
         InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
@@ -361,6 +367,7 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        TestConfigUtil.cleanUp();
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
         ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
@@ -373,7 +380,7 @@ public class QuarkusProdModeTest
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
+            manager.init(null);
             testResourceProperties = manager.start();
             store.put(TestResourceManager.class.getName(), manager);
             store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
@@ -388,7 +395,12 @@ public class QuarkusProdModeTest
         Class<?> testClass = extensionContext.getRequiredTestClass();
 
         try {
-            outputDir = Files.createTempDirectory("quarkus-prod-mode-test");
+            Optional<Path> projectBuildDir = Optional.ofNullable(System.getProperty("project.build.directory")) //maven
+                    .or(() -> Optional.ofNullable(System.getProperty("buildDir"))) //gradle
+                    .map(Path::of);
+
+            outputDir = projectBuildDir.isPresent() ? Files.createTempDirectory(projectBuildDir.get(), "quarkus-prod-mode-test")
+                    : Files.createTempDirectory("quarkus-prod-mode-test");
             Path deploymentDir = outputDir.resolve("deployment-result");
             buildDir = outputDir.resolve("build-result");
 
@@ -399,7 +411,7 @@ public class QuarkusProdModeTest
                 overrideConfigKey("quarkus.application.version", applicationVersion);
             }
             if (buildNative) {
-                overrideConfigKey("quarkus.package.type", "native");
+                overrideConfigKey("quarkus.native.enabled", "true");
             }
             exportArchive(deploymentDir, testClass);
 
@@ -425,9 +437,8 @@ public class QuarkusProdModeTest
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
                     .setForcedDependencies(forcedDependencies);
-            if (applicationName != null) {
-                builder.setBaseName(applicationName);
-            }
+            builder.setBaseName(applicationName != null ? applicationName
+                    : extensionContext.getDisplayName() + " (QuarkusProdModeTest)");
 
             Map<String, Object> buildContext = new HashMap<>();
             buildContext.put(BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY, customSourcesDir);
@@ -618,7 +629,10 @@ public class QuarkusProdModeTest
                     .directory(builtResultArtifactParent.toFile())
                     .start();
             ensureApplicationStartupOrFailure();
-            setupRestAssured();
+            if (!expectExit) { // no point in setting an URL for an app that exits right away
+                setupRestAssured();
+                clearRestAssuredURL = true;
+            }
         } catch (IOException ex) {
             throw new RuntimeException("The produced jar could not be launched. ", ex);
         }
@@ -631,11 +645,19 @@ public class QuarkusProdModeTest
         try {
             if (process != null) {
                 process.destroy();
-                process.waitFor();
+                boolean stopped = process.waitFor(1, TimeUnit.MINUTES);
+                if (!stopped) {
+                    process.destroyForcibly();
+                    process.waitFor(1, TimeUnit.MINUTES);
+                }
                 exitCode = process.exitValue();
             }
         } catch (InterruptedException ignored) {
 
+        }
+        if (clearRestAssuredURL) {
+            RestAssuredURLManager.clearURL();
+            clearRestAssuredURL = false;
         }
     }
 
@@ -644,7 +666,7 @@ public class QuarkusProdModeTest
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_HTTP_PORT_INT);
 
-        // If http port is 0, then we need to set the port to null in order to use the `quarkus.https.test-port` property
+        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
         // which is done in `RestAssuredURLManager.setURL`.
         if (httpPort == 0) {
             httpPort = null;
@@ -723,10 +745,6 @@ public class QuarkusProdModeTest
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
 
-        if (run) {
-            RestAssuredURLManager.clearURL();
-        }
-
         stop();
 
         try {
@@ -746,12 +764,15 @@ public class QuarkusProdModeTest
             if ((outputDir != null) && !preventOutputDirCleanup) {
                 FileUtil.deleteDirectory(outputDir);
             }
+
+            TestConfigUtil.cleanUp();
         }
     }
 
     @Override
     public void beforeEach(ExtensionContext context) {
-        if (run && (process == null || !process.isAlive())) {
+        // restart the app in case it was stopped manually via stop() by the previous test method
+        if (run && !expectExit && (process == null || !process.isAlive())) {
             start();
         }
 
@@ -777,12 +798,16 @@ public class QuarkusProdModeTest
             customApplicationProperties = new Properties();
         }
         try {
-            try (InputStream in = ClassLoader.getSystemResourceAsStream(resourceName)) {
+            URL systemResource = ClassLoader.getSystemResource(resourceName);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
                 customApplicationProperties.load(in);
             }
             return this;
         } catch (IOException e) {
-            throw new RuntimeException("Could not load resource: '" + resourceName + "'");
+            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
         }
     }
 

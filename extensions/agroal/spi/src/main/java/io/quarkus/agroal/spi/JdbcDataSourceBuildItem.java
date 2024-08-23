@@ -1,5 +1,7 @@
 package io.quarkus.agroal.spi;
 
+import java.util.Optional;
+
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -14,11 +16,18 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final String dbKind;
 
+    private final Optional<String> dbVersion;
+
+    private final boolean transactionIntegrationEnabled;
+
     private final boolean isDefault;
 
-    public JdbcDataSourceBuildItem(String name, String kind, boolean isDefault) {
+    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
+            boolean transactionIntegrationEnabled, boolean isDefault) {
         this.name = name;
         this.dbKind = kind;
+        this.dbVersion = dbVersion;
+        this.transactionIntegrationEnabled = transactionIntegrationEnabled;
         this.isDefault = isDefault;
     }
 
@@ -28,6 +37,14 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     public String getDbKind() {
         return dbKind;
+    }
+
+    public Optional<String> getDbVersion() {
+        return dbVersion;
+    }
+
+    public boolean isTransactionIntegrationEnabled() {
+        return transactionIntegrationEnabled;
     }
 
     public boolean isDefault() {

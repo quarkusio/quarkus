@@ -3,11 +3,12 @@ package org.jboss.resteasy.reactive.server.vertx.test.cache;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
-import io.restassured.RestAssured;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.resteasy.reactive.server.processor.ResteasyReactiveDeploymentManager;
 import org.jboss.resteasy.reactive.server.processor.scanning.CacheControlScanner;
@@ -16,6 +17,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class CacheOnMethodsTest {
 
@@ -27,7 +30,7 @@ public class CacheOnMethodsTest {
                     scanStep.addMethodScanner(new CacheControlScanner());
                 }
             })
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(ResourceWithCache.class);

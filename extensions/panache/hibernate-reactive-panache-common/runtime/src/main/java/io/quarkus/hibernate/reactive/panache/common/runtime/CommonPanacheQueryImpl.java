@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.reactive.panache.common.runtime;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
@@ -8,13 +10,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
-import org.hibernate.internal.util.LockModeConverter;
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.hibernate.reactive.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -26,7 +30,14 @@ import io.smallrye.mutiny.Uni;
 public class CommonPanacheQueryImpl<Entity> {
 
     private Object paramsArrayOrMap;
+    /**
+     * this is the HQL query expanded from the Panache-Query
+     */
     private String query;
+    /**
+     * this is the original Panache-Query, if any (can be null)
+     */
+    private String originalQuery;
     protected String countQuery;
     private String orderBy;
     private Uni<Mutiny.Session> em;
@@ -40,15 +51,19 @@ public class CommonPanacheQueryImpl<Entity> {
     private Map<String, Object> hints;
 
     private Map<String, Map<String, Object>> filters;
+    private Class<?> projectionType;
 
-    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String orderBy, Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
+        this.originalQuery = originalQuery;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
-    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery) {
+    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery,
+            Class<?> projectionType) {
         this.em = previousQuery.em;
         this.query = newQueryString;
         this.countQuery = countQuery;
@@ -60,47 +75,96 @@ public class CommonPanacheQueryImpl<Entity> {
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
+        this.projectionType = projectionType;
     }
 
     // Builder
 
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a projection on a named query");
+            selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
         }
 
+        String lowerCasedTrimmedQuery = PanacheJpaUtil.trimForAnalysis(selectQuery);
+        if (lowerCasedTrimmedQuery.startsWith("select new ")
+                || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
+        }
+
+        // If the query starts with a select clause, we pass it on to ORM which can handle that via a projection type
+        if (lowerCasedTrimmedQuery.startsWith("select ")) {
+            // just pass it through
+            return new CommonPanacheQueryImpl<>(this, query, countQuery, type);
+        }
+
+        // FIXME: this assumes the query starts with "FROM " probably?
+
+        // build select clause with a constructor expression
+        String selectClause = "SELECT " + getParametersFromClass(type, null);
+        return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery,
+                "select count(*) " + selectQuery, type);
+    }
+
+    private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
+        StringBuilder selectClause = new StringBuilder();
         // We use the first constructor that we found and use the parameter names,
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.
-        // Maybe this should be improved some days ...
-        Constructor<?> constructor = type.getDeclaredConstructors()[0];
+        // TODO: Maybe this should be improved some days ...
+        Constructor<?> constructor = getConstructor(type); //type.getDeclaredConstructors()[0];
+        selectClause.append("new ").append(type.getName()).append(" (");
+        String parametersListStr = Stream.of(constructor.getParameters())
+                .map(parameter -> getParameterName(type, parentParameter, parameter))
+                .collect(Collectors.joining(","));
+        selectClause.append(parametersListStr);
+        selectClause.append(") ");
+        return selectClause;
+    }
 
-        // build select clause with a constructor expression
-        StringBuilder select = new StringBuilder("SELECT new ").append(type.getName()).append(" (");
-        int selectInitialLength = select.length();
-        for (Parameter parameter : constructor.getParameters()) {
-            String parameterName;
-            if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
-                final String name = parameter.getAnnotation(ProjectedFieldName.class).value();
-                if (name.isEmpty()) {
-                    throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
-                }
-                parameterName = name;
-            } else if (!parameter.isNamePresent()) {
-                throw new PanacheQueryException(
-                        "Your application must be built with parameter names, this should be the default if" +
-                                " using Quarkus artifacts. Check the maven or gradle compiler configuration to include '-parameters'.");
-            } else {
+    private Constructor<?> getConstructor(Class<?> type) {
+        return type.getDeclaredConstructors()[0];
+    }
+
+    private String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
+        String parameterName;
+        // Check if constructor param is annotated with ProjectedFieldName
+        if (hasProjectedFieldName(parameter)) {
+            parameterName = getNameFromProjectedFieldName(parameter);
+        } else if (!parameter.isNamePresent()) {
+            throw new PanacheQueryException(
+                    "Your application must be built with parameter names, this should be the default if" +
+                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
+        } else {
+            // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
+            try {
+                Field field = parentType.getDeclaredField(parameter.getName());
+                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
+            } catch (NoSuchFieldException e) {
                 parameterName = parameter.getName();
             }
-            if (select.length() > selectInitialLength) {
-                select.append(", ");
-            }
-            select.append(parameterName);
         }
-        select.append(") ");
+        // For nested classes, add parent parameter in parameterName
+        parameterName = (parentParameter == null) ? parameterName : parentParameter.concat(".").concat(parameterName);
+        // Test if the parameter is a nested Class that should be projected too.
+        if (parameter.getType().isAnnotationPresent(NestedProjectedClass.class)) {
+            Class<?> nestedType = parameter.getType();
+            return getParametersFromClass(nestedType, parameterName).toString();
+        } else {
+            return parameterName;
+        }
+    }
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+    private boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
+        return annotatedElement.isAnnotationPresent(ProjectedFieldName.class);
+    }
+
+    private String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
+        final String name = annotatedElement.getAnnotation(ProjectedFieldName.class).value();
+        if (name.isEmpty()) {
+            throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+        }
+        return name;
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {
@@ -199,14 +263,17 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
+        String selectQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a count operation on a named query");
+            selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
+        } else {
+            selectQuery = query;
         }
 
         if (count == null) {
             // FIXME: question about caching the result here
             count = em.flatMap(session -> {
-                Mutiny.Query<Long> countQuery = session.createQuery(countQuery());
+                Mutiny.SelectionQuery<Long> countQuery = session.createSelectionQuery(countQuery(selectQuery), Long.class);
                 if (paramsArrayOrMap instanceof Map)
                     AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
                 else
@@ -217,18 +284,18 @@ public class CommonPanacheQueryImpl<Entity> {
         return count;
     }
 
-    private String countQuery() {
+    private String countQuery(String selectQuery) {
         if (countQuery != null) {
             return countQuery;
         }
-        return PanacheJpaUtil.getCountQuery(query);
+        return PanacheJpaUtil.getFastCountQuery(selectQuery);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends Entity> Uni<List<T>> list() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session);
-            return (Uni) applyFilters(session, () -> jpaQuery.getResultList());
+            Mutiny.SelectionQuery<?> hibernateQuery = createQuery(session);
+            return (Uni) applyFilters(session, () -> hibernateQuery.getResultList());
         });
     }
 
@@ -245,7 +312,7 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> firstResult() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session, 1);
+            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session, 1);
             return applyFilters(session, () -> jpaQuery.getResultList().map(list -> list.isEmpty() ? null : (T) list.get(0)));
         });
     }
@@ -253,15 +320,15 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
         return em.flatMap(session -> {
-            Mutiny.Query<?> jpaQuery = createQuery(session);
+            Mutiny.SelectionQuery<?> jpaQuery = createQuery(session);
             return applyFilters(session, () -> jpaQuery.getSingleResult().map(v -> (T) v))
                     // FIXME: workaround https://github.com/hibernate/hibernate-reactive/issues/263
                     .onFailure(CompletionException.class).transform(t -> t.getCause());
         });
     }
 
-    private Mutiny.Query<?> createQuery(Mutiny.Session em) {
-        Mutiny.Query<?> jpaQuery = createBaseQuery(em);
+    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em) {
+        Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
@@ -286,8 +353,8 @@ public class CommonPanacheQueryImpl<Entity> {
         return jpaQuery;
     }
 
-    private Mutiny.Query<?> createQuery(Mutiny.Session em, int maxResults) {
-        Mutiny.Query<?> jpaQuery = createBaseQuery(em);
+    private Mutiny.SelectionQuery<?> createQuery(Mutiny.Session em, int maxResults) {
+        Mutiny.SelectionQuery<?> jpaQuery = createBaseQuery(em);
 
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
@@ -307,23 +374,27 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     @SuppressWarnings("unchecked")
-    private Mutiny.Query<?> createBaseQuery(Mutiny.Session em) {
-        Mutiny.Query<?> jpaQuery;
+    private Mutiny.SelectionQuery<?> createBaseQuery(Mutiny.Session em) {
+        Mutiny.SelectionQuery<?> hibernateQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
-            jpaQuery = em.createNamedQuery(namedQuery);
+            hibernateQuery = em.createNamedQuery(namedQuery, projectionType);
         } else {
-            jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            try {
+                hibernateQuery = em.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
+            } catch (RuntimeException x) {
+                throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
+            }
         }
 
         if (paramsArrayOrMap instanceof Map) {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Map<String, Object>) paramsArrayOrMap);
         } else {
-            AbstractJpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(hibernateQuery, (Object[]) paramsArrayOrMap);
         }
 
         if (this.lockModeType != null) {
-            jpaQuery.setLockMode(LockModeConverter.convertToLockMode(lockModeType));
+            hibernateQuery.setLockMode(lockModeType);
         }
 
         if (hints != null) {
@@ -332,7 +403,7 @@ public class CommonPanacheQueryImpl<Entity> {
             //                jpaQuery.setHint(hint.getKey(), hint.getValue());
             //            }
         }
-        return jpaQuery;
+        return hibernateQuery;
     }
 
     private <T> Uni<T> applyFilters(Mutiny.Session em, Supplier<Uni<T>> uni) {

@@ -13,7 +13,7 @@ public class CompositeCacheKey {
 
     /**
      * Constructor.
-     * 
+     *
      * @param keyElements key elements
      * @throws IllegalArgumentException if no key elements are provided
      */
@@ -40,5 +40,14 @@ public class CompositeCacheKey {
             return Arrays.deepEquals(keyElements, other.keyElements);
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "CompositeCacheKey" + Arrays.toString(keyElements);
+    }
+
+    public Object[] getKeyElements() {
+        return keyElements;
     }
 }

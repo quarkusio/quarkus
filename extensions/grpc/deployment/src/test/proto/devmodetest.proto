@@ -17,4 +17,5 @@ message DevModeResponse {
 
 service DevModeService {
   rpc Check(DevModeRequest) returns (DevModeResponse);
+  // placeholder for a new method
 }

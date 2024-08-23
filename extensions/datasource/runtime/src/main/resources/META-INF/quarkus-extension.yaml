@@ -4,7 +4,10 @@ name: "Datasources"
 metadata:
   keywords:
   - "datasource"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"
   status: "stable"
   unlisted: true
+  config:
+  - "quarkus.datasource."

@@ -6,5 +6,6 @@ metadata:
   - "jdbc-postgresql"
   - "jdbc"
   - "postgresql"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"

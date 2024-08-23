@@ -1,4 +1,4 @@
-@javax.inject.Singleton
+@jakarta.inject.Singleton
 public class L {
 
     private final C c;

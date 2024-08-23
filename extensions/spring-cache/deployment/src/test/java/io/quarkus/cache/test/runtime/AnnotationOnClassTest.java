@@ -2,7 +2,7 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

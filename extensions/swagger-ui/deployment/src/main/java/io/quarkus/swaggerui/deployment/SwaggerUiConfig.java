@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.openapi.ui.DocExpansion;
@@ -21,20 +22,21 @@ public class SwaggerUiConfig {
      * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
     @ConfigItem(defaultValue = "swagger-ui")
-    String path;
+    public String path;
 
     /**
-     * If this should be included every time. By default this is only included when the application is running
+     * If this should be included every time. By default, this is only included when the application is running
      * in dev mode.
      */
     @ConfigItem(defaultValue = "false")
     boolean alwaysInclude;
 
     /**
-     * The urls that will be included as options. By default the OpenAPI path will be used.
+     * The urls that will be included as options. By default, the OpenAPI path will be used.
      * Here you can override that and supply multiple urls that will appear in the TopBar plugin.
      */
     @ConfigItem
+    @ConfigDocMapKey("name")
     Map<String, String> urls;
 
     /**
@@ -108,7 +110,7 @@ public class SwaggerUiConfig {
      * are shown.
      * Can be Boolean to enable or disable, or a string, in which case filtering will be enabled using that string as the
      * filter expression.
-     * Filtering is case sensitive matching the filter expression anywhere inside the tag.
+     * Filtering is case-sensitive matching the filter expression anywhere inside the tag.
      */
     @ConfigItem
     Optional<String> filter;
@@ -157,8 +159,8 @@ public class SwaggerUiConfig {
     Optional<String> onComplete;
 
     /**
-     * Set to false to deactivate syntax highlighting of payloads and cURL command, can be otherwise an object with the
-     * activate and theme properties.
+     * Set to {@code false} to deactivate syntax highlighting of payloads and cURL command. Can be otherwise an object with the
+     * {@code activate} and {@code theme} properties.
      */
     @ConfigItem
     Optional<String> syntaxHighlight;
@@ -310,7 +312,7 @@ public class SwaggerUiConfig {
     Optional<Boolean> oauthUseBasicAuthenticationWithAccessCodeGrant;
 
     /**
-     * OAuth only applies to authorizatonCode flows. Proof Key for Code Exchange brings enhanced security for OAuth public
+     * OAuth only applies to authorization code flows. Proof Key for Code Exchange brings enhanced security for OAuth public
      * clients - Used in the initOAuth method.
      */
     @ConfigItem
@@ -351,4 +353,15 @@ public class SwaggerUiConfig {
     @ConfigItem
     Optional<String> preauthorizeApiKeyApiKeyValue;
 
+    /**
+     * If set to true, this allows the user to modify and test different query parameters in the API request
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean queryConfigEnabled;
+
+    /**
+     * If try it out should be enabled by default
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean tryItOutEnabled;
 }

@@ -1,0 +1,3 @@
+examples:
+- source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
+  target: telemetry-micrometer-tutorial-example-resource.java

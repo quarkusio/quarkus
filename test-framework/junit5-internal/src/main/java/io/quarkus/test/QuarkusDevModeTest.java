@@ -1,13 +1,9 @@
 package io.quarkus.test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -17,7 +13,6 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
@@ -48,35 +41,42 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.testing.TestScanningLock;
-import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.runtime.util.ClassPathUtils;
-import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 /**
- * A test extension for testing Quarkus development mode in extensions. Intended for use by extension developers
- * testing their extension functionality in dev mode. Unlike {@link QuarkusUnitTest} this will test against
- * a clean deployment for each test method. This is nessesary to prevent undefined behaviour by making sure the
- * deployment starts in a clean state for each test.
+ * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
  * <p>
+ * Intended for use by extension developers testing their extension functionality in dev mode.
  * <p>
- * NOTE: These tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
- * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}. This is necessary to ensure dev mode is tested correctly.
- * <p>
+ * Note that unlike {@link QuarkusUnitTest}:
+ * <ul>
+ * <li>Tests run in black-box mode: the classloader of test methods
+ * does not give access to the running Quarkus application,
+ * so things like CDI will not work.
+ * You should define REST endpoints that perform the actions you want to simulate in your tests,
+ * and call those REST endpoints in your tests using e.g. RestAssured.</li>
+ * <li>Each test method will run in a clean deployment.
+ * This is necessary to prevent undefined behaviour by making sure the
+ * deployment starts in a clean state for each test.</li>
+ * <li>Tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
+ * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}.
+ * This is necessary to ensure dev mode is tested correctly.
  * A side effect of this is that the tests will run on port 8080 by default instead of port 8081.
+ * </ul>
  */
 public class QuarkusDevModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
@@ -228,8 +228,10 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        TestConfigUtil.cleanUp();
+        GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
+        LaunchMode.set(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
     }
@@ -249,7 +251,7 @@ public class QuarkusDevModeTest
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            testResourceManager.init();
+            testResourceManager.init(null);
             Map<String, String> properties = testResourceManager.start();
             TestResourceManager tm = testResourceManager;
 
@@ -291,10 +293,12 @@ public class QuarkusDevModeTest
             Path projectSourceParent = projectSourceRoot.getParent();
 
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
+            context.setBaseName(extensionContext.getDisplayName() + " (QuarkusDevModeTest)");
             context.setArgs(commandLineArgs);
             context.setTest(true);
             context.setAbortOnFailedStart(!allowFailedStart);
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
+            context.getBuildSystemProperties().put("quarkus.console.disable-input", "true"); //surefire communicates via stdin, we don't want the test to be reading input
             context.getBuildSystemProperties().putAll(buildSystemProperties);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
@@ -303,7 +307,7 @@ public class QuarkusDevModeTest
             if (allowFailedStart) {
                 e.printStackTrace();
             } else {
-                throw new RuntimeException(e);
+                throw (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
             }
         }
     }
@@ -320,8 +324,8 @@ public class QuarkusDevModeTest
         rootLogger.setHandlers(originalRootLoggerHandlers);
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
-        ClearCache.clearAnnotationCache();
-        GroovyCacheCleaner.clearGroovyCache();
+        ClearCache.clearCaches();
+        TestConfigUtil.cleanUp();
     }
 
     @Override
@@ -392,13 +396,12 @@ public class QuarkusDevModeTest
 
             DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
                     .setArtifactKey(GACT.fromString("io.quarkus.test:app-under-test"))
-                    .setName("default")
                     .setProjectDirectory(deploymentDir.toAbsolutePath().toString())
-                    .setSourcePaths(PathsCollection.of(deploymentSourcePath.toAbsolutePath()))
+                    .setSourcePaths(PathList.of(deploymentSourcePath.toAbsolutePath()))
                     .setClassesPath(classes.toAbsolutePath().toString())
-                    .setResourcePaths(PathsCollection.of(deploymentResourcePath.toAbsolutePath()))
+                    .setResourcePaths(PathList.of(deploymentResourcePath.toAbsolutePath()))
                     .setResourcesOutputPath(classes.toAbsolutePath().toString())
-                    .setSourceParents(PathsCollection.of(deploymentSourceParentPath.toAbsolutePath()))
+                    .setSourceParents(PathList.of(deploymentSourceParentPath.toAbsolutePath()))
                     .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                     .setTargetDir(targetDir.toAbsolutePath().toString());
 
@@ -443,9 +446,9 @@ public class QuarkusDevModeTest
                     });
                 }
                 moduleBuilder
-                        .setTestSourcePaths(PathsCollection.of(deploymentTestSourcePath.toAbsolutePath()))
+                        .setTestSourcePaths(PathList.of(deploymentTestSourcePath.toAbsolutePath()))
                         .setTestClassesPath(testClasses.toAbsolutePath().toString())
-                        .setTestResourcePaths(PathsCollection.of(deploymentTestResourcePath.toAbsolutePath()))
+                        .setTestResourcePaths(PathList.of(deploymentTestResourcePath.toAbsolutePath()))
                         .setTestResourcesOutputPath(testClasses.toAbsolutePath().toString());
             }
 
@@ -453,7 +456,6 @@ public class QuarkusDevModeTest
                     moduleBuilder
                             .build());
 
-            setDevModeRunnerJarFile(context);
             return context;
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
@@ -480,101 +482,6 @@ public class QuarkusDevModeTest
             } catch (IOException e) {
                 throw new RuntimeException("Failed to copy code gen directory", e);
             }
-        }
-    }
-
-    private static void setDevModeRunnerJarFile(final DevModeContext context) {
-        handleSurefire(context);
-        if (context.getDevModeRunnerJarFile() == null) {
-            handleIntelliJ(context);
-        }
-    }
-
-    /*
-     * See https://github.com/quarkusio/quarkus/issues/6280
-     * Maven surefire plugin launches the (forked) JVM for tests using a "surefirebooter" jar file.
-     * This jar file's name starts with the prefix "surefirebooter" and ends with the extension ".jar".
-     * The jar is launched using "java -jar .../surefirebooter*.jar ..." semantics. This jar has a
-     * MANIFEST which contains "Class-Path" entries. These entries trigger a bug in the JDK code
-     * https://bugs.openjdk.java.net/browse/JDK-8232170 which causes hot deployment related logic in Quarkus
-     * to fail in dev mode.
-     * The goal in this next section is to narrow down to this specific surefirebooter*.jar which was used to launch
-     * the tests and mark it as the "dev mode runner jar" (through DevModeContext#setDevModeRunnerJarFile),
-     * so that programmatic compilation of code (during hot deployment) doesn't run into issues noted in
-     * https://bugs.openjdk.java.net/browse/JDK-8232170.
-     * In reality the surefirebooter*.jar isn't really a "dev mode runner jar" (i.e. it's not the -dev.jar that
-     * Quarkus generates), but it's fine to mark it as such to get past this issue. This is more of a workaround
-     * on top of another workaround. In the medium/long term the actual JDK issue fix will make its way into
-     * almost all prominently used Java versions.
-     */
-    private static void handleSurefire(DevModeContext context) {
-        try {
-            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-            while (manifests.hasMoreElements()) {
-                final URL url = manifests.nextElement();
-                // don't open streams to manifest entries unless it resembles to the one
-                // we are interested in
-                if (!url.getPath().contains("surefirebooter")) {
-                    continue;
-                }
-                final boolean foundForkedBooter = ClassPathUtils.readStream(url, is -> {
-                    try {
-                        final Manifest manifest = new Manifest(is);
-                        final String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
-                        // additional check to make sure we are probing the right jar
-                        if ("org.apache.maven.surefire.booter.ForkedBooter".equals(mainClass)) {
-                            final String manifestFilePath = url.getPath();
-                            if (manifestFilePath.startsWith("file:")) {
-                                // manifest file path will be of the form jar:file:....!META-INF/MANIFEST.MF
-                                final String jarFilePath = manifestFilePath.substring(5, manifestFilePath.lastIndexOf('!'));
-                                final File surefirebooterJar = new File(
-                                        URLDecoder.decode(jarFilePath, StandardCharsets.UTF_8.name()));
-                                context.setDevModeRunnerJarFile(surefirebooterJar);
-                            }
-                            return true;
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                    return false;
-                });
-                if (foundForkedBooter) {
-                    break;
-                }
-            }
-        } catch (Throwable ignored) {
-
-        }
-    }
-
-    /*
-     * IntelliJ does not create a special jar when running the tests but instead sets up the classpath and uses
-     * the main class com.intellij.rt.junit.JUnitStarter from idea_rt.jar.
-     * To make DevModeMain happy in this case, all we need to do here is create a dummy jar file in the proper directory
-     */
-    private static void handleIntelliJ(DevModeContext context) {
-        try {
-            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
-            while (manifests.hasMoreElements()) {
-                final URL url = manifests.nextElement();
-                if (!url.getPath().contains("idea_rt.jar")) {
-                    continue;
-                }
-
-                Path intelliJPath = Paths.get(context.getApplicationRoot().getMain().getClassesPath()).getParent()
-                        .resolve("intellij");
-                Path dummyJar = intelliJPath.resolve("dummy.jar");
-
-                // create the empty dummy jar
-                try (FileSystem out = ZipUtils.newZip(dummyJar)) {
-
-                }
-
-                context.setDevModeRunnerJarFile(dummyJar.toFile());
-                break;
-            }
-        } catch (Throwable ignored) {
-
         }
     }
 
@@ -694,7 +601,7 @@ public class QuarkusDevModeTest
     private void sleepForFileChanges(Path path, long oldTime) {
         try {
             //we avoid modifying the file twice
-            //this can cause intermittent failures in the continous testing tests
+            //this can cause intermittent failures in the continuous testing tests
             long fm = modTime(path);
             if (fm > oldTime) {
                 return;
@@ -834,7 +741,7 @@ public class QuarkusDevModeTest
     private Path copySourceFilesForClass(Path projectSourcesDir, Path deploymentSourcesDir, Path classesDir, Path classFile) {
         for (CompilationProvider provider : compilationProviders) {
             Path source = provider.getSourcePath(classFile,
-                    PathsCollection.of(projectSourcesDir.toAbsolutePath()),
+                    PathList.of(projectSourcesDir.toAbsolutePath()),
                     classesDir.toAbsolutePath().toString());
             if (source != null) {
                 String relative = projectSourcesDir.relativize(source).toString();
@@ -856,7 +763,7 @@ public class QuarkusDevModeTest
             Path classFile) {
         for (CompilationProvider provider : compilationProviders) {
             Path source = provider.getSourcePath(classFile,
-                    PathsCollection.of(projectSourcesDir.toAbsolutePath()),
+                    PathList.of(projectSourcesDir.toAbsolutePath()),
                     classesDir.toAbsolutePath().toString());
             if (source != null) {
                 String relative = projectSourcesDir.relativize(source).toString();
@@ -879,5 +786,17 @@ public class QuarkusDevModeTest
     public QuarkusDevModeTest setAllowFailedStart(boolean allowFailedStart) {
         this.allowFailedStart = allowFailedStart;
         return this;
+    }
+
+    static class ChangeSet {
+        final String name;
+        final Function<String, String> mutator;
+        final Path path;
+
+        ChangeSet(String name, Function<String, String> mutator, Path path) {
+            this.name = name;
+            this.mutator = mutator;
+            this.path = path;
+        }
     }
 }

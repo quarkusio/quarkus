@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.rabbitmq.client.impl.CredentialsProvider;
 
@@ -23,7 +23,7 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_RABBITMQ);
+        return new FeatureBuildItem(Feature.MESSAGING_RABBITMQ);
     }
 
     @BuildStep

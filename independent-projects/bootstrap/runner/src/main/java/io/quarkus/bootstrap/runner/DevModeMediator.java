@@ -9,9 +9,12 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Deque;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingDeque;
+
 import org.jboss.logging.Logger;
 
 /**
@@ -22,6 +25,8 @@ import org.jboss.logging.Logger;
 public class DevModeMediator {
 
     protected static final Logger LOGGER = Logger.getLogger(DevModeMediator.class);
+
+    public static final Deque<List<Path>> removedFiles = new LinkedBlockingDeque<>();
 
     static void doDevMode(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
@@ -87,6 +92,13 @@ public class DevModeMediator {
                         closeable.close();
                     }
                     closeable = null;
+                    final List<Path> pathsToDelete = removedFiles.pollFirst();
+                    if (pathsToDelete != null) {
+                        for (Path p : pathsToDelete) {
+                            LOGGER.info("Deleting " + p);
+                            Files.deleteIfExists(p);
+                        }
+                    }
                     try {
                         closeable = doStart(appRoot, deploymentClassPath);
                     } catch (Exception e) {

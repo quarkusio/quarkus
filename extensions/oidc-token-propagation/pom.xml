@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-token-propagation-parent</artifactId>
-    <name>Quarkus - OpenID Connect Token Propagation</name>
+    <artifactId>quarkus-resteasy-client-oidc-token-propagation-parent</artifactId>
+    <name>Quarkus - RESTEasy Client - OpenID Connect Token Propagation</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

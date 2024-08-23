@@ -1,7 +1,7 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
+import jakarta.enterprise.context.RequestScoped
 import java.util.Locale
-import javax.enterprise.context.RequestScoped
 
 @RequestScoped
 class UppercaseService {

@@ -2,9 +2,21 @@ package io.quarkus.it.spring.boot;
 
 public final class BeanProperties {
 
+    private final String finalValue;
+
+    int packagePrivateValue;
+
     private int value;
 
     private InnerClass innerClass;
+
+    public BeanProperties(String finalValue) {
+        this.finalValue = finalValue;
+    }
+
+    public String getFinalValue() {
+        return finalValue;
+    }
 
     public int getValue() {
         return value;

@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.transaction.TransactionScoped;
-import javax.transaction.UserTransaction;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.transaction.TransactionScoped;
+import jakarta.transaction.UserTransaction;
 
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Session;
@@ -95,7 +95,7 @@ public class TransactionScopedInterceptorTest {
                 manualSession.find(MyEntity.class, 0);
             }
         })
-                .isInstanceOf(javax.enterprise.context.ContextNotActiveException.class);
+                .isInstanceOf(jakarta.enterprise.context.ContextNotActiveException.class);
 
         assertThat(TransactionScopedInterceptor.instances).isEmpty();
         assertThat(TransactionScopedInterceptor.loadedIds).isEmpty();

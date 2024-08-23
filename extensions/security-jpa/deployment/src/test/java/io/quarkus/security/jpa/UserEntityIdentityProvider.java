@@ -1,7 +1,11 @@
 package io.quarkus.security.jpa;
 
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
+import static io.quarkus.security.jpa.common.runtime.JpaIdentityProviderUtil.addRoles;
+import static io.quarkus.security.jpa.common.runtime.JpaIdentityProviderUtil.checkPassword;
+import static io.quarkus.security.jpa.common.runtime.JpaIdentityProviderUtil.getClearPassword;
+
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityManager;
 
 import org.hibernate.Session;
 import org.hibernate.SimpleNaturalIdLoadAccess;

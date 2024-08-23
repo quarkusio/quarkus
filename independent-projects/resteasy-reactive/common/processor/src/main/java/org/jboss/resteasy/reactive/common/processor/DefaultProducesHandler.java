@@ -3,7 +3,10 @@ package org.jboss.resteasy.reactive.common.processor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
@@ -14,6 +17,8 @@ public interface DefaultProducesHandler {
 
     interface Context {
         Type nonAsyncReturnType();
+
+        DotName httpMethod();
 
         IndexView index();
 

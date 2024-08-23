@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -11,9 +10,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 
 public class QuarkusEntryPoint {
 
@@ -25,13 +28,19 @@ public class QuarkusEntryPoint {
         System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
                 "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
         Timing.staticInitStarted(false);
-        doRun(args);
+
+        try {
+            doRun(args);
+        } catch (Exception e) {
+            InitialConfigurator.DELAYED_HANDLER.close();
+            throw e;
+        }
     }
 
     private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        String decodedPath = URLDecoder.decode(path, "UTF-8");
+        String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
 
         if (Boolean.parseBoolean(System.getenv("QUARKUS_LAUNCH_DEVMODE"))) {
@@ -60,6 +69,11 @@ public class QuarkusEntryPoint {
 
     private static void doReaugment(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
+        if (!Files.exists(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT))) {
+            System.out.println("[ERROR] Re-augmentation was requested, " +
+                    "but the application wasn't built with 'quarkus.package.jar.type=mutable-jar'");
+            return;
+        }
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT)))) {
             List<String> paths = (List<String>) in.readObject();

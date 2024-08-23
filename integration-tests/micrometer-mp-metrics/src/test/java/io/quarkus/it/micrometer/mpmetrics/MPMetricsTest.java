@@ -55,22 +55,25 @@ class MPMetricsTest {
 
                 // PrimeResource
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_PrimeResource_total{scope=\"application\",} 1.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_PrimeResource_total{scope=\"application\"} 1.0"))
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_CountedInstance_total{scope=\"application\",} 2.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_CountedInstance_total{scope=\"application\"} 2.0"))
 
                 // number of concurrent requests at time of sample
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_checkIfPrime{scope=\"application\",} 0.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_checkIfPrime{scope=\"application\"} 0.0"))
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_countPrimes_total{scope=\"application\",} 2.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_countPrimes_total{scope=\"application\"} 2.0"))
                 .body(containsString(
                         "highestPrimeNumberSoFar 887.0"))
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_highestPrimeNumberSoFar2{scope=\"application\",} 887.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_PrimeResource_highestPrimeNumberSoFar2{scope=\"application\"} 887.0"))
 
                 // the counter associated with a timed method should have been removed
-                .body(not(containsString("io_quarkus_it_micrometer_mpmetrics_PrimeResource_checkPrime")));
+                .body(not(containsString("io_quarkus_it_micrometer_mpmetrics_PrimeResource_checkPrime")))
+
+                // no calls to /message
+                .body(not(containsString("/message")));
     }
 
     @Test
@@ -83,10 +86,28 @@ class MPMetricsTest {
     }
 
     @Test
-    @Order(8)
+    @Order(6)
     void callMessage() {
         given()
                 .when().get("/message")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    @Order(7)
+    void callMessageFail() {
+        given()
+                .when().get("/message/fail")
+                .then()
+                .statusCode(500);
+    }
+
+    @Test
+    @Order(8)
+    void callMessageId() {
+        given()
+                .when().get("/message/item/35")
                 .then()
                 .statusCode(200);
     }
@@ -101,12 +122,15 @@ class MPMetricsTest {
 
                 // Prometheus body has ALL THE THINGS in no particular order
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_countPrimes_total{scope=\"application\",} 2.0"))
+                        "io_quarkus_it_micrometer_mpmetrics_CountedInstance_countPrimes_total{scope=\"application\"} 2.0"))
                 .body(containsString(
                         "highestPrimeNumberSoFar 887.0"))
                 .body(containsString(
-                        "io_quarkus_it_micrometer_mpmetrics_InjectedInstance_notPrime_total{scope=\"application\",}"))
-                .body(not(containsString("/message")));
+                        "io_quarkus_it_micrometer_mpmetrics_InjectedInstance_notPrime_total{scope=\"application\"}"))
+                .body(containsString(
+                        "first_counter_total{scope=\"application\"}"))
+                .body(containsString(
+                        "second_counter_total{scope=\"application\"}"));
     }
 
     @Test
@@ -123,4 +147,13 @@ class MPMetricsTest {
                         Matchers.equalTo(887.0f));
     }
 
+    @Test
+    @Order(11)
+    void meters() {
+        given()
+                .when().get("/message/mpmetrics")
+                .then()
+                .statusCode(200)
+                .log().body();
+    }
 }

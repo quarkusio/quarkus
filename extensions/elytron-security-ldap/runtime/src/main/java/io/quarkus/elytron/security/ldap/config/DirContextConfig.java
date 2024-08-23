@@ -1,46 +1,48 @@
 package io.quarkus.elytron.security.ldap.config;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DirContextConfig {
+public interface DirContextConfig {
 
     /**
      * The url of the ldap server
      */
-    @ConfigItem
-    public String url;
+    String url();
 
     /**
      * The principal: user which is used to connect to ldap server (also named "bindDn")
      */
-    @ConfigItem
-    public Optional<String> principal;
+    Optional<String> principal();
 
     /**
      * The password which belongs to the principal (also named "bindCredential")
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * how ldap redirects are handled
      */
-    @ConfigItem(defaultValue = "ignore")
-    public DirContextFactory.ReferralMode referralMode;
+    @WithDefault("ignore")
+    DirContextFactory.ReferralMode referralMode();
 
-    @Override
-    public String toString() {
-        return "DirContextConfig{" +
-                "url='" + url + '\'' +
-                ", principal=" + principal +
-                ", password=" + password +
-                ", referralMode=" + referralMode +
-                '}';
-    }
+    /**
+     * The connect timeout
+     */
+    @WithDefault("5s")
+    Duration connectTimeout();
+
+    /**
+     * The read timeout
+     */
+    @WithDefault("60s")
+    Duration readTimeout();
+
+    String toString();
 }

@@ -2,21 +2,9 @@ package org.jboss.resteasy.reactive.server.vertx.test.framework;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
-import io.vertx.mutiny.core.file.AsyncFile;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,6 +25,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -46,7 +35,9 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
@@ -77,6 +68,20 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.mutiny.core.file.AsyncFile;
 
 public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCallback, InvocationInterceptor {
 
@@ -116,6 +121,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     static Vertx vertx;
     static ExecutorService executor;
     boolean deleteUploadedFilesOnEnd = true;
+    List<String> fileContentTypes;
     Path uploadPath;
 
     private List<Consumer<ResteasyReactiveDeploymentManager.ScanStep>> scanCustomizers = new ArrayList<>();
@@ -124,6 +130,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     List<Closeable> closeTasks = new ArrayList<>();
     private Charset defaultCharset = StandardCharsets.UTF_8;;
     private int maxFormAttributeSize = 2048;
+
+    private int maxParameters = 1000;
 
     public static Vertx getVertx() {
         return vertx;
@@ -144,6 +152,11 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         return this;
     }
 
+    public ResteasyReactiveUnitTest setFileContentTypes(List<String> fileContentTypes) {
+        this.fileContentTypes = fileContentTypes;
+        return this;
+    }
+
     public ResteasyReactiveUnitTest setUploadPath(Path uploadPath) {
         this.uploadPath = uploadPath;
         return this;
@@ -157,6 +170,19 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     public ResteasyReactiveUnitTest setMaxFormAttributeSize(int maxFormAttributeSize) {
         this.maxFormAttributeSize = maxFormAttributeSize;
         return this;
+    }
+
+    private static Executor setVirtualThreadExecutor() {
+        Executor exec = Executors.newSingleThreadExecutor();
+        try {
+            exec = (Executor) Class.forName("java.util.concurrent.Executors")
+                    .getMethod("newVirtualThreadPerTaskExecutor")
+                    .invoke(null);
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
+                | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return exec;
     }
 
     public ResteasyReactiveUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
@@ -343,7 +369,11 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                         .onComplete(new io.vertx.core.Handler<AsyncResult<HttpServer>>() {
                             @Override
                             public void handle(AsyncResult<HttpServer> event) {
-                                startPromise.complete();
+                                if (event.failed()) {
+                                    startPromise.fail(event.cause());
+                                } else {
+                                    startPromise.complete();
+                                }
                             }
                         });
             }
@@ -369,12 +399,13 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                defaultCharset, Optional.empty(), maxFormAttributeSize);
+                fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize, maxParameters);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());
 
-        ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(application.getInitialHandler());
+        ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(ev -> {
+        }, application.getInitialHandler());
         String path = application.getPath();
         Route route = router.route(path);
         for (Consumer<Route> customizer : routeCustomisers) {

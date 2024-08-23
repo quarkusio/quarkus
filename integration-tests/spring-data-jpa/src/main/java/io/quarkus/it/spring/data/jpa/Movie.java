@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 public class Movie extends MovieSuperclass {

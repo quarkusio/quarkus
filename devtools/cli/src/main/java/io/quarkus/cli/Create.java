@@ -9,10 +9,10 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "create", sortOptions = false, mixinStandardHelpOptions = false, header = "Create a new project.", subcommands = {
+@CommandLine.Command(name = "create", header = "Create a new project.", subcommands = {
         CreateApp.class,
         CreateCli.class,
-        CreateExtension.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        CreateExtension.class })
 public class Create implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")

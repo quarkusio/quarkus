@@ -7,8 +7,8 @@ import org.jboss.jandex.ClassInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Used by {@code io.quarkus.deployment.steps.ReflectiveHierarchyStep} to determine whether or
- * not the final fields of the class should be writable (which they aren't by default)
+ * Used by {@code io.quarkus.deployment.steps.ReflectiveHierarchyStep} to determine whether
+ * the final fields of the class should be writable (which they aren't by default)
  *
  * If any one of the predicates returns true for a class, then ReflectiveHierarchyStep uses that true value
  */

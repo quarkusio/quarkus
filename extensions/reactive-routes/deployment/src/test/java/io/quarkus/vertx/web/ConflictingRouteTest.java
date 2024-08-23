@@ -2,7 +2,7 @@ package io.quarkus.vertx.web;
 
 import static io.restassured.RestAssured.get;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

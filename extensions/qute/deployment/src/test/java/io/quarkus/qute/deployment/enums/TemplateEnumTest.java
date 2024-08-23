@@ -2,12 +2,15 @@ package io.quarkus.qute.deployment.enums;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import java.util.Map;
+
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateEnum;
 import io.quarkus.test.QuarkusUnitTest;
@@ -28,6 +31,8 @@ public class TemplateEnumTest {
     @Test
     public void testTemplateData() {
         assertEquals("OK::BAR::FOO", bar.data("tx", TransactionType.FOO).render());
+        // Test the convenient Qute class
+        assertEquals("OK", Qute.fmt("{#if tx == TransactionType:FOO}OK{#else}NOK{/if}", Map.of("tx", TransactionType.FOO)));
     }
 
     // namespace is TransactionType

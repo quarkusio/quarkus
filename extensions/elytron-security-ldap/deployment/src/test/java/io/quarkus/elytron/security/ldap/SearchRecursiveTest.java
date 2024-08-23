@@ -5,11 +5,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.elytron.security.ldap.rest.SingleRoleSecuredServlet;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.ldap.LdapServerTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(LdapServerTestResource.class)
+@WithTestResource(value = LdapServerTestResource.class, restrictToAnnotatedClass = false)
 public class SearchRecursiveTest {
 
     protected static Class[] testClasses = {

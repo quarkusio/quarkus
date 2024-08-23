@@ -2,14 +2,10 @@ package org.jboss.resteasy.reactive.server.processor.generation.converters;
 
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.function.Function;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -20,6 +16,12 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
+
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 public class GeneratedConverterIndexerExtension implements ServerEndpointIndexer.ConverterSupplierIndexerExtension {
 
@@ -47,8 +49,8 @@ public class GeneratedConverterIndexerExtension implements ServerEndpointIndexer
                 for (MethodInfo i : type.methods()) {
                     boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
                     boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
-                    if ((i.parameters().size() == 1) && isNotPrivate) {
-                        if (i.parameters().get(0).name().equals(STRING)) {
+                    if ((i.parametersCount() == 1) && isNotPrivate) {
+                        if (i.parameterType(0).name().equals(STRING)) {
                             if (i.name().equals("<init>")) {
                                 stringCtor = i;
                             } else if (i.name().equals("valueOf") && isStatic) {

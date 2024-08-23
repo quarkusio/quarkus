@@ -3,7 +3,7 @@ package org.acme
 import io.quarkus.vertx.web.Route
 import io.quarkus.vertx.web.RoutingExchange
 import io.vertx.ext.web.RoutingContext
-import javax.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class MyDeclarativeRoutes {

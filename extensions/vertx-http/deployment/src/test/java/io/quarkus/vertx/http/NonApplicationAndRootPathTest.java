@@ -2,8 +2,8 @@ package io.quarkus.vertx.http;
 
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -64,7 +64,8 @@ public class NonApplicationAndRootPathTest {
     @Test
     public void testNonApplicationEndpointDirect() {
         // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("/q/non-app-relative").then().statusCode(200).body(Matchers.equalTo("/api/q/non-app-relative"));
+        RestAssured.given().get("/q/non-app-relative")
+                .then().statusCode(200).body(Matchers.equalTo("/api/q/non-app-relative"));
     }
 
     @Singleton

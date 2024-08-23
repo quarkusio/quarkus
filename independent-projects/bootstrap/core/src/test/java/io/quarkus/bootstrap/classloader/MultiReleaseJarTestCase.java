@@ -1,13 +1,9 @@
 package io.quarkus.bootstrap.classloader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.classloading.JarClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,12 +14,14 @@ import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.io.TempDir;
+
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.util.IoUtils;
 
 public class MultiReleaseJarTestCase {
 
@@ -52,10 +50,9 @@ public class MultiReleaseJarTestCase {
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void shouldLoadMultiReleaseJarOnJDK9Plus() throws IOException {
         try (QuarkusClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                .addElement(new JarClassPathElement(jarPath))
+                .addElement(ClassPathElement.fromPath(jarPath, true))
                 .build()) {
             URL resource = cl.getResource("foo.txt");
             assertNotNull(resource, "foo.txt was not found in generated JAR");
@@ -68,20 +65,4 @@ public class MultiReleaseJarTestCase {
         }
     }
 
-    @Test
-    @EnabledOnJre(JRE.JAVA_8)
-    public void shouldLoadMultiReleaseJarOnJDK8() throws IOException {
-        try (QuarkusClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                .addElement(new JarClassPathElement(jarPath))
-                .build()) {
-            URL resource = cl.getResource("foo.txt");
-            assertNotNull(resource, "foo.txt was not found in generated JAR");
-            assertFalse(resource.toString().contains("META-INF/versions/9"));
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (InputStream is = cl.getResourceAsStream("foo.txt")) {
-                IoUtils.copy(baos, is);
-            }
-            assertEquals("Original", baos.toString());
-        }
-    }
 }

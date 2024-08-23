@@ -2,7 +2,7 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,7 @@ public class VertxWithHttpDisabledTest {
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 

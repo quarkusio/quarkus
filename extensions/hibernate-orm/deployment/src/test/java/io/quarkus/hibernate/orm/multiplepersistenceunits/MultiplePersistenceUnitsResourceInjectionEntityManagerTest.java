@@ -3,9 +3,9 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -54,11 +54,10 @@ public class MultiplePersistenceUnitsResourceInjectionEntityManagerTest {
     public void testUserInInventoryEntityManager() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 
     @Test
-    @Transactional
     public void testAccessBothPersistenceUnits() {
         testUser();
         testPlane();

@@ -19,6 +19,17 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static java.util.AbstractMap.SimpleImmutableEntry;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,7 +44,6 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.Attribute;
@@ -45,16 +55,6 @@ import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * A copy of {@link io.netty.handler.codec.http.multipart.HttpPostRequestEncoder} that supports pause/resume
@@ -216,6 +216,11 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
     private boolean isChunked;
 
     /**
+     * The max HTTP chunk
+     */
+    private int maxChunkSize;
+
+    /**
      * InterfaceHttpData for Body (without encoding)
      */
     private final List<InterfaceHttpData> bodyListDatas;
@@ -263,8 +268,8 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
      *         if the request is a TRACE
      */
     public PausableHttpPostRequestEncoder(
-            HttpDataFactory factory, HttpRequest request, boolean multipart, Charset charset,
-            EncoderMode encoderMode)
+            HttpDataFactory factory, HttpRequest request, boolean multipart, int maxChunkSize,
+            Charset charset, EncoderMode encoderMode)
             throws ErrorDataEncoderException {
         this.request = checkNotNull(request, "request");
         this.charset = checkNotNull(charset, "charset");
@@ -278,6 +283,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         isLastChunk = false;
         isLastChunkSent = false;
         isMultipart = multipart;
+        this.maxChunkSize = maxChunkSize;
         multipartHttpDatas = new ArrayList<>();
         this.encoderMode = encoderMode;
         if (isMultipart) {
@@ -351,7 +357,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
 
     /**
      * This getMethod returns a List of all InterfaceHttpData from body part.<br>
-     * 
+     *
      * @return the list of InterfaceHttpData from Body part
      */
     public List<InterfaceHttpData> getBodyListAttributes() {
@@ -660,35 +666,35 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
                             139 + multipartDataBoundary.length() + multipartMixedBoundary.length() * 2 +
                                     fileUpload.getFilename().length() + fileUpload.getName().length())
 
-                                            .append("--")
-                                            .append(multipartDataBoundary)
-                                            .append("\r\n")
+                            .append("--")
+                            .append(multipartDataBoundary)
+                            .append("\r\n")
 
-                                            .append(HttpHeaderNames.CONTENT_DISPOSITION)
-                                            .append(": ")
-                                            .append(HttpHeaderValues.FORM_DATA)
-                                            .append("; ")
-                                            .append(HttpHeaderValues.NAME)
-                                            .append("=\"")
-                                            .append(fileUpload.getName())
-                                            .append("\"\r\n")
+                            .append(HttpHeaderNames.CONTENT_DISPOSITION)
+                            .append(": ")
+                            .append(HttpHeaderValues.FORM_DATA)
+                            .append("; ")
+                            .append(HttpHeaderValues.NAME)
+                            .append("=\"")
+                            .append(fileUpload.getName())
+                            .append("\"\r\n")
 
-                                            .append(HttpHeaderNames.CONTENT_TYPE)
-                                            .append(": ")
-                                            .append(HttpHeaderValues.MULTIPART_MIXED)
-                                            .append("; ")
-                                            .append(HttpHeaderValues.BOUNDARY)
-                                            .append('=')
-                                            .append(multipartMixedBoundary)
-                                            .append("\r\n\r\n")
+                            .append(HttpHeaderNames.CONTENT_TYPE)
+                            .append(": ")
+                            .append(HttpHeaderValues.MULTIPART_MIXED)
+                            .append("; ")
+                            .append(HttpHeaderValues.BOUNDARY)
+                            .append('=')
+                            .append(multipartMixedBoundary)
+                            .append("\r\n\r\n")
 
-                                            .append("--")
-                                            .append(multipartMixedBoundary)
-                                            .append("\r\n")
+                            .append("--")
+                            .append(multipartMixedBoundary)
+                            .append("\r\n")
 
-                                            .append(HttpHeaderNames.CONTENT_DISPOSITION)
-                                            .append(": ")
-                                            .append(HttpHeaderValues.ATTACHMENT);
+                            .append(HttpHeaderNames.CONTENT_DISPOSITION)
+                            .append(": ")
+                            .append(HttpHeaderValues.ATTACHMENT);
 
                     if (!fileUpload.getFilename().isEmpty()) {
                         replacement.append("; ")
@@ -812,7 +818,6 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
 
         HttpHeaders headers = request.headers();
         List<String> contentTypes = headers.getAll(HttpHeaderNames.CONTENT_TYPE);
-        List<String> transferEncoding = headers.getAll(HttpHeaderNames.TRANSFER_ENCODING);
         if (contentTypes != null) {
             headers.remove(HttpHeaderNames.CONTENT_TYPE);
             for (String contentType : contentTypes) {
@@ -842,19 +847,9 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         iterator = multipartHttpDatas.listIterator();
 
         headers.set(HttpHeaderNames.CONTENT_LENGTH, String.valueOf(realSize));
-        if (realSize > QuarkusHttpPostBodyUtil.chunkSize || isMultipart) {
+        if (realSize > maxChunkSize) {
             isChunked = true;
-            if (transferEncoding != null) {
-                headers.remove(HttpHeaderNames.TRANSFER_ENCODING);
-                for (CharSequence v : transferEncoding) {
-                    if (HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(v)) {
-                        // ignore
-                    } else {
-                        headers.add(HttpHeaderNames.TRANSFER_ENCODING, v);
-                    }
-                }
-            }
-            HttpUtil.setTransferEncodingChunked(request, true);
+            removeChunkedFromTransferEncoding(headers);
 
             // wrap to hide the possible content
             return new WrappedHttpRequest(request);
@@ -864,11 +859,14 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
             if (request instanceof FullHttpRequest) {
                 FullHttpRequest fullRequest = (FullHttpRequest) request;
                 ByteBuf chunkContent = chunk.content();
-                if (fullRequest.content() != chunkContent) {
+                if (fullRequest.content() != chunkContent && chunkContent != null) {
                     fullRequest.content().clear().writeBytes(chunkContent);
                     chunkContent.release();
+                } else if (chunkContent == null) {
+                    isChunked = true;
+                    removeChunkedFromTransferEncoding(headers);
                 }
-                return fullRequest;
+                return new WrappedHttpRequest(fullRequest);
             } else {
                 return new WrappedFullHttpRequest(request, chunk);
             }
@@ -880,6 +878,21 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
      */
     public boolean isChunked() {
         return isChunked;
+    }
+
+    private void removeChunkedFromTransferEncoding(HttpHeaders headers) {
+        List<String> transferEncoding = headers.getAll(HttpHeaderNames.TRANSFER_ENCODING);
+
+        if (transferEncoding != null) {
+            headers.remove(HttpHeaderNames.TRANSFER_ENCODING);
+            for (CharSequence v : transferEncoding) {
+                if (HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(v)) {
+                    // ignore
+                } else {
+                    headers.add(HttpHeaderNames.TRANSFER_ENCODING, v);
+                }
+            }
+        }
     }
 
     /**
@@ -927,8 +940,8 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
      */
     private ByteBuf fillByteBuf() {
         int length = currentBuffer.readableBytes();
-        if (length > QuarkusHttpPostBodyUtil.chunkSize) {
-            return currentBuffer.readRetainedSlice(QuarkusHttpPostBodyUtil.chunkSize);
+        if (length > maxChunkSize) {
+            return currentBuffer.readRetainedSlice(maxChunkSize);
         } else {
             // to continue
             ByteBuf slice = currentBuffer;
@@ -982,7 +995,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         } else {
             currentBuffer = wrappedBuffer(currentBuffer, buffer);
         }
-        if (currentBuffer.readableBytes() < QuarkusHttpPostBodyUtil.chunkSize) {
+        if (currentBuffer.readableBytes() < maxChunkSize) {
             currentData = null;
             return null;
         }
@@ -1019,7 +1032,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
             }
             // continue
             size -= buffer.readableBytes() + 1;
-            if (currentBuffer.readableBytes() >= QuarkusHttpPostBodyUtil.chunkSize) {
+            if (currentBuffer.readableBytes() >= maxChunkSize) {
                 buffer = fillByteBuf();
                 return new DefaultHttpContent(buffer);
             }
@@ -1053,7 +1066,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
                     currentBuffer = wrappedBuffer(currentBuffer, delimiter);
                 }
             }
-            if (currentBuffer.readableBytes() >= QuarkusHttpPostBodyUtil.chunkSize) {
+            if (currentBuffer.readableBytes() >= maxChunkSize) {
                 buffer = fillByteBuf();
                 return new DefaultHttpContent(buffer);
             }
@@ -1076,7 +1089,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         }
 
         // end for current InterfaceHttpData, need more data
-        if (currentBuffer.readableBytes() < QuarkusHttpPostBodyUtil.chunkSize) {
+        if (currentBuffer.readableBytes() < maxChunkSize) {
             currentData = null;
             isKey = true;
             return null;
@@ -1184,7 +1197,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
     }
 
     private int calculateRemainingSize() {
-        int size = QuarkusHttpPostBodyUtil.chunkSize;
+        int size = maxChunkSize;
         if (currentBuffer != null) {
             size -= currentBuffer.readableBytes();
         }

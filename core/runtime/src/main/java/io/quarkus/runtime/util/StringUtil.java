@@ -13,6 +13,20 @@ public final class StringUtil {
     private StringUtil() {
     }
 
+    public static String changePrefix(String name, String oldPrefix, String newPrefix) {
+        if (!name.startsWith(oldPrefix)) {
+            return name;
+        }
+        // don't use here String::replaceFirst because it uses regex
+        final int oldLen = oldPrefix.length();
+        final int diff = newPrefix.length() - oldLen;
+        final int nameLen = name.length();
+        final var builder = new StringBuilder(nameLen + diff);
+        builder.append(newPrefix);
+        builder.append(name, oldLen, nameLen);
+        return builder.toString();
+    }
+
     public static Iterator<String> camelHumpsIterator(String str) {
         return new Iterator<String>() {
             int idx;
@@ -215,5 +229,9 @@ public final class StringUtil {
 
     public static String hyphenate(String orig) {
         return join("-", lowerCase(camelHumpsIterator(orig)));
+    }
+
+    public static boolean isNullOrEmpty(String s) {
+        return s == null || s.isEmpty();
     }
 }

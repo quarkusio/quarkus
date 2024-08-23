@@ -18,6 +18,7 @@ class LiquibaseCreator {
     public LiquibaseFactory createLiquibaseFactory(DataSource dataSource, String dataSourceName) {
         LiquibaseConfig config = new LiquibaseConfig();
         config.changeLog = liquibaseBuildTimeConfig.changeLog;
+        config.searchPath = liquibaseBuildTimeConfig.searchPath;
         config.changeLogParameters = liquibaseRuntimeConfig.changeLogParameters;
 
         if (liquibaseRuntimeConfig.labels.isPresent()) {
@@ -32,6 +33,8 @@ class LiquibaseCreator {
         if (liquibaseRuntimeConfig.databaseChangeLogTableName.isPresent()) {
             config.databaseChangeLogTableName = liquibaseRuntimeConfig.databaseChangeLogTableName.get();
         }
+        config.password = liquibaseRuntimeConfig.password;
+        config.username = liquibaseRuntimeConfig.username;
         config.defaultSchemaName = liquibaseRuntimeConfig.defaultSchemaName;
         config.defaultCatalogName = liquibaseRuntimeConfig.defaultCatalogName;
         config.liquibaseTablespaceName = liquibaseRuntimeConfig.liquibaseTablespaceName;
@@ -40,6 +43,7 @@ class LiquibaseCreator {
         config.migrateAtStart = liquibaseRuntimeConfig.migrateAtStart;
         config.cleanAtStart = liquibaseRuntimeConfig.cleanAtStart;
         config.validateOnMigrate = liquibaseRuntimeConfig.validateOnMigrate;
+        config.allowDuplicatedChangesetIdentifiers = liquibaseRuntimeConfig.allowDuplicatedChangesetIdentifiers;
         return new LiquibaseFactory(config, dataSource, dataSourceName);
     }
 }

@@ -12,14 +12,14 @@ import java.util.function.Supplier;
  * Builder for {@link Engine}.
  * <p>
  * If using Qute "standalone" you'll need to create an instance of the {@link Engine} first:
- * 
+ *
  * <pre>
  * Engine engine = Engine.builder()
  *         // add the default set of value resolvers and section helpers
  *         .addDefaults()
  *         .build();
  * </pre>
- * 
+ *
  * This construct is not thread-safe and should not be reused.
  */
 public final class EngineBuilder {
@@ -29,11 +29,14 @@ public final class EngineBuilder {
     final List<NamespaceResolver> namespaceResolvers;
     final List<TemplateLocator> locators;
     final List<ResultMapper> resultMappers;
+    final List<TemplateInstance.Initializer> initializers;
     Function<String, SectionHelperFactory<?>> sectionHelperFunc;
     final List<ParserHook> parserHooks;
     boolean removeStandaloneLines;
     boolean strictRendering;
     String iterationMetadataPrefix;
+    long timeout;
+    boolean useAsyncTimeout;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -42,21 +45,36 @@ public final class EngineBuilder {
         this.locators = new ArrayList<>();
         this.resultMappers = new ArrayList<>();
         this.parserHooks = new ArrayList<>();
+        this.initializers = new ArrayList<>();
         this.strictRendering = true;
         this.removeStandaloneLines = true;
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
+        this.timeout = 10_000;
+        this.useAsyncTimeout = true;
     }
 
+    /**
+     * Register the factory for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
-        if (factory.cacheFactoryConfig()) {
-            factory = new CachedConfigSectionHelperFactory<>(factory);
-        }
+        factory = cachedFactory(factory);
         for (String alias : factory.getDefaultAliases()) {
             sectionHelperFactories.put(alias, factory);
         }
         return this;
     }
 
+    /**
+     * Register the factories for all default aliases.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelpers(SectionHelperFactory<?>... factories) {
         for (SectionHelperFactory<?> factory : factories) {
             addSectionHelper(factory);
@@ -64,7 +82,15 @@ public final class EngineBuilder {
         return this;
     }
 
+    /**
+     * Register the factory for all default aliases and the specified name.
+     *
+     * @param factory
+     * @return self
+     * @see SectionHelperFactory#getDefaultAliases()
+     */
     public EngineBuilder addSectionHelper(String name, SectionHelperFactory<?> factory) {
+        factory = cachedFactory(factory);
         addSectionHelper(factory);
         sectionHelperFactories.put(name, factory);
         return this;
@@ -73,7 +99,8 @@ public final class EngineBuilder {
     public EngineBuilder addDefaultSectionHelpers() {
         return addSectionHelpers(new IfSectionHelper.Factory(), new LoopSectionHelper.Factory(iterationMetadataPrefix),
                 new WithSectionHelper.Factory(), new IncludeSectionHelper.Factory(), new InsertSectionHelper.Factory(),
-                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory());
+                new SetSectionHelper.Factory(), new WhenSectionHelper.Factory(), new EvalSectionHelper.Factory(),
+                new FragmentSectionHelper.Factory());
     }
 
     public EngineBuilder addValueResolver(Supplier<ValueResolver> resolverSupplier) {
@@ -94,7 +121,7 @@ public final class EngineBuilder {
 
     /**
      * Add the default set of value resolvers.
-     * 
+     *
      * @return self
      * @see #addValueResolver(ValueResolver)
      */
@@ -103,12 +130,13 @@ public final class EngineBuilder {
                 ValueResolvers.mapEntryResolver(), ValueResolvers.collectionResolver(), ValueResolvers.listResolver(),
                 ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
                 ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver(), ValueResolvers.orEmpty(),
-                ValueResolvers.arrayResolver());
+                ValueResolvers.arrayResolver(), ValueResolvers.plusResolver(), ValueResolvers.minusResolver(),
+                ValueResolvers.modResolver(), ValueResolvers.numberValueResolver());
     }
 
     /**
      * Add the default set of value resolvers and section helpers.
-     * 
+     *
      * @return self
      * @see #addValueResolver(ValueResolver)
      * @see #addSectionHelper(SectionHelperFactory)
@@ -118,7 +146,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param resolver
      * @return self
      * @throws IllegalArgumentException if there is a resolver of the same priority for the given namespace
@@ -140,7 +168,7 @@ public final class EngineBuilder {
 
     /**
      * A {@link Reader} instance produced by a locator is immediately closed right after the template content is parsed.
-     * 
+     *
      * @param locator
      * @return self
      * @see Engine#getTemplate(String)
@@ -151,7 +179,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param parserHook
      * @return self
      * @see ParserHelper
@@ -162,7 +190,7 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     *
      * @param resultMapper
      * @return self
      */
@@ -172,9 +200,19 @@ public final class EngineBuilder {
     }
 
     /**
+     *
+     * @param initializer
+     * @return self
+     */
+    public EngineBuilder addTemplateInstanceInitializer(TemplateInstance.Initializer initializer) {
+        this.initializers.add(initializer);
+        return this;
+    }
+
+    /**
      * The function is used if no section helper registered via {@link #addSectionHelper(SectionHelperFactory)} matches a
      * section name.
-     * 
+     *
      * @param func
      * @return self
      */
@@ -188,7 +226,7 @@ public final class EngineBuilder {
      * <p>
      * A standalone line is a line that contains at least one section tag, parameter declaration, or comment but no expression
      * and no non-whitespace character.
-     * 
+     *
      * @param value
      * @return self
      */
@@ -202,7 +240,7 @@ public final class EngineBuilder {
      * {@link TemplateException} and the rendering is aborted.
      * <p>
      * Strict rendering is enabled by default.
-     * 
+     *
      * @param value
      * @return self
      */
@@ -217,7 +255,11 @@ public final class EngineBuilder {
      * {@link #addSectionHelper(SectionHelperFactory)}.
      * <p>
      * A valid prefix consists of alphanumeric characters and underscores.
-     * 
+     * <p>
+     * Keep in mind that the prefix must be set before the {@link LoopSectionHelper.Factory} is registered, for example before
+     * the {@link #addDefaultSectionHelpers()} method is called. In other words, the {@link LoopSectionHelper.Factory} must be
+     * re-registered after the prefix is set.
+     *
      * @param prefix
      * @return self
      * @see LoopSectionHelper.Factory
@@ -235,11 +277,41 @@ public final class EngineBuilder {
     }
 
     /**
-     * 
+     * The global rendering timeout.
+     *
+     * @param value Timeout in milliseconds
+     * @return self
+     */
+    public EngineBuilder timeout(long value) {
+        this.timeout = value;
+        return this;
+    }
+
+    /**
+     * If set to {@code true} the timeout (either global or set via the {@code timeout} instance attribute) is also used for
+     * asynchronous rendering methods, such as {@link TemplateInstance#createUni()} and {@link TemplateInstance#renderAsync()}.
+     *
+     * @param value
+     * @return self
+     */
+    public EngineBuilder useAsyncTimeout(boolean value) {
+        this.useAsyncTimeout = value;
+        return this;
+    }
+
+    /**
+     *
      * @return a new engine instance
      */
     public Engine build() {
         return new EngineImpl(this);
+    }
+
+    private SectionHelperFactory<?> cachedFactory(SectionHelperFactory<?> factory) {
+        if (factory instanceof CachedConfigSectionHelperFactory || !factory.cacheFactoryConfig()) {
+            return factory;
+        }
+        return new CachedConfigSectionHelperFactory<>(factory);
     }
 
     static class CachedConfigSectionHelperFactory<T extends SectionHelper> implements SectionHelperFactory<T> {
@@ -289,6 +361,11 @@ public final class EngineBuilder {
         @Override
         public Scope initializeBlock(Scope outerScope, BlockInfo block) {
             return delegate.initializeBlock(outerScope, block);
+        }
+
+        @Override
+        public MissingEndTagStrategy missingEndTagStrategy() {
+            return delegate.missingEndTagStrategy();
         }
 
     }

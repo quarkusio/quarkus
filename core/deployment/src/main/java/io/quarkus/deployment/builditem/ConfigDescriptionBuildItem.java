@@ -7,22 +7,19 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 
 /**
  * A build item that is not part of the standard build, but is only used to generate
- * example config files and docs
+ * example config files and docs.
  */
 public final class ConfigDescriptionBuildItem extends MultiBuildItem implements Comparable<ConfigDescriptionBuildItem> {
-
     private final String propertyName;
-    private final Class<?> type;
     private final String defaultValue;
     private final String docs;
     private final String valueTypeName;
     private final List<String> allowedValues;
     private final ConfigPhase configPhase;
 
-    public ConfigDescriptionBuildItem(String propertyName, Class<?> type, String defaultValue, String docs,
-            String valueTypeName, List<String> allowedValues, ConfigPhase configPhase) {
+    public ConfigDescriptionBuildItem(String propertyName, String defaultValue, String docs, String valueTypeName,
+            List<String> allowedValues, ConfigPhase configPhase) {
         this.propertyName = propertyName;
-        this.type = type;
         this.defaultValue = defaultValue;
         this.docs = docs;
         this.valueTypeName = valueTypeName;
@@ -32,10 +29,6 @@ public final class ConfigDescriptionBuildItem extends MultiBuildItem implements 
 
     public String getPropertyName() {
         return propertyName;
-    }
-
-    public Class<?> getType() {
-        return type;
     }
 
     public String getDefaultValue() {

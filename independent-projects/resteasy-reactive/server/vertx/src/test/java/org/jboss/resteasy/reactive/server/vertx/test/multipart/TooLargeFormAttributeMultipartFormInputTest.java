@@ -2,18 +2,19 @@ package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 
 import static io.restassured.RestAssured.given;
 
-import io.vertx.core.http.HttpServerOptions;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.multipart.other.OtherPackageFormDataBase;
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.vertx.core.http.HttpServerOptions;
+
 public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipartTest {
 
     private static final java.nio.file.Path uploadDir = Paths.get("file-uploads");
@@ -33,7 +36,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
             .setUploadPath(uploadDir)
             .setDeleteUploadedFilesOnEnd(false)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -92,6 +95,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         @Produces(MediaType.TEXT_PLAIN)
+        @SuppressWarnings({ "removal" })
         public String hello(@MultipartForm FormData data) {
             return data.getName();
         }

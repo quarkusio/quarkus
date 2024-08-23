@@ -9,10 +9,11 @@ allprojects {
   version = "1.0.0-SNAPSHOT"
 
   repositories {
-    if (System.getProperties().containsKey("maven.repo.local")) {
-      maven(url = System.getProperties().get("maven.repo.local")!!)
-    } else {
-      mavenLocal()
+    mavenLocal {
+      content {
+        includeGroupByRegex("io.quarkus.*")
+        includeGroup("org.hibernate.orm")
+      }
     }
     mavenCentral()
   }
@@ -29,7 +30,7 @@ subprojects {
   val quarkusPlatformArtifactId: String by project
   val quarkusPlatformVersion: String by project
 
-  val javaVersion = "11"
+  val javaVersion = "17"
 
   dependencies {
     "implementation"(enforcedPlatform("$quarkusPlatformGroupId:$quarkusPlatformArtifactId:$quarkusPlatformVersion"))

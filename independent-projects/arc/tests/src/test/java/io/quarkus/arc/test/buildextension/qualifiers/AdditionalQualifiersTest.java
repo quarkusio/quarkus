@@ -7,10 +7,6 @@ import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.processor.QualifierRegistrar;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,11 +15,18 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Singleton;
+
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Singleton;
+
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class AdditionalQualifiersTest {
 

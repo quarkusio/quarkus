@@ -2,8 +2,8 @@ package io.quarkus.flyway.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.DisplayName;

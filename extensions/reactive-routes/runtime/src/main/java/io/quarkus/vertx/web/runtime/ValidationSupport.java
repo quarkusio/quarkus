@@ -3,13 +3,14 @@ package io.quarkus.vertx.web.runtime;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.ElementKind;
-import javax.validation.Path.Node;
-import javax.validation.Validator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path.Node;
+import jakarta.validation.Validator;
 
 import io.quarkus.arc.ArcContainer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -42,7 +43,7 @@ public class ValidationSupport {
 
     /**
      * Generates a JSON response following https://opensource.zalando.com/problem/constraint-violation/
-     * 
+     *
      * @param violations the violations
      * @return the json object
      */
@@ -70,7 +71,7 @@ public class ValidationSupport {
     public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc, boolean forceJsonEncoding) {
         String accept = rc.request().getHeader(ACCEPT_HEADER);
         if (forceJsonEncoding || accept != null && accept.contains(APPLICATION_JSON)) {
-            rc.response().putHeader(RouteHandlers.CONTENT_TYPE, APPLICATION_JSON);
+            rc.response().putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON);
             JsonObject json = generateJsonResponse(ex.getConstraintViolations(), false);
             rc.response().setStatusCode(json.getInteger(PROBLEM_STATUS));
             rc.response().end(json.encode());

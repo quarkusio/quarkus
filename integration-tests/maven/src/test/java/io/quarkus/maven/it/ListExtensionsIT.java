@@ -69,7 +69,7 @@ class ListExtensionsIT extends QuarkusPlatformAwareMojoTestBase {
         InvocationOutputHandler outputHandler = new PrintStreamHandler(
                 new PrintStream(new TeeOutputStream(System.out, Files.newOutputStream(outputLog.toPath())), true, "UTF-8"),
                 true);
-        invoker.setOutputHandler(outputHandler);
+        request.setOutputHandler(outputHandler);
 
         File invokerLog = new File(testDir, "invoker.log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(invokerLog), false, "UTF-8"),

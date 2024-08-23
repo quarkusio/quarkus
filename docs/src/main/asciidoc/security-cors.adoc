@@ -1,0 +1,75 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-cors"]
+= Cross-origin resource sharing
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: security,web
+:keywords: cors,http
+:extensions: io.quarkus:quarkus-vertx-http
+
+Cross-origin resource sharing (CORS) is an HTTP-header-based mechanism that allows a server to indicate any origins other than its own, from which a browser should permit loading resources.
+
+These origins consist of a single domain, scheme, and port.
+For the complete origin definition, see the link:https://datatracker.ietf.org/doc/html/rfc6454[Web Origin Concept] page.
+
+[[cors-filter]]
+== CORS filter
+
+Quarkus provides a CORS filter, which implements the `jakarta.servlet.Filter` interface and intercepts all incoming HTTP requests.
+It can be enabled in the Quarkus configuration file, `src/main/resources/application.properties`:
+
+[source, properties]
+----
+quarkus.http.cors=true
+----
+
+When the filter is enabled and identifies an HTTP request as cross-origin, it will enforce the CORS policy.
+It will also add headers configured with the following properties before forwarding the request to its intended destination, like a servlet, Jakarta REST resource, or other endpoints.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.cors.adoc[leveloffset=+1, opts=optional]
+
+. An example of a full CORS filter configuration that includes a regular expression defining an allowed origin
+[source, properties]
+----
+quarkus.http.cors=true
+quarkus.http.cors.origins=http://foo.com,http://www.bar.io,/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/
+quarkus.http.cors.methods=GET,PUT,POST
+quarkus.http.cors.headers=X-Custom
+quarkus.http.cors.exposed-headers=Content-Disposition
+quarkus.http.cors.access-control-max-age=24H
+quarkus.http.cors.access-control-allow-credentials=true
+----
+
+`/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/` is treated as a regular expression because forward slash characters surround it.
+
+[NOTE]
+====
+If you use regular expressions in an `application.properties` file, make sure four backward slashes are used to represent `.` and other regular expression metadata characters as normal characters, for example, `\\\\.` represents a `.` character while `\\.` represents a metadata character allowing for any character.
+====
+
+=== Support all origins in dev mode
+
+Configuring required origins when developing a Quarkus application requiring CORS support can be difficult.
+In such cases, consider allowing all origins in dev mode only in order to focus on the actual development first:
+
+[source, properties]
+----
+quarkus.http.cors=true
+%dev.quarkus.http.cors.origins=/.*/
+----
+
+[IMPORTANT]
+====
+Enable all origins exclusively for the dev profile.
+It is not advisable to permit all origins in a production environment, as it can lead to significant security risks.
+====
+
+== References
+
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:http-reference.adoc[Quarkus HTTP Reference]
+* link:https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[Mozilla HTTP CORS documentation]

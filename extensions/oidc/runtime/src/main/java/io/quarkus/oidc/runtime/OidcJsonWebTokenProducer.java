@@ -1,10 +1,10 @@
 package io.quarkus.oidc.runtime;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -79,7 +79,9 @@ public class OidcJsonWebTokenProducer {
             return new OidcJwtCallerPrincipal(jwtClaims, credential);
         }
         String tokenType = type == AccessTokenCredential.class ? "access" : "ID";
-        LOG.tracef("Current identity is not associated with an %s token", tokenType);
+        LOG.warnf(
+                "Identity is not associated with an %s token. Access 'JsonWebToken' with '@IdToken' qualifier if ID token is required and 'JsonWebToken' without this qualifier when JWT access token is required. Inject either 'io.quarkus.security.identity.SecurityIdentity' or 'io.quarkus.oidc.UserInfo' if you need to have the same endpoint code working for both authorization code and bearer token authentication flows.",
+                tokenType);
         return new NullJsonWebToken();
     }
 }

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.mockito.Mockito;
-import org.mockito.internal.debugging.LocationImpl;
+import org.mockito.internal.debugging.LocationFactory;
 import org.mockito.internal.invocation.DefaultInvocationFactory;
 import org.mockito.internal.invocation.InterceptedInvocation;
 import org.mockito.internal.invocation.RealMethod;
@@ -58,7 +58,7 @@ public class PanacheMock {
             MockCreationSettings<?> settings = MockUtil.getMockSettings(mock);
             MyRealMethod myRealMethod = new MyRealMethod();
             InterceptedInvocation invocation = DefaultInvocationFactory.createInvocation(mock, invokedMethod, args,
-                    myRealMethod, settings, new LocationImpl(new Throwable(), true));
+                    myRealMethod, settings, LocationFactory.create(true));
             MockHandler<?> handler = MockUtil.getMockHandler(mock);
             return handler.handle(invocation);
         } catch (InvokeRealMethodException e) {

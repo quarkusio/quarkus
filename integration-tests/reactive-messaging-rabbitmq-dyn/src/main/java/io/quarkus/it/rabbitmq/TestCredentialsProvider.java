@@ -3,8 +3,8 @@ package io.quarkus.it.rabbitmq;
 import java.time.Instant;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

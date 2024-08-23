@@ -28,7 +28,8 @@ public class OpenshiftWithApplicationPropertiesTest {
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-application.properties");
+            .withConfigurationResource("openshift-with-application.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -45,7 +46,8 @@ public class OpenshiftWithApplicationPropertiesTest {
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("test-it");
-                assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                assertThat(m.getLabels()).contains(entry("foo", "bar"))
+                        .containsKey("app.kubernetes.io/version"); // make sure the version was not removed from the labels
                 assertThat(m.getNamespace()).isEqualTo("applications");
             });
             AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
@@ -55,6 +57,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv()).extracting("name", "value")
                                     .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
+                            assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                         });
                     });
             specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
@@ -70,7 +73,7 @@ public class OpenshiftWithApplicationPropertiesTest {
 
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });
@@ -88,7 +91,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                     assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 
-                assertThat(r.getSpec().getPort().getTargetPort().getIntVal()).isEqualTo(9090);
+                assertThat(r.getSpec().getPort().getTargetPort().getStrVal()).isEqualTo("http");
             });
         });
     }

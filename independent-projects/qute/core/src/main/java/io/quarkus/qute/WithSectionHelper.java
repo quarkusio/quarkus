@@ -1,8 +1,9 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code with} statement.

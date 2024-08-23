@@ -2,7 +2,7 @@ package io.quarkus.undertow.runtime;
 
 import java.util.function.Function;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
@@ -25,7 +25,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
 
-        String requestPath = request.request().path();
+        String requestPath = request.normalizedPath();
         if (!requestPath.startsWith(contextPath)) {
             //anything outside the context path we don't have anything to do with
             return Uni.createFrom().item(CheckResult.PERMIT);

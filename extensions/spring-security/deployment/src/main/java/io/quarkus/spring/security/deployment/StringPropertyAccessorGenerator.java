@@ -4,7 +4,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.Set;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;

@@ -11,10 +11,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
+@WithTestResource(value = KeycloakRealmUserPasswordManager.class, restrictToAnnotatedClass = false)
 public class NamedOidcClientInjectionTestCase {
 
     private static Class<?>[] testClasses = {

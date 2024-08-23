@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging RabbitMQ Connector Reference Documentation
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:extension-status: preview
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
 This guide is the companion from the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
 It explains in more details the configuration and usage of the RabbitMQ connector for reactive messaging.
@@ -20,15 +23,17 @@ IMPORTANT: The RabbitMQ connector supports AMQP 0-9-1, which is very different f
 AMQP 1.0 connector. You can use the AMQP 1.0 connector with RabbitMQ as described in the
 xref:amqp-reference.adoc[AMQP 1.0 connector reference], albeit with *reduced functionality*.
 
+include::{includes}/extension-status.adoc[]
+
 == RabbitMQ connector extension
 
-To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-rabbitmq` extension.
+To use the connector, you need to add the `quarkus-messaging-rabbitmq` extension.
 
 You can add the extension to your project using:
 
 [source, bash]
 ----
-> ./mvnw quarkus:add-extensions -Dextensions="quarkus-smallrye-reactive-messaging-rabbitmq"
+> ./mvnw quarkus:add-extensions -Dextensions="quarkus-messaging-rabbitmq"
 ----
 
 Or just add the following dependency to your project:
@@ -37,7 +42,7 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+    <artifactId>quarkus-messaging-rabbitmq</artifactId>
 </dependency>
 ----
 
@@ -69,11 +74,11 @@ rabbitmq-password=my-password # <4>
 
 mp.messaging.incoming.prices.connector=smallrye-rabbitmq # <5>
 ----
-1. Configures the broker host name. You can do it per channel (using the `host` attribute) or globally using `rabbitmq-host`
-2. Configures the broker port. You can do it per channel (using the `port` attribute) or globally using `rabbitmq-port`. The default is `5672`.
-3. Configures the broker username if required. You can do it per channel (using the `username` attribute) or globally using `rabbitmq-username`.
-4. Configures the broker password if required. You can do it per channel (using the `password` attribute) or globally using `rabbitmq-password`.
-5. Instructs the prices channel to be managed by the RabbitMQ connector
+<1> Configures the broker host name. You can do it per channel (using the `host` attribute) or globally using `rabbitmq-host`
+<2> Configures the broker port. You can do it per channel (using the `port` attribute) or globally using `rabbitmq-port`. The default is `5672`.
+<3> Configures the broker username if required. You can do it per channel (using the `username` attribute) or globally using `rabbitmq-username`.
+<4> Configures the broker password if required. You can do it per channel (using the `password` attribute) or globally using `rabbitmq-password`.
+<5> Instructs the prices channel to be managed by the RabbitMQ connector
 
 In dev mode and when running tests, xref:rabbitmq-dev-services.adoc[Dev Services for RabbitMQ] automatically starts a RabbitMQ broker.
 
@@ -88,7 +93,7 @@ package inbound;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class RabbitMQPriceConsumer {
@@ -110,7 +115,7 @@ package inbound;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletionStage;
 
 @ApplicationScoped
@@ -197,9 +202,9 @@ public static class Consumer {
     }
 }
 ----
-1. The `Price` instances are automatically encoded to JSON by the connector
-2. You can receive it using a `JsonObject`
-3. Then, you can reconstruct the instance using the `mapTo` method
+<1> The `Price` instances are automatically encoded to JSON by the connector
+<2> You can receive it using a `JsonObject`
+<3> Then, you can reconstruct the instance using the `mapTo` method
 
 NOTE: The `mapTo` method uses the Quarkus Jackson mapper. Check xref:rest-json.adoc#json[this guide] to learn more about the mapper configuration.
 
@@ -222,7 +227,7 @@ three strategies, controlled by the failure-strategy channel setting:
 
 === Serialization
 
-When sendingWhen sending a `Message<T>`, the connector converts the message into a RabbitMQ Message. The payload is converted to the RabbitMQ Message body.
+When sending a `Message<T>`, the connector converts the message into a RabbitMQ Message. The payload is converted to the RabbitMQ Message body.
 
 [options=header]
 |===
@@ -289,7 +294,7 @@ mp.messaging.outgoing.people.exchange.name=people
 mp.messaging.outgoing.people.exchange.declare=false
 ----
 
-[#blocking-processing]
+[[blocking-processing]]
 === Execution model and Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.
@@ -304,8 +309,8 @@ For example, The following code illustrates how you can store incoming payloads 
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class PriceStorage {
@@ -335,6 +340,12 @@ The first one provides more fine-grained tuning such as the worker pool to use a
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 ====
 
+[TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
 == Customizing the underlying RabbitMQ client
 
 The connector uses the Vert.x RabbitMQ client underneath.
@@ -356,16 +367,16 @@ public RabbitMQOptions getNamedOptions() {
         .setSsl(true)
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
-        .setUser("user1");
-        .setPassword("password1");
-        .setHost("localhost");
-        .setPort(5672);
-        .setVirtualHost("vhost1");
-        .setConnectionTimeout(6000); // in milliseconds
-        .setRequestedHeartbeat(60); // in seconds
-        .setHandshakeTimeout(6000); // in milliseconds
-        .setRequestedChannelMax(5);
-        .setNetworkRecoveryInterval(500); // in milliseconds
+        .setUser("user1")
+        .setPassword("password1")
+        .setHost("localhost")
+        .setPort(5672)
+        .setVirtualHost("vhost1")
+        .setConnectionTimeout(6000) // in milliseconds
+        .setRequestedHeartbeat(60) // in seconds
+        .setHandshakeTimeout(6000) // in milliseconds
+        .setRequestedChannelMax(5)
+        .setNetworkRecoveryInterval(500) // in milliseconds
         .setAutomaticRecoveryEnabled(true);
 }
 ----
@@ -387,7 +398,7 @@ To disable health reporting, set the `health-enabled` attribute for the channel 
 
 On the inbound side (receiving messages from RabbitMQ), the check verifies that the receiver is connected to the broker.
 
-On the outbound side (sending records to RabbitMQ), the check verifies that the sender is not disconnected from the broker; the sender _may_ still be in an initiliased state (connection not yet attempted), but this is regarded as live/ready.
+On the outbound side (sending records to RabbitMQ), the check verifies that the sender is not disconnected from the broker; the sender _may_ still be in an initialised state (connection not yet attempted), but this is regarded as live/ready.
 
 Note that a message processing failures nacks the message, which is then handled by the `failure-strategy`.
 It's the responsibility of the `failure-strategy` to report the failure and influence the outcome of the checks.
@@ -446,8 +457,8 @@ Next we configure the `rabbitmq` credentials provider. The `credentials-role` op
 role we created in Vault, in our case `my-role`. The `credentials-mount` option must be set to `rabbitmq`.
 [source, properties]
 ----
-quarkus.vault.credentials-provider.rabbitmq.credentials-role = my-role
-quarkus.vault.credentials-provider.rabbitmq.credentials-mount = rabbitmq
+quarkus.vault.credentials-provider.rabbitmq.credentials-role=my-role
+quarkus.vault.credentials-provider.rabbitmq.credentials-mount=rabbitmq
 ----
 
 NOTE: The `credentials-mount` is used directly as the mount of the secret engine in Vault. Here we are using
@@ -493,7 +504,7 @@ Type: _int_ | false | `5672`
 
 | [.no-hyphens]#*ssl*#
 
-[.no-hyphens]#_(rabbitmq-ssl)_# | Whether or not the connection should use SSL
+[.no-hyphens]#_(rabbitmq-ssl)_# | Whether the connection should use SSL
 
 Type: _boolean_ | false | `false`
 
@@ -553,7 +564,7 @@ Type: _int_ | false | `10`
 
 Type: _int_ | false | `5000`
 
-| [.no-hyphens]#*user*# | The AMQP user name to use when connecting to the broker
+| [.no-hyphens]#*user*# | The AMQP username to use when connecting to the broker
 
 Type: _string_ | false | `guest`
 
@@ -579,7 +590,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `/`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 
@@ -631,9 +642,25 @@ Type: _boolean_ | false | `true`
 
 Type: _long_ | false |
 
+| [.no-hyphens]#*queue.single-active-consumer*# | If set to true, only one consumer can actively consume messages
+
+Type: _boolean_ | false | `false`
+
+| [.no-hyphens]#*queue.x-queue-type*# | If automatically declare queue, we can choose different types of queue [quorum, classic, stream]
+
+Type: _string_ | false | `classic`
+
+| [.no-hyphens]#*queue.x-queue-mode*# | If automatically declare queue, we can choose different modes of queue [lazy, default]
+
+Type: _string_ | false | `default`
+
 | [.no-hyphens]#*max-incoming-internal-queue-size*# | The maximum size of the incoming internal queue
 
 Type: _int_ | false |
+
+| [.no-hyphens]#*connection-count*# | The number of RabbitMQ connections to create for consuming from this queue. This might be necessary to consume from a sharded queue with a single client.
+
+Type: _int_ | false | `1`
 
 | [.no-hyphens]#*auto-bind-dlq*# | Whether to automatically declare the DLQ and bind it to the binder DLX
 
@@ -659,6 +686,14 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
+| [.no-hyphens]#*dead-letter-queue-type*# | If automatically declare DLQ, we can choose different types of DLQ [quorum, classic, stream]
+
+Type: _string_ | false | `classic`
+
+| [.no-hyphens]#*dead-letter-queue-mode*# | If automatically declare DLQ, we can choose different modes of DLQ [lazy, default]
+
+Type: _string_ | false | `default`
+
 | [.no-hyphens]#*failure-strategy*# | The failure strategy to apply when a RabbitMQ message is nacked. Accepted values are `fail`, `accept`, `reject` (default)
 
 Type: _string_ | false | `reject`
@@ -679,6 +714,13 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `#`
 
+| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MIME type
+
+Type: _string_ | false |
+
+| [.no-hyphens]#*max-outstanding-messages*# | The maximum number of outstanding/unacknowledged messages being processed by the connector at a time; must be a positive number
+
+Type: _int_ | false |
 |===
 
 
@@ -720,7 +762,7 @@ Type: _boolean_ | false | `true`
 
 Type: _boolean_ | false | `true`
 
-| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used
+| [.no-hyphens]#*exchange.name*# | The exchange that messages are published to or consumed from. If not set, the channel name is used. If set to `""`, the default exchange is used
 
 Type: _string_ | false |
 
@@ -788,7 +830,7 @@ Type: _int_ | false | `60`
 
 | [.no-hyphens]#*ssl*#
 
-[.no-hyphens]#_(rabbitmq-ssl)_# | Whether or not the connection should use SSL
+[.no-hyphens]#_(rabbitmq-ssl)_# | Whether the connection should use SSL
 
 Type: _boolean_ | false | `false`
 
@@ -828,7 +870,7 @@ Type: _string_ | false |
 
 Type: _boolean_ | false | `false`
 
-| [.no-hyphens]#*user*# | The AMQP user name to use when connecting to the broker
+| [.no-hyphens]#*user*# | The AMQP username to use when connecting to the broker
 
 Type: _string_ | false | `guest`
 

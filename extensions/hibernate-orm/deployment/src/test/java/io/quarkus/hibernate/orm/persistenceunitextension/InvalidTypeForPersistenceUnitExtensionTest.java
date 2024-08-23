@@ -2,9 +2,9 @@ package io.quarkus.hibernate.orm.persistenceunitextension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 import org.hibernate.Interceptor;
 import org.hibernate.boot.model.naming.Identifier;

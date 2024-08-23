@@ -10,7 +10,10 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 /**
  * Defines a 'test profile'. Tests run under a test profile
  * will have different configuration options to other tests.
- *
+ * <p>
+ * If an implementation of this interface declares CDI beans, via producer methods/fields and nested static classes, then those
+ * beans are only taken into account if this test profile is used. In other words, the beans are ignored for any other test
+ * profile.
  */
 public interface QuarkusTestProfile {
 
@@ -48,7 +51,7 @@ public interface QuarkusTestProfile {
      * specific test profile.
      *
      * If this method is not overridden, then only the {@link QuarkusTestResourceLifecycleManager} classes enabled via the
-     * {@link io.quarkus.test.common.QuarkusTestResource} class
+     * {@link io.quarkus.test.common.WithTestResource} class
      * annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at
      * all).
      */
@@ -57,7 +60,7 @@ public interface QuarkusTestProfile {
     }
 
     /**
-     * If this is returns true then only the test resources returned from {@link #testResources()} will be started,
+     * If this returns true then only the test resources returned from {@link #testResources()} will be started,
      * global annotated test resources will be ignored.
      */
     default boolean disableGlobalTestResources() {

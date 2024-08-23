@@ -6,18 +6,17 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.vertx.UniAsserter;
+import io.quarkus.test.vertx.UniAsserter;
 
 @QuarkusTest
+@TestReactiveTransaction
 public class TestReactiveTransactionTest {
 
-    @TestReactiveTransaction
     @Test
     public void testTestTransaction(UniAsserter asserter) {
         asserter.assertNotNull(() -> Panache.currentTransaction());
     }
 
-    @TestReactiveTransaction
     @BeforeEach
     public void beforeEach(UniAsserter asserter) {
         asserter.assertNotNull(() -> Panache.currentTransaction());

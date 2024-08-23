@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.regex.Pattern;
+
 import org.jboss.logging.Logger;
 
 class LiteralSupport {
@@ -13,7 +14,7 @@ class LiteralSupport {
     static final Pattern FLOAT_LITERAL_PATTERN = Pattern.compile("[-+]?[0-9]*\\.?[0-9]+(f|F)");
 
     /**
-     * 
+     *
      * @param literal
      * @return {@link Results.NotFound.EMPTY} if no literal was found, otherwise the literal value
      */
@@ -22,7 +23,7 @@ class LiteralSupport {
         if (literal == null || literal.isEmpty()) {
             return value;
         }
-        if (isStringLiteralSeparator(literal.charAt(0))) {
+        if (isStringLiteral(literal)) {
             value = literal.substring(1, literal.length() - 1);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
@@ -73,7 +74,23 @@ class LiteralSupport {
      *         <code>false</code> otherwise
      */
     static boolean isStringLiteralSeparator(char character) {
-        return character == '"' || character == '\'';
+        return isStringLiteralSeparatorSingle(character) || isStringLiteralSeparatorDouble(character);
+    }
+
+    static boolean isStringLiteralSeparatorSingle(char character) {
+        return character == '\'';
+    }
+
+    static boolean isStringLiteralSeparatorDouble(char character) {
+        return character == '"';
+    }
+
+    static boolean isStringLiteral(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        char firstChar = value.charAt(0);
+        return isStringLiteralSeparator(firstChar) && value.charAt(value.length() - 1) == firstChar;
     }
 
 }

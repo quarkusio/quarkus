@@ -1,9 +1,9 @@
 
 package io.quarkus.hibernate.orm.envers.config;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 
@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestUseRevisionEntityWithNativeIdResource extends AbstractEnversResource {
     @GET
     public String getUseRevisionEntityWithNativeId() {
-        boolean revisionEntityWithNativeId = getGlobalConfiguration().isUseRevisionEntityWithNativeId();
+        boolean revisionEntityWithNativeId = getConfiguration().isNativeIdEnabled();
         if (revisionEntityWithNativeId) {
             return "Expected use_revision_entity_with_native_id to be false but was true";
         }

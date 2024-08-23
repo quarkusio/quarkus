@@ -44,7 +44,7 @@ public class DistinctOptions {
      * <p>
      * A null value represents the server default.
      * </p>
-     * 
+     *
      * @param collation the collation options to use
      * @return this
      */

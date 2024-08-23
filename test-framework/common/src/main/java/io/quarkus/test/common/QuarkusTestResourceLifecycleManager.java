@@ -9,7 +9,7 @@ import java.util.function.Predicate;
  * Manage the lifecycle of a test resource, for instance a H2 test server.
  * <p>
  * These resources are started before the first test is run, and are closed
- * at the end of the test suite. They are configured via the {@link QuarkusTestResource}
+ * at the end of the test suite. They are configured via the {@link WithTestResource}
  * annotation, which can be placed on any class in the test suite.
  *
  * These can also be loaded via a service loader mechanism, however if a service
@@ -28,7 +28,7 @@ public interface QuarkusTestResourceLifecycleManager {
     /**
      * Start the test resource.
      *
-     * @return A map of system properties that should be set for the running test
+     * @return A map of configuration properties that will be set for the running test
      */
     Map<String, String> start();
 
@@ -38,12 +38,24 @@ public interface QuarkusTestResourceLifecycleManager {
     void stop();
 
     /**
+     * Set the context in which this {@link QuarkusTestResourceLifecycleManager} is being used.
+     * This method is executed before the {@code init} method.
+     * The Context instance is automatically populated before calling the `start` and/or `stop` methods, so for example you can
+     * check whether any test failed when stopping the resource by using `context.getTestStatus().isTestFailed()`.
+     *
+     * The {@code context} is never null.
+     */
+    default void setContext(Context context) {
+
+    }
+
+    /**
      * Arguments passed to the lifecycle manager before it starts
      * These arguments are taken from {@code QuarkusTestResource#initArgs()}
      *
      * The {@code args} is never null
      *
-     * @see QuarkusTestResource#initArgs()
+     * @see WithTestResource#initArgs()
      */
     default void init(Map<String, String> initArgs) {
 
@@ -118,6 +130,23 @@ public interface QuarkusTestResourceLifecycleManager {
         }
 
         /**
+         * Returns {@code true} if the field can be assigned to the supplied type.
+         */
+        class MatchesType implements Predicate<Field> {
+
+            private final Class<?> expectedFieldType;
+
+            public MatchesType(Class<?> expectedFieldType) {
+                this.expectedFieldType = expectedFieldType;
+            }
+
+            @Override
+            public boolean test(Field field) {
+                return field.getType().isAssignableFrom(expectedFieldType);
+            }
+        }
+
+        /**
          * Returns {@code true} if the field is annotated with the supplied annotation and can also be assigned
          * to the supplied type.
          */
@@ -139,5 +168,22 @@ public interface QuarkusTestResourceLifecycleManager {
                 return field.getType().isAssignableFrom(expectedFieldType);
             }
         }
+    }
+
+    interface Context {
+
+        /**
+         * When a {@link QuarkusTestResourceLifecycleManager} is used with a type of test that supports test profiles,
+         * this method gives the name of the active test profile, or {@code null} if no test profile is active.
+         * In the case of {@code QuarkusTestProfile}, this method gives the name of the class that implements
+         * {@code QuarkusTestProfile}.
+         */
+        String testProfile();
+
+        /**
+         * @return the failure result that is thrown during either `BeforeAll`, `BeforeEach`, test method, `AfterAll` or
+         *         `AfterEach` phases.
+         */
+        TestStatus getTestStatus();
     }
 }

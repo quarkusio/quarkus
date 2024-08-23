@@ -1,58 +1,41 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.ArcInvocationContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
-abstract class AbstractInvocationContext implements ArcInvocationContext, Supplier<Map<String, Object>> {
+import io.quarkus.arc.ArcInvocationContext;
+
+abstract class AbstractInvocationContext implements ArcInvocationContext {
 
     private static final Object[] EMPTY_PARAMS = new Object[0];
 
-    protected final Method method;
-    protected final Constructor<?> constructor;
-    protected final Set<Annotation> interceptorBindings;
-    protected final List<InterceptorInvocation> chain;
     protected Object target;
     protected Object[] parameters;
-    // The map is initialized lazily but we need to use a holder so that all interceptors in the chain can access the same data
-    protected LazyValue<Map<String, Object>> contextData;
+    protected ContextDataMap contextData;
 
-    protected AbstractInvocationContext(Object target, Method method,
-            Constructor<?> constructor,
-            Object[] parameters, LazyValue<Map<String, Object>> contextData,
-            Set<Annotation> interceptorBindings, List<InterceptorInvocation> chain) {
+    protected AbstractInvocationContext(Object target, Object[] parameters, ContextDataMap contextData) {
         this.target = target;
-        this.method = method;
-        this.constructor = constructor;
         this.parameters = parameters != null ? parameters : EMPTY_PARAMS;
-        this.contextData = contextData != null ? contextData : new LazyValue<>(this);
-        this.interceptorBindings = interceptorBindings;
-        this.chain = chain;
+        this.contextData = contextData;
     }
 
     @Override
     public Map<String, Object> getContextData() {
-        return contextData.get();
-    }
-
-    @Override
-    public Set<Annotation> getInterceptorBindings() {
-        return interceptorBindings;
+        return contextData;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
-        for (Annotation annotation : interceptorBindings) {
+        for (Annotation annotation : getInterceptorBindings()) {
             if (annotation.annotationType().equals(annotationType)) {
                 return (T) annotation;
             }
@@ -64,7 +47,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
     @Override
     public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
         List<T> found = new ArrayList<>();
-        for (Annotation annotation : (Set<Annotation>) interceptorBindings) {
+        for (Annotation annotation : (Set<Annotation>) getInterceptorBindings()) {
             if (annotation.annotationType().equals(annotationType)) {
                 found.add((T) annotation);
             }
@@ -72,25 +55,9 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
         return found;
     }
 
-    @Override
-    public Method getMethod() {
-        return method;
-    }
-
-    @Override
-    public Object[] getParameters() {
-        return parameters;
-    }
-
-    @Override
-    public void setParameters(Object[] params) {
-        validateParameters(params);
-        this.parameters = params;
-    }
-
-    protected void validateParameters(Object[] params) {
+    static void validateParameters(Executable executable, Object[] params) {
         int newParametersCount = Objects.requireNonNull(params).length;
-        Class<?>[] parameterTypes = method.getParameterTypes();
+        Class<?>[] parameterTypes = executable.getParameterTypes();
         if (parameterTypes.length != newParametersCount) {
             throw new IllegalArgumentException(
                     "Wrong number of parameters - method has " + Arrays.toString(parameterTypes) + ", attempting to set "
@@ -111,6 +78,11 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
     }
 
     @Override
+    public Method getMethod() {
+        return null;
+    }
+
+    @Override
     public Object getTarget() {
         return target;
     }
@@ -122,14 +94,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
 
     @Override
     public Constructor<?> getConstructor() {
-        return constructor;
-    }
-
-    @Override
-    public Map<String, Object> get() {
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
-        return result;
+        return null;
     }
 
 }

@@ -2,8 +2,8 @@ package io.quarkus.micrometer.runtime.export;
 
 import java.util.Map;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusDurationNamingConvention;

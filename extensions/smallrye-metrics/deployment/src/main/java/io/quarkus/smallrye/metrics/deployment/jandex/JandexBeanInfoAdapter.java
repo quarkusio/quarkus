@@ -68,7 +68,7 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
     private Stream<AnnotationInfo> getMetricAnnotationsThroughStereotype(AnnotationInstance stereotypeInstance,
             IndexView indexView) {
         ClassInfo annotationType = indexView.getClassByName(stereotypeInstance.name());
-        if (annotationType.classAnnotation(DotNames.STEREOTYPE) != null) {
+        if (annotationType != null && annotationType.declaredAnnotation(DotNames.STEREOTYPE) != null) {
             JandexAnnotationInfoAdapter adapter = new JandexAnnotationInfoAdapter(indexView);
             return transformedAnnotations.getAnnotations(annotationType)
                     .stream()

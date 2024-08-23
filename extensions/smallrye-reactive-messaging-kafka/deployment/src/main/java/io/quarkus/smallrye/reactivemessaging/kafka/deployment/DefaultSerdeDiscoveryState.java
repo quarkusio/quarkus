@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.kafka.deployment.SmallRyeReactiveMessagingKafkaProcessor.getChannelPropertyKey;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -26,13 +29,22 @@ class DefaultSerdeDiscoveryState {
     private final Map<String, Boolean> isKafkaConnector = new HashMap<>();
     private final Set<String> alreadyConfigured = new HashSet<>();
 
+    private Boolean connectorHasKeySerializer;
+    private Boolean connectorHasValueSerializer;
+    private Boolean connectorHasKeyDeserializer;
+    private Boolean connectorHasValueDeserializer;
+
     private Boolean hasConfluent;
     private Boolean hasApicurio1;
-    private Boolean hasApicurio2;
+    private Boolean hasApicurio2Avro;
     private Boolean hasJsonb;
 
     DefaultSerdeDiscoveryState(IndexView index) {
         this.index = index;
+    }
+
+    Config getConfig() {
+        return ConfigProvider.getConfig();
     }
 
     boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,
@@ -47,12 +59,60 @@ class DefaultSerdeDiscoveryState {
 
         String channelType = incoming ? "incoming" : "outgoing";
         return isKafkaConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
-            String connectorKey = "mp.messaging." + channelType + "." + channelName + ".connector";
-            String connector = ConfigProvider.getConfig()
+            String connectorKey = getChannelPropertyKey(channelName, "connector", incoming);
+            String connector = getConfig()
                     .getOptionalValue(connectorKey, String.class)
                     .orElse("ignored");
             return KafkaConnector.CONNECTOR_NAME.equals(connector);
         });
+    }
+
+    boolean shouldNotConfigure(String key) {
+        // if we know at build time that key/value [de]serializer is configured on the connector,
+        // we should NOT emit default configuration for key/value [de]serializer on the channel
+        // (in other words, only a user can explicitly override a connector configuration)
+        //
+        // more config properties could possibly be handled in the same way, but these should suffice for now
+
+        if (key.startsWith("mp.messaging.outgoing.") && key.endsWith(".key.serializer")) {
+            if (connectorHasKeySerializer == null) {
+                connectorHasKeySerializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.serializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasKeySerializer;
+        }
+        if (key.startsWith("mp.messaging.outgoing.") && key.endsWith(".value.serializer")) {
+            if (connectorHasValueSerializer == null) {
+                connectorHasValueSerializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.serializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasValueSerializer;
+        }
+
+        if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".key.deserializer")) {
+            if (connectorHasKeyDeserializer == null) {
+                connectorHasKeyDeserializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.deserializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasKeyDeserializer;
+        }
+        if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".value.deserializer")) {
+            if (connectorHasValueDeserializer == null) {
+                connectorHasValueDeserializer = getConfig()
+                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.deserializer",
+                                String.class)
+                        .isPresent();
+            }
+            return connectorHasValueDeserializer;
+        }
+
+        return false;
     }
 
     void ifNotYetConfigured(String key, Runnable runnable) {
@@ -64,7 +124,7 @@ class DefaultSerdeDiscoveryState {
 
     boolean isAvroGenerated(DotName className) {
         ClassInfo clazz = index.getClassByName(className);
-        return clazz != null && clazz.classAnnotation(DotNames.AVRO_GENERATED) != null;
+        return clazz != null && clazz.declaredAnnotation(DotNames.AVRO_GENERATED) != null;
     }
 
     boolean hasConfluent() {
@@ -95,24 +155,24 @@ class DefaultSerdeDiscoveryState {
         return hasApicurio1;
     }
 
-    boolean hasApicurio2() {
-        if (hasApicurio2 == null) {
+    boolean hasApicurio2Avro() {
+        if (hasApicurio2Avro == null) {
             try {
                 Class.forName("io.apicurio.registry.serde.avro.AvroKafkaDeserializer", false,
                         Thread.currentThread().getContextClassLoader());
-                hasApicurio2 = true;
+                hasApicurio2Avro = true;
             } catch (ClassNotFoundException e) {
-                hasApicurio2 = false;
+                hasApicurio2Avro = false;
             }
         }
 
-        return hasApicurio2;
+        return hasApicurio2Avro;
     }
 
     boolean hasJsonb() {
         if (hasJsonb == null) {
             try {
-                Class.forName("javax.json.bind.Jsonb", false,
+                Class.forName("jakarta.json.bind.Jsonb", false,
                         Thread.currentThread().getContextClassLoader());
                 hasJsonb = true;
             } catch (ClassNotFoundException e) {
@@ -133,8 +193,27 @@ class DefaultSerdeDiscoveryState {
                 .orElse(null);
     }
 
+    ClassInfo getImplementorOfWithTypeArgument(DotName implementedInterface, DotName expectedTypeArgument) {
+        return index.getKnownDirectImplementors(implementedInterface)
+                .stream()
+                .filter(ci -> ci.interfaceTypes().stream()
+                        .anyMatch(it -> it.name().equals(implementedInterface)
+                                && it.kind() == Type.Kind.PARAMETERIZED_TYPE
+                                && it.asParameterizedType().arguments().size() == 1
+                                && it.asParameterizedType().arguments().get(0).name().equals(expectedTypeArgument)))
+                .findAny()
+                .orElse(null);
+    }
+
     List<AnnotationInstance> findAnnotationsOnMethods(DotName annotation) {
         return index.getAnnotations(annotation)
+                .stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
+                .collect(Collectors.toList());
+    }
+
+    List<AnnotationInstance> findRepeatableAnnotationsOnMethods(DotName annotation) {
+        return index.getAnnotationsWithRepeatable(annotation, index)
                 .stream()
                 .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
                 .collect(Collectors.toList());

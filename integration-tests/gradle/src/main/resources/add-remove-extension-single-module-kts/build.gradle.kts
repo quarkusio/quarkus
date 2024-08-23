@@ -4,10 +4,11 @@ plugins {
 }
 
 repositories {
-    if (System.getProperties().containsKey("maven.repo.local")) {
-        maven(url = System.getProperties().get("maven.repo.local")!!)
-    } else {
-        mavenLocal()
+    mavenLocal {
+        content {
+            includeGroupByRegex("io.quarkus.*")
+            includeGroup("org.hibernate.orm")
+        }
     }
     mavenCentral()
 }
@@ -30,4 +31,8 @@ version = "1.0.0-SNAPSHOT"
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
     options.compilerArgs.add("-parameters")
+}
+
+tasks.withType<Test> {
+    systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
 }

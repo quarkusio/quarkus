@@ -4,11 +4,13 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Kubernetes Config
+include::_attributes.adoc[]
+:categories: cloud
+:summary: Use ConfigMaps as a configuration source for your Quarkus applications.
+:topics: kubernetes,openshift,configuration,configmap
+:extensions: io.quarkus:quarkus-kubernetes-config
 
-include::./attributes.adoc[]
-
-
-Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application or make any other modifications to their Kubernetes `Deployment` (or Openshift `DeploymentConfig`).
+Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] and https://cloud.google.com/kubernetes-engine/docs/concepts/secret[Secrets] as a configuration source, without having to mount them into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application or make any other modifications to their Kubernetes `Deployment` (or OpenShift `DeploymentConfig`).
 
 
 == Configuration
@@ -16,19 +18,24 @@ Quarkus includes the `kubernetes-config` extension which allows developers to us
 Once you have your Quarkus project configured you can add the `kubernetes-config` extension
 by running the following command in your project base directory.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kubernetes-config"
-----
+:add-extension-extensions: kubernetes-config
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kubernetes-config</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-config")
 ----
 
 == Usage

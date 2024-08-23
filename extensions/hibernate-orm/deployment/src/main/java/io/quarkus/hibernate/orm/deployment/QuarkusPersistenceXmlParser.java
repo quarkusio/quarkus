@@ -5,10 +5,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 
@@ -24,7 +24,7 @@ final class QuarkusPersistenceXmlParser extends PersistenceXmlParser {
      *
      * @return the list of ParsedPersistenceXmlDescriptor(s), after discovery and parsing.
      */
-    public static List<ParsedPersistenceXmlDescriptor> locatePersistenceUnits() {
+    public static List<? extends PersistenceUnitDescriptor> locatePersistenceUnits() {
         final QuarkusPersistenceXmlParser parser = new QuarkusPersistenceXmlParser();
         parser.doResolve();
         return parser.getResolvedPersistenceUnits();

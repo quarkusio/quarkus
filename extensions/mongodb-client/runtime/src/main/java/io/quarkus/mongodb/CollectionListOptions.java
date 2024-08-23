@@ -8,7 +8,7 @@ import com.mongodb.reactivestreams.client.ListCollectionsPublisher;
 
 /**
  * Options to configure the stream of database.
- * 
+ *
  * @see ReactiveMongoDatabase#listCollectionNames()
  */
 public class CollectionListOptions {

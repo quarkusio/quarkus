@@ -2,15 +2,15 @@ package io.quarkus.oidc.token.propagation.runtime;
 
 import java.io.IOException;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
@@ -23,7 +23,7 @@ public abstract class AbstractTokenRequestFilter implements ClientRequestFilter 
 
     public void propagateToken(ClientRequestContext requestContext, String token) throws IOException {
         if (token != null) {
-            requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
+            requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
         } else {
             LOG.debugf("Injected access token is null, aborting the request with HTTP 401 error");
             abortRequest(requestContext);

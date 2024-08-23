@@ -1,7 +1,7 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
-import io.strimzi.StrimziKafkaContainer
+import io.strimzi.test.container.StrimziKafkaContainer
 
 class KafkaTestResource : QuarkusTestResourceLifecycleManager {
 

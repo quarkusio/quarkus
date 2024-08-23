@@ -47,6 +47,14 @@ public class RestClientTestCase {
                 .body(is("TEST"));
     }
 
+    /**
+     * This test in Native won't work on a barebone system,
+     * just with C.UTF-8 default fallback locale.
+     *
+     * For example, this package satisfies the dependency on a RHEL 9 type of OS:
+     * glibc-all-langpacks
+     *
+     */
     @DisabledOnOs(OS.WINDOWS)
     @Test
     public void testEmojis() {
@@ -127,8 +135,8 @@ public class RestClientTestCase {
                 .when().get("/client/cdi/default-scope-on-interface")
                 .getBody().print();
 
-        Assertions.assertEquals("javax.inject.Singleton", responseWithSingletonScope);
-        Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
+        Assertions.assertEquals("jakarta.inject.Singleton", responseWithSingletonScope);
+        Assertions.assertEquals("jakarta.enterprise.context.Dependent", responseWithDefaultScope);
     }
 
     @Test

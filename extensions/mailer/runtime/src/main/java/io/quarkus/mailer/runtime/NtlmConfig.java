@@ -12,12 +12,12 @@ public class NtlmConfig {
      * Sets the workstation used on NTLM authentication.
      */
     @ConfigItem
-    public Optional<String> workstation;
+    public Optional<String> workstation = Optional.empty();
 
     /**
      * Sets the domain used on NTLM authentication.
      */
     @ConfigItem
-    public Optional<String> domain;
+    public Optional<String> domain = Optional.empty();
 
 }

@@ -2,9 +2,9 @@ package io.quarkus.it.panache.kotlin
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
 
 @Entity
 open class Address : PanacheEntityBase {
@@ -14,10 +14,7 @@ open class Address : PanacheEntityBase {
         }
     }
 
-    @Id
-    @GeneratedValue
-    @JvmField
-    var id: Int? = null
+    @Id @GeneratedValue @JvmField var id: Int? = null
 
     var street: String? = null
 

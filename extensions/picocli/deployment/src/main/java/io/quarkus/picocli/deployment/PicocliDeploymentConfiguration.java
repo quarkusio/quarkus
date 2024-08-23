@@ -12,7 +12,7 @@ class PicocliDeploymentConfiguration {
      * </p>
      * <p>
      * CAUTION: this will have serious build-time performance impact since
-     * this is run on every restart in devmode, use with care!
+     * this is run on every restart in dev mode, use with care!
      * </p>
      * <p>
      * This property is intended to be used only in cases where an incompatible change in the
@@ -26,13 +26,4 @@ class PicocliDeploymentConfiguration {
      */
     @ConfigItem(name = "native-image.processing.enable", defaultValue = "true")
     boolean nativeImageProcessingEnabled;
-
-    /**
-     * <p>
-     * Set this to <code>true</code> to disable reading configuration from the default Config Sources. This includes
-     * `application.properties` and `.env` files.
-     * </p>
-     */
-    @ConfigItem(defaultValue = "false")
-    boolean disableDefaultConfigSources;
 }

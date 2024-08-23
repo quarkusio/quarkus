@@ -3,8 +3,8 @@ package io.quarkus.smallrye.jwt.runtime.auth;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
@@ -15,7 +15,7 @@ public class RawOptionalClaimCreator implements BeanCreator<Optional<?>> {
 
     @Override
     public Optional<?> create(CreationalContext<Optional<?>> creationalContext, Map<String, Object> params) {
-        InjectionPoint injectionPoint = InjectionPointProvider.get();
+        InjectionPoint injectionPoint = InjectionPointProvider.getCurrent(creationalContext);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
         }

@@ -1,13 +1,15 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Type;
 import java.util.Set;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Instance;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Instance;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
 
 /**
  *
@@ -21,23 +23,25 @@ public class InstanceProvider<T> implements InjectableReferenceProvider<Instance
     private final Set<Annotation> annotations;
     private final Member javaMember;
     private final int position;
+    private final boolean isTransient;
 
     public InstanceProvider(Type type, Set<Annotation> qualifiers, InjectableBean<?> targetBean, Set<Annotation> annotations,
-            Member javaMember, int position) {
+            Member javaMember, int position, boolean isTransient) {
         this.requiredType = type;
         this.qualifiers = qualifiers;
         this.targetBean = targetBean;
         this.annotations = annotations;
         this.javaMember = javaMember;
         this.position = position;
+        this.isTransient = isTransient;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Instance<T> get(CreationalContext<Instance<T>> creationalContext) {
-        InstanceImpl<T> instance = new InstanceImpl<T>(targetBean, requiredType, qualifiers,
+        InstanceImpl<T> instance = InstanceImpl.forInjection(targetBean, requiredType, qualifiers,
                 CreationalContextImpl.unwrap(creationalContext),
-                annotations, javaMember, position);
+                annotations, javaMember, position, isTransient);
         CreationalContextImpl.addDependencyToParent(InstanceBean.INSTANCE, instance,
                 (CreationalContext) creationalContext);
         return instance;

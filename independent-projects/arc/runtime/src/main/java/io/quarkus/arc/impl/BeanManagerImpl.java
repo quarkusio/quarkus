@@ -1,46 +1,50 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import javax.el.ELResolver;
-import javax.el.ExpressionFactory;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Stereotype;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.AnnotatedField;
-import javax.enterprise.inject.spi.AnnotatedMember;
-import javax.enterprise.inject.spi.AnnotatedMethod;
-import javax.enterprise.inject.spi.AnnotatedParameter;
-import javax.enterprise.inject.spi.AnnotatedType;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanAttributes;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.Decorator;
-import javax.enterprise.inject.spi.Extension;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.InjectionTarget;
-import javax.enterprise.inject.spi.InjectionTargetFactory;
-import javax.enterprise.inject.spi.InterceptionFactory;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.enterprise.inject.spi.Interceptor;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.enterprise.inject.spi.ProducerFactory;
-import javax.inject.Qualifier;
-import javax.interceptor.InterceptorBinding;
+
+import jakarta.el.ELResolver;
+import jakarta.el.ExpressionFactory;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.AnnotatedField;
+import jakarta.enterprise.inject.spi.AnnotatedMember;
+import jakarta.enterprise.inject.spi.AnnotatedMethod;
+import jakarta.enterprise.inject.spi.AnnotatedParameter;
+import jakarta.enterprise.inject.spi.AnnotatedType;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanAttributes;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.Decorator;
+import jakarta.enterprise.inject.spi.Extension;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.InjectionTargetFactory;
+import jakarta.enterprise.inject.spi.InterceptionFactory;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.enterprise.inject.spi.Interceptor;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.inject.spi.ProducerFactory;
+import jakarta.inject.Named;
+import jakarta.inject.Qualifier;
+import jakarta.interceptor.InterceptorBinding;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
 
 /**
  * @author Martin Kouba
@@ -55,8 +59,20 @@ public class BeanManagerImpl implements BeanManager {
         Objects.requireNonNull(bean, "Bean is null");
         Objects.requireNonNull(beanType, "Bean type is null");
         Objects.requireNonNull(ctx, "CreationalContext is null");
+        if (!BeanTypeAssignabilityRules.instance().matches(beanType, bean.getTypes())) {
+            throw new IllegalArgumentException("Type " + beanType + " is not a bean type of " + bean
+                    + "; its bean types are: " + bean.getTypes());
+        }
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
-            return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();
+            // there's no actual injection point or an `Instance` object,
+            // the "current" injection point must be `null`
+            InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, null);
+            try {
+                return ArcContainerImpl.beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx,
+                        false, null, true).get();
+            } finally {
+                InjectionPointProvider.setCurrent(ctx, prev);
+            }
         }
         throw new IllegalArgumentException(
                 "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: "
@@ -74,11 +90,12 @@ public class BeanManagerImpl implements BeanManager {
                 throw new UnsatisfiedResolutionException();
             }
             InjectableBean<?> bean = (InjectableBean<?>) resolve(beans);
-            InjectionPoint prev = InjectionPointProvider.set(ij);
+            InjectionPoint prev = InjectionPointProvider.setCurrent(ctx, ij);
             try {
-                return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx, false, null).get();
+                return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx,
+                        false, null, true).get();
             } finally {
-                InjectionPointProvider.set(prev);
+                InjectionPointProvider.setCurrent(ctx, prev);
             }
         }
         throw new IllegalArgumentException(
@@ -116,20 +133,13 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
-    public void fireEvent(Object event, Annotation... qualifiers) {
-        Set<Annotation> eventQualifiers = new HashSet<>();
-        Collections.addAll(eventQualifiers, qualifiers);
-        new EventImpl<Object>(event.getClass(), eventQualifiers).fire(event);
-    }
-
-    @Override
     public <T> Set<ObserverMethod<? super T>> resolveObserverMethods(T event, Annotation... qualifiers) {
         Type eventType = Types.getCanonicalType(event.getClass());
         if (Types.containsTypeVariable(eventType)) {
             throw new IllegalArgumentException("The runtime type of the event object contains a type variable: " + eventType);
         }
-        Set<Annotation> eventQualifiers = Arrays.asList(qualifiers).stream().collect(Collectors.toSet());
-        return ArcContainerImpl.instance().resolveObservers(eventType, eventQualifiers).stream().collect(Collectors.toSet());
+        Set<Annotation> eventQualifiers = new HashSet<>(Arrays.asList(qualifiers));
+        return new LinkedHashSet<>(ArcContainerImpl.instance().resolveObserverMethods(eventType, eventQualifiers));
     }
 
     @Override
@@ -149,7 +159,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isNormalScope(Class<? extends Annotation> annotationType) {
-        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope 
+        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope
         return ArcContainerImpl.instance().isNormalScope(annotationType);
     }
 
@@ -162,13 +172,13 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public boolean isQualifier(Class<? extends Annotation> annotationType) {
         return annotationType.isAnnotationPresent(Qualifier.class)
-                || ArcContainerImpl.instance().getCustomQualifiers().contains(annotationType.getName());
+                || ArcContainerImpl.instance().registeredQualifiers.isRegistered(annotationType);
     }
 
     @Override
     public boolean isInterceptorBinding(Class<? extends Annotation> annotationType) {
         return annotationType.isAnnotationPresent(InterceptorBinding.class)
-                || ArcContainerImpl.instance().getTransitiveInterceptorBindings().containsKey(annotationType);
+                || ArcContainerImpl.instance().registeredInterceptorBindings.isRegistered(annotationType);
     }
 
     @Override
@@ -221,6 +231,12 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Collection<Context> getContexts(Class<? extends Annotation> scopeType) {
+        return (Collection) Arc.container().getContexts(scopeType);
+    }
+
+    @Override
     public ELResolver getELResolver() {
         throw new UnsupportedOperationException();
     }
@@ -232,11 +248,6 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> AnnotatedType<T> createAnnotatedType(Class<T> type) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T> InjectionTarget<T> createInjectionTarget(AnnotatedType<T> type) {
         throw new UnsupportedOperationException();
     }
 
@@ -298,7 +309,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Event<Object> getEvent() {
-        return new EventImpl<>(Object.class, new HashSet<>());
+        return new EventImpl<>(Object.class, new HashSet<>(), null);
     }
 
     @Override
@@ -306,4 +317,71 @@ public class BeanManagerImpl implements BeanManager {
         return ArcContainerImpl.instance().instance;
     }
 
+    @Override
+    public boolean isMatchingBean(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type requiredType,
+            Set<Annotation> requiredQualifiers) {
+        illegalNull(beanTypes, "beanTypes");
+        illegalNull(beanQualifiers, "beanQualifiers");
+        illegalNull(requiredType, "requiredType");
+        illegalNull(requiredQualifiers, "requiredQualifiers");
+
+        Set<Type> legalBeanTypes = new HashSet<>();
+        legalBeanTypes.add(Object.class);
+        for (Type beanType : beanTypes) {
+            if (!Types.isIllegalBeanType(beanType)) {
+                legalBeanTypes.add(beanType);
+            }
+        }
+        ArcContainerImpl.instance().registeredQualifiers.verify(beanQualifiers);
+        ArcContainerImpl.instance().registeredQualifiers.verify(requiredQualifiers);
+
+        beanQualifiers = new HashSet<>(beanQualifiers);
+        beanQualifiers.add(Any.Literal.INSTANCE);
+        if (beanQualifiers.stream().allMatch(it -> it.annotationType() == Any.class || it.annotationType() == Named.class)) {
+            beanQualifiers.add(Default.Literal.INSTANCE);
+        }
+
+        if (requiredQualifiers.isEmpty()) {
+            requiredQualifiers = Qualifiers.IP_DEFAULT_QUALIFIERS;
+        }
+
+        if (!BeanTypeAssignabilityRules.instance().matches(requiredType, legalBeanTypes)) {
+            return false;
+        }
+        return ArcContainerImpl.instance().registeredQualifiers.hasQualifiers(beanQualifiers,
+                requiredQualifiers.toArray(new Annotation[0]));
+    }
+
+    @Override
+    public boolean isMatchingEvent(Type specifiedType, Set<Annotation> specifiedQualifiers, Type observedEventType,
+            Set<Annotation> observedEventQualifiers) {
+        illegalNull(specifiedType, "specifiedType");
+        illegalNull(specifiedQualifiers, "specifiedQualifiers");
+        illegalNull(observedEventType, "observedEventType");
+        illegalNull(observedEventQualifiers, "observedEventQualifiers");
+
+        if (Types.containsTypeVariable(specifiedType)) {
+            throw new IllegalArgumentException("Event type contains a type variable: " + specifiedType);
+        }
+        ArcContainerImpl.instance().registeredQualifiers.verify(specifiedQualifiers);
+        ArcContainerImpl.instance().registeredQualifiers.verify(observedEventQualifiers);
+
+        Set<Annotation> eventQualifiers = new HashSet<>(specifiedQualifiers);
+        if (eventQualifiers.isEmpty()) {
+            eventQualifiers.add(Default.Literal.INSTANCE);
+        }
+        eventQualifiers.add(Any.Literal.INSTANCE);
+
+        Set<Type> eventTypes = new HierarchyDiscovery(specifiedType).getTypeClosure();
+        if (!EventTypeAssignabilityRules.instance().matches(observedEventType, eventTypes)) {
+            return false;
+        }
+        return ArcContainerImpl.instance().registeredQualifiers.isSubset(observedEventQualifiers, eventQualifiers);
+    }
+
+    private static void illegalNull(Object obj, String name) {
+        if (obj == null) {
+            throw new IllegalArgumentException(name + " must be set");
+        }
+    }
 }

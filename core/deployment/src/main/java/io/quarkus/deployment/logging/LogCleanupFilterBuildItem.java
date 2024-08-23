@@ -1,6 +1,7 @@
 package io.quarkus.deployment.logging;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -17,17 +18,25 @@ public final class LogCleanupFilterBuildItem extends MultiBuildItem {
     private LogCleanupFilterElement filterElement;
 
     public LogCleanupFilterBuildItem(String loggerName, String... messageStarts) {
-        if (messageStarts.length == 0) {
-            throw new IllegalArgumentException("messageStarts cannot be null");
-        }
-        this.filterElement = new LogCleanupFilterElement(loggerName, Arrays.asList(messageStarts));
+        this(loggerName, Arrays.asList(messageStarts));
     }
 
     public LogCleanupFilterBuildItem(String loggerName, Level targetLevel, String... messageStarts) {
-        if (messageStarts.length == 0) {
-            throw new IllegalArgumentException("messageStarts cannot be null");
+        this(loggerName, targetLevel, Arrays.asList(messageStarts));
+    }
+
+    public LogCleanupFilterBuildItem(String loggerName, List<String> messageStarts) {
+        if (messageStarts.isEmpty()) {
+            throw new IllegalArgumentException("messageStarts cannot be empty");
         }
-        this.filterElement = new LogCleanupFilterElement(loggerName, targetLevel, Arrays.asList(messageStarts));
+        this.filterElement = new LogCleanupFilterElement(loggerName, messageStarts);
+    }
+
+    public LogCleanupFilterBuildItem(String loggerName, Level targetLevel, List<String> messageStarts) {
+        if (messageStarts.isEmpty()) {
+            throw new IllegalArgumentException("messageStarts cannot be empty");
+        }
+        this.filterElement = new LogCleanupFilterElement(loggerName, targetLevel, messageStarts);
     }
 
     public LogCleanupFilterElement getFilterElement() {

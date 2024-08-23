@@ -14,8 +14,18 @@ import io.restassured.RestAssured;
 public class JPAFunctionalityTest {
 
     @Test
-    public void testJPAFunctionalityFromServlet() throws Exception {
-        RestAssured.when().get("/jpa/testfunctionality").then().body(is("OK"));
+    public void base() {
+        RestAssured.when().get("/jpa/testfunctionality/base").then().body(is("OK"));
+    }
+
+    @Test
+    public void uuid() {
+        RestAssured.when().get("/jpa/testfunctionality/uuid").then().body(is("OK"));
+    }
+
+    @Test
+    public void json() {
+        RestAssured.when().get("/jpa/testfunctionality/json").then().body(is("OK"));
     }
 
 }

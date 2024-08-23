@@ -7,7 +7,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * Marker annotation to select mongo connection of cluster configuration
@@ -38,4 +39,22 @@ public @interface MongoClientName {
      * @return the value
      */
     String value() default "";
+
+    class Literal extends AnnotationLiteral<MongoClientName> implements MongoClientName {
+
+        public static Literal of(String value) {
+            return new Literal(value);
+        }
+
+        private final String value;
+
+        public Literal(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String value() {
+            return value;
+        }
+    }
 }

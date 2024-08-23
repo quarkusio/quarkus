@@ -1,34 +1,30 @@
 package io.quarkus.it.mongodb.panache.bugs
 
+import jakarta.inject.Inject
+import jakarta.ws.rs.Consumes
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.NotFoundException
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
+import jakarta.ws.rs.core.Response
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.Date
-import javax.inject.Inject
-import javax.ws.rs.Consumes
-import javax.ws.rs.GET
-import javax.ws.rs.NotFoundException
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
-import javax.ws.rs.core.Response
 
 @Path("/bugs")
 @Produces(MediaType.TEXT_PLAIN)
 @Consumes(MediaType.TEXT_PLAIN)
 class BugResource {
-    @Inject
-    lateinit var bug5274EntityRepository: Bug5274EntityRepository
+    @Inject lateinit var bug5274EntityRepository: Bug5274EntityRepository
 
-    @Inject
-    lateinit var bug5885EntityRepository: Bug5885EntityRepository
+    @Inject lateinit var bug5885EntityRepository: Bug5885EntityRepository
 
-    @Inject
-    lateinit var bug6324Repository: Bug6324Repository
+    @Inject lateinit var bug6324Repository: Bug6324Repository
 
-    @Inject
-    lateinit var bug6324ConcreteRepository: Bug6324ConcreteRepository
+    @Inject lateinit var bug6324ConcreteRepository: Bug6324ConcreteRepository
 
     @GET
     @Path("5274")
@@ -68,11 +64,15 @@ class BugResource {
         val localDateTomorrow: LocalDate = LocalDate.now().plus(1, ChronoUnit.DAYS)
         val localDateTimeTomorrow: LocalDateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS)
         val instantTomorrow: Instant = Instant.now().plus(1, ChronoUnit.DAYS)
-        val result: DateEntity = DateEntity
-                .find("dateDate < ?1 and localDate < ?2 and localDateTime < ?3 and instant < ?4",
-                        dateTomorrow, localDateTomorrow, localDateTimeTomorrow, instantTomorrow)
-                .firstResult()
-                ?: return Response.status(404).build()
+        DateEntity.find(
+                "dateDate < ?1 and localDate < ?2 and localDateTime < ?3 and instant < ?4",
+                dateTomorrow,
+                localDateTomorrow,
+                localDateTimeTomorrow,
+                instantTomorrow
+            )
+            .firstResult()
+            ?: return Response.status(404).build()
         return Response.ok().build()
     }
 

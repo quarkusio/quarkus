@@ -1,7 +1,10 @@
 package io.quarkus.it.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.not;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
@@ -24,6 +27,8 @@ public class WiremockTestResource {
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                        .withHeader("Filter", equalTo("OK"))
+                        .withHeader("tenant-id", not(absent()))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
@@ -33,6 +38,8 @@ public class WiremockTestResource {
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/protocol/openid-connect/certs"))
+                        .withHeader("Filter", equalTo("OK"))
+                        .withHeader("tenant-id", not(absent()))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

@@ -1,9 +1,5 @@
 package io.quarkus.devtools.codestarts.core;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,6 +9,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 public final class CodestartData {
 

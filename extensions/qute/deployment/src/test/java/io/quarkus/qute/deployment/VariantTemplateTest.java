@@ -3,8 +3,8 @@ package io.quarkus.qute.deployment;
 import static io.quarkus.qute.TemplateInstance.SELECTED_VARIANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

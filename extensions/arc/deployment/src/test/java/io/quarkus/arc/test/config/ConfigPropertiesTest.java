@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Map;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.spi.CDI;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

@@ -1,12 +1,13 @@
 package io.quarkus.oidc.client.runtime;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
@@ -15,32 +16,53 @@ import io.quarkus.oidc.client.Tokens;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractTokensProducer {
+    private static final Logger LOG = Logger.getLogger(AbstractTokensProducer.class);
+    private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
     private OidcClient oidcClient;
 
+    protected boolean earlyTokenAcquisition = true;
+
     @Inject
-    @ConfigProperty(name = "quarkus.oidc-client.early-tokens-acquisition")
-    public boolean earlyTokenAcquisition;
+    public OidcClientsConfig oidcClientsConfig;
 
     final TokensHelper tokensHelper = new TokensHelper();
 
     @PostConstruct
     public void init() {
-        OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
-        Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
-        oidcClient = clientId.isPresent() ? Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client")
-                : oidcClients.getClient();
+        Optional<OidcClient> initializedClient = client();
+        if (initializedClient.isEmpty()) {
+            Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
+            OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
+            if (clientId.isPresent()) {
+                // static named OidcClient
+                oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
+                earlyTokenAcquisition = oidcClientsConfig.namedClients.get(clientId.get()).earlyTokensAcquisition;
+            } else {
+                // default OidcClient
+                earlyTokenAcquisition = oidcClientsConfig.defaultClient.earlyTokensAcquisition;
+                oidcClient = oidcClients.getClient();
+            }
+        } else {
+            oidcClient = initializedClient.get();
+        }
 
         initTokens();
     }
 
     protected void initTokens() {
         if (earlyTokenAcquisition) {
-            tokensHelper.initTokens(oidcClient);
+            tokensHelper.initTokens(oidcClient, additionalParameters());
         }
     }
 
     public Uni<Tokens> getTokens() {
-        return tokensHelper.getTokens(oidcClient);
+        final boolean forceNewTokens = isForceNewTokens();
+        if (forceNewTokens) {
+            final Optional<String> clientId = clientId();
+            LOG.debugf("%s OidcClient will discard the current access and refresh tokens",
+                    clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
+        }
+        return tokensHelper.getTokens(oidcClient, additionalParameters(), forceNewTokens);
     }
 
     public Tokens awaitTokens() {
@@ -53,5 +75,27 @@ public abstract class AbstractTokensProducer {
      */
     protected Optional<String> clientId() {
         return Optional.empty();
+    }
+
+    /**
+     * @return Initialized OidcClient.
+     */
+    protected Optional<OidcClient> client() {
+        return Optional.empty();
+    }
+
+    /**
+     * @return {@code true} if the OIDC client must acquire a new set of tokens, discarding
+     *         previously obtained access and refresh tokens.
+     */
+    protected boolean isForceNewTokens() {
+        return false;
+    }
+
+    /**
+     * @return Additional parameters which will be used during the token acquisition or refresh methods.
+     */
+    protected Map<String, String> additionalParameters() {
+        return Map.of();
     }
 }

@@ -1,8 +1,13 @@
 package io.quarkus.quartz.runtime;
 
+import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
+
 /**
  * Defines starting modes of Quartz scheduler
+ *
+ * @deprecated Use {@link SchedulerRuntimeConfig.StartMode} instead.
  */
+@Deprecated(forRemoval = true)
 public enum QuartzStartMode {
 
     /**

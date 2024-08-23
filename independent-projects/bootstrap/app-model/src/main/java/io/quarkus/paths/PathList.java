@@ -7,12 +7,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public class PathList implements PathCollection, Serializable {
+
+    private static final long serialVersionUID = 4972894992642525297L;
 
     public static PathList from(Iterable<Path> paths) {
         final List<Path> list = new ArrayList<>();
@@ -93,17 +95,13 @@ public class PathList implements PathCollection, Serializable {
     public PathList add(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
         list.addAll(this.paths);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         return new PathList(list);
     }
 
     public PathList addFirst(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         list.addAll(this.paths);
         return new PathList(list);
     }
@@ -133,6 +131,23 @@ public class PathList implements PathCollection, Serializable {
         return buf.append(']').toString();
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(paths);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PathList other = (PathList) obj;
+        return Objects.equals(paths, other.paths);
+    }
+
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeInt(paths.size());
         for (Path p : paths) {
@@ -147,9 +162,5 @@ public class PathList implements PathCollection, Serializable {
             paths.add(Paths.get(in.readUTF()));
         }
         this.paths = Collections.unmodifiableList(paths);
-    }
-
-    public Collection<Path> toList() {
-        return new ArrayList<>(paths);
     }
 }

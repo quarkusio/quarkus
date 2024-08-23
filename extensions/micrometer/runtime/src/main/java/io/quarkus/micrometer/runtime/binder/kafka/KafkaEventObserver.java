@@ -3,8 +3,8 @@ package io.quarkus.micrometer.runtime.binder.kafka;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -35,7 +35,7 @@ public class KafkaEventObserver {
      * If the consumer has not been seen before, it will be bound to the
      * Micrometer registry and instrumented using a Kafka MeterBinder.
      * If the consumer has been seen before, the MeterBinder will be closed.
-     * 
+     *
      * @param consumer Observed Kafka Consumer
      */
     public synchronized void consumerCreated(@Observes Consumer<?, ?> consumer) {
@@ -59,7 +59,7 @@ public class KafkaEventObserver {
      * If the producer has not been seen before, it will be bound to the
      * Micrometer registry and instrumented using a Kafka MeterBinder.
      * If the producer has been seen before, the MeterBinder will be closed.
-     * 
+     *
      * @param producer Observed Kafka Producer
      */
     public synchronized void producerCreated(@Observes Producer<?, ?> producer) {

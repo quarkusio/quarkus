@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 /**
  * Only Parent Class will be registered and none of the inner classes will be registered for reflection.
  */
-@RegisterForReflection
+@RegisterForReflection(ignoreNested = true)
 class ResourceA {
 
     private class InnerClassOfA {

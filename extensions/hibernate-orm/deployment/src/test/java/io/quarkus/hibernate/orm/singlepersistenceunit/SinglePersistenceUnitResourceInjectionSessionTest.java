@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.singlepersistenceunit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
 import org.junit.jupiter.api.Test;

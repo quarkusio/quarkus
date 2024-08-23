@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
@@ -10,7 +10,10 @@ import org.eclipse.microprofile.graphql.Source;
 
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLSchema;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.graphql.api.Context;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Just a test endpoint
@@ -52,6 +55,30 @@ public class TestResource {
     }
 
     @Query
+    @NonBlocking
+    public Uni<String> failureUniNonBlocking() {
+        return Uni.createFrom().failure(new BusinessException("boom"));
+    }
+
+    @Query
+    @Blocking
+    public Uni<String> failureUniBlocking() {
+        return Uni.createFrom().failure(new BusinessException("boom"));
+    }
+
+    @Query
+    @NonBlocking
+    public String failureSyncNonBlocking() throws BusinessException {
+        throw new BusinessException("boom");
+    }
+
+    @Query
+    @Blocking
+    public String failureSyncBlocking() throws BusinessException {
+        throw new BusinessException("boom");
+    }
+
+    @Query
     public TestPojo systemserror() {
         throw new RuntimeException("Some system problem");
     }
@@ -64,6 +91,11 @@ public class TestResource {
     @Query
     public String testCharset(String characters) {
         return characters;
+    }
+
+    @Query
+    public TestUnion testUnion() {
+        return new TestUnionMember("what is my name");
     }
 
     // <placeholder>

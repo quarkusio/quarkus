@@ -12,7 +12,7 @@ public class GraphQLClientsConfig {
     /**
      * Configurations of named GraphQL client instances.
      *
-     * For dynamic clients, the key here (the client name) is always the the same as the value used
+     * For dynamic clients, the key here (the client name) is always the same as the value used
      * in the `@GraphQLClient` annotation used for injecting the client.
      *
      * For typesafe clients, the key here can be either the value of the configKey parameter of a

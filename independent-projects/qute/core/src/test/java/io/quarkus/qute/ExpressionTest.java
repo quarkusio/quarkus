@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import io.quarkus.qute.Expression.Part;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Expression.Part;
 
 public class ExpressionTest {
 
@@ -66,6 +68,17 @@ public class ExpressionTest {
                 virtualMethod(":", ExpressionImpl.from("hero.name")));
         verify("hero.name??", null, null, name("hero"), name("name"),
                 virtualMethod("or", ExpressionImpl.literalFrom(-1, "null")));
+    }
+
+    @Test
+    public void testInfixNotationRedundantSpace() throws InterruptedException, ExecutionException {
+        verify("name   or 'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name or    'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or   'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or  'John' or 1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
+        verify("name  or  'John'  or  1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
     }
 
     @Test

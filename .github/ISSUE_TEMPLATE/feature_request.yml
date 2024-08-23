@@ -3,6 +3,7 @@ description: Request or propose a new feature/enhancement
 labels: kind/enhancement
 body:
   - type: textarea
+    id: description
     validations:
       required: true
     attributes:
@@ -10,6 +11,7 @@ body:
       description: >-
         Describe the feature here.
   - type: textarea
+    id: impl_ideas
     attributes:
       label: Implementation ideas
       description: >-

@@ -10,15 +10,15 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * Object allowing the register filters, i.e. handler called on every HTTP request.
  * This object is intended to be used as follows:
- * 
+ *
  * <pre>
  * {@code
  * public void init(@Observes Filters filters) {
- *      filters.register(rc -> {
- *          // Do something before the next filter or route
- *          rc.next();
+ *     filters.register(rc -> {
+ *         // Do something before the next filter or route
+ *         rc.next();
  *         // Do something after
- *      }, 10);
+ *     }, 10);
  * }
  * }
  * </pre>
@@ -56,6 +56,7 @@ public class Filters {
 
         private Handler<RoutingContext> handler;
         private int priority;
+        private boolean isFailureHandler = false;
 
         @SuppressWarnings("unused")
         public SimpleFilter() {
@@ -63,11 +64,14 @@ public class Filters {
         }
 
         public SimpleFilter(Handler<RoutingContext> handler, int priority) {
-            if (priority < 0) {
-                throw new IllegalArgumentException("`priority` cannot be negative");
-            }
             this.handler = handler;
             this.priority = priority;
+        }
+
+        public SimpleFilter(Handler<RoutingContext> handler, int priority, boolean isFailureHandler) {
+            this.handler = handler;
+            this.priority = priority;
+            this.isFailureHandler = isFailureHandler;
         }
 
         public void setHandler(Handler<RoutingContext> handler) {
@@ -88,5 +92,13 @@ public class Filters {
             return priority;
         }
 
+        @Override
+        public boolean isFailureHandler() {
+            return isFailureHandler;
+        }
+
+        public void setFailureHandler(boolean failureHandler) {
+            isFailureHandler = failureHandler;
+        }
     }
 }

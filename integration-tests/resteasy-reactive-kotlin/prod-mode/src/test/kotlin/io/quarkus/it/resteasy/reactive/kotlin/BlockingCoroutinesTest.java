@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -18,7 +18,7 @@ public class BlockingCoroutinesTest {
 
     @RegisterExtension
     static QuarkusProdModeTest test = new QuarkusProdModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

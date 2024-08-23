@@ -10,6 +10,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -21,10 +22,18 @@ import io.quarkus.runtime.ShutdownContext;
 public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
 
+    private static final String USER_AGENT = "User-Agent";
+    private static final String USER_AGENT_VALUE = String.format(
+            "quarkus/%s-%s",
+            System.getProperty("java.vendor.version"),
+            AbstractLambdaPollLoop.class.getPackage().getImplementationVersion());
+
     private final ObjectMapper objectMapper;
     private final ObjectReader cognitoIdReader;
     private final ObjectReader clientCtxReader;
     private final LaunchMode launchMode;
+    private static final String LAMBDA_TRACE_HEADER_PROP = "com.amazonaws.xray.traceHeader";
+    private static final String MDC_AWS_REQUEST_ID_KEY = "AWSRequestId";
 
     public AbstractLambdaPollLoop(ObjectMapper objectMapper, ObjectReader cognitoIdReader, ObjectReader clientCtxReader,
             LaunchMode launchMode) {
@@ -32,6 +41,10 @@ public abstract class AbstractLambdaPollLoop {
         this.cognitoIdReader = cognitoIdReader;
         this.clientCtxReader = clientCtxReader;
         this.launchMode = launchMode;
+    }
+
+    protected boolean shouldLog(Exception e) {
+        return true;
     }
 
     protected abstract boolean isStream();
@@ -66,6 +79,7 @@ public abstract class AbstractLambdaPollLoop {
 
                         try {
                             requestConnection = (HttpURLConnection) requestUrl.openConnection();
+                            requestConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
                         } catch (IOException e) {
                             if (!running.get()) {
                                 // just return gracefully as we were probably shut down by
@@ -79,6 +93,9 @@ public abstract class AbstractLambdaPollLoop {
                         }
                         try {
                             String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            if (requestId != null) {
+                                MDC.put(MDC_AWS_REQUEST_ID_KEY, requestId);
+                            }
                             if (requestConnection.getResponseCode() != 200) {
                                 // connection should be closed by finally clause
                                 continue;
@@ -102,7 +119,9 @@ public abstract class AbstractLambdaPollLoop {
                                     }
                                 }
                                 String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
-                                TraceId.setTraceId(traceId);
+                                if (traceId != null) {
+                                    System.setProperty(LAMBDA_TRACE_HEADER_PROP, traceId);
+                                }
                                 URL url = AmazonLambdaApi.invocationResponse(baseUrl, requestId);
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);
@@ -128,7 +147,9 @@ public abstract class AbstractLambdaPollLoop {
                                 if (abortGracefully(e)) {
                                     return;
                                 }
-                                log.error("Failed to run lambda (" + launchMode + ")", e);
+                                if (shouldLog(e)) {
+                                    log.error("Failed to run lambda (" + launchMode + ")", e);
+                                }
 
                                 postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
                                         new FunctionError(e.getClass().getName(), e.getMessage()));
@@ -148,6 +169,7 @@ public abstract class AbstractLambdaPollLoop {
                             }
                             return;
                         } finally {
+                            MDC.remove(MDC_AWS_REQUEST_ID_KEY);
                             try {
                                 requestConnection.getInputStream().close();
                             } catch (IOException ignored) {
@@ -163,7 +185,7 @@ public abstract class AbstractLambdaPollLoop {
                     } catch (Exception ex) {
                         log.error("Failed to report init error (" + launchMode + ")", ex);
                     } finally {
-                        // our main loop is done, time to shutdown
+                        // our main loop is done, time to shut down
                         Application app = Application.currentApplication();
                         if (app != null) {
                             log.error("Shutting down Quarkus application because of error (" + launchMode + ")");
@@ -223,6 +245,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postResponse(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         if (response != null) {
             getOutputWriter().writeHeaders(responseConnection);
         }
@@ -239,6 +262,7 @@ public abstract class AbstractLambdaPollLoop {
     protected void requeue(String baseUrl, String requestId) throws IOException {
         URL url = AmazonLambdaApi.requeue(baseUrl, requestId);
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         while (responseConnection.getInputStream().read() != -1) {
@@ -248,6 +272,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected void postError(URL url, Object response) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setRequestProperty("Content-Type", "application/json");
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
@@ -259,13 +284,14 @@ public abstract class AbstractLambdaPollLoop {
 
     protected HttpURLConnection responseStream(URL url) throws IOException {
         HttpURLConnection responseConnection = (HttpURLConnection) url.openConnection();
+        responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         return responseConnection;
     }
 
     boolean abortGracefully(Exception ex) {
-        // if we are running in test mode, or native mode outside of the lambda container, then don't output stack trace for socket errors
+        // if we are running in test mode, or native mode outside the lambda container, then don't output stack trace for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
         boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT;

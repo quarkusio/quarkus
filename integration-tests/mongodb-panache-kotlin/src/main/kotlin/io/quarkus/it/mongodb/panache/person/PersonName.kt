@@ -14,5 +14,4 @@ class PersonName {
     override fun hashCode(): Int {
         return lastname?.hashCode() ?: 0
     }
-
 }

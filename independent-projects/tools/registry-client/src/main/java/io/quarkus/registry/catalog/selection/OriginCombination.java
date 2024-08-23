@@ -1,6 +1,5 @@
 package io.quarkus.registry.catalog.selection;
 
-import io.quarkus.maven.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -8,7 +7,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import io.quarkus.maven.dependency.ArtifactKey;
+
 public class OriginCombination {
+
+    static double calculateScore(OriginCombination s, int highestRegistryPreference, int originsTotal) {
+        double combinationScore = 0;
+        for (OriginWithPreference o : s.getCollectedOrigins()) {
+            combinationScore += Math.pow(originsTotal,
+                    highestRegistryPreference + 1 - o.getPreference().registryPreference)
+                    * ((((double) Integer.MAX_VALUE) + 1 - o.getPreference().platformPreference) / Integer.MAX_VALUE);
+        }
+        return combinationScore;
+    }
 
     private final OriginWithPreference[] collectedOrigins;
 
@@ -16,7 +27,7 @@ public class OriginCombination {
         collectedOrigins = new OriginWithPreference[0];
     }
 
-    private OriginCombination(OriginWithPreference[] selectedOrigins) {
+    OriginCombination(OriginWithPreference[] selectedOrigins) {
         this.collectedOrigins = selectedOrigins;
     }
 

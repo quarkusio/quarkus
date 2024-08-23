@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import grpc.health.v1.HealthOuterClass.HealthCheckResponse;
 import grpc.health.v1.HealthOuterClass.HealthCheckResponse.ServingStatus;

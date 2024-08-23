@@ -1,9 +1,9 @@
 package io.quarkus.arc.test.metadata;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

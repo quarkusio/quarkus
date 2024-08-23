@@ -13,7 +13,6 @@ package io.quarkus.vertx.runtime.jackson;
 import static io.quarkus.vertx.runtime.jackson.JsonUtil.BASE64_DECODER;
 
 import java.io.IOException;
-import java.time.Instant;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,7 +25,7 @@ import io.vertx.core.buffer.Buffer;
 /**
  * Copied from {@code io.vertx.core.json.jackson.BufferDeserializer} as that class is package private
  */
-class BufferDeserializer extends JsonDeserializer<Buffer> {
+public class BufferDeserializer extends JsonDeserializer<Buffer> {
 
     @Override
     public Buffer deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
@@ -34,7 +33,7 @@ class BufferDeserializer extends JsonDeserializer<Buffer> {
         try {
             return Buffer.buffer(BASE64_DECODER.decode(text));
         } catch (IllegalArgumentException e) {
-            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, Instant.class);
+            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, Buffer.class);
         }
     }
 }

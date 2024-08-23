@@ -15,18 +15,19 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
+import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
-import io.vertx.core.MultiMap;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.ext.web.RoutingContext;
 
-public class ConfigDescriptionsManager extends DevConsolePostHandler implements Supplier<ConfigDescriptionsManager> {
+public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsManager> {
 
     private final List<ConfigDescription> configDescriptions;
     private final Set<String> devServicesProperties;
     private ClassLoader currentCl;
+
+    private static final String QUOTED_DOT = "\".\"";
+    private static final String QUOTED_DOT_KEY = "$$QUOTED_DOT$$";
 
     volatile Map<ConfigSourceName, List<ConfigDescription>> values;
 
@@ -80,7 +81,9 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
         Set<String> propertyNames = new HashSet<>(addedConfigKeys);
         current.getPropertyNames().forEach(propertyNames::add);
         for (String propertyName : propertyNames) {
+            propertyName = propertyName.replace(QUOTED_DOT, QUOTED_DOT_KEY); // Make sure dots can be quoted
             String[] parts = propertyName.split("\\.");
+
             List<String> accumulate = new ArrayList<>();
             //we never want to add the full string
             //hence -1
@@ -90,6 +93,11 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
                     //so skip
                     break;
                 }
+                // If there was a quoted dot, put that back
+                if (parts[i].contains(QUOTED_DOT_KEY)) {
+                    parts[i] = parts[i].replaceAll(QUOTED_DOT_KEY, QUOTED_DOT);
+                }
+
                 accumulate.add(parts[i]);
                 //if there is both a quoted and unquoted version we only want to apply the quoted version
                 //and remove the unquoted one
@@ -114,7 +122,7 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
         for (ConfigDescription item : configDescriptions) {
             //if they are a non-wildcard description we just add them directly
             if (!item.getName().contains("{*}")) {
-                //we don't want to accidently use these properties as name expansions
+                //we don't want to accidentally use these properties as name expansions
                 //we ban them which means that the only way the name can be expanded into a map
                 //is if it is quoted
                 bannedExpansionCombos.add(item.getName());
@@ -150,9 +158,8 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
                 //we need it later, but we don't want it in this loop
                 Map<List<String>, Set<String>> building = new HashMap<>();
                 building.put(List.of(), new HashSet<>());
-                for (int i = 0; i < componentParts.size(); ++i) {
+                for (List<String> currentPart : componentParts) {
                     Map<List<String>, Set<String>> newBuilding = new HashMap<>();
-                    List<String> currentPart = componentParts.get(i);
                     for (Map.Entry<List<String>, Set<String>> entry : building.entrySet()) {
                         List<String> attempt = entry.getKey();
                         List<String> newBase = new ArrayList<>(attempt);
@@ -235,8 +242,8 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
             }
             List<String> segments = entry.getKey();
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < segments.size(); ++i) {
-                sb.append(segments.get(i));
+            for (String segment : segments) {
+                sb.append(segment);
                 sb.append(".");
             }
             String expandedName = sb.toString();
@@ -288,23 +295,13 @@ public class ConfigDescriptionsManager extends DevConsolePostHandler implements 
     }
 
     private boolean isQuoted(String part) {
-        return part.charAt(0) == '\"' && part.charAt(part.length() - 1) == '\"';
+        return part.length() >= 2 && part.charAt(0) == '\"' && part.charAt(part.length() - 1) == '\"';
     }
 
     @Override
     public ConfigDescriptionsManager get() {
         currentCl = Thread.currentThread().getContextClassLoader();
         return this;
-    }
-
-    @Override
-    protected void handlePost(RoutingContext event, MultiMap form) throws Exception {
-        String name = event.request().getFormAttribute("name");
-        String value = event.request().getFormAttribute("value");
-        addNamedConfigGroup(name + value);
-        event.redirect(event.request().path().replace("add-named-group", "config") + "?"
-                + event.request().query());
-
     }
 
     static class Holder {

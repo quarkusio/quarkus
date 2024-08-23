@@ -6,14 +6,14 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.plugins.server.servlet.ServletSecurityContext;
 
@@ -21,7 +21,9 @@ import io.quarkus.resteasy.runtime.standalone.QuarkusResteasySecurityContext;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 @PreMatching
 @Priority(Priorities.USER + 1)
@@ -33,6 +35,9 @@ public class SecurityContextFilter implements ContainerRequestFilter {
 
     @Inject
     CurrentIdentityAssociation currentIdentityAssociation;
+
+    @Inject
+    RoutingContext routingContext;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -95,6 +100,7 @@ public class SecurityContextFilter implements ContainerRequestFilter {
                 return Uni.createFrom().nullItem();
             }
         };
+        routingContext.setUser(new QuarkusHttpUser(newIdentity));
         currentIdentityAssociation.setIdentity(newIdentity);
     }
 }

@@ -5,15 +5,17 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
+
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
+
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
@@ -42,6 +44,8 @@ public class WriterInterceptorContextImpl extends AbstractInterceptorContext
     @Override
     public void proceed() throws IOException, WebApplicationException {
         Response response = context.getResponse().get();
+        // this is needed in order to avoid having the headers written out twice
+        context.serverResponse().setPreCommitListener(null);
         if (index == interceptors.length) {
             MessageBodyWriter effectiveWriter = writer;
             if (rediscoveryNeeded) {

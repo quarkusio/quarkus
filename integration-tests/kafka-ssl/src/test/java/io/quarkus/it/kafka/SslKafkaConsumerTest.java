@@ -14,36 +14,48 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.it.kafka.ssl.CertificateFormat;
 import io.restassured.RestAssured;
 
-@QuarkusTest
-@QuarkusTestResource(KafkaSSLTestResource.class)
-public class SslKafkaConsumerTest {
+public abstract class SslKafkaConsumerTest {
 
-    public static Producer<Integer, String> createProducer() {
+    public abstract CertificateFormat getFormat();
+
+    @Test
+    public void testReception() {
+        String format = getFormat().name();
+        try (Producer<Integer, String> producer = createProducer(CertificateFormat.valueOf(format))) {
+            producer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
+            String string = RestAssured
+                    .given().queryParam("format", format)
+                    .when().get("/ssl")
+                    .andReturn().asString();
+            Assertions.assertEquals("hi world", string);
+        }
+    }
+
+    public static Producer<Integer, String> createProducer(CertificateFormat format) {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, System.getProperty("bootstrap.servers"));
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "test-ssl-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        File tsFile = new File("src/test/resources/kafka-truststore.p12");
+
+        String truststore = switch (format) {
+            case PKCS12 -> "kafka-truststore.p12";
+            case JKS -> "kafka-truststore.jks";
+            case PEM -> "kafka.crt";
+        };
+
+        File tsFile = new File("target/certs/" + truststore);
         props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
         props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
-        props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
-        props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");
+        if (format != CertificateFormat.PEM) {
+            props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
+        }
+        props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, format.name());
         props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
 
         return new KafkaProducer<>(props);
     }
-
-    @Test
-    public void testReception() {
-        Producer<Integer, String> consumer = createProducer();
-        consumer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
-        String string = RestAssured.when().get("/ssl").andReturn().asString();
-        Assertions.assertEquals("hi world", string);
-    }
-
 }

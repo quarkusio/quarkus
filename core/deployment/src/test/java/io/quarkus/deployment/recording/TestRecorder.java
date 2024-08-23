@@ -59,6 +59,10 @@ public class TestRecorder {
         RESULT.add(bean);
     }
 
+    public void bean(JobDetails jobDetails) {
+        RESULT.add(jobDetails);
+    }
+
     public void bean(TestJavaBeanWithBoolean bean) {
         RESULT.add(bean);
     }
@@ -73,6 +77,14 @@ public class TestRecorder {
     }
 
     public void bean(TestConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
+    public void bean(OtherTestConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
+    public void bean(TestSingleConstructorBean bean) {
         RESULT.add(bean);
     }
 

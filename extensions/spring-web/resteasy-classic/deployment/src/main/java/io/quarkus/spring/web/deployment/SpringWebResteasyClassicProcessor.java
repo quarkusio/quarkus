@@ -1,7 +1,5 @@
 package io.quarkus.spring.web.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Providers;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -34,12 +32,11 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
-import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
+import io.quarkus.resteasy.deployment.NonJaxRsClassBuildItem;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentCustomizerBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
@@ -127,7 +124,8 @@ public class SpringWebResteasyClassicProcessor {
             }
         }));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(SpringResourceBuilder.class.getName())
+                .build());
     }
 
     /**
@@ -147,7 +145,7 @@ public class SpringWebResteasyClassicProcessor {
                     continue;
                 }
 
-                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                if (targetClass.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
                     classesWithoutRestController.add(targetClass.name());
                 }
             }
@@ -156,7 +154,7 @@ public class SpringWebResteasyClassicProcessor {
         if (!classesWithoutRestController.isEmpty()) {
             for (DotName dotName : classesWithoutRestController) {
                 LOGGER.warn("Class '" + dotName
-                        + "' uses a mapping annotation but the class itself was not annotated with '@RestContoller'. The mappings will therefore be ignored.");
+                        + "' uses a mapping annotation but the class itself was not annotated with '@RestController'. The mappings will therefore be ignored.");
             }
         }
     }
@@ -233,9 +231,8 @@ public class SpringWebResteasyClassicProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(STATIC_INIT)
     public void registerWithDevModeNotFoundMapper(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ExceptionMapperRecorder recorder) {
+            BuildProducer<NonJaxRsClassBuildItem> nonJaxRsClassProducer) {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> restControllerAnnotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
         if (restControllerAnnotations.isEmpty()) {
@@ -247,7 +244,7 @@ public class SpringWebResteasyClassicProcessor {
             String basePath = "/";
             ClassInfo restControllerAnnotatedClass = restControllerInstance.target().asClass();
 
-            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.classAnnotation(REQUEST_MAPPING);
+            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.declaredAnnotation(REQUEST_MAPPING);
             if (requestMappingInstance != null) {
                 String basePathFromAnnotation = getMappingValue(requestMappingInstance);
                 if (basePathFromAnnotation != null) {
@@ -289,7 +286,7 @@ public class SpringWebResteasyClassicProcessor {
         }
 
         if (!nonJaxRsPaths.isEmpty()) {
-            recorder.nonJaxRsClassNameToMethodPaths(nonJaxRsPaths);
+            nonJaxRsClassProducer.produce(new NonJaxRsClassBuildItem(nonJaxRsPaths));
         }
     }
 

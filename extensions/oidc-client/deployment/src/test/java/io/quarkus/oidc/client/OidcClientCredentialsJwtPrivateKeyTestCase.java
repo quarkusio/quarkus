@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KeycloakRealmClientCredentialsJwtPrivateKeyManager.class)
+@WithTestResource(value = KeycloakRealmClientCredentialsJwtPrivateKeyManager.class, restrictToAnnotatedClass = false)
 public class OidcClientCredentialsJwtPrivateKeyTestCase {
 
     private static Class<?>[] testClasses = {
@@ -28,6 +28,16 @@ public class OidcClientCredentialsJwtPrivateKeyTestCase {
     @Test
     public void testClientCredentialsToken() {
         String token = RestAssured.when().get("/client/token").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("service-account-quarkus-app"));
+    }
+
+    @Test
+    public void testPrivateKeyToken() {
+        String token = RestAssured.when().get("/client/token-key").body().asString();
         RestAssured.given().auth().oauth2(token)
                 .when().get("/protected")
                 .then()

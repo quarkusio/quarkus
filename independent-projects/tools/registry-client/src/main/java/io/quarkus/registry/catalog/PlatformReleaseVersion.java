@@ -1,5 +1,8 @@
 package io.quarkus.registry.catalog;
 
+import java.io.IOException;
+import java.util.Objects;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -8,8 +11,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.io.IOException;
-import java.util.Objects;
 
 /**
  * Representation of Quarkus Platform release.

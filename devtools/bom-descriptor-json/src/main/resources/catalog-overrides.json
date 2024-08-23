@@ -6,9 +6,29 @@
       "description": "Everything you need for REST endpoints, HTTP and web formats like JSON",
       "metadata": {
         "pinned": [
+          "io.quarkus:quarkus-rest",
+          "io.quarkus:quarkus-rest-jackson",
+          "io.quarkus:quarkus-rest-jsonb",
+          "io.quarkus:quarkus-rest-jaxb",
+          "io.quarkus:quarkus-rest-kotlin-serialization",
+          "io.quarkus:quarkus-rest-qute",
+          "io.quarkus:quarkus-rest-links",
+          "io.quarkus:quarkus-rest-client",
+          "io.quarkus:quarkus-rest-client-jackson",
+          "io.quarkus:quarkus-rest-client-jsonb",
+          "io.quarkus:quarkus-rest-client-jaxb",
+          "io.quarkus:quarkus-rest-client-kotlin-serialization",
           "io.quarkus:quarkus-resteasy",
           "io.quarkus:quarkus-resteasy-jackson",
-          "io.quarkus:quarkus-resteasy-jsonb"
+          "io.quarkus:quarkus-resteasy-jsonb",
+          "io.quarkus:quarkus-resteasy-jaxb",
+          "io.quarkus:quarkus-resteasy-multipart",
+          "io.quarkus:quarkus-resteasy-mutiny",
+          "io.quarkus:quarkus-resteasy-qute",
+          "io.quarkus:quarkus-resteasy-links",
+          "io.quarkus:quarkus-resteasy-client-jackson",
+          "io.quarkus:quarkus-resteasy-client-jsonb",
+          "io.quarkus:quarkus-resteasy-client-jaxb"
         ]
       }
     },
@@ -34,7 +54,7 @@
     {
       "name": "Messaging",
       "id": "messaging",
-      "description": "Send and receives message to various messaging systems (AMQP, KAfka etc)",
+      "description": "Send and receives message to various messaging systems (AMQP, Kafka etc)",
       "metadata": {
         "pinned": [
           "io.quarkus:quarkus-smallrye-reactive-messaging",
@@ -119,6 +139,7 @@
   ],
   "metadata":{
     "project": {
+      "default-codestart": "rest",
       "properties": {
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "${rest-assured.version}",
@@ -136,7 +157,9 @@
         "supported-maven-versions": "${supported-maven-versions}",
         "proposed-maven-version": "${proposed-maven-version}",
         "maven-wrapper-version": "${maven-wrapper.version}",
-        "gradle-wrapper-version": "${gradle-wrapper.version}"
+        "gradle-wrapper-version": "${gradle-wrapper.version}",
+        "minimum-java-version": "${minimum-java-version}",
+        "recommended-java-version": "${recommended-java-version}"
       }
     },
     "codestarts-artifacts": [

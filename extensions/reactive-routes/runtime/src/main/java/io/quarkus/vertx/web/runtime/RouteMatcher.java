@@ -1,7 +1,5 @@
 package io.quarkus.vertx.web.runtime;
 
-import io.quarkus.runtime.annotations.RecordableConstructor;
-
 public class RouteMatcher {
 
     private final String path;
@@ -11,7 +9,6 @@ public class RouteMatcher {
     private final String[] methods;
     private final int order;
 
-    @RecordableConstructor
     public RouteMatcher(String path, String regex, String[] produces, String[] consumes, String[] methods, int order) {
         this.path = path;
         this.regex = regex;

@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.ArtifactKey;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,7 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+
 public class PlatformStreamInfo implements Serializable {
+
+    private static final long serialVersionUID = 7472307823974997268L;
 
     private final String id;
     private final Map<String, PlatformReleaseInfo> releases = new HashMap<>();

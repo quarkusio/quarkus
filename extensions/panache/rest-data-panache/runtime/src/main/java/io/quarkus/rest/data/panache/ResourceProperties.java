@@ -57,4 +57,11 @@ public @interface ResourceProperties {
      * Default: hyphenated resource name without a suffix. Ignored suffixes are `Controller` and `Resource`.
      */
     String halCollectionName() default "";
+
+    /**
+     * List of the security roles permitted to access the resources.
+     * <p>
+     * Default: ""
+     */
+    String[] rolesAllowed() default {};
 }

@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.model;
 
 import java.util.Objects;
+
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -19,10 +20,11 @@ public class ServerMethodParameter extends MethodParameter {
             String signature,
             ParameterConverterSupplier converter, String defaultValue, boolean obtainedAsCollection, boolean optional,
             boolean encoded,
-            ParameterExtractor customParameterExtractor) {
+            ParameterExtractor customParameterExtractor,
+            String mimeType, String separator) {
         super(name, type, declaredType, declaredUnresolvedType, signature, parameterType, single, defaultValue,
                 obtainedAsCollection, optional,
-                encoded);
+                encoded, mimeType, null /* not useful for server params */, separator);
         this.converter = converter;
         this.customParameterExtractor = customParameterExtractor;
     }

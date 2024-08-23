@@ -1,8 +1,5 @@
 package io.quarkus.mailer.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.mailer.reactive.ReactiveMailer;
@@ -10,11 +7,13 @@ import io.quarkus.mailer.reactive.ReactiveMailer;
 /**
  * Implementation of {@link Mailer} relying on the {@link ReactiveMailer} and waiting for completion.
  */
-@ApplicationScoped
 public class BlockingMailerImpl implements Mailer {
 
-    @Inject
-    ReactiveMailer mailer;
+    private final ReactiveMailer mailer;
+
+    BlockingMailerImpl(ReactiveMailer mailer) {
+        this.mailer = mailer;
+    }
 
     @Override
     public void send(Mail... mails) {

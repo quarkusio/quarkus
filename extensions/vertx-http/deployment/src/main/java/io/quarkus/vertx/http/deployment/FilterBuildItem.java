@@ -15,9 +15,11 @@ public final class FilterBuildItem extends MultiBuildItem {
     public static final int CORS = 300;
     public static final int AUTHENTICATION = 200;
     public static final int AUTHORIZATION = 100;
+    private static final int AUTH_FAILURE_HANDLER = Integer.MIN_VALUE + 1;
 
     private final Handler<RoutingContext> handler;
     private final int priority;
+    private final boolean isFailureHandler;
 
     /**
      * Creates a new instance of {@link FilterBuildItem}.
@@ -28,10 +30,52 @@ public final class FilterBuildItem extends MultiBuildItem {
      */
     public FilterBuildItem(Handler<RoutingContext> handler, int priority) {
         this.handler = handler;
+        checkPriority(priority);
+        this.priority = priority;
+        this.isFailureHandler = false;
+    }
+
+    private FilterBuildItem(Handler<RoutingContext> handler, int priority, boolean checkPriority, boolean isFailureHandler) {
+        this.handler = handler;
+        if (checkPriority) {
+            checkPriority(priority);
+        }
+        this.priority = priority;
+        this.isFailureHandler = isFailureHandler;
+    }
+
+    /**
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
+     *
+     * @param authFailureHandler authentication failure handler
+     */
+    private FilterBuildItem(Handler<RoutingContext> authFailureHandler) {
+        this.handler = authFailureHandler;
+        this.isFailureHandler = true;
+        this.priority = AUTH_FAILURE_HANDLER;
+    }
+
+    /**
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
+     * The handler will be added as next to last, right before {@link io.quarkus.vertx.http.runtime.QuarkusErrorHandler}.
+     */
+    public static FilterBuildItem ofAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
+        return new FilterBuildItem(authFailureHandler);
+    }
+
+    /**
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
+     * The handler will be added right before any handlers added by
+     * {@link FilterBuildItem#ofAuthenticationFailureHandler(Handler)}
+     */
+    public static FilterBuildItem ofPreAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
+        return new FilterBuildItem(authFailureHandler, AUTH_FAILURE_HANDLER + 1, false, true);
+    }
+
+    private void checkPriority(int priority) {
         if (priority < 0) {
             throw new IllegalArgumentException("`priority` must be positive");
         }
-        this.priority = priority;
     }
 
     public Handler<RoutingContext> getHandler() {
@@ -42,11 +86,24 @@ public final class FilterBuildItem extends MultiBuildItem {
         return priority;
     }
 
+    public boolean isFailureHandler() {
+        return isFailureHandler;
+    }
+
     /**
      * @return a filter object wrapping the handler and priority.
      */
     public Filter toFilter() {
-        return new Filters.SimpleFilter(handler, priority);
+        if (isFailureHandler && priority == AUTH_FAILURE_HANDLER) {
+            // create filter for penultimate auth failure handler
+            final Filters.SimpleFilter filter = new Filters.SimpleFilter();
+            filter.setPriority(AUTH_FAILURE_HANDLER);
+            filter.setFailureHandler(true);
+            filter.setHandler(handler);
+            return filter;
+        } else {
+            return new Filters.SimpleFilter(handler, priority, isFailureHandler);
+        }
     }
 
 }

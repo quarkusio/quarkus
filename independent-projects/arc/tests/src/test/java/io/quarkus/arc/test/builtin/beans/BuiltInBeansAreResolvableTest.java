@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.impl.CreationalContextImpl;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -15,20 +12,26 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Annotated;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Qualifier;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Annotated;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Qualifier;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.impl.CreationalContextImpl;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class BuiltInBeansAreResolvableTest {
 
@@ -44,7 +47,8 @@ public class BuiltInBeansAreResolvableTest {
         // basic BM is resolvable
         assertTrue(instance.select(BeanManager.class).isResolvable());
         // invoke something on the BM
-        assertEquals(1, instance.select(BeanManager.class).get().getBeans(DummyBean.class).size());
+        assertEquals(1,
+                instance.select(BeanManager.class).get().getBeans(DummyBean.class, new DummyQualifier.Literal()).size());
         // you shouldn't be able to select BM with qualifiers
         assertFalse(instance.select(BeanManager.class, new DummyQualifier.Literal()).isResolvable());
     }

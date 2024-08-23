@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -12,7 +12,7 @@ import org.eclipse.microprofile.health.Liveness;
 
 @Dependent
 @Liveness
-public class BasicHealthCheck implements HealthCheck {
+class BasicHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {

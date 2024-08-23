@@ -1,6 +1,5 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -18,11 +17,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+
 public final class WrapperRunner {
 
     public enum Wrapper {
-        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "-i" }),
-        MAVEN("mvnw", "mvnw.cmd", new String[] { "package" });
+        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "--info", "--stacktrace" }),
+        MAVEN("mvnw", "mvnw.cmd", new String[] { "-B", "package" });
 
         private final String execUnix;
         private final String execWindows;
@@ -50,7 +51,7 @@ public final class WrapperRunner {
                 case "gradle-kotlin-dsl":
                     return GRADLE;
                 default:
-                    throw new IllegalStateException("No wrapper linked to buildtool: " + buildtool);
+                    throw new IllegalStateException("No wrapper linked to build tool: " + buildtool);
             }
         }
 

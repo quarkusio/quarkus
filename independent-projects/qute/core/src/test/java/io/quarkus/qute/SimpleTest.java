@@ -3,8 +3,6 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Results.NotFound;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,7 +11,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.LongAdder;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Results.NotFound;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class SimpleTest {
 
@@ -83,6 +85,7 @@ public class SimpleTest {
         data.put("nameOptional", Optional.of("BUG"));
         assertEquals("John Bug", engine.parse("{name.or('John')} {surname.or('John')}").render(data));
         assertEquals("John Bug", engine.parse("{name ?: 'John'} {surname or 'John'}").render(data));
+        assertEquals("John Bug", engine.parse("{name ?:  'John'} {surname  or   'John'}").render(data));
         assertEquals("John Bug", engine.parse("{name ?: \"John Bug\"}").render(data));
         assertEquals("Is null", engine.parse("{foo ?: 'Is null'}").render(data));
         assertEquals("10", engine.parse("{foo.age.limit ?: 10}").render(data));
@@ -93,7 +96,7 @@ public class SimpleTest {
     @Test
     public void testTernaryOperator() {
         Engine engine = Engine.builder()
-                .addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.trueResolver(),
+                .addValueResolvers(ValueResolvers.mapperResolver(), ValueResolvers.trueResolver(),
                         ValueResolvers.orResolver())
                 .build();
 
@@ -150,7 +153,7 @@ public class SimpleTest {
 
     @Test
     public void testNotFound() {
-        assertEquals("Entry \"foo\" not found in the data map in foo.bar Collection size: 0",
+        assertEquals("Key \"foo\" not found in the template data map with keys [collection] in foo.bar Collection size: 0",
                 Engine.builder().strictRendering(false).addDefaultValueResolvers()
                         .addResultMapper(new ResultMapper() {
 
@@ -255,7 +258,7 @@ public class SimpleTest {
                 return super.getParameters();
             }
         };
-        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapperResolver())
                 .build();
         assertEquals(":1:1",
                 engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")
@@ -278,7 +281,7 @@ public class SimpleTest {
                 return false;
             }
         };
-        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addSectionHelper(customIfFactory).addValueResolver(ValueResolvers.mapperResolver())
                 .build();
         assertEquals(":1:1",
                 engine.parse("{#if foo}:1{/if}{#if bar}:0{/if}{#if foo}:1{/if}")

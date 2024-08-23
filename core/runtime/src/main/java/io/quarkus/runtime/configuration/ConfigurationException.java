@@ -1,6 +1,7 @@
 package io.quarkus.runtime.configuration;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import io.quarkus.dev.config.ConfigurationProblem;
@@ -16,7 +17,7 @@ public class ConfigurationException extends RuntimeException implements Configur
     /**
      * Constructs a new {@code ConfigurationException} instance. The message is left blank ({@code null}), and no
      * cause is specified.
-     * 
+     *
      * @param configKeys
      */
     public ConfigurationException(Set<String> configKeys) {
@@ -55,7 +56,7 @@ public class ConfigurationException extends RuntimeException implements Configur
      */
     public ConfigurationException(final Throwable cause, Set<String> configKeys) {
         super(cause);
-        this.configKeys = configKeys;
+        this.configKeys = forwardCauseConfigKeys(configKeys, cause);
     }
 
     /**
@@ -70,14 +71,14 @@ public class ConfigurationException extends RuntimeException implements Configur
 
     /**
      * Constructs a new {@code ConfigurationException} instance with an initial message and cause.
-     * 
+     *
      * @param msg the message
      * @param cause the cause
      * @param configKeys
      */
     public ConfigurationException(final String msg, final Throwable cause, Set<String> configKeys) {
         super(msg, cause);
-        this.configKeys = configKeys;
+        this.configKeys = forwardCauseConfigKeys(configKeys, cause);
     }
 
     public ConfigurationException(Throwable cause) {
@@ -86,6 +87,14 @@ public class ConfigurationException extends RuntimeException implements Configur
     }
 
     public Set<String> getConfigKeys() {
+        return configKeys;
+    }
+
+    private static Set<String> forwardCauseConfigKeys(Set<String> configKeys, Throwable cause) {
+        if (cause instanceof ConfigurationProblem) {
+            var merged = new HashSet<String>(configKeys);
+            merged.addAll(((ConfigurationProblem) cause).getConfigKeys());
+        }
         return configKeys;
     }
 }

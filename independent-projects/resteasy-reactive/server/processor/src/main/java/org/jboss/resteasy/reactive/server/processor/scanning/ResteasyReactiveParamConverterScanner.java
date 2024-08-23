@@ -2,7 +2,9 @@ package org.jboss.resteasy.reactive.server.processor.scanning;
 
 import java.util.Collection;
 import java.util.function.Function;
-import javax.ws.rs.Priorities;
+
+import jakarta.ws.rs.Priorities;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
@@ -44,7 +46,7 @@ public class ResteasyReactiveParamConverterScanner {
         for (ClassInfo converterClass : paramConverterProviders) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result.keepProvider(converterClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
-                AnnotationInstance priorityInstance = converterClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER;
                 ResourceParamConverterProvider provider = new ResourceParamConverterProvider();
                 provider.setPriority(priority);

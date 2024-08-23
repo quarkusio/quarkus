@@ -1,13 +1,15 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.SecurityContext;
+import java.security.Principal;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -22,6 +24,9 @@ public class ProtectedJwtResource {
     SecurityIdentity identity;
 
     @Inject
+    Principal principal;
+
+    @Inject
     JsonWebToken accessToken;
 
     @Context
@@ -31,7 +36,8 @@ public class ProtectedJwtResource {
     @Path("test-security")
     @RolesAllowed("viewer")
     public String testSecurity() {
-        return securityContext.getUserPrincipal().getName();
+        return securityContext.getUserPrincipal().getName() + ":" + identity.getPrincipal().getName() + ":"
+                + principal.getName();
     }
 
     @POST
@@ -46,7 +52,7 @@ public class ProtectedJwtResource {
     @Path("test-security-jwt")
     @RolesAllowed("viewer")
     public String testSecurityJwt() {
-        return accessToken.getName() + ":" + accessToken.getGroups().iterator().next()
-                + ":" + accessToken.getClaim("email");
+        return accessToken.getName() + ":" + identity.getPrincipal().getName() + ":" + principal.getName()
+                + ":" + accessToken.getGroups().iterator().next() + ":" + accessToken.getClaim("email");
     }
 }

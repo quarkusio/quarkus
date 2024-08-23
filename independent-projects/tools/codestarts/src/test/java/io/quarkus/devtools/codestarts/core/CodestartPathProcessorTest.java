@@ -4,10 +4,12 @@ import static io.quarkus.devtools.codestarts.utils.NestedMaps.unflatten;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.quarkus.devtools.codestarts.CodestartStructureException;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.codestarts.CodestartStructureException;
 
 class CodestartPathProcessorTest {
 

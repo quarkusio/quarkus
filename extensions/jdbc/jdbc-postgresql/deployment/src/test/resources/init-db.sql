@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION my_func() RETURNS integer LANGUAGE plpgsql as $func$ BEGIN return 100; END $func$;

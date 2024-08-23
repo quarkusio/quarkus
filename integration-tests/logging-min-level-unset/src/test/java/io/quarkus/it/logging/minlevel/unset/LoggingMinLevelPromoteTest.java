@@ -5,18 +5,18 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
  * This test verifies that log levels are promoted to min-level when set below the default min-level.
- * 
+ *
  * So given the default min-level is DEBUG,
  * so if log level is set to TRACE,
  * it will be automatically promoted to DEBUG.
  */
 @QuarkusTest
-@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
+@WithTestResource(value = SetCategoryRuntimeLogLevels.class, restrictToAnnotatedClass = false)
 public class LoggingMinLevelPromoteTest {
 
     @Test

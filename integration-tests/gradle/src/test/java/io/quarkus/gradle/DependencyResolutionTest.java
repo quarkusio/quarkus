@@ -16,6 +16,6 @@ public class DependencyResolutionTest extends QuarkusGradleWrapperTestBase {
 
         final BuildResult result = runGradleWrapper(projectDir, "clean", "quarkusBuild");
 
-        assertThat(result.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(result.getTasks().get(":quarkusBuild"))).isTrue();
     }
 }

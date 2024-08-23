@@ -16,12 +16,12 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+            <artifactId>quarkus-spring-web-resteasy</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+            <artifactId>quarkus-spring-web-rest</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -51,7 +51,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.spring.web</provides>

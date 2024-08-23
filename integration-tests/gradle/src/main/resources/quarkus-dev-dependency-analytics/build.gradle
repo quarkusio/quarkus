@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'application'
+}
+
+group 'com.analytics'
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-resteasy'
+
+    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+}
+
+compileJava {
+    options.compilerArgs << '-parameters'
+}
+
+application {
+    mainClass = 'org.acme.EntryPoint'
+}
+
+run {
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

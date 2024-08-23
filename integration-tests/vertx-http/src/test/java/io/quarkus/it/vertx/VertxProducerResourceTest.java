@@ -37,6 +37,11 @@ public class VertxProducerResourceTest {
     }
 
     @Test
+    public void testManagementInterfaceMissing() {
+        get("/management-interface-test").then().body(containsString("OK"));
+    }
+
+    @Test
     public void testRouteRegistrationMTLS() {
         RequestSpecification spec = new RequestSpecBuilder()
                 .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))

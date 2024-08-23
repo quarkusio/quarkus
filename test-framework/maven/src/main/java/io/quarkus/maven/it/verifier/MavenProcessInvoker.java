@@ -48,7 +48,7 @@ public class MavenProcessInvoker extends DefaultInvoker {
 
         File workingDirectory = getWorkingDirectory();
         if (workingDirectory != null) {
-            cliBuilder.setWorkingDirectory(getWorkingDirectory());
+            cliBuilder.setBaseDirectory(getWorkingDirectory());
         }
 
         request.setBatchMode(true);
@@ -56,6 +56,9 @@ public class MavenProcessInvoker extends DefaultInvoker {
         Commandline cli;
         try {
             cli = cliBuilder.build(request);
+            if (logger != null) {
+                logger.debug("Running Maven CLI command: " + cli);
+            }
         } catch (CommandLineConfigurationException e) {
             throw new MavenInvocationException("Error configuring command-line. Reason: " + e.getMessage(), e);
         }

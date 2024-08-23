@@ -4,19 +4,20 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Blaze-Persistence
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
 
-Blaze-Persistence offers a fluent query builder API on top of JPA with a deep Hibernate ORM integration that enables the
-use of advanced SQL features like Common Table Expressions while staying in the realm of the JPA model.
+Blaze-Persistence offers a fluent query builder API on top of Jakarta Persistence with a deep Hibernate ORM integration that enables the
+use of advanced SQL features like Common Table Expressions while staying in the realm of the Jakarta Persistence model.
 
 On top of that, the Blaze-Persistence Entity-View module allows for DTO definitions that can be applied to business logic
 queries which are then transformed to optimized queries that only fetch the data that is needed to construct the DTO instances.
 The same DTO definitions can further be used for applying database updates, leading to a great reduction in boilerplate
 code and removing the need for object mapping tools.
 
-include::./platform-include.adoc[]
+include::{includes}/platform-include.adoc[]
 
 == Setting up and configuring Blaze-Persistence
 
@@ -32,27 +33,34 @@ In Quarkus, you just need to:
 
 Add the following dependencies to your project:
 
-* the Blaze-Persistence extension: `com.blazebit:blaze-persistence-integration-quarkus`
+* the Blaze-Persistence extension: `com.blazebit:blaze-persistence-integration-quarkus-3`
 * further Blaze-Persistence integrations as needed:
-  - `blaze-persistence-integration-jackson` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
-  - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[JAX-RS]
+  - `blaze-persistence-integration-jackson-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#Jackson%20integration[Jackson]
+  - `blaze-persistence-integration-jsonb-jakarta` for link:https://persistence.blazebit.com/documentation/1.6/entity-view/manual/en_US/#jsonb-integration[JSONB]
+  - `blaze-persistence-integration-jaxrs` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST]
+  - `blaze-persistence-integration-jaxrs-jackson-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST with Jackson]
+  - `blaze-persistence-integration-jaxrs-jsonb-jakarta` for link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#jaxrs-integration[Jakarta REST with JSONB]
 
-
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .Example dependencies using Maven
 ----
-<dependencies>
-    <!-- Blaze-Persistence specific dependencies -->
-    <dependency>
-        <groupId>com.blazebit</groupId>
-        <artifactId>blaze-persistence-integration-quarkus</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>com.blazebit</groupId>
-        <artifactId>blaze-persistence-integration-hibernate-5.4</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-</dependencies>
+<!-- Blaze-Persistence specific dependencies -->
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-quarkus-3</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.blazebit</groupId>
+    <artifactId>blaze-persistence-integration-hibernate-6.2</artifactId>
+    <scope>runtime</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.Using Gradle
+----
+implementation("com.blazebit:blaze-persistence-integration-quarkus-3")
+runtimeOnly("com.blazebit:blaze-persistence-integration-hibernate-6.2")
 ----
 
 The use in native images requires a dependency on the entity view annotation processor that may be extracted into a separate `native` profile:
@@ -65,7 +73,7 @@ The use in native images requires a dependency on the entity view annotation pro
         <dependencies>
             <dependency>
                 <groupId>com.blazebit</groupId>
-                <artifactId>blaze-persistence-entity-view-processor</artifactId>
+                <artifactId>blaze-persistence-entity-view-processor-jakarta</artifactId>
                 <scope>provided</scope>
             </dependency>
         </dependencies>
@@ -165,7 +173,7 @@ public interface GiftUpdateView extends GiftView {
 ----
 
 [source,java]
-.Example JAX-RS Resource
+.Example Jakarta REST Resource
 ----
 @Path("/gifts")
 public class GiftResource {
@@ -200,7 +208,7 @@ public class GiftResource {
     @GET
     @Path("{id"})
     @Produces(MediaType.APPLICATION_JSON)
-    public GiftView getGift(@PathParam("id") Long id) {
+    public GiftView getGift(Long id) {
         return return entityViewManager.find(entityManager, GiftView.class, view.getId());
     }
 }
@@ -217,7 +225,26 @@ When no property is set, the Blaze-Persistence defaults apply.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
 
-include::quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
+include::{includes}/quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
+
+Apart from these configuration options, further configuration and customization can be applied by observing a `CriteriaBuilderConfiguration` or `EntityViewConfiguration` events and applying customizations on these objects. The various customization use cases can be found in the link:https://persistence.blazebit.com/documentation/entity-view/manual/en_US/index.html#quarkus-customization[Quarkus section of the entity-view documentation].
+
+[source,java]
+.Example CriteriaBuilderConfiguration and EntityViewConfiguration observing
+----
+@ApplicationScoped
+public class BlazePersistenceConfigurer {
+
+    public void configure(@Observes CriteriaBuilderConfiguration config) {
+        config.setProperty("...", "...");
+    }
+    
+    public void configure(@Observes EntityViewConfiguration config) {
+        // Register custom BasicUserType or register type test values
+        config.registerBasicUserType(MyClass.class, MyClassBasicUserType.class);
+    }
+}
+----
 
 == Limitations
 

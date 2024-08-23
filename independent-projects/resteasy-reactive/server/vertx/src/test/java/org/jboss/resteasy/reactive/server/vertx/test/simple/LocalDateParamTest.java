@@ -1,19 +1,24 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.restassured.RestAssured;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+
+import jakarta.ws.rs.CookieParam;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class LocalDateParamTest {
 
@@ -40,6 +45,20 @@ public class LocalDateParamTest {
                 .then().statusCode(200).body(Matchers.equalTo("hello:1995-09-22"));
     }
 
+    @Test
+    public void localDateAsHeader() {
+        RestAssured.with().header("date", "08-08-1984")
+                .get("/hello/header")
+                .then().statusCode(200).body(Matchers.equalTo("hello=1984-08-08"));
+    }
+
+    @Test
+    public void localDateAsCookie() {
+        RestAssured.with().cookie("date", "08-08-1984")
+                .get("/hello/cookie")
+                .then().statusCode(200).body(Matchers.equalTo("hello/1984-08-08"));
+    }
+
     @Path("hello")
     public static class HelloResource {
 
@@ -58,6 +77,20 @@ public class LocalDateParamTest {
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDate date) {
             return "hello:" + date;
+        }
+
+        @GET
+        @Path("cookie")
+        public String helloCookie(
+                @CookieParam("date") @DateFormat(pattern = "dd-MM-yyyy") LocalDate date) {
+            return "hello/" + date;
+        }
+
+        @GET
+        @Path("header")
+        public String helloHeader(
+                @HeaderParam("date") @DateFormat(pattern = "dd-MM-yyyy") LocalDate date) {
+            return "hello=" + date;
         }
     }
 

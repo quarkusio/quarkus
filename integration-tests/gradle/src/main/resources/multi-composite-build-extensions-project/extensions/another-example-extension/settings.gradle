@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenLocal()
+    }
+    plugins {
+        id 'io.quarkus.extension' version "${quarkusPluginVersion}"
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+}
+includeBuild('../../libraries')
+includeBuild('../example-extension')
+rootProject.name = 'another-example-extension-parent'
+include(':deployment')
+include(':runtime')
+project(':deployment').name='another-example-extension-deployment'
+project(':runtime').name='another-example-extension'

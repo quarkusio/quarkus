@@ -10,5 +10,5 @@ metadata:
   - "rest"
   categories:
   - "cloud"
-  guide: "https://quarkus.io/guides/amazon-lambda-http"
+  guide: "https://quarkus.io/guides/aws-lambda-http"
   status: "stable"

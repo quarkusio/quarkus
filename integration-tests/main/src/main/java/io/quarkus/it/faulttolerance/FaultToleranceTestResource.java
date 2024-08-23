@@ -2,9 +2,9 @@ package io.quarkus.it.faulttolerance;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/ft")
 public class FaultToleranceTestResource {
@@ -16,6 +16,14 @@ public class FaultToleranceTestResource {
     public String getName() {
         AtomicInteger counter = new AtomicInteger();
         String name = service.getName(counter);
+        return counter + ":" + name;
+    }
+
+    @GET
+    @Path("/retried")
+    public String retried() {
+        AtomicInteger counter = new AtomicInteger();
+        String name = service.retriedMethod(counter);
         return counter + ":" + name;
     }
 

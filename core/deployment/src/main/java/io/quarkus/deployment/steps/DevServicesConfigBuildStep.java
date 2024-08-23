@@ -13,9 +13,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 
@@ -32,9 +34,14 @@ class DevServicesConfigBuildStep {
     @Produce(ServiceStartBuildItem.class)
     DevServicesLauncherConfigResultBuildItem setup(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfig,
             List<DevServicesConfigResultBuildItem> devServicesConfigResultBuildItems,
+            List<DevServicesResultBuildItem> devServicesResultBuildItems,
+            List<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigBuildItems,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
                 Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
+        for (DevServicesResultBuildItem resultBuildItem : devServicesResultBuildItems) {
+            newProperties.putAll(resultBuildItem.getConfig());
+        }
         Config config = ConfigProvider.getConfig();
         //check if there are existing already started dev services
         //if there were no changes to the processors they don't produce config
@@ -55,10 +62,19 @@ class DevServicesConfigBuildStep {
                 }
             }, true);
         }
-        for (Map.Entry<String, String> entry : newProperties.entrySet()) {
+        oldConfig = newProperties;
+
+        Map<String, String> newPropertiesWithAdditionalConfig = new HashMap<>(newProperties);
+        var unmodifiableNewProperties = Collections.unmodifiableMap(newProperties);
+        // On contrary to dev services config, "additional" config build items are
+        // produced on each restart, so we don't want to remember them from one restart to the next.
+        for (DevServicesAdditionalConfigBuildItem item : devServicesAdditionalConfigBuildItems) {
+            newPropertiesWithAdditionalConfig.putAll(item.getConfigProvider().provide(unmodifiableNewProperties));
+        }
+
+        for (Map.Entry<String, String> entry : newPropertiesWithAdditionalConfig.entrySet()) {
             runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue()));
         }
-        oldConfig = newProperties;
-        return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newProperties));
+        return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newPropertiesWithAdditionalConfig));
     }
 }

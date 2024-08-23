@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.LauncherUtil.createStartedFunction;
-import static io.quarkus.test.common.LauncherUtil.launchProcess;
 import static io.quarkus.test.common.LauncherUtil.updateConfigForPort;
 import static io.quarkus.test.common.LauncherUtil.waitForCapturedListeningData;
 import static io.quarkus.test.common.LauncherUtil.waitForStartedFunction;
@@ -34,7 +33,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     private long waitTimeSeconds;
     private String testProfile;
     private List<String> argLine;
+    private Map<String, String> env;
     private String nativeImagePath;
+    private String configuredOutputDirectory;
     private Class<?> testClass;
 
     private Process quarkusProcess;
@@ -49,7 +50,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
         this.nativeImagePath = initContext.nativeImagePath();
+        this.configuredOutputDirectory = initContext.getConfiguredOutputDirectory();
         this.argLine = initContext.argLine();
+        this.env = initContext.env();
         this.testClass = initContext.testClass();
     }
 
@@ -129,8 +132,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
         Path logFile = PropertyTestUtil.getLogFilePath();
-        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath().toString());
+        args.add("-Dquarkus.log.file.path=" + logFile.toAbsolutePath());
         args.add("-Dquarkus.log.file.enable=true");
+        args.add("-Dquarkus.log.category.\"io.quarkus\".level=INFO");
         if (testProfile != null) {
             args.add("-Dquarkus.profile=" + testProfile);
         }
@@ -143,9 +147,9 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         Files.deleteIfExists(logFile);
         Files.createDirectories(logFile.getParent());
         if (handleIo) {
-            quarkusProcess = LauncherUtil.launchProcess(args);
+            quarkusProcess = LauncherUtil.launchProcessAndDrainIO(args, env);
         } else {
-            quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[0]));
+            quarkusProcess = LauncherUtil.launchProcess(args, env);
         }
 
     }
@@ -174,7 +178,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         }
     }
 
-    private static String guessPath(Class<?> testClass) {
+    private String guessPath(Class<?> testClass) {
         //ok, lets make a guess
         //this is a horrible hack, but it is intended to make this work in IDE's
 
@@ -204,40 +208,46 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
                 "Unable to automatically find native image, please set the native.image.path to the native executable you wish to test");
     }
 
-    private static String guessPath(final URL url) {
+    private String guessPath(final URL url) {
         if (url == null) {
             return null;
         }
+        String file = null;
         if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
             //we have the maven test classes dir
             File testClasses = new File(url.getPath());
-            for (File file : testClasses.getParentFile().listFiles()) {
-                if (isNativeExecutable(file)) {
-                    logGuessedPath(file.getAbsolutePath());
-                    return file.getAbsolutePath();
-                }
-            }
+            file = guessPathFromDir(testClasses.getParentFile());
         } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
             //we have the gradle test classes dir, build/classes/java/test
             File testClasses = new File(url.getPath());
-            for (File file : testClasses.getParentFile().getParentFile().getParentFile().listFiles()) {
-                if (isNativeExecutable(file)) {
-                    logGuessedPath(file.getAbsolutePath());
-                    return file.getAbsolutePath();
-                }
-            }
+            file = guessPathFromDir(testClasses.getParentFile().getParentFile().getParentFile());
         } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
             //this will make mvn failsafe:integration-test work
             String path = url.getPath();
             int index = path.lastIndexOf("/target/");
             File targetDir = new File(path.substring(0, index) + "/target/");
-            for (File file : targetDir.listFiles()) {
-                if (isNativeExecutable(file)) {
-                    logGuessedPath(file.getAbsolutePath());
-                    return file.getAbsolutePath();
-                }
-            }
+            file = guessPathFromDir(targetDir);
 
+        }
+        return file;
+    }
+
+    private String guessPathFromDir(File dir) {
+        if (dir == null) {
+            return null;
+        }
+        if (configuredOutputDirectory != null) {
+            dir = dir.toPath().resolve(configuredOutputDirectory).toFile();
+        }
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return null;
+        }
+        for (File file : files) {
+            if (isNativeExecutable(file)) {
+                logGuessedPath(file.getAbsolutePath());
+                return file.getAbsolutePath();
+            }
         }
         return null;
     }
@@ -268,6 +278,6 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
     @Override
     public void close() {
-        quarkusProcess.destroy();
+        LauncherUtil.destroyProcess(quarkusProcess);
     }
 }

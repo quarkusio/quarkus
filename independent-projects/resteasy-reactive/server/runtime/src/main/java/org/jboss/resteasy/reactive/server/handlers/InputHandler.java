@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-import javax.ws.rs.HttpMethod;
+
+import jakarta.ws.rs.HttpMethod;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -23,13 +25,13 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 public class InputHandler implements ServerRestHandler {
 
     final long maxBufferSize;
-    private volatile Executor executor;
-    private final Supplier<Executor> supplier;
+    private volatile Executor workerExecutor;
+    private final Supplier<Executor> workerExecutorSupplier;
     private final ClassLoader originalTCCL;
 
-    public InputHandler(long maxBufferSize, Supplier<Executor> supplier) {
+    public InputHandler(long maxBufferSize, Supplier<Executor> workerExecutorSupplier) {
         this.maxBufferSize = maxBufferSize;
-        this.supplier = supplier;
+        this.workerExecutorSupplier = workerExecutorSupplier;
         // capture the proper TCCL in order to avoid losing it to Vert.x in dev-mode
         this.originalTCCL = Thread.currentThread().getContextClassLoader();
 
@@ -37,7 +39,7 @@ public class InputHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext context) throws Exception {
-        // in some cases, with sub-resource locators or via request filters, 
+        // in some cases, with sub-resource locators or via request filters,
         // it's possible we've already read the entity
         if (context.hasInputStream()) {
             // let's not set it twice
@@ -91,8 +93,8 @@ public class InputHandler implements ServerRestHandler {
             data.add(event);
             if (dataCount > maxBufferSize) {
                 context.serverRequest().pauseRequestInput();
-                if (executor == null) {
-                    executor = supplier.get();
+                if (workerExecutor == null) {
+                    workerExecutor = workerExecutorSupplier.get();
                 }
                 //super inefficient
                 //TODO: write a stream that just uses the existing vert.x buffers
@@ -105,7 +107,7 @@ public class InputHandler implements ServerRestHandler {
                 }
                 //todo timeout
                 context.setInputStream(context.serverRequest().createInputStream(ByteBuffer.wrap(ar)));
-                context.resume(executor);
+                context.resume(workerExecutor);
             }
         }
     }

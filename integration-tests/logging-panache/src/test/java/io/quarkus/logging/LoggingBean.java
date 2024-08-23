@@ -1,10 +1,10 @@
 package io.quarkus.logging;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Singleton;
 
 @Singleton
-public class LoggingBean {
+public class LoggingBean implements LoggingInterface {
     // not final to prevent constant inlining
     private static String msg = "Heya!";
 
@@ -18,6 +18,8 @@ public class LoggingBean {
     }
 
     public void doSomething() {
+        inheritedMethod("abc");
+
         if (Log.isDebugEnabled()) {
             Log.debug("starting massive computation");
         }
@@ -38,4 +40,12 @@ public class LoggingBean {
         Log.error("Hello Error", error);
     }
 
+    // https://github.com/quarkusio/quarkus/issues/32663
+    public void reproduceStackDisciplineIssue() {
+        String result;
+        String now = "now";
+
+        Log.infov("{0} {1}", "number", 42);
+        Log.info("string " + now);
+    }
 }

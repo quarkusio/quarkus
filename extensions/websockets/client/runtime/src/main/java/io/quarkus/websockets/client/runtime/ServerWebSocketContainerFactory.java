@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import javax.websocket.Extension;
+import jakarta.websocket.Extension;
 
 import io.netty.channel.EventLoopGroup;
 import io.undertow.websockets.ServerWebSocketContainer;

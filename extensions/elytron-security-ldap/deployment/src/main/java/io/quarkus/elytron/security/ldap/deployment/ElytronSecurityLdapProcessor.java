@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
@@ -25,6 +26,12 @@ class ElytronSecurityLdapProcessor {
         return new FeatureBuildItem(Feature.SECURITY_LDAP);
     }
 
+    @BuildStep
+    AllowJNDIBuildItem enableJndi() {
+        //unfortunately we can't really use LDAP without JNDI
+        return new AllowJNDIBuildItem();
+    }
+
     /**
      * Check to see if a LdapRealmConfig was specified and enabled and create a
      * {@linkplain org.wildfly.security.auth.realm.ldap.LdapSecurityRealm}
@@ -37,24 +44,31 @@ class ElytronSecurityLdapProcessor {
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             BeanContainerBuildItem beanContainerBuildItem //we need this to make sure ArC is initialized
     ) throws Exception {
-        if (!ldapSecurityRealmBuildTimeConfig.enabled) {
+        if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return;
         }
 
         RuntimeValue<SecurityRealm> realm = recorder.createRealm(ldapSecurityRealmRuntimeConfig);
-        securityRealm.produce(new SecurityRealmBuildItem(realm, ldapSecurityRealmBuildTimeConfig.realmName, null));
+        securityRealm.produce(new SecurityRealmBuildItem(realm, ldapSecurityRealmBuildTimeConfig.realmName(), null));
     }
 
     @BuildStep
     ElytronPasswordMarkerBuildItem marker(LdapSecurityRealmBuildTimeConfig ldapSecurityRealmBuildTimeConfig) {
-        if (!ldapSecurityRealmBuildTimeConfig.enabled) {
+        if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return null;
         }
         return new ElytronPasswordMarkerBuildItem();
     }
 
     @BuildStep
-    ReflectiveClassBuildItem enableReflection() {
-        return new ReflectiveClassBuildItem(true, true, QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY);
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection) {
+        // All JDK provided InitialContextFactory impls via the module descriptors:
+        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
+        reflection.produce(ReflectiveClassBuildItem.builder(QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY).methods()
+                .fields().build());
+        reflection.produce(
+                ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
+        reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
+                .build());
     }
 }

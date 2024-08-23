@@ -31,12 +31,14 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
         CLIENT_PROPERTIES.put("connect-timeout", "connectTimeout");
         CLIENT_PROPERTIES.put("read-timeout", "readTimeout");
         CLIENT_PROPERTIES.put("hostname-verifier", "hostnameVerifier");
+        CLIENT_PROPERTIES.put("verify-host", "verifyHost");
         CLIENT_PROPERTIES.put("trust-store", "trustStore");
         CLIENT_PROPERTIES.put("trust-store-password", "trustStorePassword");
         CLIENT_PROPERTIES.put("trust-store-type", "trustStoreType");
         CLIENT_PROPERTIES.put("key-store", "keyStore");
         CLIENT_PROPERTIES.put("key-store-password", "keyStorePassword");
         CLIENT_PROPERTIES.put("key-store-type", "keyStoreType");
+        CLIENT_PROPERTIES.put("tls-configuration-name", "tlsConfigurationName");
         CLIENT_PROPERTIES.put("follow-redirects", "followRedirects");
         CLIENT_PROPERTIES.put("proxy-address", "proxyAddress");
         CLIENT_PROPERTIES.put("query-param-style", "queryParamStyle");
@@ -46,8 +48,6 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
         GLOBAL_PROPERTIES = new HashMap<>();
         GLOBAL_PROPERTIES.put("quarkus.rest-client.multipart-post-encoder-mode",
                 "quarkus.rest.client.multipart-post-encoder-mode");
-        GLOBAL_PROPERTIES.put("quarkus.rest-client.disable-smart-produces",
-                "quarkus.rest-client-reactive.disable-smart-produces");
 
         GLOBAL_PROPERTIES_INVERSE = inverseMap(GLOBAL_PROPERTIES);
     }
@@ -59,9 +59,9 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
     /**
      * If an MP-style property is detected (e.g. "prefix/mp-rest/url"),
      * we need to include the relevant Quarkus-style property name ("quarkus.rest-client.prefix.url") in the iteration.
-     *
+     * <p>
      * This is required so that the BuildTimeConfigurationReader is aware that it should create the configuration objects for
-     * REST clients ({@link RestClientConfig}).
+     * REST clients ({@link RestClientsConfig.RestClientConfig}).
      */
     @Override
     public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
@@ -94,9 +94,9 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
     }
 
     /**
-     * Splits a property key into client prefix and property name. If given key doesn't contain a client prefix, null will be
-     * returned in the first array item.
-     *
+     * Splits a property key into client prefix and property name. If given key doesn't contain a client prefix, null
+     * will be returned in the first array item.
+     * <p>
      * Examples:
      * <li>`client-prefix.url` will return `String[] {"client-prefix", "url"}`</li>
      * <li>`"client.prefix".url` will return `String[] {"client.prefix", "url"}`</li>

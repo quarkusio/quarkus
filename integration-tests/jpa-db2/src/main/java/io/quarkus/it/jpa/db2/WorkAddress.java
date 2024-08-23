@@ -1,6 +1,6 @@
 package io.quarkus.it.jpa.db2;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Embeddable;
 
 /**
  * Class marked @Embeddable explicitly so it is picked up.

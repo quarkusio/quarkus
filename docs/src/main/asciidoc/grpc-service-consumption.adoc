@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Consuming a gRPC Service
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: serialization
+:summary: This guide explains how to consume gRPC services in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 gRPC clients can be injected in your application code.
 
@@ -77,11 +80,10 @@ import io.smallrye.mutiny.Uni;
 
 import hello.Greeter;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/hello")
 public class ExampleResource {
@@ -91,7 +93,7 @@ public class ExampleResource {
 
    @GET
    @Path("/mutiny/{name}")
-   public Uni<String> helloMutiny(@PathParam("name") String name) {
+   public Uni<String> helloMutiny(String name) {
       return hello.sayHello(HelloRequest.newBuilder().setName(name).build())
             .onItem().transform(HelloReply::getMessage);
    }
@@ -107,11 +109,10 @@ import io.quarkus.grpc.GrpcClient;
 
 import hello.GreeterGrpc.GreeterBlockingStub;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/hello")
 public class ExampleResource {
@@ -121,7 +122,7 @@ public class ExampleResource {
 
    @GET
    @Path("/blocking/{name}")
-   public String helloBlocking(@PathParam("name") String name) {
+   public String helloBlocking(String name) {
       return blockingHelloService.sayHello(HelloRequest.newBuilder().setName(name).build()).getMessage();
    }
 }
@@ -155,12 +156,11 @@ import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/streaming")
 @Produces(MediaType.APPLICATION_JSON)
@@ -178,7 +178,7 @@ public class StreamingEndpoint {
 
     @GET
     @Path("sink/{max}")
-    public Uni<Void> invokeSink(@PathParam("max") int max) {
+    public Uni<Void> invokeSink(int max) {
         // Send a stream and wait for completion
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
@@ -188,7 +188,7 @@ public class StreamingEndpoint {
 
     @GET
     @Path("/{max}")
-    public Multi<String> invokePipe(@PathParam("max") int max) {
+    public Multi<String> invokePipe(int max) {
         // Send a stream and retrieve a stream
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
@@ -204,12 +204,14 @@ public class StreamingEndpoint {
 
 For each gRPC service you inject in your application, you can configure the following attributes:
 
-include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc-client.adoc[opts=optional, leveloffset=+1]
 
 The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
 The following examples uses _hello_ as the client name.
-Don't forget to replace it with the name you used in in the `@GrpcClient` annotation.
+Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
+
+IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
 
 === Enabling TLS
 
@@ -242,18 +244,22 @@ quarkus.grpc.clients.hello.ssl.key=tls/client.key
 quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 ----
 
-=== Client Deadlines
+=== Client Stub Deadlines
 
-It's always reasonable to set a deadline (timeout) for a gRPC client, i.e. to specify a duration of time after which the RPC times out and the client receives the status error `DEADLINE_EXCEEDED`.
-You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
+If you need to configure a deadline for a gRPC stub, i.e. to specify a duration of time after which the stub will always return the status error `DEADLINE_EXCEEDED`.
+You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.:
 
 [source,properties]
 ----
 quarkus.grpc.clients.hello.host=localhost
 quarkus.grpc.clients.hello.deadline=2s <1>
 ----
-<1> Set the  deadline for all injected clients.
+<1> Set the  deadline for all injected stubs.
 
+IMPORTANT: Do not use this feature to implement an RPC timeout.
+To implement an RPC timeout, either use Mutiny `call.ifNoItem().after(...)` or Fault Tolerance `@Timeout`.
+
+[[grpc-headers]]
 == gRPC Headers
 Similarly to HTTP, alongside the message, gRPC calls can carry headers.
 Headers can be useful e.g. for authentication.
@@ -261,7 +267,7 @@ Headers can be useful e.g. for authentication.
 To set headers for a gRPC call, create a client with headers attached and then perform the call on this client:
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import examples.Greeter;
 import examples.HelloReply;
@@ -320,6 +326,23 @@ public class MyInterceptor implements ClientInterceptor {
 ----
 <1> This interceptor is applied to all injected gRPC clients.
 
+It's also possible to annotate a producer method as a global interceptor:
+
+[source, java]
+----
+import io.quarkus.grpc.GlobalInterceptor;
+
+import jakarta.enterprise.inject.Produces;
+
+public class MyProducer {
+    @GlobalInterceptor
+    @Produces
+    public MyInterceptor myInterceptor() {
+        return new MyInterceptor();
+    }
+}
+----
+
 TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html[ClientInterceptor JavaDoc] to properly implement your interceptor.
 
 .`@RegisterClientInterceptor` Example
@@ -340,7 +363,7 @@ class MyBean {
 ----
 <1> Registers the `MySpecialInterceptor` for this particular client.
 
-When you have multiple client interceptors, you can order them by implementing the `javax.enterprise.inject.spi.Prioritized` interface:
+When you have multiple client interceptors, you can order them by implementing the `jakarta.enterprise.inject.spi.Prioritized` interface:
 
 [source, java]
 ----
@@ -367,7 +390,7 @@ The default priority, used if the interceptor does not implement the `Prioritize
 
 === Enabling metrics collection
 
-gRPC client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+gRPC client metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
 Micrometer collects the metrics of all the gRPC clients used by the application.
 
 As an example, if you export the metrics to Prometheus, you will get:
@@ -399,3 +422,76 @@ To disable the gRPC client metrics when `quarkus-micrometer` is used, add the fo
 ----
 quarkus.micrometer.binder.grpc-client.enabled=false
 ----
+
+== Custom exception handling
+
+If any of the gRPC services or server interceptors throw an (custom) exception, you can add your own https://github.com/quarkusio/quarkus/extensions/grpc/api/src/main/java/io/quarkus/grpc/ExceptionHandlerProvider.java[ExceptionHandlerProvider]
+as a CDI bean in your application, to provide a custom handling of those exceptions.
+
+e.g.
+
+[source, java]
+----
+@ApplicationScoped
+public class HelloExceptionHandlerProvider implements ExceptionHandlerProvider {
+    @Override
+    public <ReqT, RespT> ExceptionHandler<ReqT, RespT> createHandler(ServerCall.Listener<ReqT> listener,
+            ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+        return new HelloExceptionHandler<>(listener, serverCall, metadata);
+    }
+
+    @Override
+    public Throwable transform(Throwable t) {
+        if (t instanceof HelloException he) {
+            return new StatusRuntimeException(Status.ABORTED.withDescription(he.getName()));
+        } else {
+            return ExceptionHandlerProvider.toStatusException(t, true);
+        }
+    }
+
+    private static class HelloExceptionHandler<A, B> extends ExceptionHandler<A, B> {
+        public HelloExceptionHandler(ServerCall.Listener<A> listener, ServerCall<A, B> call, Metadata metadata) {
+            super(listener, call, metadata);
+        }
+
+        @Override
+        protected void handleException(Throwable t, ServerCall<A, B> call, Metadata metadata) {
+            StatusRuntimeException sre = (StatusRuntimeException) ExceptionHandlerProvider.toStatusException(t, true);
+            Metadata trailers = sre.getTrailers() != null ? sre.getTrailers() : metadata;
+            call.close(sre.getStatus(), trailers);
+        }
+    }
+}
+----
+
+== Dev Mode
+
+By default, when starting the application in dev mode, a gRPC server is started, even if no services are configured.
+You can configure the gRPC extension's dev mode behavior using the following properties.
+
+include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.dev-mode.adoc[opts=optional, leveloffset=+1]
+
+== Inject mock clients
+
+In your `@QuarkusTest`, you can use `@InjectMock` to inject the Mutiny client of a gRPC service:
+
+[source, java]
+----
+@QuarkusTest
+public class GrpcMockTest {
+
+    @InjectMock
+    @GrpcClient("hello")
+    Greeter greeter;
+
+    @Test
+    void test1() {
+        HelloRequest request = HelloRequest.newBuilder().setName("neo").build();
+        Mockito.when(greeter.sayHello(Mockito.any(HelloRequest.class)))
+                .thenReturn(Uni.createFrom().item(HelloReply.newBuilder().setMessage("hello neo").build()));
+        Assertions.assertEquals(greeter.sayHello(request).await().indefinitely().getMessage(), "hello neo");
+    }
+}
+----
+
+IMPORTANT: Only the Mutiny client can be _mocked_, channels, and other stubs cannot be mocked.

@@ -1,10 +1,13 @@
 package io.quarkus.smallrye.openapi.common.deployment;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -36,6 +39,13 @@ public final class SmallRyeOpenApiConfig {
     public boolean ignoreStaticDocument;
 
     /**
+     * If management interface is turned on the openapi schema document will be published under the management interface. This
+     * allows you to exclude OpenAPI from management by setting the value to false
+     */
+    @ConfigItem(name = "management.enabled", defaultValue = "true")
+    public boolean managementEnabled;
+
+    /**
      * A list of local directories that should be scanned for yaml and/or json files to be included in the static model.
      * Example: `META-INF/openapi/`
      */
@@ -45,6 +55,7 @@ public final class SmallRyeOpenApiConfig {
     /**
      * Add a certain SecurityScheme with config
      */
+    @ConfigItem
     public Optional<SecurityScheme> securityScheme;
 
     /**
@@ -60,6 +71,13 @@ public final class SmallRyeOpenApiConfig {
     public String securitySchemeDescription;
 
     /**
+     * Add one or more extensions to the security scheme
+     */
+    @ConfigItem
+    @ConfigDocMapKey("extension-name")
+    public Map<String, String> securitySchemeExtensions = Collections.emptyMap();
+
+    /**
      * This will automatically add the security requirement to all methods/classes that has a `RolesAllowed` annotation.
      */
     @ConfigItem(defaultValue = "true")
@@ -72,10 +90,29 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddTags;
 
     /**
+     * Setting it to `true` will automatically add a default server to the schema if none is provided,
+     * using the current running server host and port.
+     */
+    @ConfigItem
+    public Optional<Boolean> autoAddServer;
+
+    /**
      * This will automatically add security based on the security extension included (if any).
      */
     @ConfigItem(defaultValue = "true")
     public boolean autoAddSecurity;
+
+    /**
+     * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
+     */
+    @ConfigItem
+    public Optional<String> apiKeyParameterIn;
+
+    /**
+     * Required when using `apiKey` security. The name of the header, query or cookie parameter to be used.
+     */
+    @ConfigItem
+    public Optional<String> apiKeyParameterName;
 
     /**
      * Add a scheme value to the Basic HTTP Security Scheme
@@ -90,10 +127,22 @@ public final class SmallRyeOpenApiConfig {
     public String jwtSecuritySchemeValue;
 
     /**
-     * Add a scheme value to the JWT Security Scheme
+     * Add a bearer format the JWT Security Scheme
      */
     @ConfigItem(defaultValue = "JWT")
     public String jwtBearerFormat;
+
+    /**
+     * Add a scheme value to the OAuth2 opaque token Security Scheme
+     */
+    @ConfigItem(defaultValue = "bearer")
+    public String oauth2SecuritySchemeValue;
+
+    /**
+     * Add a scheme value to OAuth2 opaque token Security Scheme
+     */
+    @ConfigItem(defaultValue = "Opaque")
+    public String oauth2BearerFormat;
 
     /**
      * Add a openIdConnectUrl value to the OIDC Security Scheme
@@ -124,12 +173,6 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem
     public Optional<String> openApiVersion;
-
-    /**
-     * Specify the list of global servers that provide connectivity information
-     */
-    @ConfigItem
-    public Optional<Set<String>> servers;
 
     /**
      * Set the title in Info tag in the Schema document
@@ -192,8 +235,10 @@ public final class SmallRyeOpenApiConfig {
     public Optional<OperationIdStrategy> operationIdStrategy;
 
     public enum SecurityScheme {
+        apiKey,
         basic,
         jwt,
+        oauth2,
         oidc,
         oauth2Implicit
     }
@@ -202,5 +247,13 @@ public final class SmallRyeOpenApiConfig {
         METHOD,
         CLASS_METHOD,
         PACKAGE_CLASS_METHOD
+    }
+
+    public Map<String, String> getValidSecuritySchemeExtentions() {
+        return securitySchemeExtensions
+                .entrySet()
+                .stream()
+                .filter(x -> x.getKey().startsWith("x-"))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -28,13 +29,14 @@ public class EnvVarsConfig {
      * The map associating environment variable names to their associated field references they take their value from.
      */
     @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
     Map<String, String> fields;
 
     /**
      * The map associating environment name to its associated value.
      */
     @ConfigItem
-    Map<String, String> vars;
+    Map<String, Optional<String>> vars;
 
     /**
      * The map recording the configuration of environment variable taking their value from resource (Secret or
@@ -42,4 +44,10 @@ public class EnvVarsConfig {
      */
     @ConfigItem
     Map<String, EnvVarFromKeyConfig> mapping;
+
+    /**
+     * The map recording the configuration of environment variable prefix.
+     */
+    @ConfigItem(name = "using-prefix")
+    Map<String, EnvVarPrefixConfig> prefixes;
 }

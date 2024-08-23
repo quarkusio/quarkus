@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.observers.inheritance;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

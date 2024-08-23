@@ -33,7 +33,11 @@ public class ServletWebXmlTestCase {
             "  <mime-mapping>\n" +
             "    <extension>wasm</extension>\n" +
             "    <mime-type>application/wasm</mime-type>\n" +
-            "  </mime-mapping>" +
+            "  </mime-mapping>\n" +
+            "    <error-page>\n" +
+            "        <error-code>404</error-code>\n" +
+            "        <location>/mapped</location>\n" +
+            "    </error-page>\n" +
             "</web-app>";
 
     @RegisterExtension
@@ -55,5 +59,12 @@ public class ServletWebXmlTestCase {
         RestAssured.when().get("/test.wasm").then()
                 .statusCode(200)
                 .contentType(is("application/wasm"));
+    }
+
+    @Test
+    public void test404Mapping() {
+        RestAssured.when().get("/missing").then()
+                .statusCode(404)
+                .body(is("web xml servlet"));
     }
 }

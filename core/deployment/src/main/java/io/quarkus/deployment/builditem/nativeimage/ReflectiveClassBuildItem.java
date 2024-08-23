@@ -2,92 +2,128 @@ package io.quarkus.deployment.builditem.nativeimage;
 
 import static java.util.Arrays.stream;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.logging.Log;
 
 /**
  * Used to register a class for reflection in native mode
  */
 public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
+    // The names of the classes that should be registered for reflection
     private final List<String> className;
     private final boolean methods;
+    private final boolean queryMethods;
     private final boolean fields;
+    private final boolean classes;
     private final boolean constructors;
-    private final boolean finalFieldsWritable;
+    private final boolean queryConstructors;
     private final boolean weak;
     private final boolean serialization;
+    private final boolean unsafeAllocated;
 
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... className) {
-        this(true, methods, fields, className);
+    public static Builder builder(Class<?>... classes) {
+        String[] classNames = stream(classes)
+                .map(aClass -> {
+                    if (aClass == null) {
+                        throw new NullPointerException();
+                    }
+                    return aClass.getName();
+                })
+                .toArray(String[]::new);
+
+        return new Builder().className(classNames);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... className) {
-        this(constructors, methods, fields, false, false, className);
+    public static Builder builder(String... classNames) {
+        return new Builder().className(classNames);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, Class<?>... className) {
-        this(constructors, methods, fields, false, false, false, className);
+    private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+            boolean fields, boolean getClasses, boolean weak, boolean serialization,
+            boolean unsafeAllocated, Class<?>... classes) {
+        this(constructors, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
+                unsafeAllocated, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, boolean serialization, Class<?>... className) {
-        List<String> names = new ArrayList<>();
-        for (Class<?> i : className) {
-            if (i == null) {
-                throw new NullPointerException();
-            }
-            names.add(i.getName());
-        }
-        this.className = names;
-        this.methods = methods;
-        this.fields = fields;
-        this.constructors = constructors;
-        this.finalFieldsWritable = finalFieldsWritable;
-        this.weak = weak;
-        this.serialization = serialization;
-        if (weak) {
-            if (serialization) {
-                throw new RuntimeException("Weak reflection not supported with serialization");
-            }
-            if (finalFieldsWritable) {
-                throw new RuntimeException("Weak reflection not supported with finalFieldsWritable");
-            }
-        }
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean methods, boolean fields, Class<?>... classes) {
+        this(true, methods, fields, classes);
     }
 
-    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {
-        this(true, methods, fields, className);
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
+        this(constructors, false, methods, false, fields, false, false, false, false, classes);
     }
 
-    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
-        this(constructors, methods, fields, false, false, className);
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean methods, boolean fields, String... classNames) {
+        this(true, methods, fields, classNames);
     }
 
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
+    public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, String... classNames) {
+        this(constructors, false, methods, false, fields, false, false, false, classNames);
+    }
+
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean serialization,
-            String... className) {
-        this(constructors, methods, fields, false, false, serialization, className);
+            String... classNames) {
+        this(constructors, false, methods, false, fields, false, serialization, false, classNames);
     }
 
-    public static ReflectiveClassBuildItem weakClass(String... className) {
-        return new ReflectiveClassBuildItem(true, true, true, false, true, className);
+    public static ReflectiveClassBuildItem weakClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors().methods().fields().weak().build();
     }
 
-    public static ReflectiveClassBuildItem serializationClass(String... className) {
-        return new ReflectiveClassBuildItem(false, false, false, false, false, true, className);
+    /**
+     * @deprecated Use {@link ReflectiveClassBuildItem#builder(Class...)} or {@link ReflectiveClassBuildItem#builder(String...)}
+     *             instead.
+     */
+    public static ReflectiveClassBuildItem weakClass(boolean constructors, boolean methods, boolean fields,
+            String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).constructors(constructors).methods(methods).fields(fields).weak()
+                .build();
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, String... className) {
-        this(constructors, methods, fields, finalFieldsWritable, weak, false, className);
+    public static ReflectiveClassBuildItem serializationClass(String... classNames) {
+        return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWritable,
-            boolean weak, boolean serialization, String... className) {
+    @Deprecated(since = "3.14", forRemoval = true)
+    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+            boolean fields, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String... className) {
+        this(constructors, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
+                className);
+    }
+
+    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+            boolean fields, boolean classes, boolean weak, boolean serialization,
+            boolean unsafeAllocated, String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();
@@ -95,11 +131,28 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
         this.className = Arrays.asList(className);
         this.methods = methods;
+        if (methods && queryMethods) {
+            Log.warnf(
+                    "Both methods and queryMethods are set to true for classes: %s. queryMethods is redundant and will be ignored",
+                    String.join(", ", className));
+            this.queryMethods = false;
+        } else {
+            this.queryMethods = queryMethods;
+        }
         this.fields = fields;
+        this.classes = classes;
         this.constructors = constructors;
-        this.finalFieldsWritable = finalFieldsWritable;
+        if (constructors && queryConstructors) {
+            Log.warnf(
+                    "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
+                    String.join(", ", className));
+            this.queryConstructors = false;
+        } else {
+            this.queryConstructors = queryConstructors;
+        }
         this.weak = weak;
         this.serialization = serialization;
+        this.unsafeAllocated = unsafeAllocated;
     }
 
     public List<String> getClassNames() {
@@ -110,16 +163,33 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return methods;
     }
 
+    public boolean isQueryMethods() {
+        return queryMethods;
+    }
+
     public boolean isFields() {
         return fields;
+    }
+
+    public boolean isClasses() {
+        return classes;
     }
 
     public boolean isConstructors() {
         return constructors;
     }
 
+    public boolean isQueryConstructors() {
+        return queryConstructors;
+    }
+
+    /**
+     * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This will
+     *             be removed in a future verion of Quarkus.
+     */
+    @Deprecated
     public boolean areFinalFieldsWritable() {
-        return finalFieldsWritable;
+        return false;
     }
 
     public boolean isWeak() {
@@ -130,33 +200,21 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return serialization;
     }
 
-    public static Builder builder(Class<?>... className) {
-        String[] classNameStrings = stream(className)
-                .map(aClass -> {
-                    if (aClass == null) {
-                        throw new NullPointerException();
-                    }
-                    return aClass.getName();
-                })
-                .toArray(String[]::new);
-
-        return new Builder()
-                .className(classNameStrings);
-    }
-
-    public static Builder builder(String... className) {
-        return new Builder()
-                .className(className);
+    public boolean isUnsafeAllocated() {
+        return unsafeAllocated;
     }
 
     public static class Builder {
         private String[] className;
         private boolean constructors = true;
+        private boolean queryConstructors;
         private boolean methods;
+        private boolean queryMethods;
         private boolean fields;
-        private boolean finalFieldsWritable;
+        private boolean classes;
         private boolean weak;
         private boolean serialization;
+        private boolean unsafeAllocated;
 
         private Builder() {
         }
@@ -166,23 +224,91 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * Configures whether constructors should be registered for reflection (true by default).
+         * Setting this enables getting all declared constructors for the class as well as invoking them reflectively.
+         */
         public Builder constructors(boolean constructors) {
             this.constructors = constructors;
             return this;
         }
 
+        public Builder constructors() {
+            return constructors(true);
+        }
+
+        /**
+         * Configures whether constructors should be registered for reflection, for query purposes only.
+         * Setting this enables getting all declared constructors for the class but does not allow invoking them reflectively.
+         */
+        public Builder queryConstructors(boolean queryConstructors) {
+            this.queryConstructors = queryConstructors;
+            return this;
+        }
+
+        public Builder queryConstructors() {
+            return queryConstructors(true);
+        }
+
+        /**
+         * Configures whether methods should be registered for reflection.
+         * Setting this enables getting all declared methods for the class as well as invoking them reflectively.
+         */
         public Builder methods(boolean methods) {
             this.methods = methods;
             return this;
         }
 
+        public Builder methods() {
+            return methods(true);
+        }
+
+        /**
+         * Configures whether declared methods should be registered for reflection, for query purposes only,
+         * i.e. {@link Class#getDeclaredMethods()}. Setting this enables getting all declared methods for the class but
+         * does not allow invoking them reflectively.
+         */
+        public Builder queryMethods(boolean queryMethods) {
+            this.queryMethods = queryMethods;
+            return this;
+        }
+
+        public Builder queryMethods() {
+            return queryMethods(true);
+        }
+
+        /**
+         * Configures whether fields should be registered for reflection.
+         * Setting this enables getting all declared fields for the class as well as accessing them reflectively.
+         */
         public Builder fields(boolean fields) {
             this.fields = fields;
             return this;
         }
 
+        public Builder fields() {
+            return fields(true);
+        }
+
+        /**
+         * Configures whether declared classes should be registered for reflection.
+         * Setting this enables getting all declared classes through Class.getClasses().
+         */
+        public Builder classes(boolean classes) {
+            this.classes = classes;
+            return this;
+        }
+
+        public Builder classes() {
+            return fields(true);
+        }
+
+        /**
+         * @deprecated As of GraalVM 21.2 finalFieldsWritable is no longer needed when registering fields for reflection. This
+         *             will be removed in a future version of Quarkus.
+         */
+        @Deprecated(forRemoval = true)
         public Builder finalFieldsWritable(boolean finalFieldsWritable) {
-            this.finalFieldsWritable = finalFieldsWritable;
             return this;
         }
 
@@ -191,13 +317,37 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
-        public Builder serialization(boolean serialize) {
+        public Builder weak() {
+            return weak(true);
+        }
+
+        /**
+         * Configures whether serialization support should be enabled for the class.
+         */
+        public Builder serialization(boolean serialization) {
             this.serialization = serialization;
             return this;
         }
 
+        public Builder serialization() {
+            return serialization(true);
+        }
+
+        /**
+         * Configures whether the class can be allocated in an unsafe manner (through JNI).
+         */
+        public Builder unsafeAllocated(boolean unsafeAllocated) {
+            this.unsafeAllocated = unsafeAllocated;
+            return this;
+        }
+
+        public Builder unsafeAllocated() {
+            return unsafeAllocated(true);
+        }
+
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, weak, className);
+            return new ReflectiveClassBuildItem(constructors, queryConstructors, methods, queryMethods, fields, classes, weak,
+                    serialization, unsafeAllocated, className);
         }
     }
 }

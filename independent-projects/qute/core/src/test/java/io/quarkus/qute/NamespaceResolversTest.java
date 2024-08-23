@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 
 public class NamespaceResolversTest {
@@ -30,9 +31,9 @@ public class NamespaceResolversTest {
 
     @Test
     public void testMultipleAndNotFound() {
-        // This one should we used first but returns NOT_FOUND and so the other resolver is used
         Engine engine = Engine.builder().addValueResolver(new ReflectionValueResolver())
                 .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> "foo1").build())
+                // This one should we used first but returns NOT_FOUND and so the other resolver is used
                 .addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(Results.NotFound::from).build())
                 .build();
         assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());
@@ -65,7 +66,8 @@ public class NamespaceResolversTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{charlie:name}", null, "alpha.html").render())
                 .withMessage(
-                        "No namespace resolver found for [charlie] in expression {charlie:name} in template alpha.html on line 1");
+                        "Rendering error in template [alpha.html] line 1: No namespace resolver found for [charlie] in expression {charlie:name}")
+                .hasFieldOrProperty("code");
     }
 
 }

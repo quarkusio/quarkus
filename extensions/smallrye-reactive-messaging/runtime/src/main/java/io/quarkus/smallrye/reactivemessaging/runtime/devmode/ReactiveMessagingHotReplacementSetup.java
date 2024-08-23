@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime.devmode;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
@@ -17,12 +17,17 @@ public class ReactiveMessagingHotReplacementSetup implements HotReplacementSetup
 
     private HotReplacementContext context;
     private volatile long nextUpdate;
-    private final Executor executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         this.context = context;
         DevModeSupportConnectorFactoryInterceptor.register(new OnMessage());
+    }
+
+    @Override
+    public void close() {
+        executor.shutdown();
     }
 
     private class OnMessage implements Supplier<CompletableFuture<Boolean>> {

@@ -56,9 +56,7 @@ public class LogCapturingOutputFilter implements BiPredicate<String, Boolean> {
                 synchronized (logOutput) {
                     if (convertToHtml) {
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        HtmlAnsiOutputStream outputStream = new HtmlAnsiOutputStream(out) {
-                        };
-                        try {
+                        try (HtmlAnsiOutputStream outputStream = new HtmlAnsiOutputStream(out)) {
                             outputStream.write(logRecord.getBytes(StandardCharsets.UTF_8));
                             if (mergeErrorStream || !errorStream) {
                                 logOutput.add(out.toString(StandardCharsets.UTF_8));

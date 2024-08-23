@@ -1,7 +1,8 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.util.Collection;
-import javax.ws.rs.ext.ContextResolver;
+
+import jakarta.ws.rs.ext.ContextResolver;
 
 public class ContextResolverDelegate<T> implements ContextResolver<T> {
 

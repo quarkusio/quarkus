@@ -3,7 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 //import io.smallrye.mutiny.Multi;
 //import org.eclipse.microprofile.reactive.messaging.Outgoing;
 //
-//import javax.enterprise.context.ApplicationScoped;
+//import jakarta.enterprise.context.ApplicationScoped;
 //import java.time.Duration;
 //import java.util.Random;
 //

@@ -4,6 +4,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -29,9 +30,18 @@ public class JacksonBuildTimeConfig {
 
     /**
      * If enabled, Jackson will serialize dates as numeric value(s).
+     * When disabled, they are serialized in ISO 8601 format.
      */
     @ConfigItem(defaultValue = "false")
     public boolean writeDatesAsTimestamps;
+
+    /**
+     * If enabled, Jackson will serialize durations as numeric value(s).
+     * When disabled, they are serialized in ISO 8601 format.
+     * This is enabled by default to match the default Jackson behavior.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean writeDurationsAsTimestamps;
 
     /**
      * If enabled, Jackson will ignore case during Enum deserialization.
@@ -52,4 +62,16 @@ public class JacksonBuildTimeConfig {
      */
     @ConfigItem
     public Optional<JsonInclude.Include> serializationInclusion;
+
+    /**
+     * Defines how names of JSON properties ("external names") are derived
+     * from names of POJO methods and fields ("internal names").
+     * The value can be one of the one of the constants in {@link com.fasterxml.jackson.databind.PropertyNamingStrategies},
+     * so for example, {@code LOWER_CAMEL_CASE} or {@code UPPER_CAMEL_CASE}.
+     *
+     * The value can also be a fully qualified class name of a {@link com.fasterxml.jackson.databind.PropertyNamingStrategy}
+     * subclass.
+     */
+    @ConfigItem
+    public Optional<String> propertyNamingStrategy;
 }

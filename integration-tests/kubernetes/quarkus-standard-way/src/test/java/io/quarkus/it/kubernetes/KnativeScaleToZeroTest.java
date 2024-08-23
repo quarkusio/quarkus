@@ -40,7 +40,8 @@ public class KnativeScaleToZeroTest {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "ConfigMap".equals(i.getKind())).singleElement().satisfies(c -> {
-            assertThat(c.getMetadata()).satisfies(m -> assertThat(m.getName()).isEqualTo("config-autoscaler"));
+            assertThat(c.getMetadata().getName()).isEqualTo("config-autoscaler");
+            assertThat(c.getMetadata().getNamespace()).isEqualTo("knative-serving");
             assertThat(c).isInstanceOfSatisfying(ConfigMap.class, m -> {
                 assertThat(m.getData()).contains(entry("enable-scale-to-zero", "false"));
             });

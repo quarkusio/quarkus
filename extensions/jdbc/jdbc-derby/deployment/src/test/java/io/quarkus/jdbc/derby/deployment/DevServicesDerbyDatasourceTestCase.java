@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -44,7 +44,7 @@ public class DevServicesDerbyDatasourceTestCase {
         try {
             configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         } catch (NullPointerException e) {
-            // we catch the NPE here as we have a proxycd  and we can't test dataSource directly
+            // we catch the NPE here as we have a proxycd and we can't test dataSource directly
             fail("Datasource should not be null");
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:derby:"));

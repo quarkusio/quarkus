@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -47,6 +48,7 @@ import io.quarkus.mongodb.MapReduceOptions;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T> {
 
@@ -262,11 +264,11 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
         return Wrappers.toMulti(collection.aggregate(clientSession, pipeline, clazz));
     }
 
-    private <D> AggregatePublisher<D> apply(AggregateOptions options, AggregatePublisher<D> publisher) {
+    private <D> Flow.Publisher<D> apply(AggregateOptions options, AggregatePublisher<D> publisher) {
         if (options == null) {
-            return publisher;
+            return AdaptersToFlow.publisher(publisher);
         }
-        return options.apply(publisher);
+        return AdaptersToFlow.publisher(options.apply(publisher));
     }
 
     @Override
@@ -409,11 +411,11 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
         return Multi.createFrom().publisher(apply(options, collection.mapReduce(mapFunction, reduceFunction)));
     }
 
-    private <D> MapReducePublisher<D> apply(MapReduceOptions options, MapReducePublisher<D> mapReduce) {
+    private <D> Flow.Publisher<D> apply(MapReduceOptions options, MapReducePublisher<D> mapReduce) {
         if (options == null) {
-            return mapReduce;
+            return AdaptersToFlow.publisher(mapReduce);
         }
-        return options.apply(mapReduce);
+        return AdaptersToFlow.publisher(options.apply(mapReduce));
     }
 
     @Override
@@ -583,6 +585,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
+    public Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateOne(filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update, UpdateOptions options) {
+        return Wrappers.toUni(collection.updateOne(filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateOne(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update,
+            UpdateOptions options) {
+        return Wrappers.toUni(collection.updateOne(clientSession, filter, update, options));
+    }
+
+    @Override
     public Uni<UpdateResult> updateMany(Bson filter, Bson update) {
         return Wrappers.toUni(collection.updateMany(filter, update));
     }
@@ -599,6 +622,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update,
+            UpdateOptions options) {
+        return Wrappers.toUni(collection.updateMany(clientSession, filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateMany(filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update, UpdateOptions options) {
+        return Wrappers.toUni(collection.updateMany(filter, update, options));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.updateMany(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             UpdateOptions options) {
         return Wrappers.toUni(collection.updateMany(clientSession, filter, update, options));
     }
@@ -661,6 +705,27 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
 
     @Override
     public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update,
+            FindOneAndUpdateOptions options) {
+        return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update, options));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.findOneAndUpdate(filter, update));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update, FindOneAndUpdateOptions options) {
+        return Wrappers.toUni(collection.findOneAndUpdate(filter, update, options));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update) {
+        return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update));
+    }
+
+    @Override
+    public Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             FindOneAndUpdateOptions options) {
         return Wrappers.toUni(collection.findOneAndUpdate(clientSession, filter, update, options));
     }

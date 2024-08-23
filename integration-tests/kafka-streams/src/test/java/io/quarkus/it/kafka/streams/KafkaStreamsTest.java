@@ -29,11 +29,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KafkaSSLTestResource.class)
+@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
 @QuarkusTest
 public class KafkaStreamsTest {
 
@@ -151,7 +151,7 @@ public class KafkaStreamsTest {
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("DOWN"))
-                .body("checks[0].data.missing_topics", CoreMatchers.is("streams-test-customers,streams-test-categories"));
+                .body("checks[0].data.missing_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
 
         RestAssured.when().get("/q/health/live").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)

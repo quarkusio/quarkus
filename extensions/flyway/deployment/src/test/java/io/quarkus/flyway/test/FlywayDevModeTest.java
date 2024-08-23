@@ -12,7 +12,7 @@ import io.restassured.RestAssured;
 /**
  * Flyway needs a datasource to work.
  * This tests assures, that an error occurs,
- * as soon as the default flyway configuration points to an missing default datasource.
+ * as soon as the default flyway configuration points to a missing default datasource.
  */
 public class FlywayDevModeTest {
 

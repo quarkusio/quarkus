@@ -2,11 +2,13 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.List;
 import java.util.Locale;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Variant;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Variant;
+
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
@@ -16,6 +18,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  * Handler that negotiates the content type for endpoints that
  * only produce a single type.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class FixedProducesHandler implements ServerRestHandler {
 
     final EncodedMediaType mediaType;
@@ -32,8 +35,9 @@ public class FixedProducesHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        List<String> acceptValues = requestContext.serverRequest().getAllRequestHeaders(HttpHeaders.ACCEPT);
-        if (acceptValues.isEmpty()) {
+        List<String> acceptValues;
+        if (requestContext.isProducesChecked() ||
+                (acceptValues = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false)).isEmpty()) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);
         } else {

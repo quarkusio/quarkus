@@ -6,9 +6,6 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.bytecode.spi.ProxyFactoryFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
-import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-
 /**
  * Responsible for initializing the QuarkusRuntimeProxyFactoryFactory.
  * N.B. : this is a stateful Service Initiator, it carries the proxy definitions which have been
@@ -16,15 +13,15 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
  */
 public final class QuarkusRuntimeProxyFactoryFactoryInitiator implements StandardServiceInitiator<ProxyFactoryFactory> {
 
-    private final ProxyDefinitions proxyClassDefinitions;
+    private final QuarkusRuntimeProxyFactoryFactory proxyFactoryFactory;
 
-    public QuarkusRuntimeProxyFactoryFactoryInitiator(RecordedState rs) {
-        proxyClassDefinitions = rs.getProxyClassDefinitions();
+    public QuarkusRuntimeProxyFactoryFactoryInitiator(QuarkusRuntimeProxyFactoryFactory proxyFactoryFactory) {
+        this.proxyFactoryFactory = proxyFactoryFactory;
     }
 
     @Override
     public ProxyFactoryFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new QuarkusRuntimeProxyFactoryFactory(proxyClassDefinitions);
+        return proxyFactoryFactory;
     }
 
     @Override

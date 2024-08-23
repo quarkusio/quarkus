@@ -5,7 +5,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -13,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * and the global log level is below it.
  */
 @QuarkusTest
-@QuarkusTestResource(SetGlobalRuntimeLogLevel.class)
+@WithTestResource(value = SetGlobalRuntimeLogLevel.class, restrictToAnnotatedClass = false)
 public class LoggingMinLevelGlobalTest {
 
     @Test

@@ -17,7 +17,7 @@ public class UnitTestTypeTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
@@ -25,7 +25,7 @@ public class UnitTestTypeTestCase {
                                     "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);

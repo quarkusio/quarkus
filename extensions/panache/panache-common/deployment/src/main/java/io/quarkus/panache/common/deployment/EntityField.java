@@ -1,5 +1,6 @@
 package io.quarkus.panache.common.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 
@@ -17,12 +19,24 @@ public class EntityField {
 
     public final String name;
     public final String descriptor;
+    public final Visibility visibility;
+    public final String librarySpecificGetterName;
+    public final String librarySpecificSetterName;
+
     public String signature;
     public final Set<EntityFieldAnnotation> annotations = new HashSet<>(2);
 
-    public EntityField(String name, String descriptor) {
+    public EntityField(String name, String descriptor, Visibility visibility) {
+        this(name, descriptor, visibility, null, null);
+    }
+
+    public EntityField(String name, String descriptor, Visibility visibility,
+            String librarySpecificGetterName, String librarySpecificSetterName) {
         this.name = name;
         this.descriptor = descriptor;
+        this.visibility = visibility;
+        this.librarySpecificGetterName = librarySpecificGetterName;
+        this.librarySpecificSetterName = librarySpecificSetterName;
     }
 
     public String getGetterName() {
@@ -40,6 +54,31 @@ public class EntityField {
             }
         }
         return false;
+    }
+
+    public enum Visibility {
+        PUBLIC(Opcodes.ACC_PUBLIC),
+        PROTECTED(Opcodes.ACC_PROTECTED),
+        PACKAGE_PRIVATE(0),
+        PRIVATE(Opcodes.ACC_PRIVATE);
+
+        public final int accessOpCode;
+
+        Visibility(int accessOpCode) {
+            this.accessOpCode = accessOpCode;
+        }
+
+        public static Visibility get(int flags) {
+            if (Modifier.isPublic(flags)) {
+                return PUBLIC;
+            } else if (Modifier.isPrivate(flags)) {
+                return PRIVATE;
+            } else if (Modifier.isProtected(flags)) {
+                return PROTECTED;
+            } else {
+                return PACKAGE_PRIVATE;
+            }
+        }
     }
 
     public static class EntityFieldAnnotation {

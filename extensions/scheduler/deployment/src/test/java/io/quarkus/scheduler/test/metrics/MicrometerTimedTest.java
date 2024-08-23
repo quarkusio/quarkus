@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -59,8 +59,8 @@ public class MicrometerTimedTest {
                     .tag("exception", "none")
                     .timer();
             assertNotNull(timer1);
-            //the count is updated after the method is called
-            //so we need to use Awaitility as the metric may not be up to date immediately
+            //the count is updated after the method is called,
+            //so we need to use Awaitility as the metric may not be up-to-date immediately
             Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
                     .atMost(2, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertTrue(timer1.count() > 0, "Count=" + timer1.count()));
@@ -95,7 +95,7 @@ public class MicrometerTimedTest {
             latch01.countDown();
         }
 
-        @Timed("foo") // Extension should not override this annotation 
+        @Timed("foo") // Extension should not override this annotation
         @Scheduled(every = "1s")
         void anotherEverySecond() {
             latch02.countDown();

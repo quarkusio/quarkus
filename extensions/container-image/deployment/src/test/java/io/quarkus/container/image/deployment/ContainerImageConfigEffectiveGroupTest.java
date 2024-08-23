@@ -9,38 +9,37 @@ import org.junit.jupiter.api.Test;
 class ContainerImageConfigEffectiveGroupTest {
 
     public static final String USER_NAME_SYSTEM_PROPERTY = "user.name";
-
-    private ContainerImageConfig sut = new ContainerImageConfig();
+    private final Optional<String> EMPTY = Optional.empty();
 
     @Test
     void testFromLowercaseUsername() {
         testWithNewUsername("test", () -> {
-            sut.group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
-            assertEquals(sut.getEffectiveGroup(), Optional.of("test"));
+            Optional<String> group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
+            assertEquals(ContainerImageProcessor.getEffectiveGroup(EMPTY, false), Optional.of("test"));
         });
     }
 
     @Test
     void testFromUppercaseUsername() {
         testWithNewUsername("TEST", () -> {
-            sut.group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
-            assertEquals(sut.getEffectiveGroup(), Optional.of("test"));
+            Optional<String> group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
+            assertEquals(ContainerImageProcessor.getEffectiveGroup(EMPTY, false), Optional.of("test"));
         });
     }
 
     @Test
     void testFromSpaceInUsername() {
         testWithNewUsername("user name", () -> {
-            sut.group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
-            assertEquals(sut.getEffectiveGroup(), Optional.of("user-name"));
+            Optional<String> group = Optional.of(System.getProperty(USER_NAME_SYSTEM_PROPERTY));
+            assertEquals(ContainerImageProcessor.getEffectiveGroup(EMPTY, false), Optional.of("user-name"));
         });
     }
 
     @Test
     void testFromOther() {
         testWithNewUsername("WhateveR", () -> {
-            sut.group = Optional.of("OtheR");
-            assertEquals(sut.getEffectiveGroup(), Optional.of("OtheR"));
+            Optional<String> group = Optional.of("OtheR");
+            assertEquals(ContainerImageProcessor.getEffectiveGroup(group, false), Optional.of("other"));
         });
     }
 

@@ -1,0 +1,34 @@
+plugins{
+    id 'java-library'
+    id 'maven-publish'
+}
+subprojects {subProject->
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+
+    group 'org.acme.extensions'
+    version '1.0-SNAPSHOT'
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId = 'org.acme.extensions'
+                artifactId = subProject.name
+                version = '1.0-SNAPSHOT'
+                from components.java
+            }
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.acme.extensions'
+            artifactId = rootProject.name
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}
+group 'org.acme.extensions'
+version '1.0-SNAPSHOT'

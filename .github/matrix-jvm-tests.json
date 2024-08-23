@@ -1,0 +1,22 @@
+[ {
+  "name": "17",
+  "java-version": 17,
+  "maven_args": "$JVM_TEST_MAVEN_ARGS",
+  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
+  "os-name": "ubuntu-latest"
+}
+, {
+  "name": "21",
+  "java-version": 21,
+  "java-version-gradle": 20,
+  "maven_args": "$JVM_TEST_MAVEN_ARGS",
+  "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
+  "os-name": "ubuntu-latest"
+}
+, {
+  "name": "17 Windows",
+  "java-version": 17,
+  "maven_args": "-DskipDocs -Dformat.skip",
+  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
+  "os-name": "windows-latest"
+}]

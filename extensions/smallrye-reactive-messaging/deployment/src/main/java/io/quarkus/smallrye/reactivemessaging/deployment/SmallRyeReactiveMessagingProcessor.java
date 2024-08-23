@@ -1,20 +1,23 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Vetoed;
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
@@ -37,6 +40,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExc
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -47,6 +52,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -59,9 +65,15 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactory;
+import io.quarkus.smallrye.reactivemessaging.runtime.DuplicatedContextConnectorFactoryInterceptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterFilter;
+import io.quarkus.smallrye.reactivemessaging.runtime.HealthCenterInterceptor;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
@@ -71,24 +83,32 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRe
 import io.quarkus.smallrye.reactivemessaging.runtime.WorkerConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactory;
 import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConnectorFactoryInterceptor;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingStartupCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingLivenessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingReadinessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingStartupCheck;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.providers.extension.EmitterConfiguration;
 
 public class SmallRyeReactiveMessagingProcessor {
 
     private static final Logger LOGGER = Logger
             .getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
+    static final String DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY = "1024";
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
+
+    static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
+
+    public static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
+        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
+                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
+    }
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING);
+        return new FeatureBuildItem(Feature.MESSAGING);
     }
 
     @BuildStep
@@ -112,7 +132,7 @@ public class SmallRyeReactiveMessagingProcessor {
             public void transform(AnnotationsTransformer.TransformationContext ctx) {
                 if (ctx.isClass()) {
                     ClassInfo clazz = ctx.getTarget().asClass();
-                    Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                    Map<DotName, List<AnnotationInstance>> annotations = clazz.annotationsMap();
                     if (scopes.isScopeDeclaredOn(clazz)
                             || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PATH)
                             || annotations.containsKey(ReactiveMessagingDotNames.REST_CONTROLLER)
@@ -141,7 +161,19 @@ public class SmallRyeReactiveMessagingProcessor {
                                 ReactiveMessagingDotNames.INCOMING)),
                 new UnremovableBeanBuildItem(
                         new BeanClassAnnotationExclusion(
-                                ReactiveMessagingDotNames.OUTGOING)));
+                                ReactiveMessagingDotNames.INCOMINGS)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.OUTGOING)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.OUTGOINGS)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.MESSAGE_CONVERTER)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.KEY_VALUE_EXTRACTOR)));
     }
 
     @BuildStep
@@ -179,8 +211,15 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
+    public void disableObservation(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigProducer) {
+        runtimeConfigProducer.produce(
+                new RunTimeConfigurationDefaultBuildItem("smallrye.messaging.observation.enabled", "false"));
+    }
+
+    @BuildStep
     public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
-            BuildProducer<HealthBuildItem> producer) {
+            BuildProducer<HealthBuildItem> producer, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
@@ -190,6 +229,24 @@ public class SmallRyeReactiveMessagingProcessor {
         producer.produce(
                 new HealthBuildItem(SmallRyeReactiveMessagingStartupCheck.class.getName(),
                         buildTimeConfig.healthEnabled));
+        if (buildTimeConfig.healthEnabled) {
+            beans.produce(new AdditionalBeanBuildItem(HealthCenterFilter.class, HealthCenterInterceptor.class));
+
+            transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                @Override
+                public boolean appliesTo(AnnotationTarget.Kind kind) {
+                    return kind == AnnotationTarget.Kind.CLASS;
+                }
+
+                @Override
+                public void transform(TransformationContext ctx) {
+                    ClassInfo clazz = ctx.getTarget().asClass();
+                    if (clazz.name().equals(ReactiveMessagingDotNames.HEALTH_CENTER)) {
+                        ctx.transform().add(HealthCenterFilter.class).done();
+                    }
+                }
+            }));
+        }
     }
 
     @BuildStep
@@ -197,17 +254,24 @@ public class SmallRyeReactiveMessagingProcessor {
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<MediatorBuildItem> mediatorMethods,
+            List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
             List<InjectedEmitterBuildItem> emitterFields,
             List<InjectedChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfig,
             ReactiveMessagingConfiguration conf) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
+        Set<String> connectorManagedIncomingChannels = connectorManagedChannels.stream()
+                .filter(c -> c.getDirection() == ChannelDirection.INCOMING)
+                .map(ConnectorManagedChannelBuildItem::getName)
+                .collect(Collectors.toSet());
+
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
         List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
-        List<EmitterConfiguration> emittersConfigurations = new ArrayList<>();
+        Map<String, EmitterConfiguration> emittersConfigurations = new HashMap<>();
         List<ChannelConfiguration> channelConfigurations = new ArrayList<>();
 
         /*
@@ -219,26 +283,35 @@ public class SmallRyeReactiveMessagingProcessor {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
 
-            if (methodInfo.hasAnnotation(BLOCKING) || methodInfo.hasAnnotation(SMALLRYE_BLOCKING)
-                    || methodInfo.hasAnnotation(TRANSACTIONAL)) {
+            if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
                 // Just in case both annotation are used, use @Blocking value.
-                String poolName = Blocking.DEFAULT_WORKER_POOL;
+                String poolName = methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
+                        ? QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER
+                        : Blocking.DEFAULT_WORKER_POOL;
 
                 // If the method is annotated with the SmallRye Reactive Messaging @Blocking, extract the worker pool name if any
                 if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
                     AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
                     poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
                 }
+                if (methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)) {
+                    defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "smallrye.messaging.worker." + poolName + ".max-concurrency",
+                            DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY));
+                }
                 workerConfigurations.add(new WorkerConfiguration(methodInfo.declaringClass().toString(),
-                        methodInfo.name(), poolName));
+                        methodInfo.name(), poolName, methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)));
             }
 
             try {
-                boolean isSuspendMethod = isSuspendMethod(methodInfo);
+                boolean isSuspendMethod = KotlinUtils.isKotlinSuspendMethod(methodInfo);
 
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
-                                Thread.currentThread().getContextClassLoader(), conf.strict);
+                                Thread.currentThread().getContextClassLoader(), conf.strict,
+                                consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
+                                        ? conf.blockingSignaturesExecutionMode
+                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP); // disable execution mode setting for inner channels
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
@@ -248,7 +321,8 @@ public class SmallRyeReactiveMessagingProcessor {
                  * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
                  * it
                  */
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(generatedInvokerName).build());
                 mediatorConfiguration
                         .setInvokerClass((Class<? extends Invoker>) recorderContext.classProxy(generatedInvokerName));
             } catch (IllegalArgumentException e) {
@@ -257,24 +331,24 @@ public class SmallRyeReactiveMessagingProcessor {
         }
 
         for (InjectedEmitterBuildItem it : emitterFields) {
-            emittersConfigurations.add(it.getEmitterConfig());
+            EmitterConfiguration configuration = it.getEmitterConfig();
+            String channel = configuration.name();
+            EmitterConfiguration previousConfig = emittersConfigurations.get(channel);
+            if (previousConfig != null && !previousConfig.equals(configuration)) {
+                throw new DeploymentException(
+                        String.format("Emitter configuration for channel `%s` is different than previous configuration : %s",
+                                channel, it.getEmitterConfig()));
+            }
+            emittersConfigurations.put(channel, configuration);
         }
         for (InjectedChannelBuildItem it : channelFields) {
             channelConfigurations.add(it.getChannelConfig());
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SmallRyeReactiveMessagingContext.class)
-                .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations, emittersConfigurations,
-                        channelConfigurations))
+                .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations,
+                        new ArrayList<>(emittersConfigurations.values()), channelConfigurations))
                 .done());
-    }
-
-    private boolean isSuspendMethod(MethodInfo methodInfo) {
-        if (!methodInfo.parameters().isEmpty()) {
-            return methodInfo.parameters().get(methodInfo.parameters().size() - 1).name()
-                    .equals(ReactiveMessagingDotNames.CONTINUATION);
-        }
-        return false;
     }
 
     /**
@@ -306,7 +380,7 @@ public class SmallRyeReactiveMessagingProcessor {
         }
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
-        for (Type i : method.parameters()) {
+        for (Type i : method.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
         String targetPackage = DotNames.internalPackageNameWithTrailingSlash(bean.getImplClazz().name());
@@ -354,14 +428,14 @@ public class SmallRyeReactiveMessagingProcessor {
             try (MethodCreator invoke = invoker.getMethodCreator(
                     MethodDescriptor.ofMethod(generatedName, "invoke", Object.class, Object[].class))) {
 
-                int parametersCount = method.parameters().size();
+                int parametersCount = method.parametersCount();
                 String[] argTypes = new String[parametersCount];
                 ResultHandle[] args = new ResultHandle[parametersCount];
                 for (int i = 0; i < parametersCount; i++) {
                     // the only method argument of io.smallrye.reactive.messaging.Invoker is an object array, so we need to pull out
                     // each argument and put it in the target method arguments array
                     args[i] = invoke.readArrayValue(invoke.getMethodParam(0), i);
-                    argTypes[i] = method.parameters().get(i).name().toString();
+                    argTypes[i] = method.parameterType(i).name().toString();
                 }
                 ResultHandle result = invoke.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(beanInstanceType, method.name(),
@@ -397,9 +471,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
             try (MethodCreator invoke = invoker.getMethodCreator("invokeBean", Object.class, Object.class, Object[].class,
                     ReactiveMessagingDotNames.CONTINUATION.toString())) {
-                ResultHandle[] args = new ResultHandle[method.parameters().size()];
+                ResultHandle[] args = new ResultHandle[method.parametersCount()];
                 ResultHandle array = invoke.getMethodParam(1);
-                for (int i = 0; i < method.parameters().size() - 1; ++i) {
+                for (int i = 0; i < method.parametersCount() - 1; ++i) {
                     args[i] = invoke.readArrayValue(array, i);
                 }
                 args[args.length - 1] = invoke.getMethodParam(2);
@@ -425,7 +499,9 @@ public class SmallRyeReactiveMessagingProcessor {
             public void transform(TransformationContext ctx) {
                 ClassInfo clazz = ctx.getTarget().asClass();
                 if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
-                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())) {
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.OUTBOUND_CONNECTOR, index.getIndex())) {
                     ctx.transform().add(DevModeSupportConnectorFactory.class).done();
                 }
             }
@@ -446,10 +522,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     CoroutineConfigurationBuildItem producesCoroutineConfiguration() {
-        try {
-            Class.forName("kotlinx.coroutines.future.FutureKt", false, getClass().getClassLoader());
+        if (QuarkusClassLoader.isClassPresentAtRuntime("kotlinx.coroutines.future.FutureKt")) {
             return new CoroutineConfigurationBuildItem(true);
-        } catch (ClassNotFoundException e) {
+        } else {
             return new CoroutineConfigurationBuildItem(false);
         }
     }
@@ -486,6 +561,55 @@ public class SmallRyeReactiveMessagingProcessor {
         public boolean isEnabled() {
             return isEnabled;
         }
+    }
+
+    @BuildStep
+    void duplicatedContextSupport(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> transformations) {
+        beans.produce(new AdditionalBeanBuildItem(DuplicatedContextConnectorFactory.class,
+                DuplicatedContextConnectorFactoryInterceptor.class));
+
+        transformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (doesImplement(clazz, ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY, index.getIndex())
+                        || doesImplement(clazz, ReactiveMessagingDotNames.INBOUND_CONNECTOR, index.getIndex())) {
+                    ctx.transform().add(DuplicatedContextConnectorFactory.class).done();
+                }
+            }
+
+            private boolean doesImplement(ClassInfo clazz, DotName iface, IndexView index) {
+                while (clazz != null && !clazz.name().equals(ReactiveMessagingDotNames.OBJECT)) {
+                    if (clazz.interfaceNames().contains(iface)) {
+                        return true;
+                    }
+
+                    clazz = index.getClassByName(clazz.superName());
+                }
+
+                return false;
+            }
+        }));
+    }
+
+    boolean consumesFromConnector(MethodInfo methodInfo, Set<String> connectorManagedChannels) {
+        AnnotationInstance incoming = methodInfo.annotation(INCOMING);
+        if (incoming != null) {
+            return connectorManagedChannels.contains(incoming.value().asString());
+        }
+        AnnotationInstance incomings = methodInfo.annotation(INCOMINGS);
+        if (incomings != null) {
+            return connectorManagedChannels.containsAll(
+                    Arrays.stream(incomings.value().asNestedArray())
+                            .map(i -> i.value().asString()).collect(Collectors.toSet()));
+        }
+        return false;
     }
 
 }

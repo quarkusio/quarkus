@@ -28,22 +28,30 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
+import io.quarkus.micrometer.deployment.export.RegistryBuildItem;
 import io.quarkus.micrometer.runtime.ClockProvider;
 import io.quarkus.micrometer.runtime.CompositeRegistryCreator;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
 import io.quarkus.micrometer.runtime.MeterFilterConstraints;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraints;
+import io.quarkus.micrometer.runtime.MeterTagsSupport;
 import io.quarkus.micrometer.runtime.MicrometerCounted;
 import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
@@ -53,10 +61,12 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
+@BuildSteps(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
 public class MicrometerProcessor {
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
+    private static final DotName METER_REGISTRY_CUSTOMIZER = DotName.createSimple(MeterRegistryCustomizer.class.getName());
     private static final DotName NAMING_CONVENTION = DotName.createSimple(NamingConvention.class.getName());
 
     private static final DotName COUNTED_ANNOTATION = DotName.createSimple(Counted.class.getName());
@@ -64,6 +74,7 @@ public class MicrometerProcessor {
     private static final DotName COUNTED_INTERCEPTOR = DotName.createSimple(MicrometerCountedInterceptor.class.getName());
     private static final DotName TIMED_ANNOTATION = DotName.createSimple(Timed.class.getName());
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
+    private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -75,25 +86,20 @@ public class MicrometerProcessor {
 
     MicrometerConfig mConfig;
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.MICROMETER);
-    }
-
-    @BuildStep(onlyIf = MicrometerEnabled.class, onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
+    @BuildStep(onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)
     MetricsCapabilityBuildItem metricsCapabilityBuildItem() {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 null);
     }
 
-    @BuildStep(onlyIf = { MicrometerEnabled.class, PrometheusRegistryProcessor.PrometheusEnabled.class })
+    @BuildStep(onlyIf = { PrometheusRegistryProcessor.PrometheusEnabled.class })
     MetricsCapabilityBuildItem metricsCapabilityPrometheusBuildItem(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         return new MetricsCapabilityBuildItem(MetricsFactory.MICROMETER::equals,
                 nonApplicationRootPathBuildItem.resolvePath(mConfig.export.prometheus.path));
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     UnremovableBeanBuildItem registerAdditionalBeans(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -105,17 +111,21 @@ public class MicrometerProcessor {
                 .setUnremovable()
                 .addBeanClass(ClockProvider.class)
                 .addBeanClass(CompositeRegistryCreator.class)
+                .addBeanClass(MeterRegistryCustomizer.class)
                 .build());
 
         // Add annotations and associated interceptors
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(MeterFilterConstraint.class)
                 .addBeanClass(MeterFilterConstraints.class)
+                .addBeanClass(MeterRegistryCustomizerConstraint.class)
+                .addBeanClass(MeterRegistryCustomizerConstraints.class)
                 .addBeanClass(TIMED_ANNOTATION.toString())
                 .addBeanClass(TIMED_INTERCEPTOR.toString())
                 .addBeanClass(COUNTED_ANNOTATION.toString())
                 .addBeanClass(COUNTED_BINDING.toString())
                 .addBeanClass(COUNTED_INTERCEPTOR.toString())
+                .addBeanClass(METER_TAG_SUPPORT.toString())
                 .build());
 
         // @Timed is registered as an additional interceptor binding
@@ -134,19 +144,20 @@ public class MicrometerProcessor {
                 .builder("org.HdrHistogram.Histogram",
                         "org.HdrHistogram.DoubleHistogram",
                         "org.HdrHistogram.ConcurrentHistogram")
-                .constructors(true).build());
+                .build());
 
-        return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, NAMING_CONVENTION);
+        return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
+                NAMING_CONVENTION);
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
     AnnotationsTransformerBuildItem processAnnotatedMetrics(
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
             public boolean appliesTo(Kind kind) {
-                // @Counted is only applicable to a method 
+                // @Counted is only applicable to a method
                 return kind == Kind.METHOD;
             }
 
@@ -163,23 +174,24 @@ public class MicrometerProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
+    @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        // BeanContainerBuildItem is present to indicate we call this after Arc is initialized
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config);
+        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config,
+                nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
+                nonApplicationRootPathBuildItem.getNormalizedHttpRootPath());
         return new RootMeterRegistryBuildItem(registry);
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
+    @Consume(RootMeterRegistryBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     void registerExtensionMetrics(MicrometerRecorder recorder,
-            RootMeterRegistryBuildItem rootMeterRegistryBuildItem,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems) {
-        // RootMeterRegistryBuildItem is present to indicate we call this after the root registry has been initialized
 
         for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
             if (item != null && item.executionTime() == ExecutionTime.STATIC_INIT) {
@@ -188,16 +200,15 @@ public class MicrometerProcessor {
         }
     }
 
-    @BuildStep(onlyIf = MicrometerEnabled.class)
+    @BuildStep
+    @Consume(RootMeterRegistryBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
-            RootMeterRegistryBuildItem rootMeterRegistryBuildItem,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             List<MicrometerRegistryProviderBuildItem> providerClasses,
             ShutdownContextBuildItem shutdownContextBuildItem) {
-        // RootMeterRegistryBuildItem is present to indicate we call this after the root registry has been initialized
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {
@@ -233,6 +244,32 @@ public class MicrometerProcessor {
         }
 
         return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).build();
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public CardPageBuildItem createCard(List<RegistryBuildItem> registries) {
+        var card = new CardPageBuildItem();
+
+        registries.stream().filter(r -> "JSON".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("JSON")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+        });
+
+        registries.stream().filter(r -> "Prometheus".equalsIgnoreCase(r.name())).findFirst().ifPresent(r -> {
+            card.addPage(Page.externalPageBuilder("Prometheus")
+                    .icon("font-awesome-solid:chart-line")
+                    .url(r.path())
+                    .isJsonContent());
+            card.addPage(Page.externalPageBuilder("Prometheus (raw output)")
+                    .doNotEmbed()
+                    .icon("font-awesome-solid:up-right-from-square")
+                    .url(r.path())
+                    .mimeType("text/plain"));
+        });
+
+        return card;
     }
 
 }

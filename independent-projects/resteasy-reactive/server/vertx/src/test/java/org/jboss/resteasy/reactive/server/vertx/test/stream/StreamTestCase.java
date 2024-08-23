@@ -1,14 +1,5 @@
 package org.jboss.resteasy.reactive.server.vertx.test.stream;
 
-import io.restassured.RestAssured;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.subscription.Cancellable;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpMethod;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
@@ -17,10 +8,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.sse.SseEventSource;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.sse.SseEventSource;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -31,6 +24,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.subscription.Cancellable;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpMethod;
 
 @DisabledOnOs(OS.WINDOWS)
 @Disabled("quarkus")
@@ -98,6 +101,10 @@ public class StreamTestCase {
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));
         RestAssured.get("/stream/text/stream/publisher")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/stream/legacy-publisher")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));

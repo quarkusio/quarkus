@@ -4,17 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ParamInterceptorTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(SimpleBean.class, Simple.class, ParamInterceptor.class);
+    public ArcTestContainer container = new ArcTestContainer(SimpleBean.class, Simple.class, FirstParamInterceptor.class,
+            SecondParamInterceptor.class, ThirdParamInterceptor.class);
 
     @Test
     public void testInterception() {
@@ -39,13 +41,13 @@ public class ParamInterceptorTest {
         });
 
         simpleBean.setPrimitiveIntVal(0);
-        assertEquals("123456", simpleBean.getVal());
+        assertEquals("123458", simpleBean.getVal());
 
         simpleBean.setIntVal(1);
-        assertEquals("123456", simpleBean.getVal());
+        assertEquals("123458", simpleBean.getVal());
 
         simpleBean.setNumberVal(2L);
-        assertEquals("123456", simpleBean.getVal());
+        assertEquals("123458", simpleBean.getVal());
 
         handle.destroy();
     }

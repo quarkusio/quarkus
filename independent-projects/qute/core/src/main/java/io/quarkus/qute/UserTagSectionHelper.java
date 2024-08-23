@@ -1,75 +1,91 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Futures.evaluateParams;
-
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class UserTagSectionHelper implements SectionHelper {
+public class UserTagSectionHelper extends IncludeSectionHelper implements SectionHelper {
 
-    private static final String IT = "it";
     private static final String NESTED_CONTENT = "nested-content";
 
-    private final Supplier<Template> templateSupplier;
-    private final Map<String, Expression> parameters;
-    private final boolean isEmpty;
+    protected final boolean isNestedContentNeeded;
+    private final HtmlEscaper htmlEscaper;
+    private final String itKey;
 
-    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters, boolean isEmpty) {
-        this.templateSupplier = templateSupplier;
-        this.parameters = parameters;
-        this.isEmpty = isEmpty;
+    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, SectionBlock> extendingBlocks,
+            Map<String, Expression> parameters, boolean isIsolated, boolean isNestedContentNeeded, HtmlEscaper htmlEscaper,
+            String itKey) {
+        super(templateSupplier, extendingBlocks, parameters, isIsolated);
+        this.isNestedContentNeeded = isNestedContentNeeded;
+        this.htmlEscaper = htmlEscaper;
+        this.itKey = itKey;
     }
 
     @Override
-    public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        CompletableFuture<ResultNode> result = new CompletableFuture<>();
-        evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
-            if (t1 != null) {
-                result.completeExceptionally(t1);
-            } else {
-                if (!isEmpty) {
-                    // Execute the nested content first and make it accessible via the "nested-content" key 
-                    evaluatedParams.put(NESTED_CONTENT,
-                            context.execute(
-                                    context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
-                }
-                try {
-                    // Execute the template with the params as the root context object
-                    TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
-                    tagTemplate.root.resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
-                            .whenComplete((resultNode, t2) -> {
-                                if (t2 != null) {
-                                    result.completeExceptionally(t2);
-                                } else {
-                                    result.complete(resultNode);
-                                }
-                            });
-                } catch (Throwable e) {
-                    result.completeExceptionally(e);
-                }
-            }
-        });
-        return result;
+    protected boolean optimizeIfNoParams() {
+        return false;
     }
 
-    public static class Factory implements SectionHelperFactory<UserTagSectionHelper> {
+    @Override
+    protected void addAdditionalEvaluatedParams(SectionResolutionContext context, Map<String, Object> evaluatedParams) {
+        evaluatedParams.put(Factory.ARGS, new Arguments(evaluatedParams));
+        if (isNestedContentNeeded) {
+            // If needed then add the {nested-content} to the evaluated params
+            Expression nestedContent = ((TemplateImpl) template.get()).findExpression(this::isNestedContent);
+            if (nestedContent != null) {
+                // Execute the nested content first and make it accessible via the "nested-content" key
+                evaluatedParams.put(NESTED_CONTENT,
+                        context.execute(
+                                context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
+            }
+        }
+    }
+
+    public boolean isNestedContentNeeded() {
+        return isNestedContentNeeded;
+    }
+
+    public HtmlEscaper getHtmlEscaper() {
+        return htmlEscaper;
+    }
+
+    public String getItKey() {
+        return itKey;
+    }
+
+    private boolean isNestedContent(Expression expr) {
+        return expr.getParts().size() == 1 && expr.getParts().get(0).getName().equals(NESTED_CONTENT);
+    }
+
+    public static class Factory extends IncludeSectionHelper.AbstractIncludeFactory<UserTagSectionHelper> {
+
+        public static final String ARGS = "_args";
+
+        private static final String IT = "it";
+        // Unlike regular includes user tags are isolated by default
+        private static final String ISOLATED_DEFAULT_VALUE = "true";
 
         private final String name;
         private final String templateId;
+        private final HtmlEscaper htmlEscaper;
 
         /**
-         * 
+         *
          * @param name Identifies the tag
          * @param templateId Used to locate the template
          */
         public Factory(String name, String templateId) {
             this.name = name;
             this.templateId = templateId;
+            this.htmlEscaper = new HtmlEscaper(List.of());
         }
 
         @Override
@@ -78,48 +94,167 @@ public class UserTagSectionHelper implements SectionHelper {
         }
 
         @Override
+        String isolatedDefaultValue() {
+            return ISOLATED_DEFAULT_VALUE;
+        }
+
+        @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(new Parameter(IT, IT, false)).build();
+            ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(Parameter.builder(IT).defaultValue(IT));
+            addDefaultParams(builder);
+            return builder.build();
         }
 
         @Override
-        public Scope initializeBlock(Scope outerScope, BlockInfo block) {
-            if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
-                for (Entry<String, String> entry : block.getParameters().entrySet()) {
-                    if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
-                        continue;
-                    }
-                    block.addExpression(entry.getKey(), entry.getValue());
-                }
-                return outerScope;
-            } else {
-                return outerScope;
-            }
+        protected boolean ignoreParameterInit(Supplier<String> firstParamSupplier, String key, String value) {
+            // {#myTag _isolated=true /}
+            return super.ignoreParameterInit(firstParamSupplier, key, value)
+                    || (key.equals(ISOLATED)
+                            // {#myTag _isolated /}
+                            || value.equals(ISOLATED)
+                            // {#myTag _unisolated /}
+                            || value.equals(UNISOLATED)
+                            // IT with default value or not the first agrument
+                            // e.g. it=it in {#myTag foo=bar /} or baz in {#myTag foo=bar baz /}
+                            || (key.equals(IT) && (!firstParamSupplier.get().equals(value) || value.equals(IT))));
         }
 
         @Override
-        public UserTagSectionHelper initialize(SectionInitContext context) {
-            Map<String, Expression> params = new HashMap<>();
-            for (Entry<String, String> entry : context.getParameters().entrySet()) {
-                if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
-                    continue;
+        protected String getTemplateId(SectionInitContext context) {
+            return templateId;
+        }
+
+        @Override
+        protected UserTagSectionHelper newHelper(Supplier<Template> template, Map<String, Expression> params,
+                Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context) {
+            boolean isNestedContentNeeded = !context.getBlock(SectionHelperFactory.MAIN_BLOCK_NAME).isEmpty();
+            // Use the filtered map of paramas and not the original map from the SectionInitContext
+            Expression itKeyExpr = params.getOrDefault(IT, null);
+
+            return new UserTagSectionHelper(template, extendingBlocks, params,
+                    isolatedValue != null ? isolatedValue
+                            : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)),
+                    isNestedContentNeeded, htmlEscaper,
+                    itKeyExpr != null ? stripQuotationMarks(itKeyExpr.toOriginalString()) : null);
+        }
+
+        @Override
+        protected void handleParam(String key, String value, Supplier<String> firstParamSupplier,
+                BiConsumer<String, String> paramConsumer) {
+            if (key.equals(IT)) {
+                if (value.equals(IT)) {
+                    return;
+                } else if (isSinglePart(value)) {
+                    // Also register the param expression with the defaulted key
+                    // {#include "foo" /} => {#include foo="foo" /}
+                    String defaultedKey = stripQuotationMarks(value);
+                    paramConsumer.accept(defaultedKey, value);
                 }
-                params.put(entry.getKey(), context.getExpression(entry.getKey()));
             }
-            boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
-            final Engine engine = context.getEngine();
+            super.handleParam(key, value, firstParamSupplier, paramConsumer);
+        }
 
-            return new UserTagSectionHelper(new Supplier<Template>() {
+    }
 
-                @Override
-                public Template get() {
-                    Template template = engine.getTemplate(templateId);
-                    if (template == null) {
-                        throw new TemplateException("Tag template not found: " + templateId);
-                    }
-                    return template;
+    private static String stripQuotationMarks(String value) {
+        if (LiteralSupport.isStringLiteral(value)) {
+            // {#include "foo" /} => {#include foo="foo" /}
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
+    }
+
+    public class Arguments implements Iterable<Entry<String, Object>> {
+
+        private final List<Entry<String, Object>> args;
+
+        Arguments(Map<String, Object> map) {
+            this.args = new ArrayList<>(Objects.requireNonNull(map).size());
+            for (Entry<String, Object> e : map.entrySet()) {
+                // Always skip the first unnamed parameter
+                if (!e.getKey().equals(UserTagSectionHelper.Factory.IT)) {
+                    args.add(e);
                 }
-            }, params, isEmpty);
+            }
+            // Sort by key
+            this.args.sort(Comparator.comparing(Entry::getKey));
+        }
+
+        private Arguments(List<Entry<String, Object>> args, HtmlEscaper htmlEscaper) {
+            this.args = args;
+        }
+
+        public boolean isEmpty() {
+            return args.isEmpty();
+        }
+
+        public int size() {
+            return args.size();
+        }
+
+        public Object get(String key) {
+            for (Entry<String, Object> e : args) {
+                if (e.getKey().equals(key)) {
+                    return e.getValue();
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public Iterator<Entry<String, Object>> iterator() {
+            return args.iterator();
+        }
+
+        public Arguments skip(String... keys) {
+            Set<String> keySet = Set.of(keys);
+            return doFilter(e -> !keySet.contains(e.getKey()));
+        }
+
+        public Arguments skipIdenticalKeyValue() {
+            return doFilter(e -> !e.getKey().equals(e.getValue()));
+        }
+
+        /**
+         * Skip the first argument if it does not define a name.
+         */
+        public Arguments skipIt() {
+            return doFilter(e -> !e.getKey().equals(itKey));
+        }
+
+        public Arguments filter(String... keys) {
+            Set<String> keySet = Set.of(keys);
+            return doFilter(e -> keySet.contains(e.getKey()));
+        }
+
+        public Arguments filterIdenticalKeyValue() {
+            return doFilter(e -> e.getKey().equals(e.getValue()));
+        }
+
+        // foo="1" bar="true" readonly="readonly"
+        public RawString asHtmlAttributes() {
+            StringBuilder builder = new StringBuilder();
+            for (Iterator<Entry<String, Object>> it = args.iterator(); it.hasNext();) {
+                Entry<String, Object> e = it.next();
+                builder.append(e.getKey());
+                builder.append("=\"");
+                builder.append(htmlEscaper.escape(String.valueOf(e.getValue())));
+                builder.append("\"");
+                if (it.hasNext()) {
+                    builder.append(" ");
+                }
+            }
+            return new RawString(builder.toString());
+        }
+
+        private Arguments doFilter(Predicate<Entry<String, Object>> predicate) {
+            List<Entry<String, Object>> newArgs = new ArrayList<>(args.size());
+            for (Entry<String, Object> e : args) {
+                if (predicate.test(e)) {
+                    newArgs.add(e);
+                }
+            }
+            return new Arguments(newArgs, htmlEscaper);
         }
 
     }

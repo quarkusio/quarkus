@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.JsonValue;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonNumber;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 
 public class AbstractJsonObjectResponse {
     private String jsonString;
@@ -29,24 +29,24 @@ public class AbstractJsonObjectResponse {
     }
 
     public String getString(String name) {
-        return json.getString(name);
+        return contains(name) ? json.getString(name) : null;
     }
 
     public Boolean getBoolean(String name) {
-        return json.getBoolean(name);
+        return contains(name) ? json.getBoolean(name) : null;
     }
 
     public Long getLong(String name) {
-        JsonNumber number = json.getJsonNumber(name);
+        JsonNumber number = contains(name) ? json.getJsonNumber(name) : null;
         return number != null ? number.longValue() : null;
     }
 
     public JsonArray getArray(String name) {
-        return json.getJsonArray(name);
+        return contains(name) ? json.getJsonArray(name) : null;
     }
 
     public JsonObject getObject(String name) {
-        return json.getJsonObject(name);
+        return contains(name) ? json.getJsonObject(name) : null;
     }
 
     public JsonObject getJsonObject() {
@@ -58,7 +58,7 @@ public class AbstractJsonObjectResponse {
     }
 
     public boolean contains(String propertyName) {
-        return json.containsKey(propertyName);
+        return json != null && json.containsKey(propertyName) && !json.isNull(propertyName);
     }
 
     public Set<String> getPropertyNames() {
@@ -73,8 +73,8 @@ public class AbstractJsonObjectResponse {
         return jsonString == null ? json.toString() : jsonString;
     }
 
-    private static JsonObject toJsonObject(String userInfoJson) {
-        try (JsonReader jsonReader = Json.createReader(new StringReader(userInfoJson))) {
+    static JsonObject toJsonObject(String json) {
+        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             return jsonReader.readObject();
         }
     }

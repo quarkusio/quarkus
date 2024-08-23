@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.deployment;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -7,22 +8,16 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "mongodb", phase = ConfigPhase.BUILD_TIME)
 public class MongoClientBuildTimeConfig {
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether a health check is published in case the smallrye-health extension is present.
      */
     @ConfigItem(name = "health.enabled", defaultValue = "true")
     public boolean healthEnabled;
 
     /**
-     * Whether or not metrics are published in case a metrics extension is present.
+     * Whether metrics are published in case a metrics extension is present.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
-
-    /**
-     * Whether or not tracing spans of driver commands are sent in case the smallrye-opentracing extension is present.
-     */
-    @ConfigItem(name = "tracing.enabled")
-    public boolean tracingEnabled;
 
     /**
      * If set to true, the default clients will always be created even if there are no injection points that use them
@@ -31,8 +26,17 @@ public class MongoClientBuildTimeConfig {
     public boolean forceDefaultClients;
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start MongoDB in dev and test mode.
+     * Whether or not tracing spans of driver commands are sent in case the quarkus-opentelemetry extension is present.
+     */
+    @ConfigItem(name = "tracing.enabled")
+    public boolean tracingEnabled;
+
+    /**
+     * Dev Services.
+     * <p>
+     * Dev Services allows Quarkus to automatically start MongoDB in dev and test mode.
      */
     @ConfigItem
+    @ConfigDocSection(generated = true)
     public DevServicesBuildTimeConfig devservices;
 }

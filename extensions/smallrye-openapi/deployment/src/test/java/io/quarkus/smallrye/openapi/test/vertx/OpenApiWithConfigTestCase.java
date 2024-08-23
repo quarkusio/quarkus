@@ -16,7 +16,9 @@ public class OpenApiWithConfigTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
                     .addAsManifestResource("test-openapi.yaml", "openapi.yaml")
-                    .addAsResource(new StringAsset("mp.openapi.scan.disable=true\nmp.openapi.servers=https://api.acme.org/"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "mp.openapi.scan.disable=true\nquarkus.smallrye-openapi.servers=https://api.acme.org/"),
                             "application.properties"));
 
     @Test

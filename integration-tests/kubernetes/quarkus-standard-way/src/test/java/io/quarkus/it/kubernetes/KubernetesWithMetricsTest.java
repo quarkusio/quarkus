@@ -12,10 +12,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.dekorate.prometheus.model.Endpoint;
+import io.dekorate.prometheus.model.ServiceMonitor;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -30,11 +32,10 @@ public class KubernetesWithMetricsTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics.properties")
-            .setForcedDependencies(
-                    List.of(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
+            .overrideConfigKey("quarkus.http.port", "9090")
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -83,6 +84,23 @@ public class KubernetesWithMetricsTest {
                     entry("prometheus.io/path", "/q/metrics"), entry("prometheus.io/port", "9090"),
                     entry("prometheus.io/scheme", "http"));
         });
+
+        assertThat(kubernetesList).filteredOn(i -> i.getKind().equals("ServiceMonitor")).singleElement()
+                .isInstanceOfSatisfying(ServiceMonitor.class, s -> {
+                    assertThat(s.getMetadata()).satisfies(m -> {
+                        assertThat(m.getName()).isEqualTo("metrics");
+                    });
+
+                    assertThat(s.getSpec()).satisfies(spec -> {
+                        assertThat(spec.getEndpoints()).hasSize(1);
+                        assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
+                            assertThat(e.getScheme()).isEqualTo("http");
+                            assertThat(e.getTargetPort().getStrVal()).isNull();
+                            assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
+                            assertThat(e.getPath()).isEqualTo("/q/metrics");
+                        });
+                    });
+                });
 
         assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
             if (h.getMetadata().getAnnotations() != null) {

@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -14,21 +12,28 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ResteasyReactiveClientProblem;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
+
 public class RuntimeExceptionMapper {
 
     private static final Logger log = Logger.getLogger(RuntimeExceptionMapper.class);
+    private static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
 
-    private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
+    private static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
@@ -39,10 +44,13 @@ public class RuntimeExceptionMapper {
     private final List<Predicate<Throwable>> nonBlockingProblemPredicate;
     private final Set<Class<? extends Throwable>> unwrappedExceptions;
 
+    public static final Response IGNORE_RESPONSE = new ResponseBuilderImpl().status(666).header(
+            "RR_EX_IGN", "true").build();
+
     public RuntimeExceptionMapper(ExceptionMapping mapping, ClassLoader classLoader) {
         try {
-            this.mappers = new HashMap<>();
-            for (var i : mapping.mappers.entrySet()) {
+            mappers = new HashMap<>();
+            for (var i : mapping.effectiveMappers().entrySet()) {
                 mappers.put((Class<? extends Throwable>) Class.forName(i.getKey(), false, classLoader), i.getValue());
             }
             blockingProblemPredicates = new ArrayList<>(mapping.blockingProblemPredicates);
@@ -59,7 +67,7 @@ public class RuntimeExceptionMapper {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
         Class<?> klass = throwable.getClass();
-        //we don't thread WebApplicationException's thrown from the client as true 'WebApplicationException'
+        //we don't read WebApplicationException's thrown from the client as true 'WebApplicationException'
         //we consider it a security risk to transparently pass on the result to the calling server
         boolean isWebApplicationException = throwable instanceof WebApplicationException
                 && !(throwable instanceof ResteasyReactiveClientProblem);
@@ -73,11 +81,11 @@ public class RuntimeExceptionMapper {
         }
 
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
-        Map.Entry<Throwable, javax.ws.rs.ext.ExceptionMapper<? extends Throwable>> entry = getExceptionMapper(
+        Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> entry = getExceptionMapper(
                 (Class<Throwable>) klass, context,
                 throwable);
         if (entry != null) {
-            javax.ws.rs.ext.ExceptionMapper exceptionMapper = entry.getValue();
+            jakarta.ws.rs.ext.ExceptionMapper exceptionMapper = entry.getValue();
             Throwable mappedException = entry.getKey();
             context.requireCDIRequestScope();
             if (exceptionMapper instanceof ResteasyReactiveAsyncExceptionMapper) {
@@ -91,14 +99,26 @@ public class RuntimeExceptionMapper {
             } else {
                 response = exceptionMapper.toResponse(mappedException);
             }
-            context.setResult(response);
-            logBlockingErrorIfRequired(mappedException, context);
-            logNonBlockingErrorIfRequired(mappedException, context);
+            // this special case is used in order to ignore the mapping of built-in mappers and let the exception handling proceed to higher levels
+            if ((IGNORE_RESPONSE == response)) {
+                if (isWebApplicationException) {
+                    context.setResult(((WebApplicationException) throwable).getResponse());
+                    logWebApplicationExceptions.debug("Application failed the request", throwable);
+                } else {
+                    logBlockingErrorIfRequired(throwable, context);
+                    logNonBlockingErrorIfRequired(throwable, context);
+                    context.handleUnmappedException(throwable);
+                }
+            } else {
+                context.setResult(response);
+                logBlockingErrorIfRequired(mappedException, context);
+                logNonBlockingErrorIfRequired(mappedException, context);
+            }
             return;
         }
         if (isWebApplicationException) {
             context.setResult(response);
-            logBlockingErrorIfRequired(throwable, context);
+            logWebApplicationExceptions.debug("Application failed the request", throwable);
             return;
         }
         if (throwable instanceof IOException) {
@@ -198,14 +218,14 @@ public class RuntimeExceptionMapper {
      * application
      * has been configured to unwrap certain exceptions.
      */
-    public <T extends Throwable> Map.Entry<Throwable, javax.ws.rs.ext.ExceptionMapper<? extends Throwable>> getExceptionMapper(
+    public <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> getExceptionMapper(
             Class<T> clazz,
             ResteasyReactiveRequestContext context,
             T throwable) {
         Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers = getClassExceptionMappers(
                 context);
         if ((classExceptionMappers != null) && !classExceptionMappers.isEmpty()) {
-            Map.Entry<Throwable, javax.ws.rs.ext.ExceptionMapper<? extends Throwable>> result = doGetExceptionMapper(clazz,
+            Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> result = doGetExceptionMapper(clazz,
                     classExceptionMappers, throwable);
             if (result != null) {
                 return result;
@@ -223,7 +243,7 @@ public class RuntimeExceptionMapper {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T extends Throwable> Map.Entry<Throwable, javax.ws.rs.ext.ExceptionMapper<? extends Throwable>> doGetExceptionMapper(
+    private <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> doGetExceptionMapper(
             Class<T> clazz,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
             Throwable throwable) {
@@ -246,7 +266,7 @@ public class RuntimeExceptionMapper {
         return null;
     }
 
-    public Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
+    public static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
         return mappers;
     }
 

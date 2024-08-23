@@ -5,50 +5,47 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class ClusterConfiguration {
+public interface ClusterConfiguration {
 
     /**
      * The host name.
      */
-    @ConfigItem(defaultValue = "localhost")
-    public String host;
+    @WithDefault("localhost")
+    String host();
 
     /**
      * The port.
      */
-    @ConfigItem
-    public OptionalInt port;
+    OptionalInt port();
 
     /**
      * The public host name.
      */
-    @ConfigItem
-    public Optional<String> publicHost;
+    Optional<String> publicHost();
 
     /**
      * The public port.
      */
-    @ConfigItem
-    public OptionalInt publicPort;
+    OptionalInt publicPort();
 
     /**
      * Enables or disables the clustering.
      */
-    @ConfigItem
-    public boolean clustered;
+    @WithDefault("false")
+    boolean clustered();
 
     /**
      * The ping interval.
      */
-    @ConfigItem(defaultValue = "20")
-    public Duration pingInterval;
+    @WithDefault("20")
+    Duration pingInterval();
 
     /**
      * The ping reply interval.
      */
-    @ConfigItem(defaultValue = "20")
-    public Duration pingReplyInterval;
+    @WithDefault("20")
+    Duration pingReplyInterval();
 }

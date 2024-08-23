@@ -10,7 +10,7 @@ metadata:
   categories:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions-http"
-  status: "preview"
+  status: "stable"
   codestart:
     name: "google-cloud-functions-http"
     kind: "example"

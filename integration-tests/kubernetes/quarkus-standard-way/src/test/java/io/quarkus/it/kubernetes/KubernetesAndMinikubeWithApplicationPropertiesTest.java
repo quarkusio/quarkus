@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -14,8 +13,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -28,8 +27,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             .setApplicationName("kubernetes-and-minikube")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-and-minikube-with-application.properties")
-            .setForcedDependencies(
-                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-minikube", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -74,7 +72,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("ClusterIP", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getNodePort()).isNull();
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
@@ -111,7 +109,7 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getNodePort()).isNotNull();
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);

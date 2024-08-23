@@ -8,13 +8,17 @@ public class TestJavaBeanWithBoolean {
     private Boolean boxedBool;
     private Boolean boxedBoolWithIsGetter;
 
+    private Boolean boxedBoolWithIsAndGetGetters;
+
     public TestJavaBeanWithBoolean() {
     }
 
-    public TestJavaBeanWithBoolean(boolean bool, Boolean boxedBool, Boolean boxedBoolWithIsGetter) {
+    public TestJavaBeanWithBoolean(boolean bool, Boolean boxedBool, Boolean boxedBoolWithIsGetter,
+            Boolean boxedBoolWithIsAndGetGetters) {
         this.bool = bool;
         this.boxedBool = boxedBool;
         this.boxedBoolWithIsGetter = boxedBoolWithIsGetter;
+        this.boxedBoolWithIsAndGetGetters = boxedBoolWithIsAndGetGetters;
     }
 
     @Override
@@ -23,6 +27,7 @@ public class TestJavaBeanWithBoolean {
                 "bool=" + bool +
                 ", boxedBool=" + boxedBool +
                 ", boxedBoolWithIsGetter=" + boxedBoolWithIsGetter +
+                ", boxedBoolWithIsAndGetGetters=" + boxedBoolWithIsAndGetGetters +
                 '}';
     }
 
@@ -34,12 +39,13 @@ public class TestJavaBeanWithBoolean {
             return false;
         TestJavaBeanWithBoolean that = (TestJavaBeanWithBoolean) o;
         return bool == that.bool && Objects.equals(boxedBool, that.boxedBool)
-                && Objects.equals(boxedBoolWithIsGetter, that.boxedBoolWithIsGetter);
+                && Objects.equals(boxedBoolWithIsGetter, that.boxedBoolWithIsGetter)
+                && Objects.equals(boxedBoolWithIsAndGetGetters, that.boxedBoolWithIsAndGetGetters);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bool, boxedBool, boxedBoolWithIsGetter);
+        return Objects.hash(bool, boxedBool, boxedBoolWithIsGetter, boxedBoolWithIsAndGetGetters);
     }
 
     public boolean isBool() {
@@ -64,7 +70,26 @@ public class TestJavaBeanWithBoolean {
         return boxedBoolWithIsGetter;
     }
 
+    // this is not actually a getter (takes a parameter)
+    public Boolean getBoxedBoolWithIsGetter(String parameter) {
+        return !boxedBoolWithIsGetter;
+    }
+
     public void setBoxedBoolWithIsGetter(Boolean boxedBoolWithIsGetter) {
         this.boxedBoolWithIsGetter = boxedBoolWithIsGetter;
+    }
+
+    // method unwraps boxedBoolWithIsAndGetGetters to a default value if it is null
+    public boolean isBoxedBoolWithIsAndGetGetters() {
+        return (boxedBoolWithIsAndGetGetters != null) ? boxedBoolWithIsAndGetGetters : true;
+    }
+
+    // Using both the 'is' prefix and the 'get' prefix, to check the property still get set if there are two getters
+    public Boolean getBoxedBoolWithIsAndGetGetters() {
+        return boxedBoolWithIsAndGetGetters;
+    }
+
+    public void setBoxedBoolWithIsAndGetGetters(Boolean boxedBoolWithIsAndGetGetters) {
+        this.boxedBoolWithIsAndGetGetters = boxedBoolWithIsAndGetGetters;
     }
 }

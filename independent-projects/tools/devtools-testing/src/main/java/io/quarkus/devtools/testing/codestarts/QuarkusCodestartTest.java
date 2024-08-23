@@ -1,7 +1,9 @@
 package io.quarkus.devtools.testing.codestarts;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.PROJECT_PACKAGE_NAME;
+import static io.quarkus.devtools.commands.CreateProjectHelper.completeCatalogWithCoords;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
+import static io.quarkus.devtools.project.QuarkusProjectHelper.artifactResolver;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
@@ -9,16 +11,6 @@ import static io.quarkus.devtools.testing.SnapshotTesting.normalizePathAsName;
 import static io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting.getMockedTestInputData;
 import static io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting.getRealTestInputData;
 
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.devtools.testing.WrapperRunner;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.assertj.core.api.AbstractPathAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
@@ -42,6 +35,17 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.devtools.testing.WrapperRunner;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 /**
  * This extension helps test a Quarkus extension codestart. It provides a way to test:
@@ -72,6 +76,8 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     private final boolean enableRegistryClient;
     private final Collection<String> artifacts;
     private final Collection<ArtifactCoords> extensions;
+    private final String quarkusBomGroupId;
+    private final String quarkusBomVersion;
     private Path targetDir;
     private ExtensionCatalog extensionCatalog;
     private QuarkusCodestartCatalog quarkusCodestartCatalog;
@@ -82,6 +88,8 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
         this.languages = builder.languages;
         this.buildTool = builder.buildTool;
         this.quarkusCodestartCatalog = builder.quarkusCodestartCatalog;
+        this.quarkusBomGroupId = builder.quarkusBomGroupId;
+        this.quarkusBomVersion = builder.quarkusBomVersion;
         this.extensionCatalog = builder.extensionCatalog;
         this.enableRegistryClient = builder.extensionCatalog == null;
         this.data = builder.data;
@@ -97,7 +105,11 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         if (enableRegistryClient) {
-            enableRegistryClientTestConfig();
+            if (quarkusBomVersion != null) {
+                enableRegistryClientTestConfig(quarkusBomGroupId != null ? quarkusBomGroupId : "io.quarkus", quarkusBomVersion);
+            } else {
+                enableRegistryClientTestConfig();
+            }
         }
         targetDir = Paths.get("target/quarkus-codestart-test/" + getTestId());
         SnapshotTesting.deleteTestDirectory(targetDir.toFile());
@@ -113,17 +125,19 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     public ExtensionCatalog getExtensionsCatalog() {
         if (extensionCatalog == null) {
             try {
-                extensionCatalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+                ExtensionCatalog baseExtensionCatalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+                extensionCatalog = completeCatalogWithCoords(baseExtensionCatalog, extensions, artifactResolver());
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve extension catalog", e);
             }
         }
+
         return extensionCatalog;
     }
 
     /**
      * This will run the build on all generated projects (with real data)
-     * 
+     *
      * @throws IOException
      */
     public void buildAllProjects() throws IOException {
@@ -179,7 +193,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * It will validate (compare and check package name) the class against the snapshots in all the projects for the given
      * language
-     * 
+     *
      * @param language the language to check
      * @param className the full qualified className (using `org.acme.ClassName` also works, it will be replaced by the project
      *        package name)
@@ -193,7 +207,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * It will validate (compare and check package name) the test class against the snapshots in all the projects for the given
      * language
-     * 
+     *
      * @param language the language to check
      * @param className the full qualified test className (using `org.acme.ClassName` also works, it will be replaced by the
      *        project package name)
@@ -246,7 +260,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
 
     /**
      * This let you compare the project file structure (tree) for a specific language against its snapshot
-     * 
+     *
      * @param language the language
      * @return the ListAssert
      * @throws Throwable
@@ -258,7 +272,7 @@ public class QuarkusCodestartTest implements BeforeAllCallback, AfterAllCallback
     /**
      * see {link #assertThatGeneratedTreeMatchSnapshots(Language language)}
      * but for a specific sub directory
-     * 
+     *
      * @param language the language
      * @param dirRelativePath the sub directory
      * @return the ListAssert

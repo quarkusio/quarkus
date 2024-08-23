@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.event.Event;
-import javax.inject.Inject;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

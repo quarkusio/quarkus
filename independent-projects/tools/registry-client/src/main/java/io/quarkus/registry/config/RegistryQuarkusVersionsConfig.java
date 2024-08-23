@@ -1,5 +1,7 @@
 package io.quarkus.registry.config;
 
+import java.util.Collection;
+
 import io.quarkus.registry.json.JsonBuilder;
 
 /**
@@ -16,6 +18,8 @@ public interface RegistryQuarkusVersionsConfig {
      * @return Quarkus version filtering expression or null
      */
     String getRecognizedVersionsExpression();
+
+    Collection<String> getRecognizedGroupIds();
 
     /**
      * If the Quarkus version expression is provided, this method may also enforce that
@@ -35,6 +39,10 @@ public interface RegistryQuarkusVersionsConfig {
 
     interface Mutable extends RegistryQuarkusVersionsConfig, JsonBuilder<RegistryQuarkusVersionsConfig> {
         Mutable setRecognizedVersionsExpression(String recognizedVersionsExpression);
+
+        Mutable addRecognizedGroupId(String recorgnizedGroupId);
+
+        Mutable setRecognizedGroupIds(Collection<String> recorgnizedGroupIds);
 
         Mutable setExclusiveProvider(boolean exclusiveProvider);
 

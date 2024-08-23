@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 
 public class LoopSectionTest {
@@ -111,6 +112,14 @@ public class LoopSectionTest {
     }
 
     @Test
+    public void testLongStream() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        assertEquals("1:2:3:",
+                engine.parse("{#for i in total}{i}:{/for}").data("total", 3L).render());
+    }
+
+    @Test
     public void testIterator() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("1:2:3:",
@@ -127,9 +136,8 @@ public class LoopSectionTest {
     @Test
     public void testNull() {
         Engine engine = Engine.builder().addDefaults().build();
-        assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> engine.parse("{#for i in items}{i}:{/for}").data("items", null).render())
-                .withMessageContaining("{items} resolved to null, use {items.orEmpty} to ignore this error");
+        assertEquals("", engine.parse("{#for i in items}{i}:{/for}").data("items", null).render());
+        assertEquals("", engine.parse("{#each foo.bar.baz??}{i}:{/each}").render());
     }
 
     @Test

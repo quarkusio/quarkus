@@ -4,6 +4,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.lang.reflect.Modifier;
 import java.util.Map;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -32,8 +33,8 @@ public class ReflectionConverterIndexerExtension implements ServerEndpointIndexe
                 for (MethodInfo i : type.methods()) {
                     boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
                     boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
-                    if ((i.parameters().size() == 1) && isNotPrivate) {
-                        if (i.parameters().get(0).name().equals(STRING)) {
+                    if ((i.parametersCount() == 1) && isNotPrivate) {
+                        if (i.parameterType(0).name().equals(STRING)) {
                             if (i.name().equals("<init>")) {
                                 stringCtor = i;
                             } else if (i.name().equals("valueOf") && isStatic) {

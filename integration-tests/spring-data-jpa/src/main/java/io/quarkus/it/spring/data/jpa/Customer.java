@@ -2,14 +2,16 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.util.Set;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.validation.constraints.Email;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.Email;
 
 import org.springframework.data.domain.Persistable;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 @Entity
 public class Customer extends AbstractEntity implements Persistable<Long> {
@@ -28,7 +30,7 @@ public class Customer extends AbstractEntity implements Persistable<Long> {
     private String telephone;
 
     @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY)
-    @JsonbTransient
+    @JsonProperty(access = Access.WRITE_ONLY)
     private Set<Cart> carts;
 
     @Column(name = "enabled", nullable = false)

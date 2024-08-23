@@ -1,5 +1,5 @@
 ####
-# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
+# This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode.
 #
 # Before building the container image run:
 #
@@ -24,4 +24,4 @@ COPY --chown=1001:root {buildtool.build-dir}/*-runner /work/application
 EXPOSE 8080
 USER 1001
 
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]

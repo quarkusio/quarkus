@@ -4,12 +4,34 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @ConfigGroup
 public class GrpcServerConfiguration {
+
+    /**
+     * Do we use separate HTTP server to serve gRPC requests.
+     * Set this to false if you want to use new Vert.x gRPC support,
+     * which uses existing Vert.x HTTP server.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useSeparateServer;
+
+    /**
+     * Configure XDS usage, if enabled.
+     */
+    @ConfigItem
+    @ConfigDocSection(generated = true)
+    public Xds xds;
+
+    /**
+     * Configure InProcess usage, if enabled.
+     */
+    @ConfigItem
+    public InProcess inProcess;
 
     /**
      * The gRPC Server port.
@@ -38,7 +60,8 @@ public class GrpcServerConfiguration {
     /**
      * The max inbound message size in bytes.
      */
-    public @ConfigItem OptionalInt maxInboundMessageSize;
+    @ConfigItem
+    public OptionalInt maxInboundMessageSize;
 
     /**
      * The max inbound metadata size in bytes

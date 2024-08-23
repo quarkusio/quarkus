@@ -1,9 +1,11 @@
 package io.quarkus.arc.deployment;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
@@ -17,13 +19,14 @@ import io.quarkus.builder.item.SimpleBuildItem;
 public final class InterceptorResolverBuildItem extends SimpleBuildItem {
 
     private final InterceptorResolver resolver;
-
     private final Set<DotName> interceptorBindings;
+    private final BeanDeployment beanDeployment;
 
     InterceptorResolverBuildItem(BeanDeployment beanDeployment) {
         this.resolver = beanDeployment.getInterceptorResolver();
         this.interceptorBindings = Collections.unmodifiableSet(
-                beanDeployment.getInterceptorBindings().stream().map(ClassInfo::name).collect(Collectors.toSet()));
+                beanDeployment.getInterceptorBindings().stream().map(ClassInfo::name).collect(Collectors.toUnmodifiableSet()));
+        this.beanDeployment = beanDeployment;
     }
 
     public InterceptorResolver get() {
@@ -31,11 +34,21 @@ public final class InterceptorResolverBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the set of all known interceptor bindings
      */
     public Set<DotName> getInterceptorBindings() {
         return interceptorBindings;
+    }
+
+    /**
+     *
+     * @param annotation
+     * @return the collection of interceptor bindings
+     * @see BeanDeployment#extractInterceptorBindings(AnnotationInstance)
+     */
+    public Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
+        return beanDeployment.extractInterceptorBindings(annotation);
     }
 
 }

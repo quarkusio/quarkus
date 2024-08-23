@@ -13,10 +13,10 @@ public class ForkJoinClassLoading {
     /**
      * A yucky hack, basically attempt to make sure every thread in the common pool has
      * the correct CL.
-     * 
+     *
      * It's not perfect, but as this only affects test and dev mode and not production it is better
      * than nothing.
-     * 
+     *
      * Really we should just not use the common pool at all.
      */
     public static void setForkJoinClassLoader(ClassLoader classLoader) {

@@ -3,10 +3,10 @@ package io.quarkus.arc.test.unused;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
@@ -74,7 +74,7 @@ public class UnusedExclusionTest {
 
         public void test(BeanContainer beanContainer) {
             // This should trigger the warning - Gama was removed
-            Gama gama = beanContainer.instance(Gama.class);
+            Gama gama = beanContainer.beanInstanceFactory(Gama.class).create().get();
             // Test that fallback was used - no injection was performed
             Assertions.assertNull(gama.beanManager);
         }

@@ -1,13 +1,5 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import io.quarkus.devtools.codestarts.CodestartException;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.core.CodestartData;
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -15,6 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartData;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 
@@ -64,7 +66,8 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
         final HashMap<String, String> flat = new HashMap<>();
         flatten("", flat, config);
         for (Map.Entry<String, String> entry : flat.entrySet()) {
-            builder.append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
+            final String key = entry.getKey().replaceAll("\\.~$", "");
+            builder.append(key).append("=").append(entry.getValue()).append("\n");
         }
         final Path propertiesTargetPath = targetPath.getParent()
                 .resolve(targetPath.getFileName().toString().replace(".yml", ".properties"));
@@ -76,12 +79,20 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     static void flatten(String prefix, Map<String, String> target, Map<String, ?> map) {
         for (Map.Entry entry : map.entrySet()) {
             if (entry.getValue() instanceof Map) {
-                flatten(prefix + entry.getKey() + ".", target, (Map) entry.getValue());
+                flatten(prefix + quote(entry.getKey().toString()) + ".", target, (Map) entry.getValue());
             } else {
                 // TODO: handle different types of values
-                target.put(prefix + entry.getKey(), entry.getValue().toString());
+                target.put(prefix + quote(entry.getKey().toString()), entry.getValue().toString());
             }
         }
+    }
+
+    private static String quote(String key) {
+        if (!key.contains(".")) {
+            return key;
+        }
+
+        return "\"" + key.replaceAll("\"", "\\\"") + "\"";
     }
 
     private static String getConfigType(Map<String, Object> data) {

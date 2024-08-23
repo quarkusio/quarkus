@@ -19,13 +19,14 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 
 /**
  * This build item is used to exclude beans that would be normally removed if the config property
  * {@link ArcConfig#removeUnusedBeans} is set to true.
  * <p>
  * Consider using one of the convenient static factory methods such as {@link #beanTypes(Class...)}:
- * 
+ *
  * <pre>
  * &#64;BuildStep
  * UnremovableBeanBuildItem unremovable() {
@@ -33,9 +34,9 @@ import io.quarkus.builder.item.MultiBuildItem;
  *     return UnremovableBeanBuildItem.beanTypes(MyService.class);
  * }
  * </pre>
- * 
+ *
  * Alternatively, you could make use of the pre-built predicate classes such as {@link BeanClassNameExclusion}:
- * 
+ *
  * <pre>
  * &#64;BuildStep
  * UnremovableBeanBuildItem unremovable() {
@@ -47,21 +48,48 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     private final Predicate<BeanInfo> predicate;
+    private final Set<String> classNames;
 
     public UnremovableBeanBuildItem(Predicate<BeanInfo> predicate) {
         this.predicate = predicate;
+        this.classNames = Collections.emptySet();
+    }
+
+    public UnremovableBeanBuildItem(BeanClassNameExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = Collections.singleton(predicate.className);
+    }
+
+    public UnremovableBeanBuildItem(BeanClassNamesExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = predicate.classNames;
+    }
+
+    public UnremovableBeanBuildItem(BeanTypeExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = Collections.singleton(predicate.dotName.toString());
+    }
+
+    public UnremovableBeanBuildItem(BeanTypesExclusion predicate) {
+        this.predicate = predicate;
+        this.classNames = predicate.dotNames.stream().map(DotName::toString).collect(Collectors.toSet());
     }
 
     public Predicate<BeanInfo> getPredicate() {
         return predicate;
     }
 
+    public Set<String> getClassNames() {
+        return classNames;
+    }
+
     /**
      * Match beans whose bean class matches any of the specified class names.
-     * 
+     *
      * @param classNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassNames(String... classNames) {
         Set<String> names = new HashSet<>();
         Collections.addAll(names, classNames);
@@ -70,20 +98,22 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans whose bean class matches any of the specified class names.
-     * 
+     *
      * @param classNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassNames(Set<String> classNames) {
         return new UnremovableBeanBuildItem(new BeanClassNamesExclusion(classNames));
     }
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(DotName... typeNames) {
         Set<DotName> names = new HashSet<>();
         Collections.addAll(names, typeNames);
@@ -92,10 +122,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(Class<?>... types) {
         return new UnremovableBeanBuildItem(new BeanTypesExclusion(
                 Arrays.stream(types).map(Class::getName).map(DotName::createSimple).collect(Collectors.toSet())));
@@ -103,10 +134,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     /**
      * Match beans which have any of the specified type names in its set of bean types.
-     * 
+     *
      * @param typeNames
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanTypes(Set<DotName> typeNames) {
         return new UnremovableBeanBuildItem(new BeanTypesExclusion(typeNames));
     }
@@ -115,10 +147,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * Match class beans whose target class contains the specified annotation.
      * <p>
      * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassAnnotation(DotName annotationName) {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(annotationName));
     }
@@ -127,26 +160,28 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
      * Match class beans whose target class contains an annotation whose name starts with the specified value.
      * <p>
      * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem beanClassAnnotation(String nameStartsWith) {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(nameStartsWith));
     }
 
     /**
      * Match beans whose target (class, method or field) is annotated with the specified annotation.
-     * 
+     *
      * @param annotationName
      * @return a new build item
      */
+    @CheckReturnValue
     public static UnremovableBeanBuildItem targetWithAnnotation(DotName annotationName) {
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return Annotations.contains(bean.getTarget().get().asClass().classAnnotations(), annotationName);
+                    return Annotations.contains(bean.getTarget().get().asClass().declaredAnnotations(), annotationName);
                 } else if (bean.isProducerMethod()) {
                     return !getAnnotations(Kind.METHOD, annotationName, bean.getTarget().get().asMethod().annotations())
                             .isEmpty();
@@ -172,6 +207,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
             return bean.getBeanClass().toString().equals(className);
         }
 
+        @Override
+        public String toString() {
+            return "BeanClassNameExclusion [className=" + className + "]";
+        }
+
     }
 
     public static class BeanClassNamesExclusion implements Predicate<BeanInfo> {
@@ -185,6 +225,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
         @Override
         public boolean test(BeanInfo bean) {
             return classNames.contains(bean.getBeanClass().toString());
+        }
+
+        @Override
+        public String toString() {
+            return "BeanClassNamesExclusion [classNames=" + classNames + "]";
         }
 
     }
@@ -202,6 +247,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
             return bean.getTypes().stream().anyMatch(t -> dotName.equals(t.name()));
         }
 
+        @Override
+        public String toString() {
+            return "BeanTypeExclusion [dotName=" + dotName + "]";
+        }
+
     }
 
     public static class BeanTypesExclusion implements Predicate<BeanInfo> {
@@ -215,6 +265,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
         @Override
         public boolean test(BeanInfo bean) {
             return bean.getTypes().stream().anyMatch(t -> dotNames.contains(t.name()));
+        }
+
+        @Override
+        public String toString() {
+            return "BeanTypesExclusion [dotNames=" + dotNames + "]";
         }
 
     }
@@ -238,7 +293,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
         @Override
         public boolean test(BeanInfo bean) {
             if (bean.isClassBean()) {
-                Map<DotName, List<AnnotationInstance>> annotations = bean.getTarget().get().asClass().annotations();
+                Map<DotName, List<AnnotationInstance>> annotations = bean.getTarget().get().asClass().annotationsMap();
                 if (name != null) {
                     return annotations.containsKey(name);
                 } else {
@@ -246,6 +301,11 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
                 }
             }
             return false;
+        }
+
+        @Override
+        public String toString() {
+            return "BeanClassAnnotationExclusion [nameStartsWith=" + nameStartsWith + ", name=" + name + "]";
         }
 
     }

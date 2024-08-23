@@ -32,13 +32,19 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>        
     </dependencies>
 
     <build>
         <plugins>
             <!-- The entity classes needs to be indexed -->
             <plugin>
-                <groupId>org.jboss.jandex</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
                 <executions>
                     <execution>

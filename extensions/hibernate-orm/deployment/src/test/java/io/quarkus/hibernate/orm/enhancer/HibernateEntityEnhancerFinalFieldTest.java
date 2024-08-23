@@ -1,9 +1,3 @@
-/*
- * Hibernate, Relational Persistence for Idiomatic Java
- *
- * License: GNU Lesser General Public License (LGPL), version 2.1 or later.
- * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
- */
 package io.quarkus.hibernate.orm.enhancer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,22 +6,21 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.persistence.Embeddable;
-import javax.persistence.Embedded;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.transaction.UserTransaction;
 
 import org.hibernate.annotations.Immutable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -41,6 +34,7 @@ public class HibernateEntityEnhancerFinalFieldTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
+                    .addClass(TransactionTestUtils.class)
                     .addClasses(
                             EntityWithFinalField.class,
                             EntityWithEmbeddedIdWithFinalField.class, EntityWithEmbeddedIdWithFinalField.EmbeddableId.class,
@@ -143,17 +137,7 @@ public class HibernateEntityEnhancerFinalFieldTest {
     }
 
     private void inTransaction(Runnable runnable) {
-        try {
-            transaction.begin();
-            try {
-                runnable.run();
-                transaction.commit();
-            } catch (Exception e) {
-                transaction.rollback();
-            }
-        } catch (SystemException | NotSupportedException e) {
-            throw new IllegalStateException("Transaction exception", e);
-        }
+        TransactionTestUtils.inTransaction(transaction, runnable);
     }
 
     @Entity(name = "withfinal")

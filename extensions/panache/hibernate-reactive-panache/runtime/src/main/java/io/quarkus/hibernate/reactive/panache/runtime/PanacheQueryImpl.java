@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.LockModeType;
+import jakarta.persistence.LockModeType;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -12,15 +12,14 @@ import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(Uni<Mutiny.Session> em, String query, String orderBy, Object paramsArrayOrMap) {
-        this.delegate = new CommonPanacheQueryImpl<Entity>(em, query, orderBy, paramsArrayOrMap);
+    PanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy, Object paramsArrayOrMap) {
+        this.delegate = new CommonPanacheQueryImpl<Entity>(em, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     protected PanacheQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {
@@ -147,11 +146,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T extends Entity> Uni<List<T>> list() {
         return delegate.list();
-    }
-
-    @Override
-    public <T extends Entity> Multi<T> stream() {
-        return delegate.stream();
     }
 
     @Override

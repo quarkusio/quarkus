@@ -1,9 +1,19 @@
 package io.quarkus.gradle.tasks;
 
-public class QuarkusRemoteDev extends QuarkusDev {
+import javax.inject.Inject;
 
-    public QuarkusRemoteDev() {
-        super("Remote development mode: enables hot deployment on remote JVM with background compilation");
+import org.gradle.api.artifacts.Configuration;
+
+import io.quarkus.gradle.extension.QuarkusPluginExtension;
+
+public abstract class QuarkusRemoteDev extends QuarkusDev {
+
+    @Inject
+    public QuarkusRemoteDev(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {
+        super(
+                "Remote development mode: enables hot deployment on remote JVM with background compilation",
+                quarkusDevConfiguration,
+                extension);
     }
 
     protected void modifyDevModeContext(GradleDevModeLauncher.Builder builder) {

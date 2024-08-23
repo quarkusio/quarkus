@@ -17,7 +17,7 @@ mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
 If you don't want to run MS SQL as a Docker container, you can start your own.
-It needs to listen on the default port and be accessible to the user `sa` with the password `A_Str0ng_Required_Password`.
+It needs to listen on port 1435 and be accessible to the user `sa` with the password `yourStrong(!)Password`.
 
 You can then run the tests as follows (either with `-Dnative` or not):
 

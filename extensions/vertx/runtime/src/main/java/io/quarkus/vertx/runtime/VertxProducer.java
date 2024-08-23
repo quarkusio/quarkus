@@ -2,15 +2,15 @@ package io.quarkus.vertx.runtime;
 
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.spi.Context;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -51,13 +51,13 @@ public class VertxProducer {
 
     /**
      * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application context is
-     * destroyed. Otherwise Vertx may attempt to stop the verticles after the CDI container is shut down.
-     * 
+     * destroyed. Otherwise, Vertx may attempt to stop the verticles after the CDI container is shut down.
+     *
      * @param event
      * @param beanManager
      */
     void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event, BeanManager beanManager) {
-        // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id 
+        // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id
         Set<Bean<?>> beans = beanManager.getBeans(AbstractVerticle.class, Any.Literal.INSTANCE);
         Context applicationContext = beanManager.getContext(ApplicationScoped.class);
         for (Bean<?> bean : beans) {

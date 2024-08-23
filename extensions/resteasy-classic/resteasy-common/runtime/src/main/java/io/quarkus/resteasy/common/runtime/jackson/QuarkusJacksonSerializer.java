@@ -12,17 +12,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import javax.activation.DataSource;
-import javax.annotation.Priority;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.ext.Provider;
+import jakarta.activation.DataSource;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.plugins.providers.FileRange;
 import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;

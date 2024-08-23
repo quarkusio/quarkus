@@ -1,10 +1,12 @@
 package io.quarkus.qute.runtime;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -14,9 +16,9 @@ public class QuteConfig {
 
     /**
      * The list of suffixes used when attempting to locate a template file.
-     * 
+     *
      * By default, `engine.getTemplate("foo")` would result in several lookups: `foo`, `foo.html`, `foo.txt`, etc.
-     * 
+     *
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "qute.html,qute.txt,html,txt")
@@ -27,6 +29,7 @@ public class QuteConfig {
      * {@link java.net.URLConnection#getFileNameMap()} is used to determine the content type of a template file.
      */
     @ConfigItem
+    @ConfigDocMapKey("file-suffix")
     public Map<String, String> contentTypes;
 
     /**
@@ -39,7 +42,7 @@ public class QuteConfig {
      * <ul>
      * <li>{@code org.acme.Foo.name} - exclude the property/method {@code name} on the {@code org.acme.Foo} class</li>
      * <li>{@code org.acme.Foo.*} - exclude any property/method on the {@code org.acme.Foo} class</li>
-     * <li>{@code *.age} - exlude the property/method {@code age} on any class</li>
+     * <li>{@code *.age} - exclude the property/method {@code age} on any class</li>
      * </ul>
      */
     @ConfigItem
@@ -80,5 +83,23 @@ public class QuteConfig {
      */
     @ConfigItem(defaultValue = "text/html,text/xml,application/xml,application/xhtml+xml")
     public List<String> escapeContentTypes;
+
+    /**
+     * The default charset of the templates files.
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    public Charset defaultCharset;
+
+    /**
+     * Development mode configuration.
+     */
+    @ConfigItem
+    public QuteDevModeConfig devMode;
+
+    /**
+     * Test mode configuration.
+     */
+    @ConfigItem
+    public QuteTestModeConfig testMode;
 
 }

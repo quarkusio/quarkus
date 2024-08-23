@@ -4,7 +4,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "reactive-messaging.kafka", phase = ConfigPhase.BUILD_TIME)
+@ConfigRoot(name = "messaging.kafka", phase = ConfigPhase.BUILD_TIME)
 public class ReactiveMessagingKafkaBuildTimeConfig {
     /**
      * Whether or not Kafka serializer/deserializer auto-detection is enabled.
@@ -13,7 +13,7 @@ public class ReactiveMessagingKafkaBuildTimeConfig {
     public boolean serializerAutodetectionEnabled;
 
     /**
-     * Whether or not Kafka serializer/deserializer generation is enabled.
+     * Whether Kafka serializer/deserializer generation is enabled.
      * When no serializer/deserializer are found and not set, Quarkus generates a Jackson-based serde.
      */
     @ConfigItem(name = "serializer-generation.enabled", defaultValue = "true")

@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.config;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -28,28 +29,40 @@ public class SslServerConfig {
     public Optional<Path> key;
 
     /**
-     * An optional key store which holds the certificate information instead of specifying separate files.
-     * The key store can be either on classpath or an external file.
+     * An optional keystore that holds the certificate information instead of specifying separate files.
+     * The keystore can be either on classpath or an external file.
      */
     @ConfigItem
     public Optional<Path> keyStore;
 
     /**
-     * An optional parameter to specify the type of the key store file. If not given, the type is automatically detected
+     * An optional parameter to specify the type of the keystore file. If not given, the type is automatically detected
      * based on the file name.
      */
     @ConfigItem
     public Optional<String> keyStoreType;
 
     /**
-     * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+     * A parameter to specify the password of the keystore file.
      */
-    @ConfigItem(defaultValue = "password")
-    public String keyStorePassword;
+    @ConfigItem
+    public Optional<String> keyStorePassword;
+
+    /**
+     * A parameter to specify the alias of the keystore file.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreAlias;
+
+    /**
+     * A parameter to specify the alias password of the keystore file.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreAliasPassword;
 
     /**
      * An optional trust store which holds the certificate information of the certificates to trust
-     *
+     * <p>
      * The trust store can be either on classpath or an external file.
      */
     @ConfigItem
@@ -75,11 +88,18 @@ public class SslServerConfig {
     public Optional<List<String>> cipherSuites;
 
     /**
-     * The list of protocols to explicitly enable.
+     * Sets the ordered list of enabled SSL/TLS protocols.
+     * <p>
+     * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}.
+     * The following list of protocols are supported: {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}.
+     * To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
+     * <p>
+     * Note that setting an empty list, and enabling SSL/TLS is invalid.
+     * You must at least have one protocol.
      */
     @DefaultConverter
     @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")
-    public List<String> protocols;
+    public Set<String> protocols;
 
     /**
      * Configures the engine to require/request client authentication.

@@ -14,6 +14,7 @@ import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
 import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
 import io.quarkus.cache.runtime.CacheKeyParameterPositions;
 import io.quarkus.cache.runtime.CacheResultInterceptor;
+import io.smallrye.mutiny.Multi;
 
 public class CacheDeploymentConstants {
 
@@ -37,11 +38,11 @@ public class CacheDeploymentConstants {
     public static final DotName REGISTER_REST_CLIENT = DotName
             .createSimple("org.eclipse.microprofile.rest.client.inject.RegisterRestClient");
 
+    // Mutiny.
+    public static final DotName MULTI = dotName(Multi.class);
+
     // Annotations parameters.
     public static final String CACHE_NAME_PARAM = "cacheName";
-
-    // Caffeine.
-    public static final String CAFFEINE_CACHE_TYPE = "caffeine";
 
     private static DotName dotName(Class<?> annotationClass) {
         return DotName.createSimple(annotationClass.getName());

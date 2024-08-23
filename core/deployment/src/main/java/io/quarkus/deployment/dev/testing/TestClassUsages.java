@@ -18,13 +18,20 @@ import org.junit.platform.launcher.PostDiscoveryFilter;
 public class TestClassUsages implements Serializable {
 
     private final Map<ClassAndMethod, Set<String>> classNames = new HashMap<>();
+    private final Map<String, Set<String>> classLevel = new HashMap<>();
 
     public synchronized void updateTestData(String currentclass, UniqueId test, Set<String> touched) {
-        classNames.put(new ClassAndMethod(currentclass, test), touched);
+        Set<String> aggregate = touched;
+        var extra = classLevel.get(currentclass);
+        if (extra != null) {
+            aggregate.addAll(extra);
+        }
+        classNames.put(new ClassAndMethod(currentclass, test), aggregate);
     }
 
     public synchronized void updateTestData(String currentclass, Set<String> touched) {
         classNames.put(new ClassAndMethod(currentclass, null), touched);
+        classLevel.put(currentclass, touched);
     }
 
     public synchronized void merge(TestClassUsages newData) {

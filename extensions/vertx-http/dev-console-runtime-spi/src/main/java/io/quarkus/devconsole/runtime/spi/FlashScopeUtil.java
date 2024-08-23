@@ -14,6 +14,10 @@ import java.util.Map;
 import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * @deprecated as part of the removal of the old Dev UI
+ */
+@Deprecated
 public class FlashScopeUtil {
     private final static String FLASH_COOKIE_NAME = "_flash";
     private final static String FLASH_CONTEXT_DATA_NAME = "flash";
@@ -45,7 +49,7 @@ public class FlashScopeUtil {
     }
 
     // we don't use json because quarkus-vertx-http does not depend on Jackson databind and therefore the
-    // stardard vert.x encoding methods fail
+    // standard vert.x encoding methods fail
 
     private static byte[] marshallMap(Map<String, Object> data) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();

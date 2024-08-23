@@ -5,7 +5,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.enterprise.inject.spi.InterceptionType;
+
+import jakarta.enterprise.inject.spi.InterceptionType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -19,7 +21,7 @@ public final class InterceptorResolver {
     }
 
     /**
-     * 
+     *
      * @param interceptionType
      * @param bindings
      * @return the list of interceptors for a set of interceptor bindings and a type of interception
@@ -59,19 +61,6 @@ public final class InterceptorResolver {
         for (AnnotationInstance binding : bindings) {
             if (isInterceptorBinding(interceptorBinding, binding)) {
                 return true;
-            } else {
-                // could be transitive binding
-                Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
-                        .getTransitiveInterceptorBindings(binding.name());
-                if (transitiveInterceptorBindings == null) {
-                    continue;
-                }
-                for (AnnotationInstance transitiveBindingInstance : transitiveInterceptorBindings) {
-                    if (isInterceptorBinding(interceptorBinding,
-                            transitiveBindingInstance)) {
-                        return true;
-                    }
-                }
             }
         }
         return false;
@@ -81,7 +70,6 @@ public final class InterceptorResolver {
         ClassInfo interceptorBindingClass = beanDeployment.getInterceptorBinding(interceptorBinding.name());
         if (candidate.name().equals(interceptorBinding.name())) {
             // Must have the same annotation member value for each member which is not annotated @Nonbinding
-            boolean matches = true;
             Set<String> nonBindingFields = beanDeployment.getInterceptorNonbindingMembers(interceptorBinding.name());
             for (AnnotationValue value : candidate.valuesWithDefaults(beanDeployment.getBeanArchiveIndex())) {
                 String annotationField = value.name();
@@ -89,13 +77,10 @@ public final class InterceptorResolver {
                         && !nonBindingFields.contains(annotationField)
                         && !value.equals(
                                 interceptorBinding.valueWithDefault(beanDeployment.getBeanArchiveIndex(), annotationField))) {
-                    matches = false;
-                    break;
+                    return false;
                 }
             }
-            if (matches) {
-                return true;
-            }
+            return true;
         }
         return false;
     }

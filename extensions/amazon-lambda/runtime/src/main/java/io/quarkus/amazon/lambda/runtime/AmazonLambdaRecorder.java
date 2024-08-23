@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -15,6 +17,7 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import com.amazonaws.services.lambda.runtime.events.S3Event;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
@@ -31,10 +34,11 @@ public class AmazonLambdaRecorder {
     private static final Logger log = Logger.getLogger(AmazonLambdaRecorder.class);
 
     private static Class<? extends RequestHandler<?, ?>> handlerClass;
-    private static Class<? extends RequestStreamHandler> streamHandlerClass;
+    static Class<? extends RequestStreamHandler> streamHandlerClass;
     private static BeanContainer beanContainer;
     private static LambdaInputReader objectReader;
     private static LambdaOutputWriter objectWriter;
+    protected static Set<Class<?>> expectedExceptionClasses;
 
     private final LambdaConfig config;
 
@@ -42,23 +46,29 @@ public class AmazonLambdaRecorder {
         this.config = config;
     }
 
-    public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler, BeanContainer container) {
+    public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
         streamHandlerClass = handler;
-        beanContainer = container;
     }
 
-    public void setHandlerClass(Class<? extends RequestHandler<?, ?>> handler, BeanContainer container) {
+    static void initializeHandlerClass(Class<? extends RequestHandler<?, ?>> handler) {
         handlerClass = handler;
-        beanContainer = container;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         Method handlerMethod = discoverHandlerMethod(handlerClass);
         Class<?> parameterType = handlerMethod.getParameterTypes()[0];
+
         if (parameterType.equals(S3Event.class)) {
             objectReader = new S3EventInputReader(objectMapper);
+        } else if (Collection.class.isAssignableFrom(parameterType)) {
+            objectReader = new CollectionInputReader<>(objectMapper, handlerMethod);
         } else {
             objectReader = new JacksonInputReader(objectMapper.readerFor(parameterType));
         }
+
         objectWriter = new JacksonOutputWriter(objectMapper.writerFor(handlerMethod.getReturnType()));
+    }
+
+    public void setBeanContainer(BeanContainer container) {
+        beanContainer = container;
     }
 
     /**
@@ -71,17 +81,17 @@ public class AmazonLambdaRecorder {
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         if (streamHandlerClass != null) {
-            RequestStreamHandler handler = beanContainer.instance(streamHandlerClass);
+            RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
             handler.handleRequest(inputStream, outputStream, context);
         } else {
             Object request = objectReader.readValue(inputStream);
-            RequestHandler handler = beanContainer.instance(handlerClass);
+            RequestHandler handler = beanContainer.beanInstance(handlerClass);
             Object response = handler.handleRequest(request, context);
             objectWriter.writeValue(outputStream, response);
         }
     }
 
-    private Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
+    private static Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
         final Method[] methods = handlerClass.getMethods();
         Method method = null;
         for (int i = 0; i < methods.length && method == null; i++) {
@@ -103,11 +113,10 @@ public class AmazonLambdaRecorder {
         return method;
     }
 
-    public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unamedHandlerClasses,
+    public void chooseHandlerClass(List<Class<? extends RequestHandler<?, ?>>> unnamedHandlerClasses,
             Map<String, Class<? extends RequestHandler<?, ?>>> namedHandlerClasses,
-            List<Class<? extends RequestStreamHandler>> unamedStreamHandlerClasses,
-            Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses,
-            BeanContainer container) {
+            List<Class<? extends RequestStreamHandler>> unnamedStreamHandlerClasses,
+            Map<String, Class<? extends RequestStreamHandler>> namedStreamHandlerClasses) {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
@@ -121,7 +130,7 @@ public class AmazonLambdaRecorder {
                 throw new RuntimeException(errorMessage);
             }
         } else {
-            int unnamedTotal = unamedHandlerClasses.size() + unamedStreamHandlerClasses.size();
+            int unnamedTotal = unnamedHandlerClasses.size() + unnamedStreamHandlerClasses.size();
             int namedTotal = namedHandlerClasses.size() + namedStreamHandlerClasses.size();
 
             if (unnamedTotal > 1 || namedTotal > 1 || (unnamedTotal > 0 && namedTotal > 0)) {
@@ -134,12 +143,12 @@ public class AmazonLambdaRecorder {
                         + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
                 throw new RuntimeException(errorMessage);
             } else if ((unnamedTotal + namedTotal) == 1) {
-                if (!unamedHandlerClasses.isEmpty()) {
-                    handlerClass = unamedHandlerClasses.get(0);
+                if (!unnamedHandlerClasses.isEmpty()) {
+                    handlerClass = unnamedHandlerClasses.get(0);
                 } else if (!namedHandlerClasses.isEmpty()) {
                     handlerClass = namedHandlerClasses.values().iterator().next();
-                } else if (!unamedStreamHandlerClasses.isEmpty()) {
-                    handlerStreamClass = unamedStreamHandlerClasses.get(0);
+                } else if (!unnamedStreamHandlerClasses.isEmpty()) {
+                    handlerStreamClass = unnamedStreamHandlerClasses.get(0);
                 } else if (!namedStreamHandlerClasses.isEmpty()) {
                     handlerStreamClass = namedStreamHandlerClasses.values().iterator().next();
                 }
@@ -147,9 +156,9 @@ public class AmazonLambdaRecorder {
         }
 
         if (handlerStreamClass != null) {
-            setStreamHandlerClass(handlerStreamClass, container);
+            setStreamHandlerClass(handlerStreamClass);
         } else {
-            setHandlerClass(handlerClass, container);
+            initializeHandlerClass(handlerClass);
         }
     }
 
@@ -160,7 +169,7 @@ public class AmazonLambdaRecorder {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
-                RequestHandler handler = beanContainer.instance(handlerClass);
+                RequestHandler handler = beanContainer.beanInstance(handlerClass);
                 return handler.handleRequest(input, context);
             }
 
@@ -182,9 +191,14 @@ public class AmazonLambdaRecorder {
             @Override
             protected void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
                     throws Exception {
-                RequestStreamHandler handler = beanContainer.instance(streamHandlerClass);
+                RequestStreamHandler handler = beanContainer.beanInstance(streamHandlerClass);
                 handler.handleRequest(input, output, context);
 
+            }
+
+            @Override
+            protected boolean shouldLog(Exception e) {
+                return expectedExceptionClasses.stream().noneMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
             }
         };
         loop.startPollLoop(context);

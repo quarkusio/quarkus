@@ -7,12 +7,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.runtime.MutinyMailerImpl;
 import io.smallrye.mutiny.Multi;
@@ -70,7 +70,7 @@ class AttachmentTest {
 
     @Test
     void testAttachmentCreationFromStream() {
-        Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
+        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
                 .onItem().transformToMulti(af -> af.toMulti()
                         .onItem().transformToIterable(this::getBytes));
 
@@ -109,7 +109,7 @@ class AttachmentTest {
 
     @Test
     void testInlineAttachmentCreationFromStream() {
-        Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
+        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
                 .onItem().transformToMulti(af -> af.toMulti()
                         .onItem().transformToIterable(this::getBytes));
 
@@ -128,7 +128,7 @@ class AttachmentTest {
 
     @Test
     void testAttachmentCreationWithDescription() {
-        Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
+        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
                 .onItem().transformToMulti(af -> af.toMulti()
                         .onItem().transformToIterable(this::getBytes));
 
@@ -154,7 +154,7 @@ class AttachmentTest {
 
     @Test
     void testInlineAttachmentCreationWithDescription() {
-        Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
+        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
                 .onItem().transformToMulti(af -> af.toMulti()
                         .onItem().transformToIterable(this::getBytes));
 

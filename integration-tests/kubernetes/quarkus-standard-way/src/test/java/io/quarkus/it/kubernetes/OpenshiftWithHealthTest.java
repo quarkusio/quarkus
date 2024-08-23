@@ -3,10 +3,11 @@ package io.quarkus.it.kubernetes;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -14,8 +15,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.PodSpec;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -31,9 +32,7 @@ public class OpenshiftWithHealthTest {
             .setRun(true)
             .setLogFileName("k8s.log")
             .withConfigurationResource("openshift-with-health.properties")
-            .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -62,7 +61,7 @@ public class OpenshiftWithHealthTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-health");
             });
@@ -70,17 +69,22 @@ public class OpenshiftWithHealthTest {
                     podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getPeriodSeconds()).isEqualTo(10);
+                                assertThat(p.getPeriodSeconds()).isEqualTo(15);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
                                     assertThat(h1.getPath()).isEqualTo("/q/health/ready");
                                 });
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getPeriodSeconds()).isEqualTo(30);
+                                assertThat(p.getPeriodSeconds()).isEqualTo(10);
                                 assertThat(p.getHttpGet()).isNull();
                                 assertThat(p.getExec()).satisfies(e -> {
                                     assertThat(e.getCommand()).containsOnly("kill");
                                 });
+                            });
+                            assertThat(container.getStartupProbe()).isNotNull().satisfies(p -> {
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
+                                assertNotNull(p.getHttpGet());
+                                assertEquals(p.getHttpGet().getPath(), "/q/health/started");
                             });
                         });
                     });

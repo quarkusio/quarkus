@@ -3,9 +3,8 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 
-import io.restassured.RestAssured;
-import io.restassured.http.Headers;
 import java.util.function.Supplier;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -16,11 +15,15 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.http.Headers;
+
 public class SimpleQuarkusRestTestCase {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -52,7 +55,9 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/missing")
                 .then().statusCode(404);
         RestAssured.get("/simple")
-                .then().body(Matchers.equalTo("GET"));
+                .then().body(Matchers.equalTo("GET")).contentType(ContentType.TEXT);
+        RestAssured.get("/simple/empty")
+                .then().body(Matchers.is(Matchers.emptyOrNullString())).contentType(Matchers.is(Matchers.emptyOrNullString()));
         RestAssured.get("/simple/foo")
                 .then().body(Matchers.equalTo("GET:foo"));
 
@@ -109,9 +114,37 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.with()
                 .queryParam("q", "qv")
                 .header("h", "123")
+                .header("h2", "a")
+                .header("h3", "b")
                 .formParam("f", "fv")
                 .post("/simple/params/pv")
-                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv"));
+                .then().statusCode(200).body(Matchers.equalTo("params: p: pv, q: qv, h: 123, h2: a, h3: b, f: fv"));
+    }
+
+    @Test
+    public void testArrayHeaders() {
+        RestAssured
+                .with()
+                .header("h2", "a")
+                .header("h2", "b")
+                .header("h3", "1")
+                .header("h4", "10")
+                .header("h4", "20")
+                .get("/simple/arrayHeaders")
+                .then().statusCode(200).body(Matchers.equalTo("h1: [], h2: [a, b], h3: [1], h4: [10, 20]"));
+    }
+
+    @Test
+    public void testArrayForms() {
+        RestAssured
+                .with()
+                .formParam("f2", "a")
+                .formParam("f2", "b")
+                .formParam("f3", "1")
+                .formParam("f4", "10")
+                .formParam("f4", "20")
+                .post("/simple/arrayForms")
+                .then().statusCode(200).body(Matchers.equalTo("f1: [], f2: [a, b], f3: [1], f4: [10, 20]"));
     }
 
     @Test
@@ -176,12 +209,17 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("OK"));
         RestAssured.get("/simple/writer")
                 .then().body(Matchers.equalTo("WRITER"));
+        RestAssured.get("/simple/uni-writer")
+                .then().body(Matchers.equalTo("WRITER"));
 
         RestAssured.get("/simple/fast-writer")
                 .then().body(Matchers.equalTo("OK"));
 
         RestAssured.get("/simple/writer/vertx-buffer")
                 .then().body(Matchers.equalTo("VERTX-BUFFER"));
+
+        RestAssured.get("/simple/writer/mutiny-buffer")
+                .then().body(Matchers.equalTo("MUTINY-BUFFER"));
     }
 
     @DisabledOnOs(OS.WINDOWS)
@@ -400,7 +438,7 @@ public class SimpleQuarkusRestTestCase {
                 .log().ifError()
                 .body(Matchers
                         .equalTo(
-                                "params: p: pv, q: qv, h: 123, xMyHeader: test, testHeaderParam: test, paramEmpty: empty, f: fv, m: mv, c: cv, q2: empty, q3: 999"));
+                                "params: p: pv, q: qv, h: 123, xMyHeader: test, testHeaderParam: test, paramEmpty: empty, f: fv, m: mv, c: cv, c2: cv, q2: empty, q3: 999"));
         RestAssured.get("/new-params/myklass/myregex/sse")
                 .then()
                 .log().ifError()

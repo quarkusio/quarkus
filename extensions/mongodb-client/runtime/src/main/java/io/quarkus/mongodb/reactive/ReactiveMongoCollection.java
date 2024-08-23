@@ -844,7 +844,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes at most one document from the collection that matches the given filter.
      * If no documents match, the collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -854,7 +854,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes at most one document from the collection that matches the given filter.
      * If no documents match, the collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -866,7 +866,7 @@ public interface ReactiveMongoCollection<T> {
      * If no documents match, the collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -877,7 +877,7 @@ public interface ReactiveMongoCollection<T> {
      * If no documents match, the collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -888,7 +888,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -898,7 +898,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -910,7 +910,7 @@ public interface ReactiveMongoCollection<T> {
      * collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -921,7 +921,7 @@ public interface ReactiveMongoCollection<T> {
      * collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -931,7 +931,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
@@ -940,7 +940,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the replace operation
      * @return a {@link Uni} receiving the {@link UpdateResult}
@@ -951,7 +951,7 @@ public interface ReactiveMongoCollection<T> {
      * Replace a document in the collection according to the specified arguments.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
@@ -961,7 +961,7 @@ public interface ReactiveMongoCollection<T> {
      * Replace a document in the collection according to the specified arguments.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the replace operation
      * @return a {@link Uni} receiving the {@link UpdateResult}
@@ -1015,6 +1015,62 @@ public interface ReactiveMongoCollection<T> {
             UpdateOptions options);
 
     /**
+     * Update a single document in the collection according to the specified arguments.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update);
+
+    /**
+     * Update a single document in the collection according to the specified arguments.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the update operation
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update, UpdateOptions options);
+
+    /**
+     * Update a single document in the collection according to the specified arguments.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update);
+
+    /**
+     * Update a single document in the collection according to the specified arguments.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the update operation
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update, UpdateOptions options);
+
+    /**
      * Update all documents in the collection according to the specified arguments.
      *
      * @param filter a document describing the query filter, which may not be null.
@@ -1060,6 +1116,46 @@ public interface ReactiveMongoCollection<T> {
             UpdateOptions options);
 
     /**
+     * Update all documents in the collection according to the specified arguments.
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update);
+
+    /**
+     * Update all documents in the collection according to the specified arguments.
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the update operation
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update, UpdateOptions options);
+
+    /**
+     * Update all documents in the collection according to the specified arguments.
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update);
+
+    /**
+     * Update all documents in the collection according to the specified arguments.
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the update operation
+     * @return a publisher with a single element the UpdateResult
+     */
+    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update, UpdateOptions options);
+
+    /**
      * Atomically find a document and remove it.
      *
      * @param filter the query filter to find the document with
@@ -1102,7 +1198,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
      *         {@code returnOriginal}
@@ -1115,7 +1211,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the operation
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
@@ -1130,7 +1226,7 @@ public interface ReactiveMongoCollection<T> {
      * Atomically find a document and replace it.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
      *         {@code returnOriginal}
@@ -1144,7 +1240,7 @@ public interface ReactiveMongoCollection<T> {
      * Atomically find a document and replace it.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the operation
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
@@ -1215,6 +1311,79 @@ public interface ReactiveMongoCollection<T> {
      *         query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update,
+            FindOneAndUpdateOptions options);
+
+    /**
+     * Atomically find a document and update it.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the document that was updated. Depending on the value of the
+     *         {@code returnOriginal}
+     *         property, this will either be the document as it was before the update or as it is after the update. If no
+     *         documents matched the
+     *         query filter, then null will be returned
+     */
+    Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update);
+
+    /**
+     * Atomically find a document and update it.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the operation
+     * @return a publisher with a single element the document that was updated. Depending on the value of the
+     *         {@code returnOriginal}
+     *         property, this will either be the document as it was before the update or as it is after the update. If no
+     *         documents matched the
+     *         query filter, then null will be returned
+     */
+    Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update, FindOneAndUpdateOptions options);
+
+    /**
+     * Atomically find a document and update it.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @return a publisher with a single element the document that was updated. Depending on the value of the
+     *         {@code returnOriginal}
+     *         property, this will either be the document as it was before the update or as it is after the update. If no
+     *         documents matched the
+     *         query filter, then null will be returned
+     */
+    Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update);
+
+    /**
+     * Atomically find a document and update it.
+     *
+     * <p>
+     * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
+     * </p>
+     *
+     * @param clientSession the client session with which to associate this operation
+     * @param filter a document describing the query filter, which may not be null.
+     * @param update a pipeline describing the update, which may not be null.
+     * @param options the options to apply to the operation
+     * @return a publisher with a single element the document that was updated. Depending on the value of the
+     *         {@code returnOriginal}
+     *         property, this will either be the document as it was before the update or as it is after the update. If no
+     *         documents matched the
+     *         query filter, then null will be returned
+     */
+    Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             FindOneAndUpdateOptions options);
 
     /**

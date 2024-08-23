@@ -30,7 +30,7 @@ public abstract class GreetTestBase {
                 .post()
                 .then()
                 .statusCode(500)
-                .body("errorMessage", containsString("end-of-input"));
+                .body("errorMessage", containsString("Could not deserialize the provided message"));
     }
 
 }

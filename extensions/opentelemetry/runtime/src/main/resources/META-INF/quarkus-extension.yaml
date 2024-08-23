@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenTelemetry"
+metadata:
+  keywords:
+    - "opentelemetry"
+    - "tracing"
+    - "distributed-tracing"
+    - "opentelemetry-otlp-exporter"
+    - "monitoring"
+  guide: "https://quarkus.io/guides/opentelemetry"
+  categories:
+    - "observability"
+  status: "stable"
+  config:
+  - "quarkus.opentelemetry."

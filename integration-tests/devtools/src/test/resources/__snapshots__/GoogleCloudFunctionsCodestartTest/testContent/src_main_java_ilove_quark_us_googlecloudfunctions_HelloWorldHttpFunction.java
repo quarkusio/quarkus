@@ -2,7 +2,7 @@ package ilove.quark.us.googlecloudfunctions;
 
 import java.io.Writer;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;

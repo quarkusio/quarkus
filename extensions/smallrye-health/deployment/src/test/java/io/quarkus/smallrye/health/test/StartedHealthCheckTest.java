@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class StartedHealthCheckTest {
+class StartedHealthCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,7 +22,7 @@ public class StartedHealthCheckTest {
                     .addClasses(StartupHC.class));
 
     @Test
-    public void testStartup() {
+    void testStartup() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/started").then()

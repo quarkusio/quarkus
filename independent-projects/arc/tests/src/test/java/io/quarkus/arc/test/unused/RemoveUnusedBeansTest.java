@@ -4,35 +4,39 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import javax.annotation.PostConstruct;
-import javax.annotation.Priority;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(HasObserver.class, Foo.class, FooAlternative.class, HasName.class, UnusedProducers.class,
-                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class, InjectedViaInstanceWithWildcard2.class,
-                    InjectedViaProvider.class, Excluded.class,
-                    UsedProducers.class,
-                    UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class, UsesBeanViaInstance.class)
+                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class, InjectedViaProvider.class, Excluded.class,
+                    UsedProducers.class, UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class,
+                    UsesBeanViaInstance.class, UsedViaAllList.class)
             .removeUnusedBeans(true)
             .addRemovalExclusion(b -> b.getBeanClass().toString().equals(Excluded.class.getName()))
             .build();
@@ -43,7 +47,6 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         assertPresent(HasName.class);
         assertPresent(InjectedViaInstance.class);
         assertPresent(InjectedViaInstanceWithWildcard.class);
-        assertPresent(InjectedViaInstanceWithWildcard2.class);
         assertPresent(InjectedViaProvider.class);
         assertPresent(String.class);
         assertPresent(UsedProducers.class);
@@ -65,6 +68,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         assertFalse(ArcContainerImpl.instance().getRemovedBeans().isEmpty());
         assertNotPresent(UnusedBean.class);
         assertNotPresent(OnlyInjectedInUnusedBean.class);
+        assertPresent(UsedViaAllList.class);
     }
 
     @Dependent
@@ -105,9 +109,6 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         Instance<InjectedViaInstance> instance;
 
         @Inject
-        Instance<? extends InjectedViaInstanceWithWildcard> instanceWildcard;
-
-        @Inject
         Instance<Comparable<? extends Foo>> instanceWildcard2;
 
         @Inject
@@ -121,12 +122,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
     }
 
     @Singleton
-    static class InjectedViaInstanceWithWildcard {
-
-    }
-
-    @Singleton
-    static class InjectedViaInstanceWithWildcard2 implements Comparable<FooAlternative> {
+    static class InjectedViaInstanceWithWildcard implements Comparable<FooAlternative> {
 
         @Override
         public int compareTo(FooAlternative o) {
@@ -203,6 +199,10 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
         @Inject
         Instance<UsedViaInstanceWithUnusedProducer> instance;
+
+        @Inject
+        @All
+        List<UsedViaAllList> list;
     }
 
     @Singleton
@@ -215,6 +215,11 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
     @Singleton
     static class OnlyInjectedInUnusedBean {
+
+    }
+
+    @Singleton
+    static class UsedViaAllList {
 
     }
 

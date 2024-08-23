@@ -2,8 +2,6 @@ package io.quarkus.bootstrap.resolver.maven.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -11,8 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.AfterEach;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 
 public class BootstrapMavenContextTestBase {
 

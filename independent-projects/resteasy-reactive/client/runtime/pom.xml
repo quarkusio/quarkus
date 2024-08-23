@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.smallrye.stork</groupId>
-            <artifactId>smallrye-stork-api</artifactId>
+            <artifactId>stork-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
@@ -27,8 +27,8 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
 
         <dependency>
@@ -44,6 +44,14 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-vertx-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -57,5 +65,4 @@
         </dependency>
 
     </dependencies>
-
 </project>

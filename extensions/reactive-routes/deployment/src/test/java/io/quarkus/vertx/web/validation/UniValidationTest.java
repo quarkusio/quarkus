@@ -8,10 +8,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.emptyString;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import org.hibernate.validator.constraints.Length;
 import org.junit.jupiter.api.Test;

@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts.core.strategy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
+
 import org.junit.jupiter.api.Test;
 
 class SmartConfigMergeCodestartFileStrategyHandlerTest {
@@ -32,5 +33,28 @@ class SmartConfigMergeCodestartFileStrategyHandlerTest {
         assertThat(flat).containsEntry("c.c-b", "2");
         assertThat(flat).containsEntry("c.c-c.c-c-a", "1");
         assertThat(flat).containsEntry("c.c-c.c-c-b", "2");
+    }
+
+    @Test
+    void testLogLevel() {
+        final HashMap<String, Object> level = new HashMap<>();
+        level.put("level", "DEBUG");
+
+        final HashMap<String, Object> categoryName = new HashMap<>();
+        categoryName.put("org.hibernate", level);
+
+        final HashMap<String, Object> category = new HashMap<>();
+        category.put("category", categoryName);
+
+        final HashMap<String, Object> log = new HashMap<>();
+        log.put("log", category);
+
+        final HashMap<String, Object> quarkus = new HashMap<>();
+        quarkus.put("quarkus", log);
+
+        final HashMap<String, String> flat = new HashMap<>();
+        SmartConfigMergeCodestartFileStrategyHandler.flatten("", flat, quarkus);
+
+        assertThat(flat).containsEntry("quarkus.log.category.\"org.hibernate\".level", "DEBUG");
     }
 }

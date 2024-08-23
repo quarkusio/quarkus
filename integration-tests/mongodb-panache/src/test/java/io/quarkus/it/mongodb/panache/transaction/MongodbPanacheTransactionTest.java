@@ -6,17 +6,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.mongodb.MongoReplicaSetTestResource;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.config.ObjectMapperConfig;
@@ -24,8 +20,6 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoReplicaSetTestResource.class)
-@DisabledOnOs(OS.WINDOWS)
 class MongodbPanacheTransactionTest {
     private static final TypeRef<List<PersonDTO>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<PersonDTO>>() {
     };

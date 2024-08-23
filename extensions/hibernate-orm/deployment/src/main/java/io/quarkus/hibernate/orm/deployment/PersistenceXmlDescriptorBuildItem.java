@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -14,13 +14,13 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class PersistenceXmlDescriptorBuildItem extends MultiBuildItem {
 
-    private final ParsedPersistenceXmlDescriptor descriptor;
+    private final PersistenceUnitDescriptor descriptor;
 
-    public PersistenceXmlDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor) {
+    public PersistenceXmlDescriptorBuildItem(PersistenceUnitDescriptor descriptor) {
         this.descriptor = descriptor;
     }
 
-    public ParsedPersistenceXmlDescriptor getDescriptor() {
+    public PersistenceUnitDescriptor getDescriptor() {
         return descriptor;
     }
 }

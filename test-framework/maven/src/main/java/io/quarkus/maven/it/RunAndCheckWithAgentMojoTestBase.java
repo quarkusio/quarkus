@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
@@ -30,6 +30,8 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
     private Process runningRemote;
     protected File agentDir;
     protected File testDir;
+
+    protected DevModeClient devModeClient = new DevModeClient();
 
     @AfterEach
     public void cleanup() throws IOException {
@@ -43,7 +45,7 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
             if (runningAgent != null) {
                 runningAgent.stop();
             }
-            DevModeTestUtils.awaitUntilServerDown();
+            devModeClient.awaitUntilServerDown();
         }
     }
 
@@ -52,7 +54,8 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
             RunningInvoker running = new RunningInvoker(testDir, false);
 
             MavenProcessInvocationResult result = running
-                    .execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
+                    .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.analytics.disabled=true"),
+                            Collections.emptyMap());
 
             await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
             assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
@@ -69,7 +72,7 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/", 200));
+                    .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/", 200));
 
             runningAgent = new RunningInvoker(agentDir, false);
             runningAgent.execute(Arrays.asList("compile", "quarkus:remote-dev"), Collections.emptyMap());

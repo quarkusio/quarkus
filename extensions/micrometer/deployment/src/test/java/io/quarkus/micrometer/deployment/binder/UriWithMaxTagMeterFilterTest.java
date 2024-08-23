@@ -2,7 +2,7 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static io.restassured.RestAssured.when;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,6 +27,7 @@ public class UriWithMaxTagMeterFilterTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, PingPongResource.class, PingPongResource.PingPongRestClient.class));
 

@@ -23,6 +23,7 @@ import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.runtime.bindings.http.FunqyHttpBindingRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -38,6 +39,15 @@ public class FunqyHttpBuildStep {
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapper.class.getName())));
         unremovable.produce(new UnremovableBeanBuildItem(
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapperProducer.class.getName())));
+    }
+
+    @BuildStep
+    public RequireBodyHandlerBuildItem requestBodyHandler(List<FunctionBuildItem> functions) {
+        if (functions.isEmpty()) {
+            return null;
+        }
+        // Require the body handler if there are functions as they may require the HTTP body
+        return new RequireBodyHandlerBuildItem();
     }
 
     @BuildStep()

@@ -21,7 +21,7 @@ public class ArrayResolverTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{array.get('foo')}").data("array", int1).render())
                 .withMessage(
-                        "Method \"get('foo')\" not found on the base object \"[I\" in expression {array.get('foo')} in template 4 on line 1");
+                        "Rendering error: Method \"get('foo')\" not found on the base object \"[I\" in expression {array.get('foo')}");
 
         assertEquals("3", engine.parse("{array.get(last)}").data("array", int1, "last", 2).render());
         assertEquals("1", engine.parse("{array[0]}").data("array", int1).render());

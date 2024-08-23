@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
@@ -26,6 +27,7 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class MockRestEventServer extends MockEventServer {
+    public static final String CONTINUE = "100-continue";
 
     private final ObjectWriter eventWriter;
     private final ObjectReader responseReader;
@@ -39,7 +41,7 @@ public class MockRestEventServer extends MockEventServer {
     }
 
     @Override
-    protected void defaultHanderSetup() {
+    protected void defaultHandlerSetup() {
         router.route().handler(this::handleHttpRequests);
     }
 
@@ -60,6 +62,8 @@ public class MockRestEventServer extends MockEventServer {
         event.setRequestContext(new AwsProxyRequestContext());
         event.getRequestContext().setRequestId(requestId);
         event.getRequestContext().setHttpMethod(ctx.request().method().name());
+        event.getRequestContext().setIdentity(new ApiGatewayRequestIdentity());
+        event.getRequestContext().getIdentity().setSourceIp(ctx.request().connection().remoteAddress().hostAddress());
         event.setHttpMethod(ctx.request().method().name());
         event.setPath(ctx.request().path());
         if (ctx.request().query() != null) {
@@ -69,9 +73,15 @@ public class MockRestEventServer extends MockEventServer {
                 if (param.contains("=")) {
                     String[] keyval = param.split("=");
                     try {
+                        String value = "";
+
+                        if (keyval.length == 2) {
+                            value = URLDecoder.decode(keyval[1], StandardCharsets.UTF_8.name());
+                        }
+
                         event.getMultiValueQueryStringParameters().add(
                                 URLDecoder.decode(keyval[0], StandardCharsets.UTF_8.name()),
-                                URLDecoder.decode(keyval[1], StandardCharsets.UTF_8.name()));
+                                value);
                     } catch (UnsupportedEncodingException e) {
                         log.error("Failed to parse query string", e);
                         ctx.response().setStatusCode(400).end();
@@ -84,6 +94,12 @@ public class MockRestEventServer extends MockEventServer {
         if (ctx.request().headers() != null) {
             event.setMultiValueHeaders(new Headers());
             for (String header : ctx.request().headers().names()) {
+                if (header.equalsIgnoreCase("Expect")) {
+                    String expect = ctx.request().getHeader("Expect");
+                    if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                        continue;
+                    }
+                }
                 List<String> values = ctx.request().headers().getAll(header);
                 for (String val : values)
                     event.getMultiValueHeaders().add(header, val);

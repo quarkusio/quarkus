@@ -6,7 +6,9 @@ import java.util.List;
 /**
  * Just a test pojo
  */
+@CustomDirective(fields = "test-pojo")
 public class TestPojo {
+    @CustomDirective(fields = "message")
     private String message;
     private List<String> list = Arrays.asList("a", "b", "c");
 

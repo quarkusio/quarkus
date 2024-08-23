@@ -41,9 +41,9 @@ public class FragmentMethodsAdder {
             for (MethodInfo methodToImplement : customInterfaceToImplementClassInfo.methods()) {
                 // methods defined on the interface are implemented by forwarding them to the bean that implements them
 
-                Object[] methodParameterTypes = new Object[methodToImplement.parameters().size()];
-                for (int i = 0; i < methodToImplement.parameters().size(); i++) {
-                    methodParameterTypes[i] = methodToImplement.parameters().get(i).name().toString();
+                Object[] methodParameterTypes = new Object[methodToImplement.parametersCount()];
+                for (int i = 0; i < methodToImplement.parametersCount(); i++) {
+                    methodParameterTypes[i] = methodToImplement.parameterType(i).name().toString();
                 }
 
                 String methodReturnType = methodToImplement.returnType().name().toString();
@@ -57,8 +57,8 @@ public class FragmentMethodsAdder {
                         ResultHandle bean = methodCreator.readInstanceField(
                                 customImplNameToHandle.get(customImplementationClassName), methodCreator.getThis());
 
-                        ResultHandle[] methodParameterHandles = new ResultHandle[methodToImplement.parameters().size()];
-                        for (int i = 0; i < methodToImplement.parameters().size(); i++) {
+                        ResultHandle[] methodParameterHandles = new ResultHandle[methodToImplement.parametersCount()];
+                        for (int i = 0; i < methodToImplement.parametersCount(); i++) {
                             methodParameterHandles[i] = methodCreator.getMethodParam(i);
                         }
 

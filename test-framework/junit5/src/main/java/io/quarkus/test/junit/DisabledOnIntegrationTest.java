@@ -36,4 +36,18 @@ public @interface DisabledOnIntegrationTest {
      * Reason for disabling this test
      */
     String value() default "";
+
+    /**
+     * The types of Quarkus application produced by the build for which this test is disabled.
+     * For example, if the tests are supposed to be disabled for built containers only,
+     * {@code ArtifactType.CONTAINER} would be set.
+     */
+    ArtifactType[] forArtifactTypes() default { ArtifactType.ALL };
+
+    enum ArtifactType {
+        ALL,
+        JAR,
+        CONTAINER,
+        NATIVE_BINARY,
+    }
 }

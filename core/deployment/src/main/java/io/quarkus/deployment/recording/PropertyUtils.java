@@ -2,7 +2,9 @@
 package io.quarkus.deployment.recording;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,10 +21,17 @@ final class PropertyUtils {
     private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
         @Override
         public Property[] apply(Class<?> type) {
+            if (type.isRecord()) {
+                RecordComponent[] recordComponents = type.getRecordComponents();
+                return Arrays.stream(recordComponents)
+                        .map(rc -> new Property(rc.getName(), rc.getAccessor(), null, rc.getType())).toArray(Property[]::new);
+            }
+
             List<Property> ret = new ArrayList<>();
             Method[] methods = type.getMethods();
 
             Map<String, Method> getters = new HashMap<>();
+            Map<String, Method> isGetters = new HashMap<>();
             Map<String, Method> setters = new HashMap<>();
             for (Method i : methods) {
                 if (i.getName().startsWith("get") && i.getName().length() > 3 && i.getParameterCount() == 0
@@ -34,19 +43,24 @@ final class PropertyUtils {
                     if (existingGetter == null || existingGetter.getReturnType().isAssignableFrom(i.getReturnType())) {
                         getters.put(name, i);
                     }
-                } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
+                } else if (i.getName().startsWith("is") && i.getName().length() > 2 && i.getParameterCount() == 0
                         && (i.getReturnType() == boolean.class || i.getReturnType() == Boolean.class)) {
                     String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
-                    getters.put(name, i);
+                    isGetters.put(name, i);
                 } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {
                     String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
                     setters.put(name, i);
                 }
             }
+
             Set<String> names = new HashSet<>(getters.keySet());
+            names.addAll(isGetters.keySet());
             names.addAll(setters.keySet());
             for (String i : names) {
                 Method get = getters.get(i);
+                if (get == null) {
+                    get = isGetters.get(i); // If there is no "get" getter, use the "is" getter
+                }
                 Method set = setters.get(i);
                 if (get == null) {
                     ret.add(new Property(i, get, set, set.getParameterTypes()[0]));

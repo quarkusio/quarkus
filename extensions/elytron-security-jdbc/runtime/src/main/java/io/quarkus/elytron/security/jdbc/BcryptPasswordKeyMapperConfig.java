@@ -4,74 +4,65 @@ import org.wildfly.security.auth.realm.jdbc.mapper.PasswordKeyMapper;
 import org.wildfly.security.password.spec.Encoding;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * Configuration information used to populate a "bcrypt"
  * {@linkplain org.wildfly.security.auth.realm.jdbc.mapper.PasswordKeyMapper}
  */
 @ConfigGroup
-public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
+public interface BcryptPasswordKeyMapperConfig {
 
-    public static final String BCRYPT = "bcrypt";
+    String BCRYPT = "bcrypt";
 
     /**
      * If the bcrypt-password-mapper is enabled.
      */
-    @ConfigItem
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * The index (1 based numbering) of the column containing the password hash
      */
-    @ConfigItem
-    public int passwordIndex;
+    @WithDefault("0")
+    int passwordIndex();
 
     /**
      * A string referencing the password hash encoding ("BASE64" or "HEX")
      */
-    @ConfigItem(defaultValue = "BASE64")
-    public Encoding hashEncoding;
+    @WithDefault("BASE64")
+    Encoding hashEncoding();
 
     /**
-     * The index (1 based numbering) of the column containing the Bcrypt salt
+     * The index (1 based numbering) of the column containing the Bcrypt salt. The default value of `-1` implies that the salt
+     * is stored in the password column using the Modular Crypt Format (MCF) standard.
      */
-    @ConfigItem
-    public int saltIndex;
+    @WithDefault("-1")
+    int saltIndex();
 
     /**
      * A string referencing the salt encoding ("BASE64" or "HEX")
      */
-    @ConfigItem(defaultValue = "BASE64")
-    public Encoding saltEncoding;
+    @WithDefault("BASE64")
+    Encoding saltEncoding();
 
     /**
-     * The index (1 based numbering) of the column containing the Bcrypt iteration count
+     * The index (1 based numbering) of the column containing the Bcrypt iteration count. The default value of `-1` implies that
+     * the iteration count is stored in the password column using the Modular Crypt Format (MCF) standard.
      */
-    @ConfigItem
-    public int iterationCountIndex;
+    @WithDefault("-1")
+    int iterationCountIndex();
 
-    @Override
-    public PasswordKeyMapper toPasswordKeyMapper() {
+    default PasswordKeyMapper toPasswordKeyMapper() {
         return PasswordKeyMapper.builder()
                 .setDefaultAlgorithm(BCRYPT)
-                .setHashColumn(passwordIndex)
-                .setHashEncoding(hashEncoding)
-                .setSaltColumn(saltIndex)
-                .setSaltEncoding(saltEncoding)
-                .setIterationCountColumn(iterationCountIndex)
+                .setHashColumn(passwordIndex())
+                .setHashEncoding(hashEncoding())
+                .setSaltColumn(saltIndex())
+                .setSaltEncoding(saltEncoding())
+                .setIterationCountColumn(iterationCountIndex())
                 .build();
     }
 
-    @Override
-    public String toString() {
-        return "BcryptPasswordKeyMapperConfig{" +
-                "enabled=" + enabled +
-                ", passwordIndex=" + passwordIndex +
-                ", hashEncoding=" + hashEncoding +
-                ", saltIndex=" + saltIndex +
-                ", saltEncoding=" + saltEncoding +
-                ", iterationCountIndex=" + iterationCountIndex +
-                '}';
-    }
+    String toString();
 }

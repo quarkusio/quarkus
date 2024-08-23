@@ -1,13 +1,17 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.enterprise.context.spi.CreationalContext;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+
+import io.quarkus.arc.InjectableBean;
 
 /**
- * 
+ * Instance handle that is initialized lazily when first used.
+ *
  * @param <T>
+ * @see EagerInstanceHandle
  */
 class LazyInstanceHandle<T> extends AbstractInstanceHandle<T> {
 

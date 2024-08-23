@@ -4,23 +4,20 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus Extension for Spring Security API
+include::_attributes.adoc[]
+:categories: compatibility
+:summary: While you are encouraged to use the Quarkus Security layer to secure your applications, Quarkus provides a compatibility layer for Spring Security in the form of the spring-security extension.
+:topics: spring,security,compatibility
+:extensions: io.quarkus:quarkus-spring-security
 
-include::./attributes.adoc[]
+While users are encouraged to use Java standard annotations for security authorizations, Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 
-While users are encouraged to use xref:security.adoc#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
-
-This guide explains how a Quarkus application can leverage the well known Spring Security annotations to define authorizations on RESTful services using roles.
+This guide explains how a Quarkus application can leverage the well-known Spring Security annotations to define authorizations on RESTful services using roles.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 * Some familiarity with the Spring Web extension
-
 
 == Solution
 
@@ -29,36 +26,30 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `spring-security-quickstart` {quickstarts-tree-url}/spring-security-quickstart[directory].
+The solution is located in the `spring-security-quickstart` link:{quickstarts-tree-url}/spring-security-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-security-quickstart \
-    -DclassName="org.acme.spring.security.GreetingController" \
-    -Dpath="/greeting" \
-    -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson"
-cd spring-security-quickstart
-----
+:create-app-artifact-id: spring-security-quickstart
+:create-app-group-id: org.acme.spring.security
+:create-app-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,rest-jackson
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
+This command generates a project which imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
 
 If you already have your Quarkus project configured, you can add the `spring-web`, `spring-security` and `security-properties-file` extensions
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-jackson"
-----
+:add-extension-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,rest-jackson
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -74,16 +65,25 @@ This will add the following to your `pom.xml`:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-web")
+implementation("io.quarkus:quarkus-spring-security")
+implementation("io.quarkus:quarkus-elytron-security-properties-file")
+implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
 For more information about `security-properties-file`, you can check out the guide of the xref:security-properties.adoc[quarkus-elytron-security-properties-file] extension.
 
 == GreetingController
 
-The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default).
-The `src/main/java/org/acme/spring/web/GreetingController.java` file looks as follows:
+The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the Jakarta REST ones used by default).
+First create a `src/main/java/org/acme/spring/security/GreetingController.java`, a controller with the Spring Web annotations to define our REST endpoint, as follows:
 
 [source,java]
 ----
@@ -99,7 +99,7 @@ public class GreetingController {
 
     @GetMapping
     public String hello() {
-        return "hello";
+        return "Hello Spring";
     }
 }
 ----
@@ -119,15 +119,14 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-public class GreetingControllerTest {
-
+class GreetingControllerTest {
     @Test
-    public void testHelloEndpoint() {
+    void testHelloEndpoint() {
         given()
           .when().get("/greeting")
           .then()
              .statusCode(200)
-             .body(is("hello"));
+             .body(is("Hello Spring"));
     }
 
 }
@@ -135,11 +134,15 @@ public class GreetingControllerTest {
 
 == Package and run the application
 
-Run the application with: `./mvnw quarkus:dev`.
+Run the application with:
+
+include::{includes}/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 The result should be: `{"message": "hello"}`.
 
+[[secure]]
 == Modify the controller to secure the `hello` method
 
 In order to restrict access to the `hello` method to users with certain roles, the `@Secured` annotation will be utilized.
@@ -166,7 +169,7 @@ public class GreetingController {
 }
 ----
 
-The easiest way to setup users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
+The easiest way to set up users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
 For more information about this extension check xref:security-properties.adoc[the associated guide].
 An example configuration would be the following:
 
@@ -219,6 +222,16 @@ public class GreetingControllerTest {
 
 == Test the changes
 
+=== Automatically
+
+Press `r`, while in dev mode, or run the application with:
+
+include::{includes}/devtools/test.adoc[]
+
+All tests should succeed.
+
+=== Manually
+
 Access allowed::
 
 Open your browser again to http://localhost:8080/greeting and introduce `scott` and `jb0ss` in the dialog displayed.
@@ -238,14 +251,14 @@ You don't have authorization to view this page.
 HTTP ERROR 403
 ----
 
-== Run the application as a native executable
+[TIP]
+====
+Some browsers save credentials for basic authentication. If the dialog is not displayed, try to clear saved logins or use the Private mode
+====
 
-You can of course create a native image using the instructions of the xref:building-native-image.adoc[Building a native executable guide].
+== Supported Spring Security annotations
 
-
-== Supported Spring Security functionalities
-
-Quarkus currently only supports a subset of the functionalities that Spring Security provides with more features being planned. More specifically, Quarkus supports the security related features of role-based authorization semantics
+Quarkus currently only supports a subset of the functionality that Spring Security provides with more features being planned. More specifically, Quarkus supports the security related features of role-based authorization semantics
 (think of `@Secured` instead of `@RolesAllowed`).
 
 === Annotations
@@ -254,13 +267,15 @@ The table below summarizes the supported annotations:
 
 .Supported Spring Security annotations
 |===
-|Name|Comments
+|Name|Comments|Spring documentation
 
 |@Secured
-|
+| See <<secure, above>>
+| link:https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html#use-secured[Authorizing Method Invocation with @Secured]
 
 |@PreAuthorize
 |See next section for more details
+|link:https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html#use-preauthorize[Authorizing Method Invocation with @PreAuthorize]
 
 |===
 
@@ -289,22 +304,22 @@ public class Roles {
 
 hasAnyRole::
 
-In the same fashion as `hasRole`, users can use `hasAnyRole`  to check if the logged in user has any of the specified roles.
+In the same fashion as `hasRole`, users can use `hasAnyRole`  to check if the logged-in user has any of the specified roles.
 +
 Some examples are: `@PreAuthorize("hasAnyRole('admin')")`, `@PreAuthorize("hasAnyRole(@roles.USER, 'view')")`
 
-permitAll:: Adding `@PreAuthorize("permitAll()")` to a method will ensure that that method is accessible by any user (including anonymous users). Adding it to a class will ensure that all public methods
+permitAll:: Adding `@PreAuthorize("permitAll()")` to a method will ensure that method is accessible by any user (including anonymous users). Adding it to a class will ensure that all public methods
 of the class that are not annotated with any other Spring Security annotation will be accessible.
 
-denyAll:: Adding `@PreAuthorize("denyAll()")` to a method will ensure that that method is not accessible by any user. Adding it to a class will ensure that all public methods
+denyAll:: Adding `@PreAuthorize("denyAll()")` to a method will ensure that method is not accessible by any user. Adding it to a class will ensure that all public methods
 of the class that are not annotated with any other Spring Security annotation will not be accessible to any user.
 
-isAnonymous:: When annotating a bean method with `@PreAuthorize("isAnonymous()")` the method will only be accessible if the current user is anonymous - i.e. a non logged in user.
+isAnonymous:: When annotating a bean method with `@PreAuthorize("isAnonymous()")` the method will only be accessible if the current user is anonymous - i.e. a non logged-in user.
 
-isAuthenticated:: When annotating a bean method with `@PreAuthorize("isAuthenticated()")` the method will only be accessible if the current user is a logged in user. Essentially the
+isAuthenticated:: When annotating a bean method with `@PreAuthorize("isAuthenticated()")` the method will only be accessible if the current user is a logged-in user. Essentially the
 method is only unavailable for anonymous users.
 
-#paramName == authentication.principal.username:: This syntax allows users to check if a parameter (or a field of the parameter) of the secured method is equal to the logged in username.
+#paramName == authentication.principal.username:: This syntax allows users to check if a parameter (or a field of the parameter) of the secured method is equal to the logged-in username.
 +
 Examples of this use case are:
 +
@@ -318,6 +333,7 @@ public class Person {
         this.name = name;
     }
 
+    // this syntax requires getters for field access
     public String getName() {
         return name;
     }
@@ -337,12 +353,12 @@ public class MyComponent {
     }
 }
 ----
-<1> `doSomething` can be executed if the current logged in user is the same as the `username` method parameter
-<2> `doSomethingElse` can be executed if the current logged in user is the same as the `name` field of `person` method parameter
+<1> `doSomething` can be executed if the current logged-in user is the same as the `username` method parameter
+<2> `doSomethingElse` can be executed if the current logged-in user is the same as the `name` field of `person` method parameter
 +
 TIP: the use of `authentication.` is optional, so using `principal.username` has the same result.
 
-#paramName != authentication.principal.username:: This is similar to the previous expression with the difference being that the method parameter must be different than the logged in username.
+#paramName != authentication.principal.username:: This is similar to the previous expression with the difference being that the method parameter must be different from the logged-in username.
 
 @beanName.method():: This syntax allows developers to specify that the execution of method of a specific bean will determine if the current user can access the secured method.
 +
@@ -371,7 +387,6 @@ An example of the `PersonChecker` could be:
 @Component
 public class PersonChecker {
 
-    @Override
     public boolean check(Person person, String username) {
         return person.getName().equals(username);
     }
@@ -382,7 +397,7 @@ Note that for the `check` method the parameter types must match what is specifie
 
 ===== Combining expressions
 
-The `@PreAuthorize` annotations allows for the combination of expressions using logical `AND` / `OR`. Currently there is a limitation where only a single
+The `@PreAuthorize` annotations allows for the combination of expressions using logical `AND` / `OR`. Currently, there is a limitation where only a single
 logical operation can be used (meaning mixing `AND` and `OR` isn't allowed).
 
 Some examples of allowed expressions are:
@@ -405,26 +420,33 @@ Some examples of allowed expressions are:
 
     }
 ----
+[IMPORTANT]
+====
+Currently, expressions do not support parentheses for logical operators and are evaluated from left to right
+====
 
-Also to be noted that currently parentheses are not supported and expressions are evaluated from left to right when needed.
 
 == Important Technical Note
 
 Please note that the Spring support in Quarkus does not start a Spring Application Context nor are any Spring infrastructure classes run.
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
-What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
 
 == Conversion Table
 
-The following table shows how Spring Security annotations can be converted to JAX-RS annotations.
+The following table shows how Spring Security annotations can be converted to Jakarta REST annotations.
 
 |===
-|Spring |JAX-RS |Comments
+|Spring |Jakarta REST |Comments
 
 |@Secured("admin")
 |@RolesAllowed("admin")
 |
+
+|@PreAuthorize
+|No direct replacement
+|Quarkus handles complex authorisation differently, see link:https://quarkus.io/guides/security-authorize-web-endpoints-reference[this guide] for details
 
 |===
 

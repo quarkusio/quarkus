@@ -16,7 +16,10 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.core.Application;
+
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -34,6 +37,7 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
@@ -58,7 +62,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveParamConverterScanner;
 import org.jboss.resteasy.reactive.server.processor.util.GeneratedClass;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -79,8 +83,11 @@ public class ResteasyReactiveDeploymentManager {
     public static class ScanStep {
         final IndexView index;
         int inputBufferSize = 10000;
+
+        int minChunkSize = 128;
+        int outputBufferSize = 8192;
         /**
-         * By default we assume a default produced media type of "text/plain"
+         * By default, we assume a default produced media type of "text/plain"
          * for String endpoint return types. If this is disabled, the default
          * produced media type will be "[text/plain, *&sol;*]" which is more
          * expensive due to negotiation.
@@ -101,7 +108,7 @@ public class ResteasyReactiveDeploymentManager {
         private String applicationPath;
         private final List<MethodScanner> methodScanners = new ArrayList<>();
         private final List<FeatureScanner> featureScanners = new ArrayList<>();
-        private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
+        private final List<AnnotationTransformation> annotationsTransformers = new ArrayList<>();
 
         public ScanStep(IndexView nonCalculatingIndex) {
             index = JandexUtil.createCalculatingIndex(nonCalculatingIndex);
@@ -169,8 +176,17 @@ public class ResteasyReactiveDeploymentManager {
             return this;
         }
 
+        /**
+         * @deprecated use {@link #addAnnotationTransformation(AnnotationTransformation)}
+         */
+        @Deprecated(forRemoval = true)
         public ScanStep addAnnotationsTransformer(AnnotationsTransformer annotationsTransformer) {
             this.annotationsTransformers.add(annotationsTransformer);
+            return this;
+        }
+
+        public ScanStep addAnnotationTransformation(AnnotationTransformation annotationTransformation) {
+            this.annotationsTransformers.add(annotationTransformation);
             return this;
         }
 
@@ -191,6 +207,8 @@ public class ResteasyReactiveDeploymentManager {
                     additionalResourcePaths);
             SerializerScanningResult serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index,
                     applicationScanningResult);
+            Set<DotName> parameterContainers = ResteasyReactiveParameterContainerScanner.scanParameterContainers(index,
+                    applicationScanningResult);
 
             AdditionalReaders readers = new AdditionalReaders();
             AdditionalWriters writers = new AdditionalWriters();
@@ -200,14 +218,18 @@ public class ResteasyReactiveDeploymentManager {
 
             ServerEndpointIndexer.Builder builder = new ServerEndpointIndexer.Builder()
                     .setIndex(index)
+                    .setApplicationIndex(index)
                     .addContextTypes(contextTypes)
-                    .setAnnotationsTransformers(annotationsTransformers)
+                    .setAnnotationTransformations(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())
+                    .addParameterContainerTypes(parameterContainers)
                     .setClassLevelExceptionMappers(new HashMap<>())
                     .setAdditionalReaders(readers)
                     .setAdditionalWriters(writers)
                     .setInjectableBeans(new HashMap<>())
-                    .setConfig(new ResteasyReactiveConfig(inputBufferSize, singleDefaultProduces, defaultProduces))
+                    .setConfig(
+                            new ResteasyReactiveConfig(inputBufferSize, minChunkSize, outputBufferSize, singleDefaultProduces,
+                                    defaultProduces))
                     .setHttpAnnotationToMethod(resources.getHttpAnnotationToMethod())
                     .setApplicationScanningResult(applicationScanningResult);
             for (MethodScanner scanner : methodScanners) {
@@ -353,6 +375,7 @@ public class ResteasyReactiveDeploymentManager {
             }
         }
 
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         public RunnableApplication createApplication(RuntimeConfiguration runtimeConfiguration,
                 RequestContextFactory requestContextFactory, Executor executor) {
             sa.getResourceInterceptors().initializeDefaultFactories(factoryCreator);
@@ -376,7 +399,7 @@ public class ResteasyReactiveDeploymentManager {
             }
 
             DeploymentInfo info = new DeploymentInfo()
-                    .setConfig(new ResteasyReactiveConfig())
+                    .setResteasyReactiveConfig(new ResteasyReactiveConfig())
                     .setFeatures(sa.scannedFeatures)
                     .setInterceptors(sa.resourceInterceptors)
                     .setDynamicFeatures(sa.dynamicFeatures)
@@ -415,15 +438,24 @@ public class ResteasyReactiveDeploymentManager {
             }
             info.setApplicationPath(path);
             List<Closeable> closeTasks = new ArrayList<>();
-            RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, () -> executor,
+            Supplier<Executor> executorSupplier = new Supplier<Executor>() {
+                @Override
+                public Executor get() {
+                    return executor;
+                }
+            };
+            RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, executorSupplier,
+                    executorSupplier,
                     closeTasks::add, requestContextFactory, ThreadSetupAction.NOOP, "/");
             Deployment deployment = runtimeDeploymentManager.deploy();
             deployment.setRuntimeConfiguration(runtimeConfiguration);
             RestInitialHandler initialHandler = new RestInitialHandler(deployment);
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment
+            List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment
                     .getRuntimeConfigurableServerRestHandlers();
-            for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
-                handler.configure(runtimeConfiguration);
+            for (GenericRuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
+                if (handler.getConfigurationClass().equals(RuntimeConfiguration.class)) {
+                    handler.configure(runtimeConfiguration);
+                }
             }
             return new RunnableApplication(closeTasks, initialHandler, deployment, path);
         }
@@ -432,7 +464,7 @@ public class ResteasyReactiveDeploymentManager {
             String path = "/";
             if (sa.applicationScanningResult.getSelectedAppClass() != null) {
                 var pathAn = sa.applicationScanningResult.getSelectedAppClass()
-                        .classAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
+                        .declaredAnnotation(ResteasyReactiveDotNames.APPLICATION_PATH);
                 if (pathAn != null) {
                     path = pathAn.value().asString();
                     if (!path.startsWith("/")) {

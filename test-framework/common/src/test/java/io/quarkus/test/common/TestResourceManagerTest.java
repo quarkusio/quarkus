@@ -2,47 +2,61 @@ package io.quarkus.test.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class TestResourceManagerTest {
 
     private static final String OVERRIDEN_KEY = "overridenKey";
     public static boolean parallelTestResourceRunned = false;
 
-    @Test
-    void testRepeatableAnnotationsAreIndexed() {
+    @ParameterizedTest
+    @ValueSource(classes = { MyTest.class, MyTest2.class })
+    void testRepeatableAnnotationsAreIndexed(Class<?> clazz) {
         AtomicInteger counter = new AtomicInteger();
-        TestResourceManager manager = new TestResourceManager(MyTest.class);
+        TestResourceManager manager = new TestResourceManager(clazz);
         manager.inject(counter);
         assertThat(counter.intValue()).isEqualTo(2);
     }
 
-    @Test
-    void testSequentialResourcesRunSequentially() {
-        TestResourceManager manager = new TestResourceManager(SequentialTestResourcesTest.class);
+    @ParameterizedTest
+    @ValueSource(classes = { SequentialTestResourcesTest.class, SequentialTestResourcesTest2.class })
+    void testSequentialResourcesRunSequentially(Class<?> clazz) {
+        TestResourceManager manager = new TestResourceManager(clazz);
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
         Assertions.assertEquals("value2", props.get(OVERRIDEN_KEY));
     }
 
-    @Test
-    void testParallelResourcesRunInParallel() {
-        TestResourceManager manager = new TestResourceManager(ParallelTestResourcesTest.class);
+    @ParameterizedTest
+    @ValueSource(classes = { ParallelTestResourcesTest.class, ParallelTestResourcesTest2.class })
+    void testParallelResourcesRunInParallel(Class<?> clazz) {
+        TestResourceManager manager = new TestResourceManager(clazz);
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
     }
 
+    @WithTestResource(value = FirstLifecycleManager.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = SecondLifecycleManager.class, restrictToAnnotatedClass = false)
+    public static class MyTest {
+    }
+
     @QuarkusTestResource(FirstLifecycleManager.class)
     @QuarkusTestResource(SecondLifecycleManager.class)
-    public static class MyTest {
+    public static class MyTest2 {
     }
 
     public static class FirstLifecycleManager implements QuarkusTestResourceLifecycleManager {
@@ -85,9 +99,14 @@ public class TestResourceManagerTest {
         }
     }
 
+    @WithTestResource(value = FirstSequentialQuarkusTestResource.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = SecondSequentialQuarkusTestResource.class, restrictToAnnotatedClass = false)
+    public static class SequentialTestResourcesTest {
+    }
+
     @QuarkusTestResource(FirstSequentialQuarkusTestResource.class)
     @QuarkusTestResource(SecondSequentialQuarkusTestResource.class)
-    public static class SequentialTestResourcesTest {
+    public static class SequentialTestResourcesTest2 {
     }
 
     public static class FirstSequentialQuarkusTestResource implements QuarkusTestResourceLifecycleManager {
@@ -131,9 +150,14 @@ public class TestResourceManagerTest {
         }
     }
 
+    @WithTestResource(value = FirstParallelQuarkusTestResource.class, parallel = true, restrictToAnnotatedClass = false)
+    @WithTestResource(value = SecondParallelQuarkusTestResource.class, parallel = true, restrictToAnnotatedClass = false)
+    public static class ParallelTestResourcesTest {
+    }
+
     @QuarkusTestResource(value = FirstParallelQuarkusTestResource.class, parallel = true)
     @QuarkusTestResource(value = SecondParallelQuarkusTestResource.class, parallel = true)
-    public static class ParallelTestResourcesTest {
+    public static class ParallelTestResourcesTest2 {
     }
 
     public static class FirstParallelQuarkusTestResource implements QuarkusTestResourceLifecycleManager {
@@ -176,5 +200,100 @@ public class TestResourceManagerTest {
         public int order() {
             return 2;
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = { RepeatableAnnotationBasedTestResourcesTest.class,
+            RepeatableAnnotationBasedTestResourcesTest2.class })
+    void testAnnotationBased(Class<?> clazz) {
+        TestResourceManager manager = new TestResourceManager(clazz);
+        manager.init("test");
+        Map<String, String> props = manager.start();
+        Assertions.assertEquals("value", props.get("annotationkey1"));
+        Assertions.assertEquals("value", props.get("annotationkey2"));
+    }
+
+    public static class AnnotationBasedQuarkusTestResource
+            implements QuarkusTestResourceConfigurableLifecycleManager<WithAnnotationBasedTestResource> {
+
+        private String key;
+
+        @Override
+        public void init(WithAnnotationBasedTestResource annotation) {
+            this.key = annotation.key();
+        }
+
+        @Override
+        public Map<String, String> start() {
+            Map<String, String> props = new HashMap<>();
+            props.put(key, "value");
+            return props;
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    public static class AnnotationBasedQuarkusTestResource2
+            implements QuarkusTestResourceConfigurableLifecycleManager<WithAnnotationBasedTestResource2> {
+
+        private String key;
+
+        @Override
+        public void init(WithAnnotationBasedTestResource2 annotation) {
+            this.key = annotation.key();
+        }
+
+        @Override
+        public Map<String, String> start() {
+            Map<String, String> props = new HashMap<>();
+            props.put(key, "value");
+            return props;
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    @WithTestResource(value = AnnotationBasedQuarkusTestResource.class, restrictToAnnotatedClass = false)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Repeatable(WithAnnotationBasedTestResource.List.class)
+    public @interface WithAnnotationBasedTestResource {
+        String key() default "";
+
+        @Target(ElementType.TYPE)
+        @Retention(RetentionPolicy.RUNTIME)
+        @WithTestResourceRepeatable(WithAnnotationBasedTestResource.class)
+        @interface List {
+            WithAnnotationBasedTestResource[] value();
+        }
+    }
+
+    @QuarkusTestResource(AnnotationBasedQuarkusTestResource2.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Repeatable(WithAnnotationBasedTestResource2.List.class)
+    public @interface WithAnnotationBasedTestResource2 {
+        String key() default "";
+
+        @Target(ElementType.TYPE)
+        @Retention(RetentionPolicy.RUNTIME)
+        @QuarkusTestResourceRepeatable(WithAnnotationBasedTestResource2.class)
+        @interface List {
+            WithAnnotationBasedTestResource2[] value();
+        }
+    }
+
+    @WithAnnotationBasedTestResource(key = "annotationkey1")
+    @WithAnnotationBasedTestResource(key = "annotationkey2")
+    public static class RepeatableAnnotationBasedTestResourcesTest {
+    }
+
+    @WithAnnotationBasedTestResource2(key = "annotationkey1")
+    @WithAnnotationBasedTestResource2(key = "annotationkey2")
+    public static class RepeatableAnnotationBasedTestResourcesTest2 {
     }
 }

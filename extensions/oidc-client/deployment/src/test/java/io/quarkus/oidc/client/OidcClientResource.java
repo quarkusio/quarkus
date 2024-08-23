@@ -1,10 +1,10 @@
 package io.quarkus.oidc.client;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 
 import io.smallrye.mutiny.Uni;
 
@@ -13,6 +13,16 @@ public class OidcClientResource {
 
     @Inject
     OidcClient client;
+
+    @Inject
+    @NamedOidcClient("key")
+    OidcClient keyClient;
+
+    @GET
+    @Path("token-key")
+    public Uni<String> tokenFromPrivateKeyUni() {
+        return keyClient.getTokens().flatMap(tokens -> Uni.createFrom().item(tokens.getAccessToken()));
+    }
 
     @GET
     @Path("token")
@@ -23,13 +33,13 @@ public class OidcClientResource {
     @GET
     @Path("tokens")
     public Uni<String> grantTokensUni() {
-        return client.getTokens().flatMap(tokens -> createTokensString(tokens));
+        return client.getTokens().flatMap(this::createTokensString);
     }
 
     @GET
     @Path("refresh-tokens")
     public Uni<String> refreshGrantTokens(@QueryParam("refreshToken") String refreshToken) {
-        return client.refreshTokens(refreshToken).flatMap(tokens -> createTokensString(tokens));
+        return client.refreshTokens(refreshToken).flatMap(this::createTokensString);
     }
 
     private Uni<String> createTokensString(Tokens tokens) {

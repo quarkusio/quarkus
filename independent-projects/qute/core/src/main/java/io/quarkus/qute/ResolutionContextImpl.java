@@ -2,20 +2,21 @@ package io.quarkus.qute;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 class ResolutionContextImpl implements ResolutionContext {
 
     private final Object data;
     private final Evaluator evaluator;
     private final Map<String, SectionBlock> extendingBlocks;
-    private final TemplateInstance templateInstance;
+    private final Function<String, Object> attributeFun;
 
     ResolutionContextImpl(Object data,
-            Evaluator evaluator, Map<String, SectionBlock> extendingBlocks, TemplateInstance templateInstance) {
+            Evaluator evaluator, Map<String, SectionBlock> extendingBlocks, Function<String, Object> attributeFun) {
         this.data = data;
         this.evaluator = evaluator;
         this.extendingBlocks = extendingBlocks;
-        this.templateInstance = templateInstance;
+        this.attributeFun = attributeFun;
     }
 
     @Override
@@ -52,8 +53,13 @@ class ResolutionContextImpl implements ResolutionContext {
     }
 
     @Override
+    public SectionBlock getCurrentExtendingBlock(String name) {
+        return getExtendingBlock(name);
+    }
+
+    @Override
     public Object getAttribute(String key) {
-        return templateInstance.getAttribute(key);
+        return attributeFun.apply(key);
     }
 
     @Override
@@ -111,6 +117,14 @@ class ResolutionContextImpl implements ResolutionContext {
             }
             if (parent != null) {
                 return parent.getExtendingBlock(name);
+            }
+            return null;
+        }
+
+        @Override
+        public SectionBlock getCurrentExtendingBlock(String name) {
+            if (extendingBlocks != null) {
+                return extendingBlocks.get(name);
             }
             return null;
         }

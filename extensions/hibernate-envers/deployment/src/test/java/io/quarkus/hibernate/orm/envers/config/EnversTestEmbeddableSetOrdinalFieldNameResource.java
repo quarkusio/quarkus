@@ -1,9 +1,9 @@
 
 package io.quarkus.hibernate.orm.envers.config;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 
@@ -12,7 +12,7 @@ import io.quarkus.hibernate.orm.envers.AbstractEnversResource;
 public class EnversTestEmbeddableSetOrdinalFieldNameResource extends AbstractEnversResource {
     @GET
     public String getEntityWithEmbeddableSetMappingNameOverride() {
-        String embeddableSetOrdinalName = getAuditEntitiesConfiguration().getEmbeddableSetOrdinalPropertyName();
+        String embeddableSetOrdinalName = getConfiguration().getEmbeddableSetOrdinalPropertyName();
         if (embeddableSetOrdinalName.equals("ORD")) {
             return "OK";
         }

@@ -2,8 +2,12 @@ package io.quarkus.amazon.lambda.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -14,15 +18,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 
 public class MockEventServer implements Closeable {
     protected static final Logger log = Logger.getLogger(MockEventServer.class);
@@ -38,6 +41,22 @@ public class MockEventServer implements Closeable {
     public static final String INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION;
     public static final String NEXT_INVOCATION = BASE_PATH + AmazonLambdaApi.API_PATH_INVOCATION_NEXT;
     public static final String POST_EVENT = BASE_PATH;
+    public static final String CONTINUE = "100-continue";
+    private static final Set<String> COMMA_VALUE_HEADERS;
+
+    static {
+        COMMA_VALUE_HEADERS = new HashSet<>();
+        COMMA_VALUE_HEADERS.add("date");
+        COMMA_VALUE_HEADERS.add("last-modified");
+        COMMA_VALUE_HEADERS.add("expires");
+        COMMA_VALUE_HEADERS.add("if-modified-since");
+        COMMA_VALUE_HEADERS.add("if-unmodified-since");
+    }
+
+    public static boolean canHaveCommaValue(String header) {
+        return COMMA_VALUE_HEADERS.contains(header.toLowerCase(Locale.ROOT));
+    }
+
     final AtomicBoolean closed = new AtomicBoolean();
 
     public MockEventServer() {
@@ -50,28 +69,44 @@ public class MockEventServer implements Closeable {
 
     public void start(int port) {
         vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
-        httpServer = vertx.createHttpServer();
+        HttpServerOptions options = new HttpServerOptions();
+        options.setPort(port == 0 ? -1 : port);
+        httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);
         setupRoutes();
         try {
-            httpServer.requestHandler(router).listen(port).toCompletionStage().toCompletableFuture().get();
+            this.httpServer.requestHandler(router).listen().toCompletionStage().toCompletableFuture().get();
+            log.info("Mock Lambda Event Server Started");
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
-        log.info("Mock Lambda Event Server Started");
+    }
+
+    public int getPort() {
+        return httpServer.actualPort();
     }
 
     public void setupRoutes() {
-        router.route().handler(BodyHandler.create());
+        router.route().handler((context) -> {
+            if (context.get("continue-sent") == null) {
+                String expect = context.request().getHeader(HttpHeaderNames.EXPECT);
+                if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                    context.put("continue-sent", true);
+                    context.response().writeContinue();
+                }
+            }
+            context.next();
+        });
+        router.route().handler(new MockBodyHandler());
         router.post(POST_EVENT).handler(this::postEvent);
         router.route(NEXT_INVOCATION).blockingHandler(this::nextEvent);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_REQUEUE).handler(this::handleRequeue);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_RESPONSE).handler(this::handleResponse);
         router.route(INVOCATION + ":requestId" + AmazonLambdaApi.API_PATH_ERROR).handler(this::handleError);
-        defaultHanderSetup();
+        defaultHandlerSetup();
     }
 
-    protected void defaultHanderSetup() {
+    protected void defaultHandlerSetup() {
         router.post().handler(this::postEvent);
     }
 
@@ -96,9 +131,9 @@ public class MockEventServer implements Closeable {
     }
 
     public void nextEvent(RoutingContext ctx) {
-        vertx.executeBlocking(new Handler<>() {
+        vertx.executeBlocking(new Callable<Void>() {
             @Override
-            public void handle(Promise<Object> event) {
+            public Void call() {
                 final AtomicBoolean closed = new AtomicBoolean(false);
                 ctx.response().closeHandler((v) -> closed.set(true));
                 ctx.response().exceptionHandler((v) -> closed.set(true));
@@ -113,12 +148,12 @@ public class MockEventServer implements Closeable {
                                 log.debugf("Polled message %s but connection was closed, returning to queue",
                                         request.get(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID));
                                 queue.put(request);
-                                return;
+                                return null;
                             } else {
                                 break;
                             }
                         } else if (closed.get()) {
-                            return;
+                            return null;
                         }
                     }
                 } catch (InterruptedException e) {
@@ -144,8 +179,9 @@ public class MockEventServer implements Closeable {
                 } else {
                     ctx.response().setStatusCode(200).end();
                 }
+                return null;
             }
-        }, false, null);
+        }, false);
     }
 
     protected String getEventContentType(RoutingContext request) {

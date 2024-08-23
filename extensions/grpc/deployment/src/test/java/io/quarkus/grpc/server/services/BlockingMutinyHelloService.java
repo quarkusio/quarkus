@@ -14,8 +14,18 @@ public class BlockingMutinyHelloService implements Greeter {
     @Override
     @Blocking
     public Uni<HelloReply> sayHello(HelloRequest request) {
+
+        // Force failure if awaiting
+        Uni.createFrom().nullItem().await().indefinitely();
+
         return Uni.createFrom().item(request.getName())
                 .map(s -> Thread.currentThread().getName() + " " + s)
                 .map(s -> HelloReply.newBuilder().setMessage(s).build());
+    }
+
+    @Override
+    @Blocking
+    public Uni<HelloReply> wEIRD(HelloRequest request) {
+        return sayHello(request);
     }
 }

@@ -1,8 +1,8 @@
 package org.acme;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class MyFunctionsIT extends MyFunctionsTest {
     // Run the same tests in native
 }

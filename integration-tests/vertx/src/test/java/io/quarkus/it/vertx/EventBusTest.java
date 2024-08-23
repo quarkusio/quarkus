@@ -21,6 +21,19 @@ public class EventBusTest {
     }
 
     @Test
+    public void testEventBusWithObjectAndHeader() {
+        String body = new JsonObject()
+                .put("firstName", "Bob")
+                .put("lastName", "Morane")
+                .toString();
+        given().contentType(ContentType.JSON).body(body)
+                .post("/vertx-test/event-bus/person2")
+                .then().statusCode(200)
+                // For some reason Multimap.toString() has \n at the end.
+                .body(equalTo("Hello Bob Morane, header=headerValue\n"));
+    }
+
+    @Test
     public void testEventBusWithPet() {
         String body = new JsonObject().put("name", "Neo").put("kind", "rabbit").toString();
         given().contentType(ContentType.JSON).body(body)

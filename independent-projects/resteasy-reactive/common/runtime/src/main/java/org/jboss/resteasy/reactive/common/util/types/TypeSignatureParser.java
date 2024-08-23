@@ -5,10 +5,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-// FIXME: move to quarkus-core?
 public class TypeSignatureParser {
 
-    private char[] chars;
+    private final char[] chars;
     private int i;
 
     public TypeSignatureParser(String signature) {
@@ -17,7 +16,7 @@ public class TypeSignatureParser {
 
     public Type parseType() {
         int arrayCount = 0;
-        Type ret = null;
+        Type ret;
         int start = i;
         LOOP: do {
             char c = chars[i++];
@@ -60,13 +59,6 @@ public class TypeSignatureParser {
                     // in signatures unless we have access to the current context, we should not support them
                     throw new IllegalArgumentException(
                             "Invalid type variable in signature: " + new String(chars) + " at position " + i);
-                //                // consume until the ;
-                //                int tStart = i;
-                //                while(chars[i++] != ';') {
-                //                }
-                //                ret = new FixedTypeVariableImpl<>(new String(chars, tStart, i - tStart - 1));
-                //                break LOOP;
-                // ArrayTypeSignature
                 case '[':
                     arrayCount++;
                     break;

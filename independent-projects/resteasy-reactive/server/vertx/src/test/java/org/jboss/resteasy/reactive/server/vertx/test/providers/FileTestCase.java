@@ -1,12 +1,13 @@
 package org.jboss.resteasy.reactive.server.vertx.test.providers;
 
-import io.restassured.RestAssured;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import javax.ws.rs.core.HttpHeaders;
+
+import jakarta.ws.rs.core.HttpHeaders;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
@@ -15,17 +16,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.restassured.RestAssured;
+
 public class FileTestCase {
 
-    private final static String LOREM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut\n"
-            +
-            "enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor\n"
-            +
-            "in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,\n"
-            +
-            " sunt in culpa qui officia deserunt mollit anim id est laborum.\n" +
-            "\n" +
-            "";
     private static final String FILE = "src/test/resources/lorem.txt";
 
     @RegisterExtension
@@ -35,13 +29,8 @@ public class FileTestCase {
 
     @Test
     public void testFiles() throws Exception {
-        // adjusting expected file size for Windows, whose git checkout will adjust line separators
-        String content;
-        if (System.lineSeparator().length() == 2) {
-            content = LOREM.replace("\n", System.lineSeparator());
-        } else {
-            content = LOREM;
-        }
+
+        String content = Files.readString(Path.of(FILE));
         String contentLength = String.valueOf(content.length());
         RestAssured.get("/providers/file/file")
                 .then()
@@ -77,7 +66,7 @@ public class FileTestCase {
                 .then()
                 .statusCode(200)
                 .header(HttpHeaders.CONTENT_LENGTH, "10")
-                .body(Matchers.equalTo(LOREM.substring(20, 30)));
+                .body(Matchers.equalTo(content.substring(20, 30)));
     }
 
     @Test

@@ -1,21 +1,37 @@
 package io.quarkus.security.deployment;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  *
  */
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public final class SecurityConfig {
+@ConfigMapping(prefix = "quarkus.security")
+@ConfigRoot
+public interface SecurityConfig {
 
     /**
-     * List of security providers to enable for reflection
+     * Whether authorization is enabled in dev mode or not. In other launch modes authorization is always enabled.
      */
-    @ConfigItem
-    public Optional<List<String>> securityProviders;
+    @WithName("auth.enabled-in-dev-mode")
+    @WithDefault("true")
+    boolean authorizationEnabledInDevMode();
+
+    /**
+     * List of security providers to register
+     */
+    Optional<Set<String>> securityProviders();
+
+    /**
+     * Security provider configuration
+     */
+    @ConfigDocMapKey("provider-name")
+    Map<String, String> securityProviderConfig();
 }

@@ -3,13 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using Hibernate ORM and JPA
-
-include::./attributes.adoc[]
+= Using Hibernate ORM and Jakarta Persistence
+include::_attributes.adoc[]
+:categories: data
+:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
-:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/5.6/userguide/html_single/Hibernate_User_Guide.html
+:topics: data,hibernate-orm,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-orm
 
-Hibernate ORM is the de facto standard JPA implementation and offers you the full breadth of an Object Relational Mapper.
+Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
 
 == Solution
@@ -19,7 +21,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-orm-quickstart` {quickstarts-tree-url}/hibernate-orm-quickstart[directory].
+The solution is located in the `hibernate-orm-quickstart` link:{quickstarts-tree-url}/hibernate-orm-quickstart[directory].
 
 == Setting up and configuring Hibernate ORM
 
@@ -28,7 +30,7 @@ When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` 
 Using such a classic configuration file is an option, but unnecessary unless you have specific advanced needs;
 so we'll see first how Hibernate ORM can be configured without a `persistence.xml` resource.
 
-In Quarkus, you just need to:
+In Quarkus, you only need to:
 
 * add your configuration settings in `{config-file}`
 * annotate your entities with `@Entity` and any other mapping annotation as usual
@@ -48,23 +50,32 @@ Add the following dependencies to your project:
   - `quarkus-jdbc-oracle` for link:https://www.oracle.com/database/[Oracle Database]
   - `quarkus-jdbc-postgresql` for link:https://www.postgresql.org/[PostgreSQL]
 
+For instance:
 
-[source,xml]
-.Example dependencies using Maven
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- Hibernate ORM specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm</artifactId>
-    </dependency>
+<!-- Hibernate ORM specific dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-orm</artifactId>
+</dependency>
 
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-</dependencies>
+<!-- JDBC driver dependencies -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+// Hibernate ORM specific dependencies
+implementation("io.quarkus:quarkus-hibernate-orm")
+
+// JDBC driver dependencies
+implementation("io.quarkus:quarkus-jdbc-postgresql")
 ----
 
 Annotate your persistent objects with `@Entity`,
@@ -73,26 +84,27 @@ then add the relevant configuration properties in `{config-file}`.
 [source,properties]
 .Example `{config-file}`
 ----
-# datasource configuration
-quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-kind = postgresql <1>
 quarkus.datasource.username = hibernate
 quarkus.datasource.password = hibernate
 quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.database.generation=drop-and-create <2>
 ----
+<1> xref:datasource.adoc[Configure the datasource].
+<2> Drop and create the database at startup (use `update` to only update the schema).
 
 Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file.
 They will often map to Hibernate ORM configuration properties but could have different names and don't necessarily map 1:1 to each other.
 
 Also, Quarkus will set many Hibernate ORM configuration settings automatically, and will often use more modern defaults.
 
-Please see below section <<hibernate-configuration-properties, Hibernate ORM configuration properties>> for the list of properties you can set in `{config-file}`.
+For a list of the items that you can set in `{config-file}`, see <<hibernate-configuration-properties,Hibernate ORM configuration properties>>.
 
 An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
 
-The dialect will be selected based on the JDBC driver - unless you set one explicitly.
+The dialect will be selected and configured automatically based on your datasource;
+you may want to <<hibernate-dialect,configure it to more precisely match your database>>.
 
 You can then happily inject your `EntityManager`:
 
@@ -145,7 +157,7 @@ public class Gift {
 }
 ----
 
-To load SQL statements when Hibernate ORM starts, add an `import.sql` file to the root of your resources directory.
+To load SQL statements when Hibernate ORM starts, add an `import.sql` file to the root of your `resources` directory.
 This script can contain any SQL DML statements.
 Make sure to terminate each statement with a semicolon.
 
@@ -155,6 +167,118 @@ WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
+[[hibernate-dialect]]
+=== Dialect
+
+[[hibernate-dialect-supported-databases]]
+==== Supported databases
+
+For xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases],
+the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect]
+does not need to be set explicitly:
+it is selected automatically based on the datasource.
+
+By default, the dialect is configured to target the minimum supported version of the database.
+
+In order for Hibernate ORM to generate more efficient SQL,
+to avoid workarounds and to take advantage of more database features,
+you can set the database version explicitly:
+
+[source,properties]
+.`{config-file}` with an explicit `db-version`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-version = 14.0 <1>
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+----
+<1> Set the database version. The Hibernate ORM dialect will target that version.
+
+As a rule, the version set here should be as high as possible,
+but must be lower than or equal to the version of any database your application will connect to.
+
+[NOTE]
+====
+As described above, the version can either be preconfigured explicitly via a `quarkus.datasource.db-version` configuration property,
+or implicitly set by the Quarkus build process to a minimum supported version of the database.
+Quarkus will try to check this preconfigured version against the actual database version on startup,
+leading to a startup failure when the actual version is lower.
+
+This is because Hibernate ORM may generate SQL that is invalid
+for versions of the database older than what is configured,
+which would lead to runtime exceptions.
+
+If the database cannot be reached, a warning will be logged but startup will proceed.
+====
+
+[[hibernate-dialect-other-databases]]
+==== Other databases
+
+If xref:datasource.adoc#other-databases[your database does not have a corresponding Quarkus extension],
+or if the defaults do not match your needs for some reason,
+you will need to set the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect] explicitly:
+
+[source,properties]
+.`{config-file}` with an explicit `dialect`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
+
+quarkus.hibernate-orm.dialect=Cockroach <1>
+----
+<1> Set the Hibernate ORM dialect.
++
+For built-in dialects, the expected value is one of the names
+in the link:{hibernate-orm-dialect-docs-url}[official list of dialects], *without* the `Dialect` suffix,
+for example `Cockroach` for `CockroachDialect`.
++
+For third-party dialects, the expected value is the fully-qualified class name,
+for example `com.acme.hibernate.AcmeDbDialect`.
+
+[WARNING]
+====
+In that case, keep in mind that the JDBC driver or Hibernate ORM dialect
+may not work properly in GraalVM native executables.
+====
+
+As with <<hibernate-dialect-supported-databases,supported databases>>,
+you can configure the DB version explicitly to get the most out of Hibernate ORM:
+
+[source,properties]
+.`{config-file}` with an explicit `dialect` and `db-version`
+----
+quarkus.datasource.db-kind = postgresql
+quarkus.datasource.db-version = 22.2 <1>
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
+
+quarkus.hibernate-orm.dialect=Cockroach <2>
+----
+<1> Set the database version. The Hibernate ORM dialect will target that version.
+Since we're targeting CockroachDB here, we're passing the CockroachDB version, not the PostgreSQL version.
+<2> Set the Hibernate ORM dialect.
+
+[[hibernate-dialect-varying-database]]
+==== Varying database
+
+When enabling <<database-approach,database multi-tenancy>>,
+Hibernate ORM will use multiple datasources at runtime for the same persistence unit,
+and by default Quarkus cannot tell which datasource is going to be used,
+so it will not be able to detect a dialect to use in Hibernate ORM.
+
+For that reason, when enabling <<database-approach,database multi-tenancy>>,
+it is recommended to explicitly point the Hibernate ORM configuration to one datasource
+among those that will be used at runtime, e.g. with `quarkus.hibernate-orm.datasource=base`
+(`base` being the name of a datasource).
+
+When doing so, Quarkus will infer the database version and (if possible) dialect from that datasource.
+For unsupported databases, you may still need to set the Hibernate ORM dialect explicitly,
+as explained in <<hibernate-dialect-other-databases,this section>>.
+
 [[hibernate-configuration-properties]]
 === Hibernate ORM configuration properties
 
@@ -162,7 +286,7 @@ There are various optional properties useful to refine your `EntityManagerFactor
 
 There are no required properties, as long as a default datasource is configured.
 
-When no property is set, Quarkus can typically infer everything it needs to setup Hibernate ORM
+When no property is set, Quarkus can typically infer everything it needs to set up Hibernate ORM
 and will have it use the default datasource.
 
 The configuration properties listed here allow you to override such defaults, and customize and tune various aspects.
@@ -170,11 +294,19 @@ The configuration properties listed here allow you to override such defaults, an
 include::{generated-dir}/config/quarkus-hibernate-orm.adoc[opts=optional, leveloffset=+2]
 
 [NOTE]
---
-Do not mix `persistence.xml` and `quarkus.hibernate-orm.*` properties in `{config-file}`.
+====
+Do not mix <<persistence-xml,`persistence.xml`>> and `quarkus.hibernate-orm.*` properties in `{config-file}`.
 Quarkus will raise an exception.
 Make up your mind on which approach you want to use.
---
+
+If your classpath contains a `persistence.xml` that you want to ignore,
+set the following configuration property:
+
+[source,properties]
+----
+quarkus.hibernate-orm.persistence-xml.ignore=true
+----
+====
 
 [TIP]
 ====
@@ -205,7 +337,6 @@ For instance, the following snippet defines a default datasource and a default p
 quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
-quarkus.hibernate-orm.dialect=org.hibernate.dialect.H2Dialect
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
@@ -231,7 +362,7 @@ quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 <2> Define a datasource named `inventory`.
 <3> Define a persistence unit called `users`.
 <4> Define the datasource used by the persistence unit.
-<5> This configuration property is important but we will discuss it a bit later.
+<5> This configuration property is important, but we will discuss it a bit later.
 <6> Define a persistence unit called `inventory` pointing to the `inventory` datasource.
 
 [NOTE]
@@ -317,7 +448,7 @@ package org.acme.model.user;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 ----
-<1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
+<1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the Jakarta Persistence one.
 
 [CAUTION]
 ====
@@ -358,6 +489,98 @@ You can inject the `EntityManagerFactory` of a named persistence unit using the 
 EntityManagerFactory entityManagerFactory;
 ----
 
+[[persistence-unit-active]]
+=== Activate/deactivate persistence units
+
+If a persistence unit is configured at build time,
+by default it is active at runtime,
+that is Quarkus will start the corresponding Hibernate ORM `SessionFactory` on application startup.
+
+To deactivate a persistence unit at runtime, set `quarkus.hibernate-orm[.optional name].active` to `false`.
+Then Quarkus will not start the corresponding Hibernate ORM `SessionFactory` on application startup.
+Any attempt to use the corresponding persistence unit at runtime will fail with a clear error message.
+
+This is in particular useful when you want an application to be able
+to xref:datasource.adoc#datasource-active[use one of a pre-determined set of datasources at runtime].
+
+For example, with the following configuration:
+
+[source,properties]
+----
+quarkus.hibernate-orm."pg".packages=org.acme.model.shared
+quarkus.hibernate-orm."pg".datasource=pg
+quarkus.hibernate-orm."pg".database.generation=drop-and-create
+quarkus.hibernate-orm."pg".active=false
+quarkus.datasource."pg".db-kind=h2
+quarkus.datasource."pg".active=false
+quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
+
+quarkus.hibernate-orm."oracle".packages=org.acme.model.shared
+quarkus.hibernate-orm."oracle".datasource=oracle
+quarkus.hibernate-orm."oracle".database.generation=drop-and-create
+quarkus.hibernate-orm."oracle".active=false
+quarkus.datasource."oracle".db-kind=oracle
+quarkus.datasource."oracle".active=false
+quarkus.datasource."oracle".jdbc.url=jdbc:oracle:///your_database
+----
+
+xref:config-reference.adoc#configuration-sources[Setting] `quarkus.hibernate-orm."pg".active=true` and `quarkus.datasource."pg".active=true` at runtime
+will make only the PostgreSQL persistence unit and datasource available,
+and setting `quarkus.hibernate-orm."oracle".active=true` and `quarkus.datasource."oracle".active=true` at runtime
+will make only the Oracle persistence unit and datasource available.
+
+[TIP]
+====
+xref:config-reference.adoc#custom-profiles[Custom configuration profiles] can help simplify such a setup.
+By appending the following profile-specific configuration to the one above,
+you can select a persistence unit/datasource at runtime simply by
+xref:config-reference.adoc#multiple-profiles[setting `quarkus.profile`]:
+`quarkus.profile=prod,pg` or `quarkus.profile=prod,oracle`.
+
+[source,properties]
+----
+%pg.quarkus.hibernate-orm."pg".active=true
+%pg.quarkus.datasource."pg".active=true
+# Add any pg-related runtime configuration here, prefixed with "%pg."
+
+%oracle.quarkus.hibernate-orm."oracle".active=true
+%oracle.quarkus.datasource."oracle".active=true
+# Add any pg-related runtime configuration here, prefixed with "%pg."
+----
+====
+
+[TIP]
+====
+It can also be useful to define a xref:cdi.adoc#ok-you-said-that-there-are-several-kinds-of-beans[CDI bean producer] redirecting to the currently active persistence unit,
+like this:
+
+[source,java,indent=0]
+----
+public class MyProducer {
+    @Inject
+    DataSourceSupport dataSourceSupport;
+
+    @Inject
+    @PersistenceUnit("pg")
+    Session pgSessionBean;
+
+    @Inject
+    @PersistenceUnit("oracle")
+    Session oracleSessionBean;
+
+    @Produces
+    @ApplicationScoped
+    public Session session() {
+        if (dataSourceSupport.getInactiveNames().contains("pg")) {
+            return oracleSessionBean;
+        } else {
+            return pgSessionBean;
+        }
+    }
+}
+----
+====
+
 [[persistence-xml]]
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
@@ -370,8 +593,16 @@ This is useful for:
 
 [NOTE]
 ====
-If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
+If you use a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
 and only persistence units defined in `persistence.xml` will be taken into account.
+
+If your classpath contains a `persistence.xml` that you want to ignore,
+set the following configuration property:
+
+[source,properties]
+----
+quarkus.hibernate-orm.persistence-xml.ignore=true
+----
 ====
 
 Your `pom.xml` dependencies as well as your Java code would be identical to the precedent example. The only
@@ -392,7 +623,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 
         <properties>
             <!-- Connection specific -->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
 
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
@@ -401,9 +632,9 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
                 Optimistically create the tables;
                 will cause background errors being logged if they already exist,
                 but is practical to retain existing data across runs (or create as needed) -->
-            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
 
-            <property name="javax.persistence.validation.mode" value="NONE"/>
+            <property name="jakarta.persistence.validation.mode" value="NONE"/>
         </properties>
 
     </persistence-unit>
@@ -411,7 +642,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 ----
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
-so in this case the appropriate reference is the link:{orm-doc-url-prefix}#configurations[documentation on hibernate.org].
+so in this case the appropriate reference is the link:{hibernate-orm-docs-url}#configurations[documentation on hibernate.org].
 
 Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
 the same defaults be applied.
@@ -421,10 +652,10 @@ the same defaults be applied.
 
 Hibernate ORM in Quarkus supports XML mapping.
 You can add mapping files following
-the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (JPA)]
+the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (Jakarta Persistence)]
 or the http://hibernate.org/dtd/hibernate-mapping-3.0.dtd[`hbm.xml` format (specific to Hibernate ORM, deprecated)]:
 
-* in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus.hibernate-orm.mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
+* in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus-hibernate-orm-mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
 * in <<persistence-xml,`persistence.xml`>> through the `<mapping-file>` element.
 
 XML mapping files are parsed at build time.
@@ -462,7 +693,7 @@ your entity changes or any change to your `import.sql` is immediately picked up 
 
 [TIP]
 ====
-By default in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
+By default, in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
 ====
 
@@ -486,7 +717,7 @@ WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.
-You can define different xref:config.adoc#configuration-profiles[configuration profiles]
+You can define different xref:config-reference.adoc#profiles[configuration profiles]
 to select different behaviors depending on your environment.
 This is great because you can define different combinations of Hibernate ORM properties matching the development style you currently need.
 
@@ -503,11 +734,11 @@ This is great because you can define different combinations of Hibernate ORM pro
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
 ----
 
-[source,bash]
-.Start "dev mode" using a custom profile via Maven
-----
-./mvnw compile quarkus:dev -Dquarkus.profile=dev-with-data
-----
+You can start dev mode using a custom profile:
+
+:dev-additional-parameters: -Dquarkus.profile=dev-with-data
+include::{includes}/devtools/dev.adoc[]
+:!dev-additional-parameters:
 
 == Hibernate ORM in production mode
 
@@ -535,9 +766,11 @@ Add the following in your properties file.
 [[flyway]]
 == Automatically transitioning to Flyway to Manage Schemas
 
-If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode, Quarkus provides a simple way to turn
-your Hibernate ORM auto generated schema into a Flyway migration file. This is intended to make is easy to move from
-the early development phase, where Hibernate can be used to quickly setup the schema, to the production phase, where
+If you have the xref:flyway.adoc[Flyway extension] installed when running in development mode,
+Quarkus provides a simple way to initialize your Flyway configuration
+using the schema generated automatically by Hibernate ORM.
+This is intended to ease the move from
+the early development phase, where Hibernate can be used to quickly set up the schema, to the production phase, where
 Flyway is used to manage schema changes.
 
 To use this feature simply open the Dev UI when the `quarkus-flyway` extension is installed and click in the `Datasources`
@@ -546,7 +779,7 @@ link in the Flyway pane. Hit the `Create Initial Migration` button and the follo
 - A `db/migration/V1.0.0__\{appname\}.sql` file will be created, containing the SQL Hibernate is running to generate the schema
 - `quarkus.flyway.baseline-on-migrate` will be set, telling Flyway to automatically create its baseline tables
 - `quarkus.flyway.migrate-at-start` will be set, telling Flyway to automatically apply migrations on application startup
-- `%dev.quarkus.flyway.clean-at-start` and ``%test.quarkus.flyway.clean-at-start` will be set, to clean the DB after reload in dev/test mode
+- `%dev.quarkus.flyway.clean-at-start` and `%test.quarkus.flyway.clean-at-start` will be set, to clean the DB after reload in dev/test mode
 
 WARNING: This button is simply a convenience to quickly get you started with Flyway, it is up to you to determine how you want to
 manage your database schemas in production. In particular the `migrate-at-start` setting may not be right for all environments.
@@ -558,7 +791,7 @@ Applications that frequently read the same entities can see their performance im
 
 === Caching of entities
 
-To enable second-level cache, mark the entities that you want cached with `@javax.persistence.Cacheable`:
+To enable second-level cache, mark the entities that you want cached with `@jakarta.persistence.Cacheable`:
 
 [source,java]
 ----
@@ -627,7 +860,7 @@ That's all! Caching technology is already integrated and enabled by default in Q
 
 Caches store the data in separate regions to isolate different portions of data; such regions are assigned a name, which is useful for configuring each region independently, or to monitor their statistics.
 
-By default entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
+By default, entities are cached in regions named after their fully qualified name, e.g. `org.acme.Country`.
 
 Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `org.acme.Country#cities`.
 
@@ -649,8 +882,7 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ----
 ====
 
-
-include::duration-format-note.adoc[]
+include::{includes}/duration-format-note.adoc[]
 
 === Limitations of Caching
 
@@ -702,10 +934,10 @@ For more information about Hibernate Envers, see link:https://hibernate.org/orm/
 
 [[metrics]]
 == Metrics
-Either xref:micrometer.adoc[Micrometer] or xref:microprofile-metrics.adoc[SmallRye Metrics] are
+Either xref:telemetry-micrometer.adoc[Micrometer] or xref:smallrye-metrics.adoc[SmallRye Metrics] are
 capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
 on the `/q/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
-When using link:microprofile-metrics[SmallRye Metrics], metrics will be available under the `vendor` scope.
+When using xref:smallrye-metrics.adoc[SmallRye Metrics], metrics will be available under the `vendor` scope.
 
 == Limitations and other things you should know
 
@@ -718,10 +950,10 @@ know what is being done.
 
 === Automatic build time enhancement
 
-Hibernate ORM can use build time enhanced entities; normally this is not mandatory but it's useful and will have your
+Hibernate ORM can use build time enhanced entities; normally this is not mandatory, but it's useful and will have your
 applications perform better.
 
-Typically you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
+Typically, you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
 not necessary as the enhancement step is integrated in the build and analysis of the Quarkus application.
 
 [WARNING]
@@ -741,11 +973,11 @@ All configuration is optional; for more details see xref:transaction.adoc[Using 
 
 Connection pool::
 Don't need to choose one either. Quarkus automatically includes the Agroal connection pool;
-just configure your datasource as in the above examples and it will setup Hibernate ORM to use Agroal.
+configure your datasource as in the above examples and it will set up Hibernate ORM to use Agroal.
 More details about this connection pool can be found in xref:datasource.adoc[Quarkus - Datasources].
 
 Second Level Cache::
-as explained above in section <<caching,Caching>>, you don't need to pick an implementation.
+As explained earlier in the <<caching,Caching section>>, you don't need to pick an implementation.
 A suitable implementation based on technologies from link:https://infinispan.org/[Infinispan] and link:https://github.com/ben-manes/caffeine[Caffeine] is included as a transitive dependency of the Hibernate ORM extension, and automatically integrated during the build.
 
 === Limitations
@@ -754,13 +986,13 @@ XML mapping with duplicate files in the classpath::
 <<xml-mapping,XML mapping>> files are expected to have a unique path.
 +
 In practice, it's only possible to have duplicate XML mapping files in the classpath in very specific scenarios.
-For example, if two JARs include a `META-INF/orm.xml` file (with the exact same path, but in different JARs),
+For example, if two JARs include a `META-INF/orm.xml` file (with the exact same path but in different JARs),
 then the mapping file path `META-INF/orm.xml` can only be referenced from a `persistence.xml`
 **in the same JAR as the `META-INF/orm.xml` file**.
 
 JMX::
 Management beans are not working in GraalVM native images;
-therefore Hibernate's capability to register statistics and management operations with the JMX bean is disabled when compiling into a native image.
+therefore, Hibernate's capability to register statistics and management operations with the JMX bean is disabled when compiling into a native image.
 This limitation is likely permanent, as it's not a goal for native images
 to implement support for JMX. All such metrics can be accessed in other ways.
 
@@ -769,16 +1001,23 @@ Hibernate ORM's capability to integrate with JACC is disabled when building Graa
 as JACC is not available - nor useful - in native mode.
 
 Binding the Session to ThreadLocal context::
-Essentially using the `ThreadLocalSessionContext` helper of Hibernate ORM is not implemented.
-The team believes this isn't a big deal as it's trivial to inject the Session via CDI instead, or
-handling the binding into a ThreadLocal yourself, making this a legacy feature.
-This limitation might be resolved in the future, if someone opens a ticket for it and provides a reasonable use case to justify the need.
+It is impossible to use the `ThreadLocalSessionContext` helper of Hibernate ORM as support for it is not implemented.
+Since Quarkus provides out-of-the-box CDI support, injection or programmatic CDI lookup is a better approach.
+This feature also didn't integrate well with reactive components and more modern context propagation techniques, making us believe this legacy feature has no future.
+If you badly need to bind it to a ThreadLocal, it should be trivial to implement in your own code.
+
+JNDI::
+The JNDI technology is commonly used in other runtimes to integrate different components.
+A common use case is Java Enterprise servers to bind the TransactionManager and the Datasource components to a name and then have Hibernate ORM configured to look these components up by name.
+But in Quarkus, this use case doesn't apply as components are injected directly, making JNDI support an unnecessary legacy.
+To avoid unexpected use of JNDI, full support for JNDI has been disabled in the Hibernate ORM extension for Quarkus.
+This is both a security precaution and an optimization.
 
 === Other notable differences
 
 Format of `import.sql`::
-When importing a `import.sql` to setup your database, keep in mind that Quarkus reconfigures Hibernate ORM so to require a semicolon (';') to terminate each statement.
-The default in Hibernate is to have a statement per line, without requiring a terminator other than newline: remember to convert your scripts to use the ';' terminator character if you're reusing existing scripts.
+When importing a `import.sql` to set up your database, keep in mind that Quarkus reconfigures Hibernate ORM so to require a semicolon (`;`) to terminate each statement.
+The default in Hibernate is to have a statement per line, without requiring a terminator other than newline: remember to convert your scripts to use the `;` terminator character if you're reusing existing scripts.
 This is useful so to allow multi-line statements and human friendly formatting.
 
 == Simplifying Hibernate ORM with Panache
@@ -795,23 +1034,23 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 [[multitenancy]]
 == Multitenancy
 
-"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
+"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{hibernate-orm-docs-url}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] and the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach.
+Quarkus currently supports the link:{hibernate-orm-docs-url}#multitenacy-separate-database[separate database] approach, the link:{hibernate-orm-docs-url}#multitenacy-separate-schema[separate schema] approach and the link:{hibernate-orm-docs-url}#multitenacy-discriminator[discriminator] approach.
 
-To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
+To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
 === Writing the application
 
-Let's start by implementing the `/{tenant}` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
+Let's start by implementing the `/{tenant}` endpoint. As you can see from the source code below it is just a regular Jakarta REST resource:
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @ApplicationScoped
 @Path("/{tenant}")
@@ -826,7 +1065,7 @@ public class FruitResource {
         return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
                 .getResultList().toArray(new Fruit[0]);
     }
-    
+
 }
 ----
 
@@ -834,7 +1073,7 @@ In order to resolve the tenant from incoming requests and map it to a specific t
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -850,7 +1089,7 @@ public class CustomTenantResolver implements TenantResolver {
     public String getDefaultTenantId() {
         return "base";
     }
-    
+
     @Override
     public String resolveTenantId() {
         String path = context.request().path();
@@ -863,7 +1102,7 @@ public class CustomTenantResolver implements TenantResolver {
 
         return parts[1];
     }
-    
+
 }
 ----
 <1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier
@@ -901,36 +1140,41 @@ public class CustomTenantResolver implements TenantResolver {
 
 === Configuring the application
 
-In general it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
-Therefore you have to disable it and you need to make sure that the tables are created per schema. 
+In general, it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
+Therefore, you have to disable it, and you need to make sure that the tables are created per schema.
 The following setup will use the xref:flyway.adoc[Flyway] extension to achieve this goal.
 
+[[schema-approach]]
 ==== SCHEMA approach
 
 The same data source will be used for all tenants and a schema has to be created for every tenant inside that data source.
-CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the DATABASE approach below. 
+
+CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the <<database-approach,database approach>>.
 
 [source,properties]
 ----
-# Disable generation
-quarkus.hibernate-orm.database.generation=none
+quarkus.hibernate-orm.database.generation=none <1>
 
-# Enable SCHEMA approach and use default datasource
-quarkus.hibernate-orm.multitenant=SCHEMA
-# You could use a non-default datasource by using the following setting 
-# quarkus.hibernate-orm.multitenant-schema-datasource=other
+quarkus.hibernate-orm.multitenant=SCHEMA <2>
 
-# The default data source used for all tenant schemas
-quarkus.datasource.db-kind=postgresql
+quarkus.datasource.db-kind=postgresql <3>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 
-# Enable Flyway configuration to create schemas
-quarkus.flyway.schemas=base,mycompany
+quarkus.flyway.schemas=base,mycompany <4>
 quarkus.flyway.locations=classpath:schema
 quarkus.flyway.migrate-at-start=true
 ----
+<1> Disable schema generation, because it is not supported by Hibernate ORM for schema multi-tenancy.
+We'll use Flyway instead, see further down.
+<2> Enable schema multi-tenancy.
++
+We use the default datasource here, but could use a named datasource if we wanted to,
+by following instructions <<multiple-persistence-units,there>>.
+<3> xref:datasource.adoc[Configure the datasource].
+<4> Configure xref:flyway.adoc[Flyway] for database initialization,
+because schema generation by Hibernate ORM is not supported in this case.
 
 Here is an example of the Flyway SQL (`V1.0.0__create_fruits.sql`) to be created in the configured folder `src/main/resources/schema`.
 
@@ -959,44 +1203,62 @@ INSERT INTO mycompany.known_fruits(id, name) VALUES (2, 'Apricots');
 INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
 ----
 
-
-
+[[database-approach]]
 ==== DATABASE approach
 
-For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`. 
+For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`.
+
+[CAUTION]
+====
+// Related to https://github.com/quarkusio/quarkus/issues/11861
+With this approach, all datasources used by the same persistence unit
+are assumed to point to a database of the same vendor (same `db-kind`) and version.
+
+Mismatches will not be detected, and may result in unpredictable behavior.
+====
 
 [source,properties]
 ----
-# Disable generation
-quarkus.hibernate-orm.database.generation=none
+quarkus.hibernate-orm.database.generation=none <1>
 
-# Enable DATABASE approach
-quarkus.hibernate-orm.multitenant=DATABASE
+quarkus.hibernate-orm.multitenant=DATABASE <2>
+quarkus.hibernate-orm.datasource=base <3>
 
 # Default tenant 'base'
-quarkus.datasource.base.db-kind=postgresql
+quarkus.datasource.base.db-kind=postgresql <4>
 quarkus.datasource.base.username=quarkus_test
 quarkus.datasource.base.password=quarkus_test
 quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+quarkus.flyway.base.locations=classpath:database/base <5>
+quarkus.flyway.base.migrate-at-start=true
 
 # Tenant 'mycompany'
-quarkus.datasource.mycompany.db-kind=postgresql
+quarkus.datasource.mycompany.db-kind=postgresql <6>
 quarkus.datasource.mycompany.username=mycompany
 quarkus.datasource.mycompany.password=mycompany
 quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
-
-# Flyway configuration for the default datasource
-quarkus.flyway.locations=classpath:database/default
-quarkus.flyway.migrate-at-start=true
-
-# Flyway configuration for the mycompany datasource
-quarkus.flyway.mycompany.locations=classpath:database/mycompany
+quarkus.flyway.mycompany.locations=classpath:database/mycompany <7>
 quarkus.flyway.mycompany.migrate-at-start=true
 ----
+<1> Disable schema generation, because it is not supported by Hibernate ORM for database multi-tenancy.
+We'll use Flyway instead, see further down.
+<2> Enable database multi-tenancy.
+<3> Select a datasource for the persistence unit.
++
+This is only to allow Quarkus to determine the Hibernate ORM dialect to use;
+see <<hibernate-dialect-varying-database,this section>> for details.
+<4> xref:datasource.adoc[Configure the datasource] for one tenant, `base`.
+<5> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `base`,
+because schema generation by Hibernate ORM is not supported in this case.
+<6> xref:datasource.adoc[Configure the datasource] for another tenant.
++
+There could be more tenants, but here we're stopping at two.
+<7> Configure xref:flyway.adoc[Flyway] for database initialization for tenant `mycompany`,
+because schema generation by Hibernate ORM is not supported in this case.
 
 Following are examples of the Flyway SQL files to be created in the configured folder `src/main/resources/database`.
 
-Default schema (`src/main/resources/database/default/V1.0.0__create_fruits.sql`):
+Schema for tenant `base` (`src/main/resources/database/base/V1.0.0__create_fruits.sql`):
 
 [source,sql]
 ----
@@ -1012,7 +1274,7 @@ INSERT INTO known_fruits(id, name) VALUES (2, 'Apple');
 INSERT INTO known_fruits(id, name) VALUES (3, 'Banana');
 ----
 
-Mycompany schema (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
+Schema for tenant `mycompany` (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
 
 [source,sql]
 ----
@@ -1028,6 +1290,24 @@ INSERT INTO known_fruits(id, name) VALUES (2, 'Apricots');
 INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 ----
 
+[[discriminator-approach]]
+==== DISCRIMINATOR approach
+
+The default data source will be used for all tenants. All entities defining a field annotated with `@TenantId` will have that field populated automatically, and will get filtered automatically in queries.
+
+
+[source,properties]
+----
+quarkus.hibernate-orm.multitenant=DISCRIMINATOR <1>
+
+quarkus.datasource.db-kind=postgresql <2>
+quarkus.datasource.username=quarkus_test
+quarkus.datasource.password=quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+----
+<1> Enable discriminator multi-tenancy.
+<2> xref:datasource.adoc[Configure the datasource].
+
 === Programmatically Resolving Tenants Connections
 
 If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file,
@@ -1040,7 +1320,7 @@ Your custom connection resolver would allow for example to read tenant informati
 [[interceptors]]
 == Interceptors
 
-You can assign an link:{orm-doc-url-prefix}#events-interceptors[`org.hibernate.Interceptor`]
+You can assign an link:{hibernate-orm-docs-url}#events-interceptors[`org.hibernate.Interceptor`]
 to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
 
 [source,java]
@@ -1078,4 +1358,96 @@ In that case, the interceptor implementation doesn't need to be thread-safe.
 ====
 Due to a limitation in Hibernate ORM itself,
 `@PreDestroy` methods on `@Dependent`-scoped interceptors will never get called.
+====
+
+
+[[statement_inspectors]]
+== Statement Inspectors
+
+You can assign a `org.hibernate.engine.jdbc.spi.StatementInspector` to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
+
+[source,java]
+----
+@PersistenceUnitExtension // <1>
+public class MyStatementInspector implements StatementInspector { // <2>
+    @Override
+    public String inspect(String sql) {
+        // ...
+        return sql;
+    }
+}
+----
+<1> Annotate the statement inspector implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<2> Implement `org.hibernate.engine.jdbc.spi.StatementInspector`.
+
+[[json_xml_serialization_deserialization]]
+== Customizing JSON/XML serialization/deserialization
+
+By default, Quarkus will try to automatically configure format mappers depending on available extensions.
+Globally configured `ObjectMapper` (or `Jsonb`) will be used for serialization/deserialization operations when Jackson (or JSON-B) is available.
+Jackson will take precedence if both Jackson and JSON-B are available at the same time.
+
+JSON and XML serialization/deserialization in Hibernate ORM can be customized by implementing a `org.hibernate.type.format.FormatMapper`
+and annotating the implementation with the appropriate qualifiers:
+
+[source,java]
+----
+@JsonFormat // <1>
+@PersistenceUnitExtension // <2>
+public class MyJsonFormatMapper implements FormatMapper { // <3>
+    @Override
+    public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+        // ...
+    }
+
+    @Override
+    public <T> String toString(T value, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+       // ...
+    }
+}
+----
+<1> Annotate the format mapper implementation with the `@JsonFormat` qualifier
+to tell Quarkus that this mapper is specific to JSON serialization/deserialization.
++
+<2> Annotate the format mapper implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<3> Implement `org.hibernate.type.format.FormatMapper`.
+
+In case of a custom XML format mapper, a different CDI qualifier must be applied:
+
+[source,java]
+----
+@XmlFormat // <1>
+@PersistenceUnitExtension // <2>
+public class MyJsonFormatMapper implements FormatMapper { // <3>
+    @Override
+    public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+        // ...
+    }
+
+    @Override
+    public <T> String toString(T value, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+       // ...
+    }
+}
+----
+<1> Annotate the format mapper implementation with the `@XmlFormat` qualifier
+to tell Quarkus that this mapper is specific to XML serialization/deserialization.
++
+<2> Annotate the format mapper implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<3> Implement `org.hibernate.type.format.FormatMapper`.
+
+[NOTE]
+====
+Format mappers *must* have both `@PersistenceUnitExtension` and either `@JsonFormat` or `@XmlFormat` CDI qualifiers applied.
+
+Having multiple JSON (or XML) format mappers registered for the same persistence unit will result in an exception, because of the ambiguity.
 ====

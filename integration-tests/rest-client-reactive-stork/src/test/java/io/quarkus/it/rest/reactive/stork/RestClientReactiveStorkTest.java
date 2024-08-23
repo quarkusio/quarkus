@@ -10,14 +10,26 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.arc.Arc;
+import io.quarkus.it.rest.client.reactive.stork.MyServiceDiscoveryProvider;
+import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.Response;
+import io.vertx.core.Vertx;
 
 @QuarkusTest
-@QuarkusTestResource(SlowWiremockServer.class)
-@QuarkusTestResource(FastWiremockServer.class)
+@WithTestResource(value = SlowWiremockServer.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = FastWiremockServer.class, restrictToAnnotatedClass = false)
 public class RestClientReactiveStorkTest {
+
+    @Test
+    @DisabledOnIntegrationTest
+    void shouldUseQuarkusVertxInstance() {
+        Vertx providedVertx = MyServiceDiscoveryProvider.providedVertx;
+        assertThat(providedVertx).isNotNull()
+                .isEqualTo(Arc.container().instance(Vertx.class).get());
+    }
 
     @Test
     void shouldUseFasterService() {
@@ -41,5 +53,18 @@ public class RestClientReactiveStorkTest {
 
         // after hitting the slow endpoint, we should only use the fast one:
         assertThat(responses).containsOnly(FAST_RESPONSE, FAST_RESPONSE, FAST_RESPONSE);
+    }
+
+    @Test
+    void shouldUseV2Service() {
+        Set<String> responses = new HashSet<>();
+
+        for (int i = 0; i < 2; i++) {
+            Response response = when().get("/client/quarkus");
+            response.then().statusCode(200);
+        }
+
+        responses.clear();
+
     }
 }

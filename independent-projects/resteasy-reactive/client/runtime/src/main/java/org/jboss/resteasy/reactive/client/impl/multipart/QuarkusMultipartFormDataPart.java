@@ -20,7 +20,12 @@ public class QuarkusMultipartFormDataPart {
     private final Multi<Byte> multiByteContent;
 
     public QuarkusMultipartFormDataPart(String name, Buffer content, String mediaType, Class<?> type) {
+        this(name, null, content, mediaType, type);
+    }
+
+    public QuarkusMultipartFormDataPart(String name, String filename, Buffer content, String mediaType, Class<?> type) {
         this.name = name;
+        this.filename = filename;
         this.content = content;
         this.mediaType = mediaType;
         this.type = type;
@@ -37,7 +42,6 @@ public class QuarkusMultipartFormDataPart {
         }
         this.isObject = true;
         this.value = null;
-        this.filename = null;
         this.pathname = null;
         this.text = false;
     }
@@ -63,7 +67,7 @@ public class QuarkusMultipartFormDataPart {
         this.content = null;
     }
 
-    public QuarkusMultipartFormDataPart(String name, String value) {
+    public QuarkusMultipartFormDataPart(String name, String value, String filename) {
         if (name == null) {
             throw new NullPointerException("Multipart field name cannot be null");
         }
@@ -72,7 +76,7 @@ public class QuarkusMultipartFormDataPart {
         }
         this.name = name;
         this.value = value;
-        this.filename = null;
+        this.filename = filename;
         this.pathname = null;
         this.content = null;
         this.multiByteContent = null;

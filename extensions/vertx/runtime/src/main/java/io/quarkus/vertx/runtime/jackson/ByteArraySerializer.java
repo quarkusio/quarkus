@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 /**
  * Copied from {@code io.vertx.core.json.jackson.ByteArraySerializer} as that class is package private
  */
-class ByteArraySerializer extends JsonSerializer<byte[]> {
+public class ByteArraySerializer extends JsonSerializer<byte[]> {
 
     @Override
     public void serialize(byte[] value, JsonGenerator jgen, SerializerProvider provider) throws IOException {

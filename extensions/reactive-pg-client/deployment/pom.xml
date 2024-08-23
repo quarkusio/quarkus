@@ -15,8 +15,7 @@
     <name>Quarkus - Reactive PostgreSQL Client - Deployment</name>
 
     <properties>
-        <postgres.image>postgres:14.1</postgres.image>
-        <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
+        <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
     </properties>
 
     <dependencies>
@@ -47,7 +46,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -65,6 +64,17 @@
             <artifactId>quarkus-smallrye-health-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+        </dependency>
     </dependencies>
 
     <build>
@@ -77,15 +87,20 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -123,9 +138,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -146,13 +158,13 @@
                                             <port>5431:5432</port>
                                         </ports>
                                         <wait>
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>5432</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
+                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
+                                            and that's the truth the second time only.
+                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
+                                            See also how the condition is configured in testcontainers:
+                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
+                                            <time>20000</time>
+                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
                                         </wait>
                                     </run>
                                 </image>

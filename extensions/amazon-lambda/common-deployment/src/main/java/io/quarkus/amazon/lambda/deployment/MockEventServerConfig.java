@@ -10,6 +10,12 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class MockEventServerConfig {
     /**
+     * Setting to true will start event server even if quarkus.devservices.enabled=false
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Port to access mock event server in dev mode
      */
     @ConfigItem(defaultValue = "8080")

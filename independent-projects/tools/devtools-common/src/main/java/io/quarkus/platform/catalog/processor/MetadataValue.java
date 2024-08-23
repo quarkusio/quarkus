@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-final class MetadataValue {
+public final class MetadataValue {
     private static final MetadataValue EMPTY_METADATA_VALUE = new MetadataValue(null);
     private final Object val;
 
@@ -34,6 +34,20 @@ final class MetadataValue {
     public String asString() {
         if (val instanceof String) {
             return (String) val;
+        }
+        return null;
+    }
+
+    public Integer asInteger() {
+        if (val instanceof String) {
+            try {
+                return Integer.parseInt((String) val);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        if (val instanceof Integer) {
+            return (Integer) val;
         }
         return null;
     }

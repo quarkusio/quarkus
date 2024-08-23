@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.arc.deployment.devconsole.DevObserverInfo;
-import io.quarkus.arc.deployment.devconsole.Name;
+import io.quarkus.arc.deployment.devui.DevObserverInfo;
+import io.quarkus.arc.deployment.devui.Name;
 
 public class DevObserverInfoTest {
 

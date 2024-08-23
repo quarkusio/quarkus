@@ -4,13 +4,15 @@ import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerFileUpload;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
 
-class ResumingRequestWrapper extends AbstractRequestWrapper {
+public class ResumingRequestWrapper extends HttpServerRequestWrapper {
 
     private boolean userSetState;
 
-    ResumingRequestWrapper(HttpServerRequest request) {
-        super(request);
+    public ResumingRequestWrapper(HttpServerRequest request) {
+        super((HttpServerRequestInternal) request);
     }
 
     @Override

@@ -6,7 +6,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * <p>
  * A tenant resolver is responsible for resolving the {@link OidcTenantConfig} for tenants, dynamically.
- * 
+ *
  * <p>
  * Instead of implementing a {@link TenantResolver} that maps the tenant configuration based on an identifier and its
  * corresponding entry in the application configuration file, beans implementing this interface can dynamically construct the

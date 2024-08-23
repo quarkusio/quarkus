@@ -15,6 +15,8 @@ public interface Constants {
     String PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX = "-quarkus-platform-descriptor";
     String PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX = "-quarkus-platform-properties";
 
+    String QUARKUS_VERSION_CLASSIFIER_ALL = "all";
+
     String JSON = "json";
 
     String LAST_UPDATED = "last-updated";

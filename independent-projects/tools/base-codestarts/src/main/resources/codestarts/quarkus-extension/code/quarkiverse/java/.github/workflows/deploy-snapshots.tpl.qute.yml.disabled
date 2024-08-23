@@ -1,0 +1,40 @@
+# This workflow will build and deploy a snapshot of your artifact to Sonatype Snapshots repository
+name: Deploy Snapshots
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-snapshot:
+    runs-on: ubuntu-latest
+    name: Deploy Snapshot artifacts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: {java.version}
+          cache: 'maven'
+          server-id: 'ossrh'
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Deploy Snapshot
+        run: |
+          mvn -B clean deploy -DperformRelease=true -Drelease
+        env:
+            MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+            MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+            MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

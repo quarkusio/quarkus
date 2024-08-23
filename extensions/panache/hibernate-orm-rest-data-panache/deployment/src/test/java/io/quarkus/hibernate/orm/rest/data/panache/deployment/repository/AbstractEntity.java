@@ -1,11 +1,13 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.repository;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 @MappedSuperclass
-public abstract class AbstractEntity<IdType extends Number> {
+public abstract class AbstractEntity<IdType extends Number> extends PanacheEntityBase {
 
     @Id
     @GeneratedValue
@@ -13,5 +15,9 @@ public abstract class AbstractEntity<IdType extends Number> {
 
     public IdType getId() {
         return id;
+    }
+
+    public void setId(IdType id) {
+        this.id = id;
     }
 }

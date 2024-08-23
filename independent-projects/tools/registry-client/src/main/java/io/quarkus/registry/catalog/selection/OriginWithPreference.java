@@ -25,15 +25,6 @@ public class OriginWithPreference {
     }
 
     public boolean canBeCombinedWith(OriginWithPreference o) {
-        final OriginPreference otherPref = o.getPreference();
-        // if the quarkus versions are not compatible
-        if (preference.compatibilityCode != otherPref.compatibilityCode
-                // if it's different releases of the same platform
-                || preference.registryPreference == otherPref.registryPreference
-                        && preference.platformPreference == otherPref.platformPreference
-                        && preference.releasePreference != otherPref.releasePreference) {
-            return false;
-        }
-        return true;
+        return preference.canBeCombinedWith(o.getPreference());
     }
 }

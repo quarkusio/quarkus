@@ -1,14 +1,16 @@
 package org.jboss.resteasy.reactive.server.vertx.test.multipart;
 
-import io.smallrye.common.annotation.NonBlocking;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.MultipartForm;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/multipart-all")
 public class MultipartResourceWithAllUploads {
@@ -18,7 +20,7 @@ public class MultipartResourceWithAllUploads {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @NonBlocking
     @Path("/simple/{times}")
-    public String simple(@MultipartForm FormDataWithAllUploads formData, Integer times) {
+    public String simple(@BeanParam FormDataWithAllUploads formData, Integer times) {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }

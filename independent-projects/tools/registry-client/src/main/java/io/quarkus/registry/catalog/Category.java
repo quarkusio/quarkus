@@ -1,7 +1,8 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.registry.json.JsonBuilder;
 import java.util.Map;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 public interface Category {
 
@@ -16,7 +17,7 @@ public interface Category {
     Map<String, Object> getMetadata();
 
     default Mutable mutable() {
-        return Category.builder();
+        return new CategoryImpl.Builder(this);
     }
 
     interface Mutable extends Category, JsonBuilder<Category> {

@@ -11,7 +11,7 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
  * This ProxyFactoryFactory is responsible to loading proxies which have been
  * defined in advance.
  * N.B. during the Quarkus application build, the service registry will use a different implementation:
- * 
+ *
  * @see io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator
  */
 public class QuarkusRuntimeProxyFactoryFactory implements ProxyFactoryFactory {
@@ -25,12 +25,6 @@ public class QuarkusRuntimeProxyFactoryFactory implements ProxyFactoryFactory {
     @Override
     public ProxyFactory buildProxyFactory(SessionFactoryImplementor sessionFactory) {
         return new QuarkusProxyFactory(proxyClassDefinitions);
-    }
-
-    @Deprecated
-    @Override
-    public BasicProxyFactory buildBasicProxyFactory(Class superClass, Class[] interfaces) {
-        return null;
     }
 
     @Override

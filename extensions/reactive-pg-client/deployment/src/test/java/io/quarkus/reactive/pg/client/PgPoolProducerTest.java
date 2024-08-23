@@ -1,10 +1,9 @@
 package io.quarkus.reactive.pg.client;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,10 +40,8 @@ public class PgPoolProducerTest {
         @Inject
         PgPool pgClient;
 
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1").execute(ar -> cf.complete(null));
-            return cf;
+        public CompletionStage<?> verify() {
+            return pgClient.query("SELECT 1").execute().toCompletionStage();
         }
     }
 
@@ -57,7 +54,6 @@ public class PgPoolProducerTest {
         public CompletionStage<Void> verify() {
             return pgClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem(() -> null)
                     .subscribeAsCompletionStage();
         }
     }

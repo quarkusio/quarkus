@@ -1,9 +1,11 @@
 package io.quarkus.registry.catalog;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.quarkus.registry.json.JsonBuilder;
 import java.util.Collection;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 public interface Platform {
 

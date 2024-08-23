@@ -6,8 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyWriter;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
@@ -85,21 +87,31 @@ public class ScoreSystem {
         }
 
         public static Diagnostic ExecutionNonBlocking = new Diagnostic("Dispatched on the IO thread", 100);
-        public static Diagnostic ExecutionBlocking = new Diagnostic("Needs a worker thread dispatch", 0);
+        public static Diagnostic ExecutionBlocking = new Diagnostic("Relies on a blocking worker thread", 0);
+
+        public static Diagnostic ExecutionVirtualThread = new Diagnostic("Relies on a virtual thread", 66);
 
         public static Diagnostic ResourceSingleton = new Diagnostic("Single resource instance for all requests", 100);
         public static Diagnostic ResourcePerRequest = new Diagnostic("New resource instance for every request", 0);
 
         public static Diagnostic WriterBuildTime(MessageBodyWriter<?> buildTimeWriter) {
-            return new Diagnostic("Single writer set at build time: " + buildTimeWriter, 90);
+            return new Diagnostic("Single writer set at build time: " + buildTimeWriter.getClass().getName(), 90);
         }
 
         public static Diagnostic WriterBuildTimeDirect(MessageBodyWriter<?> buildTimeWriter) {
-            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter, 100);
+            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter.getClass().getName(), 100);
         }
 
         public static Diagnostic WriterBuildTimeMultiple(List<MessageBodyWriter<?>> buildTimeWriters) {
-            return new Diagnostic("Multiple writers set at build time: " + buildTimeWriters, 50);
+            return new Diagnostic("Multiple writers set at build time: [" + getClassNames(buildTimeWriters) + "]", 50);
+        }
+
+        private static String getClassNames(List<MessageBodyWriter<?>> buildTimeWriters) {
+            List<String> classNames = new ArrayList<>(buildTimeWriters.size());
+            for (MessageBodyWriter<?> buildTimeWriter : buildTimeWriters) {
+                classNames.add(buildTimeWriter.getClass().getName());
+            }
+            return String.join(", ", classNames);
         }
 
         public static Diagnostic WriterRunTime = new Diagnostic("Run time writers required", 0);

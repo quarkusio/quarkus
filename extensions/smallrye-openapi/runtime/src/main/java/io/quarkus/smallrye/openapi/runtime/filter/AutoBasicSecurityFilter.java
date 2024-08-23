@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
-import org.eclipse.microprofile.openapi.OASFactory;
+import java.util.Map;
+
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 
 /**
@@ -14,8 +15,9 @@ public class AutoBasicSecurityFilter extends AutoSecurityFilter {
     }
 
     public AutoBasicSecurityFilter(String securitySchemeName, String securitySchemeDescription,
+            Map<String, String> securitySchemeExtensions,
             String basicSecuritySchemeValue) {
-        super(securitySchemeName, securitySchemeDescription);
+        super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
         this.basicSecuritySchemeValue = basicSecuritySchemeValue;
     }
 
@@ -28,10 +30,8 @@ public class AutoBasicSecurityFilter extends AutoSecurityFilter {
     }
 
     @Override
-    protected SecurityScheme getSecurityScheme() {
-        SecurityScheme securityScheme = OASFactory.createSecurityScheme();
+    protected void updateSecurityScheme(SecurityScheme securityScheme) {
         securityScheme.setType(SecurityScheme.Type.HTTP);
         securityScheme.setScheme(basicSecuritySchemeValue);
-        return securityScheme;
     }
 }

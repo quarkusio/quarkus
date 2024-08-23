@@ -1,5 +1,8 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
+import java.util.List;
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -15,4 +18,10 @@ public class LiquibaseMongodbBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "db/changeLog.xml")
     public String changeLog;
+
+    /**
+     * The search path for DirectoryResourceAccessor
+     */
+    @ConfigItem
+    public Optional<List<String>> searchPath;
 }

@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.test;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -8,7 +10,9 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 
 public class Util {
     private Util() {
@@ -61,4 +65,11 @@ public class Util {
             Thread.sleep(3);
         } while (collection.size() < count && i++ < 10);
     }
+
+    public static void assertTags(Tag tag, Meter... meters) {
+        for (Meter meter : meters) {
+            assertThat(meter.getId().getTags().contains(tag));
+        }
+    }
+
 }

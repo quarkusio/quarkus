@@ -1,27 +1,31 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 // FIXME: we need to refactor the serialisation of entities to bytes between here and Sse and Serialisers
 // and figure out where interceptors come into play
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class StreamingUtil {
 
     public static CompletionStage<?> send(ResteasyReactiveRequestContext context,
-            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers, Object entity, String prefix) {
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers, Object entity, String prefix,
+            String suffix) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -43,6 +47,13 @@ public class StreamingUtil {
             System.arraycopy(data, 0, prefixedData, prefixBytes.length, data.length);
             data = prefixedData;
         }
+        if (suffix != null) {
+            byte[] suffixBytes = suffix.getBytes(StandardCharsets.US_ASCII);
+            byte[] suffixedData = new byte[data.length + suffixBytes.length];
+            System.arraycopy(data, 0, suffixedData, 0, data.length);
+            System.arraycopy(suffixBytes, 0, suffixedData, data.length, suffixBytes.length);
+            data = suffixedData;
+        }
         return response.write(data);
     }
 
@@ -56,14 +67,13 @@ public class StreamingUtil {
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
                 .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
                 .toArray(ServerSerialisers.NO_WRITER);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        StreamingOutputStream baos = new StreamingOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations
-            if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
+            if (writer.isWriteable(entityClass, entityType, context.getAllAnnotations(), mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
-                writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                        Serialisers.EMPTY_MULTI_MAP, baos);
+                writer.writeTo(entity, entityClass, entityType, context.getAllAnnotations(), mediaType,
+                        new QuarkusMultivaluedHashMap<>(), baos);
                 wrote = true;
                 break;
             }
@@ -86,7 +96,6 @@ public class StreamingUtil {
             for (int i = 0; i < customizers.size(); i++) {
                 customizers.get(i).customize(response);
             }
-            // FIXME: other headers?
         }
     }
 }

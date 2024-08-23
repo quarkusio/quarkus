@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FormAuthTestCase extends AbstractFormAuthTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

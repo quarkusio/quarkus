@@ -3,7 +3,7 @@ package io.quarkus.it.kafka.streams;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.streams.KafkaStreams;
@@ -11,10 +11,10 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-@QuarkusTestResource(KafkaSSLTestResource.class)
+@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
 @QuarkusTest
 public class KafkaStreamsPropertiesTest {
 
@@ -24,7 +24,7 @@ public class KafkaStreamsPropertiesTest {
     @Test
     public void testProperties() throws Exception {
         // reflection hack ... no other way to get raw props ...
-        Field configField = KafkaStreams.class.getDeclaredField("config");
+        Field configField = KafkaStreams.class.getDeclaredField("applicationConfigs");
         configField.setAccessible(true);
         StreamsConfig config = (StreamsConfig) configField.get(streams);
 

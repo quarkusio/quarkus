@@ -9,18 +9,19 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
@@ -28,6 +29,9 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaContext;
+import io.quarkus.netty.runtime.virtual.VirtualAddress;
+import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.runtime.Application;
@@ -40,6 +44,11 @@ public class LambdaHttpHandlerTest {
     private static final String QUERY = "testParam1=testValue1&testParam2=testValue2";
     private static final String HOST_HEADER = "Host";
     private static final String HOST = "localhost";
+
+    private static final List<String> COOKIES = List.of("testcookie1=cvalue1", "testcookie2=cvalue2");
+    private static final String COOKIE_HEADER_KEY = "Cookie";
+    private static final String COOKIE_HEADER_VALUE = "testcookie1=cvalue1; testcookie2=cvalue2";
+
     private static final String METHOD = "GET";
 
     private final Application application = mock(Application.class);
@@ -47,8 +56,9 @@ public class LambdaHttpHandlerTest {
     private final APIGatewayV2HTTPEvent.RequestContext requestContext = mock(APIGatewayV2HTTPEvent.RequestContext.class);
     private final APIGatewayV2HTTPEvent.RequestContext.Http requestContextMethod = mock(
             APIGatewayV2HTTPEvent.RequestContext.Http.class);
-    private final Context context = mock(Context.class);
+    private final AmazonLambdaContext context = mock(AmazonLambdaContext.class);
     private final VirtualClientConnection<?> connection = mock(VirtualClientConnection.class);
+    private final VirtualChannel peer = mock(VirtualChannel.class);
 
     @BeforeEach
     public void mockSetup() {
@@ -57,6 +67,9 @@ public class LambdaHttpHandlerTest {
         when(requestContext.getHttp()).thenReturn(requestContextMethod);
         when(requestContextMethod.getMethod()).thenReturn(METHOD);
         when(request.getHeaders()).thenReturn(Collections.singletonMap(HOST_HEADER, HOST));
+        when(request.getCookies()).thenReturn(COOKIES);
+        when(connection.peer()).thenReturn(peer);
+        when(peer.remoteAddress()).thenReturn(new VirtualAddress("whatever"));
     }
 
     @SuppressWarnings({ "rawtypes", "unused" })
@@ -109,6 +122,15 @@ public class LambdaHttpHandlerTest {
         APIGatewayV2HTTPResponse response = mockHttpFunction(null, status);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         assertEquals(status.code(), response.getStatusCode());
+    }
+
+    @Test
+    public void verifyCookies() throws ExecutionException, InterruptedException {
+        mockHttpFunction(null, HttpResponseStatus.OK);
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(captor.capture());
+        DefaultHttpRequest rq = (DefaultHttpRequest) captor.getAllValues().get(0);
+        assertEquals(COOKIE_HEADER_VALUE, rq.headers().get(COOKIE_HEADER_KEY));
     }
 
 }

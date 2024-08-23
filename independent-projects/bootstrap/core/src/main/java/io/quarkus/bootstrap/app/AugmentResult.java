@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -13,11 +14,16 @@ public class AugmentResult {
     private final List<ArtifactResult> results;
     private final JarResult jar;
     private final Path nativeImagePath;
+    private final Map<String, String> graalVMInfo;
 
-    public AugmentResult(List<ArtifactResult> results, JarResult jar, Path nativeImagePath) {
+    public AugmentResult(List<ArtifactResult> results,
+            JarResult jar,
+            Path nativeImagePath,
+            Map<String, String> graalVMInfo) {
         this.results = results;
         this.jar = jar;
         this.nativeImagePath = nativeImagePath;
+        this.graalVMInfo = graalVMInfo;
     }
 
     public List<ArtifactResult> getResults() {
@@ -43,5 +49,9 @@ public class AugmentResult {
             }
         }
         return res;
+    }
+
+    public Map<String, String> getGraalVMInfo() {
+        return graalVMInfo;
     }
 }

@@ -4,9 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Build, Sign and Encrypt JSON Web Tokens
-
-include::./attributes.adoc[]
-:toc:
+include::_attributes.adoc[]
+:categories: security
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt-build
 
 According to link:https://datatracker.ietf.org/doc/html/rfc7519[RFC7519], JSON Web Token (JWT) is a compact, URL-safe means of representing claims which are encoded as a JSON object that is used as the payload of a JSON Web Signature (JWS) structure or as the plaintext of a JSON Web Encryption (JWE) structure, enabling the claims to be digitally signed or integrity protected with a Message Authentication Code(MAC) and/or encrypted.
 
@@ -14,21 +15,28 @@ Signing the claims is used most often to secure the claims. What is known today 
 
 However, when the claims are sensitive, their confidentiality can be guaranteed by following the steps described in the link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption] specification to produce a JWT token with the encrypted claims.
 
-Finally both the confidentiality and integrity of the claims can be further enforced by signing them first and then encrypting the nested JWT token.
+Finally, both the confidentiality and integrity of the claims can be further enforced by signing them first and then encrypting the nested JWT token.
 
 SmallRye JWT Build provides an API for securing JWT claims using all of these options. link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] is used internally to support this API.
 
-== Maven dependency
+== Dependency
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-jwt-build</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-jwt-build</artifactId>
 </dependency>
 ----
 
-Note you can use Smallrye JWT Build API without having to create Microprofile JWT endpoints supported by `quarkus-smallrye-jwt`.
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-jwt-build")
+----
+
+Note you can use Smallrye JWT Build API without having to create MicroProfile JWT endpoints supported by `quarkus-smallrye-jwt`.
 It can also be excluded from `quarkus-smallrye-jwt` if MP JWT endpoints do not need to generate JWT tokens.
 
 == Create JwtClaimsBuilder and set the claims
@@ -38,8 +46,8 @@ The first step is to initialize a `JwtClaimsBuilder` using one of the options be
 [source, java]
 ----
 import java.util.Collections;
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -97,7 +105,7 @@ String jwt2 = Jwt.claims("/tokenClaims.json").jws().keyId("kid1").header("custom
 Note the `alg` (algorithm) header is set to `RS256` by default. Signing key identifier (`kid` header) does not have to be set if a single JSON Web Key (JWK) containing a `kid` property is used.
 
 RSA and Elliptic Curve (EC) private keys as well as symmetric secret keys can be used to sign the claims.
-`ES256` and `HS256` are the defaut algorithms for EC private and symmetric key algorithms respectively.
+`ES256` and `HS256` are the default algorithms for EC private and symmetric key algorithms respectively.
 
 You can customize the signature algorithm, for example:
 
@@ -112,9 +120,10 @@ String jwt = Jwt.upn("Alice").jws().algorithm(SignatureAlgorithm.PS256).sign();
 
 Alternatively you can use a `smallrye.jwt.new-token.signature-algorithm` property:
 
-```properties
+[source,properties]
+----
 smallrye.jwt.new-token.signature-algorithm=PS256
-```
+----
 
 and write a simpler API sequence:
 
@@ -126,7 +135,7 @@ import io.smallrye.jwt.build.Jwt;
 String jwt = Jwt.upn("Alice").sign();
 ----
 
-Note the `sign` step can be combined with the <<encrypt-claims, encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+Note the `sign` step can be combined with the <<encrypt-claims,encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[encrypt-claims]]
 == Encrypt the claims
@@ -149,12 +158,12 @@ String jwt2 = Jwt.claims("/tokenClaims.json").jwe().header("custom-header", "cus
 Note the `alg` (key management algorithm) header is set to `RSA-OAEP` and the `enc` (content encryption header) is set to `A256GCM` by default.
 
 RSA and Elliptic Curve (EC) public keys as well as symmetric secret keys can be used to encrypt the claims.
-`ECDH-ES` and `A256KW` are the defaut algorithms for EC public and symmetric key encryption algorithms respectively.
+`ECDH-ES` and `A256KW` are the default algorithms for EC public and symmetric key encryption algorithms respectively.
 
-Note two encryption operations are done when creating an ecrypted token:
+Note two encryption operations are done when creating an encrypted token:
 
 1) the generated content encryption key is encrypted by the key supplied with the API using the key encryption algorithm such as `RSA-OAEP`
-2) the claims are encryped by the generated content encryption key using the content encryption algorithm such as `A256GCM`.
+2) the claims are encrypted by the generated content encryption key using the content encryption algorithm such as `A256GCM`.
 
 You can customize the key and content encryption algorithms, for example:
 
@@ -174,10 +183,11 @@ String jwt = Jwt.subject("Bob").jwe()
 
 Alternatively you can use `smallrye.jwt.new-token.key-encryption-algorithm` and `smallrye.jwt.new-token.content-encryption-algorithm` properties to customize the key and content encryption algorithms:
 
-```properties
+[source,properties]
+----
 smallrye.jwt.new-token.key-encryption-algorithm=RSA-OAEP-256
 smallrye.jwt.new-token.content-encryption-algorithm=A256CBC-HS512
-```
+----
 
 and write a simpler API sequence:
 
@@ -191,9 +201,9 @@ String jwt = Jwt.subject("Bob").encrypt();
 ----
 
 Note that when the token is directly encrypted by the public RSA or EC key it is not possible to verify which party sent the token.
-Therefore the secret keys should be preferred for directly encrypting the tokens, for example, when using JWT as cookies where a secret key is managed by the Quarkus endpoint with only this endpoint being both a producer and a consumer of the encrypted token.
+Therefore, the secret keys should be preferred for directly encrypting the tokens, for example, when using JWT as cookies where a secret key is managed by the Quarkus endpoint with only this endpoint being both a producer and a consumer of the encrypted token.
 
-If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[innersign-encrypt-claims]]
 == Sign the claims and encrypt the nested JWT token
@@ -231,8 +241,8 @@ As mentioned above, `iat` (issued at), `exp` (expires at), `jti` (token identifi
 
 [source,properties]
 ----
-smallrye.jwt.sign.key=privateKey.pem
-smallrye.jwt.encrypt.key=publicKey.pem
+smallrye.jwt.sign.key.location=privateKey.pem
+smallrye.jwt.encrypt.key.location=publicKey.pem
 ----
 
 You can also use MicroProfile `ConfigSource` to fetch the keys from the external services such as link:{vault-guide}[HashiCorp Vault] or other secret managers and use `smallrye.jwt.sign.key` and `smallrye.jwt.encrypt.key` properties instead:
@@ -298,7 +308,7 @@ or
 }
 ----
 
-`io.smallrye.jwt.util.KeyUtils` can also be used to generate a pair of assymetric RSA or EC keys. These keys can be stored using a `JWK`, `JWK Set` or `PEM` format.
+`io.smallrye.jwt.util.KeyUtils` can also be used to generate a pair of asymmetric RSA or EC keys. These keys can be stored using a `JWK`, `JWK Set` or `PEM` format.
 
 == SmallRye JWT Builder configuration
 
@@ -308,11 +318,13 @@ SmallRye JWT supports the following properties which can be used to customize th
 |===
 |Property Name|Default|Description
 |smallrye.jwt.sign.key.location|`none`|Location of a private key which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
-|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
+|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
 |smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
+|smallrye.jwt.sign.relax-key-validation|false|Relax the validation of the signing keys.
 |smallrye.jwt.encrypt.key|none|Key value which will be used to encrypt the claims or inner JWT when a no-argument encrypt() method is called.
 |smallrye.jwt.encrypt.key.id|`none`|Encryption key identifier which is checked only when JWK keys are used.
+|smallrye.jwt.encrypt.relax-key-validation|false|Relax the validation of the encryption keys.
 |smallrye.jwt.new-token.signature-algorithm|RS256|Signature algorithm. This property will be checked if the JWT signature builder has not already set the signature algorithm.
 |smallrye.jwt.new-token.key-encryption-algorithm|RSA-OAEP|Key encryption algorithm. This property will be checked if the JWT encryption builder has not already set the key encryption algorithm.
 |smallrye.jwt.new-token.content-encryption-algorithm|A256GCM|Content encryption algorithm. This property will be checked if the JWT encryption builder has not already set the content encryption algorithm.
@@ -320,6 +332,12 @@ SmallRye JWT supports the following properties which can be used to customize th
 |smallrye.jwt.new-token.issuer|none|Token issuer which can be used to set an `iss` (issuer) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.audience|none|Token audience which can be used to set an `aud` (audience) claim value if this claim has not already been set.
 |smallrye.jwt.new-token.override-matching-claims|false| Set this property to `true` for `smallrye.jwt.new-token.issuer` and `smallrye.jwt.new-token.audience` values to override the already initialized `iss` (issuer) and `aud` (audience) claims.
+|smallrye.jwt.keystore.type|`JKS`|This property can be used to customize a keystore type if either `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` or both of these properties point to a `KeyStore` file. If it is not set then the file name will be checked to determine the keystore type before defaulting to `JKS`.
+|smallrye.jwt.keystore.provider||This property can be used to customize a `KeyStore` provider if `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` point to a `KeyStore` file.
+|smallrye.jwt.keystore.password||Keystore password. If `smallrye.jwt.sign.key.location` or `smallrye.jwt.encrypt.key.location` point to a `KeyStore` file then this property has be set.
+|smallrye.jwt.keystore.encrypt.key.alias||This property has to be set to identify a public encryption key which will be extracted from `KeyStore` from a matching certificate if `smallrye.jwt.encrypt.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.sign.key.alias||This property has to be set to identify a private signing key if `smallrye.jwt.sign.key.location` points to a `KeyStore` file.
+|smallrye.jwt.keystore.sign.key.password||This property may be set if a private signing key's password in `KeyStore` is different to `smallrye.jwt.keystore.password` when `smallrye.jwt.sign.key.location` points to a `KeyStore` file.
 |===
 
 == References
@@ -330,6 +348,6 @@ SmallRye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * link:https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J]
-* xref:security-openid-connect.adoc[Using OpenID Connect to Protect Service Applications]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-jwt.adoc[Using Smallrye JWT to Protect Service Applications]
-* xref:security.adoc[Quarkus Security]
+* xref:security-overview.adoc[Quarkus Security overview]

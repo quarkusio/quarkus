@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -28,12 +29,47 @@ public class KafkaDevServicesBuildTimeConfig {
     public Optional<Integer> port;
 
     /**
-     * The Kafka image to use.
-     * Note that only Redpanda images are supported.
-     * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
+     * Kafka dev service container type.
+     * <p>
+     * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
+     * <p>
+     * For Redpanda:
+     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/vectorized/redpanda
+     * <p>
+     * For Strimzi:
+     * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
+     * <p>
+     * For Kafka Native:
+     * See https://github.com/ozangunalp/kafka-native and https://quay.io/repository/ogunalp/kafka-native
+     * <p>
+     * Note that Strimzi and Kafka Native images are launched in Kraft mode.
      */
-    @ConfigItem(defaultValue = "vectorized/redpanda:v21.11.2")
-    public String imageName;
+    @ConfigItem(defaultValue = "redpanda")
+    public Provider provider = Provider.REDPANDA;
+
+    public enum Provider {
+        REDPANDA("docker.io/vectorized/redpanda:v24.1.2"),
+        STRIMZI("quay.io/strimzi-test-container/test-container:latest-kafka-3.7.0"),
+        KAFKA_NATIVE("quay.io/ogunalp/kafka-native:latest");
+
+        private final String defaultImageName;
+
+        Provider(String imageName) {
+            this.defaultImageName = imageName;
+        }
+
+        public String getDefaultImageName() {
+            return defaultImageName;
+        }
+    }
+
+    /**
+     * The Kafka container image to use.
+     * <p>
+     * Dependent on the provider.
+     */
+    @ConfigItem
+    public Optional<String> imageName;
 
     /**
      * Indicates if the Kafka broker managed by Quarkus Dev Services is shared.
@@ -54,7 +90,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for Kafka looks for a container with the
      * {@code quarkus-dev-service-kafka} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-kafka} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared Kafka brokers.
@@ -71,6 +107,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * The topic creation will not try to re-partition existing topics with different number of partitions.
      */
     @ConfigItem
+    @ConfigDocMapKey("topic-name")
     public Map<String, Integer> topicPartitions;
 
     /**
@@ -82,9 +119,16 @@ public class KafkaDevServicesBuildTimeConfig {
     public Duration topicPartitionsTimeout;
 
     /**
-     * Allows configuring the Red Panda broker.
+     * Environment variables that are passed to the container.
      */
     @ConfigItem
-    public RedPandaBuildTimeConfig redpanda;
+    @ConfigDocMapKey("environment-variable-name")
+    public Map<String, String> containerEnv;
+
+    /**
+     * Allows configuring the Redpanda broker.
+     */
+    @ConfigItem
+    public RedpandaBuildTimeConfig redpanda;
 
 }

@@ -24,7 +24,7 @@ public class BcryptUtil {
 
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and 10 iterations.
-     * 
+     *
      * @param password the password to hash
      * @return the Modular Crypt Format bcrypt hash of the given password
      * @throws NullPointerException if the password is null
@@ -36,7 +36,7 @@ public class BcryptUtil {
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and the specified iteration
      * count.
-     * 
+     *
      * @param password the password to hash
      * @param iterationCount the number of iterations to use while hashing
      * @return the Modular Crypt Format bcrypt hash of the given password
@@ -52,7 +52,7 @@ public class BcryptUtil {
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using the specified salt and the specified iteration
      * count.
-     * 
+     *
      * @param password the password to hash
      * @param iterationCount the number of iterations to use while hashing
      * @param salt the salt to use while hashing
@@ -97,7 +97,7 @@ public class BcryptUtil {
      *
      * @param plainText the plain text string to check
      * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
-     * @return the boolean result of whether or not the plain text matches the decoded Modular Crypt Format bcrypt hash
+     * @return the boolean result of whether the plain text matches the decoded Modular Crypt Format bcrypt hash
      * @throws NullPointerException if the plainText password or passwordHash is null
      */
     public static boolean matches(String plainText, String passwordHash) {

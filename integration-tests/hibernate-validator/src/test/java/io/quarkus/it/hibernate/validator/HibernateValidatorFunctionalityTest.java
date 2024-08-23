@@ -4,21 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import java.util.logging.Formatter;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 
-import javax.validation.ConstraintViolationException;
-import javax.ws.rs.core.Response;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.core.Response;
 
-import org.jboss.logmanager.formatters.PatternFormatter;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionImpl;
-import io.quarkus.test.InMemoryLogHandler;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.LogCollectingTestResource;
+import io.quarkus.test.common.ResourceArg;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -29,25 +26,17 @@ import io.restassured.response.ValidatableResponse;
  * Test various Bean Validation operations running in Quarkus
  */
 @QuarkusTest
-@QuarkusTestResource(H2DatabaseTestResource.class)
+@WithTestResource(value = H2DatabaseTestResource.class, restrictToAnnotatedClass = false)
+@WithTestResource(value = LogCollectingTestResource.class, initArgs = {
+        @ResourceArg(name = LogCollectingTestResource.LOGGER, value = "io.quarkus"),
+        @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING")
+})
 public class HibernateValidatorFunctionalityTest {
-    private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
-    private static final java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("io.quarkus");
-    private static final InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler(
-            record -> record.getLevel().intValue() >= Level.WARNING.intValue());
 
     @BeforeEach
-    public void setLogHandler() {
+    public void clearLogs() {
         if (isLogChecksPossible()) {
-            inMemoryLogHandler.getRecords().clear();
-            rootLogger.addHandler(inMemoryLogHandler);
-        }
-    }
-
-    @AfterEach
-    public void removeLogHandler() {
-        if (isLogChecksPossible()) {
-            rootLogger.removeHandler(inMemoryLogHandler);
+            LogCollectingTestResource.current().clear();
         }
     }
 
@@ -132,13 +121,13 @@ public class HibernateValidatorFunctionalityTest {
 
         if (isLogChecksPossible()) {
             // There should also be some logs to raise the internal error to the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
+            assertThat(LogCollectingTestResource.current().getRecords())
+                    .extracting(LogCollectingTestResource::format)
                     .hasSize(1);
-            assertThat(inMemoryLogHandler.getRecords())
+            assertThat(LogCollectingTestResource.current().getRecords())
                     .element(0).satisfies(record -> {
                         assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
+                        assertThat(LogCollectingTestResource.format(record))
                                 .contains(
                                         "HTTP Request to /hibernate-validator/test/cdi-bean-method-validation-uncaught failed, error id:");
                     });
@@ -160,8 +149,8 @@ public class HibernateValidatorFunctionalityTest {
 
         if (isLogChecksPossible()) {
             // There should not be any warning/error logs since user errors do not require the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
+            assertThat(LogCollectingTestResource.current().getRecords())
+                    .extracting(LogCollectingTestResource::format)
                     .isEmpty();
         }
 
@@ -240,13 +229,13 @@ public class HibernateValidatorFunctionalityTest {
 
         if (isLogChecksPossible()) {
             // There should also be some logs to raise the internal error to the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
+            assertThat(LogCollectingTestResource.current().getRecords())
+                    .extracting(LogCollectingTestResource::format)
                     .hasSize(1);
-            assertThat(inMemoryLogHandler.getRecords())
+            assertThat(LogCollectingTestResource.current().getRecords())
                     .element(0).satisfies(record -> {
                         assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
+                        assertThat(LogCollectingTestResource.format(record))
                                 .contains(
                                         "HTTP Request to /hibernate-validator/test/rest-end-point-return-value-validation/plop/ failed, error id:");
                     });
@@ -278,11 +267,29 @@ public class HibernateValidatorFunctionalityTest {
                 .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
                 .then()
                 .statusCode(400)
+                .contentType(ContentType.TEXT)
                 .body(containsString("numeric value out of bounds"));
 
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/42/")
                 .then()
+                .contentType(ContentType.TEXT)
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidationWithAnnotationOnOverriddenMethod() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-overridden-method/plop/")
+                .then()
+                .statusCode(400)
+                .contentType(ContentType.TEXT)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-overridden-method/42/")
+                .then()
+                .contentType(ContentType.TEXT)
                 .body(is("42"));
     }
 
@@ -295,7 +302,7 @@ public class HibernateValidatorFunctionalityTest {
                 .body(containsString("numeric value out of bounds"));
 
         if (isLogChecksPossible()) {
-            assertThat(inMemoryLogHandler.getRecords()).isEmpty();
+            assertThat(LogCollectingTestResource.current().getRecords()).isEmpty();
         }
 
         RestAssured.when()
@@ -358,6 +365,16 @@ public class HibernateValidatorFunctionalityTest {
                 .get("/hibernate-validator/test/test-validation-message-locale/1")
                 .then()
                 .body(containsString("Vrijednost ne zadovoljava uzorak"));
+    }
+
+    @Test
+    public void testValidationMessageInvalidAcceptLanguageHeaderLeadsToDefaultLocaleBeingUsed() {
+        RestAssured.given()
+                .header("Accept-Language", "invalid string")
+                .when()
+                .get("/hibernate-validator/test/test-validation-message-locale/1")
+                .then()
+                .body(containsString("Value is not in line with the pattern"));
     }
 
     @Test

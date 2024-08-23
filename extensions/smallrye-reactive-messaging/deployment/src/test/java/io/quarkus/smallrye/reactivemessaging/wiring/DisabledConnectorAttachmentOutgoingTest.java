@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -30,7 +30,7 @@ public class DisabledConnectorAttachmentOutgoingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyDummyConnector.class, MySource.class))
-            .overrideConfigKey("quarkus.reactive-messaging.auto-connector-attachment", "false");
+            .overrideConfigKey("quarkus.messaging.auto-connector-attachment", "false");
 
     @Inject
     @Connector("dummy")

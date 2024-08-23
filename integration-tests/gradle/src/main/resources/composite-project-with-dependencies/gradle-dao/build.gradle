@@ -5,7 +5,12 @@ plugins {
 
 repositories {
     mavenCentral()
-    mavenLocal()
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
 }
 
 dependencies {
@@ -28,4 +33,8 @@ compileJava {
 
 compileTestJava {
     options.encoding = 'UTF-8'
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

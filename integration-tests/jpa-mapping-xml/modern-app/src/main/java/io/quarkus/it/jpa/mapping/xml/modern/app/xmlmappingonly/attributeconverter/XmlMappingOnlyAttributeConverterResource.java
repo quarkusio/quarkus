@@ -2,13 +2,13 @@ package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.attributeconvert
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.UserTransaction;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.UserTransaction;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.Session;
 

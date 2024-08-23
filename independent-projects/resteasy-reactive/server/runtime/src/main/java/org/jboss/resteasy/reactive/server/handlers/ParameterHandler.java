@@ -2,9 +2,11 @@ package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.Collection;
 import java.util.function.BiConsumer;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -37,6 +39,8 @@ public class ParameterHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) {
+        // needed because user provided ParamConverter classes could use request scoped CDI beans
+        requestContext.requireCDIRequestScope();
         try {
             Object result = extractor.extractParameter(requestContext);
             if (result instanceof ParameterExtractor.ParameterCallback) {
@@ -55,6 +59,7 @@ public class ParameterHandler implements ServerRestHandler {
                 handleResult(result, requestContext, false);
             }
         } catch (Exception e) {
+            log.debug("Error occurred during parameter extraction", e);
             if (e instanceof WebApplicationException) {
                 throw e;
             } else {
@@ -71,7 +76,7 @@ public class ParameterHandler implements ServerRestHandler {
         }
         Throwable toThrow = null;
         if (converter != null && ((result != null) || isOptional)) {
-            // spec says: 
+            // spec says:
             /*
              * 3.2 Fields and Bean Properties
              * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation

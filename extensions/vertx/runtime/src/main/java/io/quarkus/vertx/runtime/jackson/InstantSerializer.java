@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 /**
  * Copied from {@code io.vertx.core.json.jackson.InstantSerializer} as that class is package private
  */
-class InstantSerializer extends JsonSerializer<Instant> {
+public class InstantSerializer extends JsonSerializer<Instant> {
     @Override
     public void serialize(Instant value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         jgen.writeString(ISO_INSTANT.format(value));

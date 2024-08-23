@@ -1,0 +1,16 @@
+allowlist
+blocklist
+primary
+source
+initiator
+requester
+controller
+host
+director
+secondary
+replica
+responder
+device
+worker
+proxy
+performer

@@ -4,55 +4,129 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DevServicesBuildTimeConfig {
+public interface DevServicesBuildTimeConfig {
 
     /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
+     * Whether this Dev Service should start with the application in dev mode or tests.
      *
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a database when running in Dev or Test mode.
+     * Dev Services are enabled by default
+     * unless connection configuration (e.g. the JDBC URL or reactive client URL) is set explicitly.
      *
-     * @deprecated Use .enabled instead.
+     * @asciidoclet
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    @Deprecated(forRemoval = true, since = "2.1")
-    public Optional<Boolean> enabledDeprecated = Optional.empty();
+    Optional<Boolean> enabled();
 
     /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
-     *
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a database when running in Dev or Test mode.
+     * The container image name for container-based Dev Service providers.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
-    @ConfigItem
-    public Optional<Boolean> enabled = Optional.empty();
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> imageName();
 
     /**
-     * The container image name to use, for container based DevServices providers.
-     *
-     * If the provider is not container based (e.g. a H2 Database) then this has no effect.
+     * Environment variables that are passed to the container.
      */
-    @ConfigItem
-    public Optional<String> imageName;
+    @ConfigDocMapKey("environment-variable-name")
+    Map<String, String> containerEnv();
+
+    /**
+     * Generic properties that are passed for additional container configuration.
+     * <p>
+     * Properties defined here are database-specific
+     * and are interpreted specifically in each database dev service implementation.
+     */
+    @ConfigDocMapKey("property-key")
+    Map<String, String> containerProperties();
 
     /**
      * Generic properties that are added to the database connection URL.
      */
-    @ConfigItem
-    public Map<String, String> properties;
+    @ConfigDocMapKey("property-key")
+    Map<String, String> properties();
 
     /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    @ConfigItem
-    public OptionalInt port;
+    OptionalInt port();
+
+    /**
+     * The container start command to use for container-based Dev Service providers.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> command();
+
+    /**
+     * The database name to use if this Dev Service supports overriding it.
+     */
+    Optional<String> dbName();
+
+    /**
+     * The username to use if this Dev Service supports overriding it.
+     */
+    Optional<String> username();
+
+    /**
+     * The password to use if this Dev Service supports overriding it.
+     */
+    Optional<String> password();
+
+    /**
+     * The path to a SQL script to be loaded from the classpath and applied to the Dev Service database.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    Optional<String> initScriptPath();
+
+    /**
+     * The volumes to be mapped to the container.
+     * <p>
+     * The map key corresponds to the host location; the map value is the container location.
+     * If the host location starts with "classpath:",
+     * the mapping loads the resource from the classpath with read-only permission.
+     * <p>
+     * When using a file system location, the volume will be generated with read-write permission,
+     * potentially leading to data loss or modification in your file system.
+     * <p>
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     */
+    @ConfigDocMapKey("host-path")
+    Map<String, String> volumes();
+
+    /**
+     * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
+     * to reuse them in the next dev mode session or test suite execution.
+     *
+     * Within a dev mode session or test suite execution,
+     * Quarkus will always reuse Dev Services as long as their configuration
+     * (username, password, environment, port bindings, ...) did not change.
+     * This feature is specifically about keeping containers running
+     * **when Quarkus is not running** to reuse them across runs.
+     *
+     * WARNING: This feature needs to be enabled explicitly in `testcontainers.properties`,
+     * may require changes to how you configure data initialization in dev mode and tests,
+     * and may leave containers running indefinitely, forcing you to stop and remove them manually.
+     * See xref:databases-dev-services.adoc#reuse[this section of the documentation] for more information.
+     *
+     * This configuration property is set to `true` by default,
+     * so it is mostly useful to *disable* reuse,
+     * if you enabled it in `testcontainers.properties`
+     * but only want to use it for some of your Quarkus applications or datasources.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean reuse();
 
 }

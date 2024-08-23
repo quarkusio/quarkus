@@ -5,7 +5,7 @@ import static io.restassured.RestAssured.when;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,6 +28,7 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder.vertx.match-patterns", "/one=/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.ignore-patterns", "/two")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 
@@ -42,8 +43,8 @@ public class VertxWithHttpEnabledTest {
         Assertions.assertTrue(httpBinderConfiguration.isClientEnabled());
         Assertions.assertTrue(httpBinderConfiguration.isServerEnabled());
 
-        // prefer http-server.ignore-patterns
-        Assertions.assertEquals(1, httpBinderConfiguration.getServerIgnorePatterns().size());
+        // http-server.ignore-patterns: add 1 due to default ignore ^/q/.*
+        Assertions.assertEquals(2, httpBinderConfiguration.getServerIgnorePatterns().size());
         Pattern p = httpBinderConfiguration.getServerIgnorePatterns().get(0);
         Assertions.assertTrue(p.matcher("/http").matches());
 

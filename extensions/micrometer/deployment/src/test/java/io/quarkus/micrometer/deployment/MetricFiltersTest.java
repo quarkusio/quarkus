@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Produces;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Produces;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +21,8 @@ public class MetricFiltersTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class,
-                            MeterFilterProducer.class));
+                            MeterFilterProducer.class))
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
 
     @Test
     public void testCDIFilters() {

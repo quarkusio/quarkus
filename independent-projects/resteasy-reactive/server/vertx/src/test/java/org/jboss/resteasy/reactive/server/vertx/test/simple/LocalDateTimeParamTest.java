@@ -1,14 +1,18 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.restassured.RestAssured;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import java.util.Optional;
+
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
+import org.jboss.resteasy.reactive.RestCookie;
+import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
@@ -16,6 +20,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.restassured.RestAssured;
 
 public class LocalDateTimeParamTest {
 
@@ -31,6 +37,15 @@ public class LocalDateTimeParamTest {
     }
 
     @Test
+    public void localDateTimeAsOptionalQueryParam() {
+        RestAssured.get("/hello/optional?date=1984-08-08T01:02:03")
+                .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
+
+        RestAssured.get("/hello/optional")
+                .then().statusCode(200).body(Matchers.equalTo("hello#2022"));
+    }
+
+    @Test
     public void localDateTimeAsPathParam() {
         RestAssured.get("/hello/1995-09-21 01:02:03")
                 .then().statusCode(200).body(Matchers.equalTo("hello@9"));
@@ -42,12 +57,32 @@ public class LocalDateTimeParamTest {
                 .then().statusCode(200).body(Matchers.equalTo("hello:22"));
     }
 
+    @Test
+    public void localDateTimeAsHeader() {
+        RestAssured.with().header("date", "1984-08-08 01:02:03")
+                .get("/hello/header")
+                .then().statusCode(200).body(Matchers.equalTo("hello=1984-08-08T01:02:03"));
+    }
+
+    @Test
+    public void localDateTimeAsCookie() {
+        RestAssured.with().cookie("date", "1984-08-08 01:02:03")
+                .get("/hello/cookie")
+                .then().statusCode(200).body(Matchers.equalTo("hello/1984-08-08T01:02:03"));
+    }
+
     @Path("hello")
     public static class HelloResource {
 
         @GET
         public String helloQuery(@RestQuery LocalDateTime date) {
             return "hello#" + date.getYear();
+        }
+
+        @Path("optional")
+        @GET
+        public String helloOptionalQuery(@RestQuery Optional<LocalDateTime> date) {
+            return "hello#" + date.orElse(LocalDateTime.of(2022, 1, 1, 0, 0)).getYear();
         }
 
         @GET
@@ -60,6 +95,18 @@ public class LocalDateTimeParamTest {
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
             return "hello:" + date.getDayOfMonth();
+        }
+
+        @Path("cookie")
+        @GET
+        public String helloCookie(@RestCookie @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime date) {
+            return "hello/" + date;
+        }
+
+        @Path("header")
+        @GET
+        public String helloHeader(@RestHeader @DateFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime date) {
+            return "hello=" + date;
         }
     }
 

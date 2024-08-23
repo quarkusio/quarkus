@@ -1,8 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resteasy.async.filters;
 
-import javax.annotation.Priority;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.ext.Provider;
 
 @PreMatching
 @Priority(2)

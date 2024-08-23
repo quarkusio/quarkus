@@ -30,4 +30,15 @@ public final class UnsupportedOSBuildItem extends MultiBuildItem {
         this.os = os;
         this.error = error;
     }
+
+    public boolean triggerError(boolean isContainerBuild) {
+        return
+        // When the host OS is unsupported, it could have helped to
+        // run in a Linux builder image (e.g. an extension unsupported on Windows).
+        (os.active && !isContainerBuild) ||
+        // If Linux is the OS the extension does not support,
+        // it fails in a container build regardless the host OS,
+        // because we have only Linux based builder images.
+                (isContainerBuild && os == Os.LINUX);
+    }
 }

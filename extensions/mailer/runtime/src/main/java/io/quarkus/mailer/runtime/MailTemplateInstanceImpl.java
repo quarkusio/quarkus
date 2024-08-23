@@ -11,17 +11,18 @@ import java.util.stream.Collectors;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
+import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
-    private final MutinyMailerImpl mailer;
+    private final ReactiveMailer mailer;
     private final TemplateInstance templateInstance;
     private Mail mail;
 
-    MailTemplateInstanceImpl(MutinyMailerImpl mailer, TemplateInstance templateInstance) {
+    MailTemplateInstanceImpl(ReactiveMailer mailer, TemplateInstance templateInstance) {
         this.mailer = mailer;
         this.templateInstance = templateInstance;
         this.mail = new Mail();
@@ -84,6 +85,24 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     @Override
     public MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
         this.mail.addInlineAttachment(name, file, contentType, contentId);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, data, contentType, contentId);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, File file, String contentType) {
+        this.mail.addAttachment(name, file, contentType);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, byte[] data, String contentType) {
+        this.mail.addAttachment(name, data, contentType);
         return this;
     }
 

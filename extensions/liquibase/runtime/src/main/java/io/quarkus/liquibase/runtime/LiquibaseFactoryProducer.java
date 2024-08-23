@@ -12,7 +12,7 @@ import io.quarkus.liquibase.LiquibaseFactory;
  * and it's {@code createLiquibaseFactory} method is called at runtime in order to produce
  * the actual {@code LiquibaseFactory} objects.
  *
- * CDI scopes and qualifiers are setup at build-time, which is why this class is devoid of
+ * CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of
  * any CDI annotations
  *
  */

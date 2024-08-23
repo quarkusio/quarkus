@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(AmqpBroker.class)
+@WithTestResource(value = AmqpBroker.class, restrictToAnnotatedClass = false)
 @DisabledOnOs(OS.WINDOWS)
 public class AmqpConnectorTest {
 

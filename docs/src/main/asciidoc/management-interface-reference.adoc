@@ -1,0 +1,280 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Management interface reference
+include::_attributes.adoc[]
+:categories: observability
+:summary: Management interface configuration
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: management,observability
+:extensions: io.quarkus:quarkus-vertx-http
+
+By default, Quarkus exposes the _management_ endpoints under `/q` on the main HTTP server.
+The same HTTP server provides the application endpoints and the management endpoints.
+
+This document presents how you can use a separate HTTP server (bound to a different network interface and port) for the management endpoints.
+It avoids exposing these endpoints on the main server and, therefore, prevents undesired accesses.
+
+== Enabling the management interface
+
+To enable the management interface, use the following **build-time** property:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+----
+
+By default, management endpoints will be exposed on: `http://0.0.0.0:9000/q`.
+For example, if you have `smallrye-health` installed, the readiness probe will be exposed at `http://0.0.0.0:9000/q/health/ready`.
+
+SmallRye Health Checks, SmallRye Metrics, Micrometer and Info endpoints will be declared as management endpoints when the management interface is enabled.
+
+NOTE: The management interface is disabled when no extensions relying on it (such as the SmallRye Health or SmallRye OpenAPI extensions) are installed.
+
+== Configure the host, port and scheme
+
+By default, the management interface is exposed on the interface: `0.0.0.0` (all interfaces) and on the port `9000` (`9001` in test mode).
+It does not use TLS (`https`) by default.
+
+You can configure the host, ports, and TLS certificates using the following properties:
+
+* `quarkus.management.host` - the interface / host
+* `quarkus.management.port` - the port
+* `quarkus.management.test-port` - the port to use in test mode
+* `quarkus.management.ssl` - the TLS configuration, xref:http-reference#ssl[same as for the main HTTP server].
+
+Here is a configuration example exposing the management interface on _https://localhost:9002_:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.host=localhost
+quarkus.management.port=9002
+quarkus.management.ssl.certificate.key-store-file=server-keystore.jks
+quarkus.management.ssl.certificate.key-store-password=secret
+----
+
+Key store, trust store and certificate files can be reloaded periodically.
+Configure the `quarkus.management.ssl.certificate.reload-period` property to specify the interval at which the certificates should be reloaded:
+
+[source, properties]
+----
+quarkus.http.management.certificate.files=/mount/certs/tls.crt
+quarkus.http.management.certificate.key-files=/mount/certs/tls.key
+quarkus.http.management.certificate.reload-period=1h
+----
+
+The files are reloaded from the same location as they were initially loaded from.
+If there is no content change, the reloading is a no-op.
+It the reloading fails, the server will continue to use the previous certificates.
+
+IMPORTANT: Unlike the main HTTP server, the management interface does not handle _http_ and _https_ at the same time.
+If _https_ is configured, plain HTTP requests will be rejected.
+
+== Configure the root path
+
+Management endpoints are configured differently than standard HTTP endpoints.
+They use a unique root path, which is `/q` by default.
+This management root path can be configured using the `quarkus.management.root-path property`.
+For example, if you want to expose the management endpoints under `/management` use:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+quarkus.management.root-path=/management
+----
+
+The mounting rules of the management endpoints slightly differ from the ones used when using the main HTTP server:
+
+* Management endpoints configured using a _relative_ path (not starting with `/`) will be served from the configured root path.
+For example, if the endpoint path is `health` and the root path is `management`, the resulting path is `/management/health`
+* Management endpoints configured using an _absolute_ path (starting with `/`) will be served from the root.
+For example, if the endpoint path is `/health`, the resulting path is `/health`, regardless of the root path
+* The management interface does not use the HTTP root path from the main HTTP server.
+
+[IMPORTANT]
+====
+The `quarkus.http.root-path` property is only applied to the main HTTP server and not to the management interface.
+In addition, the `quarkus.http.non-application-root-path` property is not used for endpoint exposed on the management interface.
+====
+
+[[management-endpoint-extension]]
+== Create a management endpoint in an extension
+
+NOTE: To expose an endpoint on the management interface from the code of an application, refer to xref:#management-endpoint-application[the application section].
+
+SmallRye Health Checks, SmallRye Metrics, and Micrometer endpoints will be declared as management endpoints when the management interface is enabled.
+
+NOTE: if you do not enable the management interface, these endpoints will be served using the main HTTP server (under `/q` by default).
+
+Extensions can create a management endpoint by defining a _non application_ route and calling `management()` method:
+
+[source, java]
+----
+@BuildStep
+void createManagementRoute(BuildProducer<RouteBuildItem> routes,
+        NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+        MyRecorder recorder) {
+
+    routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+        .management() // Must be called BEFORE the routeFunction method
+        .routeFunction("my-path", recorder.route())
+        .handler(recorder.getHandler())
+        .blockingRoute()
+        .build());
+    //...
+}
+----
+
+If the management interface is enabled, the endpoint will be exposed on: `http://0.0.0.0:9000/q/my-path`.
+Otherwise, it will be exposed on: `http://localhost:8080/q/my-path`.
+
+IMPORTANT: Management endpoints can only be declared by extensions and not from the application code.
+
+[[management-endpoint-application]]
+== Exposing an endpoint on the management interface (as an application)
+
+You can expose endpoints on the management interface by registering routes on the management router.
+To access the router use the following code:
+
+[source,java]
+----
+public void registerManagementRoutes(@Observes ManagementInterface mi) {
+       mi.router().get("/admin").handler(rc ->
+            rc.response().end("admin it is")
+       );
+}
+----
+
+The `io.quarkus.vertx.http.ManagementInterface` event is fired when the management interface is initialized.
+So, if the management interface is not enabled, the method won't be called.
+
+The `router()` method returns a `io.vertx.ext.web.Router` object which can be used to register routes.
+The paths are relative to `/`.
+For example, the previous snippet registers a route on `/admin`.
+This route is accessible on `http://0.0.0.0:9000/admin`, if you use the default host and port.
+
+More details about the `Router` API can be found on https://vertx.io/docs/vertx-web/java/[the Vert.x Web documentation].
+
+== Management Interface Configuration
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.management.adoc[leveloffset=+1, opts=optional]
+
+[[reverse-proxy]]
+== Running behind a reverse proxy
+
+
+Quarkus can be accessed through proxies that generate headers (e.g. `X-Forwarded-Host`) to preserve information about the original request.
+Quarkus can be configured to automatically update information like protocol, host, port and URI to use the values from those headers.
+
+IMPORTANT: Activating this feature can expose the server to security issues like information spoofing.
+Activate it only when running behind a reverse proxy.
+
+To set up this feature for the management interface, include the following lines in `src/main/resources/application.properties`:
+[source,properties]
+----
+quarkus.management.proxy.proxy-address-forwarding=true
+----
+
+To constrain this behavior to the standard `Forwarded` header (and ignore `X-Forwarded` variants) by setting `quarkus.management.proxy.allow-forwarded` in `src/main/resources/application.properties`:
+[source,properties]
+----
+quarkus.management.proxy.allow-forwarded=true
+----
+
+Alternatively, you can prefer `X-Forwarded-*` headers using the following configuration in `src/main/resources/application.properties` (note `allow-x-forwarded` instead of `allow-forwarded`):
+[source,properties]
+----
+quarkus.management.proxy.proxy-address-forwarding=true
+quarkus.management.proxy.allow-x-forwarded=true
+quarkus.management.proxy.enable-forwarded-host=true
+quarkus.management.proxy.enable-forwarded-prefix=true
+----
+
+Supported forwarding address headers are:
+
+* `Forwarded`
+* `X-Forwarded-Proto`
+* `X-Forwarded-Host`
+* `X-Forwarded-Port`
+* `X-Forwarded-Ssl`
+* `X-Forwarded-Prefix`
+
+If both header variants (`Forwarded` and `X-Forwarded-*`) are enabled, the `Forwarded` header will have precedence.
+
+IMPORTANT: Using both `Forwarded` and `X-Forwarded` headers can have security implications as it may allow clients to forge requests with a header that is not overwritten by the proxy.
+
+Ensure that your proxy is configured to strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client request.
+
+== Kubernetes
+
+When Quarkus generates the Kubernetes metadata, it checks if the management interface is enabled and configures the probes accordingly.
+The resulting descriptor defines the main HTTP port (named `http`) and the management port (named `management`).
+Health probes (using HTTP actions) and Prometheus scrape URLs are configured using the `management` port.
+
+[IMPORTANT]
+.KNative
+====
+Until https://github.com/knative/serving/issues/8471[KNative#8471] is resolved, you cannot use the management interface, as KNative does not support containers will multiple exposed ports.
+====
+
+== Security
+
+You can enable _basic_ authentication using the following properties:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+# Enable basic authentication
+quarkus.management.auth.basic=true
+# Require all access to /q/* to be authenticated
+quarkus.management.auth.permission.all.policy=authenticated
+quarkus.management.auth.permission.all.paths=/q/*
+----
+
+You can also use different permissions for different paths or use role bindings:
+
+[source, properties]
+----
+quarkus.management.enabled=true
+# Enable basic authentication
+quarkus.management.auth.basic=true
+# Configure a management policy if needed, here the policy `management-policy` requires users to have the role `management`.
+quarkus.management.auth.policy.management-policy.roles-allowed=management
+
+# For each endpoint you can configure the permissions
+# Health used the management-policy (so requires authentication + the `management` role)
+quarkus.management.auth.permission.health.paths=/q/health/*
+quarkus.management.auth.permission.health.policy=management-policy
+
+# Metrics just requires authentication
+quarkus.management.auth.permission.metrics.paths=/q/metrics/*
+quarkus.management.auth.permission.metrics.policy=authenticated
+----
+
+More details about Basic authentication in Quarkus can be found in the xref:security-basic-authentication-howto.adoc[Basic authentication guide].
+
+== Injecting management URL in tests
+
+When testing your application, you can inject the management URL using the `@TestHTTPResource` annotation:
+
+[source,java]
+----
+@TestHTTPResource(value="/management", management=true)
+URL management;
+----
+
+The `management` attribute is set to `true` to indicate that the injected URL is for the management interface.
+The `context-root` is automatically added.
+Thus, in the previous example, the injected URL is `http://localhost:9001/q/management`.
+
+`@TestHTTPResource` is particularly useful when setting the management `test-port` to 0, which indicates that the system will assign a random port to the management interface:
+
+[source, properties]
+----]
+quarkus.management.test-port=0
+----

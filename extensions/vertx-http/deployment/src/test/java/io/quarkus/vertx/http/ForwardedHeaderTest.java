@@ -23,7 +23,6 @@ public class ForwardedHeaderTest {
     @Test
     public void test() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
-
         RestAssured.given()
                 .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
                 .get("/forward")
@@ -31,4 +30,36 @@ public class ForwardedHeaderTest {
                 .body(Matchers.equalTo("https|somehost|backend:4444"));
     }
 
+    @Test
+    public void testForwardedForWithSequenceOfProxies() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=backend:4444,for=backend2:5555;host=somehost;proto=https")
+                .get("/forward")
+                .then()
+                .body(Matchers.equalTo("https|somehost|backend:4444"));
+    }
+
+    @Test
+    public void testForwardedWithSequenceOfProxiesIncludingIpv6Address() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
+                .get("/forward")
+                .then()
+                .body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
+    }
+
+    @Test
+    public void testForwardedForWithIpv6Address2() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+
+        RestAssured.given()
+                .header("Forwarded", "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
+                .get("/forward")
+                .then()
+                .body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
+    }
 }

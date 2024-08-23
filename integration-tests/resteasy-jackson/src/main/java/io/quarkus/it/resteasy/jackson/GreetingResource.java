@@ -1,22 +1,19 @@
 package io.quarkus.it.resteasy.jackson;
 
-import java.sql.Date;
-import java.time.LocalDate;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 @Path("/greeting")
 public class GreetingResource {
 
-    @GET
-    public Greeting hello() {
-        LocalDate localDate = LocalDate.of(2019, 01, 01);
-        return new Greeting("hello", localDate, new Date(localDate.toEpochDay()));
+    @POST
+    public Greeting hello(Greeting body) {
+        return body;
     }
 
     @Path("config")

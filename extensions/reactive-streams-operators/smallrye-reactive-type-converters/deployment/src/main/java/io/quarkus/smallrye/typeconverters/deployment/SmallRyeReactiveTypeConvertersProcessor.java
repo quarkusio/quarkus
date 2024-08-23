@@ -15,7 +15,7 @@ import io.smallrye.reactive.converters.ReactiveTypeConverter;
 
 /**
  * Searches for implementations of the {@link ReactiveTypeConverter} class and register them as SPI. So the result depends
- * of the implementation added by the user in the build classpath (Maven dependencies).
+ * on the implementation added by the user in the build classpath (Maven dependencies).
  *
  * Note that if none are found, nothing is added - so declaring this augmentation is quite useless in this case.
  */

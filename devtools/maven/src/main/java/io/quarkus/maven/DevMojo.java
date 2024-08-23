@@ -1,5 +1,9 @@
 package io.quarkus.maven;
 
+import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
+import static java.util.Collections.emptyMap;
 import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -11,6 +15,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -20,34 +25,38 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import org.aesh.readline.terminal.impl.ExecPty;
 import org.aesh.readline.terminal.impl.Pty;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.utils.ANSI;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
@@ -67,7 +76,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -78,26 +87,34 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.fusesource.jansi.internal.Kernel32;
-import org.fusesource.jansi.internal.WindowsSupport;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ConfiguredClassLoading;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.devmode.DependenciesFilter;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import io.quarkus.bootstrap.resolver.maven.IncubatingApplicationModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.util.BootstrapUtils;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
+import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
-import io.quarkus.maven.dependency.GACT;
-import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.expression.Expression;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process. A background compilation process is launched and any changes are
@@ -105,52 +122,28 @@ import io.quarkus.runtime.LaunchMode;
  * <p>
  * You can use this dev mode in a remote container environment with {@code remote-dev}.
  */
-@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class DevMojo extends AbstractMojo {
 
-    private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
+    private static final Set<String> IGNORED_PHASES = Set.of(
+            "pre-clean", "clean", "post-clean");
 
-    private static final String KOTLIN_MAVEN_PLUGIN_GA = "org.jetbrains.kotlin:kotlin-maven-plugin";
-
-    /**
-     * running any one of these phases means the compile phase will have been run, if these have
-     * not been run we manually run compile
-     */
-    private static final Set<String> POST_COMPILE_PHASES = Set.of(
+    private static final List<String> PRE_DEV_MODE_PHASES = List.of(
+            "validate",
+            "initialize",
+            "generate-sources",
+            "process-sources",
+            "generate-resources",
+            "process-resources",
             "compile",
             "process-classes",
             "generate-test-sources",
             "process-test-sources",
             "generate-test-resources",
             "process-test-resources",
-            "test-compile",
-            "process-test-classes",
-            "test",
-            "prepare-package",
-            "package",
-            "pre-integration-test",
-            "integration-test",
-            "post-integration-test",
-            "verify",
-            "install",
-            "deploy");
+            "test-compile");
 
-    /**
-     * running any one of these phases means the test-compile phase will have been run, if these have
-     * not been run we manually run test-compile
-     */
-    private static final Set<String> POST_TEST_COMPILE_PHASES = Set.of(
-            "test-compile",
-            "process-test-classes",
-            "test",
-            "prepare-package",
-            "package",
-            "pre-integration-test",
-            "integration-test",
-            "post-integration-test",
-            "verify",
-            "install",
-            "deploy");
+    private static final String IO_QUARKUS = "io.quarkus";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
     private static final String QUARKUS_GENERATE_CODE_TESTS_GOAL = "generate-code-tests";
 
@@ -161,6 +154,8 @@ public class DevMojo extends AbstractMojo {
 
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
+
+    private static final String BOOTSTRAP_ID = "DevMojo";
 
     /**
      * The directory for compiled classes.
@@ -173,7 +168,7 @@ public class DevMojo extends AbstractMojo {
 
     /**
      * If this server should be started in debug mode. The default is to start in debug mode and listen on
-     * port 5005. Whether or not the JVM is suspended waiting for a debugger to be attached,
+     * port 5005. Whether the JVM is suspended waiting for a debugger to be attached,
      * depends on the value of {@link #suspend}.
      * <p>
      * {@code debug} supports the following options:
@@ -204,10 +199,20 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${debug}")
     private String debug;
 
+    @Parameter(defaultValue = "${open-lang-package}")
+    private boolean openJavaLang;
+
     /**
-     * Whether or not the JVM launch, in debug mode, should be suspended. This parameter is only
+     * Allows configuring the modules to add to the application.
+     * The listed modules will be added using: {@code --add-modules m1,m2...}.
+     */
+    @Parameter(defaultValue = "${add-modules}")
+    private List<String> modules;
+
+    /**
+     * Whether the JVM launch, in debug mode, should be suspended. This parameter is only
      * relevant when the JVM is launched in {@link #debug debug mode}. This parameter supports the
-     * following values (all the allowed values are case insensitive):
+     * following values (all the allowed values are case-insensitive):
      * <table>
      * <th>
      * <td>Value</td>
@@ -248,10 +253,10 @@ public class DevMojo extends AbstractMojo {
     private String argsString;
 
     @Parameter
-    private Map<String, String> environmentVariables = Collections.emptyMap();
+    private Map<String, String> environmentVariables = Map.of();
 
     @Parameter
-    private Map<String, String> systemProperties = Collections.emptyMap();
+    private Map<String, String> systemProperties = Map.of();
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
@@ -263,10 +268,13 @@ public class DevMojo extends AbstractMojo {
     private MavenVersionEnforcer mavenVersionEnforcer;
 
     @Component
+    private ArtifactHandlerManager artifactHandlerManager;
+
+    @Component
     private RepositorySystem repoSystem;
 
     @Component
-    RemoteRepositoryManager remoteRepositoryManager;
+    QuarkusWorkspaceProvider workspaceProvider;
 
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
@@ -279,14 +287,14 @@ public class DevMojo extends AbstractMojo {
 
     /**
      * This value is intended to be set to true when some generated bytecode
-     * is erroneous causing the JVM to crash when the verify:none option is set (which is on by default)
+     * is erroneous causing the JVM to crash when the <code>verify:none</code> option is set (which is on by default)
      */
     @Parameter(defaultValue = "${preventnoverify}")
     private boolean preventnoverify = false;
 
     /**
      * Whether changes in the projects that appear to be dependencies of the project containing the application to be launched
-     * should trigger hot-reload. By default they do.
+     * should trigger hot-reload. By default, they do.
      */
     @Parameter(defaultValue = "${noDeps}")
     private boolean noDeps = false;
@@ -297,6 +305,12 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter
     private List<String> compilerArgs;
+
+    /**
+     * Additional compiler arguments
+     */
+    @Parameter
+    private List<CompilerOptions> compilerOptions;
 
     /**
      * The --release argument to javac.
@@ -317,13 +331,16 @@ public class DevMojo extends AbstractMojo {
     private String target;
 
     /**
-     * Whether or not to enforce the quarkus-maven-plugin build goal to be configured.
+     * Whether to enforce the quarkus-maven-plugin build goal to be configured.
      * By default, a missing build goal is considered an inconsistency (although the build goal is not <i>required</i>
      * technically).
      * In this case a warning will be logged and the application will not be started.
      */
     @Parameter(defaultValue = "${quarkus.enforceBuildGoal}")
     private boolean enforceBuildGoal = true;
+
+    @Parameter(property = "quarkus.warnIfBuildGoalMissing")
+    boolean warnIfBuildGoalMissing = true;
 
     @Component
     private WorkspaceReader wsReader;
@@ -334,10 +351,27 @@ public class DevMojo extends AbstractMojo {
     @Component
     private ToolchainManager toolchainManager;
 
-    private Map<AppArtifactKey, Plugin> pluginMap;
+    private Map<ArtifactKey, Plugin> pluginMap;
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
+
+    @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
+    MojoExecution mojoExecution;
+
+    @Component
+    BuildAnalyticsProvider analyticsProvider;
+
+    /**
+     * A comma-separated list of Maven plugin keys in {@code groupId:artifactId} format
+     * (for example {@code org.codehaus.mojo:flatten-maven-plugin} and/or goal prefixes,
+     * (for example {@code flatten}) that should be skipped when {@code quarkus:dev} identifies
+     * Maven plugin goals that should be executed before the application is launched in dev mode.
+     * <p>
+     * Only the {@code flatten} Maven plugin is skipped by default.
+     */
+    @Parameter(defaultValue = "org.codehaus.mojo:flatten-maven-plugin")
+    Set<String> skipPlugins;
 
     /**
      * console attributes, used to restore the console state
@@ -348,6 +382,15 @@ public class DevMojo extends AbstractMojo {
     private Pty pty;
     private boolean windowsColorSupport;
 
+    /**
+     * Indicates for which launch mode the dependencies should be resolved.
+     *
+     * @return launch mode for which the dependencies should be resolved
+     */
+    protected LaunchMode getLaunchModeClasspath() {
+        return LaunchMode.DEVELOPMENT;
+    }
+
     @Override
     public void setLog(Log log) {
         super.setLog(log);
@@ -356,29 +399,58 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
-        saveTerminalState();
+
+        if (project.getPackaging().equals(ArtifactCoords.TYPE_POM)) {
+            getLog().info("Type of the artifact is POM, skipping dev goal");
+            return;
+        }
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
         initToolchain();
 
-        //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
-        handleAutoCompile();
+        // we always want to compile if needed, so if it is run from the parent it will compile dependent projects
+        String bootstrapId = handleAutoCompile();
 
         if (enforceBuildGoal) {
             final PluginDescriptor pluginDescr = getPluginDescriptor();
             final Plugin pluginDef = getConfiguredPluginOrNull(pluginDescr.getGroupId(), pluginDescr.getArtifactId());
-            if (pluginDef == null || !isGoalConfigured(pluginDef, "build")) {
-                getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
-                        "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
-                        " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
+            if (!isGoalConfigured(pluginDef, "build")) {
+                if (warnIfBuildGoalMissing) {
+                    var currentGoal = getCurrentGoal();
+                    getLog().warn(
+                            "Skipping " + currentGoal + " as this is assumed to be a support library." +
+                                    " To disable this warning set warnIfBuildGoalMissing parameter to false."
+                                    + System.lineSeparator() +
+                                    "To enable " + currentGoal +
+                                    " for this module, make sure the quarkus-maven-plugin configuration includes the build goal"
+                                    +
+                                    " or disable the enforceBuildGoal flag (via plugin configuration or via" +
+                                    " -Dquarkus.enforceBuildGoal=false).");
+                }
                 return;
             }
         }
 
-        try {
+        saveTerminalState();
 
-            DevModeRunner runner = new DevModeRunner();
+        analyticsProvider.buildAnalyticsUserInput((String prompt) -> {
+            System.out.print(prompt);
+            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
+                @Override
+                public void close() throws IOException {
+                    //don't close System.in!
+                }
+            })) {
+                return scanner.nextLine();
+            } catch (Exception e) {
+                getLog().debug("Failed to collect user input for analytics", e);
+                return "";
+            }
+        });
+
+        try {
+            DevModeRunner runner = new DevModeRunner(bootstrapId);
             Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
@@ -406,23 +478,24 @@ public class DevMojo extends AbstractMojo {
                     }
                     if (!changed.isEmpty()) {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
+
+                        // stop the runner before we build the new one as the debug port being free
+                        // is tested when building the runner
+                        runner.stop();
+
                         final DevModeRunner newRunner;
                         try {
-                            triggerCompile(false, false);
-                            triggerCompile(true, false);
-                            newRunner = new DevModeRunner();
+                            bootstrapId = handleAutoCompile();
+                            newRunner = new DevModeRunner(runner.launcher.getActualDebugPort(), bootstrapId);
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
                         }
-                        runner.stop();
                         newRunner.run();
                         runner = newRunner;
                     }
                 }
-
             }
-
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
@@ -434,11 +507,13 @@ public class DevMojo extends AbstractMojo {
      */
     private void saveTerminalState() {
         try {
-            windowsAttributes = WindowsSupport.getConsoleMode();
-            windowsAttributesSet = true;
             if (windowsAttributes > 0) {
                 long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
                 if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                    int[] mode = new int[1];
+                    windowsAttributes = Kernel32.GetConsoleMode(hConsole, mode) == 0 ? -1 : mode[0];
+                    windowsAttributesSet = true;
+
                     final int VIRTUAL_TERMINAL_PROCESSING = 0x0004; //enable color on the windows console
                     if (Kernel32.SetConsoleMode(hConsole, windowsAttributes | VIRTUAL_TERMINAL_PROCESSING) != 0) {
                         windowsColorSupport = true;
@@ -461,7 +536,10 @@ public class DevMojo extends AbstractMojo {
 
     private void restoreTerminalState() {
         if (windowsAttributesSet) {
-            WindowsSupport.setConsoleMode(windowsAttributes);
+            long hConsole = Kernel32.GetStdHandle(Kernel32.STD_INPUT_HANDLE);
+            if (hConsole != (long) Kernel32.INVALID_HANDLE_VALUE) {
+                Kernel32.SetConsoleMode(hConsole, windowsAttributes);
+            }
         } else {
             if (attributes == null || pty == null) {
                 return;
@@ -481,112 +559,338 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private void handleAutoCompile() throws MojoExecutionException {
-        //we check to see if there was a compile (or later) goal before this plugin
-        boolean compileNeeded = true;
-        boolean testCompileNeeded = true;
-        boolean prepareNeeded = true;
-        boolean prepareTestsNeeded = true;
-        for (String goal : session.getGoals()) {
-            if (goal.endsWith("quarkus:generate-code")) {
-                prepareNeeded = false;
-            }
-            if (goal.endsWith("quarkus:generate-code-tests")) {
-                prepareTestsNeeded = false;
-            }
+    private String handleAutoCompile() throws MojoExecutionException {
 
-            if (POST_COMPILE_PHASES.contains(goal)) {
-                compileNeeded = false;
+        List<String> goals = session.getGoals();
+        // check for default goal(s) if none were specified explicitly,
+        // see also org.apache.maven.lifecycle.internal.DefaultLifecycleTaskSegmentCalculator
+        if (goals.isEmpty() && !StringUtils.isEmpty(project.getDefaultGoal())) {
+            goals = List.of(StringUtils.split(project.getDefaultGoal()));
+        }
+        final String currentGoal = getCurrentGoal();
+
+        int latestHandledPhaseIndex = -1;
+        for (String goal : goals) {
+            if (goal.endsWith(currentGoal)) {
                 break;
             }
-            if (POST_TEST_COMPILE_PHASES.contains(goal)) {
-                testCompileNeeded = false;
-                break;
+            if (goal.indexOf(':') >= 0 || IGNORED_PHASES.contains(goal)) {
+                continue;
             }
-            if (goal.endsWith("quarkus:dev")) {
-                break;
+            var i = PRE_DEV_MODE_PHASES.indexOf(goal);
+            if (i < 0 || i == PRE_DEV_MODE_PHASES.size() - 1) {
+                // all the necessary goals have already been executed
+                return null;
+            }
+            if (i > latestHandledPhaseIndex) {
+                latestHandledPhaseIndex = i;
             }
         }
 
-        //if the user did not compile we run it for them
-        if (compileNeeded) {
-            triggerCompile(false, prepareNeeded);
-        }
-        if (testCompileNeeded) {
-            try {
-                triggerCompile(true, prepareTestsNeeded);
-            } catch (Throwable t) {
-                getLog().error("Test compile failed, you will need to fix your tests before you can use continuous testing", t);
+        final String quarkusPluginId = getPluginDescriptor().getId();
+        // configured plugin executions by lifecycle phases
+        final Map<String, List<PluginExec>> phaseExecutions = new HashMap<>();
+        // goals with prefixes on the command line
+        final Map<String, Plugin> pluginPrefixes = new HashMap<>();
+        String bootstrapId = BOOTSTRAP_ID;
+        for (Plugin p : project.getBuildPlugins()) {
+            if (p.getExecutions().isEmpty()) {
+                continue;
+            }
+            if (skipPlugins.contains(p.getKey())) {
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Skipping " + p.getId() + " execution according to skipPlugins value");
+                }
+                continue;
+            }
+            for (PluginExecution e : p.getExecutions()) {
+                if (e.getPhase() != null && !PRE_DEV_MODE_PHASES.contains(e.getPhase())) {
+                    // skip executions with phases post quarkus:dev, such as install, deploy, site, etc
+                    if (getLog().isDebugEnabled()) {
+                        getLog().debug("Skipping " + e.getId() + " of " + p.getId());
+                    }
+                    continue;
+                }
+                String goalPrefix = null;
+                if (!e.getGoals().isEmpty()) {
+                    goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();
+                    if (skipPlugins.contains(goalPrefix)) {
+                        if (getLog().isDebugEnabled()) {
+                            getLog().debug("Skipping " + goalPrefix + " execution according to skipPlugins value");
+                            continue;
+                        }
+                        continue;
+                    }
+                    pluginPrefixes.put(goalPrefix, p);
+                    pluginPrefixes.put(p.getId(), p);
+                }
+                if (e.getPhase() != null) {
+                    phaseExecutions.computeIfAbsent(e.getPhase(), k -> new ArrayList<>()).add(new PluginExec(p, goalPrefix, e));
+                } else {
+                    for (String goal : e.getGoals()) {
+                        if (goal.equals(QUARKUS_GENERATE_CODE_GOAL) && p.getId().equals(quarkusPluginId)) {
+                            var clone = e.clone();
+                            clone.setGoals(List.of(QUARKUS_GENERATE_CODE_GOAL));
+                            // this will schedule it before the compile phase goals
+                            phaseExecutions.computeIfAbsent("compile", k -> new ArrayList<>())
+                                    .add(0, new PluginExec(p, goalPrefix, clone));
+                            bootstrapId = e.getId();
+                        } else if (goal.equals(QUARKUS_GENERATE_CODE_TESTS_GOAL) && p.getId().equals(quarkusPluginId)) {
+                            var clone = e.clone();
+                            clone.setGoals(List.of(QUARKUS_GENERATE_CODE_TESTS_GOAL));
+                            // this will schedule it before the test-compile phase goals
+                            phaseExecutions.computeIfAbsent("test-compile", k -> new ArrayList<>())
+                                    .add(0, new PluginExec(p, goalPrefix, clone));
+                        } else {
+                            var mojoDescr = getMojoDescriptor(p, goal);
+                            if (mojoDescr.getPhase() != null) {
+                                phaseExecutions.computeIfAbsent(mojoDescr.getPhase(), k -> new ArrayList<>())
+                                        .add(new PluginExec(p, goalPrefix, e));
+                            } else {
+                                getLog().warn("Failed to determine the lifecycle phase for " + p.getId() + ":" + goal);
+                            }
+                        }
+                    }
+                }
             }
         }
+
+        // Map<pluginId, List<goals>>
+        final Map<String, List<String>> executedPluginGoals = new HashMap<>();
+        for (String goal : goals) {
+            if (goal.endsWith(currentGoal)) {
+                break;
+            }
+            var colon = goal.lastIndexOf(':');
+            if (colon >= 0) {
+                var plugin = pluginPrefixes.get(goal.substring(0, colon));
+                if (plugin == null) {
+                    getLog().warn("Failed to locate plugin for " + goal);
+                } else {
+                    executedPluginGoals.computeIfAbsent(plugin.getId(), k -> new ArrayList<>()).add(goal.substring(colon + 1));
+                }
+            }
+        }
+
+        final Map<String, String> quarkusGoalParams = Map.of(
+                "mode", LaunchMode.DEVELOPMENT.name(),
+                QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false",
+                "bootstrapId", bootstrapId);
+        for (int phaseIndex = latestHandledPhaseIndex + 1; phaseIndex < PRE_DEV_MODE_PHASES.size(); ++phaseIndex) {
+            var executions = phaseExecutions.get(PRE_DEV_MODE_PHASES.get(phaseIndex));
+            if (executions == null) {
+                continue;
+            }
+            for (PluginExec pe : executions) {
+                var executedGoals = executedPluginGoals.getOrDefault(pe.plugin.getId(), List.of());
+                for (String goal : pe.execution.getGoals()) {
+                    if (!executedGoals.contains(goal)) {
+                        try {
+                            executeGoal(pe, goal,
+                                    pe.getPluginId().equals(quarkusPluginId) ? quarkusGoalParams : Map.of());
+                        } catch (Throwable t) {
+                            if (goal.equals("testCompile")) {
+                                getLog().error(
+                                        "Test compile failed, you will need to fix your tests before you can use continuous testing",
+                                        t);
+                            } else {
+                                throw t;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return bootstrapId;
     }
 
-    private void initToolchain() throws MojoExecutionException {
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Collections.emptyMap());
-    }
-
-    private void triggerPrepare(boolean test) throws MojoExecutionException {
-        final PluginDescriptor pluginDescr = getPluginDescriptor();
-        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(),
-                test ? QUARKUS_GENERATE_CODE_TESTS_GOAL : QUARKUS_GENERATE_CODE_GOAL,
-                Collections.singletonMap("mode", LaunchMode.DEVELOPMENT.name()));
+    private String getCurrentGoal() {
+        return mojoExecution.getMojoDescriptor().getPluginDescriptor().getGoalPrefix() + ":"
+                + mojoExecution.getGoal();
     }
 
     private PluginDescriptor getPluginDescriptor() {
-        return (PluginDescriptor) getPluginContext().get("pluginDescriptor");
+        return mojoExecution.getMojoDescriptor().getPluginDescriptor();
     }
 
-    private void triggerCompile(boolean test, boolean prepareNeeded) throws MojoExecutionException {
-        handleResources(test);
-
-        if (prepareNeeded) {
-            triggerPrepare(test);
-        }
-
-        // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile",
-                Collections.emptyMap());
-
-        // Compile the Java sources if needed
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile",
-                Collections.emptyMap());
-    }
-
-    /**
-     * Execute the resources:resources goal if resources have been configured on the project
-     */
-    private void handleResources(boolean test) throws MojoExecutionException {
-        List<Resource> resources = project.getResources();
-        if (resources.isEmpty()) {
+    private void initToolchain() throws MojoExecutionException {
+        final Plugin plugin = getConfiguredPluginOrNull(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN);
+        if (!isGoalConfigured(plugin, "toolchain")) {
             return;
         }
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources",
-                Collections.emptyMap());
+        executeGoal(new PluginExec(plugin, null, null), "toolchain", Map.of());
     }
 
-    private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal, Map<String, String> params)
+    private void executeGoal(PluginExec pluginExec, String goal, Map<String, String> params)
             throws MojoExecutionException {
-        final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
-        if (!isGoalConfigured(plugin, goal)) {
-            return;
+        var msg = new StringBuilder();
+        msg.append("Invoking ")
+                .append(pluginExec.getPrefix()).append(":")
+                .append(pluginExec.plugin.getVersion()).append(":")
+                .append(goal);
+        if (pluginExec.getExecutionId() != null) {
+            msg.append(" (").append(pluginExec.getExecutionId()).append(")");
         }
-        getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
-                + ") @ " + project.getArtifactId());
+        msg.append(" @ ").append(project.getArtifactId());
+        getLog().info(msg.toString());
         executeMojo(
                 plugin(
-                        groupId(pluginGroupId),
-                        artifactId(pluginArtifactId),
-                        version(plugin.getVersion()),
-                        plugin.getDependencies()),
+                        groupId(pluginExec.plugin.getGroupId()),
+                        artifactId(pluginExec.plugin.getArtifactId()),
+                        version(pluginExec.plugin.getVersion()),
+                        pluginExec.plugin.getDependencies()),
                 goal(goal),
-                getPluginConfig(plugin, goal, params),
+                getPluginConfig(pluginExec.plugin, pluginExec.getExecutionId(), goal, params),
                 executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
-    public boolean isGoalConfigured(Plugin plugin, String goal) {
+    private List<String> readAnnotationProcessors(Xpp3Dom pluginConfig) {
+        if (pluginConfig == null) {
+            return List.of();
+        }
+        Xpp3Dom annotationProcessors = pluginConfig.getChild("annotationProcessors");
+        if (annotationProcessors == null) {
+            return List.of();
+        }
+        Xpp3Dom[] processors = annotationProcessors.getChildren("annotationProcessor");
+        if (processors.length == 0) {
+            return List.of();
+        }
+        List<String> ret = new ArrayList<>(processors.length);
+        for (Xpp3Dom processor : processors) {
+            ret.add(processor.getValue());
+        }
+        return ret;
+    }
+
+    private Set<File> readAnnotationProcessorPaths(Xpp3Dom pluginConfig) throws MojoExecutionException {
+        if (pluginConfig == null) {
+            return Set.of();
+        }
+        Xpp3Dom annotationProcessorPaths = pluginConfig.getChild("annotationProcessorPaths");
+        if (annotationProcessorPaths == null) {
+            return Set.of();
+        }
+        var versionConstraints = getAnnotationProcessorPathsDepMgmt(pluginConfig);
+        Xpp3Dom[] paths = annotationProcessorPaths.getChildren("path");
+        Set<File> elements = new LinkedHashSet<>();
+        try {
+            List<org.eclipse.aether.graph.Dependency> dependencies = convertToDependencies(paths);
+            CollectRequest collectRequest = new CollectRequest(dependencies, versionConstraints,
+                    project.getRemoteProjectRepositories());
+            DependencyRequest dependencyRequest = new DependencyRequest();
+            dependencyRequest.setCollectRequest(collectRequest);
+            DependencyResult dependencyResult = repoSystem.resolveDependencies(session.getRepositorySession(),
+                    dependencyRequest);
+
+            for (ArtifactResult resolved : dependencyResult.getArtifactResults()) {
+                elements.add(resolved.getArtifact().getFile());
+            }
+            return elements;
+        } catch (Exception e) {
+            throw new MojoExecutionException(
+                    "Resolution of annotationProcessorPath dependencies failed: " + e.getLocalizedMessage(), e);
+        }
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> getAnnotationProcessorPathsDepMgmt(Xpp3Dom pluginConfig) {
+        final Xpp3Dom useDepMgmt = pluginConfig.getChild("annotationProcessorPathsUseDepMgmt");
+        if (useDepMgmt == null || !Boolean.parseBoolean(useDepMgmt.getValue())) {
+            return List.of();
+        }
+        var dm = project.getDependencyManagement();
+        if (dm == null) {
+            return List.of();
+        }
+        return getProjectAetherDependencyManagement();
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> convertToDependencies(Xpp3Dom[] paths) throws MojoExecutionException {
+        List<org.eclipse.aether.graph.Dependency> dependencies = new ArrayList<>();
+        for (Xpp3Dom path : paths) {
+            String type = getValue(path, "type", "jar");
+            ArtifactHandler handler = artifactHandlerManager.getArtifactHandler(type);
+            // WATCH OUT: this constructor turns any null values into empty strings
+            org.eclipse.aether.artifact.Artifact artifact = new DefaultArtifact(
+                    getValue(path, "groupId", null),
+                    getValue(path, "artifactId", null),
+                    getValue(path, "classifier", null),
+                    handler.getExtension(),
+                    getValue(path, "version", null));
+            if (toNullIfEmpty(artifact.getVersion()) == null) {
+                artifact = artifact.setVersion(getAnnotationProcessorPathVersion(artifact));
+            }
+            Set<org.eclipse.aether.graph.Exclusion> exclusions = convertToAetherExclusions(path.getChild("exclusions"));
+            dependencies.add(new org.eclipse.aether.graph.Dependency(artifact, JavaScopes.RUNTIME, false, exclusions));
+        }
+        return dependencies;
+    }
+
+    private String getAnnotationProcessorPathVersion(org.eclipse.aether.artifact.Artifact annotationProcessorPath)
+            throws MojoExecutionException {
+        List<Dependency> managedDependencies = getProjectManagedDependencies();
+        return findManagedVersion(annotationProcessorPath, managedDependencies)
+                .orElseThrow(() -> new MojoExecutionException(String.format(
+                        "Cannot find version for annotation processor path '%s'. The version needs to be either"
+                                + " provided directly in the plugin configuration or via dependency management.",
+                        annotationProcessorPath)));
+    }
+
+    private Optional<String> findManagedVersion(
+            org.eclipse.aether.artifact.Artifact artifact, List<Dependency> managedDependencies) {
+        // here, Dependency uses null, while artifact uses empty strings
+        return managedDependencies.stream()
+                .filter(dep -> Objects.equals(dep.getGroupId(), artifact.getGroupId())
+                        && Objects.equals(dep.getArtifactId(), artifact.getArtifactId())
+                        && Objects.equals(dep.getClassifier(), toNullIfEmpty(artifact.getClassifier()))
+                        && Objects.equals(dep.getType(), toNullIfEmpty(artifact.getExtension())))
+                .findAny()
+                .map(org.apache.maven.model.Dependency::getVersion);
+    }
+
+    private String toNullIfEmpty(String value) {
+        if (value != null && value.isBlank())
+            return null;
+        return value;
+    }
+
+    private List<Dependency> getProjectManagedDependencies() {
+        DependencyManagement dependencyManagement = project.getDependencyManagement();
+        if (dependencyManagement == null || dependencyManagement.getDependencies() == null) {
+            return List.of();
+        }
+        return dependencyManagement.getDependencies();
+    }
+
+    private String getValue(Xpp3Dom path, String element, String defaultValue) {
+        Xpp3Dom child = path.getChild(element);
+        // don't bother filtering empty strings or null values, DefaultArtifact will turn nulls into empty strings
+        if (child == null) {
+            return defaultValue;
+        }
+        return child.getValue();
+    }
+
+    private Set<org.eclipse.aether.graph.Exclusion> convertToAetherExclusions(Xpp3Dom exclusions) {
+        if (exclusions == null) {
+            return Set.of();
+        }
+        Set<Exclusion> aetherExclusions = new HashSet<>();
+        for (Xpp3Dom exclusion : exclusions.getChildren("exclusion")) {
+            Exclusion aetherExclusion = new Exclusion(
+                    getValue(exclusion, "groupId", null),
+                    getValue(exclusion, "artifactId", null),
+                    getValue(exclusion, "classifier", null),
+                    getValue(exclusion, "extension", "jar"));
+            aetherExclusions.add(aetherExclusion);
+        }
+        return aetherExclusions;
+    }
+
+    private boolean isGoalConfigured(Plugin plugin, String goal) {
         if (plugin == null) {
             return false;
         }
@@ -598,11 +902,13 @@ public class DevMojo extends AbstractMojo {
         return false;
     }
 
-    private Xpp3Dom getPluginConfig(Plugin plugin, String goal, Map<String, String> params) throws MojoExecutionException {
+    private Xpp3Dom getPluginConfig(Plugin plugin, String executionId, String goal, Map<String, String> params)
+            throws MojoExecutionException {
         Xpp3Dom mergedConfig = null;
         if (!plugin.getExecutions().isEmpty()) {
             for (PluginExecution exec : plugin.getExecutions()) {
-                if (exec.getConfiguration() != null && exec.getGoals().contains(goal)) {
+                if (exec.getConfiguration() != null && exec.getGoals().contains(goal)
+                        && matchesExecution(executionId, exec.getId())) {
                     mergedConfig = mergedConfig == null ? (Xpp3Dom) exec.getConfiguration()
                             : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) exec.getConfiguration(), true);
                 }
@@ -640,6 +946,27 @@ public class DevMojo extends AbstractMojo {
         return configuration;
     }
 
+    /**
+     * Check if the <code>currentExecutionId</code> matches the provided <code>executionId</code>.
+     * <p>
+     * This method will return <code>true</code> if
+     * <ul>
+     * <li>current execution id is undefined</li>
+     * <li>execution id is undefined</li>
+     * <li>both equals (ignoring case)</li>
+     * </ul>
+     *
+     * @param currentExecutionId current execution id (if defined)
+     * @param executionId execution id to test matching (if defined)
+     * @return <code>true</code> if executions ids do match.
+     */
+    private static boolean matchesExecution(String currentExecutionId, String executionId) {
+        if (currentExecutionId == null) {
+            return true;
+        }
+        return executionId == null || currentExecutionId.equalsIgnoreCase(executionId);
+    }
+
     private MojoDescriptor getMojoDescriptor(Plugin plugin, String goal) throws MojoExecutionException {
         try {
             return pluginManager.getMojoDescriptor(plugin, goal, pluginRepos, repoSession);
@@ -654,10 +981,10 @@ public class DevMojo extends AbstractMojo {
             pluginMap = new HashMap<>();
             // the original plugin keys may include property expressions, so we can't rely on the exact groupId:artifactId keys
             for (Plugin p : project.getBuildPlugins()) {
-                pluginMap.put(new AppArtifactKey(p.getGroupId(), p.getArtifactId()), p);
+                pluginMap.put(ArtifactKey.ga(p.getGroupId(), p.getArtifactId()), p);
             }
         }
-        return pluginMap.get(new AppArtifactKey(groupId, artifactId));
+        return pluginMap.get(ArtifactKey.ga(groupId, artifactId));
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {
@@ -676,60 +1003,111 @@ public class DevMojo extends AbstractMojo {
         return null;
     }
 
-    private void addProject(MavenDevModeLauncher.Builder builder, WorkspaceModule module, boolean root) throws Exception {
+    private void addProject(MavenDevModeLauncher.Builder builder, ResolvedDependency module, boolean root) throws Exception {
+        if (!module.isJar()) {
+            return;
+        }
 
         String projectDirectory;
         Set<Path> sourcePaths;
         String classesPath = null;
+        String generatedSourcesPath = null;
         Set<Path> resourcePaths;
         Set<Path> testSourcePaths;
-        String testClassesPath;
+        String testClassesPath = null;
         Set<Path> testResourcePaths;
-        List<Profile> activeProfiles = Collections.emptyList();
+        List<Profile> activeProfiles = List.of();
 
-        final MavenProject mavenProject = session.getProjectMap().get(
-                String.format("%s:%s:%s", module.getId().getGroupId(), module.getId().getArtifactId(),
-                        module.getId().getVersion()));
+        MavenProject mavenProject = null;
+        if (module.getClassifier().isEmpty()) {
+            for (MavenProject p : session.getAllProjects()) {
+                if (module.getArtifactId().equals(p.getArtifactId())
+                        && module.getGroupId().equals(p.getGroupId())
+                        && module.getVersion().equals(p.getVersion())) {
+                    mavenProject = p;
+                    break;
+                }
+            }
+        }
+        final ArtifactSources sources = module.getSources();
         if (mavenProject == null) {
-            projectDirectory = module.getModuleDir().getAbsolutePath();
-            sourcePaths = module.getMainSources().stream().map(src -> src.getSourceDir().toPath().toAbsolutePath())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            testSourcePaths = module.getTestSources().stream().map(src -> src.getSourceDir().toPath().toAbsolutePath())
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            if (sources == null) {
+                getLog().debug("Local dependency " + module.toCompactCoords() + " does not appear to have any sources");
+                return;
+            }
+            projectDirectory = module.getWorkspaceModule().getModuleDir().getAbsolutePath();
+            sourcePaths = new LinkedHashSet<>();
+            for (SourceDir src : sources.getSourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    sourcePaths.add(p.toAbsolutePath());
+                }
+            }
+            testSourcePaths = new LinkedHashSet<>();
+            ArtifactSources testSources = module.getWorkspaceModule().getTestSources();
+            if (testSources != null) {
+                for (SourceDir src : testSources.getSourceDirs()) {
+                    for (Path p : src.getSourceTree().getRoots()) {
+                        testSourcePaths.add(p.toAbsolutePath());
+                    }
+                }
+            }
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
             sourcePaths = mavenProject.getCompileSourceRoots().stream()
-                    .map(Paths::get)
+                    .map(Path::of)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
-                    .map(Paths::get)
+                    .map(Path::of)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             activeProfiles = mavenProject.getActiveProfiles();
         }
 
         final Path sourceParent;
-        if (module.getMainSources().isEmpty()) {
-            if (module.getMainResources().isEmpty()) {
-                throw new MojoExecutionException("The project does not appear to contain any sources or resources");
+        if (sourcePaths.isEmpty()) {
+            if (sources == null || sources.getResourceDirs() == null) {
+                throw new MojoExecutionException(
+                        "Local dependency " + module.toCompactCoords() + " does not appear to have any sources");
             }
-            sourceParent = module.getMainResources().iterator().next().getSourceDir().toPath().toAbsolutePath().getParent();
+            sourceParent = sources.getResourceDirs().iterator().next().getDir().toAbsolutePath().getParent();
         } else {
-            sourceParent = module.getMainSources().iterator().next().getSourceDir().toPath().toAbsolutePath().getParent();
+            sourceParent = sourcePaths.iterator().next().toAbsolutePath().getParent();
         }
 
-        Path classesDir = module.getMainSources().iterator().next().getDestinationDir().toPath().toAbsolutePath();
-        if (Files.isDirectory(classesDir)) {
-            classesPath = classesDir.toString();
+        Path classesDir = null;
+        resourcePaths = new LinkedHashSet<>();
+        if (sources != null) {
+            SourceDir firstSourceDir = sources.getSourceDirs().iterator().next();
+            classesDir = firstSourceDir.getOutputDir().toAbsolutePath();
+            if (firstSourceDir.getAptSourcesDir() != null) {
+                generatedSourcesPath = firstSourceDir.getAptSourcesDir().toAbsolutePath().toString();
+            }
+            if (Files.isDirectory(classesDir)) {
+                classesPath = classesDir.toString();
+            }
+            for (SourceDir src : sources.getResourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    resourcePaths.add(p.toAbsolutePath());
+                }
+            }
         }
-        Path testClassesDir = module.getTestSources().iterator().next().getDestinationDir().toPath().toAbsolutePath();
-        testClassesPath = testClassesDir.toString();
+        if (module.getWorkspaceModule().hasTestSources()) {
+            Path testClassesDir = module.getWorkspaceModule().getTestSources().getSourceDirs().iterator().next().getOutputDir()
+                    .toAbsolutePath();
+            testClassesPath = testClassesDir.toString();
+        }
 
-        resourcePaths = module.getMainResources().stream().map(src -> src.getSourceDir().toPath().toAbsolutePath())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        testResourcePaths = module.getTestResources().stream().map(src -> src.getSourceDir().toPath().toAbsolutePath())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        testResourcePaths = new LinkedHashSet<>();
+        ArtifactSources testSources = module.getWorkspaceModule().getTestSources();
+        if (testSources != null) {
+            for (SourceDir src : testSources.getResourceDirs()) {
+                for (Path p : src.getSourceTree().getRoots()) {
+                    testResourcePaths.add(p.toAbsolutePath());
+                }
+            }
+        }
+
         // Add the resources and test resources from the profiles
         for (Profile profile : activeProfiles) {
             final BuildBase build = profile.getBuild();
@@ -737,40 +1115,48 @@ public class DevMojo extends AbstractMojo {
                 resourcePaths.addAll(
                         build.getResources().stream()
                                 .map(Resource::getDirectory)
-                                .map(Paths::get)
+                                .map(Path::of)
                                 .map(Path::toAbsolutePath)
                                 .collect(Collectors.toList()));
                 testResourcePaths.addAll(
                         build.getTestResources().stream()
                                 .map(Resource::getDirectory)
-                                .map(Paths::get)
+                                .map(Path::of)
                                 .map(Path::toAbsolutePath)
                                 .collect(Collectors.toList()));
             }
         }
 
         if (classesPath == null && (!sourcePaths.isEmpty() || !resourcePaths.isEmpty())) {
-            throw new MojoExecutionException("Hot reloadable dependency " + module.getId()
-                    + " has not been compiled yet (the classes directory " + classesDir + " does not exist)");
+            throw new MojoExecutionException("Hot reloadable dependency " + module.getWorkspaceModule().getId()
+                    + " has not been compiled yet (the classes directory " + (classesDir == null ? "" : classesDir)
+                    + " does not exist)");
         }
 
-        Path targetDir = Paths.get(project.getBuild().getDirectory());
+        Path targetDir = Path.of(project.getBuild().getDirectory());
+
+        // In some cases, we may have a generatedSourcesPath that has not been created, or that has been deleted
+        // after Maven created it. Javac will not be happy about it, and we will mimic Maven and auto-create it
+        // when this happens, to avoid crashing the compiler
+        if (generatedSourcesPath != null && Files.notExists(Path.of(generatedSourcesPath))) {
+            Files.createDirectories(Path.of(generatedSourcesPath));
+        }
 
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(new GACT(module.getId().getGroupId(), module.getId().getArtifactId()))
-                .setName(module.getId().getArtifactId())
+                .setArtifactKey(module.getKey())
                 .setProjectDirectory(projectDirectory)
-                .setSourcePaths(PathsCollection.from(sourcePaths))
+                .setSourcePaths(PathList.from(sourcePaths))
                 .setClassesPath(classesPath)
+                .setGeneratedSourcesPath(generatedSourcesPath)
                 .setResourcesOutputPath(classesPath)
-                .setResourcePaths(PathsCollection.from(resourcePaths))
-                .setSourceParents(PathsCollection.of(sourceParent.toAbsolutePath()))
+                .setResourcePaths(PathList.from(resourcePaths))
+                .setSourceParents(PathList.of(sourceParent.toAbsolutePath()))
                 .setPreBuildOutputDir(targetDir.resolve("generated-sources").toAbsolutePath().toString())
                 .setTargetDir(targetDir.toAbsolutePath().toString())
-                .setTestSourcePaths(PathsCollection.from(testSourcePaths))
+                .setTestSourcePaths(PathList.from(testSourcePaths))
                 .setTestClassesPath(testClassesPath)
                 .setTestResourcesOutputPath(testClassesPath)
-                .setTestResourcePaths(PathsCollection.from(testResourcePaths))
+                .setTestResourcePaths(PathList.from(testResourcePaths))
                 .build();
 
         if (root) {
@@ -785,8 +1171,12 @@ public class DevMojo extends AbstractMojo {
         final QuarkusDevModeLauncher launcher;
         private Process process;
 
-        private DevModeRunner() throws Exception {
-            launcher = newLauncher();
+        private DevModeRunner(String bootstrapId) throws Exception {
+            launcher = newLauncher(null, bootstrapId);
+        }
+
+        private DevModeRunner(String actualDebugPort, String bootstrapId) throws Exception {
+            launcher = newLauncher(actualDebugPort, bootstrapId);
         }
 
         Collection<Path> pomFiles() {
@@ -840,7 +1230,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private QuarkusDevModeLauncher newLauncher() throws Exception {
+    private QuarkusDevModeLauncher newLauncher(String actualDebugPort, String bootstrapId) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -858,7 +1248,7 @@ public class DevMojo extends AbstractMojo {
                 .suspend(suspend)
                 .debug(debug)
                 .debugHost(debugHost)
-                .debugPort(debugPort)
+                .debugPort(actualDebugPort)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);
@@ -866,19 +1256,61 @@ public class DevMojo extends AbstractMojo {
             builder.jvmArgs("-Dio.quarkus.force-color-support=true");
         }
 
+        if (openJavaLang) {
+            builder.jvmArgs("--add-opens");
+            builder.jvmArgs("java.base/java.lang=ALL-UNNAMED");
+        }
+
+        if (modules != null && !modules.isEmpty()) {
+            String mods = String.join(",", this.modules);
+            builder.jvmArgs("--add-modules");
+            builder.jvmArgs(mods);
+        }
+
         builder.projectDir(project.getFile().getParentFile());
-        builder.buildSystemProperties((Map) project.getProperties());
+
+        Properties projectProperties = project.getProperties();
+        Map<String, String> effectiveProperties = new HashMap<>();
+        for (String name : projectProperties.stringPropertyNames()) {
+            if (name.startsWith("quarkus.")) {
+                effectiveProperties.put(name, projectProperties.getProperty(name));
+            }
+        }
+
+        // Add other properties that may be required for expansion
+        List<String> effectivePropertyValues = new ArrayList<>(effectiveProperties.values());
+        for (String value : effectivePropertyValues) {
+            for (String reference : Expression.compile(value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
+                String referenceValue = session.getUserProperties().getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                    continue;
+                }
+
+                referenceValue = projectProperties.getProperty(reference);
+                if (referenceValue != null) {
+                    effectiveProperties.put(reference, referenceValue);
+                }
+            }
+        }
+        builder.buildSystemProperties(effectiveProperties);
 
         builder.applicationName(project.getArtifactId());
         builder.applicationVersion(project.getVersion());
 
         builder.sourceEncoding(getSourceEncoding());
 
+        if (compilerOptions != null) {
+            for (CompilerOptions compilerOption : compilerOptions) {
+                builder.compilerOptions(compilerOption.getName(), compilerOption.getArgs());
+            }
+        }
+
         // Set compilation flags.  Try the explicitly given configuration first.  Otherwise,
         // refer to the configuration of the Maven Compiler Plugin.
         final Optional<Xpp3Dom> compilerPluginConfiguration = findCompilerPluginConfiguration();
         if (compilerArgs != null) {
-            builder.compilerOptions(compilerArgs);
+            builder.compilerOptions("java", compilerArgs);
         } else if (compilerPluginConfiguration.isPresent()) {
             final Xpp3Dom compilerPluginArgsConfiguration = compilerPluginConfiguration.get().getChild("compilerArgs");
             if (compilerPluginArgsConfiguration != null) {
@@ -891,9 +1323,10 @@ public class DevMojo extends AbstractMojo {
                         && !compilerPluginArgsConfiguration.getValue().isEmpty()) {
                     compilerPluginArgs.add(compilerPluginArgsConfiguration.getValue().trim());
                 }
-                builder.compilerOptions(compilerPluginArgs);
+                builder.compilerOptions("java", compilerPluginArgs);
             }
         }
+
         if (release != null) {
             builder.releaseJavaVersion(release);
         } else if (compilerPluginConfiguration.isPresent()) {
@@ -911,35 +1344,38 @@ public class DevMojo extends AbstractMojo {
         }
 
         setKotlinSpecificFlags(builder);
+        setAnnotationProcessorFlags(builder);
 
         // path to the serialized application model
         final Path appModelLocation = resolveSerializedModelLocation();
 
-        ApplicationModel appModel = bootstrapProvider
-                .getResolvedApplicationModel(QuarkusBootstrapProvider.getProjectId(project), LaunchMode.DEVELOPMENT);
+        ApplicationModel appModel = bootstrapProvider.getResolvedApplicationModel(
+                QuarkusBootstrapProvider.getProjectId(project), getLaunchModeClasspath(), bootstrapId);
         if (appModel != null) {
             bootstrapProvider.close();
         } else {
-            final MavenArtifactResolver.Builder resolverBuilder = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
+            final BootstrapMavenContextConfig<?> mvnConfig = BootstrapMavenContext.config()
+                    .setUserSettings(session.getRequest().getUserSettingsFile())
                     .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepositoryManager)
-                    .setWorkspaceDiscovery(true);
+                    .setWorkspaceDiscovery(true)
+                    .setPreferPomsFromWorkspace(true)
+                    // it's important to set the base directory instead of the POM
+                    // which maybe manipulated by a plugin and stored outside the base directory
+                    .setCurrentProject(project.getBasedir().toString());
 
-            // if it already exists, it may be a reload triggered by a change in a POM
-            // in which case we should not be using the original Maven session
-            boolean reinitializeMavenSession = Files.exists(appModelLocation);
-            if (reinitializeMavenSession) {
-                Files.delete(appModelLocation);
-            } else {
-                // we can re-use the original Maven session
-                resolverBuilder.setRepositorySystemSession(repoSession);
-            }
-
-            appModel = new BootstrapAppModelResolver(resolverBuilder.build())
+            // There are a couple of reasons we don't want to use the original Maven session:
+            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;
+            // 2) in case there is a local module that has a snapshot version, which is also available in a remote snapshot repository,
+            // the Maven resolver will be checking for newer snapshots in the remote repository and might end up resolving the artifact from there.
+            final BootstrapMavenContext mvnCtx = workspaceProvider.createMavenContext(mvnConfig);
+            appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
                     .setDevMode(true)
+                    .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
-                    .resolveModel(new GACTV(project.getGroupId(), project.getArtifactId(), null, "jar", project.getVersion()));
+                    // enabled the incubating model resolver for in dev mode
+                    .setIncubatingModelResolver(!IncubatingApplicationModelResolver
+                            .isIncubatingModelResolverProperty(project.getProperties(), "false"))
+                    .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }
 
         // serialize the app model to avoid re-resolving it in the dev process
@@ -947,51 +1383,43 @@ public class DevMojo extends AbstractMojo {
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + appModelLocation);
 
         if (noDeps) {
-            addProject(builder, appModel.getApplicationModule(), true);
-            appModel.getApplicationModule().getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
-            builder.localArtifact(new AppArtifactKey(project.getGroupId(), project.getArtifactId()));
+            addProject(builder, appModel.getAppArtifact(), true);
+            appModel.getApplicationModule().getBuildFiles().forEach(builder::watchedBuildFile);
+            builder.localArtifact(
+                    ArtifactKey.of(project.getGroupId(), project.getArtifactId(), null, ArtifactCoords.TYPE_JAR));
         } else {
-            for (WorkspaceModule project : DependenciesFilter.getReloadableModules(appModel)) {
-                addProject(builder, project, project == appModel.getApplicationModule());
-                project.getBuildFiles().forEach(p -> builder.watchedBuildFile(p));
-                builder.localArtifact(new AppArtifactKey(project.getId().getGroupId(), project.getId().getArtifactId()));
+            for (ResolvedDependency project : DependenciesFilter.getReloadableModules(appModel)) {
+                addProject(builder, project, project == appModel.getAppArtifact());
+                project.getWorkspaceModule().getBuildFiles().forEach(builder::watchedBuildFile);
+                builder.localArtifact(project.getKey());
             }
         }
 
-        addQuarkusDevModeDeps(builder);
+        addQuarkusDevModeDeps(builder, appModel);
+        //look for an application.properties
+        Set<Path> resourceDirs = new HashSet<>();
+        for (Resource resource : project.getResources()) {
+            String dir = resource.getDirectory();
+            Path path = Paths.get(dir);
+            resourceDirs.add(path);
+        }
 
         //in most cases these are not used, however they need to be present for some
         //parent-first cases such as logging
         //first we go through and get all the parent first artifacts
-        Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
-        for (Artifact appDep : project.getArtifacts()) {
-            if (appDep.getArtifactHandler().getExtension().equals("jar") && appDep.getFile().isFile()) {
-                try (ZipFile file = new ZipFile(appDep.getFile())) {
-                    ZipEntry entry = file.getEntry(EXT_PROPERTIES_PATH);
-                    if (entry != null) {
-                        Properties p = new Properties();
-                        try (InputStream inputStream = file.getInputStream(entry)) {
-                            p.load(inputStream);
-                            String parentFirst = p.getProperty(ApplicationModel.PARENT_FIRST_ARTIFACTS);
-                            if (parentFirst != null) {
-                                String[] artifacts = parentFirst.split(",");
-                                for (String artifact : artifacts) {
-                                    parentFirstArtifacts.add(new AppArtifactKey(artifact.split(":")));
-                                }
-                            }
-                        }
+        final Collection<ArtifactKey> configuredParentFirst = ConfiguredClassLoading.builder()
+                .setApplicationModel(appModel)
+                .setApplicationRoot(PathsCollection.from(resourceDirs))
+                .setMode(QuarkusBootstrap.Mode.DEV)
+                .build().getParentFirstArtifacts();
 
-                    }
-                }
-            }
-        }
         for (Artifact appDep : project.getArtifacts()) {
             // only add the artifact if it's present in the dev mode context
             // we need this to avoid having jars on the classpath multiple times
-            AppArtifactKey key = new AppArtifactKey(appDep.getGroupId(), appDep.getArtifactId(),
+            final ArtifactKey key = ArtifactKey.of(appDep.getGroupId(), appDep.getArtifactId(),
                     appDep.getClassifier(), appDep.getArtifactHandler().getExtension());
-            if (!builder.isLocal(key) && parentFirstArtifacts.contains(key)) {
-                builder.classpathEntry(appDep.getFile());
+            if (!builder.isLocal(key) && configuredParentFirst.contains(key)) {
+                builder.classpathEntry(key, appDep.getFile());
             }
         }
 
@@ -1002,8 +1430,7 @@ public class DevMojo extends AbstractMojo {
         if (argsString != null) {
             builder.applicationArgs(argsString);
         }
-        propagateUserProperties(builder);
-
+        analyticsProvider.sendAnalytics(DEV_MODE, appModel, emptyMap(), buildDir);
         return builder.build();
     }
 
@@ -1025,26 +1452,6 @@ public class DevMojo extends AbstractMojo {
 
     }
 
-    private void propagateUserProperties(MavenDevModeLauncher.Builder builder) {
-        Properties userProps = BootstrapMavenOptions.newInstance().getSystemProperties();
-        if (userProps == null) {
-            return;
-        }
-        final StringBuilder buf = new StringBuilder();
-        buf.append("-D");
-        for (Object o : userProps.keySet()) {
-            String name = o.toString();
-            final String value = userProps.getProperty(name);
-            buf.setLength(2);
-            buf.append(name);
-            if (value != null && !value.isEmpty()) {
-                buf.append('=');
-                buf.append(value);
-            }
-            builder.jvmArgs(buf.toString());
-        }
-    }
-
     private void applyCompilerFlag(Optional<Xpp3Dom> compilerPluginConfiguration, String flagName,
             Consumer<String> builderCall) {
         compilerPluginConfiguration
@@ -1055,9 +1462,23 @@ public class DevMojo extends AbstractMojo {
                 .ifPresent(builderCall);
     }
 
-    private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder)
+    private void addQuarkusDevModeDeps(MavenDevModeLauncher.Builder builder, ApplicationModel appModel)
             throws MojoExecutionException, DependencyResolutionException {
-        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
+
+        ResolvedDependency coreDeployment = null;
+        for (ResolvedDependency d : appModel.getDependencies()) {
+            if (d.isDeploymentCp() && d.getArtifactId().equals("quarkus-core-deployment")
+                    && d.getGroupId().equals(IO_QUARKUS)) {
+                coreDeployment = d;
+                break;
+            }
+        }
+        if (coreDeployment == null) {
+            throw new MojoExecutionException(
+                    "Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+        }
+
+        final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-bootstrap-maven-resolver/pom.properties";
         final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
         if (devModePomPropsIs == null) {
             throw new MojoExecutionException("Failed to locate " + pomPropsPath + " on the classpath");
@@ -1081,32 +1502,63 @@ public class DevMojo extends AbstractMojo {
             throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing version");
         }
 
-        final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, "jar", devModeVersion);
+        final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, ArtifactCoords.TYPE_JAR,
+                devModeVersion);
         final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
                 new DependencyRequest()
                         .setCollectRequest(
                                 new CollectRequest()
-                                        .setRoot(new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME))
+                                        // it doesn't matter what the root artifact is, it's an alias
+                                        .setRootArtifact(new DefaultArtifact(IO_QUARKUS, "quarkus-devmode-alias",
+                                                ArtifactCoords.TYPE_JAR, "1.0"))
+                                        .setManagedDependencies(getProjectAetherDependencyManagement())
+                                        .setDependencies(List.of(
+                                                new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME),
+                                                new org.eclipse.aether.graph.Dependency(new DefaultArtifact(
+                                                        coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
+                                                        coreDeployment.getClassifier(), coreDeployment.getType(),
+                                                        coreDeployment.getVersion()), JavaScopes.RUNTIME)))
                                         .setRepositories(repos)));
 
         for (ArtifactResult appDep : cpRes.getArtifactResults()) {
             //we only use the launcher for launching from the IDE, we need to exclude it
-            if (!(appDep.getArtifact().getGroupId().equals("io.quarkus")
-                    && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
-                if (appDep.getArtifact().getGroupId().equals("io.quarkus")
-                        && appDep.getArtifact().getArtifactId().equals("quarkus-class-change-agent")) {
-                    builder.jvmArgs("-javaagent:" + appDep.getArtifact().getFile().getAbsolutePath());
+            final org.eclipse.aether.artifact.Artifact a = appDep.getArtifact();
+            if (!(a.getArtifactId().equals("quarkus-ide-launcher")
+                    && a.getGroupId().equals(IO_QUARKUS))) {
+                if (a.getArtifactId().equals("quarkus-class-change-agent")
+                        && a.getGroupId().equals(IO_QUARKUS)) {
+                    builder.jvmArgs("-javaagent:" + a.getFile().getAbsolutePath());
                 } else {
-                    builder.classpathEntry(appDep.getArtifact().getFile());
+                    builder.classpathEntry(
+                            ArtifactKey.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension()),
+                            a.getFile());
                 }
             }
         }
     }
 
+    private List<org.eclipse.aether.graph.Dependency> getProjectAetherDependencyManagement() {
+        final List<org.eclipse.aether.graph.Dependency> managed = new ArrayList<>(
+                project.getDependencyManagement().getDependencies().size());
+        project.getDependencyManagement().getDependencies().forEach(d -> {
+            final List<Exclusion> exclusions;
+            if (!d.getExclusions().isEmpty()) {
+                exclusions = new ArrayList<>(d.getExclusions().size());
+                d.getExclusions().forEach(e -> exclusions.add(new Exclusion(e.getGroupId(), e.getArtifactId(), "*", "*")));
+            } else {
+                exclusions = List.of();
+            }
+            managed.add(new org.eclipse.aether.graph.Dependency(
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
+                    d.getScope(), d.isOptional(), exclusions));
+        });
+        return managed;
+    }
+
     private void setKotlinSpecificFlags(MavenDevModeLauncher.Builder builder) {
         Plugin kotlinMavenPlugin = null;
         for (Plugin plugin : project.getBuildPlugins()) {
-            if (plugin.getKey().equals(KOTLIN_MAVEN_PLUGIN_GA)) {
+            if (plugin.getArtifactId().equals(KOTLIN_MAVEN_PLUGIN) && plugin.getGroupId().equals(ORG_JETBRAINS_KOTLIN)) {
                 kotlinMavenPlugin = plugin;
                 break;
             }
@@ -1149,18 +1601,51 @@ public class DevMojo extends AbstractMojo {
         builder.compilerPluginOptions(options);
     }
 
+    private void setAnnotationProcessorFlags(MavenDevModeLauncher.Builder builder) {
+        Plugin compilerMavenPlugin = null;
+        for (Plugin plugin : project.getBuildPlugins()) {
+            if (plugin.getArtifactId().equals("maven-compiler-plugin")
+                    && plugin.getGroupId().equals("org.apache.maven.plugins")) {
+                compilerMavenPlugin = plugin;
+                break;
+            }
+        }
+        if (compilerMavenPlugin == null) {
+            return;
+        }
+
+        getLog().debug("Maven compiler plugin found, looking for annotation processors");
+
+        List<String> options = new ArrayList<>();
+        Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) compilerMavenPlugin.getConfiguration();
+        try {
+            Set<File> processorPaths = this.readAnnotationProcessorPaths(compilerPluginConfiguration);
+            getLog().debug("Found processor paths: " + processorPaths);
+            if (!processorPaths.isEmpty()) {
+                builder.annotationProcessorPaths(processorPaths);
+            }
+        } catch (MojoExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        List<String> processors = this.readAnnotationProcessors(compilerPluginConfiguration);
+        getLog().debug("Found processors: " + processors);
+        if (!processors.isEmpty()) {
+            builder.annotationProcessors(processors);
+        }
+        builder.compilerPluginOptions(options);
+    }
+
     protected void modifyDevModeContext(MavenDevModeLauncher.Builder builder) {
 
     }
 
     private Optional<Xpp3Dom> findCompilerPluginConfiguration() {
         for (final Plugin plugin : project.getBuildPlugins()) {
-            if (!plugin.getKey().equals("org.apache.maven.plugins:maven-compiler-plugin")) {
-                continue;
-            }
-            final Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
-            if (compilerPluginConfiguration != null) {
-                return Optional.of(compilerPluginConfiguration);
+            if (plugin.getArtifactId().equals(MAVEN_COMPILER_PLUGIN) && plugin.getGroupId().equals(ORG_APACHE_MAVEN_PLUGINS)) {
+                final Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
+                if (compilerPluginConfiguration != null) {
+                    return Optional.of(compilerPluginConfiguration);
+                }
             }
         }
         return Optional.empty();
@@ -1170,5 +1655,29 @@ public class DevMojo extends AbstractMojo {
         final Path p = BootstrapUtils.resolveSerializedAppModelPath(Paths.get(project.getBuild().getDirectory()));
         p.toFile().deleteOnExit();
         return p;
+    }
+
+    private static final class PluginExec {
+        final Plugin plugin;
+        final String prefix;
+        final PluginExecution execution;
+
+        PluginExec(Plugin plugin, String prefix, PluginExecution execution) {
+            this.plugin = plugin;
+            this.prefix = prefix;
+            this.execution = execution;
+        }
+
+        String getPluginId() {
+            return plugin.getId();
+        }
+
+        String getPrefix() {
+            return prefix == null ? plugin.getId() : prefix;
+        }
+
+        String getExecutionId() {
+            return execution == null ? null : execution.getId();
+        }
     }
 }

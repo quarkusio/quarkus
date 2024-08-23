@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.server.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
@@ -21,11 +23,6 @@ public interface HandlerChainCustomizer {
      * @param resourceMethod The method, will be null if this has not been matched yet
      */
     default List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
-        return handlers(phase);
-    }
-
-    @Deprecated(forRemoval = true)
-    default List<ServerRestHandler> handlers(Phase phase) {
         return Collections.emptyList();
     }
 
@@ -33,7 +30,7 @@ public interface HandlerChainCustomizer {
      * Returns an alternate invocation handler for this method.
      *
      * This is only considered for method level customizers
-     * 
+     *
      * @param invoker
      */
     default ServerRestHandler alternateInvocationHandler(EndpointInvoker invoker) {
@@ -44,7 +41,7 @@ public interface HandlerChainCustomizer {
      * Returns an alternate endpoint invoker for this method.
      *
      * This is only considered for method level customizers
-     * 
+     *
      * @param method
      */
     default Supplier<EndpointInvoker> alternateInvoker(ServerResourceMethod method) {
@@ -103,6 +100,12 @@ public interface HandlerChainCustomizer {
          * handlers are invoked just after the resource method is invoked
          */
         AFTER_METHOD_INVOKE,
+
+        /**
+         * handlers are invoked after the handlers that run after the method invocation
+         */
+        AFTER_METHOD_INVOKE_SECOND_ROUND,
+
         /**
          * handlers are invoked just after the resource method result has been turned into a {@link Response}
          */

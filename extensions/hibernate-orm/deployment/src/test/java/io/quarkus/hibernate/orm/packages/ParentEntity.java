@@ -1,14 +1,13 @@
 package io.quarkus.hibernate.orm.packages;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
-import org.hibernate.annotations.Any;
+import org.hibernate.annotations.Filter;
 
 @Entity
+@Filter(name = "filter")
 public class ParentEntity {
 
     @Id
@@ -16,10 +15,6 @@ public class ParentEntity {
     private long id;
 
     private String name;
-
-    @Any(metaDef = "childrenAnyMetaDef", metaColumn = @Column(name = "child_type"))
-    @JoinColumn(name = "child_id")
-    private Object child;
 
     public ParentEntity() {
     }
@@ -47,13 +42,5 @@ public class ParentEntity {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public Object getChild() {
-        return child;
-    }
-
-    public void setChild(Object child) {
-        this.child = child;
     }
 }

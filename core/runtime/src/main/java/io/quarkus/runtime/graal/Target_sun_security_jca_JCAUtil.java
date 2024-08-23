@@ -5,7 +5,6 @@ import java.security.SecureRandom;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK17OrLater;
 
 @TargetClass(className = "sun.security.jca.JCAUtil", onlyWith = JDK17OrLater.class)
 public final class Target_sun_security_jca_JCAUtil {

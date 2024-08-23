@@ -1,6 +1,6 @@
 package org.acme.common;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class CommonBean {

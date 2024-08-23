@@ -15,15 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-cloud-config-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-config-yaml</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -44,20 +40,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-config-yaml-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -96,47 +79,35 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <!-- include tags -->
+                            <groups>common,test</groups>
+                            <!-- exclude tags -->
+                            <excludedGroups>test-only</excludedGroups>
+                        </configuration>
+                    </execution>
+                    <!-- This configuration is used in order to test that 'quarkus.spring-cloud-config.profiles' is taken into account -->
+                    <execution>
+                        <id>profiles-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.spring-cloud-config.profiles>test</quarkus.spring-cloud-config.profiles>
+                            </systemPropertyVariables>
+                            <!-- include tags -->
+                            <groups>test-only</groups>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>native</id>
-            <activation>
-                <property>
-                    <name>native</name>
-                </property>
-            </activation>
-            <!-- add some custom config, the rest comes from parent -->
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>uk.co.automatictester</groupId>
-                        <artifactId>wiremock-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>wiremock-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <dir>target/classes</dir>
-                                    <params>--port=8089 --disable-banner</params>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>wiremock-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

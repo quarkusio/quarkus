@@ -12,7 +12,7 @@ public class DefaultCacheKey {
 
     /**
      * Constructor.
-     * 
+     *
      * @param cacheName cache name
      * @throws NullPointerException if the cache name is {@code null}
      */
@@ -35,5 +35,10 @@ public class DefaultCacheKey {
             return Objects.equals(cacheName, other.cacheName);
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultCacheKey[cacheName=" + cacheName + "]";
     }
 }

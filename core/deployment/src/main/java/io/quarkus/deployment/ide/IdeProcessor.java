@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,7 +102,9 @@ public class IdeProcessor {
                             }
                         }
                     }
-                    if (matches.size() == 1) {
+                    if ((matches.size() == 0 && runningIdes.size() > 0)) {
+                        result = runningIdes.iterator().next();
+                    } else if (matches.size() >= 1) {
                         result = matches.get(0);
                     }
                 }
@@ -133,7 +135,7 @@ public class IdeProcessor {
             return null;
         }
 
-        Set<Ide> result = new HashSet<>(2);
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
         Path root = buildSystemTarget.getOutputDirectory();
 
         // hack to try and guess the IDE when using a multi-module project
@@ -160,7 +162,7 @@ public class IdeProcessor {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
-        Set<Ide> result = new HashSet<>(4);
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
         List<ProcessInfo> processInfos = Collections.emptyList();
         try {
             processInfos = ProcessUtil.runningProcesses();
@@ -199,7 +201,7 @@ public class IdeProcessor {
                 ProcessHandle.Info info = p.info();
                 Optional<String> command = info.command();
                 if (command.isPresent()) {
-                    result.add(new ProcessInfo(command.get(), info.arguments().orElse(null)));
+                    result.add(new ProcessInfo(command.get(), info.commandLine().orElse(""), info.arguments().orElse(null)));
                 }
             });
             return result;
@@ -209,10 +211,12 @@ public class IdeProcessor {
     private static class ProcessInfo {
         // the executable pathname of the process.
         private final String command;
+        private final String commandLine;
         private final String[] arguments;
 
-        public ProcessInfo(String command, String[] arguments) {
+        public ProcessInfo(String command, String commandLine, String[] arguments) {
             this.command = command;
+            this.commandLine = commandLine;
             this.arguments = arguments;
         }
 
@@ -220,12 +224,16 @@ public class IdeProcessor {
             return command;
         }
 
+        public String getCommandLine() {
+            return commandLine;
+        }
+
         public String[] getArguments() {
             return arguments;
         }
 
         private boolean containInCommand(String value) {
-            return this.command.contains(value);
+            return this.command.contains(value) || this.commandLine.contains(value);
         }
 
         private boolean containInArguments(String value) {

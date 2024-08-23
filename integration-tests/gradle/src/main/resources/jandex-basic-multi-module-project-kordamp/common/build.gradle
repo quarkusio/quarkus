@@ -1,0 +1,13 @@
+plugins {
+    id 'io.quarkus'
+    id 'java-library'
+    id "org.kordamp.gradle.jandex" version "1.1.0"
+}
+
+dependencies {
+
+}
+
+jandex {
+    version = "3.1.0"
+}

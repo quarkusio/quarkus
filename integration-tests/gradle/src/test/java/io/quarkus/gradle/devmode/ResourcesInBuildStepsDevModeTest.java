@@ -16,7 +16,7 @@ public class ResourcesInBuildStepsDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override
     protected String[] buildArguments() {
-        return new String[] { "clean", ":application:quarkusDev", "-s" };
+        return new String[] { "clean", ":application:quarkusDev" };
     }
 
     protected void testDevMode() throws Exception {

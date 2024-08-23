@@ -1,11 +1,12 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 
 public class TsQuarkusExt {
 
@@ -27,6 +28,10 @@ public class TsQuarkusExt {
         rtContent = new TsJar();
         runtime.setContent(rtContent);
         rtDescr.set(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString());
+    }
+
+    public PropsBuilder getDescriptor() {
+        return rtDescr;
     }
 
     public TsQuarkusExt setConditionalDeps(TsQuarkusExt... exts) {

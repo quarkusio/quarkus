@@ -1,6 +1,6 @@
 package io.quarkus.it.jsonb;
 
-import javax.json.bind.spi.JsonbProvider;
+import jakarta.json.bind.spi.JsonbProvider;
 
 import org.junit.jupiter.api.Test;
 

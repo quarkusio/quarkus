@@ -1,32 +1,40 @@
 package io.quarkus.devservices.postgresql.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class PostgresqlDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(PostgresqlDevServicesProcessor.class);
-
-    public static final String TAG = "14.1";
 
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
@@ -35,49 +43,84 @@ public class PostgresqlDevServicesProcessor {
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupPostgres(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.POSTGRESQL, new DevServicesDatasourceProvider() {
+            @SuppressWarnings("unchecked")
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
-                QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(imageName, fixedExposedPort,
-                        !devServicesSharedNetworkBuildItem.isEmpty());
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                        devServicesSharedNetworkBuildItem);
+                QuarkusPostgreSQLContainer container = new QuarkusPostgreSQLContainer(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
+                        useSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("quarkus"))
-                        .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+
+                String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                String effectiveDbName = containerConfig.getDbName().orElse(
+                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+
+                container.withUsername(effectiveUsername)
+                        .withPassword(effectivePassword)
+                        .withDatabaseName(effectiveDbName)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
+
+                container.withEnv(containerConfig.getContainerEnv());
+
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
 
                 container.start();
 
                 LOG.info("Dev Services for PostgreSQL started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
+                        container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for PostgreSQL shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "PostgreSQL"));
             }
         });
     }
 
     private static class QuarkusPostgreSQLContainer extends PostgreSQLContainer {
+
+        private static final String READY_REGEX = ".*database system is ready to accept connections.*\\s";
+        private static final String SKIPPING_INITIALIZATION_REGEX = ".*PostgreSQL Database directory appears to contain a database; Skipping initialization:*\\s";
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
         private String hostName = null;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse(PostgreSQLContainer.IMAGE + ":" + PostgresqlDevServicesProcessor.TAG))
+            super(DockerImageName
+                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("postgresql")))
                     .asCompatibleSubstituteFor(DockerImageName.parse(PostgreSQLContainer.IMAGE)));
+
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+
+            // Workaround for https://github.com/testcontainers/testcontainers-java/issues/4799.
+            // The motivation of this custom wait strategy is that Testcontainers fails to start a Postgresql database when it
+            // has been already initialized.
+            // This custom wait strategy will work fine regardless of the state of the Postgresql database.
+            // More information in the issue ticket in Testcontainers.
+
+            // Added Wait.forListeningPort() for https://github.com/quarkusio/quarkus/issues/25682
+            // as suggested by https://github.com/testcontainers/testcontainers-java/pull/6309
+            this.waitStrategy = new WaitAllStrategy()
+                    .withStrategy(Wait.forLogMessage("(" + READY_REGEX + ")?(" + SKIPPING_INITIALIZATION_REGEX + ")?", 2))
+                    .withStrategy(Wait.forListeningPort())
+                    .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
         }
 
         @Override
@@ -111,6 +154,10 @@ public class PostgresqlDevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
     }
 }

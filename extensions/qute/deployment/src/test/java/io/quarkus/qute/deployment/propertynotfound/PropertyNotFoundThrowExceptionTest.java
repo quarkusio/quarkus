@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,8 @@ public class PropertyNotFoundThrowExceptionTest {
         } catch (Exception expected) {
             Throwable rootCause = ExceptionUtil.getRootCause(expected);
             assertEquals(TemplateException.class, rootCause.getClass());
-            assertTrue(rootCause.getMessage().contains("{foos}"));
+            assertTrue(rootCause.getMessage().contains("Key \"foos\" not found in the template data map with keys []"),
+                    rootCause.getMessage());
         }
     }
 

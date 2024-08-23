@@ -1,12 +1,12 @@
 package io.quarkus.test.security;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Alternative;
-import javax.inject.Inject;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
+import jakarta.interceptor.Interceptor;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -27,6 +27,11 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
     }
 
     volatile SecurityIdentity testIdentity;
+
+    /**
+     * Whether authentication is successful only if right mechanism was used to authenticate.
+     */
+    volatile boolean isPathBasedIdentity = false;
 
     /**
      * A request scoped delegate that allows the system to function as normal when
@@ -56,10 +61,11 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
 
     @Override
     public Uni<SecurityIdentity> getDeferredIdentity() {
-        if (testIdentity != null) {
-            return Uni.createFrom().item(testIdentity);
+        if (testIdentity == null) {
+            return delegate.getDeferredIdentity();
         }
-        return delegate.getDeferredIdentity();
+        return delegate.getDeferredIdentity().onItem()
+                .transform(underlying -> underlying.isAnonymous() && !isPathBasedIdentity ? testIdentity : underlying);
     }
 
     @Override
@@ -70,11 +76,15 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
         //the identity ends up in the routing context
         SecurityIdentity underlying = delegate.getIdentity();
         if (underlying.isAnonymous()) {
-            if (testIdentity != null) {
+            if (testIdentity != null && !isPathBasedIdentity) {
                 return testIdentity;
             }
         }
         return delegate.getIdentity();
+    }
+
+    void setPathBasedIdentity(boolean pathBasedIdentity) {
+        isPathBasedIdentity = pathBasedIdentity;
     }
 }
 

@@ -11,13 +11,13 @@ import io.quarkus.cli.common.RunModeOption;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", aliases = "rm", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Remove extension(s) from this project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "remove", aliases = "rm", header = "Remove extension(s) from this project.")
 public class ProjectExtensionsRemove extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.")
+    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "Extension(s) to remove from this project.", split = ",")
     Set<String> extensions;
 
     @Override

@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -20,17 +21,42 @@ import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakRealmResourceManager.class)
+@WithTestResource(value = KeycloakRealmResourceManager.class, restrictToAnnotatedClass = false)
 public class OidcClientTest {
 
     @Test
     public void testGetUserNameOidcClient() {
         RestAssured.when().get("/frontend/userOidcClient")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+    }
+
+    @Test
+    public void testGetUserNameMisconfiguredClientFilter() {
+        RestAssured.given().header("Accept", "text/plain")
+                .when().get("/frontend/userNameMisconfiguredClientFilter")
+                .then()
+                .statusCode(200)
+                .body(containsString("invalid_grant"));
+    }
+
+    @Test
+    public void testGetUserNameNonDefaultOidcClient() {
+        RestAssured.when().get("/frontend/userNonDefaultOidcClient")
+                .then()
+                .statusCode(200)
+                .body(equalTo("bob"));
+    }
+
+    @Test
+    public void testGetUserNameOidcClientManagedExecutor() {
+        RestAssured.when().get("/frontend/userOidcClientManagedExecutor")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));

@@ -3,9 +3,10 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,26 +40,34 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
     @PersistenceUnit("inventory")
     EntityManager inventoryEntityManager;
 
+    @Inject
+    UserTransaction transaction;
+
     @Test
-    @Transactional
-    public void testDefault() {
+    public void testDefault() throws Exception {
+        transaction.begin();
         SharedEntity defaultEntity = new SharedEntity("default");
         defaultEntityManager.persist(defaultEntity);
 
         SharedEntity savedDefaultEntity = defaultEntityManager.find(SharedEntity.class, defaultEntity.getId());
         assertEquals(defaultEntity.getName(), savedDefaultEntity.getName());
+        transaction.commit();
 
+        transaction.begin();
         SharedEntity defaultEntity2 = new SharedEntity("default2");
         usersEntityManager.persist(defaultEntity2);
 
         SharedEntity savedDefaultEntity2 = usersEntityManager.find(SharedEntity.class, defaultEntity2.getId());
         assertEquals(defaultEntity2.getName(), savedDefaultEntity2.getName());
+        transaction.commit();
 
+        transaction.begin();
         SharedEntity defaultEntity3 = new SharedEntity("default3");
         inventoryEntityManager.persist(defaultEntity3);
 
         SharedEntity savedDefaultEntity3 = inventoryEntityManager.find(SharedEntity.class, defaultEntity3.getId());
         assertEquals(defaultEntity3.getName(), savedDefaultEntity3.getName());
+        transaction.commit();
     }
 
     @Test
@@ -75,7 +84,7 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
 
         OtherUserInSubPackage savedOtherUserInSubPackage = usersEntityManager.find(OtherUserInSubPackage.class,
                 otherUserInSubPackage.getId());
-        assertEquals(savedOtherUserInSubPackage.getName(), savedOtherUserInSubPackage.getName());
+        assertEquals(otherUserInSubPackage.getName(), savedOtherUserInSubPackage.getName());
     }
 
     @Test
@@ -93,6 +102,6 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
     public void testUserInInventoryEntityManager() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 }

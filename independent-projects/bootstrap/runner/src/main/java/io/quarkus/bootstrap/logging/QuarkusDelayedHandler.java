@@ -31,6 +31,7 @@ import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.Level;
@@ -207,6 +208,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
 
     public synchronized void buildTimeComplete() {
         buildTimeLoggingActivated = false;
+        runCloseTasks();
     }
 
     /**
@@ -235,9 +237,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
     @Override
     public Handler[] clearHandlers() throws SecurityException {
         activated = false;
-        for (Runnable i : logCloseTasks) {
-            i.run();
-        }
+        runCloseTasks();
         return super.clearHandlers();
     }
 
@@ -310,6 +310,15 @@ public class QuarkusDelayedHandler extends ExtHandler {
         }
         droppedRecords.clear();
         activated = true;
+    }
+
+    private void runCloseTasks() {
+        if (!logCloseTasks.isEmpty()) {
+            for (Runnable i : logCloseTasks) {
+                i.run();
+            }
+            logCloseTasks.clear();
+        }
     }
 
     static final class CategoryAndLevel {

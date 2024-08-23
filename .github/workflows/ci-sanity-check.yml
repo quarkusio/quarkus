@@ -10,20 +10,26 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
       - '.github/*.java'
+      - '.github/*.conf'
+      - '.sdkmanrc'
   pull_request:
     paths:
       - '.gitignore'
       - '.dockerignore'
-      - 'adr/**'
       - '*.md'
       - '*.adoc'
       - '*.txt'
+      - 'adr/**'
+      - 'jakarta/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
       - '.github/*.java'
+      - '.github/*.conf'
+      - '.sdkmanrc'
 
 jobs:
   ci-sanity-check:

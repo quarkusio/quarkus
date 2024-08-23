@@ -50,6 +50,7 @@ public class KubernetesWithDefaultsTest {
                             });
                         });
                     });
+                    assertThat(deploymentSpec.getStrategy()).isNull();
                 });
             });
         });

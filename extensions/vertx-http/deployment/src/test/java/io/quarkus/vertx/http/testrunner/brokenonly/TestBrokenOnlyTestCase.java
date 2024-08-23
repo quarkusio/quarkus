@@ -10,16 +10,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.restassured.RestAssured;
 
-public class TestBrokenOnlyTestCase {
+public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(BrokenOnlyResource.class)
@@ -27,15 +27,19 @@ public class TestBrokenOnlyTestCase {
                                     "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(SimpleET.class);
                 }
             });
 
+    public TestBrokenOnlyTestCase() {
+        super("devui-continuous-testing");
+    }
+
     @Test
-    public void testBrokenOnlyMode() throws InterruptedException {
+    public void testBrokenOnlyMode() throws InterruptedException, Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         TestStatus ts = utils.waitForNextCompletion();
 
@@ -44,7 +48,7 @@ public class TestBrokenOnlyTestCase {
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
         //start broken only mode
-        RestAssured.post("q/dev/io.quarkus.quarkus-vertx-http/tests/toggle-broken-only");
+        super.executeJsonRPCMethod("toggleBrokenOnly");
 
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override

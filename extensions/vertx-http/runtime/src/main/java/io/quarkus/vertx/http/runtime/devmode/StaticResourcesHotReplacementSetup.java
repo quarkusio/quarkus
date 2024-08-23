@@ -14,7 +14,9 @@ public class StaticResourcesHotReplacementSetup implements HotReplacementSetup {
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         List<Path> resources = new ArrayList<>();
-        addPathIfContainsStaticResources(resources, context.getClassesDir());
+        for (Path classesDir : context.getClassesDir()) {
+            addPathIfContainsStaticResources(resources, classesDir);
+        }
         for (Path resourceDir : context.getResourcesDir()) {
             addPathIfContainsStaticResources(resources, resourceDir);
         }

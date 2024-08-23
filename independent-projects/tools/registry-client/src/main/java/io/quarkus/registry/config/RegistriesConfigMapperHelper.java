@@ -1,12 +1,5 @@
 package io.quarkus.registry.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.json.JsonArtifactCoordsMixin;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,6 +8,15 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonArtifactCoordsMixin;
 
 public class RegistriesConfigMapperHelper {
 
@@ -34,10 +36,11 @@ public class RegistriesConfigMapperHelper {
     }
 
     public static ObjectMapper initMapper(ObjectMapper mapper) {
-        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.addMixIn(ArtifactCoords.class, JsonArtifactCoordsMixin.class)
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return mapper;
     }
 

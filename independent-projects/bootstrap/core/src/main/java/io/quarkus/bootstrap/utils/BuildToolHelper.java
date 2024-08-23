@@ -1,15 +1,17 @@
 package io.quarkus.bootstrap.utils;
 
-import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
-import io.quarkus.bootstrap.util.BootstrapUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
+import io.quarkus.bootstrap.util.BootstrapUtils;
 
 /**
  * Helper class used to expose build tool used by the project
@@ -19,7 +21,7 @@ public class BuildToolHelper {
     private static final Logger log = Logger.getLogger(BuildToolHelper.class);
 
     private final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
-    private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
+    private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses", "integrationTestClasses" };
     private final static List<String> ENABLE_JAR_PACKAGING = Collections
             .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
@@ -106,6 +108,7 @@ public class BuildToolHelper {
     public static ApplicationModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)
             throws IOException, AppModelResolverException {
         if (isGradleProject(projectRoot)) {
+            log.infof("Loading Quarkus Gradle application model for %s", projectRoot);
             final ApplicationModel model = QuarkusGradleModelFactory.create(
                     getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
                     mode, jvmArgs, tasks);

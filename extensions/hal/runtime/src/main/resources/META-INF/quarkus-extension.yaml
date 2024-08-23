@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Hypertext Application Language (HAL)"
+metadata:
+  keywords:
+  - "jsonb"
+  - "json-b"
+  - "jackson"
+  - "hal"
+  - "rest"
+  - "jaxrs"
+  - "jakarta-rest"
+  - "links"
+  categories:
+    - "web"
+  status: "experimental"

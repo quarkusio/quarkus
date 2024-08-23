@@ -1,0 +1,186 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Build analytics
+:categories: analytics
+:summary: This guide presents what build analytics is and how to configure it.
+
+The Quarkus team has limited knowledge, from Maven download numbers, of the remarkable growth of Quarkus and the number of users reporting issues/concerns. Still, we need more insight into the platforms, operating system, Java combinations, and build tools our users employ.
+The build analytics tool aims to provide us with this information.
+
+== How it works
+
+*Collection happens only at build-time* and not at runtime. Collection occurs during usage of Quarkus build tooling (Maven, Gradle). Your built application does not contain any data collection code.
+
+*All data collected is anonymous*. There is no way to link this data back to an individual or organization. The intent is to learn about general patterns and trends; therefore, only anonymous data is needed.
+
+*Collection is disabled by default* You will be asked if you want to opt in to data collection the first time you use dev mode. The console will wait for a few seconds for your input.
+
+== This is the data being collected
+
+* Anonymous application name. SHA-256 hash of the Group Id + Artifact Id.
+* Anonymous application version. SHA-256 hash of the Artifact Id + Version.
+* Anonymous user id. During the 1st build, this is generated locally at random, and subsequently reused.
+* Quarkus version
+* Java version
+* GraalVM version
+* Operating system details: OS name, OS version and architecture
+* Build system details, such as Maven, Gradle, and so on.
+* If a CI system was detected
+* Country and timezone
+* Extensions enabled. Only extensions whose `groupIds` start with `io.quarkus`, `io.quarkiverse` or are included in the quarkus platform are collected.
+
+And here is an example of the data payload being sent:
+
+[source,json]
+.Example analytics payload
+----
+{
+  "context": {
+    "app": {
+      "name": "ZzOlt3q0VgNK0oyUd6NDAhPqJjTSxNOAnqHb5dHfS7M=",
+      "version": "FUDdh16tTKtuJkcoY2Wp57IKKwxZ/Hx42tTvi3Izpmc="
+    },
+    "build": {
+      "gradle_version": "N/A",
+      "maven_version": "3.8.7"
+    },
+    "ci": {
+      "name": "unknown"
+    },
+    "graalvm": {
+      "java_version": "N/A",
+      "vendor": "N/A",
+      "version": "N/A"
+    },
+    "ip": "0.0.0.0",
+    "java": {
+      "vendor": "Eclipse Adoptium",
+      "version": "17.0.4.1"
+    },
+    "kubernetes": {
+      "detected": "false"
+    },
+    "library": {
+      "name": "unknown",
+      "version": "unknown"
+    },
+    "location": {
+      "country": "PT"
+    },
+    "os": {
+      "name": "Mac OS X",
+      "os_arch": "aarch64",
+      "version": "13.3.1"
+    },
+    "quarkus": {
+      "version": "999-SNAPSHOT"
+    },
+    "timezone": "Europe/Lisbon"
+  },
+  "event": "BUILD",
+  "integrations": {},
+  "messageId": "api-2PCI9LWQM8oRyHIS6fCQMIQ0dlR",
+  "originalTimestamp": "2023-05-01T15:21:22.266033Z",
+  "properties": {
+    "app_extensions": [
+      {
+        "artifact_id": "quarkus-resteasy-jackson",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      },
+      {
+        "artifact_id": "quarkus-smallrye-openapi",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      },
+      {
+        "artifact_id": "quarkus-hibernate-orm",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      },
+      {
+        "artifact_id": "quarkus-opentelemetry",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      },
+      {
+        "artifact_id": "quarkus-jdbc-postgresql",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      },
+      {
+        "artifact_id": "quarkus-arc",
+        "group_id": "io.quarkus",
+        "version": "999-SNAPSHOT"
+      }
+    ]
+  },
+  "receivedAt": "2023-05-01T15:21:23.184Z",
+  "timestamp": "2023-05-01T15:21:22.266Z",
+  "type": "track",
+  "userId": "872332b4-4b21-42ee-854b-d86c8629e78b"
+}
+----
+
+== Where are the config files?
+Analytics configurations are stored at the `.redhat` folder in the user's home directory:
+
+`anonymousId` is the locally generated anonymous user id.
+
+`io.quarkus.analytics.localconfig` holds if the user has agreed to send analytics data or not.
+
+`io.quarkus.analytics.remoteconfig` cache of the remote configuration that allows to disable analytics globally.
+
+== Show me the code!
+
+The bulk of the code is implemented in the `analytics-common` module. Data is sent using calls to `io.quarkus.analytics.AnalyticsService.sendAnalytics(...)` from the Maven and Gradle plugins.
+
+The uploaded events are stored under the project's `/target` folder with the name `build-analytics-event.json`.
+
+== How to disable analytics?
+
+*Build time analytics is not active by default.*
+
+If you have opted in and would like to disable build time analytics, you can do so in two ways:
+
+* Globally, by editing the `io.quarkus.analytics.localconfig` file in the '.redhat' folder of your user’s home directory. Update the file as follows:
+[source,json]
+----
+{"disabled":true}
+----
+
+* Per project, by using the system property `quarkus.analytics.disabled=true` when building the project.
+
+[source,bash]
+.Example using maven
+----
+mvn clean install -Dquarkus.analytics.disabled=true
+----
+
+== Configuration
+// Build telemetry runs outside quarkus, therefore no @ConfigRoot to generate the config part
+
+|===
+| Configuration property | Type | Default
+
+| [[build-analytics-quarkus-analytics-disabled]]`link:#build-analytics-quarkus-analytics-disabled[quarkus.analytics.disabled]`
+
+Values can be `true` or `false`.
+
+Setting this property to `true` will disable the collection of analytics data on that specific project regardless of any other configuration.
+| boolean
+| false
+| [[build-analytics-quarkus-analytics-uri-base]]`link:#build-analytics.quarkus-analytics-uri-base[quarkus.analytics.uri.base]`
+
+Base URL of the analytics service. This is were all the data is sent to.
+| String
+| "https://api.segment.io/"
+| [[build-analytics-quarkus-analytics-timeout]]`link:#build-analytics-quarkus-analytics-timeout[quarkus.analytics.timeout]`
+
+Value in milliseconds for the timeout of the HTTP request to submit the analytics service.
+| int
+| 3000
+|===

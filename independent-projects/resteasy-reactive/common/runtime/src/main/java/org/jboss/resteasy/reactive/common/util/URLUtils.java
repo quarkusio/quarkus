@@ -22,7 +22,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Set;
 import java.util.regex.Pattern;
-import javax.ws.rs.core.MultivaluedMap;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * Utilities for dealing with URLs
@@ -99,35 +100,13 @@ public class URLUtils {
         if (buffer != null) {
             buffer.setLength(0);
         }
-        boolean needToChange = false;
         int numChars = s.length();
         int i = 0;
         while (i < numChars) {
             char c = s.charAt(i);
-            if (c == '+') {
-                if (formEncoding) {
-                    if (!needToChange) {
-                        if (buffer == null) {
-                            buffer = new StringBuilder();
-                        }
-                        buffer.append(s, 0, i);
-                    }
-                    buffer.append(' ');
-                    i++;
-                } else {
-                    i++;
-                    if (needToChange) {
-                        buffer.append(c);
-                    }
-                }
-            } else if (c == '%' || c > 127) {
-                if (!needToChange) {
-                    if (buffer == null) {
-                        buffer = new StringBuilder();
-                    }
-                    buffer.append(s, 0, i);
-                    needToChange = true;
-                }
+            if (c == '%' || c > 127 || c == '+') {
+                buffer = new StringBuilder();
+                buffer.append(s, 0, i);
                 /*
                  * Starting with this instance of a character
                  * that needs to be encoded, process all
@@ -232,16 +211,16 @@ public class URLUtils {
 
                     String decoded = new String(bytes, 0, pos, enc);
                     buffer.append(decoded);
+                    return buffer.toString();
                 } catch (NumberFormatException e) {
                     throw failedToDecodeURL(s, enc, e);
                 }
-                break;
             } else {
                 i++;
             }
         }
 
-        return (needToChange ? buffer.toString() : s);
+        return s;
     }
 
     private static RuntimeException failedToDecodeURL(String s, Charset enc, Throwable o) {

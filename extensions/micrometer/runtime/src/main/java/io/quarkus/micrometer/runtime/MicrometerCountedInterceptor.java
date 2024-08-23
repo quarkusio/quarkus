@@ -2,16 +2,19 @@ package io.quarkus.micrometer.runtime;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
 
 import io.micrometer.core.annotation.Counted;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.arc.ArcInvocationContext;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Functions;
 
 /**
  * Quarkus declared interceptor responsible for intercepting all methods
@@ -29,9 +32,11 @@ public class MicrometerCountedInterceptor {
     public final String RESULT_TAG_SUCCESS_VALUE = "success";
 
     private final MeterRegistry meterRegistry;
+    private final MeterTagsSupport meterTagsSupport;
 
-    public MicrometerCountedInterceptor(MeterRegistry meterRegistry) {
+    public MicrometerCountedInterceptor(MeterRegistry meterRegistry, MeterTagsSupport meterTagsSupport) {
         this.meterRegistry = meterRegistry;
+        this.meterTagsSupport = meterTagsSupport;
     }
 
     /**
@@ -51,34 +56,49 @@ public class MicrometerCountedInterceptor {
      * @throws Throwable When the intercepted method throws one.
      */
     @AroundInvoke
+    @SuppressWarnings("unchecked")
     Object countedMethod(ArcInvocationContext context) throws Exception {
         MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
         if (counted == null) {
             return context.proceed();
         }
         Method method = context.getMethod();
-        Tags commonTags = getCommonTags(method.getDeclaringClass().getName(), method.getName());
+        Tags tags = meterTagsSupport.getTags(context);
 
-        // If we're working with a CompletionStage
-        final boolean stopWhenCompleted = CompletionStage.class.isAssignableFrom(method.getReturnType());
-        if (stopWhenCompleted) {
+        Class<?> returnType = method.getReturnType();
+        if (TypesUtil.isCompletionStage(returnType)) {
             try {
-                return ((CompletionStage<?>) context.proceed()).whenComplete((result, throwable) -> {
-                    recordCompletionResult(counted, commonTags, throwable);
+                return ((CompletionStage<?>) context.proceed()).whenComplete(new BiConsumer<Object, Throwable>() {
+                    @Override
+                    public void accept(Object o, Throwable throwable) {
+                        recordCompletionResult(counted, tags, throwable);
+                    }
                 });
             } catch (Throwable e) {
-                record(counted, commonTags, e);
+                record(counted, tags, e);
+            }
+        } else if (TypesUtil.isUni(returnType)) {
+            try {
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(
+                        new Functions.TriConsumer<>() {
+                            @Override
+                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                                recordCompletionResult(counted, tags, throwable);
+                            }
+                        });
+            } catch (Throwable e) {
+                record(counted, tags, e);
             }
         }
 
         try {
             Object result = context.proceed();
             if (!counted.recordFailuresOnly()) {
-                record(counted, commonTags, null);
+                record(counted, tags, null);
             }
             return result;
         } catch (Throwable e) {
-            record(counted, commonTags, e);
+            record(counted, tags, e);
             throw e;
         }
     }
@@ -102,10 +122,6 @@ public class MicrometerCountedInterceptor {
             builder.description(description);
         }
         builder.register(meterRegistry).increment();
-    }
-
-    private Tags getCommonTags(String className, String methodName) {
-        return Tags.of("class", className, "method", methodName);
     }
 
 }

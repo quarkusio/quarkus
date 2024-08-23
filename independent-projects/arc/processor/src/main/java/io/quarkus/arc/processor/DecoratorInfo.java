@@ -5,11 +5,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+
+import io.quarkus.arc.impl.Sets;
 
 public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo> {
 
@@ -19,8 +22,8 @@ public class DecoratorInfo extends BeanInfo implements Comparable<DecoratorInfo>
     DecoratorInfo(AnnotationTarget target, BeanDeployment beanDeployment, InjectionPointInfo delegateInjectionPoint,
             Set<Type> decoratedTypes, List<Injection> injections, int priority) {
         super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
-                Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, false, Collections.emptyList(), null, false, null, priority);
+                Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
+                null, null, false, Collections.emptyList(), null, false, null, priority, null, null);
         this.delegateInjectionPoint = delegateInjectionPoint;
         this.decoratedTypes = decoratedTypes;
     }

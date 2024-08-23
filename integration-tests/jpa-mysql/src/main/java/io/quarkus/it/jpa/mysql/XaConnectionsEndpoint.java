@@ -4,25 +4,26 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import javax.inject.Inject;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.quarkus.agroal.DataSource;
 
-@WebServlet(name = "XaConnectionEndpoint", urlPatterns = "/jpa-mysql/testxaconnection")
-public class XaConnectionsEndpoint extends HttpServlet {
+@Path("/jpa-mysql/testxaconnection")
+@Produces(MediaType.TEXT_PLAIN)
+public class XaConnectionsEndpoint {
 
     @Inject
     @DataSource("samebutxa")
     AgroalDataSource xaDatasource;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @GET
+    public String test() throws IOException {
 
         // Test 1#
         // Verify that the connection can be obtained
@@ -38,9 +39,9 @@ public class XaConnectionsEndpoint extends HttpServlet {
                 .connectionFactoryConfiguration();
         Class<?> connectionProviderClass = cfg.connectionProviderClass();
         if (connectionProviderClass.equals(com.mysql.cj.jdbc.MysqlXADataSource.class)) {
-            resp.getWriter().write("OK");
+            return "OK";
         } else {
-            resp.getWriter().write("Unexpected Driver class: " + connectionProviderClass.getName());
+            return "Unexpected Driver class: " + connectionProviderClass.getName();
         }
 
     }

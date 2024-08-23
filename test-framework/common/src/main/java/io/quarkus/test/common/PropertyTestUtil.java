@@ -22,23 +22,17 @@ public class PropertyTestUtil {
     }
 
     public static String getLogFileLocation() {
-        return getLogFileLocation(getLogFinalName());
-    }
+        String logFilePath = System.getProperty(LOG_FILE_PATH_PROPERTY);
 
-    private static String getLogFinalName() {
-        return System.getProperty(LOG_FILE_PATH_PROPERTY, FileConfig.DEFAULT_LOG_FILE_NAME);
+        if (logFilePath != null) {
+            return logFilePath;
+        }
+
+        return getLogFileLocation(FileConfig.DEFAULT_LOG_FILE_NAME);
     }
 
     public static Path getLogFilePath() {
-        List<String> logFileLocationParts = getLogFileLocationParts(getLogFinalName());
-        if (logFileLocationParts.isEmpty()) {
-            throw new IllegalStateException("Unable to determine log file path");
-        } else if (logFileLocationParts.size() == 1) {
-            return Paths.get(logFileLocationParts.get(0));
-        } else {
-            return Paths.get(logFileLocationParts.get(0),
-                    logFileLocationParts.subList(1, logFileLocationParts.size()).toArray(new String[0]));
-        }
+        return Paths.get(getLogFileLocation());
     }
 
     private static String getLogFileLocation(String logFileName) {

@@ -6,9 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.qute.generator.ExtensionMethodGenerator.ParamKind;
-import io.quarkus.qute.generator.ExtensionMethodGenerator.Parameters;
 import java.io.IOException;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -17,6 +16,9 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.generator.ExtensionMethodGenerator.ParamKind;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.Parameters;
 
 public class ParametersTest {
 

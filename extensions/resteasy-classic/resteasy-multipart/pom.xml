@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-multipart-parent</artifactId>
-    <name>Quarkus - RESTEasy - Multipart</name>
+    <name>Quarkus - RESTEasy Classic - Multipart</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

@@ -3,13 +3,16 @@ package io.quarkus.arc.test.buildextension.beans;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.Map;
-import javax.enterprise.context.spi.CreationalContext;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SyntheticBeanCollisionTest {
 

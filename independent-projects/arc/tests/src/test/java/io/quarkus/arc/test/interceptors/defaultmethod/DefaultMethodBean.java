@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.defaultmethod;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 @ABinding

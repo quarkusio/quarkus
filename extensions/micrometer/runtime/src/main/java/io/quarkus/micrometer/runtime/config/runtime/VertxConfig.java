@@ -19,7 +19,7 @@ public class VertxConfig {
     /**
      * Comma-separated list of regular expressions defining uri paths
      * that should be ignored (not measured).
-     * 
+     *
      * @deprecated use {@code quarkus.micrometer.binder.http-server.ignore-patterns}
      */
     @Deprecated

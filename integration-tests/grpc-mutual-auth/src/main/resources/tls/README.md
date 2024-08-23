@@ -4,9 +4,10 @@ The ca is self-signed:
 ----------------------
 
 ```bash
-openssl req -x509 -new -newkey rsa:2048 -nodes -keyout ca.key -out ca.pem \
+openssl req -x509 -new -newkey rsa:4096 -nodes -keyout ca.key -out ca.pem \
   -config ca-openssl.cnf -days 3650 -extensions v3_req
 ```
+
 
 When prompted for certificate information, everything is default.
 
@@ -14,7 +15,7 @@ Client is issued by CA:
 -----------------------
 
 ```bash
-openssl genrsa -out client.key.rsa 2048
+openssl genrsa -out client.key.rsa 4096
 openssl pkcs8 -topk8 -in client.key.rsa -out client.key -nocrypt
 openssl req -new -key client.key -out client.csr
 ```
@@ -31,8 +32,8 @@ server is issued by CA with a special config for subject alternative names:
 ----------------------------------------------------------------------------
 
 ```bash
-openssl genrsa -out server1.key.rsa 2048
-openssl pkcs8 -topk8 -in server.key.rsa -out server.key -nocrypt
+openssl genrsa -out server1.key.rsa 4096
+openssl pkcs8 -topk8 -in server1.key.rsa -out server.key -nocrypt
 openssl req -new -key server.key -out server.csr -config server-openssl.cnf
 ```
 

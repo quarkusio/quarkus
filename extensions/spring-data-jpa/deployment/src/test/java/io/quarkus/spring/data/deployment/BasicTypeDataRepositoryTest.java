@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -14,13 +15,14 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import org.assertj.core.data.Percentage;
 import org.hibernate.Hibernate;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -38,7 +41,8 @@ public class BasicTypeDataRepositoryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class))
+                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class,
+                            FixedLocaleJavaType.class))
             .withConfigurationResource("application.properties");
 
     private static final UUID uuid = UUID.randomUUID();
@@ -122,6 +126,80 @@ public class BasicTypeDataRepositoryTest {
         // next page should return zero elements
         Slice<WithDoubleValue> nextPage = repo.findAllDoubleValuesToSlice(PageRequest.of(1, 1));
         assertEquals(0, nextPage.getNumberOfElements());
+    }
+
+    @Test
+    @Order(8)
+    @Transactional
+    public void testListOrderByNullHandling() throws MalformedURLException {
+        // Insert row with null in url
+        UUID uuidForTheNullUrlRecord = UUID.randomUUID();
+        BasicTypeData item = populateData(new BasicTypeData());
+        item.setUuid(uuidForTheNullUrlRecord);
+        item.setUrl(null);
+        repo.save(item);
+        // At this moment, there should be at least two records, one inserted in the first test,
+        // and the second with the "url" column to null.
+
+        // Check Nulls first
+        List<BasicTypeData> list = repo.findAll(Sort.by(Sort.Order.by("url").nullsFirst()));
+        assertEquals(uuidForTheNullUrlRecord, list.get(0).getUuid());
+
+        // Check Nulls last
+        list = repo.findAll(Sort.by(Sort.Order.by("url").nullsLast()));
+        assertEquals(uuidForTheNullUrlRecord, list.get(list.size() - 1).getUuid());
+    }
+
+    @Test
+    @Order(9)
+    @Transactional
+    public void testGetReferenceById() throws Exception {
+        populateData(new BasicTypeData());
+        assertThat(repo.getReferenceById(1)).isNotNull();
+    }
+
+    @Test
+    @Order(10)
+    @Transactional
+    public void testGetOne() throws Exception {
+        populateData(new BasicTypeData());
+        assertThat(repo.getOne(1)).isNotNull();
+    }
+
+    @Test
+    @Order(11)
+    @Transactional
+    public void testGetById() throws Exception {
+        populateData(new BasicTypeData());
+        assertThat(repo.getReferenceById(1)).isNotNull();
+    }
+
+    @Test
+    @Order(12)
+    @Transactional
+    public void testDeleteAllInBatch() throws Exception {
+        Assertions.assertDoesNotThrow(() -> repo.deleteAllInBatch());
+    }
+
+    @Test
+    @Order(13)
+    @Transactional
+    public void testDeleteAllInBatchWithIterable() throws Exception {
+        Assertions.assertDoesNotThrow(() -> repo.deleteAllInBatch(new ArrayList<>()));
+    }
+
+    @Test
+    @Order(14)
+    @Transactional
+    public void testDeleteInBatch() throws Exception {
+        Assertions.assertDoesNotThrow(() -> repo.deleteInBatch(new ArrayList<>()));
+    }
+
+    @Test
+    @Order(15)
+    @Transactional
+    public void testDeleteAllByIdInBatch() throws Exception {
+        Assertions.assertDoesNotThrow(() -> repo.deleteAllByIdInBatch(new ArrayList<>()));
     }
 
     private BasicTypeData populateData(BasicTypeData basicTypeData) throws MalformedURLException {

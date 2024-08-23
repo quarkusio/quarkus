@@ -10,7 +10,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.core.Application;
+
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ArchivePath;
@@ -215,7 +217,7 @@ public class TestUtil {
      * Get the path to the containers base dir for standalone mode (configuration, logs, etc..).
      * When arquillian.xml contains more containers that could be started simultaneously the parameter containerQualifier
      * is used to determine which base dir to get.
-     * 
+     *
      * @param containerQualifier container qualifier or null if the arquillian.xml contains max 1 container available
      *        to be running at time
      * @return absolute path to base dir
@@ -228,7 +230,7 @@ public class TestUtil {
      * Get the path to the containers base dir for standalone mode (configuration, logs, etc..).
      * When arquillian.xml contains more containers that could be started simultaneously the parameter containerQualifier
      * is used to determine which base dir to get.
-     * 
+     *
      * @param onServer whether the check is made from client side (the path is constructed) or from deployment (the path
      *        is read from actual runtime value)
      * @param containerQualifier container qualifier or null if the arquillian.xml contains max 1 container available

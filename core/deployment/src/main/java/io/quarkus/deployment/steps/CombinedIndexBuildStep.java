@@ -3,8 +3,11 @@ package io.quarkus.deployment.steps;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -37,11 +40,12 @@ public class CombinedIndexBuildStep {
 
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
+        Set<DotName> knownMissingClasses = new HashSet<>();
 
         for (AdditionalIndexedClassesBuildItem additionalIndexedClasses : additionalIndexedClassesItems) {
             for (String classToIndex : additionalIndexedClasses.getClassesToIndex()) {
                 IndexingUtil.indexClass(classToIndex, indexer, archivesIndex, additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                        knownMissingClasses, Thread.currentThread().getContextClassLoader());
             }
         }
 
@@ -49,6 +53,11 @@ public class CombinedIndexBuildStep {
         if (index == null) {
             index = new PersistentClassIndex();
             liveReloadBuildItem.setContextObject(PersistentClassIndex.class, index);
+        }
+
+        Map<DotName, Optional<ClassInfo>> additionalClasses = index.getAdditionalClasses();
+        for (DotName knownMissingClass : knownMissingClasses) {
+            additionalClasses.put(knownMissingClass, Optional.empty());
         }
 
         CompositeIndex compositeIndex = CompositeIndex.create(archivesIndex, indexer.complete());

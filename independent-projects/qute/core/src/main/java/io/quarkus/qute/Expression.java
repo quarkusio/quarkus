@@ -1,21 +1,22 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import io.quarkus.qute.TemplateNode.Origin;
+
 /**
  * Represents a value expression. It could be a literal such as {@code 'foo'}. It could have a namespace such as {@code data}
  * for {@code data:name}. It could have several parts such as {@code item} and {@code name} for {@code item.name}.
- * 
+ *
  * @see Evaluator
  */
 public interface Expression {
 
     /**
-     * 
+     *
      * @return the namespace, may be {@code null}
      * @see NamespaceResolver
      */
@@ -26,31 +27,31 @@ public interface Expression {
     }
 
     /**
-     * 
+     *
      * @return the list of parts, is never {@code null}
      */
     List<Part> getParts();
 
     /**
-     * 
+     *
      * @return true if it represents a literal
      */
     boolean isLiteral();
 
     /**
-     * 
+     *
      * @return the literal value, or null
      */
     CompletableFuture<Object> getLiteralValue();
 
     /**
-     * 
+     *
      * @return the literal value, or null
      */
     Object getLiteral();
 
     /**
-     * 
+     *
      * @return the literal value
      * @throws IllegalStateException If the expression does not represent a literal
      * @see Expression#isLiteral()
@@ -58,13 +59,13 @@ public interface Expression {
     CompletionStage<Object> asLiteral();
 
     /**
-     * 
+     *
      * @return the origin
      */
     Origin getOrigin();
 
     /**
-     * 
+     *
      * @return the original value as defined in the template
      */
     String toOriginalString();
@@ -82,19 +83,19 @@ public interface Expression {
 
     /**
      * The id must be unique for the template.
-     * 
+     *
      * @return the generated id or {@code -1} for an expression that was not created by a parser
      */
     int getGeneratedId();
 
     /**
-     * 
+     *
      * @see Expression#getParts()
      */
     interface Part {
 
         /**
-         * 
+         *
          * @return the name of a property or virtual method
          */
         String getName();
@@ -109,7 +110,7 @@ public interface Expression {
          * <li>property; for example {@code foo} and {@code foo<loop#123>}</li>
          * <li>virtual method; for example {@code foo.call(bar)} and {@code foo.getNames(10)<loop-element>}</li>
          * </ul>
-         * 
+         *
          * @return the type check info
          */
         String getTypeInfo();

@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>39</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>independent-projects/parent/pom.xml</relativePath>
     </parent>
 
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-parent</artifactId>
-    <name>Quarkus - Parent pom</name>
+    <artifactId>quarkus-project</artifactId>
+    <name>Quarkus - Project pom</name>
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -35,7 +36,9 @@
         </license>
     </licenses>
 
-    <scm>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
         <url>https://github.com/quarkusio/quarkus</url>
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
@@ -48,34 +51,52 @@
     </issueManagement>
 
     <properties>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
-
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>3.14.4</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.40</quarkus-platform-bom-plugin.version>
+        <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.107</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
+        <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
+        <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
+
+        <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
+
         <!-- Dependency versions -->
+        <!-- Properties below are set in this file because they are used
+             in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
+        <jacoco.version>0.8.12</jacoco.version>
+        <kubernetes-client.version>6.13.3</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>5.5.0</rest-assured.version>
+        <hibernate-orm.version>6.6.0.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
+        <bytebuddy.version>1.14.18</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-commons-annotations.version>7.0.1.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-reactive.version>2.4.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
+        <hibernate-search.version>7.2.0.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.42.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
-        <grpc-jprotoc.version>1.2.0</grpc-jprotoc.version>
-        <protoc.version>3.19.1</protoc.version>
+        <grpc.version>1.65.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
+        <protoc.version>3.25.3</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
+        <proto-google-common-protos.version>2.43.0</proto-google-common-protos.version>
 
+        <!-- Used in the build parent (for the junit 5 plugin) and in the BOM (for the API) -->
+        <smallrye-certificate-generator.version>0.8.1</smallrye-certificate-generator.version>
+
+        <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
+        <testng.version>7.8.0</testng.version>
     </properties>
 
     <modules>
 
         <!-- External projects -->
+        <module>independent-projects/parent</module>
         <module>independent-projects/ide-config</module>
         <module>independent-projects/revapi</module>
         <module>independent-projects/arc</module>
@@ -83,11 +104,15 @@
         <module>independent-projects/qute</module>
         <module>independent-projects/tools</module>
         <module>independent-projects/enforcer-rules</module>
+        <module>independent-projects/vertx-utils</module>
         <module>independent-projects/resteasy-reactive</module>
+        <module>independent-projects/extension-maven-plugin</module>
+        <module>independent-projects/junit5-virtual-threads</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
         <module>bom/test</module>
+        <module>bom/dev-ui</module>
         <module>build-parent</module>
 
         <!-- Core components -->
@@ -140,13 +165,25 @@
                     <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
                     <version>${quarkus-platform-bom-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check-plugin.version}</version>
+                    <configuration>
+                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                        <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                        <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
         <extensions>
             <extension>
                 <groupId>io.quarkus.bot</groupId>
-                <artifactId>build-reporting-maven-extension</artifactId>
-                <version>1.0.5</version>
+                <artifactId>build-reporter-maven-extension</artifactId>
+                <version>3.9.1</version>
             </extension>
         </extensions>
     </build>
@@ -165,12 +202,37 @@
                 <skipITs>true</skipITs>
                 <skipDocs>true</skipDocs>
                 <enforcer.skip>true</enforcer.skip>
+                <maven-enforcer-plugin.phase>none</maven-enforcer-plugin.phase>
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
                 <skipCodestartValidation>true</skipCodestartValidation>
+                <truststore.skip>true</truststore.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>quick-build-docs</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
+                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <skipCodestartValidation>true</skipCodestartValidation>
+                <truststore.skip>true</truststore.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>
@@ -195,6 +257,7 @@
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <truststore.skip>true</truststore.skip>
             </properties>
         </profile>
         <profile>
@@ -208,73 +271,6 @@
             <modules>
                 <module>relocations</module>
             </modules>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!--
-                        ## IMPORTANT ##
-                        In your ~/.m2/settings.xml you need to add and edit the following profile:
-                        <profile>
-                            <id>release</id>
-                            <properties>
-                                <gpg.useagent>false</gpg.useagent>
-                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
-                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                            </properties>
-                        </profile>
-                         -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
         <profile>
             <id>tcks</id>
@@ -301,7 +297,7 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.vackosar.gitflowincrementalbuilder</groupId>
+                        <groupId>io.github.gitflow-incremental-builder</groupId>
                         <artifactId>gitflow-incremental-builder</artifactId>
                         <version>${gitflow-incremental-builder.version}</version>
                         <extensions>true</extensions>
@@ -309,6 +305,8 @@
                              General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
                         <configuration>
+                            <!-- these metadata file can't affect the build -->
+                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*</excludePathsMatching>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
                             <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
@@ -324,6 +322,27 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>owasp-check</id>
+            <activation>
+                <property>
+                    <name>owasp-check</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp-report</id>
+            <activation>
+                <property>
+                    <name>owasp-report</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
+            </build>
+        </profile>
     </profiles>
-
 </project>

@@ -16,18 +16,19 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.grpc.MutinyBean;
+import io.quarkus.grpc.MutinyClient;
+import io.quarkus.grpc.MutinyGrpc;
+import io.quarkus.grpc.MutinyService;
+import io.quarkus.grpc.MutinyStub;
 import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.RegisterInterceptor;
 import io.quarkus.grpc.RegisterInterceptors;
-import io.quarkus.grpc.runtime.MutinyBean;
-import io.quarkus.grpc.runtime.MutinyClient;
-import io.quarkus.grpc.runtime.MutinyGrpc;
-import io.quarkus.grpc.runtime.MutinyService;
-import io.quarkus.grpc.runtime.MutinyStub;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 
 public class GrpcDotNames {
 
@@ -38,7 +39,8 @@ public class GrpcDotNames {
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class.getName());
-    public static final DotName TRANSACTIONAL = DotName.createSimple("javax.transaction.Transactional");
+    public static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class.getName());
+    public static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
 
     public static final DotName ABSTRACT_BLOCKING_STUB = DotName.createSimple(AbstractBlockingStub.class.getName());
     public static final DotName MUTINY_STUB = DotName.createSimple(MutinyStub.class.getName());

@@ -4,7 +4,9 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
 import org.jboss.resteasy.reactive.server.processor.scanning.ClassInjectorTransformer;
@@ -26,7 +28,7 @@ public class TransformedFieldInjectionIndexerExtension implements ServerEndpoint
 
     @Override
     public void handleFieldInjection(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-            boolean superTypeIsInjectable) {
+            boolean superTypeIsInjectable, IndexView indexView) {
         for (Map.Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
             if (entry.getValue().getConverter() != null) {
                 injectedClassConverterFieldConsumer
@@ -35,6 +37,6 @@ public class TransformedFieldInjectionIndexerExtension implements ServerEndpoint
             }
         }
         transformations.accept(currentTypeName, new ClassInjectorTransformer(fieldExtractors, superTypeIsInjectable,
-                requireCreateBeanParams));
+                requireCreateBeanParams, indexView));
     }
 }

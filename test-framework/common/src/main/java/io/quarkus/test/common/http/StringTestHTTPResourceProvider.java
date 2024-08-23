@@ -1,7 +1,6 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 
 public class StringTestHTTPResourceProvider implements TestHTTPResourceProvider<String> {
     @Override
@@ -10,7 +9,7 @@ public class StringTestHTTPResourceProvider implements TestHTTPResourceProvider<
     }
 
     @Override
-    public String provide(URI testUri, Field field) {
-        return testUri.toASCIIString();
+    public String provide(String testUri, Field field) {
+        return testUri;
     }
 }

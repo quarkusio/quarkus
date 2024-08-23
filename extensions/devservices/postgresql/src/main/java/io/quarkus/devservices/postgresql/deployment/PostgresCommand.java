@@ -8,6 +8,7 @@ import org.aesh.command.CommandResult;
 import org.aesh.command.GroupCommand;
 import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.option.Option;
 
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 
@@ -15,6 +16,9 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 public class PostgresCommand implements GroupCommand {
 
     private final DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem;
+
+    @Option(shortName = 'h', hasValue = false, overrideRequired = true)
+    public boolean help;
 
     public PostgresCommand(DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem) {
         this.devServicesLauncherConfigResultBuildItem = devServicesLauncherConfigResultBuildItem;
@@ -27,6 +31,7 @@ public class PostgresCommand implements GroupCommand {
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-        return null;
+        commandInvocation.getShell().writeln(commandInvocation.getHelpInfo());
+        return CommandResult.SUCCESS;
     }
 }

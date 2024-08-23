@@ -11,9 +11,10 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Logger;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Qualifier;
 import javax.sql.DataSource;
+
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Qualifier;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;

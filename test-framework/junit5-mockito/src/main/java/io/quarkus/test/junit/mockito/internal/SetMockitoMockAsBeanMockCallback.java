@@ -9,8 +9,10 @@ public class SetMockitoMockAsBeanMockCallback implements QuarkusTestBeforeEachCa
     @Override
     public void beforeEach(QuarkusTestMethodContext context) {
         MockitoMocksTracker.getMocks(context.getTestInstance()).forEach(this::installMock);
-        if (context.getOuterInstance() != null) {
-            MockitoMocksTracker.getMocks(context.getOuterInstance()).forEach(this::installMock);
+        if (context.getOuterInstances() != null) {
+            for (Object outerInstance : context.getOuterInstances()) {
+                MockitoMocksTracker.getMocks(outerInstance).forEach(this::installMock);
+            }
         }
     }
 

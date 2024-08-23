@@ -1,6 +1,6 @@
 package io.quarkus.vertx.http.devmode;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import io.vertx.ext.web.Router;
 

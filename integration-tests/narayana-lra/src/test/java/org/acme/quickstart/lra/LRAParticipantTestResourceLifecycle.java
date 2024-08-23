@@ -15,14 +15,14 @@ public class LRAParticipantTestResourceLifecycle implements QuarkusTestResourceL
     private static GenericContainer<?> registry;
     private static String coordinatorEndpoint;
 
-    // the endpoint on wich an LRA coordinator is listening
+    // the endpoint on which an LRA coordinator is listening
     public static String getCoordinatorEndpoint() {
         return coordinatorEndpoint;
     }
 
     @Override
     public Map<String, String> start() {
-        registry = new GenericContainer<>("jbosstm/lra-coordinator:5.12.0.Final")
+        registry = new GenericContainer<>("quay.io/jbosstm/lra-coordinator:latest")
                 .withExposedPorts(8080)
                 .withEnv("QUARKUS_PROFILE", "prod");
         registry.start();
@@ -30,7 +30,7 @@ public class LRAParticipantTestResourceLifecycle implements QuarkusTestResourceL
         Map<String, String> properties = new HashMap<>();
 
         coordinatorEndpoint = String.format("http://%s:%d/%s",
-                registry.getContainerIpAddress(),
+                registry.getHost(),
                 registry.getFirstMappedPort(),
                 LRAConstants.COORDINATOR_PATH_NAME);
 

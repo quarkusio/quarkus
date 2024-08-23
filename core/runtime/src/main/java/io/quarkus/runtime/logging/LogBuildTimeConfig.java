@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LogBuildTimeConfig {
 
     /**
-     * Whether or not logging metrics are published in case a metrics extension is present.
+     * If enabled and a metrics extension is present, logging metrics are published.
      */
     @ConfigItem(name = "metrics.enabled", defaultValue = "false")
     public boolean metricsEnabled;
@@ -24,10 +24,16 @@ public class LogBuildTimeConfig {
     public Level minLevel;
 
     /**
+     * This will decorate the stacktrace in dev mode to show the line in the code that cause the exception
+     */
+    @ConfigItem(defaultValue = "true")
+    public Boolean decorateStacktraces;
+
+    /**
      * Minimum logging categories.
      * <p>
-     * Logging is done on a per-category basis. Each category can be independently configured.
-     * A configuration which applies to a category will also apply to all sub-categories of that category,
+     * Logging is done on a per-category basis. Each category can be configured independently.
+     * A configuration that applies to a category will also apply to all sub-categories of that category,
      * unless there is a more specific matching sub-category configuration.
      */
     @ConfigItem(name = "category")

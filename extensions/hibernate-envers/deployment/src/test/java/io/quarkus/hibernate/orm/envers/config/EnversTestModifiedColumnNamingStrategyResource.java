@@ -1,9 +1,9 @@
 
 package io.quarkus.hibernate.orm.envers.config;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.hibernate.envers.boot.internal.ImprovedModifiedColumnNamingStrategy;
 
@@ -15,7 +15,7 @@ public class EnversTestModifiedColumnNamingStrategyResource extends AbstractEnve
     @GET
     public String getModifiedNamingStrategy() {
         Class<?> expectedClass = ImprovedModifiedColumnNamingStrategy.class;
-        Class<?> actualClass = getGlobalConfiguration().getModifiedColumnNamingStrategy().getClass();
+        Class<?> actualClass = getConfiguration().getModifiedColumnNamingStrategy().getClass();
         if (actualClass.equals(expectedClass)) {
             return "OK";
         }

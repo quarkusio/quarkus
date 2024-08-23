@@ -1,0 +1,14 @@
+---
+extends: substitution
+ignorecase: true
+level: warning
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: Use '%s' rather than '%s.'
+# source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  blacklist: blocklist
+  whitelist: allowlist
+  master(?! broker): primary|source|initiator|requester|controller|host|director|supplier
+  slave(?! broker): secondary|replica|responder|device|worker|proxy|performer|consumer

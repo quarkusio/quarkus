@@ -2,7 +2,7 @@ package io.quarkus.test.qute;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ public class QuteErrorPageTest {
     public void testErrorPage() {
         config.modifyResourceFile("templates/hello.txt", file -> "{@java.lang.String hello}{hello.foo}");
         RestAssured.when().get("/hello").then()
-                .body(containsString("Incorrect expression found: {hello.foo}"))
+                .body(containsString("hello.txt:1"), containsString("{hello.foo}"))
                 .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
 

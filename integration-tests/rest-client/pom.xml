@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
@@ -12,10 +12,8 @@
     <name>Quarkus - Integration Tests - REST client</name>
 
     <properties>
-        <self-signed.trust-store>${project.basedir}/self-signed</self-signed.trust-store>
+        <self-signed.trust-store>${project.build.directory}/certs/self-signed-keystore.p12</self-signed.trust-store>
         <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
-        <wrong-host.trust-store>${project.basedir}/wrong-host</wrong-host.trust-store>
-        <wrong-host.trust-store-password>changeit</wrong-host.trust-store-password>
     </properties>
 
     <dependencies>
@@ -32,7 +30,7 @@
         <!-- Client dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client</artifactId>
+            <artifactId>quarkus-resteasy-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -45,6 +43,14 @@
                 <exclusion>
                     <groupId>jakarta.activation</groupId>
                     <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_3.0_spec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -59,11 +65,16 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -142,9 +153,8 @@
                         <!-- force the locale as we want to explicitly test message interpolation -->
                         <user.language>en</user.language>
                         <javax.net.ssl.trustStore>${self-signed.trust-store}</javax.net.ssl.trustStore>
-                        <javax.net.ssl.trustStorePassword>${self-signed.trust-store-password}</javax.net.ssl.trustStorePassword>
-                        <rest-client.trustStore>${wrong-host.trust-store}</rest-client.trustStore>
-                        <rest-client.trustStorePassword>${wrong-host.trust-store-password}</rest-client.trustStorePassword>
+                        <javax.net.ssl.trustStorePassword>${self-signed.trust-store-password}
+                        </javax.net.ssl.trustStorePassword>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -162,8 +172,6 @@
             <!-- add some custom config, the rest comes from parent -->
             <properties>
                 <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
-                <quarkus.native.additional-build-args>-J-Djavax.net.ssl.trustStore=${self-signed.trust-store},
-                    -J-Djavax.net.ssl.trustStorePassword=${self-signed.trust-store-password}</quarkus.native.additional-build-args>
             </properties>
             <build>
                 <plugins>
@@ -174,8 +182,6 @@
                             <systemPropertyVariables>
                                 <!-- force the locale as we want to explicitly test message interpolation -->
                                 <user.language>en</user.language>
-                                <rest-client.trustStore>${wrong-host.trust-store}</rest-client.trustStore>
-                                <rest-client.trustStorePassword>${wrong-host.trust-store-password}</rest-client.trustStorePassword>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

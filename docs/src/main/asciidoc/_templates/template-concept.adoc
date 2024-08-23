@@ -1,0 +1,63 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="..."]
+= Title using sentence capitalization
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+A short introduction that summarizes or frames the concept.
+This summary should help a reader determine whether or not this document is what they want to read.
+
+////
+TODO: If this is a concept related to an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Create additional sections
+
+- xref:../doc-concept.adoc#concept[Quarkus documentation content types: Concept guides]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:../doc-reference.adoc#cross-references[Cross-references]
+
+
+== Guidelines for a good Concept doc
+
+Explanation/Concept documents should do things that the other parts of the documentation do not.
+
+* Make connections to other things, even to something outside the immediate topic, if that helps explain the concept.
+* Provide background and context in your explanation: explain why things are so - design decisions, historical reasons, technical constraints - draw implications, mention specific examples.
+* Consider alternatives, counter-examples, or multiple different approaches to the same question.
+
+== Language tips:
+
+- Explain: "The reason for x is because historically, y…"
+- Offer judgments and even opinions where appropriate.., "W is better than z, because…"
+- Provide context that helps the reader: "An x in system y is analogous to a w in system z. However…"
+- Weigh up alternatives: "Some users prefer w (because z). This can be a good approach, but…"
+- Unfold the machinery’s internal secrets, to help understand why something does what it does: "An x interacts with a y as follows:…"
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

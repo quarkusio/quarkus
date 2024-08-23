@@ -11,9 +11,9 @@ public class CategoryConfig {
 
     /**
      * The log level for this category.
-     *
+     * <p>
      * Note that to get log levels below <code>INFO</code>,
-     * the minimum level build time configuration option needs to be adjusted as well.
+     * the minimum level build-time configuration option also needs to be adjusted.
      */
     @ConfigItem(defaultValue = "inherit")
     InheritableLevel level;
@@ -25,9 +25,13 @@ public class CategoryConfig {
     Optional<List<String>> handlers;
 
     /**
-     * Specify whether or not this logger should send its output to its parent Logger
+     * Specify whether this logger should send its output to its parent Logger
      */
     @ConfigItem(defaultValue = "true")
     boolean useParentHandlers;
 
+    // for method refs
+    public InheritableLevel getLevel() {
+        return level;
+    }
 }

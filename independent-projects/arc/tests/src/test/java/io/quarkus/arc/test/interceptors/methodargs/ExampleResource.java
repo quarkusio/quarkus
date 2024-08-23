@@ -1,7 +1,8 @@
 package io.quarkus.arc.test.interceptors.methodargs;
 
 import java.util.List;
-import javax.inject.Singleton;
+
+import jakarta.inject.Singleton;
 
 @Singleton
 @Simple

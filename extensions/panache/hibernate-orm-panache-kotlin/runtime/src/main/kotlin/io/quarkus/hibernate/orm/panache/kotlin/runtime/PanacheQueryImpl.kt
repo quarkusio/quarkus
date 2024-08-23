@@ -4,15 +4,22 @@ import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
+import jakarta.persistence.LockModeType
 import java.util.stream.Stream
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
+import org.hibernate.Session
 
-class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
+class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     private var delegate: CommonPanacheQueryImpl<Entity>
 
-    internal constructor(em: EntityManager?, query: String?, orderBy: String?, paramsArrayOrMap: Any?) {
-        delegate = CommonPanacheQueryImpl(em, query, orderBy, paramsArrayOrMap)
+    internal constructor(
+        session: Session?,
+        hqlQuery: String?,
+        originalQuery: String?,
+        orderBy: String?,
+        paramsArrayOrMap: Any?
+    ) {
+        delegate =
+            CommonPanacheQueryImpl(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
     }
 
     private constructor(delegate: CommonPanacheQueryImpl<Entity>) {
@@ -20,7 +27,7 @@ class PanacheQueryImpl<Entity: Any> : PanacheQuery<Entity> {
     }
 
     // Builder
-    override fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity> {
+    override fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity> {
         return PanacheQueryImpl(delegate.project(type))
     }
 

@@ -12,12 +12,11 @@ import java.util.OptionalInt;
 import java.util.Queue;
 import java.util.Set;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -25,7 +24,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -52,15 +50,20 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.smallrye.faulttolerance.deployment.devui.FaultToleranceInfoBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusAsyncExecutorProvider;
+import io.quarkus.smallrye.faulttolerance.runtime.QuarkusBeforeRetryHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusExistingCircuitBreakerNames;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallRyeFaultToleranceRecorder;
+import io.smallrye.faulttolerance.CdiFaultToleranceSpi;
 import io.smallrye.faulttolerance.CircuitBreakerMaintenanceImpl;
 import io.smallrye.faulttolerance.ExecutorHolder;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
@@ -71,7 +74,6 @@ import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.core.util.RunnableWrapper;
 import io.smallrye.faulttolerance.internal.RequestContextControllerProvider;
 import io.smallrye.faulttolerance.internal.StrategyCache;
-import io.smallrye.faulttolerance.metrics.MetricsProvider;
 import io.smallrye.faulttolerance.propagation.ContextPropagationRequestContextControllerProvider;
 import io.smallrye.faulttolerance.propagation.ContextPropagationRunnableWrapper;
 
@@ -87,7 +89,8 @@ public class SmallRyeFaultToleranceProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_FAULT_TOLERANCE));
 
@@ -95,23 +98,27 @@ public class SmallRyeFaultToleranceProcessor {
                 ContextPropagationRequestContextControllerProvider.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(RunnableWrapper.class.getName(),
                 ContextPropagationRunnableWrapper.class.getName()));
+        // make sure this is initialised at runtime, otherwise it will get a non-initialised ContextPropagationManager
+        runtimeInitializedClassBuildItems.produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        // Add reflective acccess to fallback handlers
-        Set<String> fallbackHandlers = new HashSet<>();
-        for (ClassInfo implementor : index
-                .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()))) {
-            fallbackHandlers.add(implementor.name().toString());
+        // Add reflective access to fallback handlers and before retry handlers
+        Set<String> handlers = new HashSet<>();
+        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.FALLBACK_HANDLER)) {
+            handlers.add(implementor.name().toString());
         }
-        if (!fallbackHandlers.isEmpty()) {
-            AdditionalBeanBuildItem.Builder fallbackHandlersBeans = AdditionalBeanBuildItem.builder()
+        for (ClassInfo implementor : index.getAllKnownImplementors(DotNames.BEFORE_RETRY_HANDLER)) {
+            handlers.add(implementor.name().toString());
+        }
+        if (!handlers.isEmpty()) {
+            AdditionalBeanBuildItem.Builder handlerBeans = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(BuiltinScope.DEPENDENT.getName());
-            for (String fallbackHandler : fallbackHandlers) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler));
-                fallbackHandlersBeans.addBeanClass(fallbackHandler);
+            for (String handler : handlers) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(handler).methods().build());
+                handlerBeans.addBeanClass(handler);
             }
-            beans.produce(fallbackHandlersBeans.build());
+            beans.produce(handlerBeans.build());
         }
         // Add reflective access to fallback methods
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.FALLBACK)) {
@@ -152,11 +159,20 @@ public class SmallRyeFaultToleranceProcessor {
         }
         // Add reflective access to custom backoff strategies
         for (ClassInfo strategy : index.getAllKnownImplementors(DotNames.CUSTOM_BACKOFF_STRATEGY)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, strategy.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(strategy.name().toString()).methods().build());
+        }
+        // Add reflective access to retry predicates
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            for (String memberName : List.of("result", "exception")) {
+                AnnotationValue member = annotation.value(memberName);
+                if (member != null) {
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
+                }
+            }
         }
 
         for (DotName annotation : DotNames.FT_ANNOTATIONS) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, annotation.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(annotation.toString()).methods().build());
             // also make them bean defining annotations
             additionalBda.produce(new BeanDefiningAnnotationBuildItem(annotation));
         }
@@ -188,25 +204,30 @@ public class SmallRyeFaultToleranceProcessor {
                         ExecutorHolder.class,
                         StrategyCache.class,
                         QuarkusFallbackHandlerProvider.class,
+                        QuarkusBeforeRetryHandlerProvider.class,
                         QuarkusAsyncExecutorProvider.class,
-                        MetricsProvider.class,
                         CircuitBreakerMaintenanceImpl.class,
                         RequestContextIntegration.class,
                         SpecCompatibility.class);
+
+        if (metricsCapability.isEmpty()) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.NoopProvider");
+        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
+        } else if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+            builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
+        }
+
         beans.produce(builder.build());
 
         // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
-        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors 
+        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors
         // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
-                        QuarkusExistingCircuitBreakerNames.class)
+                        QuarkusExistingCircuitBreakerNames.class, CdiFaultToleranceSpi.EagerDependencies.class,
+                        CdiFaultToleranceSpi.LazyDependencies.class)
                 .build());
-
-        if (!metricsCapability.isPresent()) {
-            //disable fault tolerance metrics with the MP sys props
-            systemProperty.produce(new SystemPropertyBuildItem("MP_Fault_Tolerance_Metrics_Enabled", "false"));
-        }
 
         config.produce(new RunTimeConfigurationDefaultBuildItem("smallrye.faulttolerance.mp-compatibility", "false"));
     }
@@ -222,11 +243,10 @@ public class SmallRyeFaultToleranceProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 if (ctx.isClass()) {
-                    if (!ctx.getTarget().asClass().name().toString()
-                            .equals("io.smallrye.faulttolerance.FaultToleranceInterceptor")) {
+                    if (!ctx.getTarget().asClass().name().equals(DotNames.FAULT_TOLERANCE_INTERCEPTOR)) {
                         return;
                     }
-                    final Config config = ConfigProvider.getConfig();
+                    Config config = ConfigProvider.getConfig();
 
                     OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
                     if (priority.isPresent()) {
@@ -243,13 +263,27 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
-    void validateFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
+    void processFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
             RecorderContext recorderContext,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
+            BuildProducer<FaultToleranceInfoBuildItem> faultToleranceInfo) {
+
+        Config config = ConfigProvider.getConfig();
+
+        Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
+                "Fallback/applyOn", "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
+
+        for (String exceptionConfig : exceptionConfigs) {
+            Optional<String[]> exceptionNames = config.getOptionalValue(exceptionConfig, String[].class);
+            if (exceptionNames.isPresent()) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
+            }
+        }
 
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -257,11 +291,12 @@ public class SmallRyeFaultToleranceProcessor {
         // none of them are application classes
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, false);
 
-        FaultToleranceScanner scaner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
+        FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
                 recorderContext);
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
         List<Throwable> exceptions = new ArrayList<>();
+        Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
 
         for (BeanInfo info : validationPhase.getContext().beans()) {
             ClassInfo beanClass = info.getImplClazz();
@@ -269,21 +304,56 @@ public class SmallRyeFaultToleranceProcessor {
                 continue;
             }
 
-            if (scaner.hasFTAnnotations(beanClass)) {
-                scaner.forEachMethod(beanClass, method -> {
-                    FaultToleranceMethod ftMethod = scaner.createFaultToleranceMethod(beanClass, method);
+            if (scanner.hasFTAnnotations(beanClass)) {
+                for (String exceptionConfig : exceptionConfigs) {
+                    Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
+                            + "/" + exceptionConfig, String[].class);
+                    if (exceptionNames.isPresent()) {
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
+                    }
+                }
+
+                scanner.forEachMethod(beanClass, method -> {
+                    FaultToleranceMethod ftMethod = scanner.createFaultToleranceMethod(beanClass, method);
                     if (ftMethod.isLegitimate()) {
                         ftMethods.add(ftMethod);
 
-                        if (method.hasAnnotation(DotNames.BLOCKING) && method.hasAnnotation(DotNames.NON_BLOCKING)) {
+                        if (annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS)
+                                && annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
+                            exceptions.add(new DefinitionException(
+                                    "Both @Asynchronous and @AsynchronousNonBlocking present on '" + method + "'"));
+                        }
+
+                        if (annotationStore.hasAnnotation(method, DotNames.BLOCKING)
+                                && annotationStore.hasAnnotation(method, DotNames.NON_BLOCKING)) {
                             exceptions.add(
                                     new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
+                        }
+
+                        for (String exceptionConfig : exceptionConfigs) {
+                            Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
+                                    + "/" + method.name() + "/" + exceptionConfig, String[].class);
+                            if (exceptionNames.isPresent()) {
+                                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
+                            }
+                        }
+
+                        if (annotationStore.hasAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME)) {
+                            AnnotationInstance ann = annotationStore.getAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME);
+                            existingCircuitBreakerNames.computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
+                                    .add(method + " @ " + method.declaringClass());
                         }
                     }
                 });
 
-                if (beanClass.classAnnotation(DotNames.BLOCKING) != null
-                        && beanClass.classAnnotation(DotNames.NON_BLOCKING) != null) {
+                if (annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS)
+                        && annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
+                    exceptions.add(new DefinitionException(
+                            "Both @Asynchronous and @AsynchronousNonBlocking present on '" + beanClass + "'"));
+                }
+
+                if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
+                        && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
                     exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
                 }
             }
@@ -291,14 +361,6 @@ public class SmallRyeFaultToleranceProcessor {
 
         recorder.createFaultToleranceOperation(ftMethods);
 
-        Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
-        for (AnnotationInstance it : index.getAnnotations(DotNames.CIRCUIT_BREAKER_NAME)) {
-            if (it.target().kind() == Kind.METHOD) {
-                MethodInfo method = it.target().asMethod();
-                existingCircuitBreakerNames.computeIfAbsent(it.value().asString(), ignored -> new HashSet<>())
-                        .add(method + " @ " + method.declaringClass());
-            }
-        }
         for (Map.Entry<String, Set<String>> entry : existingCircuitBreakerNames.entrySet()) {
             if (entry.getValue().size() > 1) {
                 exceptions.add(new DefinitionException("Multiple circuit breakers have the same name '"
@@ -308,13 +370,20 @@ public class SmallRyeFaultToleranceProcessor {
 
         for (DotName backoffAnnotation : DotNames.BACKOFF_ANNOTATIONS) {
             for (AnnotationInstance it : index.getAnnotations(backoffAnnotation)) {
-                if (it.target().kind() == Kind.CLASS && it.target().asClass().classAnnotation(DotNames.RETRY) == null) {
-                    exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
-                            + " present on '" + it.target() + "', but @Retry is missing"));
-                } else if (it.target().kind() == Kind.METHOD && !it.target().asMethod().hasAnnotation(DotNames.RETRY)) {
+                if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
                     exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
                             + " present on '" + it.target() + "', but @Retry is missing"));
                 }
+            }
+        }
+        for (AnnotationInstance it : index.getAnnotations(DotNames.RETRY_WHEN)) {
+            if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
+                exceptions.add(new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
+            }
+        }
+        for (AnnotationInstance it : index.getAnnotations(DotNames.BEFORE_RETRY)) {
+            if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
+                exceptions.add(new DefinitionException("@BeforeRetry present on '" + it.target() + "', but @Retry is missing"));
             }
         }
 
@@ -323,6 +392,9 @@ public class SmallRyeFaultToleranceProcessor {
         }
 
         recorder.initExistingCircuitBreakerNames(existingCircuitBreakerNames.keySet());
+
+        // dev UI
+        faultToleranceInfo.produce(new FaultToleranceInfoBuildItem(ftMethods.size()));
     }
 
     @BuildStep

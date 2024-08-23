@@ -1,0 +1,82 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Podman with Quarkus
+:categories: tooling
+:topics: podman,devops,tooling
+include::_attributes.adoc[]
+
+https://podman.io/[Podman] is an open-source, daemonless, and rootless container engine for developing, managing, and running OCI Containers on Linux, Windows and Mac. It can be used to support the container functionality and Dev Services on Quarkus.
+
+== Installing Podman
+
+Podman's install approach varies depending on the operating system you are using, and the required steps also change over time depending on the version of Podman. For Mac and Windows we highly recommend installing through the Podman Desktop graphical application. It is the simplest option with the least number of steps, it adds additional functionality like automatic start, and it helps manage future updates. There is also a CLI-only option that may be used. However, this setup requires additional manual tasks to manage, update, and launch the Podman Machine environment.
+
+
+[WARNING]
+====
+The Homebrew package manager on Mac (*brew*) *should not be used to install Podman* as it results in an unverified combination of components. This is due to Homebrew sharing dependencies between projects, along with limited vetting of upgrade requests. As an example, there were several instances where an update to qemu broke on Apple Silicon, preventing Podman machine VMs from booting.
+====
+
+On Linux, Podman is integrated as part of the operating system, and installed through the system's packager manager. As with Mac, and Windows, Podman Desktop can also be installed to supplement the Podman CLI. However, on Linux, Podman Desktop acts as a client to the native Podman integration, and does not manage the underlying Podman installation.
+
+See https://podman-desktop.io/downloads/ for the latest version of Podman Desktop.
+
+Additionally, if you are using Linux, see the Podman https://podman.io/docs/installation#installing-on-linux[Linux installation documentation] for instructions installing Podman to your specific Linux distribution.
+
+=== Docker compatibility mode
+
+When installing Podman Desktop on Mac or Windows, it's important to enable Docker compatibility mode when prompted. This will ensure the podman-mac-helper is setup on your behalf (normally a manual action you are prompted to do after start), necessary for supporting /var/run/docker.sock (privileged location). It will also install support for Docker Compose.
+
+
+== Platform differences
+
+While interacting with containers is mostly identical between Mac, Windows, and Linux, there are important environmental differences to be aware of. Notably, the way in which containers are executed is different, since "Containers are Linux". More specifically, containers contain Linux userland binaries with a dependency on the Linux kernel syscall interface. As such, Linux containers cannot run natively on macOS or Windows; they instead require the use of a virtual machine (VM), running Linux, to host them. For systems that require it, Podman includes a subsystem called Podman Machine that is used to manage this VM. Podman Desktop performs a guided interactive setup of this VM, and will automatically launch it on your behalf.
+
+== Rootful vs Rootless
+
+Podman supports two modes of operation: rootful, in which case the container runs as root on the Linux host (or VM in the case of Mac/Windows), and rootless, where the container runs under a standard Unix user account. The latter offers significantly stronger security, but some containers are not capable of running under the increased restrictions. As an example, if a container creates new devices, loopback mount points, and performs other highly restricted operations, then they must be run as root. Note, that this is not to be confused with the USER value specified in Containerfile/Dockerfile, which refers to how processes inside the container perceive themselves. In rootless, processes running in a container with a USER of "root" will appear to each other as root, but due to pid namespacing, they will actually be running as a standard restricted user account on the host system.
+
+=== Configuring on Win & Mac
+
+On systems which involve a Podman Machine managed VM (Mac & Windows), container clients and Podman commands communicate remotely to either a rootful or rootless system service running the VM. Which is used is determined by the `rootful` setting of the Podman machine. For maximal compatibility, Podman Desktop defaults to enabling rootful for new machine instances. There is limited security impact to this since the VM itself is running under a user process. This can also be changed via the podman commands:
+
+
+[source,bash]
+----
+podman machine set --rootful=true # or false
+podman machine stop
+podman machine start
+----
+
+=== Configuring on Linux
+
+On Linux systems, it's recommended to configure client access in a rootless configuration using a user systemd service.
+
+This can be enabled using the following command:
+[source,bash]
+----
+systemctl --user enable podman.socket --now
+----
+
+==== Setting DOCKER_HOST on Linux
+
+With the above rootless setup on Linux, you will need to configure clients, such as Quarkus and testcontainers by setting the `DOCKER_HOST` environment variable to point to the user service podman socket. The path be set using an expression which queries the path using the podman command:
+
+
+[source,bash]
+----
+export DOCKER_HOST=unix://$(podman info --format '{{.Host.RemoteSocket.Path}}')
+----
+
+== Other Linux settings
+
+=== Short names of images
+
+Testcontainers and Quarkus Dev Services also expect the container service they make requests against to be non-interactive.
+In case you have multiple registries configured in your Docker or Podman configuration, and when using short image names, Podman responds with a prompt asking which registry should be used to pull images.
+
+While we recommend you to avoid short names and always use fully specified names including the registry, Testcontainers unfortunately relies on short names internally for the time being.
+If you are using Testcontainers, either directly or through Dev Services, you need to disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.

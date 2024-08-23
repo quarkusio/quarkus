@@ -1,13 +1,14 @@
 package io.quarkus.devtools.project;
 
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
+
 import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.registry.catalog.ExtensionCatalog;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Locale;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -44,6 +45,10 @@ public enum BuildTool {
         this.gitIgnoreEntries = gitIgnoreEntries;
         this.buildDirectory = buildDirectory;
         this.buildFiles = buildFiles;
+    }
+
+    public boolean isAnyGradle() {
+        return GRADLE.equals(this) || GRADLE_KOTLIN_DSL.equals(this);
     }
 
     /**
@@ -86,7 +91,7 @@ public enum BuildTool {
     /**
      * Determine the build tool from the contents of an existing project
      * (pom.xml, build.gradle.kts, build.gradle, etc.)
-     * 
+     *
      * @param projectDirPath The Path to an existing project
      * @return the BuildTool enumeration matched from filesystem content or null;
      */

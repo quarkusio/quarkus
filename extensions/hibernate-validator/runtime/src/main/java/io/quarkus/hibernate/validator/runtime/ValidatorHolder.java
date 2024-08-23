@@ -1,20 +1,21 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import jakarta.validation.Validator;
+
+import org.hibernate.validator.HibernateValidatorFactory;
 
 public class ValidatorHolder {
 
-    private static ValidatorFactory validatorFactory;
+    private static HibernateValidatorFactory validatorFactory;
 
     private static Validator validator;
 
-    static void initialize(ValidatorFactory validatorFactory) {
+    static void initialize(HibernateValidatorFactory validatorFactory) {
         ValidatorHolder.validatorFactory = validatorFactory;
         ValidatorHolder.validator = validatorFactory.getValidator();
     }
 
-    static ValidatorFactory getValidatorFactory() {
+    static HibernateValidatorFactory getValidatorFactory() {
         return validatorFactory;
     }
 

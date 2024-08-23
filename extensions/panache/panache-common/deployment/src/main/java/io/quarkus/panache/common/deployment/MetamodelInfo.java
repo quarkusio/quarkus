@@ -16,7 +16,7 @@ public class MetamodelInfo {
         entities.put(entityModel.name, entityModel);
     }
 
-    public Set<String> getEntitiesWithPublicFields() {
+    public Set<String> getEntitiesWithExternallyAccessibleFields() {
         return entities.entrySet().stream()
                 .filter(e -> {
                     EntityModel value = e.getValue();

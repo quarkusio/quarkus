@@ -7,10 +7,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.PathSegment;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
@@ -24,6 +27,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 /**
  * UriInfo implementation
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class UriInfoImpl implements UriInfo {
 
     private final ResteasyReactiveRequestContext currentRequest;
@@ -51,6 +55,9 @@ public class UriInfoImpl implements UriInfo {
         if (prefix.isEmpty())
             return path;
         // else skip the prefix
+        if (path.length() == prefix.length()) {
+            return "/";
+        }
         return path.substring(prefix.length());
     }
 
@@ -148,7 +155,7 @@ public class UriInfoImpl implements UriInfo {
             RuntimeResource target = currentRequest.getTarget();
             if (target != null) { // a target can be null if this happens in a filter that runs before the target is set
                 for (Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
-                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue(), false));
                 }
             }
         }
@@ -219,11 +226,17 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public URI resolve(URI uri) {
-        return null;
+        return getBaseUri().resolve(uri);
     }
 
     @Override
     public URI relativize(URI uri) {
-        return null;
+        URI from = getRequestUri();
+        URI to = uri;
+        if (uri.getScheme() == null && uri.getHost() == null) {
+            to = getBaseUriBuilder().replaceQuery(null).path(uri.getPath()).replaceQuery(uri.getQuery())
+                    .fragment(uri.getFragment()).build();
+        }
+        return UriBuilderImpl.relativize(from, to);
     }
 }

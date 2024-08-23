@@ -19,7 +19,9 @@ public class AddNamespaceDecorator extends NamedResourceDecorator<ObjectMetaBuil
 
     @Override
     public void andThenVisit(ObjectMetaBuilder builder, ObjectMeta resourceMeta) {
-        builder.withNamespace(namespace);
+        if (!builder.hasNamespace()) {
+            builder.withNamespace(namespace);
+        }
     }
 
     @Override

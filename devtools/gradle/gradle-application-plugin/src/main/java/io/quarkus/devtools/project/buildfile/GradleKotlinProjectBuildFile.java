@@ -3,7 +3,7 @@ package io.quarkus.devtools.project.buildfile;
 import org.gradle.api.Project;
 
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class GradleKotlinProjectBuildFile extends GradleProjectBuildFile {

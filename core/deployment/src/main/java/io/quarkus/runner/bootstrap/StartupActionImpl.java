@@ -1,5 +1,7 @@
 package io.quarkus.runner.bootstrap;
 
+import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -9,11 +11,13 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -44,27 +48,36 @@ public class StartupActionImpl implements StartupAction {
     private static final Logger log = Logger.getLogger(StartupActionImpl.class);
 
     private final CuratedApplication curatedApplication;
-    private final BuildResult buildResult;
     private final QuarkusClassLoader runtimeClassLoader;
+
+    private final String mainClassName;
+    private final String applicationClassName;
+    private final Map<String, String> devServicesProperties;
+    private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
+    private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
-        this.buildResult = buildResult;
-        Set<String> eagerClasses = new HashSet<>();
-        Map<String, byte[]> transformedClasses = extractTransformers(eagerClasses);
-        QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
+
+        this.mainClassName = buildResult.consume(MainClassBuildItem.class).getClassName();
+        this.applicationClassName = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
+        this.devServicesProperties = extractDevServicesProperties(buildResult);
+        this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
+
+        Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
+        QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
-        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(true));
-        if (curatedApplication.getQuarkusBootstrap().isFlatClassPath()) {
-            resources.putAll(extractGeneratedResources(false));
+        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(buildResult, true));
+        if (curatedApplication.isFlatClassPath()) {
+            resources.putAll(extractGeneratedResources(buildResult, false));
             baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;
         } else {
-            baseClassLoader.reset(extractGeneratedResources(false),
+            baseClassLoader.reset(extractGeneratedResources(buildResult, false),
                     transformedClasses);
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
                     resources, transformedClasses);
@@ -90,7 +103,7 @@ public class StartupActionImpl implements StartupAction {
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-        final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
+        final String className = mainClassName;
         try {
             // force init here
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
@@ -108,9 +121,16 @@ public class StartupActionImpl implements StartupAction {
                             ApplicationStateNotification.notifyStartupFailed(e);
                         }
                     } finally {
-                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                        for (var i : runtimeApplicationShutdownBuildItems) {
                             try {
                                 i.getCloseTask().run();
+                            } catch (Throwable t) {
+                                log.error("Failed to run close task", t);
+                            }
+                        }
+                        for (var closeTask : runtimeCloseTasks) {
+                            try {
+                                closeTask.close();
                             } catch (Throwable t) {
                                 log.error("Failed to run close task", t);
                             }
@@ -123,18 +143,22 @@ public class StartupActionImpl implements StartupAction {
             return new RunningQuarkusApplicationImpl(new Closeable() {
                 @Override
                 public void close() throws IOException {
-                    try {
-                        runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
-                    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
-                            | ClassNotFoundException e) {
-                        log.error("Failed to stop Quarkus", e);
-                    } finally {
-                        ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
-                        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
-                            //for tests we just always shut down the curated application, as it is only used once
-                            //dev mode might be about to restart, so we leave it
-                            curatedApplication.close();
+                    if (Quarkus.isMainThread(Thread.currentThread())) {
+                        CountDownLatch latch = new CountDownLatch(1);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                doClose();
+                                latch.countDown();
+                            }
+                        }).start();
+                        try {
+                            latch.await();
+                        } catch (InterruptedException e) {
+                            throw new IOException(e);
                         }
+                    } else {
+                        doClose();
                     }
                 }
             }, runtimeClassLoader);
@@ -143,7 +167,7 @@ public class StartupActionImpl implements StartupAction {
             try {
                 final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                         runtimeClassLoader);
-                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                         .invoke(null);
             } catch (Throwable t2) {
                 t.addSuppressed(t2);
@@ -155,40 +179,84 @@ public class StartupActionImpl implements StartupAction {
     }
 
     @Override
+    public void addRuntimeCloseTask(Closeable closeTask) {
+        this.runtimeCloseTasks.add(closeTask);
+    }
+
+    private void doClose() {
+        try {
+            runtimeClassLoader.loadClass(Quarkus.class.getName()).getMethod("blockingExit").invoke(null);
+        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException
+                | ClassNotFoundException e) {
+            log.error("Failed to stop Quarkus", e);
+        } finally {
+            ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
+            if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
+                //for tests, we just always shut down the curated application, as it is only used once
+                //dev mode might be about to restart, so we leave it
+                curatedApplication.close();
+            }
+        }
+    }
+
+    @Override
     public int runMainClassBlocking(String... args) throws Exception {
+        //first we hack around class loading in the fork join pool
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
+
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-        final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
+        final String className = mainClassName;
         try {
             AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
-            Method getCurrentApplication = lifecycleManager.getDeclaredMethod("getCurrentApplication");
-            Object oldApplication = getCurrentApplication.invoke(null);
-            lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class).invoke(null,
-                    new Consumer<Integer>() {
-                        @Override
-                        public void accept(Integer integer) {
-                            result.set(integer);
-                        }
-                    });
-            // force init here
-            Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
-            Method start = appClass.getMethod("main", String[].class);
-            start.invoke(null, (Object) (args == null ? new String[0] : args));
-            Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
-            q.getMethod("blockingExit").invoke(null);
-            Object newApplication = getCurrentApplication.invoke(null);
-            if (oldApplication == newApplication) {
-                //quarkus was not actually started by the main method
-                //just return
-                return 0;
+            AtomicBoolean alreadyStarted = new AtomicBoolean();
+            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class);
+            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class);
+
+            try {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<Integer>) result::set);
+                setAlreadyStartedCallback.invoke(null, (Consumer<Boolean>) alreadyStarted::set);
+                // force init here
+                Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
+                Method start = appClass.getMethod("main", String[].class);
+                start.invoke(null, (Object) (args == null ? new String[0] : args));
+
+                CountDownLatch latch = new CountDownLatch(1);
+                new Thread(() -> {
+                    try {
+                        Class<?> q = Class.forName(Quarkus.class.getName(), true, runtimeClassLoader);
+                        q.getMethod("blockingExit").invoke(null);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                }).start();
+                latch.await();
+
+                if (alreadyStarted.get()) {
+                    //quarkus was not actually started by the main method
+                    //just return
+                    return 0;
+                }
+                return result.get();
+            } finally {
+                setDefaultExitCodeHandler.invoke(null, (Consumer<?>) null);
+                setAlreadyStartedCallback.invoke(null, (Consumer<?>) null);
             }
-            return result.get();
         } finally {
+            for (var closeTask : runtimeCloseTasks) {
+                try {
+                    closeTask.close();
+                } catch (Throwable t) {
+                    log.error("Failed to run close task", t);
+                }
+            }
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);
-            for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+            for (var i : runtimeApplicationShutdownBuildItems) {
                 try {
                     i.getCloseTask().run();
                 } catch (Throwable t) {
@@ -207,14 +275,14 @@ public class StartupActionImpl implements StartupAction {
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
-        //first
+        //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-            final String className = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
+            final String className = applicationClassName;
             Class<?> appClass;
             try {
                 // force init here
@@ -224,7 +292,7 @@ public class StartupActionImpl implements StartupAction {
                 try {
                     final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                             runtimeClassLoader);
-                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                             .invoke(null);
                 } catch (Throwable t2) {
                     t.addSuppressed(t2);
@@ -246,6 +314,13 @@ public class StartupActionImpl implements StartupAction {
                             // (e.g. ServiceLoader calls)
                             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                             closeTask.close();
+                            for (var closeTask : runtimeCloseTasks) {
+                                try {
+                                    closeTask.close();
+                                } catch (Throwable t) {
+                                    log.error("Failed to run close task", t);
+                                }
+                            }
                         } finally {
                             Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();
@@ -253,7 +328,7 @@ public class StartupActionImpl implements StartupAction {
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
 
-                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                        for (var i : runtimeApplicationShutdownBuildItems) {
                             try {
                                 i.getCloseTask().run();
                             } catch (Throwable t) {
@@ -262,7 +337,7 @@ public class StartupActionImpl implements StartupAction {
                         }
                         if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST &&
                                 !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
-                            //for tests we just always shut down the curated application, as it is only used once
+                            //for tests, we just always shut down the curated application, as it is only used once
                             //dev mode might be about to restart, so we leave it
                             curatedApplication.close();
                         }
@@ -287,35 +362,36 @@ public class StartupActionImpl implements StartupAction {
 
     @Override
     public Map<String, String> getDevServicesProperties() {
+        return devServicesProperties;
+    }
+
+    private static Map<String, String> extractDevServicesProperties(BuildResult buildResult) {
         DevServicesLauncherConfigResultBuildItem result = buildResult
                 .consumeOptional(DevServicesLauncherConfigResultBuildItem.class);
         if (result == null) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         return new HashMap<>(result.getConfig());
     }
 
-    private Map<String, byte[]> extractTransformers(Set<String> eagerClasses) {
+    private static Map<String, byte[]> extractTransformedClasses(BuildResult buildResult) {
         Map<String, byte[]> ret = new HashMap<>();
         TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
         for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
             for (TransformedClassesBuildItem.TransformedClass clazz : i) {
                 if (clazz.getData() != null) {
                     ret.put(clazz.getFileName(), clazz.getData());
-                    if (clazz.isEager()) {
-                        eagerClasses.add(clazz.getClassName());
-                    }
                 }
             }
         }
         return ret;
     }
 
-    private Map<String, byte[]> extractGeneratedResources(boolean applicationClasses) {
+    private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(i.getName().replace('.', '/') + ".class", i.getClassData());
+                data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
                 if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
                         File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);
@@ -357,7 +433,10 @@ public class StartupActionImpl implements StartupAction {
         }
         if (applicationClasses) {
             for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-                data.put(i.getName(), i.getClassData());
+                if (i.isExcludeFromDevCL()) {
+                    continue;
+                }
+                data.put(i.getName(), i.getData());
             }
         }
         return data;

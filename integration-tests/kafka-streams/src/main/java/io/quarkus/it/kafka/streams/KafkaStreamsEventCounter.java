@@ -2,17 +2,20 @@ package io.quarkus.it.kafka.streams;
 
 import java.util.concurrent.atomic.LongAdder;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsConfig;
 
 @ApplicationScoped
 public class KafkaStreamsEventCounter {
 
     LongAdder eventCount = new LongAdder();
 
-    void onKafkaStreamsEvent(@Observes KafkaStreams kafkaStreams) {
+    void onKafkaStreamsEvent(@Observes KafkaStreams kafkaStreams, StreamsConfig streamsConfig) {
+        assert kafkaStreams.state() == KafkaStreams.State.CREATED;
+        assert streamsConfig != null;
         eventCount.increment();
     }
 

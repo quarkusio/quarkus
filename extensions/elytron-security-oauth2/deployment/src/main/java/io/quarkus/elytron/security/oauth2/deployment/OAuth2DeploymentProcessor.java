@@ -1,6 +1,6 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
@@ -56,7 +56,7 @@ class OAuth2DeploymentProcessor {
             OAuth2BuildTimeConfig oauth2BuildTimeConfig,
             OAuth2RuntimeConfig oauth2RuntimeConfig,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (!oauth2BuildTimeConfig.enabled) {
+        if (!oauth2BuildTimeConfig.enabled()) {
             return null;
         }
 
@@ -67,7 +67,7 @@ class OAuth2DeploymentProcessor {
 
     @BuildStep
     ElytronTokenMarkerBuildItem marker(OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
-        if (!oauth2BuildTimeConfig.enabled) {
+        if (!oauth2BuildTimeConfig.enabled()) {
             return null;
         }
         return new ElytronTokenMarkerBuildItem();

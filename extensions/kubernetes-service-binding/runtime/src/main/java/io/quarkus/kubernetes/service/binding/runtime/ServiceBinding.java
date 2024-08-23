@@ -29,6 +29,7 @@ public final class ServiceBinding {
     private final String provider;
     private final Map<String, String> properties;
     private final String type;
+    private final String bindingDirectory;
 
     public ServiceBinding(Path bindingDirectory) {
         this(bindingDirectory.getFileName().toString(), getFilenameToContentMap(bindingDirectory), bindingDirectory);
@@ -54,6 +55,7 @@ public final class ServiceBinding {
                     + "' does not represent a valid Service ServiceBinding directory as it does not specify a type");
         }
 
+        this.bindingDirectory = bindingDirectory.toString();
         this.name = name;
         this.type = type;
         this.provider = provider;
@@ -105,6 +107,10 @@ public final class ServiceBinding {
 
     public String getProvider() {
         return provider;
+    }
+
+    public String getBindingDirectory() {
+        return bindingDirectory;
     }
 
     @Override

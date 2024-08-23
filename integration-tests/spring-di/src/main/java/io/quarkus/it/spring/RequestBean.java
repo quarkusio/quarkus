@@ -2,7 +2,7 @@ package io.quarkus.it.spring;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @RequestService
 public class RequestBean {

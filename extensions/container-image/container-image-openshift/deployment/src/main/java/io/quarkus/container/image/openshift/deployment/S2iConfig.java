@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.deployment.images.ContainerImages;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -11,33 +12,47 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class S2iConfig {
 
-    public static final String DEFAULT_BASE_JVM_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
-    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
+    public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";
+    public static final String DEFAULT_NATIVE_DOCKERFILE = "src/main/docker/Dockerfile.native";
+
+    public static final String FALLBACK_JAR_DIRECTORY = "/deployments/";
+    public static final String FALLBACK_NATIVE_BINARY_DIRECTORY = "/home/quarkus/";
+
     /**
-     * The base image to be used when a container image is being produced for the jar build
+     * The build config strategy to use.
      */
-    @ConfigItem(defaultValue = DEFAULT_BASE_JVM_IMAGE)
-    public String baseJvmImage;
+    @ConfigItem(defaultValue = "binary")
+    public BuildStrategy buildStrategy;
+
+    /**
+     * The base image to be used when a container image is being produced for the jar build.
+     *
+     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21:1.20}
+     * is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17:1.20} is used as the default.
+     */
+    @ConfigItem
+    public Optional<String> baseJvmImage;
 
     /**
      * The base image to be used when a container image is being produced for the native binary build
      */
-    @ConfigItem(defaultValue = DEFAULT_BASE_NATIVE_IMAGE)
+    @ConfigItem(defaultValue = ContainerImages.QUARKUS_BINARY_S2I)
     public String baseNativeImage;
 
     /**
-     * Additional JVM arguments to pass to the JVM when starting the application
+     * The JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
-    public List<String> jvmArguments;
+    @ConfigItem
+    public Optional<List<String>> jvmArguments;
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0")
-    public List<String> nativeArguments;
+    @ConfigItem
+    public Optional<List<String>> nativeArguments;
 
     /**
      * The directory where the jar is added during the assemble phase.
@@ -79,7 +94,7 @@ public class S2iConfig {
      * @returns true if baseJvmImage is the default
      */
     public boolean hasDefaultBaseJvmImage() {
-        return baseJvmImage.equals(DEFAULT_BASE_JVM_IMAGE);
+        return baseJvmImage.isPresent();
     }
 
     /**
@@ -88,6 +103,6 @@ public class S2iConfig {
      * @returns true if baseNativeImage is the default
      */
     public boolean hasDefaultBaseNativeImage() {
-        return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
+        return baseNativeImage.equals(ContainerImages.QUARKUS_BINARY_S2I);
     }
 }

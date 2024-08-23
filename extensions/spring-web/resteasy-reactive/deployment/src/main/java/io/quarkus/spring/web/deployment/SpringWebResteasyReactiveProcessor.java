@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -75,11 +75,6 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName RESPONSE_STATUS = DotName
             .createSimple("org.springframework.web.bind.annotation.ResponseStatus");
-    private static final DotName EXCEPTION_HANDLER = DotName
-            .createSimple("org.springframework.web.bind.annotation.ExceptionHandler");
-
-    private static final DotName REST_CONTROLLER_ADVICE = DotName
-            .createSimple("org.springframework.web.bind.annotation.RestControllerAdvice");
 
     private static final DotName MODEL_AND_VIEW = DotName.createSimple("org.springframework.web.servlet.ModelAndView");
     private static final DotName VIEW = DotName.createSimple("org.springframework.web.servlet.View");
@@ -87,9 +82,6 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName HTTP_ENTITY = DotName.createSimple("org.springframework.http.HttpEntity");
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
-
-    private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = Set.of(
-            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY);
 
     private static final String DEFAULT_NONE = "\n\t\t\n\t\t\n\uE000\uE001\uE002\n\t\t\t\t\n"; // from ValueConstants
 
@@ -120,7 +112,7 @@ public class SpringWebResteasyReactiveProcessor {
                 .getAnnotations(REST_CONTROLLER_ANNOTATION)) {
             ClassInfo targetClass = restController.target().asClass();
             additionalResourceClassProducer.produce(new AdditionalResourceClassBuildItem(targetClass,
-                    getSinglePathOfInstance(targetClass.classAnnotation(REQUEST_MAPPING), "")));
+                    getSinglePathOfInstance(targetClass.declaredAnnotation(REQUEST_MAPPING), "")));
         }
     }
 
@@ -141,7 +133,7 @@ public class SpringWebResteasyReactiveProcessor {
                     continue;
                 }
 
-                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                if (targetClass.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
                     classesWithoutRestController.add(targetClass.name());
                 }
             }
@@ -297,19 +289,21 @@ public class SpringWebResteasyReactiveProcessor {
                             }
                             transform.add(create(jaxRsAnnotation, annotation.target(), annotationValues));
 
-                            boolean required = true; // the default value
-                            String defaultValueStr = DEFAULT_NONE; // default value of @RequestMapping#defaultValue
+                            String defaultValueStr = null;
                             AnnotationValue defaultValue = annotation.value("defaultValue");
                             if (defaultValue != null) {
                                 defaultValueStr = defaultValue.asString();
-                                required = false; // implicitly set according to the javadoc of @RequestMapping#defaultValue
                             } else {
                                 AnnotationValue requiredValue = annotation.value("required");
                                 if (requiredValue != null) {
-                                    required = requiredValue.asBoolean();
+                                    if (requiredValue.asBoolean()) {
+                                        throw new IllegalArgumentException(
+                                                "Using required @RequestMapping is not supported. Offending method is '"
+                                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                                    }
                                 }
                             }
-                            if (!required) {
+                            if (defaultValueStr != null) {
                                 transform.add(create(DEFAULT_VALUE, annotation.target(),
                                         Collections
                                                 .singletonList(AnnotationValue.createStringValue("value", defaultValueStr))));

@@ -1,9 +1,9 @@
 package com.demo.application;
 
 import com.demo.common.base.model.BaseEntity;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class Application {

@@ -7,10 +7,11 @@ import java.util.List;
 
 import io.quarkus.cli.registry.BaseRegistryCommand;
 import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistryConfig;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "remove", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Remove a Quarkus extension registry", description = "%n"
-        + "This command will remove a Quarkus extension registry from the registry client configuration.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "remove", header = "Remove a Quarkus extension registry", description = "%n"
+        + "This command will remove a Quarkus extension registry from the registry client configuration.")
 public class RegistryRemoveCommand extends BaseRegistryCommand {
 
     @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to remove from the registry client configuration%n"
@@ -31,18 +32,13 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
         }
 
         final RegistriesConfig.Mutable config;
-        if (existingConfig) {
-            registryClient.refreshRegistryCache(output);
-            config = registryClient.resolveConfig().mutable();
-            if (config.getSource().getFilePath() == null) {
-                output.error("Can only modify file-based configuration. Config source is " + config.getSource().describe());
-                return CommandLine.ExitCode.SOFTWARE;
-            }
+        if (configYaml != null && !existingConfig) {
+            // we're creating a new configuration for a new file
+            config = RegistriesConfig.builder();
         } else {
-            output.error("Can only remove registries from an existing configuration. The specified config file does not exist: "
-                    + configYaml);
-            return CommandLine.ExitCode.SOFTWARE;
+            config = registryClient.resolveConfig().mutable();
         }
+        registryClient.refreshRegistryCache(output);
 
         boolean persist = false;
         for (String registryId : registryIds) {
@@ -50,7 +46,15 @@ public class RegistryRemoveCommand extends BaseRegistryCommand {
         }
 
         if (persist) {
-            config.persist();
+            output.printText("Configured registries:");
+            for (RegistryConfig rc : config.getRegistries()) {
+                output.printText("- " + rc.getId());
+            }
+            if (configYaml != null) {
+                config.persist(configYaml);
+            } else {
+                config.persist();
+            }
         }
         return CommandLine.ExitCode.OK;
     }

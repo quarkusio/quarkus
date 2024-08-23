@@ -1,11 +1,14 @@
 package io.quarkus.bootstrap.runner;
 
-import io.quarkus.bootstrap.graal.ImageInfo;
-import io.quarkus.bootstrap.logging.InitialConfigurator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.logging.Handler;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.graal.ImageInfo;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 
 /**
  * Class that is responsible for printing out timing results.
@@ -86,24 +89,29 @@ public class Timing {
         }
     }
 
-    public static void printStartupTime(String name, String version, String quarkusVersion, String features, String profile,
-            boolean liveCoding, boolean anc) {
+    public static void printStartupTime(String name, String version, String quarkusVersion, String features,
+            List<String> profiles, boolean liveCoding, boolean anc) {
         Timing t = get(anc);
         final long bootTimeNanoSeconds = System.nanoTime() - t.bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
-        String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
+        String safeAppVersion = (version == null || version.trim().isEmpty() || "null".equals(version)) ? UNSET_VALUE : version;
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
-        if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
+
+        if (UNSET_VALUE.equals(safeAppName)) {
             logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
                     t.httpServerInfo);
         } else {
-            logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
+            String appNameAndVersion = UNSET_VALUE.equals(safeAppVersion) ? name : name + " " + version;
+
+            logger.infof("%s %s (powered by Quarkus %s) started in %ss. %s", appNameAndVersion, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, t.httpServerInfo);
         }
-        logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
+
+        logger.infof("Profile%s %s activated. %s", profiles.size() > 1 ? "s" : "", String.join(",", profiles),
+                liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
         t.bootStartTime = -1;
     }

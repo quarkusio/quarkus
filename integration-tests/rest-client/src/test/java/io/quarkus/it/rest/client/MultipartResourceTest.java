@@ -21,7 +21,8 @@ public class MultipartResourceTest {
                 .body(containsString("Content-Disposition: form-data; name=\"file\""),
                         containsString("HELLO WORLD"),
                         containsString("Content-Disposition: form-data; name=\"fileName\""),
-                        containsString("greeting.txt"));
+                        containsString("greeting.txt"),
+                        containsString("Content-Disposition: form-data; name=\"uuid\""));
 
         given()
                 .when().get("/q/metrics")

@@ -1,9 +1,8 @@
 package io.quarkus.vertx.web.runtime;
 
+import java.util.concurrent.Flow;
+import java.util.concurrent.Flow.Subscriber;
 import java.util.function.Function;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.AsyncResult;
@@ -37,10 +36,10 @@ public class MultiJsonArraySupport {
     private static void write(Multi<Buffer> multi, RoutingContext rc) {
         HttpServerResponse response = rc.response();
         multi.subscribe().withSubscriber(new Subscriber<Buffer>() {
-            Subscription upstream;
+            Flow.Subscription upstream;
 
             @Override
-            public void onSubscribe(Subscription subscription) {
+            public void onSubscribe(Flow.Subscription subscription) {
                 this.upstream = subscription;
                 this.upstream.request(1);
             }
@@ -78,7 +77,7 @@ public class MultiJsonArraySupport {
         });
     }
 
-    private static void onWriteDone(Subscription subscription, AsyncResult<Void> ar, RoutingContext rc) {
+    private static void onWriteDone(Flow.Subscription subscription, AsyncResult<Void> ar, RoutingContext rc) {
         if (ar.failed()) {
             rc.fail(ar.cause());
         } else {

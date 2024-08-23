@@ -91,9 +91,12 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         invoker = initInvoker(testDir);
 
         Properties properties = new Properties();
-        properties.put("groupId", "io.quarkiverse.my-quarki-ext");
-        properties.put("extensionId", "my-quarki-ext");
-        properties.put("quarkusVersion", "1.10.5.Final");
+        properties.put("groupId", "io.quarkiverse.my-quarkiverse-ext");
+        properties.put("extensionId", "my-quarkiverse-ext");
+        properties.put("quarkusVersion", "3.14.0");
+        properties.put("extensionName", "My Quarkiverse extension");
+        properties.put("extensionDescription", "My Quarkiverse extension description");
+        properties.put("withCodestart", "true");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -101,12 +104,26 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         final Path testDirPath = testDir.toPath();
         assertThatDirectoryTreeMatchSnapshots(testInfo, testDirPath)
                 .contains(
-                        "quarkus-my-quarki-ext/pom.xml",
-                        "quarkus-my-quarki-ext/deployment/src/main/java/io/quarkiverse/my/quarki/ext/deployment/MyQuarkiExtProcessor.java",
-                        "quarkus-my-quarki-ext/integration-tests/pom.xml",
-                        "quarkus-my-quarki-ext/integration-tests/src/test/java/io/quarkiverse/my/quarki/ext/it/MyQuarkiExtResourceTest.java");
-        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarki-ext/pom.xml");
-        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarki-ext/runtime/pom.xml");
+                        "quarkus-my-quarkiverse-ext/pom.xml",
+                        "quarkus-my-quarkiverse-ext/runtime/src/main/codestarts/quarkus/my-quarkiverse-ext-codestart/codestart.yml",
+                        "quarkus-my-quarkiverse-ext/deployment/src/main/java/io/quarkiverse/my/quarkiverse/ext/deployment/MyQuarkiverseExtProcessor.java",
+                        "quarkus-my-quarkiverse-ext/integration-tests/pom.xml",
+                        "quarkus-my-quarkiverse-ext/integration-tests/src/test/java/io/quarkiverse/my/quarkiverse/ext/it/MyQuarkiverseExtResourceTest.java");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/runtime/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath,
+                "quarkus-my-quarkiverse-ext/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/LICENSE");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/README.md");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/build.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/antora.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/index.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/integration-tests/pom.xml");
     }
 
     @Test
@@ -119,7 +136,7 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("groupId", "io.standalone");
         properties.put("extensionId", "my-own-ext");
         properties.put("namespaceId", "my-org-");
-        properties.put("quarkusVersion", "1.10.5.Final");
+        properties.put("quarkusVersion", "3.14.0");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();

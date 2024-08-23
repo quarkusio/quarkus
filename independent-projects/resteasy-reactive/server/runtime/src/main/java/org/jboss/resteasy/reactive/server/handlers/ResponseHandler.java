@@ -4,9 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
@@ -19,6 +21,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 /**
  * Our job is to turn endpoint return types into Response instances
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResponseHandler implements ServerRestHandler {
 
     public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
@@ -74,7 +77,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -97,9 +100,6 @@ public class ResponseHandler implements ServerRestHandler {
                 responseBuilder = fromResponse(existing);
                 responseBuilder.entity(genericEntity.getEntity());
             } else {
-                // TCK says to use the entity type as generic type if we return a response
-                if (existing.hasEntity() && (existing.getEntity() != null))
-                    requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficient
                 responseBuilder = fromResponse(existing);
                 if ((result instanceof RestResponseImpl)) {
@@ -123,7 +123,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -142,21 +142,23 @@ public class ResponseHandler implements ServerRestHandler {
                 @Override
                 public Response get() {
                     if (response == null) {
-                        Response.ResponseBuilder responseBuilder;
+                        ResponseBuilderImpl responseBuilder;
                         if (result instanceof GenericEntity) {
                             GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                             requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = ResponseImpl.ok(genericEntity.getEntity());
+                            responseBuilder = ResponseBuilderImpl.ok(genericEntity.getEntity());
                         } else if (result == null) {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.noContent();
+                            responseBuilder = ResponseBuilderImpl.noContent();
                         } else {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.ok(result);
+                            responseBuilder = ResponseBuilderImpl.ok(result);
                         }
-                        EncodedMediaType produces = requestContext.getResponseContentType();
-                        if (produces != null) {
-                            responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                        if (responseBuilder.getEntity() != null) {
+                            EncodedMediaType produces = requestContext.getResponseContentType();
+                            if (produces != null) {
+                                responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                            }
                         }
                         if (!responseBuilderCustomizers.isEmpty()) {
                             for (int i = 0; i < responseBuilderCustomizers.size(); i++) {
@@ -193,10 +195,13 @@ public class ResponseHandler implements ServerRestHandler {
         if (response.hasEntity()) {
             b.entity(response.getEntity());
         }
-        for (String headerName : response.getHeaders().keySet()) {
-            List<Object> headerValues = response.getHeaders().get(headerName);
-            for (Object headerValue : headerValues) {
-                b.header(headerName, headerValue);
+        var headers = response.getHeaders();
+        if (headers != null) {
+            for (String headerName : headers.keySet()) {
+                List<Object> headerValues = headers.get(headerName);
+                for (Object headerValue : headerValues) {
+                    b.header(headerName, headerValue);
+                }
             }
         }
         return (ResponseBuilderImpl) b;
@@ -246,6 +251,7 @@ public class ResponseHandler implements ServerRestHandler {
             }
         }
 
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         class AddHeadersCustomizer implements ResponseBuilderCustomizer {
 
             private Map<String, List<String>> headers;

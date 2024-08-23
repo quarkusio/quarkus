@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -44,7 +45,7 @@ public class MessageBundleValidationTest {
         fail();
     }
 
-    @MessageBundle
+    @MessageBundle(DEFAULT_NAME)
     public interface Hellos {
 
         @Message("Hello {foo}")

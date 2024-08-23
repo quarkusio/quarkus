@@ -1,10 +1,9 @@
 package io.quarkus.vertx.web.runtime;
 
+import java.util.concurrent.Flow;
+import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.smallrye.mutiny.Multi;
@@ -52,7 +51,7 @@ public class MultiSseSupport {
 
     public static void write(Multi<Buffer> multi, RoutingContext rc) {
         HttpServerResponse response = rc.response();
-        multi.subscribe().withSubscriber(new Subscriber<Buffer>() {
+        multi.subscribe().withSubscriber(new Flow.Subscriber<Buffer>() {
             Subscription upstream;
 
             @Override
@@ -86,7 +85,7 @@ public class MultiSseSupport {
 
     public static void subscribeBuffer(Multi<Buffer> multi, RoutingContext rc) {
         HttpServerResponse response = rc.response();
-        multi.subscribe().withSubscriber(new Subscriber<Buffer>() {
+        multi.subscribe().withSubscriber(new Flow.Subscriber<Buffer>() {
             Subscription upstream;
             final AtomicLong count = new AtomicLong();
 

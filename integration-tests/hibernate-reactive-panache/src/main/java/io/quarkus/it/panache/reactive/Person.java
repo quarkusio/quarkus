@@ -5,19 +5,20 @@ import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTAN
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Transient;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Transient;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
@@ -44,7 +45,7 @@ import io.smallrye.mutiny.Uni;
         @NamedQuery(name = "Person.deleteById", query = "delete from Person2 p where p.id = :id"),
         @NamedQuery(name = "Person.deleteById.ordinal", query = "delete from Person2 p where p.id = ?1"),
 })
-@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = "string"))
+@FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = @ParamDef(name = "name", type = String.class))
 @FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")
@@ -56,6 +57,9 @@ public class Person extends PanacheEntity {
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public Address address;
+
+    @Embedded
+    public PersonDescription description;
 
     @Enumerated(EnumType.STRING)
     public Status status;

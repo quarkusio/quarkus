@@ -4,13 +4,13 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Extending Configuration Support
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: core
+:summary: Extend and customize the Configuration.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
+:topics: configuration
 
 [[custom-config-source]]
 == Custom `ConfigSource`
@@ -25,7 +25,7 @@ image::config-sources.png[align=center,width=90%]
 
 A custom `ConfigSource` requires an implementation of `org.eclipse.microprofile.config.spi.ConfigSource` or
 `org.eclipse.microprofile.config.spi.ConfigSourceProvider`. Each implementation requires registration via
-the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader] mechanism, either in
+the https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader] mechanism, either in
 `META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource` or
 `META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider` files.
 
@@ -175,7 +175,7 @@ link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/as
 is the factory ability to provide a context with access to the available configuration.
 
 Each implementation of `io.smallrye.config.ConfigSourceFactory` requires registration via
-the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
+the https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
 mechanism in the `META-INF/services/io.smallrye.config.ConfigSourceFactory` file.
 
 === Example
@@ -248,7 +248,7 @@ It is possible to create a custom `Converter` type as specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc#adding-custom-converters[MicroProfile Config].
 
 A custom `Converter` requires an implementation of `org.eclipse.microprofile.config.spi.Converter<T>`. Each implementation
-requires registration via the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
+requires registration via the https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
 mechanism in the `META-INF/services/org.eclipse.microprofile.config.spi.Converter` file. Consider:
 
 [source,java]
@@ -299,7 +299,7 @@ MicroProfileCustomValue value;
 
 === Converter priority
 
-The `javax.annotation.Priority` annotation overrides the `Converter` priority and change converters precedence to fine
+The `jakarta.annotation.Priority` annotation overrides the `Converter` priority and change converters precedence to fine
 tune the execution order. By default, if no `@Priority` is specified by the `Converter`, the converter is registered
 with a priority of `100`. Consider:
 
@@ -307,7 +307,7 @@ with a priority of `100`. Consider:
 ----
 package org.acme.config;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 import org.eclipse.microprofile.config.spi.Converter;
 
 @Priority(150)
@@ -344,7 +344,7 @@ xref:config-reference.adoc#property-expressions[Property Expressions],
 or just logging to find out where the config value was loaded from.
 
 An interceptor requires an implementation of `io.smallrye.config.ConfigSourceInterceptor`. Each implementation
-requires registration via the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
+requires registration via the https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
 mechanism in the `META-INF/services/io.smallrye.config.ConfigSourceInterceptor` file.
 
 The `io.smallrye.config.ConfigSourceInterceptor` is able to intercept the resolution of a configuration name with the
@@ -356,7 +356,7 @@ origin and ordinal.
 NOTE: The interceptor chain is applied before any conversion is performed on the configuration value.
 
 Interceptors may also be created with an implementation of `io.smallrye.config.ConfigSourceInterceptorFactory`. Each
-implementation requires registration via the https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
+implementation requires registration via the https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html[ServiceLoader]
 mechanism in the `META-INF/services/io.smallrye.config.ConfigSourceInterceptorFactory` file.
 
 The `ConfigSourceInterceptorFactory` may initialize an interceptor with access to the current chain
@@ -369,7 +369,9 @@ The `ConfigSourceInterceptorFactory` may initialize an interceptor with access t
 ----
 package org.acme.config;
 
-import javax.annotation.Priority;
+import static io.smallrye.config.SecretKeys.doLocked;
+
+import jakarta.annotation.Priority;
 
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigLogging;

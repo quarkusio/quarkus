@@ -2,9 +2,9 @@ package io.quarkus.it.flyway;
 
 import java.util.Objects;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Entity used within tests
@@ -17,6 +17,8 @@ public class AppEntity {
     private int id;
 
     private String name;
+
+    private String createdBy;
 
     public int getId() {
         return id;
@@ -32,6 +34,14 @@ public class AppEntity {
 
     public void setName(final String name) {
         this.name = name;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     @Override

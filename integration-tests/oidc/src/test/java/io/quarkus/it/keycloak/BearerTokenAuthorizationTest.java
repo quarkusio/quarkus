@@ -1,7 +1,7 @@
 package io.quarkus.it.keycloak;
 
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getAccessToken;
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getRefreshToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getRefreshToken;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -12,16 +12,15 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakXTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class BearerTokenAuthorizationTest {
 
     @Test
@@ -76,7 +75,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/api/users/me")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test
@@ -145,7 +144,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given()
                 .when().get("/api/users/me").then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test
@@ -172,7 +171,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/basic-only")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic"));
     }
 
     @Test
@@ -212,5 +211,25 @@ public class BearerTokenAuthorizationTest {
                 .atMost(5, TimeUnit.SECONDS).until(
                         () -> RestAssured.given().auth().oauth2(token).when()
                                 .get("/api/users/me").thenReturn().statusCode() == 401);
+    }
+
+    @Test
+    public void testAuthenticationEvent() {
+        RestAssured.given()
+                .get("/authentication-event/failure-observed")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("false"));
+        RestAssured.given().auth()
+                .preemptive().basic("alice", "wrongpassword")
+                .header("keep-event", "true")
+                .when().get("/authentication-event/secured")
+                .then()
+                .statusCode(401);
+        RestAssured.given()
+                .get("/authentication-event/failure-observed")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("true"));
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.vertx.http.security;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;

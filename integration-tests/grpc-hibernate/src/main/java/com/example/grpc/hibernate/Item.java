@@ -1,8 +1,8 @@
 package com.example.grpc.hibernate;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 @Entity(name = "Item")
 public class Item {
@@ -11,4 +11,12 @@ public class Item {
     public Long id;
 
     public String text;
+
+    @Override
+    public String toString() {
+        return "Item{" +
+                "id=" + id +
+                ", text='" + text + '\'' +
+                '}';
+    }
 }

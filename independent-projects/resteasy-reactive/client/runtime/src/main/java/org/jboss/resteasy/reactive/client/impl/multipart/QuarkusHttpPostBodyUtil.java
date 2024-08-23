@@ -17,6 +17,9 @@ package org.jboss.resteasy.reactive.client.impl.multipart;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpConstants;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+import io.netty.util.internal.StringUtil;
 
 /**
  * A copy of Netty's HttpPostBodyUtil which is not public
@@ -24,8 +27,6 @@ import io.netty.handler.codec.http.HttpConstants;
  * Shared Static object between HttpMessageDecoder, HttpPostRequestDecoder and HttpPostRequestEncoder
  */
 final class QuarkusHttpPostBodyUtil {
-
-    public static final int chunkSize = 8096;
 
     /**
      * Default Content-Type in binary form
@@ -127,7 +128,7 @@ final class QuarkusHttpPostBodyUtil {
 
     /**
      * Find the first non whitespace
-     * 
+     *
      * @return the rank of the first non whitespace
      */
     static int findNonWhitespace(String sb, int offset) {
@@ -142,7 +143,7 @@ final class QuarkusHttpPostBodyUtil {
 
     /**
      * Find the end of String
-     * 
+     *
      * @return the rank of the end of string
      */
     static int findEndOfString(String sb) {
@@ -269,5 +270,80 @@ final class QuarkusHttpPostBodyUtil {
             }
         }
         return -1;
+    }
+
+    /**
+     * copied from {@link HttpPostRequestDecoder}
+     *
+     * @param contentType
+     * @return
+     */
+    public static String[] getMultipartDataBoundary(String contentType) {
+        // Check if Post using "multipart/form-data; boundary=--89421926422648 [; charset=xxx]"
+        String[] headerContentType = splitHeaderContentType(contentType);
+        final String multiPartHeader = HttpHeaderValues.MULTIPART_FORM_DATA.toString();
+        if (headerContentType[0].regionMatches(true, 0, multiPartHeader, 0, multiPartHeader.length())) {
+            int mrank;
+            int crank;
+            final String boundaryHeader = HttpHeaderValues.BOUNDARY.toString();
+            if (headerContentType[1].regionMatches(true, 0, boundaryHeader, 0, boundaryHeader.length())) {
+                mrank = 1;
+                crank = 2;
+            } else if (headerContentType[2].regionMatches(true, 0, boundaryHeader, 0, boundaryHeader.length())) {
+                mrank = 2;
+                crank = 1;
+            } else {
+                return null;
+            }
+            String boundary = StringUtil.substringAfter(headerContentType[mrank], '=');
+            if (boundary == null) {
+                throw new HttpPostRequestDecoder.ErrorDataDecoderException("Needs a boundary value");
+            }
+            if (boundary.charAt(0) == '"') {
+                String bound = boundary.trim();
+                int index = bound.length() - 1;
+                if (bound.charAt(index) == '"') {
+                    boundary = bound.substring(1, index);
+                }
+            }
+            final String charsetHeader = HttpHeaderValues.CHARSET.toString();
+            if (headerContentType[crank].regionMatches(true, 0, charsetHeader, 0, charsetHeader.length())) {
+                String charset = StringUtil.substringAfter(headerContentType[crank], '=');
+                if (charset != null) {
+                    return new String[] { "--" + boundary, charset };
+                }
+            }
+            return new String[] { "--" + boundary };
+        }
+        return null;
+    }
+
+    private static String[] splitHeaderContentType(String sb) {
+        int aStart;
+        int aEnd;
+        int bStart;
+        int bEnd;
+        int cStart;
+        int cEnd;
+        aStart = findNonWhitespace(sb, 0);
+        aEnd = sb.indexOf(';');
+        if (aEnd == -1) {
+            return new String[] { sb, "", "" };
+        }
+        bStart = findNonWhitespace(sb, aEnd + 1);
+        if (sb.charAt(aEnd - 1) == ' ') {
+            aEnd--;
+        }
+        bEnd = sb.indexOf(';', bStart);
+        if (bEnd == -1) {
+            bEnd = findEndOfString(sb);
+            return new String[] { sb.substring(aStart, aEnd), sb.substring(bStart, bEnd), "" };
+        }
+        cStart = findNonWhitespace(sb, bEnd + 1);
+        if (sb.charAt(bEnd - 1) == ' ') {
+            bEnd--;
+        }
+        cEnd = findEndOfString(sb);
+        return new String[] { sb.substring(aStart, aEnd), sb.substring(bStart, bEnd), sb.substring(cStart, cEnd) };
     }
 }

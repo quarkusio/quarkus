@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -24,7 +24,6 @@ import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))

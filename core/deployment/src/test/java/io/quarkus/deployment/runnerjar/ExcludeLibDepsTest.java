@@ -19,10 +19,10 @@ import io.quarkus.maven.dependency.GACTV;
  * The test allowing to make sure that if we exclude a library from an extension, the
  * exclusion will be also applied to the deployment dependencies.
  */
-public class ExcludeLibDepsTest extends ExecutableOutputOutcomeTestBase {
+public class ExcludeLibDepsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact extADep1 = TsArtifact.jar("ext-a-dep-1");
         addToExpectedLib(extADep1);
@@ -71,7 +71,7 @@ public class ExcludeLibDepsTest extends ExecutableOutputOutcomeTestBase {
         final Set<Dependency> expectedRuntimeDeps = new HashSet<>();
         expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a", "1"), "compile",
                 DependencyFlags.DIRECT, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP));
+                DependencyFlags.DEPLOYMENT_CP, DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT));
         expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-dep-1", "1"), "compile",
                 DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         expectedRuntimeDeps.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-dep-2", "1"), "compile",

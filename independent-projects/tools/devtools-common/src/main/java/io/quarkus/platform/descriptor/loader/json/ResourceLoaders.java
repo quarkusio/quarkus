@@ -1,6 +1,5 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import io.quarkus.fs.util.ZipUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -12,7 +11,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.Function;
+
 import org.apache.commons.io.FilenameUtils;
+
+import io.quarkus.fs.util.ZipUtils;
 
 public final class ResourceLoaders {
 

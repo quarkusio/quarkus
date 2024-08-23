@@ -2,12 +2,14 @@ package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
 import java.io.ByteArrayOutputStream;
 import java.util.function.Supplier;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.DefaultMediaTypeCustomObject;
@@ -38,7 +40,7 @@ public class DefaultMediaTypeTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
@@ -213,5 +215,29 @@ public class DefaultMediaTypeTest {
                 response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
+    }
+
+    @Test
+    @DisplayName("Post Multi Media Type Consumer")
+    public void testConsumesMultiMediaType() {
+        WebTarget target = client.target(generateURL("/postMultiMediaTypeConsumer"));
+        Response response = target.request().post(Entity.entity("payload", "application/soap+xml"));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("postMultiMediaTypeConsumer", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", MediaType.TEXT_XML));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("postMultiMediaTypeConsumer", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", "any/media-type"));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
+                response.getStatus());
+        Assertions.assertEquals("any/media-type", response.readEntity(String.class));
+
+        response = target.request().post(Entity.entity("payload", "unexpected/media-type"));
+        Assertions.assertEquals(Response.Status.UNSUPPORTED_MEDIA_TYPE.getStatusCode(),
+                response.getStatus());
     }
 }

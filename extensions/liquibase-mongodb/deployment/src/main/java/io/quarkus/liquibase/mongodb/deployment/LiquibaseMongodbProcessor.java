@@ -1,49 +1,55 @@
 package io.quarkus.liquibase.mongodb.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
+import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.paths.PathFilter;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.change.core.CreateProcedureChange;
@@ -56,11 +62,23 @@ import liquibase.changelog.DatabaseChangeLog;
 import liquibase.exception.LiquibaseException;
 import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
+import liquibase.plugin.AbstractPluginFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 
 class LiquibaseMongodbProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseMongodbProcessor.class);
+
+    private static final ArtifactCoords LIQUIBASE_ARTIFACT = Dependency.of(
+            "org.liquibase", "liquibase-core", "*");
+    private static final ArtifactCoords LIQUIBASE_MONGODB_ARTIFACT = Dependency.of(
+            "org.liquibase.ext", "liquibase-mongodb", "*");
+    private static final PathFilter LIQUIBASE_RESOURCE_FILTER = PathFilter.forIncludes(List.of(
+            "*.properties",
+            "www.liquibase.org/xml/ns/dbchangelog/*.xsd"));
+    private static final PathFilter LIQUIBASE_MONGODB_RESOURCE_FILTER = PathFilter.forIncludes(List.of(
+            "www.liquibase.org/xml/ns/mongodb/*.xsd",
+            "liquibase.parser.core.xml/*.xsd"));
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
 
@@ -69,20 +87,19 @@ class LiquibaseMongodbProcessor {
         return new FeatureBuildItem(Feature.LIQUIBASE_MONGODB);
     }
 
-    @BuildStep
-    public SystemPropertyBuildItem disableHub() {
-        // Don't block app startup with prompt:
-        // Do you want to see this operation's report in Liquibase Hub, which improves team collaboration?
-        // If so, enter your email. If not, enter [N] to no longer be prompted, or [S] to skip for now, but ask again next time (default "S"):
-        return new SystemPropertyBuildItem("liquibase.hub.mode", "off");
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    List<IndexDependencyBuildItem> indexLiquibase() {
+        return List.of(
+                new IndexDependencyBuildItem(LIQUIBASE_ARTIFACT.getGroupId(), LIQUIBASE_ARTIFACT.getArtifactId()),
+                new IndexDependencyBuildItem(
+                        LIQUIBASE_MONGODB_ARTIFACT.getGroupId(), LIQUIBASE_MONGODB_ARTIFACT.getArtifactId()));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Record(STATIC_INIT)
     void nativeImageConfiguration(
-            LiquibaseMongodbRecorder recorder,
             LiquibaseMongodbBuildTimeConfig liquibaseBuildConfig,
             CombinedIndexBuildItem combinedIndex,
+            CurateOutcomeBuildItem curateOutcome,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> services,
@@ -90,22 +107,35 @@ class LiquibaseMongodbProcessor {
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(liquibase.diff.compare.CompareControl.class.getName()));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(
+                liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
-        reflective.produce(new ReflectiveClassBuildItem(false, true, false,
+        reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
-                liquibase.database.jvm.JdbcConnection.class.getName()));
+                liquibase.database.jvm.JdbcConnection.class.getName())
+                .methods().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(true, true, true,
-                liquibase.parser.ChangeLogParserCofiguration.class.getName(),
-                liquibase.hub.HubServiceFactory.class.getName(),
-                liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
-                liquibase.configuration.GlobalConfiguration.class.getName(),
-                com.datical.liquibase.ext.config.LiquibaseProConfiguration.class.getName(),
-                liquibase.license.LicenseServiceFactory.class.getName(),
+        reflective.produce(ReflectiveClassBuildItem
+                .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
+                        .map(classInfo -> classInfo.name().toString())
+                        .toArray(String[]::new))
+                .constructors().build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.command.CommandFactory.class.getName(),
+                liquibase.database.LiquibaseTableNamesFactory.class.getName(),
+                liquibase.configuration.ConfiguredValueModifierFactory.class.getName(),
+                liquibase.changelog.FastCheckService.class.getName(),
+                // deprecated, but still used by liquibase.nosql.lockservice.AbstractNoSqlLockService
+                liquibase.configuration.GlobalConfiguration.class.getName())
+                .constructors().build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.configuration.LiquibaseConfiguration.class.getName(),
+                liquibase.parser.ChangeLogParserConfiguration.class.getName(),
+                liquibase.GlobalConfiguration.class.getName(),
                 liquibase.executor.ExecutorService.class.getName(),
                 liquibase.change.ChangeFactory.class.getName(),
-                liquibase.logging.core.LogServiceFactory.class.getName(),
-                liquibase.logging.LogFactory.class.getName(),
                 liquibase.change.ColumnConfig.class.getName(),
                 liquibase.change.AddColumnConfig.class.getName(),
                 liquibase.change.core.LoadDataColumnConfig.class.getName(),
@@ -113,10 +143,12 @@ class LiquibaseMongodbProcessor {
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
                 liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
-                liquibase.ext.mongodb.database.MongoClientDriver.class.getName()));
+                liquibase.ext.mongodb.database.MongoClientDriver.class.getName())
+                .constructors().methods().fields().build());
 
-        reflective.produce(new ReflectiveClassBuildItem(false, false, true,
-                liquibase.change.ConstraintsConfig.class.getName()));
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.change.ConstraintsConfig.class.getName())
+                .fields().build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();
@@ -129,73 +161,49 @@ class LiquibaseMongodbProcessor {
             }
         }
         reflective.produce(
-                new ReflectiveClassBuildItem(true, true, true, classesMarkedWithDatabaseChangeProperty.toArray(new String[0])));
+                ReflectiveClassBuildItem.builder(classesMarkedWithDatabaseChangeProperty.toArray(new String[0]))
+                        .constructors().methods().fields().build());
 
         resource.produce(
                 new NativeImageResourceBuildItem(getChangeLogs(liquibaseBuildConfig).toArray(new String[0])));
 
-        Stream.of(liquibase.change.Change.class,
-                liquibase.changelog.ChangeLogHistoryService.class,
-                liquibase.command.LiquibaseCommand.class,
-                liquibase.database.Database.class,
-                liquibase.database.DatabaseConnection.class,
-                liquibase.datatype.LiquibaseDataType.class,
-                liquibase.diff.compare.DatabaseObjectComparator.class,
-                liquibase.diff.DiffGenerator.class,
-                liquibase.diff.output.changelog.ChangeGenerator.class,
-                liquibase.executor.Executor.class,
-                liquibase.license.LicenseService.class,
-                liquibase.lockservice.LockService.class,
-                liquibase.logging.LogService.class,
-                liquibase.parser.ChangeLogParser.class,
-                liquibase.parser.NamespaceDetails.class,
-                liquibase.parser.SnapshotParser.class,
-                liquibase.precondition.Precondition.class,
-                liquibase.serializer.ChangeLogSerializer.class,
-                liquibase.serializer.SnapshotSerializer.class,
-                liquibase.servicelocator.ServiceLocator.class,
-                liquibase.snapshot.SnapshotGenerator.class,
-                liquibase.sqlgenerator.SqlGenerator.class,
-                liquibase.structure.DatabaseObject.class,
-                liquibase.hub.HubService.class)
-                .forEach(t -> addService(services, reflective, t, false));
-
         // Register Precondition services, and the implementation class for reflection while also registering fields for reflection
-        addService(services, reflective, liquibase.precondition.Precondition.class, true);
+        addService(services, reflective, liquibase.precondition.Precondition.class.getName(), true);
 
-        // liquibase XSD
-        resource.produce(new NativeImageResourceBuildItem(
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.7.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.10.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd",
-                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-3.10.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.0.xsd",
-                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd",
-                "liquibase.build.properties"));
+        // CommandStep implementations are needed (just like in non-mongodb variant)
+        addService(services, reflective, liquibase.command.CommandStep.class.getName(), false,
+                "liquibase.command.core.StartH2CommandStep");
+
+        var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
+
+        resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
+                dependencies, LIQUIBASE_ARTIFACT, LIQUIBASE_RESOURCE_FILTER));
+        resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
+                dependencies, LIQUIBASE_MONGODB_ARTIFACT, LIQUIBASE_MONGODB_RESOURCE_FILTER));
+        services.produce(ServiceProviderBuildItem.allProvidersOfDependencies(
+                dependencies, List.of(LIQUIBASE_ARTIFACT, LIQUIBASE_MONGODB_ARTIFACT)));
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-mongo"));
     }
 
     private void addService(BuildProducer<ServiceProviderBuildItem> services,
-            BuildProducer<ReflectiveClassBuildItem> reflective, Class<?> serviceClass,
-            boolean shouldRegisterFieldForReflection) {
+            BuildProducer<ReflectiveClassBuildItem> reflective, String serviceClassName,
+            boolean shouldRegisterFieldForReflection, String... excludedImpls) {
         try {
-            String service = "META-INF/services/" + serviceClass.getName();
+            String service = ServiceProviderBuildItem.SPI_ROOT + serviceClassName;
             Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     service);
-            services.produce(new ServiceProviderBuildItem(serviceClass.getName(), implementations.toArray(new String[0])));
+            if (excludedImpls.length > 0) {
+                implementations = new HashSet<>(implementations);
+                Arrays.asList(excludedImpls).forEach(implementations::remove);
+            }
+            services.produce(new ServiceProviderBuildItem(serviceClassName, implementations.toArray(new String[0])));
 
-            reflective.produce(new ReflectiveClassBuildItem(true, true, shouldRegisterFieldForReflection,
-                    implementations.toArray(new String[0])));
+            reflective.produce(ReflectiveClassBuildItem.builder(
+                    implementations.toArray(new String[0]))
+                    .constructors().methods().fields(shouldRegisterFieldForReflection).build());
         } catch (IOException ex) {
             throw new IllegalStateException(ex);
         }
@@ -221,12 +229,24 @@ class LiquibaseMongodbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder) {
+    @Consume(BeanContainerBuildItem.class)
+    ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
+            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem) {
         // will actually run the actions at runtime
         recorder.doStartActions();
-
+        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase-mongodb"));
         return new ServiceStartBuildItem("liquibase-mongodb");
+    }
+
+    @BuildStep
+    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
+        return InitTaskBuildItem.create()
+                .withName(app.getName() + "-liquibase-mongodb-init")
+                .withTaskEnvVars(
+                        Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
+                .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true);
     }
 
     /**
@@ -236,19 +256,25 @@ class LiquibaseMongodbProcessor {
      */
     private List<String> getChangeLogs(LiquibaseMongodbBuildTimeConfig liquibaseBuildConfig) {
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
-        ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
-                Thread.currentThread().getContextClassLoader());
 
         ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
 
-        Set<String> resources = new LinkedHashSet<>();
+        try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader())) {
 
-        resources.addAll(findAllChangeLogFiles(liquibaseBuildConfig.changeLog, changeLogParserFactory,
-                classLoaderResourceAccessor, changeLogParameters));
+            Set<String> resources = new LinkedHashSet<>(
+                    findAllChangeLogFiles(liquibaseBuildConfig.changeLog, changeLogParserFactory,
+                            classLoaderResourceAccessor, changeLogParameters));
 
-        LOGGER.debugf("Liquibase changeLogs: %s", resources);
+            LOGGER.debugf("Liquibase changeLogs: %s", resources);
 
-        return new ArrayList<>(resources);
+            return new ArrayList<>(resources);
+
+        } catch (Exception ex) {
+            // close() really shouldn't declare that exception, see also https://github.com/liquibase/liquibase/pull/2576
+            throw new IllegalStateException(
+                    "Error while loading the liquibase changelogs: %s".formatted(ex.getMessage()), ex);
+        }
     }
 
     /**
@@ -290,20 +316,16 @@ class LiquibaseMongodbProcessor {
     private Optional<String> extractChangeFile(Change change, String changeSetFilePath) {
         String path = null;
         Boolean relative = null;
-        if (change instanceof LoadDataChange) {
-            LoadDataChange loadDataChange = (LoadDataChange) change;
+        if (change instanceof LoadDataChange loadDataChange) {
             path = loadDataChange.getFile();
             relative = loadDataChange.isRelativeToChangelogFile();
-        } else if (change instanceof SQLFileChange) {
-            SQLFileChange sqlFileChange = (SQLFileChange) change;
+        } else if (change instanceof SQLFileChange sqlFileChange) {
             path = sqlFileChange.getPath();
             relative = sqlFileChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateProcedureChange) {
-            CreateProcedureChange createProcedureChange = (CreateProcedureChange) change;
+        } else if (change instanceof CreateProcedureChange createProcedureChange) {
             path = createProcedureChange.getPath();
             relative = createProcedureChange.isRelativeToChangelogFile();
-        } else if (change instanceof CreateViewChange) {
-            CreateViewChange createViewChange = (CreateViewChange) change;
+        } else if (change instanceof CreateViewChange createViewChange) {
             path = createViewChange.getPath();
             relative = createViewChange.getRelativeToChangelogFile();
         }

@@ -57,7 +57,7 @@ public class AccessLogFileTestCase {
 
     @RegisterExtension
     public static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     Path logDirectory;

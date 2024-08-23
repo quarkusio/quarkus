@@ -52,7 +52,8 @@ public class ManagedReplacedDependencyTestCase extends CollectDependenciesBase {
         addManagedDep(ext201);
         addManagedDep(ext301);
 
-        addCollectedDep(ext301.getRuntime(), DependencyFlags.DIRECT | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
+        addCollectedDep(ext301.getRuntime(), DependencyFlags.DIRECT | DependencyFlags.RUNTIME_EXTENSION_ARTIFACT
+                | DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
         addCollectedDeploymentDep(ext301.getDeployment());
     }
 }

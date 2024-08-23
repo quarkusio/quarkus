@@ -5,7 +5,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class InterceptedStaticMethodsRecorder {
 
-    public static final String INTIALIZER_CLASS_NAME = "io.quarkus.arc.runtime.InterceptedStaticMethodsInitializer";
+    // This class is generated and calls all generated static interceptor initializers to register metadata in the InterceptedStaticMethods class
+    public static final String INITIALIZER_CLASS_NAME = "io.quarkus.arc.runtime.InterceptedStaticMethodsInitializer";
 
     public void callInitializer() {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -13,7 +14,7 @@ public class InterceptedStaticMethodsRecorder {
             cl = InterceptedStaticMethodsRecorder.class.getClassLoader();
         }
         try {
-            Class.forName(INTIALIZER_CLASS_NAME, true, cl);
+            Class.forName(INITIALIZER_CLASS_NAME, true, cl);
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }

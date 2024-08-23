@@ -2,15 +2,20 @@ package org.jboss.resteasy.reactive.server.jackson;
 
 import static org.jboss.resteasy.reactive.common.providers.serialisers.JsonMessageBodyWriterUtil.setContentTypeIfNecessary;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import org.jboss.resteasy.reactive.server.StreamingOutputStream;
+
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.annotation.Annotation;
-import javax.ws.rs.core.MultivaluedMap;
 
 public final class JacksonMessageBodyWriterUtil {
 
@@ -23,6 +28,7 @@ public final class JacksonMessageBodyWriterUtil {
         if (JacksonMessageBodyWriterUtil.needsNewFactory(jsonFactory)) {
             jsonFactory = jsonFactory.copy();
             JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig(jsonFactory);
+            jsonFactory.setCodec(mapper);
             return mapper.writer().with(jsonFactory);
         } else {
             return mapper.writer();
@@ -42,8 +48,9 @@ public final class JacksonMessageBodyWriterUtil {
     public static void doLegacyWrite(Object o, Annotation[] annotations, MultivaluedMap<String, Object> httpHeaders,
             OutputStream entityStream, ObjectWriter defaultWriter) throws IOException {
         setContentTypeIfNecessary(httpHeaders);
-        if (o instanceof String) { // YUK: done in order to avoid adding extra quotes...
-            entityStream.write(((String) o).getBytes());
+        if ((o instanceof String) && (!(entityStream instanceof StreamingOutputStream))) {
+            // YUK: done in order to avoid adding extra quotes... when we are not streaming a result
+            entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             if (annotations != null) {
                 for (Annotation annotation : annotations) {
@@ -54,7 +61,7 @@ public final class JacksonMessageBodyWriterUtil {
                     }
                 }
             }
-            entityStream.write(defaultWriter.writeValueAsBytes(o));
+            entityStream.write(defaultWriter.writeValueAsString(o).getBytes(StandardCharsets.UTF_8));
         }
     }
 

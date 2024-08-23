@@ -5,14 +5,15 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
+import javax.inject.Named;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.*;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
-import org.codehaus.plexus.component.annotations.Component;
 
-@Component(role = MavenVersionEnforcer.class, instantiationStrategy = "per-lookup")
+@Named
 public class MavenVersionEnforcer {
 
     public void ensureMavenVersion(Log log, MavenSession session) throws MojoExecutionException {
@@ -82,8 +83,8 @@ public class MavenVersionEnforcer {
     }
 
     /**
-     * Copied from Artifact.VersionRange. This is tweaked to handle singular ranges properly. Currently the default
-     * containsVersion method assumes a singular version means allow everything.
+     * Copied from Artifact.VersionRange. This is tweaked to handle singular ranges properly. Currently, the default
+     * <code>containsVersion</code> method assumes a singular version means allow everything.
      *
      * @param allowedRange range of allowed versions.
      * @param theVersion the version to be checked.

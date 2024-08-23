@@ -1,11 +1,8 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.ContextCreator;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,7 +10,15 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.enterprise.context.NormalScope;
+
+import jakarta.enterprise.context.NormalScope;
+
+import io.quarkus.arc.ContextCreator;
+import io.quarkus.arc.CurrentContextFactory;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Custom context configurator.
@@ -77,7 +82,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal() {
@@ -89,7 +94,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal(boolean value) {
@@ -98,12 +103,53 @@ public final class ContextConfigurator {
     }
 
     public ContextConfigurator contextClass(Class<? extends InjectableContext> contextClazz) {
-        return creator(mc -> mc.newInstance(MethodDescriptor.ofConstructor(contextClazz)));
+        if (!Modifier.isPublic(contextClazz.getModifiers())
+                || Modifier.isAbstract(contextClazz.getModifiers())
+                || contextClazz.isAnonymousClass()
+                || contextClazz.isLocalClass()
+                || (contextClazz.getEnclosingClass() != null && !Modifier.isStatic(contextClazz.getModifiers()))) {
+            throw new IllegalArgumentException(
+                    "A context class must be a public non-abstract top-level or static nested class");
+        }
+        Constructor<?> constructor = getConstructor(contextClazz);
+        if (constructor == null) {
+            throw new IllegalArgumentException(
+                    "A context class must either declare a no-args constructor or a constructor that accepts a single parameter of type io.quarkus.arc.CurrentContextFactory");
+        }
+        return creator(new Function<>() {
+            @Override
+            public ResultHandle apply(MethodCreator mc) {
+                ResultHandle[] args;
+                if (constructor.getParameterCount() == 0) {
+                    args = new ResultHandle[0];
+                } else {
+                    args = new ResultHandle[] { mc.getMethodParam(0) };
+                }
+                return mc.newInstance(MethodDescriptor.ofConstructor(contextClazz, constructor.getParameterTypes()), args);
+            }
+        });
+    }
+
+    private Constructor<?> getConstructor(Class<? extends InjectableContext> contextClazz) {
+        Constructor<?> constructor = null;
+        try {
+            constructor = contextClazz.getDeclaredConstructor(CurrentContextFactory.class);
+        } catch (NoSuchMethodException ignored) {
+        }
+        if (constructor == null) {
+            try {
+                constructor = contextClazz.getDeclaredConstructor();
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        return constructor;
     }
 
     public ContextConfigurator creator(Class<? extends ContextCreator> creatorClazz) {
         return creator(mc -> {
             ResultHandle paramsHandle = mc.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+            mc.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, paramsHandle,
+                    mc.load(ContextCreator.KEY_CURRENT_CONTEXT_FACTORY), mc.getMethodParam(0));
             for (Entry<String, Object> entry : params.entrySet()) {
                 ResultHandle valHandle = null;
                 if (entry.getValue() instanceof String) {

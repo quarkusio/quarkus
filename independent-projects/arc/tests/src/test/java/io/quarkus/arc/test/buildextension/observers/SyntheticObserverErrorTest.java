@@ -3,10 +3,11 @@ package io.quarkus.arc.test.buildextension.observers;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.processor.ObserverRegistrar;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.processor.ObserverRegistrar;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class SyntheticObserverErrorTest {
 

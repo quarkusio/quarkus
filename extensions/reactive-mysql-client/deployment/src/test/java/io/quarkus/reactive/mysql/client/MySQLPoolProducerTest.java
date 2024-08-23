@@ -1,10 +1,9 @@
 package io.quarkus.reactive.mysql.client;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,10 +39,8 @@ public class MySQLPoolProducerTest {
         @Inject
         MySQLPool mysqlClient;
 
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            mysqlClient.query("SELECT 1").execute(ar -> cf.complete(null));
-            return cf;
+        public CompletionStage<?> verify() {
+            return mysqlClient.query("SELECT 1").execute().toCompletionStage();
         }
     }
 
@@ -56,7 +53,6 @@ public class MySQLPoolProducerTest {
         public CompletionStage<Void> verify() {
             return mysqlClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem((Void) null)
                     .subscribeAsCompletionStage();
         }
     }

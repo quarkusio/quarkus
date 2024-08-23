@@ -1,7 +1,8 @@
 package org.jboss.resteasy.reactive.common.headers;
 
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.ext.RuntimeDelegate;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.CookieParser;
 
 /**
@@ -15,7 +16,7 @@ public class CookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate<Cook
     }
 
     public String toString(Cookie value) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         ServerCookie.appendCookieValue(buf, 0, value.getName(), value.getValue(), value.getPath(), value.getDomain(), null, -1,
                 false);
         return buf.toString();

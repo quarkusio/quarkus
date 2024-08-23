@@ -17,17 +17,15 @@ public class ModuleTestRunner {
 
     final TestState testState = new TestState();
     private final TestSupport testSupport;
-    private final DevModeContext devModeContext;
     private final CuratedApplication testApplication;
     private final DevModeContext.ModuleInfo moduleInfo;
 
     private final TestClassUsages testClassUsages = new TestClassUsages();
     private JunitTestRunner runner;
 
-    public ModuleTestRunner(TestSupport testSupport, DevModeContext devModeContext, CuratedApplication testApplication,
+    public ModuleTestRunner(TestSupport testSupport, CuratedApplication testApplication,
             DevModeContext.ModuleInfo moduleInfo) {
         this.testSupport = testSupport;
-        this.devModeContext = devModeContext;
         this.testApplication = testApplication;
         this.moduleInfo = moduleInfo;
     }
@@ -42,7 +40,7 @@ public class ModuleTestRunner {
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
 
         var old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
+        Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
         try {
             synchronized (this) {
                 if (runner != null) {
@@ -50,7 +48,6 @@ public class ModuleTestRunner {
                 }
                 JunitTestRunner.Builder builder = new JunitTestRunner.Builder()
                         .setClassScanResult(classScanResult)
-                        .setDevModeContext(devModeContext)
                         .setRunId(runId)
                         .setTestState(testState)
                         .setTestClassUsages(testClassUsages)
@@ -59,6 +56,8 @@ public class ModuleTestRunner {
                         .setExcludeTags(testSupport.excludeTags)
                         .setInclude(testSupport.include)
                         .setExclude(testSupport.exclude)
+                        .setIncludeEngines(testSupport.includeEngines)
+                        .setExcludeEngines(testSupport.excludeEngines)
                         .setTestType(testSupport.testType)
                         .setModuleInfo(moduleInfo)
                         .addListener(listener)
@@ -85,13 +84,13 @@ public class ModuleTestRunner {
                 @Override
                 public void run() {
                     var old = Thread.currentThread().getContextClassLoader();
-                    Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
+                    Thread.currentThread().setContextClassLoader(testApplication.getOrCreateAugmentClassLoader());
                     try {
                         prepared.run();
+                    } finally {
                         synchronized (ModuleTestRunner.this) {
                             runner = null;
                         }
-                    } finally {
                         Thread.currentThread().setContextClassLoader(old);
                     }
                 }

@@ -17,7 +17,7 @@ public final class BuildTimeConditionBuildItem extends MultiBuildItem {
                 this.target = target;
                 break;
             default:
-                throw new IllegalArgumentException("'target' can only be a class, a field or a method");
+                throw new IllegalArgumentException("'target' can only be a class, a field or a method: " + target);
         }
         this.enabled = enabled;
     }

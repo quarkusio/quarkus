@@ -2,31 +2,30 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.security.auth.AuthPermission;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.keycloak.representations.idm.authorization.Permission;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
-@Path("/api-permission-tenant")
+@Path("")
 public class ProtectedTenantResource {
 
     @Inject
     SecurityIdentity identity;
 
+    @Path("api-permission-tenant")
     @GET
-    public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource Tenant")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
+    public Uni<List<Permission>> apiPermissions() {
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
+    }
+
+    @Path("dynamic-permission-tenant")
+    @GET
+    public Uni<List<Permission>> dynamicPermissions() {
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
     }
 }

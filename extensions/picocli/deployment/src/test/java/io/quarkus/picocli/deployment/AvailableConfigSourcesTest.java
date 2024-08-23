@@ -2,7 +2,7 @@ package io.quarkus.picocli.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -17,7 +17,7 @@ import io.smallrye.config.SmallRyeConfig;
 public class AvailableConfigSourcesTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
-            (jar) -> jar.addAsResource(new StringAsset("quarkus.picocli.disable-default-config-sources=true\n" +
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.config.sources.system-only=true\n" +
                     "my.prop=1234\n"), "application.properties"));
 
     @Inject
@@ -27,7 +27,7 @@ public class AvailableConfigSourcesTest {
     void sources() {
         ConfigValue value = config.getConfigValue("my.prop");
         assertEquals("1234", value.getValue());
-        assertEquals("PropertiesConfigSource[source=Specified default values]", value.getConfigSourceName());
+        assertEquals("DefaultValuesConfigSource", value.getConfigSourceName());
 
         for (final ConfigSource configSource : config.getConfigSources()) {
             if (configSource.getName().contains("application.properties")) {

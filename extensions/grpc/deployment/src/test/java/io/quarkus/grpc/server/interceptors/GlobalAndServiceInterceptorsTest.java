@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -107,6 +107,11 @@ public class GlobalAndServiceInterceptorsTest {
         public Uni<HelloReply> sayHello(HelloRequest request) {
             return Uni.createFrom().item(HelloReply.newBuilder().setMessage("Hello, " + request.getName()).build());
         }
+
+        @Override
+        public Uni<HelloReply> wEIRD(HelloRequest request) {
+            return sayHello(request);
+        }
     }
 
     @GrpcService
@@ -116,6 +121,11 @@ public class GlobalAndServiceInterceptorsTest {
         @Override
         public Uni<HelloReply3> sayHello(HelloRequest3 request) {
             return Uni.createFrom().item(HelloReply3.newBuilder().setMessage("Hello3, " + request.getName()).build());
+        }
+
+        @Override
+        public Uni<HelloReply3> wEIRD(HelloRequest3 request) {
+            return sayHello(request);
         }
     }
 

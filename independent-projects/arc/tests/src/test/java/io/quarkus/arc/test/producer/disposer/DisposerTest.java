@@ -4,26 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.MyQualifier;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Singleton;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 
 public class DisposerTest {
 
@@ -102,13 +105,13 @@ public class DisposerTest {
 
         static final AtomicInteger DESTROYED = new AtomicInteger();
 
-        static final AtomicReference<String> DISPOSED = new AtomicReference<>();
+        static final AtomicReference<CharSequence> DISPOSED = new AtomicReference<>();
 
         @MyQualifier
         @Produces
         String produce = toString();
 
-        void dipose(@Disposes @MyQualifier String value) {
+        void dipose(@Disposes @MyQualifier CharSequence value) {
             DISPOSED.set(value);
         }
 

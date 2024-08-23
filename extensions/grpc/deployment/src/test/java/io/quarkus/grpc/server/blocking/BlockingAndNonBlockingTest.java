@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,10 +19,10 @@ import grpc.health.v1.HealthOuterClass;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
-import io.grpc.reflection.v1alpha.ServerReflectionRequest;
-import io.grpc.reflection.v1alpha.ServerReflectionResponse;
-import io.grpc.reflection.v1alpha.ServiceResponse;
+import io.grpc.reflection.v1.MutinyServerReflectionGrpc;
+import io.grpc.reflection.v1.ServerReflectionRequest;
+import io.grpc.reflection.v1.ServerReflectionResponse;
+import io.grpc.reflection.v1.ServiceResponse;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.GrpcClient;

@@ -1,6 +1,10 @@
 package io.quarkus.micrometer.deployment.binder.mpmetrics;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -47,7 +51,7 @@ public class MetricDotNames {
             .createSimple("org.eclipse.microprofile.metrics.Metric");
 
     // these are needed for determining whether a class is a REST endpoint or JAX-RS provider
-    static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    static final DotName JAXRS_PATH = DotName.createSimple("jakarta.ws.rs.Path");
     static final DotName REST_CONTROLLER = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 
@@ -92,8 +96,8 @@ public class MetricDotNames {
      */
     static boolean isSingleInstance(ClassInfo classInfo) {
         BuiltinScope beanScope = BuiltinScope.from(classInfo);
-        return classInfo.annotations().containsKey(REST_CONTROLLER) ||
-                classInfo.annotations().containsKey(JAXRS_PATH) ||
+        return classInfo.annotationsMap().containsKey(REST_CONTROLLER) ||
+                classInfo.annotationsMap().containsKey(JAXRS_PATH) ||
                 BuiltinScope.APPLICATION.equals(beanScope) ||
                 BuiltinScope.SINGLETON.equals(beanScope);
     }

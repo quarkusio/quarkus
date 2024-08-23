@@ -12,6 +12,6 @@ public class ResourceBundleStep {
          * This might no longer be required if GraalVM auto-includes it in a future release.
          * See https://github.com/oracle/graal/issues/2005 for more details about it.
          */
-        return new NativeImageResourceBundleBuildItem("sun.security.util.Resources");
+        return new NativeImageResourceBundleBuildItem("sun.security.util.Resources", "java.base");
     }
 }

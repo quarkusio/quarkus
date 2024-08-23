@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.http.HttpStatus;
 import org.apache.kafka.streams.KafkaStreams;
@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 import io.quarkus.runtime.Application;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 
-@QuarkusTestResource(KafkaSSLTestResource.class)
+@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
 @TestProfile(KafkaStreamsStartupFailureTest.NonExistingTopicProfile.class)
 @QuarkusTest
 public class KafkaStreamsStartupFailureTest {

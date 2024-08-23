@@ -2,9 +2,9 @@ package io.quarkus.hibernate.orm.metadatabuildercontributor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,7 +32,7 @@ public class MetadataBuilderContributorTest {
 
         assertThat(entityManager.createQuery("select addHardcodedSuffix(e.name) from MyEntity e", String.class)
                 .getSingleResult())
-                        .isEqualTo("some_name_some_suffix");
+                .isEqualTo("some_name_some_suffix");
     }
 
 }

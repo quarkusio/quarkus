@@ -2,8 +2,8 @@ package io.quarkus.it.panache.reactive;
 
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 

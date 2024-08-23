@@ -3,7 +3,7 @@ package io.quarkus.it.infinispan.cache.jpa;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;

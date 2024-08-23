@@ -1,23 +1,23 @@
 package io.quarkus.deployment.dev.testing;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -26,16 +26,22 @@ import org.junit.platform.launcher.TestIdentifier;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.app.QuarkusBootstrap.Mode;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.deployment.dev.QuarkusCompiler;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
-import io.quarkus.runtime.configuration.HyphenateEnumConverter;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathList;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class TestSupport implements TestController {
 
@@ -56,6 +62,8 @@ public class TestSupport implements TestController {
     volatile List<String> excludeTags = Collections.emptyList();
     volatile Pattern include = null;
     volatile Pattern exclude = null;
+    volatile List<String> includeEngines = Collections.emptyList();
+    volatile List<String> excludeEngines = Collections.emptyList();
     volatile boolean displayTestOutput;
     volatile Boolean explicitDisplayTestOutput;
     volatile boolean brokenOnlyMode;
@@ -67,11 +75,13 @@ public class TestSupport implements TestController {
     private Throwable compileProblem;
     private volatile boolean firstRun = true;
 
-    String appPropertiesIncludeTags;
-    String appPropertiesExcludeTags;
+    List<String> appPropertiesIncludeTags;
+    List<String> appPropertiesExcludeTags;
     String appPropertiesIncludePattern;
     String appPropertiesExcludePattern;
-    String appPropertiesTestType;
+    List<String> appPropertiesIncludeEngines;
+    List<String> appPropertiesExcludeEngines;
+    TestType appPropertiesTestType;
     private TestConfig config;
     private volatile boolean closed;
 
@@ -139,44 +149,37 @@ public class TestSupport implements TestController {
         }
     }
 
+    private static Pattern getCompiledPatternOrNull(Optional<String> patternStr) {
+        return patternStr.isPresent() ? Pattern.compile(patternStr.get()) : null;
+    }
+
     public void init() {
         if (moduleRunners.isEmpty()) {
-            TestWatchedFiles.setWatchedFilesListener((s) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(s, true));
+            TestWatchedFiles.setWatchedFilesListener(
+                    (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
+            final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern);
+            final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern);
             for (var module : context.getAllModules()) {
-                boolean mainModule = module == context.getApplicationRoot();
+                final boolean mainModule = module == context.getApplicationRoot();
                 if (config.onlyTestApplicationModule && !mainModule) {
                     continue;
-                } else if (config.includeModulePattern.isPresent()) {
-                    Pattern p = Pattern.compile(config.includeModulePattern.get());
-                    if (!p.matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
+                } else if (includeModulePattern != null) {
+                    if (!includeModulePattern
+                            .matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }
-                } else if (config.excludeModulePattern.isPresent()) {
-                    Pattern p = Pattern.compile(config.excludeModulePattern.get());
-                    if (p.matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
+                } else if (excludeModulePattern != null) {
+                    if (excludeModulePattern
+                            .matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }
                 }
 
                 try {
-                    Set<Path> paths = new LinkedHashSet<>();
-                    paths.add(Paths.get(module.getTest().get().getClassesPath()));
-                    if (module.getTest().get().getResourcesOutputPath() != null) {
-                        paths.add(Paths.get(module.getTest().get().getResourcesOutputPath()));
-                    }
-                    if (mainModule) {
-                        paths.addAll(curatedApplication.getQuarkusBootstrap().getApplicationRoot().toList());
-                    } else {
-                        paths.add(Paths.get(module.getMain().getClassesPath()));
-                    }
-                    for (var i : paths) {
-                        if (!Files.exists(i)) {
-                            Files.createDirectories(i);
-                        }
-                    }
-                    var testCuratedApplication = curatedApplication.getQuarkusBootstrap().clonedBuilder()
+                    final Path projectDir = Path.of(module.getProjectDirectory());
+                    final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                             .setMode(QuarkusBootstrap.Mode.TEST)
                             .setAssertionsEnabled(true)
                             .setDisableClasspathCache(false)
@@ -186,10 +189,63 @@ public class TestSupport implements TestController {
                             .setTest(true)
                             .setAuxiliaryApplication(true)
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
-                            .setProjectRoot(Paths.get(module.getProjectDirectory()))
-                            .setApplicationRoot(PathsCollection.from(paths))
-                            .build()
-                            .bootstrap();
+                            .setProjectRoot(projectDir)
+                            .setApplicationRoot(getRootPaths(module, mainModule))
+                            .clearLocalArtifacts();
+
+                    final QuarkusClassLoader ctParentFirstCl;
+                    final Mode currentMode = curatedApplication.getQuarkusBootstrap().getMode();
+                    // in case of quarkus:test the application model will already include test dependencies
+                    if (Mode.CONTINUOUS_TEST != currentMode && Mode.TEST != currentMode) {
+                        // In this case the current application model does not include test dependencies.
+                        // 1) we resolve an application model for test mode;
+                        // 2) we create a new CT base classloader that includes parent-first test scoped dependencies
+                        // so that they are not loaded by augment and base runtime classloaders.
+                        var appModelFactory = curatedApplication.getQuarkusBootstrap().newAppModelFactory();
+                        appModelFactory.setBootstrapAppModelResolver(null);
+                        appModelFactory.setTest(true);
+                        appModelFactory.setLocalArtifacts(Set.of());
+                        if (!mainModule) {
+                            appModelFactory.setAppArtifact(null);
+                            appModelFactory.setProjectRoot(projectDir);
+                        }
+                        final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
+                        bootstrapConfig.setExistingModel(testModel);
+
+                        QuarkusClassLoader.Builder clBuilder = null;
+                        var currentParentFirst = curatedApplication.getApplicationModel().getParentFirst();
+                        for (ResolvedDependency d : testModel.getDependencies()) {
+                            if (d.isClassLoaderParentFirst() && !currentParentFirst.contains(d.getKey())) {
+                                if (clBuilder == null) {
+                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First"
+                                            + curatedApplication.getClassLoaderNameSuffix(),
+                                            getClass().getClassLoader().getParent(), false);
+                                }
+                                clBuilder.addElement(ClassPathElement.fromDependency(d));
+                            }
+                        }
+
+                        ctParentFirstCl = clBuilder == null ? null : clBuilder.build();
+                        if (ctParentFirstCl != null) {
+                            bootstrapConfig.setBaseClassLoader(ctParentFirstCl);
+                        }
+                    } else {
+                        ctParentFirstCl = null;
+                        if (mainModule) {
+                            // the model and the app classloader already include test scoped dependencies
+                            bootstrapConfig.setExistingModel(curatedApplication.getApplicationModel());
+                        }
+                    }
+
+                    //we always want to propagate parent first
+                    //so it is consistent. Some modules may not have quarkus dependencies
+                    //so they won't load junit parent first without this
+                    for (var i : curatedApplication.getApplicationModel().getDependencies()) {
+                        if (i.isClassLoaderParentFirst()) {
+                            bootstrapConfig.addParentFirstArtifact(i.getKey());
+                        }
+                    }
+                    var testCuratedApplication = bootstrapConfig.build().bootstrap();
                     if (mainModule) {
                         //horrible hack
                         //we really need a compiler per module but we are not setup for this yet
@@ -199,7 +255,7 @@ public class TestSupport implements TestController {
                         //has complained much
                         compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
                     }
-                    var testRunner = new ModuleTestRunner(this, context, testCuratedApplication, module);
+                    var testRunner = new ModuleTestRunner(this, testCuratedApplication, module);
                     QuarkusClassLoader cl = (QuarkusClassLoader) getClass().getClassLoader();
                     cl.addCloseTask(new Runnable() {
                         @Override
@@ -208,6 +264,9 @@ public class TestSupport implements TestController {
                                 close();
                             } finally {
                                 testCuratedApplication.close();
+                                if (ctParentFirstCl != null) {
+                                    ctParentFirstCl.close();
+                                }
                             }
                         }
                     });
@@ -217,6 +276,37 @@ public class TestSupport implements TestController {
                 }
             }
         }
+    }
+
+    private PathList getRootPaths(ModuleInfo module, final boolean mainModule) {
+        final PathList.Builder pathBuilder = PathList.builder();
+        final Consumer<Path> paths = new Consumer<>() {
+            @Override
+            public void accept(Path t) {
+                if (!pathBuilder.contains(t)) {
+                    if (!Files.exists(t)) {
+                        try {
+                            Files.createDirectories(t);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                    pathBuilder.add(t);
+                }
+            }
+        };
+        module.getTest().ifPresent(test -> {
+            paths.accept(Path.of(test.getClassesPath()));
+            if (test.getResourcesOutputPath() != null) {
+                paths.accept(Path.of(test.getResourcesOutputPath()));
+            }
+        });
+        if (mainModule) {
+            curatedApplication.getQuarkusBootstrap().getApplicationRoot().forEach(paths::accept);
+        } else {
+            paths.accept(Path.of(module.getMain().getClassesPath()));
+        }
+        return pathBuilder.build();
     }
 
     public synchronized void close() {
@@ -234,6 +324,8 @@ public class TestSupport implements TestController {
         for (var runner : moduleRunners) {
             runner.abort();
         }
+        TestWatchedFiles.setWatchedFilesListener(
+                (BiConsumer<Map<String, Boolean>, List<Map.Entry<Predicate<String>, Boolean>>>) null);
     }
 
     public void runTests() {
@@ -364,25 +456,17 @@ public class TestSupport implements TestController {
                     }
                 }
 
-                @Override
-                public void noTests(TestRunResults results) {
-                    allResults.add(results);
-                    runStarted(0);
-                }
             }));
-        }
-        if (testCount.get() == 0) {
-            TestRunResults results = new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                    System.currentTimeMillis(), Collections.emptyMap());
-            for (var i : testRunListeners) {
-                i.noTests(results);
-            }
         }
         for (var i : testRunListeners) {
             i.runStarted(testCount.get());
         }
         for (var i : runnables) {
-            i.run();
+            try {
+                i.run();
+            } catch (Exception e) {
+                log.error("Failed to run test module", e);
+            }
         }
         Map<String, TestClassResult> aggregate = new HashMap<>();
         for (var i : allResults) {
@@ -421,81 +505,75 @@ public class TestSupport implements TestController {
      * related config in application.properties it will cause a re-test, but the
      * values will not be applied until a dev mode restart happens.
      * <p>
-     * We also can't apply this as part of the test startup, as by then it is too
-     * late, and the filters have already been resloved.
+     * We also can't apply this as part of the test startup, as it is too
+     * late and the filters have already been resolved.
      * <p>
-     * We manually check for application.properties changes and apply them.
+     * We manually check for configuration changes and apply them.
      */
     private void handleApplicationPropertiesChange() {
-        for (Path rootPath : curatedApplication.getQuarkusBootstrap().getApplicationRoot()) {
-            Path appProps = rootPath.resolve("application.properties");
-            if (Files.exists(appProps)) {
-                Properties p = new Properties();
-                try (InputStream in = Files.newInputStream(appProps)) {
-                    p.load(in);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+        SmallRyeConfig updatedConfig = getMinimalConfig();
+
+        List<String> includeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-tags").orElse(List.of());
+        List<String> excludeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-tags").orElse(List.of());
+        String includePattern = updatedConfig.getOptionalValue("quarkus.test.include-pattern", String.class).orElse(null);
+        String excludePattern = updatedConfig.getOptionalValue("quarkus.test.exclude-pattern", String.class).orElse(null);
+        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines").orElse(List.of());
+        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines").orElse(List.of());
+        TestType testType = updatedConfig.getOptionalValue("quarkus.test.type", TestType.class).orElse(TestType.ALL);
+
+        if (!firstRun) {
+            if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
+                this.includeTags = includeTags;
+            }
+            if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
+                this.excludeTags = excludeTags;
+            }
+            if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
+                if (includePattern == null) {
+                    this.include = null;
+                } else {
+                    this.include = Pattern.compile(includePattern);
                 }
-                String includeTags = p.getProperty("quarkus.test.include-tags");
-                String excludeTags = p.getProperty("quarkus.test.exclude-tags");
-                String includePattern = p.getProperty("quarkus.test.include-pattern");
-                String excludePattern = p.getProperty("quarkus.test.exclude-pattern");
-                String testType = p.getProperty("quarkus.test.type");
-                if (!firstRun) {
-                    if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
-                        if (includeTags == null) {
-                            this.includeTags = Collections.emptyList();
-                        } else {
-                            this.includeTags = Arrays.stream(includeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
-                        if (excludeTags == null) {
-                            this.excludeTags = Collections.emptyList();
-                        } else {
-                            this.excludeTags = Arrays.stream(excludeTags.split(",")).map(String::trim)
-                                    .collect(Collectors.toList());
-                        }
-                    }
-                    if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
-                        if (includePattern == null) {
-                            include = null;
-                        } else {
-                            include = Pattern.compile(includePattern);
-                        }
-                    }
-                    if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
-                        if (excludePattern == null) {
-                            exclude = null;
-                        } else {
-                            exclude = Pattern.compile(excludePattern);
-                        }
-                    }
-                    if (!Objects.equals(testType, appPropertiesTestType)) {
-                        if (testType == null) {
-                            this.testType = TestType.ALL;
-                        } else {
-                            this.testType = new HyphenateEnumConverter<>(TestType.class).convert(testType);
-                        }
-                    }
+            }
+            if (!Objects.equals(excludePattern, appPropertiesExcludePattern)) {
+                if (excludePattern == null) {
+                    this.exclude = null;
+                } else {
+                    this.exclude = Pattern.compile(excludePattern);
                 }
-                appPropertiesIncludeTags = includeTags;
-                appPropertiesExcludeTags = excludeTags;
-                appPropertiesIncludePattern = includePattern;
-                appPropertiesExcludePattern = excludePattern;
-                appPropertiesTestType = testType;
-                break;
+            }
+            if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
+                this.includeEngines = includeEngines;
+            }
+            if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
+                this.excludeEngines = excludeEngines;
+            }
+            if (!Objects.equals(testType, appPropertiesTestType)) {
+                this.testType = testType;
             }
         }
+
+        appPropertiesIncludeTags = includeTags;
+        appPropertiesExcludeTags = excludeTags;
+        appPropertiesIncludePattern = includePattern;
+        appPropertiesExcludePattern = excludePattern;
+        appPropertiesIncludeEngines = includeEngines;
+        appPropertiesExcludeEngines = excludeEngines;
+        appPropertiesTestType = testType;
+    }
+
+    private static SmallRyeConfig getMinimalConfig() {
+        return new SmallRyeConfigBuilder().addDefaultSources().build();
+    }
+
+    private Optional<List<String>> getTrimmedListFromConfig(SmallRyeConfig updatedConfig, String property) {
+        return updatedConfig.getOptionalValue(property, String.class)
+                .map(t -> Arrays.stream(t.split(",")).map(String::trim)
+                        .collect(Collectors.toList()));
     }
 
     public boolean isStarted() {
         return started;
-    }
-
-    public CuratedApplication getCuratedApplication() {
-        return curatedApplication;
     }
 
     public QuarkusCompiler getCompiler() {
@@ -525,6 +603,11 @@ public class TestSupport implements TestController {
     public void setPatterns(String include, String exclude) {
         this.include = include == null ? null : Pattern.compile(include);
         this.exclude = exclude == null ? null : Pattern.compile(exclude);
+    }
+
+    public void setEngines(List<String> includeEngines, List<String> excludeEngines) {
+        this.includeEngines = includeEngines;
+        this.excludeEngines = excludeEngines;
     }
 
     public TestSupport setConfiguredDisplayTestOutput(boolean displayTestOutput) {

@@ -3,17 +3,26 @@ package io.quarkus.it.mongodb.panache.reactive.book;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.Flow;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.annotations.SseElementType;
-import org.reactivestreams.Publisher;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 import io.quarkus.it.mongodb.panache.book.Book;
 import io.quarkus.panache.common.Parameters;
@@ -44,8 +53,8 @@ public class ReactiveBookRepositoryResource {
     @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType(MediaType.APPLICATION_JSON)
-    public Publisher<Book> streamBooks(@QueryParam("sort") String sort) {
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    public Flow.Publisher<Book> streamBooks(@QueryParam("sort") String sort) {
         if (sort != null) {
             return reactiveBookRepository.streamAll(Sort.ascending(sort));
         }

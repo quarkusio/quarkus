@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.paths.PathCollection;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -13,7 +12,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import io.quarkus.paths.PathCollection;
+
 public class PathsCollection implements PathCollection, Serializable {
+
+    private static final long serialVersionUID = -7214825505580070033L;
 
     public static PathsCollection from(Iterable<Path> paths) {
         final List<Path> list = new ArrayList<>();
@@ -84,18 +87,14 @@ public class PathsCollection implements PathCollection, Serializable {
     public PathsCollection add(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
         list.addAll(this.paths);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         return new PathsCollection(list);
     }
 
     @Override
     public PathsCollection addFirst(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         list.addAll(this.paths);
         return new PathsCollection(list);
     }

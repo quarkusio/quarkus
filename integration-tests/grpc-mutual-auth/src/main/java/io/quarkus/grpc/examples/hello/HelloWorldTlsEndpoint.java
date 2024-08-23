@@ -1,8 +1,8 @@
 package io.quarkus.grpc.examples.hello;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import examples.GreeterGrpc;
 import examples.HelloReply;
@@ -30,6 +30,32 @@ public class HelloWorldTlsEndpoint {
     @Path("/mutiny/{name}")
     public Uni<String> helloMutiny(@PathParam("name") String name) {
         return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(HelloReply::getMessage);
+    }
+
+    @GET
+    @Path("/blocking-admin/{name}")
+    public String roleAdminHelloBlocking(@PathParam("name") String name) {
+        return blockingHelloService.sayHelloRoleAdmin(HelloRequest.newBuilder().setName(name).build()).getMessage();
+    }
+
+    @GET
+    @Path("/mutiny-admin/{name}")
+    public Uni<String> roleAdminHelloMutiny(@PathParam("name") String name) {
+        return mutinyHelloService.sayHelloRoleAdmin(HelloRequest.newBuilder().setName(name).build())
+                .onItem().transform(HelloReply::getMessage);
+    }
+
+    @GET
+    @Path("/blocking-user/{name}")
+    public String userRoleHelloBlocking(@PathParam("name") String name) {
+        return blockingHelloService.sayHelloRoleUser(HelloRequest.newBuilder().setName(name).build()).getMessage();
+    }
+
+    @GET
+    @Path("/mutiny-user/{name}")
+    public Uni<String> userRoleHelloMutiny(@PathParam("name") String name) {
+        return mutinyHelloService.sayHelloRoleUser(HelloRequest.newBuilder().setName(name).build())
                 .onItem().transform(HelloReply::getMessage);
     }
 }

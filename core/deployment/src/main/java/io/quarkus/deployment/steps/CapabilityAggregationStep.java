@@ -106,8 +106,7 @@ public class CapabilityAggregationStep {
             final Object previous = providedCapabilities.put(capability, provider);
             if (previous != null) {
                 if (previous instanceof String) {
-                    capabilityErrors = capabilityErrors == null ? capabilityErrors = new CapabilityErrors()
-                            : capabilityErrors;
+                    capabilityErrors = createIfNull(capabilityErrors);
                     capabilityErrors.addConflict(capability, previous.toString());
                     providedCapabilities.put(capability, capabilityErrors);
                 } else {
@@ -122,6 +121,18 @@ public class CapabilityAggregationStep {
                     capsProvidedByBuildSteps = new HashMap<>();
                 }
                 capsProvidedByBuildSteps.computeIfAbsent(provider, k -> new ArrayList<>(1)).add(capability);
+            }
+        }
+
+        for (ExtensionCapabilities extCap : curateOutcomeBuildItem.getApplicationModel().getExtensionCapabilities()) {
+            if (extCap.getRequiresCapabilities().isEmpty()) {
+                continue;
+            }
+            for (String required : extCap.getRequiresCapabilities()) {
+                if (!providedCapabilities.containsKey(required)) {
+                    capabilityErrors = createIfNull(capabilityErrors);
+                    capabilityErrors.addMissing(required, extCap.getExtension());
+                }
             }
         }
 
@@ -148,5 +159,9 @@ public class CapabilityAggregationStep {
         }
 
         return new Capabilities(providedCapabilities.keySet());
+    }
+
+    private static CapabilityErrors createIfNull(CapabilityErrors capabilityErrors) {
+        return capabilityErrors == null ? capabilityErrors = new CapabilityErrors() : capabilityErrors;
     }
 }

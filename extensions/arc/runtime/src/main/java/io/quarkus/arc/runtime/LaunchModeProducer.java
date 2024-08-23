@@ -1,7 +1,7 @@
 package io.quarkus.arc.runtime;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
 
 import io.quarkus.runtime.LaunchMode;
 

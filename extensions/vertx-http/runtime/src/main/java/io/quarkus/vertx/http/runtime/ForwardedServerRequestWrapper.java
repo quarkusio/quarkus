@@ -25,12 +25,12 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequestInternal {
-
-    private final HttpServerRequestInternal delegate;
+public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -41,9 +41,10 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     private String uri;
     private String absoluteURI;
 
-    ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
-        delegate = (HttpServerRequestInternal) request;
-        forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
+    public ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
+            TrustedProxyCheck trustedProxyCheck) {
+        super((HttpServerRequestInternal) request);
+        forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions, trustedProxyCheck);
     }
 
     void changeTo(HttpMethod method, String uri) {
@@ -189,6 +190,11 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     @Override
     public SocketAddress remoteAddress() {
         return forwardedParser.remoteAddress();
+    }
+
+    @Override
+    public HostAndPort authority() {
+        return forwardedParser.authority();
     }
 
     @Override
@@ -387,5 +393,16 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     @Override
     public DecoderResult decoderResult() {
         return delegate.decoderResult();
+    }
+
+    @Override
+    public HttpServerRequest setParamsCharset(String charset) {
+        delegate.setParamsCharset(charset);
+        return this;
+    }
+
+    @Override
+    public String getParamsCharset() {
+        return delegate.getParamsCharset();
     }
 }

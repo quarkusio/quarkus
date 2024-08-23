@@ -13,18 +13,28 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     final String declaringClass;
     final String name;
     final String[] params;
+    final boolean queryOnly;
 
     public ReflectiveMethodBuildItem(MethodInfo methodInfo) {
-        String[] params = new String[methodInfo.parameters().size()];
+        this(false, methodInfo);
+    }
+
+    public ReflectiveMethodBuildItem(boolean queryOnly, MethodInfo methodInfo) {
+        String[] params = new String[methodInfo.parametersCount()];
         for (int i = 0; i < params.length; ++i) {
-            params[i] = methodInfo.parameters().get(i).name().toString();
+            params[i] = methodInfo.parameterType(i).name().toString();
         }
         this.name = methodInfo.name();
         this.params = params;
         this.declaringClass = methodInfo.declaringClass().name().toString();
+        this.queryOnly = queryOnly;
     }
 
     public ReflectiveMethodBuildItem(Method method) {
+        this(false, method);
+    }
+
+    public ReflectiveMethodBuildItem(boolean queryOnly, Method method) {
         this.params = new String[method.getParameterCount()];
         if (method.getParameterCount() > 0) {
             Class<?>[] parameterTypes = method.getParameterTypes();
@@ -34,6 +44,36 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         }
         this.name = method.getName();
         this.declaringClass = method.getDeclaringClass().getName();
+        this.queryOnly = queryOnly;
+    }
+
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            String... params) {
+        this(false, declaringClass, name, params);
+    }
+
+    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name,
+            String... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = params;
+        this.queryOnly = queryOnly;
+    }
+
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            Class<?>... params) {
+        this(false, declaringClass, name, params);
+    }
+
+    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name,
+            Class<?>... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = new String[params.length];
+        for (int i = 0; i < params.length; ++i) {
+            this.params[i] = params[i].getName();
+        }
+        this.queryOnly = queryOnly;
     }
 
     public String getName() {
@@ -46,6 +86,10 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 
     public String getDeclaringClass() {
         return declaringClass;
+    }
+
+    public boolean isQueryOnly() {
+        return queryOnly;
     }
 
     @Override

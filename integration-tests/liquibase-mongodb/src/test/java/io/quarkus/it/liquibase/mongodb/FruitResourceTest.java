@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -18,13 +18,13 @@ import org.junit.jupiter.api.condition.OS;
 import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
+@WithTestResource(value = MongoTestResource.class, restrictToAnnotatedClass = false)
 @DisabledOnOs(OS.WINDOWS)
 class FruitResourceTest {
 

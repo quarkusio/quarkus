@@ -26,20 +26,33 @@ public class RegexMatchTest {
     }
 
     @Test
-    public void resourceRegexIsMatching() {
-        //We need to exclude both of these:
+    public void nativeImageResourceRegexIsMatching() {
+        //We need to exclude this one:
         final String RES1 = "/META-INF/native-image/native-image.properties";
-        final String RES2 = "/META-INF/native-image/reflect-config.json";
         final Pattern pattern = Pattern.compile(OracleMetadataOverrides.NATIVE_IMAGE_RESOURCE_MATCH_REGEX);
 
         Assert.assertTrue(pattern.matcher(RES1).find());
-        Assert.assertTrue(pattern.matcher(RES2).find());
 
-        //While this one should NOT be ignored:
-        final String RES3 = "/META-INF/native-image/resource-config.json";
-        final String RES4 = "/META-INF/native-image/jni-config.json";
+        //While these should NOT be ignored:
+        final String RES2 = "/META-INF/native-image/resource-config.json";
+        final String RES3 = "/META-INF/native-image/jni-config.json";
+        Assert.assertFalse(pattern.matcher(RES2).find());
         Assert.assertFalse(pattern.matcher(RES3).find());
-        Assert.assertFalse(pattern.matcher(RES4).find());
+    }
+
+    @Test
+    public void nativeImageReflectConfigRegexIsMatching() {
+        //We need to exclude this one:
+        final String RES1 = "/META-INF/native-image/reflect-config.json";
+        final Pattern pattern = Pattern.compile(OracleMetadataOverrides.NATIVE_IMAGE_REFLECT_CONFIG_MATCH_REGEX);
+
+        Assert.assertTrue(pattern.matcher(RES1).find());
+
+        //While these should NOT be ignored:
+        final String RES2 = "/META-INF/native-image/resource-config.json";
+        final String RES3 = "/META-INF/native-image/jni-config.json";
+        Assert.assertFalse(pattern.matcher(RES2).find());
+        Assert.assertFalse(pattern.matcher(RES3).find());
     }
 
 }

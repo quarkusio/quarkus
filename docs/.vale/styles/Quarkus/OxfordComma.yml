@@ -1,0 +1,8 @@
+---
+extends: existence
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Use the Oxford comma in '%s'."
+# source: Quarkus contributor guide
+tokens:
+  - '(?:[^\s,]+,){1,} \w+ (?:and|or) \w+[.?!]'

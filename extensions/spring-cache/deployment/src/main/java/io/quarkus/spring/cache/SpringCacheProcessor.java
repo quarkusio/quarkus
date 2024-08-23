@@ -1,6 +1,6 @@
 package io.quarkus.spring.cache;
 
-import static io.quarkus.spring.cache.SpringCacheUtil.*;
+import static io.quarkus.spring.cache.SpringCacheUtil.getSpringCacheName;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.cache.deployment.AdditionalCacheNameBuildItem;
+import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

@@ -6,7 +6,6 @@
         <artifactId>quarkus-oidc-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -24,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -33,6 +32,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -47,12 +50,18 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-adapter-core</artifactId>
+            <artifactId>keycloak-core</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-core</artifactId>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -72,7 +81,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -97,15 +106,23 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AlegacyConfigRoot=true</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -145,9 +162,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -156,7 +170,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.image}</name>
+                                    <name>${keycloak.docker.legacy.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>
@@ -172,7 +186,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <http>
                                                 <url>http://localhost:8180</url>
                                             </http>
@@ -220,6 +234,5 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 </project>

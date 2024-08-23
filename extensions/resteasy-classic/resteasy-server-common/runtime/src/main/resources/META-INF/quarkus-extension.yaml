@@ -1,13 +1,14 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "RESTEasy Server Common"
+name: "RESTEasy Classic Server Common"
 metadata:
   keywords:
   - "resteasy"
   - "jaxrs"
   - "web"
   - "rest"
-  guide: "https://quarkus.io/guides/rest-json"
+  - "jakarta-rest"
+  guide: "https://quarkus.io/guides/resteasy"
   categories:
   - "web"
   status: "stable"

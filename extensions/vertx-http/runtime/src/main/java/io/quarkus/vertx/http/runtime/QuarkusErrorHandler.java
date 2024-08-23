@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -17,8 +18,9 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.TemplateHtmlBuilder;
-import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -32,7 +34,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final Logger log = getLogger(QuarkusErrorHandler.class);
 
     /**
-     * we don't want to generate a new UUID each time as it is slowish. Instead we just generate one based one
+     * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
     private static final String BASE_ID = UUID.randomUUID().toString() + "-";
@@ -40,11 +42,28 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
 
     private final boolean showStack;
+    private final boolean decorateStack;
     private final Optional<HttpConfiguration.PayloadHint> contentTypeDefault;
+    private final List<ErrorPageAction> actions;
+    private final List<String> knowClasses;
+    private final String srcMainJava;
 
-    public QuarkusErrorHandler(boolean showStack, Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
+            Optional<HttpConfiguration.PayloadHint> contentTypeDefault) {
+        this(showStack, decorateStack, contentTypeDefault, null, List.of(), List.of());
+    }
+
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
+            Optional<HttpConfiguration.PayloadHint> contentTypeDefault,
+            String srcMainJava,
+            List<String> knowClasses,
+            List<ErrorPageAction> actions) {
         this.showStack = showStack;
+        this.decorateStack = decorateStack;
         this.contentTypeDefault = contentTypeDefault;
+        this.srcMainJava = srcMainJava;
+        this.knowClasses = knowClasses;
+        this.actions = actions;
     }
 
     @Override
@@ -79,11 +98,25 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
                 return;
             }
-            if (event.failure() instanceof AuthenticationFailedException) {
-                //generally this should be handled elsewhere
-                //but if we get to this point bad things have happened
+
+            if (event.failure() instanceof AuthenticationException) {
+                if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
+                    //set 401 if status wasn't set upstream
+                    event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
+                }
+
+                //when proactive security is enabled and this wasn't handled elsewhere, we expect event to
+                //end here as failing event makes it possible to customize response, however when proactive security is
+                //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
                 //so it is better to send a response than to hang
-                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+                event.response().end();
+                return;
+            }
+
+            if (event.failure() instanceof RejectedExecutionException) {
+                log.warn(
+                        "Worker thread pool exhaustion, no more worker threads available - returning a `503 - SERVICE UNAVAILABLE` response.");
+                event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code()).end();
                 return;
             }
         } catch (IllegalStateException e) {
@@ -127,7 +160,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
         }
         //we have logged the error
-        //now lets see if we can actually send a response
+        //now let's see if we can actually send a response
         //if not we just return
         if (event.response().ended()) {
             return;
@@ -179,10 +212,16 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     private void htmlResponse(RoutingContext event, String details, Throwable exception) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
-        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
-        if (showStack && exception != null) {
-            htmlBuilder.stack(exception);
+        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details,
+                this.actions);
+
+        if (decorateStack && exception != null) {
+            htmlBuilder.decorate(exception, this.srcMainJava, this.knowClasses);
         }
+        if (showStack && exception != null) {
+            htmlBuilder.stack(exception, this.knowClasses);
+        }
+
         writeResponse(event, htmlBuilder.toString());
     }
 

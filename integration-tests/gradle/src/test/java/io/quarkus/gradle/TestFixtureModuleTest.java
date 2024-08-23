@@ -16,6 +16,6 @@ public class TestFixtureModuleTest extends QuarkusGradleWrapperTestBase {
 
         final BuildResult result = runGradleWrapper(projectDir, "clean", "test");
 
-        assertThat(result.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(result.getTasks().get(":test"))).isTrue();
     }
 }

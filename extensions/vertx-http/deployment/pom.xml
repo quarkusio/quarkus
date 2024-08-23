@@ -31,9 +31,35 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-credentials-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
-        <!-- Used for the dev console. Note that there is no corresponding runtime dependency -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-spi</artifactId>
+        </dependency>
+
+        <!-- Dev UI -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.mvnpm</groupId>
+            <artifactId>importmap</artifactId>
+        </dependency>
+        <!-- Used for the dev ui. Note that there is no corresponding runtime dependency -->
         <dependency>
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-core</artifactId>
@@ -46,28 +72,17 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
-        <!-- Webjars for the UI -->
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>provided</scope>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>font-awesome</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>jquery</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>codemirror</artifactId>
-            <scope>provided</scope>
-        </dependency>
+
         <!-- Test dependencies -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-deployment</artifactId>
@@ -108,6 +123,12 @@
             <artifactId>vertx-web-client</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.certs</groupId>
+            <artifactId>smallrye-certificate-generator-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -125,171 +146,28 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            
-            <!-- So we don't have to keep a version of these javascript libs in our repo -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>install-ui</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
+                        <id>default-compile</id>
                         <configuration>
-                            <artifactItems>
-                                <!-- Bootstrap -->
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>bootstrap</artifactId>
-                                    <version>${webjar.bootstrap.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/css/</outputDirectory>
-                                    <includes>**/bootstrap.min.css, **/bootstrap.min.css.map</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>bootstrap</artifactId>
-                                    <version>${webjar.bootstrap.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
-                                    <includes>**/bootstrap.bundle.min.js, **/bootstrap.bundle.min.js.map</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- JQuery -->
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>jquery</artifactId>
-                                    <version>${webjar.jquery.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
-                                    <includes>**/jquery.min.js, **/jquery.min.js.map</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- Font awesome -->
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>font-awesome</artifactId>
-                                    <version>${webjar.font-awesome.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/css</outputDirectory>
-                                    <includes>**/css/all.min.css</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>font-awesome</artifactId>
-                                    <version>${webjar.font-awesome.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/fontawesome/webfonts</outputDirectory>
-                                    <includes>**/webfonts/**.*</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- Code Mirror -->
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>codemirror</artifactId>
-                                    <version>${webjar.codemirror.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/lib</outputDirectory>
-                                    <includes>**/lib/**.js, **/lib/**.css</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>codemirror</artifactId>
-                                    <version>${webjar.codemirror.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/properties</outputDirectory>
-                                    <includes>**/mode/properties/**.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>codemirror</artifactId>
-                                    <version>${webjar.codemirror.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/mode/javascript</outputDirectory>
-                                    <includes>**/mode/javascript/**.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>codemirror</artifactId>
-                                    <version>${webjar.codemirror.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/addon/hint</outputDirectory>
-                                    <includes>**/addon/hint/show-hint.js, **/addon/hint/show-hint.css</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.webjars</groupId>
-                                    <artifactId>codemirror</artifactId>
-                                    <version>${webjar.codemirror.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/codemirror/addon/selection</outputDirectory>
-                                    <includes>**/addon/selection/active-line.js</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                                <!-- Mermaid -->
-                                <artifactItem>
-                                    <groupId>org.webjars.npm</groupId>
-                                    <artifactId>mermaid</artifactId>
-                                    <version>${webjar.mermaid.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/dev-static/js/</outputDirectory>
-                                    <includes>**/mermaid.min.js, **/mermaid.min.js.map</includes>
-                                    <fileMappers>
-                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
-                                    </fileMappers>
-                                </artifactItem>
-                            </artifactItems>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                            <compilerArgs>
+                                <arg>-AlegacyConfigRoot=true</arg>
+                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
             </plugin>
         </plugins>
     </build>

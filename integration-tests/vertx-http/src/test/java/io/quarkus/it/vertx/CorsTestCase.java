@@ -17,7 +17,7 @@ public class CorsTestCase {
                 .options("/simple/options")
                 .then()
                 .statusCode(200)
-                .header("Access-Control-Allow-Methods", is("GET"))
+                .header("Access-Control-Allow-Methods", is("POST,GET,PUT,OPTIONS,DELETE"))
                 .header("access-control-allow-origin", is("https://example.org/"))
                 .header("access-control-allow-credentials", is("false"))
                 .header("content-length", is("0"))

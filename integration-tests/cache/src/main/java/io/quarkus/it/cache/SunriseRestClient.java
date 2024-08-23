@@ -1,12 +1,12 @@
 package io.quarkus.it.cache;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
 
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
@@ -22,7 +22,7 @@ public interface SunriseRestClient {
     @GET
     @Path("time/{city}")
     @CacheResult(cacheName = CACHE_NAME)
-    String getSunriseTime(@PathParam String city, @QueryParam String date);
+    String getSunriseTime(@RestPath String city, @RestQuery String date);
 
     @GET
     @Path("invocations")
@@ -36,8 +36,8 @@ public interface SunriseRestClient {
     @DELETE
     @Path("invalidate/{city}")
     @CacheInvalidate(cacheName = CACHE_NAME)
-    void invalidate(@CacheKey @PathParam String city, @QueryParam String notPartOfTheCacheKey,
-            @CacheKey @QueryParam String date);
+    void invalidate(@CacheKey @RestPath String city, @RestQuery String notPartOfTheCacheKey,
+            @CacheKey @RestPath String date);
 
     @DELETE
     @Path("invalidate")

@@ -51,7 +51,7 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
-            parameterTypeNames = input.asMethod().parameters().stream()
+            parameterTypeNames = input.asMethod().parameterTypes().stream()
                     .map(type -> type.name().toString())
                     .toArray(String[]::new);
         } else {

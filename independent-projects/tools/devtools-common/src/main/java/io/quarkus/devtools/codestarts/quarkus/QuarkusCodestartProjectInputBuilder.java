@@ -1,13 +1,5 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +10,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
     private static final List<AppContent> FULL_CONTENT = Arrays.asList(AppContent.values());
 
@@ -26,6 +27,7 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     Set<AppContent> appContent = new HashSet<>(FULL_CONTENT);
     String example;
     BuildTool buildTool = BuildTool.MAVEN;
+    String defaultCodestart;
 
     QuarkusCodestartProjectInputBuilder() {
         super();
@@ -142,6 +144,13 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
             return this;
         }
         this.buildTool = buildTool;
+        return this;
+    }
+
+    public QuarkusCodestartProjectInputBuilder defaultCodestart(String defaultCodestart) {
+        if (defaultCodestart != null) {
+            this.defaultCodestart = defaultCodestart;
+        }
         return this;
     }
 

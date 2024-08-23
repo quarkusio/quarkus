@@ -2,8 +2,8 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -19,6 +19,7 @@ public class KafkaClientMetricsDisabledTest {
             .overrideConfigKey("quarkus.micrometer.binder.kafka.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withEmptyApplication();
 
     @Inject

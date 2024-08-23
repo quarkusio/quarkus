@@ -1,9 +1,13 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMNewerThan;
+import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
+import io.quarkus.test.junit.GraalVMVersion;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -35,10 +39,12 @@ public class RegisterForReflectionITCase {
     }
 
     @Test
-    public void testTargetWithNested() {
+    public void testTargetWithNestedPost22_1() {
         final String resourceC = BASE_PKG + ".ResourceC";
 
-        assertRegistration("FAILED", resourceC);
+        // Starting with GraalVM 22.1 ResourceC implicitly gets registered by GraalVM
+        // (see https://github.com/oracle/graal/pull/4414)
+        assertRegistration("ResourceC", resourceC);
         assertRegistration("InaccessibleClassOfC", resourceC + "$InaccessibleClassOfC");
         assertRegistration("OtherInaccessibleClassOfC", resourceC + "$InaccessibleClassOfC$OtherInaccessibleClassOfC");
     }
@@ -50,6 +56,22 @@ public class RegisterForReflectionITCase {
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
         assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMNewerThan(GraalVMVersion.GRAALVM_23_1_0)
+    public void testLambdaCapturingPre24_0() {
+        // Starting with GraalVM 22.1 support Lambda functions serialization
+        // (see https://github.com/oracle/graal/issues/3756)
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda$"));
+    }
+
+    @Test
+    @DisableIfBuiltWithGraalVMOlderThan(GraalVMVersion.GRAALVM_24_0_0)
+    public void testLambdaCapturingPost23_1() {
+        // Starting with GraalVM 24.0 lambda class names match the ones from HotSpot
+        // (see https://github.com/oracle/graal/pull/7775)
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda/"));
     }
 
     private void assertRegistration(String expected, String queryParam) {

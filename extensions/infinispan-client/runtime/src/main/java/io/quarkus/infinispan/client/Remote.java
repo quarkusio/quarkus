@@ -10,8 +10,8 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.Nonbinding;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.inject.Qualifier;
 
 /**
  * Qualifier used to specify which remote cache will be injected.
@@ -26,6 +26,23 @@ public @interface Remote {
     /**
      * The remote cache name. If no value is provided the default cache is assumed.
      */
-    @Nonbinding
     String value() default "";
+
+    class Literal extends AnnotationLiteral<Remote> implements Remote {
+
+        public static Literal of(String value) {
+            return new Literal(value);
+        }
+
+        private final String value;
+
+        public Literal(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String value() {
+            return value;
+        }
+    }
 }

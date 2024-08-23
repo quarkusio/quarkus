@@ -36,6 +36,7 @@ public class LoggingWithPanacheProcessor {
                     .setClassToTransform(className)
                     .setVisitorFunction((ignored, visitor) -> new AddLoggerFieldAndRewriteInvocations(visitor, className))
                     .setClassReaderOptions(ClassReader.EXPAND_FRAMES)
+                    .setPriority(1000)
                     .build());
         }
     }
@@ -43,7 +44,8 @@ public class LoggingWithPanacheProcessor {
     /**
      * Makes the following modifications to the visited class:
      * <ul>
-     * <li>adds a {@code private static final} field of type {@code org.jboss.logging.Logger};</li>
+     * <li>adds a {@code private static final} field of type {@code org.jboss.logging.Logger}
+     * ({@code public} in case the class is an interface, to obey the JVMS rules);</li>
      * <li>initializes the field (to {@code Logger.getLogger(className)}) at the beginning of the
      * static initializer (creating one if missing);</li>
      * <li>rewrites all invocations of {@code static} methods on {@code io.quarkus.logging.Log}
@@ -57,6 +59,8 @@ public class LoggingWithPanacheProcessor {
         private final String className;
         private final String classNameBinary;
 
+        private boolean isInterface;
+
         private boolean generatedLoggerField;
         private boolean generatedLoggerFieldInitialization;
 
@@ -64,6 +68,14 @@ public class LoggingWithPanacheProcessor {
             super(Gizmo.ASM_API_VERSION, visitor);
             this.className = className;
             this.classNameBinary = className.replace(".", "/");
+        }
+
+        @Override
+        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+            super.visit(version, access, name, signature, superName, interfaces);
+            if ((access & Opcodes.ACC_INTERFACE) != 0) {
+                isInterface = true;
+            }
         }
 
         @Override
@@ -125,7 +137,7 @@ public class LoggingWithPanacheProcessor {
                         locals = new int[numArgs];
                         for (int i = numArgs - 1; i >= 0; i--) {
                             locals[i] = newLocal(argTypes[i]);
-                            super.visitVarInsn(argTypes[i].getOpcode(Opcodes.ISTORE), locals[i]);
+                            visitor.visitVarInsn(argTypes[i].getOpcode(Opcodes.ISTORE), locals[i]);
                         }
                     }
 
@@ -150,7 +162,7 @@ public class LoggingWithPanacheProcessor {
                         // stack: [logger arg1 arg2 arg3]      locals: {l1 = arg4}
                         // stack: [logger arg1 arg2 arg3 arg4] locals: {}
                         for (int i = 0; i < numArgs; i++) {
-                            super.visitVarInsn(argTypes[i].getOpcode(Opcodes.ILOAD), locals[i]);
+                            visitor.visitVarInsn(argTypes[i].getOpcode(Opcodes.ILOAD), locals[i]);
                         }
                     }
 
@@ -190,8 +202,11 @@ public class LoggingWithPanacheProcessor {
         }
 
         private void generateLoggerField() {
-            super.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
-                    SYNTHETIC_LOGGER_FIELD_NAME, JBOSS_LOGGER_DESCRIPTOR, null, null);
+            // interface fields must be public static final per the JVMS
+            int access = isInterface
+                    ? Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
+                    : Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
+            super.visitField(access, SYNTHETIC_LOGGER_FIELD_NAME, JBOSS_LOGGER_DESCRIPTOR, null, null);
             generatedLoggerField = true;
         }
     }

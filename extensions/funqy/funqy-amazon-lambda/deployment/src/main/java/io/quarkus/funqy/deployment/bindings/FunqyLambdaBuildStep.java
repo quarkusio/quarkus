@@ -20,6 +20,8 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.lambda.FunqyLambdaBindingRecorder;
+import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;
+import io.quarkus.funqy.lambda.config.FunqyAmazonConfig;
 import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.runtime.LaunchMode;
 
@@ -37,17 +39,20 @@ public class FunqyLambdaBuildStep {
             BuildProducer<FeatureBuildItem> feature,
             Optional<FunctionInitializedBuildItem> hasFunctions,
             LambdaObjectMapperInitializedBuildItem mapperDependency,
-            BeanContainerBuildItem beanContainer) throws Exception {
+            BeanContainerBuildItem beanContainer,
+            FunqyAmazonBuildTimeConfig buildTimeConfig) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
         feature.produce(new FeatureBuildItem(FUNQY_AMAZON_LAMBDA));
-        recorder.init(beanContainer.getValue());
+        recorder.init(beanContainer.getValue(), buildTimeConfig);
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public RuntimeComplete choose(FunqyConfig config, FunqyLambdaBindingRecorder recorder) {
-        recorder.chooseInvoker(config);
+    public RuntimeComplete choose(FunqyConfig config,
+            FunqyAmazonConfig amazonConfig,
+            FunqyLambdaBindingRecorder recorder) {
+        recorder.chooseInvoker(config, amazonConfig);
         return new RuntimeComplete();
     }
 

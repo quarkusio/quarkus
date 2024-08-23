@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 
 public class ClientDtoDecoder implements Decoder.TextStream<Dto> {
     @Override

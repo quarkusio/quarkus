@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static org.hamcrest.Matchers.containsString;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;

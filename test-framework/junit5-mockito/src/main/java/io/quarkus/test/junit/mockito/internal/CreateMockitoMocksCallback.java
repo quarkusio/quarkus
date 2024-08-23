@@ -4,24 +4,19 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Qualifier;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.impl.Mockable;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.mockito.MockitoConfig;
 
 public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCallback {
 
@@ -30,14 +25,16 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         Class<?> current = testInstance.getClass();
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
-                if (injectMockAnnotation != null) {
-                    boolean returnsDeepMocks = injectMockAnnotation.returnsDeepMocks();
-                    Object beanInstance = getBeanInstance(testInstance, field, InjectMock.class);
-                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanInstance,
-                            new MockConfiguration(returnsDeepMocks));
-                    if (result.isPresent()) {
-                        MockitoMocksTracker.track(testInstance, result.get(), beanInstance);
+                InjectMock deprecatedInjectMock = field.getAnnotation(InjectMock.class);
+                if (deprecatedInjectMock != null) {
+                    boolean returnsDeepMocks = deprecatedInjectMock.returnsDeepMocks();
+                    injectField(testInstance, field, InjectMock.class, returnsDeepMocks);
+                } else {
+                    io.quarkus.test.InjectMock injectMock = field.getAnnotation(io.quarkus.test.InjectMock.class);
+                    if (injectMock != null) {
+                        MockitoConfig config = field.getAnnotation(MockitoConfig.class);
+                        boolean returnsDeepMocks = config != null ? config.returnsDeepMocks() : false;
+                        injectField(testInstance, field, io.quarkus.test.InjectMock.class, returnsDeepMocks);
                     }
                 }
             }
@@ -45,39 +42,31 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object beanInstance,
-            MockConfiguration mockConfiguration) {
-        Class<?> beanClass = beanInstance.getClass();
-        // make sure we don't mock proxy classes, especially given that they don't have generics info
-        if (ClientProxy.class.isAssignableFrom(beanClass)) {
-            // and yet some of them appear to have Object as supertype, avoid them
-            if (beanClass.getSuperclass() != Object.class)
-                beanClass = beanClass.getSuperclass();
-            else {
-                // try to find the mocked interface
-                Set<Class<?>> foundInterf = new HashSet<>();
-                for (Class<?> interf : beanClass.getInterfaces()) {
-                    if (interf == Mockable.class || interf == ClientProxy.class)
-                        continue;
-                    foundInterf.add(interf);
-                }
-                // only act if we found a single interface
-                if (foundInterf.size() == 1) {
-                    beanClass = foundInterf.iterator().next();
-                }
-            }
+    private void injectField(Object testInstance, Field field, Class<? extends Annotation> annotationType,
+            boolean returnsDeepMocks) {
+        InstanceHandle<?> beanHandle = getBeanHandle(testInstance, field, annotationType);
+        Optional<Object> result = createMockAndSetTestField(testInstance, field, beanHandle,
+                new MockConfiguration(returnsDeepMocks));
+        if (result.isPresent()) {
+            MockitoMocksTracker.track(testInstance, result.get(), beanHandle.get());
         }
+    }
+
+    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, InstanceHandle<?> beanHandle,
+            MockConfiguration mockConfiguration) {
+        Class<?> implementationClass = beanHandle.getBean().getImplementationClass();
         Object mock;
         boolean isNew;
-        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanInstance);
+        // Note that beanHandle.get() returns a client proxy for normal scoped beans; i.e. the contextual instance is not created
+        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanHandle.get());
         if (currentMock.isPresent()) {
             mock = currentMock.get();
             isNew = false;
         } else {
             if (mockConfiguration.useDeepMocks) {
-                mock = Mockito.mock(beanClass, Mockito.RETURNS_DEEP_STUBS);
+                mock = Mockito.mock(implementationClass, Mockito.RETURNS_DEEP_STUBS);
             } else {
-                mock = Mockito.mock(beanClass);
+                mock = Mockito.mock(implementationClass);
             }
             isNew = true;
         }
@@ -94,38 +83,36 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    static Object getBeanInstance(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
+    static InstanceHandle<?> getBeanHandle(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
         Type fieldType = field.getGenericType();
-        Annotation[] qualifiers = getQualifiers(field);
         ArcContainer container = Arc.container();
         BeanManager beanManager = container.beanManager();
-        Set<Bean<?>> beans = beanManager.getBeans(fieldType, qualifiers);
-        if (beans.isEmpty()) {
+        Annotation[] qualifiers = getQualifiers(field, beanManager);
+
+        InstanceHandle<?> handle = container.instance(fieldType, qualifiers);
+        if (!handle.isAvailable()) {
             throw new IllegalStateException(
                     "Invalid use of " + annotationType.getTypeName() + " - could not resolve the bean of type: "
                             + fieldType.getTypeName() + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        Bean<?> bean = beanManager.resolve(beans);
-        if (!beanManager.isNormalScope(bean.getScope())) {
+        if (!beanManager.isNormalScope(handle.getBean().getScope())) {
             throw new IllegalStateException(
                     "Invalid use of " + annotationType.getTypeName()
-                            + " - the injected bean does not declare a CDI normal scope but: " + bean.getScope().getName()
+                            + " - the injected bean does not declare a CDI normal scope but: "
+                            + handle.getBean().getScope().getName()
                             + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        return container.instance((InjectableBean<?>) bean).get();
+        return handle;
     }
 
-    static Annotation[] getQualifiers(Field fieldToMock) {
+    static Annotation[] getQualifiers(Field fieldToMock, BeanManager beanManager) {
         List<Annotation> qualifiers = new ArrayList<>();
         Annotation[] fieldAnnotations = fieldToMock.getDeclaredAnnotations();
         for (Annotation fieldAnnotation : fieldAnnotations) {
-            for (Annotation annotationOfFieldAnnotation : fieldAnnotation.annotationType().getAnnotations()) {
-                if (annotationOfFieldAnnotation.annotationType().equals(Qualifier.class)) {
-                    qualifiers.add(fieldAnnotation);
-                    break;
-                }
+            if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
+                qualifiers.add(fieldAnnotation);
             }
         }
         return qualifiers.toArray(new Annotation[0]);

@@ -24,7 +24,6 @@ public class JaxRsSecurityConfig {
      *
      * The role of '**' means any authenticated user, which is equivalent to the {@link io.quarkus.security.Authenticated}
      * annotation.
-     *
      */
     @ConfigItem
     public Optional<List<String>> defaultRolesAllowed;

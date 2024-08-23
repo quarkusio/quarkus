@@ -1,6 +1,6 @@
 package io.quarkus.qute.deployment.typesafe;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;

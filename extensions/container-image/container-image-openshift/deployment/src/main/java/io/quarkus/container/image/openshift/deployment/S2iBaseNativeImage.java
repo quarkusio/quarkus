@@ -8,7 +8,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 public enum S2iBaseNativeImage {
 
     //We only compare `repositories` so registries and tags are stripped
-    QUARKUS("quarkus/ubi-quarkus-native-binary-s2i:latest", "application", "QUARKUS_HOME", "QUARKUS_OPTS");
+    QUARKUS("quarkus/ubi-quarkus-native-binary-s2i:2.0", "application", "QUARKUS_HOME", "QUARKUS_OPTS");
 
     private final String image;
     private final String fixedNativeBinaryName;
@@ -35,7 +35,7 @@ public enum S2iBaseNativeImage {
         return image;
     }
 
-    public String getFixedNativeNinaryName() {
+    public String getFixedNativeBinaryName() {
         return this.fixedNativeBinaryName;
     }
 

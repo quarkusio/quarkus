@@ -1,8 +1,8 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
-import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
+import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -10,22 +10,16 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.dekorate.kubernetes.config.DeploymentStrategy;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.kubernetes.spi.DeployStrategy;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class KubernetesConfig implements PlatformConfiguration {
-
-    public enum DeploymentResourceKind {
-        Deployment(DEPLOYMENT),
-        StatefulSet(STATEFULSET);
-
-        final String kind;
-
-        DeploymentResourceKind(String kind) {
-            this.kind = kind;
-        }
-    }
 
     /**
      * The name of the group this component belongs too
@@ -37,21 +31,20 @@ public class KubernetesConfig implements PlatformConfiguration {
      * The name of the application. This value will be used for naming Kubernetes
      * resources like: - Deployment - Service and so on ...
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.name}")
+    @ConfigItem
     Optional<String> name;
 
     /**
      * The version of the application.
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
+    @ConfigItem
     Optional<String> version;
-
     /**
      * The kind of the deployment resource to use.
-     * Supported values are 'Deployment' and 'StatefulSet' defaulting to the first.
+     * Supported values are 'StatefulSet', 'Job', 'CronJob' and 'Deployment' defaulting to the latter.
      */
-    @ConfigItem(defaultValue = "Deployment")
-    KubernetesConfig.DeploymentResourceKind deploymentKind;
+    @ConfigItem
+    Optional<DeploymentResourceKind> deploymentKind;
 
     /**
      * The namespace the generated resources should belong to.
@@ -69,16 +62,18 @@ public class KubernetesConfig implements PlatformConfiguration {
      * Custom labels to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("label-name")
     Map<String, String> labels;
 
     /**
      * Custom annotations to add to all resources
      */
     @ConfigItem
+    @ConfigDocMapKey("annotation-name")
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * Whether to add the build timestamp to the Kubernetes annotations
      * This is a very useful way to have manifests of successive builds of the same
      * application differ - thus ensuring that Kubernetes will apply the updated resources
      */
@@ -99,8 +94,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The arguments
-     *
-     * @return The arguments
      */
     @ConfigItem
     Optional<List<String>> arguments;
@@ -110,14 +103,6 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Optional<String> serviceAccount;
-
-    /**
-     * The host under which the application is going to be exposed
-     * 
-     * @deprecated Use the {@code quarkus.kubernetes.ingress.host} instead
-     */
-    @ConfigItem
-    Optional<String> host;
 
     /**
      * The application ports
@@ -130,6 +115,20 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "1")
     Integer replicas;
+
+    /**
+     * Specifies the deployment strategy.
+     */
+    @ConfigItem(defaultValue = "None")
+    DeploymentStrategy strategy;
+
+    /**
+     * Specifies rolling update configuration.
+     * The configuration is applied when DeploymentStrategy == RollingUpdate, or
+     * when explicit configuration has been provided. In the later case RollingUpdate is assumed.
+     */
+    @ConfigItem
+    RollingUpdateConfig rollingUpdate;
 
     /**
      * The type of service that will be generated for the application
@@ -156,6 +155,13 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<List<String>> imagePullSecrets;
 
     /**
+     * Enable generation of image pull secret, when the container image username and
+     * password are provided.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean generateImagePullSecret;
+
+    /**
      * The liveness probe
      */
     @ConfigItem
@@ -166,6 +172,12 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem
     ProbeConfig readinessProbe;
+
+    /**
+     * The startup probe
+     */
+    @ConfigItem
+    ProbeConfig startupProbe;
 
     /**
      * Prometheus configuration
@@ -190,6 +202,12 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Map<String, ConfigMapVolumeConfig> configMapVolumes;
+
+    /**
+     * EmptyDir volumes
+     */
+    @ConfigItem
+    Optional<List<String>> emptyDirVolumes;
 
     /**
      * Git Repository volumes
@@ -235,9 +253,8 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The target deployment platform.
-     * Defaults to kubernetes. Can be kubernetes, openshift, knative, minikube etc, or any combination of the above as comma
-     * separated
-     * list.
+     * Defaults to kubernetes. Can be kubernetes, openshift, knative, minikube etc., or any combination of the above as comma
+     * separated list.
      */
     @ConfigItem
     Optional<List<String>> deploymentTarget;
@@ -255,17 +272,24 @@ public class KubernetesConfig implements PlatformConfiguration {
     ResourcesConfig resources;
 
     /**
-     * If true, a Kubernetes Ingress will be created
-     * 
-     * @deprecated Use the {@code quarkus.kubernetes.ingress.expose} instead
+     * RBAC configuration
      */
-    @ConfigItem
-    boolean expose;
+    RbacConfig rbac;
 
     /**
      * Ingress configuration
      */
-    ExpositionConfig ingress;
+    IngressConfig ingress;
+
+    /**
+     * Job configuration. It's only used if and only if {@code quarkus.kubernetes.deployment-kind} is `Job`.
+     */
+    JobConfig job;
+
+    /**
+     * CronJob configuration. It's only used if and only if {@code quarkus.kubernetes.deployment-kind} is `CronJob`.
+     */
+    CronJobConfig cronJob;
 
     /**
      * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
@@ -274,10 +298,22 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean addVersionToLabelSelectors;
 
     /**
+     * If true, the 'app.kubernetes.io/name' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addNameToLabelSelectors;
+
+    /**
      * If set to true, Quarkus will attempt to deploy the application to the target Kubernetes cluster
      */
     @ConfigItem(defaultValue = "false")
     boolean deploy;
+
+    /**
+     * If deploy is enabled, it will follow this strategy to update the resources to the target Kubernetes cluster.
+     */
+    @ConfigItem(defaultValue = "CreateOrUpdate")
+    DeployStrategy deployStrategy;
 
     /**
      * If set, the secret will mounted to the application container and its contents will be used for application configuration.
@@ -286,11 +322,79 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config map will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem
     Optional<String> appConfigMap;
+
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
+    /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
+     * Debug configuration to be set in pods.
+     */
+    DebugConfig remoteDebug;
+
+    /**
+     * Flag to enable init task externalization.
+     * When enabled (default), all initialization tasks
+     * created by extensions, will be externalized as Jobs.
+     * In addition, the deployment will wait for these jobs.
+     *
+     * @Deprecated use {@link #initTasks} configuration instead
+     */
+    @Deprecated(since = "3.1", forRemoval = true)
+    @ConfigItem(defaultValue = "true")
+    boolean externalizeInit;
+
+    /**
+     * Init tasks configuration.
+     *
+     * The init tasks are automatically generated by extensions like Flyway to perform the database migration before staring
+     * up the application.
+     *
+     * This property is only taken into account if `quarkus.kubernetes.externalize-init` is true.
+     */
+    @ConfigItem
+    Map<String, InitTaskConfig> initTasks;
+
+    /**
+     * Default Init tasks configuration.
+     *
+     * The init tasks are automatically generated by extensions like Flyway to perform the database migration before staring
+     * up the application.
+     */
+    @ConfigItem
+    InitTaskConfig initTaskDefaults;
+
+    /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean idempotent;
+
+    /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
+    /**
+     * Optionally set directory generated kubernetes resources will be written to. Default is `target/kubernetes`.
+     */
+    @ConfigItem
+    Optional<String> outputDirectory;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -302,10 +406,6 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
-    }
-
-    public String getDeploymentResourceKind() {
-        return deploymentKind.kind;
     }
 
     public Optional<String> getNamespace() {
@@ -323,6 +423,16 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public boolean isAddBuildTimestamp() {
         return addBuildTimestamp;
+    }
+
+    @Override
+    public boolean isAddNameToLabelSelectors() {
+        return addNameToLabelSelectors;
+    }
+
+    @Override
+    public boolean isAddVersionToLabelSelectors() {
+        return addVersionToLabelSelectors;
     }
 
     @Override
@@ -380,8 +490,9 @@ public class KubernetesConfig implements PlatformConfiguration {
         return serviceAccount;
     }
 
-    public Optional<String> getHost() {
-        return host;
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Map<String, PortConfig> getPorts() {
@@ -408,12 +519,20 @@ public class KubernetesConfig implements PlatformConfiguration {
         return imagePullSecrets;
     }
 
+    public boolean isGenerateImagePullSecret() {
+        return generateImagePullSecret;
+    }
+
     public ProbeConfig getLivenessProbe() {
         return livenessProbe;
     }
 
     public ProbeConfig getReadinessProbe() {
         return readinessProbe;
+    }
+
+    public ProbeConfig getStartupProbe() {
+        return startupProbe;
     }
 
     public PrometheusConfig getPrometheusConfig() {
@@ -430,6 +549,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Map<String, ConfigMapVolumeConfig> getConfigMapVolumes() {
         return configMapVolumes;
+    }
+
+    public List<String> getEmptyDirVolumes() {
+        return emptyDirVolumes.orElse(Collections.emptyList());
     }
 
     public Map<String, GitRepoVolumeConfig> getGitRepoVolumes() {
@@ -468,11 +591,6 @@ public class KubernetesConfig implements PlatformConfiguration {
         return resources;
     }
 
-    @Override
-    public boolean isExpose() {
-        return expose;
-    }
-
     public Optional<String> getAppSecret() {
         return appSecret;
     }
@@ -482,7 +600,47 @@ public class KubernetesConfig implements PlatformConfiguration {
     }
 
     @Override
-    public Optional<ExpositionConfig> getExposition() {
-        return Optional.of(ingress);
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
+    }
+
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
+    }
+
+    public DeployStrategy getDeployStrategy() {
+        return deployStrategy;
+    }
+
+    @Override
+    public RbacConfig getRbacConfig() {
+        return rbac;
+    }
+
+    public DeploymentResourceKind getDeploymentResourceKind(Capabilities capabilities) {
+        if (deploymentKind.isPresent()) {
+            return deploymentKind.filter(k -> k.isAvailalbleOn(KUBERNETES)).get();
+        } else if (capabilities.isPresent(Capability.PICOCLI)) {
+            return DeploymentResourceKind.Job;
+        }
+        return DeploymentResourceKind.Deployment;
+    }
+
+    public boolean isExternalizeInit() {
+        return externalizeInit;
+    }
+
+    public Map<String, InitTaskConfig> getInitTasks() {
+        return initTasks;
+    }
+
+    public InitTaskConfig getInitTaskDefaults() {
+        return initTaskDefaults;
     }
 }

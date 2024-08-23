@@ -1,17 +1,18 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.APP_CONFIG;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PACKAGE_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_ARTIFACT_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_GRADLE_PLUGIN_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_MAVEN_PLUGIN_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.RESOURCE_PATH;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.SOURCE_TYPE;
+import static io.quarkus.devtools.commands.CreateProject.CreateProjectKey.*;
+import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_GRADLE_PLUGIN_VERSION;
+import static io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey.QUARKUS_MAVEN_PLUGIN_VERSION;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -19,15 +20,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
-import io.quarkus.devtools.project.codegen.SourceType;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.platform.tools.ToolsUtils;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.
@@ -36,14 +30,31 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class CreateProject {
 
-    public static final String NO_DOCKERFILES = "quarkus.create-project.no-dockerfiles";
-    public static final String NO_BUILDTOOL_WRAPPER = "quarkus.create-project.no-buildtool-wrapper";
-    public static final String NO_CODE = "quarkus.create-project.no-code";
-    public static final String EXAMPLE = "quarkus.create-project.example";
-    public static final String EXTRA_CODESTARTS = "quarkus.create-project.extra-codestarts";
+    public interface CreateProjectKey {
+        String PROJECT_GROUP_ID = "project.group-id";
+        String PROJECT_ARTIFACT_ID = "project.artifact-id";
+        String PROJECT_VERSION = "project.version";
+        String PROJECT_NAME = "project.name";
+        String PROJECT_DESCRIPTION = "project.description";
+        String PACKAGE_NAME = "project.package-name";
+        String EXTENSIONS = "project.extensions";
+        String RESOURCE_CLASS_NAME = "project.resource.class-name";
+        String RESOURCE_PATH = "project.resource.path";
+        String JAVA_VERSION = "project.java-version";
+        String APP_CONFIG = "project.app-config";
+
+        String QUARKUS_VERSION = "quarkus-version";
+        String NO_DOCKERFILES = "codegen.no-dockerfiles";
+        String NO_BUILDTOOL_WRAPPER = "codegen.no-buildtool-wrapper";
+        String NO_CODE = "codegen.no-code";
+        String EXAMPLE = "codegen.example";
+        String EXTRA_CODESTARTS = "codegen.extra-codestarts";
+
+        String DATA = "data";
+    }
 
     private QuarkusProject quarkusProject;
-    private String javaTarget;
+    private String javaVersion;
     private Set<String> extensions = new HashSet<>();
 
     private Map<String, Object> values = new HashMap<>();
@@ -64,6 +75,22 @@ public class CreateProject {
 
     public CreateProject version(String version) {
         setValue(PROJECT_VERSION, version);
+        return this;
+    }
+
+    public CreateProject name(String name) {
+        if (name == null || name.isBlank()) {
+            return this;
+        }
+        setValue(PROJECT_NAME, name);
+        return this;
+    }
+
+    public CreateProject description(String description) {
+        if (description == null || description.isBlank()) {
+            return this;
+        }
+        setValue(PROJECT_DESCRIPTION, description);
         return this;
     }
 
@@ -88,23 +115,27 @@ public class CreateProject {
         return this;
     }
 
-    public CreateProject sourceType(SourceType sourceType) {
-        setValue(SOURCE_TYPE, sourceType);
-        return this;
-    }
-
     public CreateProject extraCodestarts(Set<String> extraCodestarts) {
         setValue(EXTRA_CODESTARTS, extraCodestarts);
         return this;
     }
 
-    public CreateProject javaTarget(String javaTarget) {
-        this.javaTarget = javaTarget;
+    public CreateProject javaVersion(String javaVersion) {
+        this.javaVersion = javaVersion;
         return this;
     }
 
     public CreateProject resourcePath(String resourcePath) {
         setValue(RESOURCE_PATH, resourcePath);
+        return this;
+    }
+
+    public CreateProject resourceClassName(String resourceClassName) {
+        if (resourceClassName == null) {
+            return this;
+        }
+        CreateProjectHelper.checkClassName(resourceClassName);
+        setValue(RESOURCE_CLASS_NAME, resourceClassName);
         return this;
     }
 
@@ -115,19 +146,6 @@ public class CreateProject {
             configMap = ToolsUtils.stringToMap(appConfigAsString, ",", "=");
         }
         setValue(APP_CONFIG, configMap);
-        return this;
-    }
-
-    /**
-     * Use packageName instead as this one is only working with RESTEasy and SpringWeb
-     */
-    @Deprecated
-    public CreateProject className(String className) {
-        if (className == null) {
-            return this;
-        }
-        CreateProjectHelper.checkClassName(className);
-        setValue(CLASS_NAME, className);
         return this;
     }
 
@@ -180,6 +198,13 @@ public class CreateProject {
         return noDockerfiles(true);
     }
 
+    public CreateProject data(String dataAsString) {
+        setValue(DATA, StringUtils.isNoneBlank(dataAsString) ? ToolsUtils.stringToMap(dataAsString, ",", "=")
+                : Collections.emptyMap());
+
+        return this;
+    }
+
     public CreateProject setValue(String name, Object value) {
         if (value != null) {
             values.put(name, value);
@@ -199,10 +224,11 @@ public class CreateProject {
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
-        CreateProjectHelper.setJavaVersion(values, javaTarget);
+        final SourceType sourceType = SourceType.resolve(extensions);
+        setValue(CreateProjectKey.JAVA_VERSION, computeJavaVersion(sourceType, javaVersion));
+
         CreateProjectHelper.handleSpringConfiguration(values, extensions);
 
-        // TODO: sanitize? handle language extensions?
         setValue(EXTENSIONS, extensions);
 
         final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);

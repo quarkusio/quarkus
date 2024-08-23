@@ -1,7 +1,7 @@
 package io.quarkus.it.amazon.lambda;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class AmazonLambdaSimpleIT extends AmazonLambdaSimpleTestCase {
 }

@@ -38,7 +38,7 @@ public class KnativeClusterLocalTest {
 
         assertThat(getKNativeService(kubernetesDir)).satisfies(service -> {
             assertThat(service.getMetadata()).satisfies(m -> {
-                assertThat(m.getLabels()).contains(entry("serving.knative.dev/visibility", "cluster-local"));
+                assertThat(m.getLabels()).contains(entry("networking.knative.dev/visibility", "cluster-local"));
             });
         });
     }

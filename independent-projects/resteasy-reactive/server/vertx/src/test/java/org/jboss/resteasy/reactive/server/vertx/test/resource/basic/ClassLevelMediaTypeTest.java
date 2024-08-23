@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
 import java.util.function.Supplier;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.resteasy.reactive.server.vertx.test.resource.basic.resource.ClassLevelMediaTypeResource;
 import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
@@ -23,7 +25,7 @@ public class ClassLevelMediaTypeTest {
     private static Client client;
     @RegisterExtension
     static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
@@ -52,7 +54,7 @@ public class ClassLevelMediaTypeTest {
             Response response = base.request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
-            Assertions.assertEquals(response.getHeaderString("Content-Type"), "application/json");
+            Assertions.assertEquals(response.getHeaderString("Content-Type"), "application/json;charset=UTF-8");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -63,7 +63,7 @@ public class GraphQLGroupedTest extends AbstractGraphQLTest {
 
     @GraphQLApi
     @Name("books")
-    @Description("Allow all book releated APIs")
+    @Description("Allow all book related APIs")
     public static class BookGraphQLApi {
 
         @Query

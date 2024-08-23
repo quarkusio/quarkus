@@ -1,12 +1,13 @@
 package io.quarkus.qute;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 /**
  * Maps keys to values in a similar way to {@link java.util.Map}. The difference is that a mapper could be stateless, i.e. the
  * lookup may be performed dynamically.
- * 
+ *
  * @see ValueResolvers#mapperResolver()
  */
 public interface Mapper {
@@ -20,7 +21,7 @@ public interface Mapper {
     }
 
     /**
-     * 
+     *
      * @param key
      * @return {@code true} if the mapper should be applied to the specified key
      */
@@ -29,23 +30,21 @@ public interface Mapper {
     }
 
     /**
-     * 
+     * The returned set may be a subset of the final set of all mapped keys.
+     *
+     * @return the set of known mapped keys
+     */
+    default Set<String> mappedKeys() {
+        return Set.of();
+    }
+
+    /**
+     *
      * @param map
      * @return a mapper that wraps the given map
      */
     static Mapper wrap(Map<String, ?> map) {
-        return new Mapper() {
-
-            @Override
-            public boolean appliesTo(String key) {
-                return map.containsKey(key);
-            }
-
-            @Override
-            public Object get(String key) {
-                return map.get(key);
-            }
-        };
+        return new MapperMapWrapper(map);
     }
 
 }

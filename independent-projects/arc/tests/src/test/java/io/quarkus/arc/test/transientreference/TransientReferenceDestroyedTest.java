@@ -4,23 +4,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.TransientReference;
-import javax.enterprise.inject.spi.AnnotatedField;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.TransientReference;
+import jakarta.enterprise.inject.spi.AnnotatedField;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class TransientReferenceDestroyedTest {
 
@@ -30,7 +34,8 @@ public class TransientReferenceDestroyedTest {
 
     @Test
     public void testTransientReferences() {
-        Controller controller = Arc.container().instance(Controller.class).get();
+        InstanceHandle<Controller> controllerHandle = Arc.container().instance(Controller.class);
+        Controller controller = controllerHandle.get();
         assertNotNull(controller.theBeer);
         assertTrue(Arc.container().instance(Integer.class).get() > 0);
         assertEquals(3, BeerProducer.DESTROYED.size(), "Destroyed beers: " + BeerProducer.DESTROYED);
@@ -38,16 +43,26 @@ public class TransientReferenceDestroyedTest {
         assertTrue(BeerProducer.DESTROYED.contains(2));
         assertTrue(BeerProducer.DESTROYED.contains(3));
 
+        controllerHandle.destroy();
+        // Controller.theBeer is also destroyed
+        assertEquals(4, BeerProducer.DESTROYED.size());
+
         BeerProducer.COUNTER.set(0);
         BeerProducer.DESTROYED.clear();
 
-        InterceptedController interceptedController = Arc.container().instance(InterceptedController.class).get();
+        InstanceHandle<InterceptedController> interceptedControllerHandle = Arc.container()
+                .instance(InterceptedController.class);
+        InterceptedController interceptedController = interceptedControllerHandle.get();
         assertNotNull(interceptedController.getTheBeer());
         assertTrue(Arc.container().instance(Long.class).get() > 0);
         assertEquals(3, BeerProducer.DESTROYED.size(), "Destroyed beers: " + BeerProducer.DESTROYED);
         assertTrue(BeerProducer.DESTROYED.contains(1));
         assertTrue(BeerProducer.DESTROYED.contains(2));
         assertTrue(BeerProducer.DESTROYED.contains(3));
+
+        interceptedControllerHandle.destroy();
+        // InterceptedController.theBeer is also destroyed
+        assertEquals(4, BeerProducer.DESTROYED.size());
     }
 
     @Singleton

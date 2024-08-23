@@ -1,6 +1,7 @@
 package io.quarkus.flyway.runtime;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,6 +16,8 @@ import java.util.stream.Stream;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.pattern.ValidatePattern;
+import org.flywaydb.core.internal.util.ValidatePatternUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -200,11 +203,11 @@ class FlywayCreatorTest {
     void testIgnoreMissingMigrations() {
         runtimeConfig.ignoreMissingMigrations = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertFalse(createdFlywayConfig().isIgnoreMissingMigrations());
+        assertFalse(ValidatePatternUtils.isMissingIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
 
         runtimeConfig.ignoreMissingMigrations = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertTrue(createdFlywayConfig().isIgnoreMissingMigrations());
+        assertTrue(ValidatePatternUtils.isMissingIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
     }
 
     @Test
@@ -212,11 +215,27 @@ class FlywayCreatorTest {
     void testIgnoreFutureMigrations() {
         runtimeConfig.ignoreFutureMigrations = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertFalse(createdFlywayConfig().isIgnoreFutureMigrations());
+        assertFalse(ValidatePatternUtils.isFutureIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
 
         runtimeConfig.ignoreFutureMigrations = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertTrue(createdFlywayConfig().isIgnoreFutureMigrations());
+        assertTrue(ValidatePatternUtils.isFutureIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
+    }
+
+    @Test
+    @DisplayName("cleanOnValidationError defaults to false and is correctly set")
+    void testCleanOnValidationError() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(runtimeConfig.cleanOnValidationError, createdFlywayConfig().isCleanOnValidationError());
+        assertFalse(runtimeConfig.cleanOnValidationError);
+
+        runtimeConfig.cleanOnValidationError = false;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertFalse(createdFlywayConfig().isCleanOnValidationError());
+
+        runtimeConfig.cleanOnValidationError = true;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertTrue(createdFlywayConfig().isCleanOnValidationError());
     }
 
     @ParameterizedTest
@@ -227,6 +246,35 @@ class FlywayCreatorTest {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(createdFlywayConfig().isValidateOnMigrate(), expected);
         assertEquals(runtimeConfig.validateOnMigrate, expected);
+    }
+
+    @Test
+    @DisplayName("validateMigrationNaming defaults to false and it is correctly set")
+    void testValidateMigrationNaming() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(runtimeConfig.validateMigrationNaming, createdFlywayConfig().isValidateMigrationNaming());
+        assertFalse(runtimeConfig.validateMigrationNaming);
+
+        runtimeConfig.validateMigrationNaming = true;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertTrue(createdFlywayConfig().isValidateMigrationNaming());
+    }
+
+    @Test
+    @DisplayName("validateIgnoreMigrationPatterns defaults to false and it is correctly set")
+    void testIgnoreMigrationPatterns() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(0, createdFlywayConfig().getIgnoreMigrationPatterns().length);
+        assertFalse(runtimeConfig.ignoreMigrationPatterns.isPresent());
+
+        runtimeConfig.ignoreMigrationPatterns = Optional.of(new String[] { "*:missing" });
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        final ValidatePattern[] existingIgnoreMigrationPatterns = createdFlywayConfig().getIgnoreMigrationPatterns();
+        assertEquals(1, existingIgnoreMigrationPatterns.length);
+        final String[] ignoreMigrationPatterns = runtimeConfig.ignoreMigrationPatterns.get();
+        final ValidatePattern[] validatePatterns = Arrays.stream(ignoreMigrationPatterns)
+                .map(ValidatePattern::fromPattern).toArray(ValidatePattern[]::new);
+        assertArrayEquals(validatePatterns, existingIgnoreMigrationPatterns);
     }
 
     private static List<String> pathList(Location[] locations) {

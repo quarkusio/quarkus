@@ -1,20 +1,22 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.codejive.properties.Properties;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 // We keep it here to take advantage of the abstract tests
 abstract class AbstractGradleBuildFile extends BuildFile {
@@ -45,19 +47,23 @@ abstract class AbstractGradleBuildFile extends BuildFile {
     public void writeToDisk() throws IOException {
         if (rootProjectPath != null) {
             Files.write(rootProjectPath.resolve(getSettingsGradlePath()), getModel().getRootSettingsContent().getBytes());
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                getModel().getRootPropertiesContent().store(out, "Gradle properties");
-                Files.write(rootProjectPath.resolve(GRADLE_PROPERTIES_PATH),
-                        out.toByteArray());
+            if (hasRootProjectFile(GRADLE_PROPERTIES_PATH)) {
+                try (StringWriter sw = new StringWriter()) {
+                    getModel().getRootPropertiesContent().store(sw, "Gradle properties");
+                    Files.writeString(rootProjectPath.resolve(GRADLE_PROPERTIES_PATH),
+                            sw.toString());
+                }
             }
         } else {
             writeToProjectFile(getSettingsGradlePath(), getModel().getSettingsContent().getBytes());
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-                getModel().getPropertiesContent().store(out, "Gradle properties");
-                writeToProjectFile(GRADLE_PROPERTIES_PATH, out.toByteArray());
+            if (hasProjectFile(GRADLE_PROPERTIES_PATH)) {
+                try (StringWriter sw = new StringWriter()) {
+                    getModel().getPropertiesContent().store(sw, "Gradle properties");
+                    writeToProjectFile(GRADLE_PROPERTIES_PATH, sw.toString());
+                }
             }
         }
-        writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent().getBytes());
+        writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent());
     }
 
     static boolean containsProperty(ArtifactCoords coords) {

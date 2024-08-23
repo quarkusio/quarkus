@@ -1,12 +1,12 @@
 package io.quarkus.it.cache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @ApplicationScoped
 @Path("sunrise")
@@ -16,7 +16,7 @@ public class SunriseRestServerResource {
 
     @GET
     @Path("time/{city}")
-    public String getSunriseTime(@PathParam String city, @QueryParam String date) {
+    public String getSunriseTime(@RestPath String city, @RestQuery String date) {
         sunriseTimeInvocations++;
         return "2020-12-20T10:15:30";
     }
@@ -29,7 +29,7 @@ public class SunriseRestServerResource {
 
     @DELETE
     @Path("invalidate/{city}")
-    public void invalidate(@PathParam String city, @QueryParam String notPartOfTheCacheKey, @QueryParam String date) {
+    public void invalidate(@RestPath String city, @RestQuery String notPartOfTheCacheKey, @RestQuery String date) {
         // Do nothing. We only need to test the caching annotation on the client side.
     }
 

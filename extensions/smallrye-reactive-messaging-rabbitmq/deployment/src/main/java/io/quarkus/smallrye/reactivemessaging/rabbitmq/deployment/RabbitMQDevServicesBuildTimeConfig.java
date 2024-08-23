@@ -2,7 +2,9 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -34,6 +36,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
          * Extra arguments for the exchange definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -56,6 +59,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
          * Extra arguments for the queue definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -90,6 +94,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
          * Extra arguments for the binding definition.
          */
         @ConfigItem
+        @ConfigDocMapKey("argument-name")
         public Map<String, String> arguments;
     }
 
@@ -109,12 +114,22 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * If not defined, the port will be chosen randomly.
      */
     @ConfigItem
-    public Optional<Integer> port;
+    public OptionalInt port;
+
+    /**
+     * Optional fixed port for the RabbitMQ management plugin.
+     * <p>
+     * If not defined, the port will be chosen randomly.
+     */
+    @ConfigItem
+    public OptionalInt httpPort;
 
     /**
      * The image to use.
+     * Note that only official RabbitMQ images are supported.
+     * Specifically, the image repository must end with {@code rabbitmq}.
      */
-    @ConfigItem(defaultValue = "rabbitmq:3.9-management")
+    @ConfigItem(defaultValue = "rabbitmq:3.12-management")
     public String imageName;
 
     /**
@@ -136,7 +151,7 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for RabbitMQ looks for a container with the
      * {@code quarkus-dev-service-rabbitmq} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-rabbitmq} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared RabbitMQ brokers.
@@ -148,17 +163,27 @@ public class RabbitMQDevServicesBuildTimeConfig {
      * Exchanges that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("exchange-name")
     public Map<String, Exchange> exchanges;
 
     /**
      * Queues that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("queue-name")
     public Map<String, Queue> queues;
 
     /**
      * Bindings that should be predefined after starting the RabbitMQ broker.
      */
     @ConfigItem
+    @ConfigDocMapKey("binding-name")
     public Map<String, Binding> bindings;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    @ConfigDocMapKey("environment-variable-name")
+    public Map<String, String> containerEnv;
 }

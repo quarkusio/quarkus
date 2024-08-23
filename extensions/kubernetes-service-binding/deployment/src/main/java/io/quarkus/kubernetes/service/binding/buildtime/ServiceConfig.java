@@ -2,35 +2,32 @@ package io.quarkus.kubernetes.service.binding.buildtime;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+public interface ServiceConfig {
 
-@ConfigGroup
-public class ServiceConfig {
+    /**
+     * The name of the service binding.
+     * If no value is specified the id of the service will be used instead.
+     */
+    Optional<String> binding();
 
     /**
      * The kind of the service.
      */
-    @ConfigItem
-    public String kind;
+    Optional<String> kind();
 
     /**
      * The apiVersion of the service
      */
-    @ConfigItem
-    public String apiVersion;
+    Optional<String> apiVersion();
 
     /**
      * The name of the service.
      * When this is empty the key of the service is meant to be used as name.
      */
-    @ConfigItem
-    public Optional<String> name;
+    Optional<String> name();
 
     /**
      * The namespace of the service.
      */
-    @ConfigItem
-    public Optional<String> namespace;
-
+    Optional<String> namespace();
 }

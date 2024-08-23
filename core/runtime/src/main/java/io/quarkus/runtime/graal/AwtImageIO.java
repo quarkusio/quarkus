@@ -1,6 +1,6 @@
 package io.quarkus.runtime.graal;
 
-import java.awt.Graphics;
+import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.util.Iterator;
 import java.util.function.BooleanSupplier;
@@ -41,7 +41,7 @@ public class AwtImageIO {
 @TargetClass(className = "java.awt.GraphicsEnvironment", onlyWith = AwtImageIO.IsAWTAbsent.class)
 final class Target_java_awt_GraphicsEnvironment {
     @Substitute
-    public static Graphics getLocalGraphicsEnvironment() {
+    public static GraphicsEnvironment getLocalGraphicsEnvironment() {
         throw new UnsupportedOperationException(AwtImageIO.AWT_EXTENSION_HINT);
     }
 

@@ -1,11 +1,12 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.json.JsonBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonBuilder;
 
 public interface Extension {
 
@@ -16,11 +17,14 @@ public interface Extension {
     String MD_NESTED_CODESTART_ARTIFACT = "codestart.artifact";
 
     String MD_GUIDE = "guide";
+
+    String MD_MINIMUM_JAVA_VERSION = "minimum-java-version";
     String MD_KEYWORDS = "keywords";
     String MD_UNLISTED = "unlisted";
     String MD_CATEGORIES = "categories";
     String MD_STATUS = "status";
     String MD_BUILT_WITH_QUARKUS_CORE = "built-with-quarkus-core";
+    String MD_CLI_PLUGINS = "cli-plugins";
 
     String getName();
 

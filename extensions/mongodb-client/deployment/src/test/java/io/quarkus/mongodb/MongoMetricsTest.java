@@ -3,7 +3,7 @@ package io.quarkus.mongodb;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.MetricID;
@@ -48,7 +48,7 @@ public class MongoMetricsTest extends MongoTestBase {
         assertThat(getGaugeValueOrNull("mongodb.connection-pool.size", getTags())).isNull();
         assertThat(getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags())).isNull();
 
-        // Just need to execute something so that an connection is opened
+        // Just need to execute something so that a connection is opened
         String name = client.listDatabaseNames().first();
 
         assertEquals(1L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));

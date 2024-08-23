@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
 import io.quarkus.vertx.http.runtime.attribute.SubstituteEmptyWrapper;
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -84,6 +85,8 @@ import io.vertx.ext.web.RoutingContext;
  * <li><code>%{c,xxx}</code> for a specific cookie
  * <li><code>%{r,xxx}</code> xxx is an attribute in the ServletRequest
  * <li><code>%{s,xxx}</code> xxx is an attribute in the HttpSession
+ * <li><code>%{d,xxx}</code> xxx is a data item in the exchange</li>
+ * <li><code>%{X,xxx}</code> xxx is a key in the Vert.X MDC</li>
  * </ul>
  *
  * @author Stuart Douglas
@@ -92,13 +95,16 @@ public class AccessLogHandler implements Handler<RoutingContext> {
 
     private final AccessLogReceiver accessLogReceiver;
     private final String formatString;
+    private final boolean consolidateReroutedRequests;
     private final ExchangeAttribute tokens;
     private final Pattern excludePattern;
 
-    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, final String formatString, ClassLoader classLoader,
+    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, final String formatString,
+            boolean consolidateReroutedRequests, ClassLoader classLoader,
             Optional<String> excludePattern) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
+        this.consolidateReroutedRequests = consolidateReroutedRequests;
         this.tokens = new ExchangeAttributeParser(classLoader, Collections.singletonList(new SubstituteEmptyWrapper("-")))
                 .parse(this.formatString);
         if (excludePattern.isPresent()) {
@@ -108,9 +114,11 @@ public class AccessLogHandler implements Handler<RoutingContext> {
         }
     }
 
-    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, String formatString, final ExchangeAttribute attribute) {
+    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, String formatString, boolean consolidateReroutedRequests,
+            final ExchangeAttribute attribute) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
+        this.consolidateReroutedRequests = consolidateReroutedRequests;
         this.tokens = attribute;
         this.excludePattern = null;
     }
@@ -140,12 +148,19 @@ public class AccessLogHandler implements Handler<RoutingContext> {
                 return;
             }
         }
+        if (consolidateReroutedRequests && rc.get(OriginalRequestContext.RC_DATA_KEY, null) != null) {
+            rc.next();
+            return;
+        }
         QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
                 accessLogReceiver.logMessage(tokens.readAttribute(rc));
             }
         });
+        if (consolidateReroutedRequests) {
+            rc.put(OriginalRequestContext.RC_DATA_KEY, new OriginalRequestContext(rc));
+        }
         rc.next();
     }
 

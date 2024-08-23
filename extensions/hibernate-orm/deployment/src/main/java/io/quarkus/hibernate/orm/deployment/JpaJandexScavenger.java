@@ -19,25 +19,27 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
-import org.hibernate.boot.jaxb.mapping.spi.EntityOrMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbConverter;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEmbeddable;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntity;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListener;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityListeners;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappings;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitDefaults;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbPersistenceUnitMetadata;
-import org.hibernate.boot.jaxb.mapping.spi.ManagedType;
+import org.hibernate.boot.jaxb.mapping.EntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbConverter;
+import org.hibernate.boot.jaxb.mapping.JaxbEmbeddable;
+import org.hibernate.boot.jaxb.mapping.JaxbEntity;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListener;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListeners;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.JaxbMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitDefaults;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitMetadata;
+import org.hibernate.boot.jaxb.mapping.ManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -58,7 +60,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 public final class JpaJandexScavenger {
 
-    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED, ClassNames.ELEMENT_COLLECTION);
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
     private static final String XML_MAPPING_NO_FILE = "no-file";
@@ -81,19 +83,20 @@ public final class JpaJandexScavenger {
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
-    public JpaModelBuildItem discoverModelAndRegisterForReflection() {
+    public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
         Collector collector = new Collector();
 
-        for (DotName packageAnnotation : HibernateOrmAnnotations.PACKAGE_ANNOTATIONS) {
+        for (DotName packageAnnotation : ClassNames.PACKAGE_ANNOTATIONS) {
             enlistJPAModelAnnotatedPackages(collector, packageAnnotation);
         }
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
         enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelIdClasses(collector, ClassNames.ID_CLASS);
         enlistEmbeddedsAndElementCollections(collector);
 
         enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
-        for (DotName annotation : HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS) {
+        for (DotName annotation : ClassNames.JPA_LISTENER_ANNOTATIONS) {
             enlistPotentialCdiBeanClasses(collector, annotation);
         }
 
@@ -101,29 +104,23 @@ public final class JpaJandexScavenger {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
 
-        Set<String> allModelClassNames = new HashSet<>(collector.entityTypes);
-        allModelClassNames.addAll(collector.modelTypes);
-        for (String className : allModelClassNames) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+        Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
+        managedClassNames.addAll(collector.modelTypes);
+        for (String className : managedClassNames) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
         }
 
         if (!collector.enumTypes.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.lang.Enum"));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.lang.Enum").methods().build());
             for (String className : collector.enumTypes) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().build());
             }
         }
 
         // for the java types we collected (usually from java.time but it could be from other types),
         // we just register them for reflection
         for (String javaType : collector.javaTypes) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, javaType));
-        }
-
-        // Converters need to be in the list of model types in order for @Converter#autoApply to work,
-        // but they don't need reflection enabled.
-        for (DotName potentialCdiBeanType : collector.potentialCdiBeanTypes) {
-            allModelClassNames.add(potentialCdiBeanType.toString());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType).methods().build());
         }
 
         if (!collector.unindexedClasses.isEmpty()) {
@@ -142,8 +139,8 @@ public final class JpaJandexScavenger {
             }
         }
 
-        return new JpaModelBuildItem(collector.packages, collector.entityTypes, collector.potentialCdiBeanTypes,
-                allModelClassNames, collector.xmlMappingsByPU);
+        return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
+                collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
     }
 
     private void enlistExplicitMappings(Collector collector,
@@ -198,17 +195,17 @@ public final class JpaJandexScavenger {
             enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListeners());
         }
 
-        for (JaxbEntity entity : mapping.getEntity()) {
+        for (JaxbEntity entity : mapping.getEntities()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, entity, "entity");
         }
-        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclass()) {
+        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclasses()) {
             enlistOrmXmlMappingManagedClass(collector, packagePrefix, mappedSuperclass, "mapped-superclass");
         }
-        for (JaxbEmbeddable embeddable : mapping.getEmbeddable()) {
+        for (JaxbEmbeddable embeddable : mapping.getEmbeddables()) {
             String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
             enlistExplicitClass(collector, name);
         }
-        for (JaxbConverter converter : mapping.getConverter()) {
+        for (JaxbConverter converter : mapping.getConverters()) {
             collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
         }
     }
@@ -301,7 +298,7 @@ public final class JpaJandexScavenger {
                 // The call to 'enlistExplicitClass' above may not
                 // detect that this class is an entity if it is not annotated
                 collector.entityTypes.add(name);
-                collectHbmXmlEmbeddedTypes(collector, packagePrefix, attributes);
+                collectHbmXmlEmbeddedTypes(collector, packagePrefix, compositeAttribute.getAttributes());
             }
         }
     }
@@ -312,21 +309,26 @@ public final class JpaJandexScavenger {
         addClassHierarchyToReflectiveList(collector, dotName);
     }
 
-    private void enlistEmbeddedsAndElementCollections(Collector collector) {
+    private void enlistEmbeddedsAndElementCollections(Collector collector) throws BuildException {
         Set<DotName> embeddedTypes = new HashSet<>();
 
         for (DotName embeddedAnnotation : EMBEDDED_ANNOTATIONS) {
-            Collection<AnnotationInstance> annotations = index.getAnnotations(embeddedAnnotation);
-
-            for (AnnotationInstance annotation : annotations) {
+            for (AnnotationInstance annotation : index.getAnnotations(embeddedAnnotation)) {
                 AnnotationTarget target = annotation.target();
 
                 switch (target.kind()) {
                     case FIELD:
-                        collectEmbeddedTypes(embeddedTypes, target.asField().type());
+                        var field = target.asField();
+                        collectEmbeddedType(embeddedTypes, field.declaringClass(), field, field.type(), true);
                         break;
                     case METHOD:
-                        collectEmbeddedTypes(embeddedTypes, target.asMethod().returnType());
+                        var method = target.asMethod();
+                        if (method.isBridge()) {
+                            // Generated by javac for covariant return type override.
+                            // There's another method with a more specific return type, ignore this one.
+                            continue;
+                        }
+                        collectEmbeddedType(embeddedTypes, method.declaringClass(), method, method.returnType(), true);
                         break;
                     default:
                         throw new IllegalStateException(
@@ -334,6 +336,30 @@ public final class JpaJandexScavenger {
                 }
 
             }
+        }
+
+        for (AnnotationInstance annotation : index.getAnnotations(ClassNames.ELEMENT_COLLECTION)) {
+            AnnotationTarget target = annotation.target();
+
+            switch (target.kind()) {
+                case FIELD:
+                    var field = target.asField();
+                    collectElementCollectionTypes(embeddedTypes, field.declaringClass(), field, field.type());
+                    break;
+                case METHOD:
+                    var method = target.asMethod();
+                    if (method.isBridge()) {
+                        // Generated by javac for covariant return type override.
+                        // There's another method with a more specific return type, ignore this one.
+                        continue;
+                    }
+                    collectElementCollectionTypes(embeddedTypes, method.declaringClass(), method, method.returnType());
+                    break;
+                default:
+                    throw new IllegalStateException(
+                            "[internal error] " + ClassNames.ELEMENT_COLLECTION + " placed on a unknown element: " + target);
+            }
+
         }
 
         for (DotName embeddedType : embeddedTypes) {
@@ -372,6 +398,20 @@ public final class JpaJandexScavenger {
             DotName targetDotName = klass.name();
             addClassHierarchyToReflectiveList(collector, targetDotName);
             collectModelType(collector, klass);
+        }
+    }
+
+    private void enlistJPAModelIdClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            DotName targetDotName = annotation.value().asClass().name();
+            addClassHierarchyToReflectiveList(collector, targetDotName);
+            collector.modelTypes.add(targetDotName.toString());
         }
     }
 
@@ -465,24 +505,53 @@ public final class JpaJandexScavenger {
     private static void collectModelType(Collector collector, ClassInfo modelClass) {
         String name = modelClass.name().toString();
         collector.modelTypes.add(name);
-        if (modelClass.classAnnotation(ClassNames.JPA_ENTITY) != null) {
+        if (modelClass.declaredAnnotation(ClassNames.JPA_ENTITY) != null) {
             collector.entityTypes.add(name);
         }
     }
 
-    private static void collectEmbeddedTypes(Set<DotName> embeddedTypes, Type indexType) {
-        switch (indexType.kind()) {
+    private void collectEmbeddedType(Set<DotName> embeddedTypes, ClassInfo declaringClass,
+            Declaration attribute, Type attributeType, boolean validate)
+            throws BuildException {
+        DotName className;
+        switch (attributeType.kind()) {
             case CLASS:
-                embeddedTypes.add(indexType.asClassType().name());
+                className = attributeType.asClassType().name();
                 break;
             case PARAMETERIZED_TYPE:
-                embeddedTypes.add(indexType.name());
-                for (Type typeArgument : indexType.asParameterizedType().arguments()) {
-                    collectEmbeddedTypes(embeddedTypes, typeArgument);
+                className = attributeType.name();
+                break;
+            default:
+                // do nothing
+                return;
+        }
+        if (validate && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
+            throw new BuildException(
+                    "Type " + className + " must be annotated with @Embeddable, because it is used as an embeddable."
+                            + " This type is used in class " + declaringClass
+                            + " for attribute " + attribute + ".");
+        }
+        embeddedTypes.add(attributeType.name());
+    }
+
+    private void collectElementCollectionTypes(Set<DotName> embeddedTypes, ClassInfo declaringClass,
+            Declaration attribute, Type attributeType)
+            throws BuildException {
+        switch (attributeType.kind()) {
+            case CLASS:
+                // Raw collection type, nothing we can do
+                break;
+            case PARAMETERIZED_TYPE:
+                embeddedTypes.add(attributeType.name());
+                var typeArguments = attributeType.asParameterizedType().arguments();
+                for (Type typeArgument : typeArguments) {
+                    // We don't validate @Embeddable annotations on element collections at the moment
+                    // See https://github.com/quarkusio/quarkus/pull/35822
+                    collectEmbeddedType(embeddedTypes, declaringClass, attribute, typeArgument, false);
                 }
                 break;
             case ARRAY:
-                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().component());
+                collectEmbeddedType(embeddedTypes, declaringClass, attribute, attributeType.asArrayType().constituent(), true);
                 break;
             default:
                 // do nothing
@@ -494,7 +563,8 @@ public final class JpaJandexScavenger {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
                 || className.startsWith("org.hibernate.engine.spi.")
-                || className.startsWith("javax.persistence.")) {
+                || className.startsWith("jakarta.persistence.")
+                || className.startsWith("jakarta.persistence.")) {
             return true;
         }
         return false;

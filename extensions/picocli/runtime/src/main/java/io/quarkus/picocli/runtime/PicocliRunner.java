@@ -1,7 +1,7 @@
 package io.quarkus.picocli.runtime;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Event;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
 
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;

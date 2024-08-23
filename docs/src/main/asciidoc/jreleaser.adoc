@@ -1,0 +1,813 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Packaging And Releasing With JReleaser
+include::_attributes.adoc[]
+:categories: tooling
+:jreleaser-version: 1.6.0
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:topics: tooling
+
+This guide covers packaging and releasing CLI applications using the link:https://jreleaser.org[JReleaser] tool.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* a GitHub account and a GitHub Personal Access token
+
+== Bootstrapping the project
+
+First, we need a project that defines a CLI application. We recommend using the xref:picocli.adoc[PicoCLI] extension.
+This can be done using the following command:
+
+:create-cli-artifact-id: app
+:create-cli-code:
+include::{includes}/devtools/create-cli.adoc[]
+
+This command initializes the file structure and the minimum set of required files in the project:
+
+[source]
+----
+.
+├── README.md
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+└── src
+    └── main
+        ├── docker
+        │   ├── Dockerfile.jvm
+        │   ├── Dockerfile.legacy-jar
+        │   └── Dockerfile.native
+        ├── java
+        │   └── org
+        │       └── acme
+        │           └── GreetingCommand.java
+        └── resources
+            └── application.properties
+----
+
+It will also configure the picocli extension in the `pom.xml`:
+
+[source,xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-picocli</artifactId>
+    </dependency>
+----
+
+== Preparing the project for GitHub releases
+
+The project must be hosted at a GitHub repository before we continue. This task can be completed by logging into your
+GitHub account, creating a new repository, and adding the newly created sources to said repository. Choose the `main`
+branch as default to take advantage of conventions and thus configure less in your `pom.xml`.
+
+You also need a GitHub Personal Access token to be able to post a release to the repository you just created. Follow
+the official documentation for
+link:https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token[creating a personal access token].
+Store the newly created token at a safe place for future reference. Next, you have the choice of configuring the token
+as an environment variable named `JRELEASER_GITHUB_TOKEN` so that the tool can read it. Alternatively you may store
+the token at a secure location of your choosing, using a `.yml`, `.toml`, `.json`, or `.properties` file. The default
+location is `~/.jreleaser/config[format]`. For example, using the `.yml` format this file could look like:
+
+[source,yaml]
+.~/.jreleaser/config.yml
+----
+JRELEASER_GITHUB_TOKEN: <github-token-value>
+----
+
+Alright. Add all sources and create a first commit. You can choose your own conventions for commit messages however you
+can get more bang for your buck when using JReleaser if you follow the
+link:https://www.conventionalcommits.org/en/v1.0.0/[Conventional Commits] specification. Make your first commit with the
+following message "build: Add initial sources".
+
+== Packaging as a Native Image distribution
+
+Quarkus already knows how to create a native executable using GraalVM Native Image. The default setup will create a
+single executable file following a naming convention. However, the JReleaser tool expects a distribution that is, a
+conventional file structure packaged as a Zip or Tar file. The file structure must follow this layout:
+
+[source]
+----
+.
+├── LICENSE
+├── README
+└── bin
+    └── executable
+----
+
+This structure lets you add all kinds of supporting files required by the executable, such as configuration files,
+shell completion scripts, man pages, license, readme, and more.
+
+== Creating the distribution
+
+We can leverage the link:http://maven.apache.org/plugins/maven-assembly-plugin/[maven-assembly-plugin] to create such
+a distribution. We'll also make use of the link:https://github.com/trustin/os-maven-plugin[os-maven-plugin] to properly
+identify the platform on which this executable can run, adding said platform to the distribution's filename.
+
+First, let's add the os-maven-plugin to the `pom.xml`. This plugin works as a Maven extension and as such must be added
+to the `<build>` section of the file:
+
+[source,xml]
+----
+  <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
+    <!-- ... -->
+----
+
+Next, native executables on Linux and macOS platforms typically do not have a file extension but Windows executables do,
+we need to take care of this when renaming the generated executable. We can also place the generated distributions into
+their own directory to avoid cluttering the `target` directory. Thus, let's add a couple of properties to the existing
+`<properties>` section in the `pom.xml`:
+
+[source,xml]
+----
+<executable-suffix/>
+<distribution.directory>${project.build.directory}/distributions</distribution.directory>
+----
+
+Now we configure the maven-assembly-plugin to create a Zip and a Tar file containing the executable and any supporting files
+it may need to perform its job. Take special note on the name of the distribution, this is where we make use of the platform
+properties detected by the os-maven-plugin. This plugin is configured in its own profile with the `single` goal bound to
+the `package` phase. It's done this way to avoid rebuilding the distribution every single time the build is invoked, as we
+only needed when we're ready for a release.
+
+[source,xml]
+----
+    <profile>
+      <id>dist</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.3.0</version>
+            <configuration>
+              <attach>false</attach>
+              <appendAssemblyId>false</appendAssemblyId>
+              <finalName>${project.artifactId}-${project.version}-${os.detected.classifier}</finalName>
+              <outputDirectory>${distribution.directory}</outputDirectory>
+              <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <executions>
+              <execution>
+                <id>make-distribution</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>dist-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <executable-suffix>.exe</executable-suffix>
+      </properties>
+    </profile>
+----
+
+Note that two profiles are configured. The `dist` profile configures the assembly plugin, and it's configured in such a way that
+it must be activated explicitly by passing `-Pdist` as a command flag. On the other hand the `dist-windows` profile becomes
+active automatically when the build is run on a Windows platform. This second profile takes care of setting the value for the
+`executable-suffix` property which is required by the assembly descriptor, as shown next:
+
+[source,xml,subs=macros+]
+.src/main/assembly/assembly.xml
+----
+<assembly
+        xmlns="pass:[http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0]"
+        xmlns:xsi="pass:[http://www.w3.org/2001/XMLSchema-instance]"
+        xsi:schemaLocation="pass:[http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0] pass:[http://maven.apache.org/xsd/assembly-1.1.0.xsd]">
+    <id>dist</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+        <format>dir</format>
+    </formats>
+    <files>
+        <file>
+            <source>${project.build.directory}/${project.artifactId}-${project.version}-runner${executable-suffix}</source>
+            <outputDirectory>./bin</outputDirectory>
+            <destName>${project.artifactId}${executable-suffix}</destName>
+        </file>
+    </files>
+</assembly>
+----
+
+These are the files created by the assembly plugin when invoking `./mvnw -Pdist package` on macOS:
+
+[source]
+----
+$ tree target/distributions/
+target/distributions/
+├── app-1.0.0-SNAPSHOT-osx-x86_64
+│   └── app-1.0.0-SNAPSHOT-osx-x86_64
+│       └── bin
+│           └── app
+├── app-1.0.0-SNAPSHOT-osx-x86_64.tar.gz
+└── app-1.0.0-SNAPSHOT-osx-x86_64.zip
+----
+
+Feel free to update the assembly descriptor to include additional files such as LICENSE, readme, or anything else needed by
+the consumers of the executable. Make another commit right here with "build: Configure distribution assembly".
+
+We're ready to go to the next phase: configuring the release.
+
+== Adding JReleaser
+
+The JReleaser tool can be invoked in many ways: as a CLI tool, as a Docker image, or as a Maven plugin. The last option is very
+convenient given that we are already working with Maven. Let's add yet another profile that contains the release configuration
+as once again we don't require this behavior to be active all the time only when we're ready to post a release:
+
+[source,xml,subs=attributes+]
+----
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jreleaser</groupId>
+            <artifactId>jreleaser-maven-plugin</artifactId>
+            <version>{jreleaser-version}</version>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+----
+
+There are a few goals we can invoke at this point, we can for example ask JReleaser to print out its current configuration by
+invoking the `./mvnw -Prelease jreleaser:config` command. The tool will output everything that it knows about the project. We
+can also generate the changelog by invoking `./mvnw -Prelease jreleaser:changelog`. A file containing the changelog will be
+placed at `target/jreleaser/release/CHANGELOG.md` which at this point should look like this:
+
+[source,markdown]
+.target/jreleaser/release/CHANGELOG.md
+----
+## Changelog
+
+8ef3307 build: Configure distribution assembly
+5215200 build: Add initial sources
+----
+
+Not very exciting, but we can change this by instructing JReleaser to format the changelog according to our own conventions. You
+can manually specify patterns to categorize commits however if you chose to follow Conventional Commits we can instruct JReleaser
+to do the same. Add the following to the JReleaser plugin configuration section:
+
+[source,xml]
+----
+            <configuration>
+              <jreleaser>
+                <release>
+                  <github>
+                    <changelog>
+                      <formatted>ALWAYS</formatted>
+                      <preset>conventional-commits</preset>
+                    </changelog>
+                  </github>
+                </release>
+              </jreleaser>
+            </configuration>
+----
+
+Run the previous Maven command once again and inspect the generated changelog, it should now look like this:
+
+[source,markdown]
+.target/jreleaser/release/CHANGELOG.md
+----
+## Changelog
+
+## 🛠  Build
+- 8ef3307 Configure distribution assembly (Andres Almiray)
+- 5215200 Add initial sources (Andres Almiray)
+
+
+## Contributors
+We'd like to thank the following people for their contributions:
+Andres Almiray
+----
+
+There are more formatting options you may apply but for now these will suffice. Let's make yet another commit right now, with
+"build: Configure JReleaser plugin" as a commit message. If you want you can generate the changelog once again and see this
+latest commit added to the file.
+
+== Adding distributions to the release
+
+We've reached the point where we can configure the binary distributions. If you run the `./mvnw -Prelease jreleaser:config`
+command you'll notice there's no mention of any distribution files that we configured in previous steps. This is because
+the tool has no implicit knowledge of them, we must tell JReleaser which files we'd like to release. This decouples creation
+of distributions from release assets as you might like to add or remove files at your leisure. For this particular case we'll
+configure Zip files for both macOS and Windows, and a Tar file for Linux. These files must be added to the JReleaser plugin
+configuration section, like so:
+
+[source,xml]
+----
+            <configuration>
+              <jreleaser>
+                <release>
+                  <github>
+                    <changelog>
+                      <formatted>ALWAYS</formatted>
+                      <preset>conventional-commits</preset>
+                    </changelog>
+                  </github>
+                </release>
+                <distributions>
+                  <app>
+                    <type>BINARY</type>
+                    <artifacts>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-linux-x86_64.tar.gz</path>
+                        <platform>linux-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-windows-x86_64.zip</path>
+                        <platform>windows-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-osx-x86_64.zip</path>
+                        <platform>osx-x86_64</platform>
+                      </artifact>
+                    </artifacts>
+                  </app>
+                </distributions>
+              </jreleaser>
+            </configuration>
+----
+
+We can appreciate a distribution named `app` (same as the project's artifactId for convenience) with 3 configured artifacts.
+Note the use of Maven properties and Mustache templates to define the paths. You may use explicit values if you want or rely
+on properties to parameterize the configuration. Maven properties resolve eagerly during build validation while Mustache
+templates resolve lazily during the execution of the JReleaser plugin goals. Each artifact must define a `platform`
+property that uniquely identifies them. If we run the `./mvnw -Prelease jreleaser:config` we'll quickly get an error as now
+that there's a configured distribution the plugin expects more metadata to be provided by the project:
+
+[source]
+----
+[ERROR] == JReleaser ==
+[ERROR] project.copyright must not be blank
+[ERROR] project.description must not be blank
+[ERROR] project.website must not be blank
+[ERROR] project.docsUrl must not be blank
+[ERROR] project.license must not be blank
+[ERROR] project.authors must not be blank
+----
+
+This metadata can be provided in two ways: either as part of the JReleaser plugin's configuration or using standard
+POM elements. If you choose the former option then the plugin's configuration may look like this:
+
+[source,xml,subs=macros+]
+----
+            <configuration>
+              <jreleaser>
+                <project>
+                 <description>app - Sample Quarkus CLI application</description>
+                 <links>
+                   <homepage>https://github.com/aalmiray/app</homepage>
+                   <documentation>https://github.com/aalmiray/app</documentation>
+                 </links>
+                 <license>APACHE-2.0</license>
+                 <authors>Andres Almiray</authors>
+                 <copyright>2021 Kordamp</copyright>
+                </project>
+                <!-- ... -->
+----
+
+If you choose to use standard POM elements then your `pom.xml` must contain these entries at the very least, of course
+adapting values to your own:
+
+[source,xml,subs=macros+]
+----
+  <name>app</name>
+  <description>app -- Sample Quarkus CLI application</description>
+  <inceptionYear>2021</inceptionYear>
+  <url>pass:[https://github.com/aalmiray/app]</url>
+  <developers>
+    <developer>
+      <id>aalmiray</id>
+      <name>Andres Almiray</name>
+    </developer>
+  </developers>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>pass:[http://www.apache.org/licenses/LICENSE-2.0.txt]</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+----
+
+Yet, we're not still out of the woods as invoking the `./mvnw -Prelease jreleaser:config` once more will still result in
+another error, this time the failure relates to missing artifacts. This is because we did not assemble all required
+artifacts, yet the plugin expects them to be readily available. Here you have the choice to build the required artifacts
+on other nodes then copy them to their expected locations -- a task that can be performed running a GitHub Actions
+workflow on multiple nodes. Or you can instruct JReleaser to ignore some artifacts and select only those that match your
+current platform. Previously we showed how the distribution would look like when created on macOS, assuming we're still on
+that platform we have the correct artifact.
+
+We can instruct JReleaser to select only artifacts that match macOS at this point by invoking the `jreleaser:config` goal
+with an additional flag: `./mvnw -Prelease jreleaser:config -Djreleaser.select.current.platform`. This time the command
+will succeed and print out the model. Note that only the path for the macOS artifact has been fully resolved, leaving the
+other 2 paths untouched.
+
+Let's make one more commit here with "build: Configure distribution artifacts" as message. We can create a release right
+now, by invoking a different goal: `./mvnw -Prelease jreleaser:release -Djreleaser.select.current.platform`. This will
+create a Git release at the chosen repository, which includes tagging the repository, uploading the changelog, all
+distribution artifacts and their checksum as release assets.
+
+But before we do that let's add one additional feature, let's create a Homebrew formula that will make it easy for macOS
+users to consume the binary distribution, shall we?
+
+== Configuring Homebrew as a packager
+
+link:https://brew.sh/[Homebrew] is a popular choice among macOS users to install and manage binaries. Homebrew packages
+are at their core a Ruby file (known as a formula) that's executed on the target environment to install or upgrade a
+particular binary. JReleaser can create formulae from binary distributions such as the one we already have configured.
+
+For this to work we simply have to enable Homebrew in the JReleaser plugin configuration like so:
+
+[source,xml]
+----
+                <distributions>
+                  <app>
+                    <type>BINARY</type>
+                    <brew>
+                      <active>ALWAYS</active>
+                    </brew>
+                    <artifacts>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-linux-x86_64.tar.gz</path>
+                        <platform>linux-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-windows-x86_64.zip</path>
+                        <platform>windows-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-osx-x86_64.zip</path>
+                        <platform>osx-x86_64</platform>
+                      </artifact>
+                    </artifacts>
+                  </app>
+                </distributions>
+----
+
+One last thing: it's a good practice to publish Homebrew formulae for non-snapshot releases thus change the project's version
+from `1.0.0-SNAPSHOT` to say `1.0.0.Alpha1` or go directly with `1.0.0` as you feel like doing. One last commit, and we're done:
+say `feat: Add Homebrew packager configuration` as commit message. Alright, we're finally ready, let's post a release!
+
+== Creating a release
+
+It's been quite the whirlwind tour of adding configuration to the `pom.xml` but that's just for getting the project ready for
+its first release; subsequent release require less tampering with configuration. We can create a git release and the
+Homebrew formula with the `jreleaser:full-release` goal but if you still have some doubts on how things may play out then
+you can invoke the goal in dry-run mode that is, let JReleaser perform all local operations as needed without affecting
+remote resources such as Git repositories. This is how it would look like:
+
+[source,subs=attributes+]
+----
+# because we changed the project's version
+./mvnw -Dnative,dist package
+./mvnw -Prelease jreleaser:full-release -Djreleaser.select.current.platform -Djreleaser.dry.run=true
+
+[INFO] --- jreleaser-maven-plugin:{jreleaser-version}:full-release (default-cli) @ app ---
+[INFO] JReleaser {jreleaser-version}
+[INFO]   - basedir set to /tmp/app
+[INFO]   - outputdir set to /tmp/app/target/jreleaser
+[WARNING] Platform selection is in effect
+[WARNING] Artifacts will be filtered by platform matching: [osx-x86_64]
+[INFO] git-root-search set to false
+[INFO] Loading variables from /Users/aalmiray/.jreleaser/config.toml
+[INFO] Validating configuration
+[INFO] Strict mode set to false
+[INFO] Project version set to 1.0.0.Alpha1
+[INFO] Release is not snapshot
+[INFO] Timestamp is 2023-04-27T15:06:34.289907+02:00
+[INFO] HEAD is at 73603ac
+[INFO] Platform is osx-x86_64
+[INFO] dry-run set to true
+[INFO] Generating changelog
+[INFO] Storing changelog: target/jreleaser/release/CHANGELOG.md
+[INFO] Cataloging artifacts
+[INFO]   [sbom] Cataloging is not enabled. Skipping
+[INFO] Calculating checksums for distributions and files
+[INFO]   [checksum] target/distributions/app-1.0.0.Alpha1-osx-x86_64.zip.sha256
+[INFO] Signing distributions and files
+[INFO]   [sign] Signing is not enabled. Skipping
+[INFO] Deploying Maven artifacts
+[INFO]   [maven] Deploying is not enabled. Skipping
+[INFO] Uploading distributions and files
+[INFO]   [upload] Uploading is not enabled. Skipping
+[INFO] Releasing to https://github.com/aalmiray/app@main
+[INFO]  - uploading app-1.0.0.Alpha1-osx-x86_64.zip
+[INFO]  - uploading checksums_sha256.txt
+[INFO] Preparing distributions
+[INFO]   - Preparing app distribution
+[INFO]     [brew] preparing app distribution
+[INFO] Packaging distributions
+[INFO]   - Packaging app distribution
+[INFO]     [brew] packaging app distribution
+[INFO] Publishing distributions
+[INFO]   - Publishing app distribution
+[INFO]     [brew] publishing app distribution
+[INFO]     [brew] setting up repository aalmiray/homebrew-tap
+[INFO] Announcing release
+[INFO]   [announce] Announcing is not enabled. Skipping
+[INFO] Writing output properties to target/jreleaser/output.properties
+[INFO] JReleaser succeeded after 0.620 s
+
+----
+
+JReleaser will perform the following tasks for us:
+
+* Generate a changelog based on all commits from the last tag (if any) to the latest commit.
+* Calculate SHA256 (default) checksums for all input files.
+* Sign all files with GPG. In our case we did not configure this step thus it's skipped.
+* Upload assets to JFrog Artifactory or AWS S3. We also skip this step as it's not configured.
+* Create a Git release at the chosen repository, tagging it.
+* Upload all assets, including checksums.
+* Create a Homebrew formula, publishing to pass:[https://github.com/aalmiray/homebrew-tap].
+
+Of course no remote repository was affected as we can appreciate the `-Djreleaser.dry.run=true` property was in effect. If you're
+so inclined inspect the contents of `target/jreleaser/package/app/brew/Formula/app.rb` which defines the Homebrew formula
+to be published. It should look something like this:
+
+[source,ruby,subs=attributes,macros+]
+.app.rb
+----
+# Generated with JReleaser {jreleaser-version} at 2023-04-27T15:06:34.289907+02:00
+class App < Formula
+  desc "app -- Sample Quarkus CLI application"
+  homepage "pass:[https://github.com/aalmiray/app]"
+  url "pass:[https://github.com/aalmiray/app/releases/download/v1.0.0.Alpha1/app-1.0.0.Alpha1-osx-x86_64.zip]"
+  version "1.0.0.Alpha1"
+  sha256 "85c9918b23e3ac4ef64d5dd02714e241231d3f1358afdba09d3fd0b9a889e131"
+  license "Apache-2.0"
+
+
+  def install
+    libexec.install Dir["*"]
+    bin.install_symlink "#{libexec}/bin/app" => "app"
+  end
+
+  test do
+    output = shell_output("#{bin}/app --version")
+    assert_match "1.0.0.Alpha1", output
+  end
+end
+----
+
+When ready, create a release for real this time by simply removing the `-Djreleaser.dry.run` flag from the command line, then
+browse to your repository and look at the freshly created release.
+
+== Further reading
+
+* link:https://jreleaser.org/guide/latest/index.html[JReleaser] documentation.
+
+== Reference
+
+As a reference, these are the full contents of the `pom.xml`:
+
+[source,xml,subs=attributes+,macros+]
+----
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.acme</groupId>
+  <artifactId>app</artifactId>
+  <version>1.0.0.Alpha1</version>
+  <name>app</name>
+  <description>app -- Sample Quarkus CLI application</description>
+  <inceptionYear>2021</inceptionYear>
+  <url>https://github.com/aalmiray/app</url>
+  <developers>
+    <developer>
+      <id>aalmiray</id>
+      <name>Andres Almiray</name>
+    </developer>
+  </developers>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <properties>
+    <executable-suffix/>
+    <distribution.directory>${project.build.directory}/distributions</distribution.directory>
+    <compiler-plugin.version>3.13.0</compiler-plugin.version>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>{quarkus-platform-groupid}</quarkus.platform.group-id>
+    <quarkus.platform.version>{quarkus-version}</quarkus.platform.version>
+    <surefire-plugin.version>3.0.0</surefire-plugin.version>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>${quarkus.platform.artifact-id}</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-picocli</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
+    <plugins>
+      <plugin>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+              <goal>generate-code</goal>
+              <goal>generate-code-tests</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler-plugin.version}</version>
+        <configuration>
+          <parameters>${maven.compiler.parameters}</parameters>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>native</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
+      <properties>
+        <skipITs>false</skipITs>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
+      </properties>
+    </profile>
+    <profile>
+      <id>dist</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.3.0</version>
+            <configuration>
+              <attach>false</attach>
+              <appendAssemblyId>false</appendAssemblyId>
+              <finalName>${project.artifactId}-${project.version}-${os.detected.classifier}</finalName>
+              <outputDirectory>${distribution.directory}</outputDirectory>
+              <workDirectory>${project.build.directory}/assembly/work</workDirectory>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <executions>
+              <execution>
+                <id>make-distribution</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>dist-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <executable-suffix>.exe</executable-suffix>
+      </properties>
+    </profile>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jreleaser</groupId>
+            <artifactId>jreleaser-maven-plugin</artifactId>
+            <version>{jreleaser-version}</version>
+            <configuration>
+              <jreleaser>
+                <!--project>
+                 <description>app - Sample Quarkus CLI application</description>
+                 <website>https://github.com/aalmiray/app</website>
+                 <docsUrl>https://github.com/aalmiray/app</docsUrl>
+                 <license>APACHE-2.0</license>
+                 <authors>Andres Almiray</authors>
+                 <copyright>2021 Kordamp</copyright>
+                </project-->
+                <release>
+                  <github>
+                    <changelog>
+                      <formatted>ALWAYS</formatted>
+                      <preset>conventional-commits</preset>
+                    </changelog>
+                  </github>
+                </release>
+                <distributions>
+                  <app>
+                    <type>BINARY</type>
+                    <brew>
+                      <active>ALWAYS</active>
+                    </brew>
+                    <artifacts>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-linux-x86_64.tar.gz</path>
+                        <platform>linux-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-windows-x86_64.zip</path>
+                        <platform>windows-x86_64</platform>
+                      </artifact>
+                      <artifact>
+                        <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-osx-x86_64.zip</path>
+                        <platform>osx-x86_64</platform>
+                      </artifact>
+                    </artifacts>
+                  </app>
+                </distributions>
+              </jreleaser>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
+----

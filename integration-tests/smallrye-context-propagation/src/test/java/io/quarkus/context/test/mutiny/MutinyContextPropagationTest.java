@@ -4,7 +4,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
@@ -154,6 +154,12 @@ public class MutinyContextPropagationTest {
                 .body(equalTo("OK"));
         awaitState(() -> RestAssured.when().get("/mutiny-context/transaction-multi-2").then()
                 .statusCode(Response.Status.OK.getStatusCode()));
+    }
+
+    @Test
+    public void testContextPropagationBug40852() {
+        RestAssured.when().get("/mutiny-context/bug40852").then()
+                .statusCode(Response.Status.OK.getStatusCode());
     }
 
     private void awaitState(ThrowingRunnable task) {

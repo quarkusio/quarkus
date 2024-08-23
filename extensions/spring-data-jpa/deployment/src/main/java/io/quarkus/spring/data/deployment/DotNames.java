@@ -22,14 +22,15 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Version;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
 import org.jboss.jandex.DotName;
 import org.springframework.data.domain.Page;
@@ -42,6 +43,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.Repository;
@@ -54,15 +57,22 @@ public final class DotNames {
             .createSimple(Repository.class.getName());
     public static final DotName SPRING_DATA_CRUD_REPOSITORY = DotName
             .createSimple(CrudRepository.class.getName());
+
+    public static final DotName SPRING_DATA_LIST_CRUD_REPOSITORY = DotName
+            .createSimple(ListCrudRepository.class.getName());
     public static final DotName SPRING_DATA_PAGING_REPOSITORY = DotName
             .createSimple(PagingAndSortingRepository.class.getName());
+
+    public static final DotName SPRING_DATA_LIST_PAGING_REPOSITORY = DotName
+            .createSimple(ListPagingAndSortingRepository.class.getName());
     public static final DotName SPRING_DATA_JPA_REPOSITORY = DotName
             .createSimple(JpaRepository.class.getName());
     public static final DotName SPRING_DATA_REPOSITORY_DEFINITION = DotName
             .createSimple(RepositoryDefinition.class.getName());
 
     public static final Set<DotName> SUPPORTED_REPOSITORIES = new HashSet<>(Arrays.asList(
-            SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
+            SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_LIST_PAGING_REPOSITORY,
+            SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_LIST_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
 
     public static final DotName SPRING_DATA_NO_REPOSITORY_BEAN = DotName
             .createSimple(NoRepositoryBean.class.getName());
@@ -93,6 +103,7 @@ public final class DotNames {
     public static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());;
     public static final DotName JPA_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     public static final DotName JPA_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    public static final DotName JPA_TRANSIENT = DotName.createSimple(Transient.class.getName());
     public static final DotName VOID = DotName.createSimple(void.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

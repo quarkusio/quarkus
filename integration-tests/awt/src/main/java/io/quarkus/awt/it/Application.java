@@ -30,10 +30,11 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Objects;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.logging.Logger;
 
@@ -58,13 +59,16 @@ public class Application {
         final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
         // Font source: https://ftp.gnu.org/gnu/freefont/
-        // Note those fonts binaries were altered to bear different names, "My" prefix.
+        // Note those fonts binaries were altered to bear different names, "My" prefix, "X" suffix.
         ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
                 Application.class.getResourceAsStream("/MyFreeMono.ttf"),
                 "MyFreeMono.ttf not found.")));
         ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
                 Application.class.getResourceAsStream("/MyFreeSerif.ttf"),
                 "MyFreeSerif.ttf not found.")));
+        ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
+                Application.class.getResourceAsStream("/DejaVuSansMonoX.ttf"),
+                "DejaVuSansMonoX.ttf not found.")));
     }
 
     public BufferedImage getABGRTestImage() throws IOException {
@@ -143,11 +147,12 @@ public class Application {
         // Text as glyph vector, draw bytes
         final FontRenderContext fontRenderContext = g.getFontRenderContext();
         g.setColor(Color.CYAN);
-        final GlyphVector glyphVector = new Font("Arial", Font.PLAIN, 16)
+        final GlyphVector glyphVector = new Font("DejaVu Sans Mono X", Font.PLAIN, 16)
                 .createGlyphVector(fontRenderContext, "Mandrel 1");
         g.drawGlyphVector(glyphVector, img.getWidth() / 2f, img.getHeight() / 2f);
         final byte[] bytesToDraw = new byte[] { 'M', 'A', 'N', 'D', 'R', 'E', 'L' };
-        g.drawBytes(bytesToDraw, 0, bytesToDraw.length, img.getWidth() - 70, img.getHeight() - 10);
+        g.setFont(new Font("DejaVu Sans Mono X", Font.PLAIN, 16));
+        g.drawBytes(bytesToDraw, 0, bytesToDraw.length, img.getWidth() - 75, img.getHeight() - 10);
 
         // Arcs
         g.setColor(Color.DARK_GRAY);
@@ -175,12 +180,12 @@ public class Application {
         pathOrRectangles.append(outer, false);
         pathOrRectangles.append(inner, false);
         g.fill(pathOrRectangles);
-        g.setFont(new Font("Helvetica", Font.BOLD, 15));
-        g.drawString("Intersection: ", 120, 200);
-        g.setFont(new Font("Helvetica", Font.BOLD, 20));
+        g.setFont(new Font("DejaVu Sans Mono X", Font.BOLD, 15));
+        g.drawString("Intersection: ", 120, 205);
+        g.setFont(new Font("DejaVu Sans Mono X", Font.BOLD, 20));
         g.setColor(Color.RED);
-        g.drawString((e.intersects(outer.getBounds2D()) || e.intersects(inner.getBounds2D())) ? "YES❤️" : "NO",
-                img.getWidth() - 125, img.getHeight() - 93);
+        g.drawString((e.intersects(outer.getBounds2D()) || e.intersects(inner.getBounds2D())) ? "YES ❤" : "NO",
+                img.getWidth() - 110, img.getHeight() - 88);
 
         // Polygons
         g.setColor(Color.GREEN);
@@ -202,7 +207,7 @@ public class Application {
         g.drawString("Mandrel 3", 20, 20);
         g.setFont(new Font("MyFreeSerif", Font.PLAIN, 15));
         g.drawString("Mandrel 4", 20, 60);
-        g.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 15));
+        g.setFont(new Font("DejaVu Sans Mono X", Font.BOLD, 15));
         g.drawString("Mandrel 5", 20, 100);
         String text = "Quarkus Mandrel";
         g.setFont(new Font("MyFreeSerif", Font.PLAIN, 40));

@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -19,7 +19,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class DispatchedThreadTest {
+class DispatchedThreadTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -28,7 +28,7 @@ public class DispatchedThreadTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void check() {
+    void check() {
         RestAssured.when().get("/q/health/live").then()
                 .body("status", is("UP"),
                         "checks.status", contains("UP"),

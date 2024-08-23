@@ -17,7 +17,8 @@ public class GenerateAllLogUsages {
         println("    public void testLogging() {");
         Arrays.stream(Log.class.getDeclaredMethods())
                 .filter(method -> Modifier.isPublic(method.getModifiers()))
-                .sorted(Comparator.comparing(Method::getName).thenComparingInt(Method::getParameterCount))
+                .sorted(Comparator.comparing(Method::getName).thenComparingInt(Method::getParameterCount)
+                        .thenComparing(Method::toString))
                 .forEach(method -> {
                     Parameter[] parameters = method.getParameters();
                     String[] arguments = new String[method.getParameterCount()];

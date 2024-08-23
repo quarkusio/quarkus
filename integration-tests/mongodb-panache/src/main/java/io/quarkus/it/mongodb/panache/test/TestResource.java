@@ -3,14 +3,15 @@ package io.quarkus.it.mongodb.panache.test;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.CollationStrength;
 
@@ -77,6 +78,13 @@ public class TestResource {
         Assertions.assertEquals(0, TestImperativeEntity.list("category = :category",
                 Parameters.with("category", null)).size());
 
+        // find with options
+        Assertions.assertEquals(5, TestImperativeEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size());
+
         // regex
         TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
         entityWithUpperCase.persist();
@@ -113,6 +121,16 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, TestImperativeEntity.find("{'title' : ?1}", "aaa").withCollation(collation).count());
+        Assertions.assertEquals(2, TestImperativeEntity.find("{'title' : ?1}", "AAA").withCollation(collation).count());
+        Assertions.assertEquals(1, TestImperativeEntity.find("{'title' : ?1}", "bbb").withCollation(collation).count());
+        Assertions.assertEquals(1, TestImperativeEntity.find("{'title' : ?1}", "BBB").withCollation(collation).count());
         entityAUpper.delete();
         entityALower.delete();
         entityB.delete();
@@ -157,7 +175,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = TestImperativeEntity.update("{'$inc': {'cpt': 1}}").all();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, TestImperativeEntity.count("cpt = ?1", 2));
+        updated = TestImperativeEntity.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestImperativeEntity.count("cpt = ?1", 3));
 
         // delete
         TestImperativeEntity.delete("category = ?1", "newCategory3");
@@ -224,6 +245,13 @@ public class TestResource {
         Assertions.assertEquals(0, testImperativeRepository.list("category = :category",
                 Parameters.with("category", null)).size());
 
+        // find with options
+        Assertions.assertEquals(5, testImperativeRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .size());
+
         // regex
         TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
         testImperativeRepository.persist(entityWithUpperCase);
@@ -261,6 +289,17 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+
+        Assertions.assertEquals(2, testImperativeRepository.find("{'title' : ?1}", "aaa").withCollation(collation).count());
+        Assertions.assertEquals(2, testImperativeRepository.find("{'title' : ?1}", "AAA").withCollation(collation).count());
+        Assertions.assertEquals(1, testImperativeRepository.find("{'title' : ?1}", "bbb").withCollation(collation).count());
+        Assertions.assertEquals(1, testImperativeRepository.find("{'title' : ?1}", "BBB").withCollation(collation).count());
         testImperativeRepository.delete(entityALower);
         testImperativeRepository.delete(entityAUpper);
         testImperativeRepository.delete(entityB);
@@ -307,7 +346,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = testImperativeRepository.update("{'$inc': {'cpt': 1}}").all();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, testImperativeRepository.count("cpt = ?1", 2));
+        updated = testImperativeRepository.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3"));
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testImperativeRepository.count("cpt = ?1", 3));
 
         // delete
         testImperativeRepository.delete("category = ?1", "newCategory3");
@@ -447,6 +489,14 @@ public class TestResource {
         Assertions.assertEquals(0, TestReactiveEntity.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
 
+        // find with options
+        Assertions.assertEquals(5, TestReactiveEntity.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size());
+
         // regex
         TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");
         entityWithUpperCase.persist().await().indefinitely();
@@ -488,6 +538,20 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, TestReactiveEntity.find("{'title' : ?1}", "aaa").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(2, TestReactiveEntity.find("{'title' : ?1}", "AAA").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, TestReactiveEntity.find("{'title' : ?1}", "bbb").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, TestReactiveEntity.find("{'title' : ?1}", "BBB").withCollation(collation).count()
+                .await().indefinitely());
         entityAUpper.delete().await().indefinitely();
         entityALower.delete().await().indefinitely();
         entityB.delete().await().indefinitely();
@@ -536,7 +600,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = TestReactiveEntity.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, TestReactiveEntity.count("cpt = ?1", 2).await().indefinitely());
+        updated = TestReactiveEntity.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestReactiveEntity.count("cpt = ?1", 3).await().indefinitely());
 
         // delete
         TestReactiveEntity.delete("category = ?1", "newCategory3").await().indefinitely();
@@ -606,6 +673,14 @@ public class TestResource {
         Assertions.assertEquals(0, testReactiveRepository.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
 
+        // find with options
+        Assertions.assertEquals(5, testReactiveRepository.find("category", "category0")
+                .withBatchSize(2)
+                .withReadPreference(ReadPreference.nearest())
+                .list()
+                .await().indefinitely()
+                .size());
+
         // regex
         TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");
         testReactiveRepository.persist(entityWithUpperCase).await().indefinitely();
@@ -645,6 +720,20 @@ public class TestResource {
         Assertions.assertEquals("aaa", results.get(0).title);
         Assertions.assertEquals("AAA", results.get(1).title);
         Assertions.assertEquals("BBB", results.get(2).title);
+
+        //count with collation
+        collation = Collation.builder()
+                .locale("en")
+                .collationStrength(CollationStrength.SECONDARY)
+                .build();
+        Assertions.assertEquals(2, testReactiveRepository.find("{'title' : ?1}", "aaa").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(2, testReactiveRepository.find("{'title' : ?1}", "AAA").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, testReactiveRepository.find("{'title' : ?1}", "bbb").withCollation(collation).count()
+                .await().indefinitely());
+        Assertions.assertEquals(1, testReactiveRepository.find("{'title' : ?1}", "BBB").withCollation(collation).count()
+                .await().indefinitely());
         testReactiveRepository.delete(entityALower).await().indefinitely();
         testReactiveRepository.delete(entityAUpper).await().indefinitely();
         testReactiveRepository.delete(entityB).await().indefinitely();
@@ -696,7 +785,10 @@ public class TestResource {
         Assertions.assertEquals(10, updated);
         updated = testReactiveRepository.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
-        Assertions.assertEquals(10, testReactiveRepository.count("cpt = ?1", 2).await().indefinitely());
+        updated = testReactiveRepository.update(new Document("$inc", new Document("cpt", 1)))
+                .where(new Document("category", "newCategory3")).await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, testReactiveRepository.count("cpt = ?1", 3).await().indefinitely());
 
         // delete
         testReactiveRepository.delete("category = ?1", "newCategory3").await().indefinitely();

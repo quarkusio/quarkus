@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.app;
 
+import java.io.Serializable;
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
-import java.io.Serializable;
-import java.nio.file.Path;
 
 /**
  * An additional archive that should be added to the generated application.
@@ -16,6 +17,8 @@ import java.nio.file.Path;
  * dependencies should already be available.
  */
 public class AdditionalDependency implements Serializable {
+
+    private static final long serialVersionUID = -6987195473010677257L;
 
     /**
      * The path to the application archive
@@ -38,16 +41,10 @@ public class AdditionalDependency implements Serializable {
     }
 
     /**
-     * @deprecated in favor of {@link #AdditionalDependency(PathCollection, boolean, boolean)}
      * @param archivePath archive paths
      * @param hotReloadable whether the dependency is reloadable
      * @param forceApplicationArchive whether it should be added as an application archive
      */
-    @Deprecated
-    public AdditionalDependency(PathsCollection archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
-        this(PathList.from(archivePath), hotReloadable, forceApplicationArchive);
-    }
-
     public AdditionalDependency(PathCollection paths, boolean hotReloadable, boolean forceApplicationArchive) {
         this.paths = paths;
         this.hotReloadable = hotReloadable;

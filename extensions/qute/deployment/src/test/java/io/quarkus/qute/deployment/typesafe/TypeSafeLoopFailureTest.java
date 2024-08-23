@@ -33,7 +33,7 @@ public class TypeSafeLoopFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (1)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (1)"), te.getMessage());
                 assertTrue(te.getMessage().contains("foo.ages"), te.getMessage());
             });
 

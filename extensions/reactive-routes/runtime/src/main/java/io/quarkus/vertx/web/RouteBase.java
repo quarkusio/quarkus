@@ -21,7 +21,7 @@ public @interface RouteBase {
 
     /**
      * The values are used for any route method declared on the class where {@link Route#produces()} is empty.
-     * 
+     *
      * @return the produced content types
      */
     String[] produces() default {};

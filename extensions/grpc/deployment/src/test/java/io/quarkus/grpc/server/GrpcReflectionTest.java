@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Flow;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -12,8 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import com.google.protobuf.ByteString;
 
@@ -25,12 +24,12 @@ import io.grpc.reflection.testing.ReflectionTestDepthTwoProto;
 import io.grpc.reflection.testing.ReflectionTestProto;
 import io.grpc.reflection.testing.Reply;
 import io.grpc.reflection.testing.Request;
-import io.grpc.reflection.v1alpha.ExtensionRequest;
-import io.grpc.reflection.v1alpha.FileDescriptorResponse;
-import io.grpc.reflection.v1alpha.MutinyServerReflectionGrpc;
-import io.grpc.reflection.v1alpha.ServerReflectionRequest;
-import io.grpc.reflection.v1alpha.ServerReflectionResponse;
-import io.grpc.reflection.v1alpha.ServiceResponse;
+import io.grpc.reflection.v1.ExtensionRequest;
+import io.grpc.reflection.v1.FileDescriptorResponse;
+import io.grpc.reflection.v1.MutinyServerReflectionGrpc;
+import io.grpc.reflection.v1.ServerReflectionRequest;
+import io.grpc.reflection.v1.ServerReflectionResponse;
+import io.grpc.reflection.v1.ServiceResponse;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusUnitTest;
@@ -115,8 +114,10 @@ public class GrpcReflectionTest {
     }
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
+        subscriber.reset();
         Multi<ServerReflectionResponse> multi = reflection.serverReflectionInfo(processor);
         multi.subscribe().withSubscriber(subscriber);
+        subscriber.awaitForSubscription();
         processor.onNext(request);
         return subscriber.awaitAndGetLast();
     }
@@ -233,16 +234,24 @@ public class GrpcReflectionTest {
         assertThat(list).containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    private static class ResettableSubscriber<T> implements Subscriber<T> {
+    private static class ResettableSubscriber<T> implements Flow.Subscriber<T> {
 
-        private Subscription subscription;
+        private Flow.Subscription subscription;
         private volatile T last;
         private boolean completed;
         private Throwable failure;
 
         @Override
-        public void onSubscribe(Subscription subscription) {
+        public void onSubscribe(Flow.Subscription subscription) {
             this.subscription = subscription;
+        }
+
+        public void reset() {
+            this.subscription = null;
+        }
+
+        public void awaitForSubscription() {
+            await().until(() -> subscription != null);
         }
 
         public T awaitAndGetLast() {

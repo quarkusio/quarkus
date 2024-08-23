@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.runtime;
 
 import java.util.List;
 
-import javax.persistence.spi.PersistenceProvider;
-import javax.persistence.spi.PersistenceProviderResolver;
+import jakarta.persistence.spi.PersistenceProvider;
+import jakarta.persistence.spi.PersistenceProviderResolver;
 
 /**
  * During the static init phase, we don't access the PersistenceProviderResolver.

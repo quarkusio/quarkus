@@ -39,7 +39,7 @@ public class HibernateSearchConfigUtil {
             T value,
             Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
         if (shouldBeAdded.apply(value)) {
-            propertyCollector.accept(BackendSettings.backendKey(backendName, configPath), getValue.apply(value));
+            addBackendConfig(propertyCollector, backendName, configPath, getValue.apply(value));
         }
     }
 
@@ -62,8 +62,7 @@ public class HibernateSearchConfigUtil {
                 propertyCollector.accept(
                         IndexSettings.indexKey(backendName, indexName, configPath), getValue.apply(value));
             } else {
-                propertyCollector.accept(
-                        BackendSettings.backendKey(backendName, configPath), getValue.apply(value));
+                addBackendConfig(propertyCollector, backendName, configPath, getValue.apply(value));
             }
         }
     }

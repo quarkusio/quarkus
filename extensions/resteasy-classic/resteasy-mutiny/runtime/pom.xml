@@ -10,8 +10,8 @@
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Runtime</name>
-    <description>Mutiny support for RESTEasy server</description>
+    <name>Quarkus - RESTEasy Classic - Mutiny - Runtime</name>
+    <description>Mutiny support for RESTEasy Classic server</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -45,19 +45,24 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

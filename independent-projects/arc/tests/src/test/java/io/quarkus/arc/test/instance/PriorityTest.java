@@ -2,14 +2,16 @@ package io.quarkus.arc.test.instance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.Priority;
-import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class PriorityTest {
 
@@ -33,8 +35,7 @@ public class PriorityTest {
 
     }
 
-    @javax.annotation.Priority(5) // this priority takes precedence
-    @Priority(50)
+    @Priority(5)
     @Singleton
     static class AlphaConverter implements Converter {
 

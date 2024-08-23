@@ -2,7 +2,7 @@ package io.quarkus.qute.deployment.scanning;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;

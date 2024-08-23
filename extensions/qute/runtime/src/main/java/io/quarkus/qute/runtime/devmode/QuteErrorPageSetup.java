@@ -48,7 +48,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             + "<span style=\"color:silver;\">{realLines.get(line_index).pad}</span>\n"
             // line content
             + " {line}\n"
-            // highlight the error line - end 
+            // highlight the error line - end
             + "{#if lineNumber is realLines.get(line_index)}</div>{#else}<br>{/if}\n"
             // point to error
             + "{#if lineNumber is realLines.get(line_index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
@@ -94,7 +94,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
         builder = new TemplateHtmlBuilder("Error restarting Quarkus", problemsFound, problemsFound);
 
         // Attempt to sort problems by line
-        Collections.sort(problems, new Comparator<Throwable>() {
+        problems.sort(new Comparator<Throwable>() {
             @Override
             public int compare(Throwable t1, Throwable t2) {
                 Object o1 = getOrigin(t1);
@@ -229,7 +229,8 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
     private int getLineCharacterStart(Object origin) {
         int lineCharacter = 0;
         try {
-            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN).getMethod("getLineCharacterStart");
+            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN)
+                    .getMethod("getLineCharacterStart");
             lineCharacter = (int) getLineCharacter.invoke(origin);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalAccessException
                 | IllegalArgumentException | InvocationTargetException e) {

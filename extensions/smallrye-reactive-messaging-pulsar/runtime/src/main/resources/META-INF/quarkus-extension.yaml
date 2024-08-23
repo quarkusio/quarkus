@@ -1,0 +1,21 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Messaging - Pulsar Connector"
+metadata:
+  short-name: "pulsar"
+  keywords:
+  - "pulsar"
+  - "reactive-pulsar"
+  guide: "https://quarkus.io/guides/pulsar"
+  categories:
+  - "messaging"
+  status: "preview"
+  config:
+  - "mp.messaging."
+  - "quarkus.messaging."
+  - "quarkus.pulsar."
+  codestart:
+    name: "messaging"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

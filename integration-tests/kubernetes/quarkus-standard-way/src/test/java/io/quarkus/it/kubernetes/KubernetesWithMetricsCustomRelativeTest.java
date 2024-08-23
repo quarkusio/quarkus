@@ -7,16 +7,17 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.dekorate.prometheus.model.Endpoint;
+import io.dekorate.prometheus.model.ServiceMonitor;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -31,10 +32,12 @@ public class KubernetesWithMetricsCustomRelativeTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-metrics-custom-relative.properties")
-            .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion())));
+            .overrideConfigKey("quarkus.http.port", "9090")
+            .overrideConfigKey("quarkus.micrometer.export.prometheus.path", "met")
+            .overrideConfigKey("quarkus.kubernetes.prometheus.prefix", "example.io")
+            .overrideConfigKey("quarkus.kubernetes.prometheus.scrape", "example.io/should_be_scraped")
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -79,6 +82,23 @@ public class KubernetesWithMetricsCustomRelativeTest {
                 });
             });
         });
+
+        assertThat(kubernetesList).filteredOn(i -> i.getKind().equals("ServiceMonitor")).singleElement()
+                .isInstanceOfSatisfying(ServiceMonitor.class, s -> {
+                    assertThat(s.getMetadata()).satisfies(m -> {
+                        assertThat(m.getName()).isEqualTo("metrics");
+                    });
+
+                    assertThat(s.getSpec()).satisfies(spec -> {
+                        assertThat(spec.getEndpoints()).hasSize(1);
+                        assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
+                            assertThat(e.getScheme()).isEqualTo("http");
+                            assertThat(e.getTargetPort().getStrVal()).isNull();
+                            assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
+                            assertThat(e.getPath()).isEqualTo("/q/met");
+                        });
+                    });
+                });
     }
 
 }

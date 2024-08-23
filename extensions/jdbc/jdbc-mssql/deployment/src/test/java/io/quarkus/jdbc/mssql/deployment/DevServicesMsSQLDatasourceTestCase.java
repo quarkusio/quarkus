@@ -8,7 +8,7 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,7 +41,7 @@ public class DevServicesMsSQLDatasourceTestCase {
     public void testDatasource() throws Exception {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:sqlserver:"));
-        assertEquals("SA", configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals("sa", configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(MSSQLExceptionSorter.class);
 

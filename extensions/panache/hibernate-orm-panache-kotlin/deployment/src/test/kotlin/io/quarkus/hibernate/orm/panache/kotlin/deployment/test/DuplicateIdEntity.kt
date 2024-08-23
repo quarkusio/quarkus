@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment.test
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
-import javax.persistence.Id
+import jakarta.persistence.Id
 
 class DuplicateIdEntity : PanacheEntity() {
     @Id

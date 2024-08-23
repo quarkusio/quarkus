@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import static java.util.Map.entry;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BEAN_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_DECIMAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BIG_INTEGER;
@@ -8,16 +9,23 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CHARACTER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONFIGURATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DUMMY_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INTEGER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LIST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
@@ -25,11 +33,14 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.NON_BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -40,21 +51,35 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_INTEGER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRIMITIVE_LONG;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PRODUCES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_SSE_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_STREAM_ELEMENT_TYPE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RUN_ON_VIRTUAL_THREAD;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SECURITY_CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SSE_EVENT_SINK;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SUSPENDED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -63,7 +88,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,19 +100,26 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.SseEventSink;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.SseEventSink;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -100,7 +131,11 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
+import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -110,25 +145,18 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
+    // spec
     // NOTE: sync with ContextProducer and ContextParamExtractor
-    private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            // spec
-            ResteasyReactiveDotNames.URI_INFO,
-            ResteasyReactiveDotNames.HTTP_HEADERS,
-            ResteasyReactiveDotNames.REQUEST,
-            ResteasyReactiveDotNames.SECURITY_CONTEXT,
-            ResteasyReactiveDotNames.PROVIDERS,
-            ResteasyReactiveDotNames.RESOURCE_CONTEXT,
-            ResteasyReactiveDotNames.CONFIGURATION,
-            ResteasyReactiveDotNames.SSE,
-            ResteasyReactiveDotNames.SSE_EVENT_SINK,
+    private static final Set<DotName> DEFAULT_CONTEXT_TYPES = Set.of(URI_INFO, HTTP_HEADERS, REQUEST, SECURITY_CONTEXT,
+            PROVIDERS, RESOURCE_CONTEXT, CONFIGURATION, SSE,
+            SSE_EVENT_SINK,
             // extras
-            ResteasyReactiveDotNames.SERVER_REQUEST_CONTEXT,
+            SERVER_REQUEST_CONTEXT,
             DotName.createSimple("org.jboss.resteasy.reactive.server.SimpleResourceInfo"), //TODO: fixme
-            ResteasyReactiveDotNames.RESOURCE_INFO)));
+            RESOURCE_INFO);
 
-    private static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME, OFFSET_TIME,
-            OFFSET_DATE_TIME, ZONED_DATE_TIME);
+    protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
+            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
@@ -138,46 +166,56 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
+    public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
+
+    private static final boolean JDK_SUPPORTS_VIRTUAL_THREADS;
 
     static {
-        Map<String, String> prims = new HashMap<>();
-        prims.put(byte.class.getName(), Byte.class.getName());
-        prims.put(Byte.class.getName(), Byte.class.getName());
-        prims.put(boolean.class.getName(), Boolean.class.getName());
-        prims.put(Boolean.class.getName(), Boolean.class.getName());
-        prims.put(char.class.getName(), Character.class.getName());
-        prims.put(Character.class.getName(), Character.class.getName());
-        prims.put(short.class.getName(), Short.class.getName());
-        prims.put(Short.class.getName(), Short.class.getName());
-        prims.put(int.class.getName(), Integer.class.getName());
-        prims.put(Integer.class.getName(), Integer.class.getName());
-        prims.put(float.class.getName(), Float.class.getName());
-        prims.put(Float.class.getName(), Float.class.getName());
-        prims.put(double.class.getName(), Double.class.getName());
-        prims.put(Double.class.getName(), Double.class.getName());
-        prims.put(long.class.getName(), Long.class.getName());
-        prims.put(Long.class.getName(), Long.class.getName());
-        primitiveTypes = Collections.unmodifiableMap(prims);
+        primitiveTypes = Map.ofEntries(
+                entry(byte.class.getName(), Byte.class.getName()),
+                entry(Byte.class.getName(), Byte.class.getName()),
+                entry(boolean.class.getName(), Boolean.class.getName()),
+                entry(Boolean.class.getName(), Boolean.class.getName()),
+                entry(char.class.getName(), Character.class.getName()),
+                entry(Character.class.getName(), Character.class.getName()),
+                entry(short.class.getName(), Short.class.getName()),
+                entry(Short.class.getName(), Short.class.getName()),
+                entry(int.class.getName(), Integer.class.getName()),
+                entry(Integer.class.getName(), Integer.class.getName()),
+                entry(float.class.getName(), Float.class.getName()),
+                entry(Float.class.getName(), Float.class.getName()),
+                entry(double.class.getName(), Double.class.getName()),
+                entry(Double.class.getName(), Double.class.getName()),
+                entry(long.class.getName(), Long.class.getName()),
+                entry(Long.class.getName(), Long.class.getName()));
 
-        Map<DotName, Class<?>> supportedReaderJavaTps = new HashMap<>();
-        supportedReaderJavaTps.put(PRIMITIVE_BOOLEAN, boolean.class);
-        supportedReaderJavaTps.put(PRIMITIVE_DOUBLE, double.class);
-        supportedReaderJavaTps.put(PRIMITIVE_FLOAT, float.class);
-        supportedReaderJavaTps.put(PRIMITIVE_LONG, long.class);
-        supportedReaderJavaTps.put(PRIMITIVE_INTEGER, int.class);
-        supportedReaderJavaTps.put(PRIMITIVE_CHAR, char.class);
-        supportedReaderJavaTps.put(BOOLEAN, Boolean.class);
-        supportedReaderJavaTps.put(DOUBLE, Double.class);
-        supportedReaderJavaTps.put(FLOAT, Float.class);
-        supportedReaderJavaTps.put(LONG, Long.class);
-        supportedReaderJavaTps.put(INTEGER, Integer.class);
-        supportedReaderJavaTps.put(CHARACTER, Character.class);
-        supportedReaderJavaTps.put(BIG_DECIMAL, BigDecimal.class);
-        supportedReaderJavaTps.put(BIG_INTEGER, BigInteger.class);
-        supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
+        supportedReaderJavaTypes = Map.ofEntries(
+                entry(PRIMITIVE_BOOLEAN, boolean.class),
+                entry(PRIMITIVE_DOUBLE, double.class),
+                entry(PRIMITIVE_FLOAT, float.class),
+                entry(PRIMITIVE_LONG, long.class),
+                entry(PRIMITIVE_INTEGER, int.class),
+                entry(PRIMITIVE_CHAR, char.class),
+                entry(BOOLEAN, Boolean.class),
+                entry(DOUBLE, Double.class),
+                entry(FLOAT, Float.class),
+                entry(LONG, Long.class),
+                entry(INTEGER, Integer.class),
+                entry(CHARACTER, Character.class),
+                entry(BIG_DECIMAL, BigDecimal.class),
+                entry(BIG_INTEGER, BigInteger.class));
+
+        boolean isJDKCompatible = true;
+        try {
+            Class.forName("java.lang.ThreadBuilders");
+        } catch (ClassNotFoundException e) {
+            isJDKCompatible = false;
+        }
+        JDK_SUPPORTS_VIRTUAL_THREADS = isJDKCompatible;
     }
 
     protected final IndexView index;
+    protected final IndexView applicationIndex;
     protected final Map<String, String> existingConverters;
     protected final Map<String, InjectableBean> injectableBeans;
     protected final boolean hasRuntimeConverters;
@@ -190,15 +228,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final BlockingDefault defaultBlocking;
     private final Map<DotName, Map<String, String>> classLevelExceptionMappers;
     private final Function<String, BeanFactory<Object>> factoryCreator;
-    private final Consumer<ResourceMethodCallbackData> resourceMethodCallback;
+    private final Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
     private final AnnotationStore annotationStore;
-    private final ApplicationScanningResult applicationScanningResult;
+    protected final ApplicationScanningResult applicationScanningResult;
     private final Set<DotName> contextTypes;
+    private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
-    private final MultipartParameterIndexerExtension multipartParameterIndexerExtension;
+    private final TargetJavaVersion targetJavaVersion;
+
+    private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
+
+    private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private final boolean skipNotRestParameters;
+
+    private SerializerScanningResult serializerScanningResult;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
+        this.applicationIndex = builder.applicationIndex;
         this.existingConverters = builder.existingConverters;
         this.scannedResourcePaths = builder.scannedResourcePaths;
         this.config = builder.config;
@@ -211,11 +258,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.classLevelExceptionMappers = builder.classLevelExceptionMappers;
         this.factoryCreator = builder.factoryCreator;
         this.resourceMethodCallback = builder.resourceMethodCallback;
-        this.annotationStore = new AnnotationStore(builder.annotationsTransformers);
+        this.annotationStore = new AnnotationStore(builder.index, builder.annotationsTransformers);
         this.applicationScanningResult = builder.applicationScanningResult;
         this.contextTypes = builder.contextTypes;
+        this.parameterContainerTypes = builder.parameterContainerTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
-        this.multipartParameterIndexerExtension = builder.multipartParameterIndexerExtension;
+        this.targetJavaVersion = builder.targetJavaVersion;
+        this.isDisabledCreator = builder.isDisabledCreator;
+        this.skipMethodParameter = builder.skipMethodParameter;
+        this.skipNotRestParameters = builder.skipNotRestParameters;
     }
 
     public Optional<ResourceClass> createEndpoints(ClassInfo classInfo, boolean considerApplication) {
@@ -237,16 +288,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (!path.startsWith("/")) {
                     path = "/" + path;
                 }
-                clazz.setPath(path);
+                clazz.setPath(sanitizePath(path));
             }
             if (factoryCreator != null) {
-                clazz.setFactory((BeanFactory<Object>) factoryCreator.apply(classInfo.name().toString()));
+                clazz.setFactory(factoryCreator.apply(classInfo.name().toString()));
             }
             Map<String, String> classLevelExceptionMappers = this.classLevelExceptionMappers.get(classInfo.name());
             if (classLevelExceptionMappers != null) {
                 clazz.setClassLevelExceptionMappers(classLevelExceptionMappers);
             }
-            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(),
+            List<ResourceMethod> methods = createEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(),
                     clazz.getPathParameters(), clazz.getPath(), considerApplication);
             clazz.getMethods().addAll(methods);
 
@@ -267,6 +318,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 clazz.setPerRequestResource(true);
             }
 
+            if (isDisabledCreator != null) {
+                clazz.setIsDisabled(isDisabledCreator.apply(classInfo));
+            }
+
             return Optional.of(clazz);
         } catch (Exception e) {
             if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
@@ -279,12 +334,104 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
+    private String sanitizePath(String path) {
+        // this simply replaces the whitespace characters (not part of a path variable) with %20
+        // TODO: this might have to be more complex, URL encoding maybe?
+        // zero braces indicates we are outside of a variable
+        int bracesCount = 0;
+        StringBuilder replaced = null;
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if ((c == ' ') && (bracesCount == 0)) {
+                if (replaced == null) {
+                    replaced = new StringBuilder(path.length() + 2);
+                    replaced.append(path, 0, i);
+                }
+                replaced.append("%20");
+                continue;
+            }
+            if (replaced != null) {
+                replaced.append(c);
+            }
+            if (c == '{') {
+                bracesCount++;
+            } else if (c == '}') {
+                bracesCount--;
+            }
+        }
+        if (replaced == null) {
+            return path;
+        }
+        return replaced.toString();
+    }
+
     protected abstract METHOD createResourceMethod(MethodInfo info, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext);
 
     protected List<ResourceMethod> createEndpoints(ClassInfo currentClassInfo,
-            ClassInfo actualEndpointInfo, Set<String> seenMethods,
+            ClassInfo actualEndpointInfo, Set<String> seenMethods, Set<String> existingClassNameBindings,
             Set<String> pathParameters, String resourceClassPath, boolean considerApplication) {
+
+        List<ResourceMethod> ret = new ArrayList<>();
+
+        List<FoundEndpoint> endpoints = collectEndpoints(currentClassInfo, actualEndpointInfo, seenMethods,
+                existingClassNameBindings, considerApplication, httpAnnotationToMethod, index, applicationScanningResult,
+                getAnnotationStore());
+        Map<String, BasicResourceClassInfo> basicResourceClassInfoMap = new HashMap<>();
+        for (FoundEndpoint endpoint : endpoints) {
+
+            // assemble method path
+            String methodPath = readStringValue(getAnnotationStore().getAnnotation(endpoint.methodInfo, PATH));
+            if (endpoint.httpMethod != null) {
+                // HTTP annotation method
+                validateHttpAnnotations(endpoint.methodInfo);
+                if (methodPath != null) {
+                    if (!methodPath.startsWith("/")) {
+                        methodPath = "/" + methodPath;
+                    }
+                    if (methodPath.endsWith("/")) {
+                        methodPath = handleTrailingSlash(methodPath);
+                    }
+                } else {
+                    methodPath = "";
+                }
+            } else {
+                // resource locator method
+                if (methodPath != null) {
+                    if (!methodPath.startsWith("/")) {
+                        methodPath = "/" + methodPath;
+                    }
+                    if (methodPath.endsWith("/")) {
+                        methodPath = methodPath.substring(0, methodPath.length() - 1);
+                    }
+                }
+            }
+
+            // create BasicResourceClassInfo and remember it
+            BasicResourceClassInfo basicResourceClassInfo = basicResourceClassInfoMap.get(endpoint.classInfo.name().toString());
+            if (basicResourceClassInfo == null) {
+                String[] classProduces = extractProducesConsumesValues(
+                        getAnnotationStore().getAnnotation(endpoint.classInfo, PRODUCES));
+                String[] classConsumes = extractProducesConsumesValues(
+                        getAnnotationStore().getAnnotation(endpoint.classInfo, CONSUMES));
+                basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
+                        classConsumes, pathParameters, getStreamAnnotationValue(endpoint.classInfo));
+                basicResourceClassInfoMap.put(endpoint.classInfo.name().toString(), basicResourceClassInfo);
+            }
+
+            ResourceMethod method = createResourceMethod(endpoint.classInfo, actualEndpointInfo, basicResourceClassInfo,
+                    endpoint.classNameBindings, endpoint.httpMethod, endpoint.methodInfo, methodPath);
+            ret.add(method);
+        }
+
+        return ret;
+    }
+
+    private static List<FoundEndpoint> collectEndpoints(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            Set<String> seenMethods, Set<String> existingClassNameBindings, boolean considerApplication,
+            Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult,
+            AnnotationStore annotationStore) {
+
         if (considerApplication && applicationScanningResult != null
                 && !applicationScanningResult.keepClass(actualEndpointInfo.name().toString())) {
             return Collections.emptyList();
@@ -295,55 +442,34 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return Collections.emptyList();
         }
 
-        List<ResourceMethod> ret = new ArrayList<>();
-        String[] classProduces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, PRODUCES));
-        String[] classConsumes = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentClassInfo, CONSUMES));
-
-        String classSseElementType = null;
-        AnnotationInstance classSseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentClassInfo,
-                REST_SSE_ELEMENT_TYPE);
-        if (classSseElementTypeAnnotation != null) {
-            classSseElementType = classSseElementTypeAnnotation.value().asString();
-        }
-
-        BasicResourceClassInfo basicResourceClassInfo = new BasicResourceClassInfo(resourceClassPath, classProduces,
-                classConsumes, pathParameters, classSseElementType);
-
+        List<FoundEndpoint> ret = new ArrayList<>();
         Set<String> classNameBindings = NameBindingUtil.nameBindingNames(index, currentClassInfo);
+        if (classNameBindings.isEmpty()) {
+            classNameBindings = existingClassNameBindings;
+        }
 
         for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<MethodInfo> methods = currentClassInfo.methods();
             for (MethodInfo info : methods) {
-                AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, httpMethod);
+                AnnotationInstance annotation = annotationStore.getAnnotation(info, httpMethod);
                 if (annotation != null) {
                     if (!hasProperModifiers(info)) {
                         continue;
                     }
-                    validateHttpAnnotations(info);
                     String descriptor = methodDescriptor(info);
                     if (seenMethods.contains(descriptor)) {
                         continue;
                     }
                     seenMethods.add(descriptor);
-                    String methodPath = readStringValue(getAnnotationStore().getAnnotation(info, PATH));
-                    if (methodPath != null) {
-                        if (!methodPath.startsWith("/")) {
-                            methodPath = "/" + methodPath;
-                        }
-                    } else {
-                        methodPath = "";
-                    }
-                    ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            basicResourceClassInfo, classNameBindings, httpMethod, info, methodPath);
-
-                    ret.add(method);
+                    ret.add(new FoundEndpoint(currentClassInfo, classNameBindings, info, httpMethod));
                 }
             }
         }
+
         //now resource locator methods
         List<MethodInfo> methods = currentClassInfo.methods();
         for (MethodInfo info : methods) {
-            AnnotationInstance annotation = getAnnotationStore().getAnnotation(info, PATH);
+            AnnotationInstance annotation = annotationStore.getAnnotation(info, PATH);
             if (annotation != null) {
                 if (!hasProperModifiers(info)) {
                     continue;
@@ -353,38 +479,31 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     continue;
                 }
                 seenMethods.add(descriptor);
-                String methodPath = readStringValue(annotation);
-                if (methodPath != null) {
-                    if (!methodPath.startsWith("/")) {
-                        methodPath = "/" + methodPath;
-                    }
-                    if (methodPath.endsWith("/")) {
-                        methodPath = methodPath.substring(0, methodPath.length() - 1);
-                    }
-                }
-                ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                        basicResourceClassInfo, classNameBindings, null, info, methodPath);
-                ret.add(method);
+                ret.add(new FoundEndpoint(currentClassInfo, classNameBindings, info, null));
             }
         }
 
         DotName superClassName = currentClassInfo.superName();
-        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
+        if (superClassName != null && !superClassName.equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters, resourceClassPath, considerApplication));
+                ret.addAll(collectEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings, considerApplication,
+                        httpAnnotationToMethod, index, applicationScanningResult, annotationStore));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
-                ret.addAll(createEndpoints(superClass, actualEndpointInfo, seenMethods,
-                        pathParameters, resourceClassPath, considerApplication));
+                ret.addAll(collectEndpoints(superClass, actualEndpointInfo, seenMethods, classNameBindings, considerApplication,
+                        httpAnnotationToMethod, index, applicationScanningResult, annotationStore));
             }
         }
         return ret;
+    }
+
+    protected String handleTrailingSlash(String path) {
+        return path;
     }
 
     private void validateHttpAnnotations(MethodInfo info) {
@@ -405,7 +524,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
-    private boolean hasProperModifiers(MethodInfo info) {
+    private static boolean hasProperModifiers(MethodInfo info) {
         if (isSynthetic(info.flags())) {
             log.debug("Method '" + info.name() + " of Resource class '" + info.declaringClass().name()
                     + "' is a synthetic method and will therefore be ignored");
@@ -424,7 +543,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    private boolean isSynthetic(int mod) {
+    private static boolean isSynthetic(int mod) {
         return (mod & 0x1000) != 0; //0x1000 == SYNTHETIC
     }
 
@@ -436,10 +555,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             methodContext.put(METHOD_CONTEXT_ANNOTATION_STORE, getAnnotationStore());
             Set<String> pathParameters = new HashSet<>(basicResourceClassInfo.getPathParameters());
             URLUtils.parsePathParameters(methodPath, pathParameters);
-            Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parameters().size()];
-            MethodParameter[] methodParameters = new MethodParameter[currentMethodInfo.parameters()
-                    .size()];
-            for (int paramPos = 0; paramPos < currentMethodInfo.parameters().size(); ++paramPos) {
+            Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[currentMethodInfo.parametersCount()];
+            MethodParameter[] methodParameters = new MethodParameter[currentMethodInfo.parametersCount()];
+            for (int paramPos = 0; paramPos < currentMethodInfo.parametersCount(); ++paramPos) {
                 parameterAnnotations[paramPos] = new HashMap<>();
             }
             for (AnnotationInstance i : getAnnotationStore().getAnnotations(currentMethodInfo)) {
@@ -451,33 +569,55 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     basicResourceClassInfo.getConsumes());
             boolean suspended = false;
             boolean sse = false;
-            boolean formParamRequired = false;
-            boolean multipart = false;
-            boolean hasBodyParam = false;
+            boolean formParamRequired = getAnnotationStore().getAnnotation(currentMethodInfo,
+                    ResteasyReactiveDotNames.WITH_FORM_READ) != null;
+            Set<String> fileFormNames = new HashSet<>();
+            Type bodyParamType = null;
             TypeArgMapper typeArgMapper = new TypeArgMapper(currentMethodInfo.declaringClass(), index);
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
-                boolean encoded = anns.containsKey(ResteasyReactiveDotNames.ENCODED);
-                Type paramType = currentMethodInfo.parameters().get(i);
+                PARAM parameterResult = null;
+                boolean encoded = anns.containsKey(ENCODED);
+                Type paramType = currentMethodInfo.parameterType(i);
                 String errorLocation = "method " + currentMethodInfo + " on class " + currentMethodInfo.declaringClass();
 
-                PARAM parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
-                        existingConverters, additionalReaders,
-                        anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
-                        currentMethodInfo.parameterName(i),
-                        consumes,
-                        methodContext);
+                if (skipParameter(anns) || skipNotRestParameters(skipNotRestParameters).apply(anns)) {
+                    parameterResult = createIndexedParam()
+                            .setCurrentClassInfo(currentClassInfo)
+                            .setActualEndpointInfo(actualEndpointInfo)
+                            .setExistingConverters(existingConverters)
+                            .setAdditionalReaders(additionalReaders)
+                            .setAnns(anns)
+                            .setParamType(paramType)
+                            .setErrorLocation(errorLocation)
+                            .setField(false)
+                            .setHasRuntimeConverters(hasRuntimeConverters)
+                            .setPathParameters(pathParameters)
+                            .setSourceName(currentMethodInfo.parameterName(i))
+                            .setType(ParameterType.SKIPPED);
+                } else {
+                    parameterResult = extractParameterInfo(currentClassInfo, actualEndpointInfo, currentMethodInfo,
+                            existingConverters, additionalReaders,
+                            anns, paramType, errorLocation, false, hasRuntimeConverters, pathParameters,
+                            currentMethodInfo.parameterName(i),
+                            consumes,
+                            methodContext);
+                }
+
                 suspended |= parameterResult.isSuspended();
                 sse |= parameterResult.isSse();
                 String name = parameterResult.getName();
                 String defaultValue = parameterResult.getDefaultValue();
                 ParameterType type = parameterResult.getType();
                 if (type == ParameterType.BODY) {
-                    if (hasBodyParam)
+                    if (bodyParamType != null)
                         throw new RuntimeException(
                                 "Resource method " + currentMethodInfo + " can only have a single body parameter: "
                                         + currentMethodInfo.parameterName(i));
-                    hasBodyParam = true;
+                    bodyParamType = paramType;
+                    if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
+                        warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
+                    }
                 }
                 String elementType = parameterResult.getElementType();
                 boolean single = parameterResult.isSingle();
@@ -486,68 +626,90 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 }
                 methodParameters[i] = createMethodParameter(currentClassInfo, actualEndpointInfo, encoded, paramType,
                         parameterResult, name, defaultValue, type, elementType, single,
-                        AsmUtil.getSignature(paramType, typeArgMapper));
+                        AsmUtil.getSignature(paramType, typeArgMapper), fileFormNames);
 
-                if (type == ParameterType.BEAN) {
+                if (type == ParameterType.BEAN
+                        || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
-                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i);
-                } else if (type == ParameterType.FORM) {
+                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i, fileFormNames);
+                } else if (type == ParameterType.FORM || type == ParameterType.MULTI_PART_DATA_INPUT) {
                     formParamRequired = true;
-                } else if (type == ParameterType.MULTI_PART_FORM) {
-                    multipart = true;
-                    ClassInfo multipartClassInfo = index.getClassByName(paramType.name());
-                    multipartParameterIndexerExtension.handleMultipartParameter(multipartClassInfo, index);
                 }
             }
 
-            if (multipart) {
-                if (hasBodyParam) {
+            if (formParamRequired) {
+                if (bodyParamType != null
+                        && !bodyParamType.name().equals(ResteasyReactiveDotNames.MULTI_VALUED_MAP)
+                        && !bodyParamType.name().equals(ResteasyReactiveDotNames.STRING)) {
                     throw new RuntimeException(
-                            "'@MultipartForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
+                            "'@FormParam' and '@RestForm' cannot be used in a resource method that contains a body parameter. Offending method is '"
                                     + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
                 }
                 boolean validConsumes = false;
-                if (consumes != null) {
+                if (consumes != null && consumes.length > 0) {
                     for (String c : consumes) {
-                        if (c.startsWith(MediaType.MULTIPART_FORM_DATA)) {
+                        if (c.startsWith(MediaType.MULTIPART_FORM_DATA)
+                                || c.startsWith(MediaType.APPLICATION_FORM_URLENCODED)) {
                             validConsumes = true;
                             break;
                         }
                     }
-                }
-                // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
-                if (!validConsumes) {
-                    throw new RuntimeException(
-                            "'@MultipartForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)'. Offending method is '"
-                                    + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    // TODO: does it make sense to default to MediaType.MULTIPART_FORM_DATA when no consumes is set?
+                    if (!validConsumes) {
+                        throw new RuntimeException(
+                                "'@FormParam' and '@RestForm' can only be used on methods annotated with '@Consumes(MediaType.MULTIPART_FORM_DATA)' '@Consumes(MediaType.APPLICATION_FORM_URLENCODED)'. Offending method is '"
+                                        + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    }
                 }
             }
 
-            Type nonAsyncReturnType = getNonAsyncReturnType(methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
+            Type methodContextReturnTypeOrReturnType = methodContext.containsKey(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
                     ? (Type) methodContext.get(METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)
-                    : currentMethodInfo.returnType());
+                    : currentMethodInfo.returnType();
+            if (REST_RESPONSE.equals(methodContextReturnTypeOrReturnType.name())
+                    && (methodContextReturnTypeOrReturnType.kind() == Kind.CLASS)) {
+                log.warn("Method '" + currentMethodInfo.name() + " of Resource class '"
+                        + currentMethodInfo.declaringClass().name()
+                        + "' returns RestResponse but does not declare a generic type. It is strongly advised to define the generic type otherwise the behavior could be unpredictable");
+            }
+            Type nonAsyncReturnType = getNonAsyncReturnType(methodContextReturnTypeOrReturnType);
             addWriterForType(additionalWriters, nonAsyncReturnType);
 
-            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES),
-                    basicResourceClassInfo.getProduces());
-            produces = applyDefaultProduces(produces, nonAsyncReturnType);
-            produces = addDefaultCharsets(produces);
-
-            String sseElementType = basicResourceClassInfo.getSseElementType();
-            AnnotationInstance sseElementTypeAnnotation = getAnnotationStore().getAnnotation(currentMethodInfo,
-                    REST_SSE_ELEMENT_TYPE);
-            if (sseElementTypeAnnotation != null) {
-                sseElementType = sseElementTypeAnnotation.value().asString();
+            String streamElementType = basicResourceClassInfo.getStreamElementType();
+            String streamElementTypeInMethod = getStreamAnnotationValue(currentMethodInfo);
+            if (streamElementTypeInMethod != null) {
+                streamElementType = streamElementTypeInMethod;
             }
+
+            String[] produces = extractProducesConsumesValues(getAnnotationStore().getAnnotation(currentMethodInfo, PRODUCES));
+            if (((produces == null) || (produces.length == 0)) && (streamElementType != null)) {
+                // when @RestStreamElementType is used, we automatically determine SSE as the @Produces MediaType
+                produces = new String[] { MediaType.SERVER_SENT_EVENTS };
+            } else if (produces == null || produces.length == 0) {
+                // use the @Produces annotation at class level if exists
+                produces = basicResourceClassInfo.getProduces();
+            }
+
+            produces = applyDefaultProducesAndAddCharsets(httpMethod, nonAsyncReturnType, produces);
+
             boolean returnsMultipart = false;
             if (produces != null && produces.length == 1) {
-                if (sseElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
+                if (streamElementType == null && MediaType.SERVER_SENT_EVENTS.equals(produces[0])) {
                     // Handle server sent events responses
                     String[] defaultProducesForType = applyAdditionalDefaults(nonAsyncReturnType);
                     if (defaultProducesForType.length == 1) {
-                        sseElementType = defaultProducesForType[0];
+                        streamElementType = defaultProducesForType[0];
                     }
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
+                    if (RESPONSE.equals(nonAsyncReturnType.name())) {
+                        throw new DeploymentException(
+                                String.format(
+                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s'",
+                                        RESPONSE,
+                                        REST_RESPONSE,
+                                        currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo));
+                    }
+
                     // Handle multipart form data responses
                     ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
                     returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(additionalWriters,
@@ -556,43 +718,51 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
+            boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
             // when the class defining the annotations is an interface
             if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
                 MethodInfo actualMethodInfo = actualEndpointInfo.method(currentMethodInfo.name(),
-                        currentMethodInfo.parameters().toArray(new Type[0]));
+                        currentMethodInfo.parameterTypes().toArray(new Type[0]));
                 if (actualMethodInfo != null) {
                     //we don't pass AUTOMATIC here, as the method signature would be the same, so the same determination
                     //would be reached for a default
-                    blocking = isBlocking(actualMethodInfo, blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
+                    blocking = isBlocking(actualMethodInfo,
+                            blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
+                    runOnVirtualThread = isRunOnVirtualThread(actualMethodInfo,
+                            blocking ? BlockingDefault.BLOCKING : BlockingDefault.NON_BLOCKING);
                 }
             }
 
             if (returnsMultipart && !blocking) {
                 throw new DeploymentException(
-                        "Endpoints that produce a Multipart result can only be used on non blocking methods. Offending method is '"
+                        "Endpoints that produce a Multipart result can only be used on blocking methods. Offending method is '"
                                 + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
             }
 
+            methodContext.put(METHOD_PRODUCES, produces);
             ResourceMethod method = createResourceMethod(currentMethodInfo, actualEndpointInfo, methodContext)
                     .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
-                    .setPath(methodPath)
+                    .setPath(sanitizePath(methodPath))
                     .setConsumes(consumes)
                     .setProduces(produces)
                     .setNameBindingNames(nameBindingNames)
                     .setName(currentMethodInfo.name())
                     .setBlocking(blocking)
+                    .setRunOnVirtualThread(runOnVirtualThread)
                     .setSuspended(suspended)
                     .setSse(sse)
-                    .setSseElementType(sseElementType)
+                    .setEncoded(currentMethodInfo.hasDeclaredAnnotation(ENCODED))
+                    .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
-                    .setMultipart(multipart)
+                    .setFileFormNames(fileFormNames)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(
                             toClassName(currentMethodInfo.returnType(), currentClassInfo, actualEndpointInfo, index))
                     // FIXME: resolved arguments ?
                     .setReturnType(
-                            determineReturnType(currentMethodInfo, typeArgMapper, currentClassInfo, actualEndpointInfo, index));
+                            determineReturnType(methodContextReturnTypeOrReturnType, typeArgMapper, currentClassInfo,
+                                    actualEndpointInfo, index));
 
             if (httpMethod == null) {
                 handleClientSubResource(method, currentMethodInfo, index);
@@ -601,7 +771,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             handleAdditionalMethodProcessing((METHOD) method, currentClassInfo, currentMethodInfo, getAnnotationStore());
             if (resourceMethodCallback != null) {
                 resourceMethodCallback.accept(
-                        new ResourceMethodCallbackData(basicResourceClassInfo, actualEndpointInfo, currentMethodInfo, method));
+                        new ResourceMethodCallbackEntry(this, index, basicResourceClassInfo, actualEndpointInfo,
+                                currentMethodInfo,
+                                method));
             }
             return method;
         } catch (Exception e) {
@@ -610,19 +782,107 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
     }
 
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
+                + methodInfo.declaringClass().name() + "#" + methodInfo + "'");
+    }
+
+    private Function<Map<DotName, AnnotationInstance>, Boolean> skipNotRestParameters(boolean skipAllNotMethodParameter) {
+        return new Function<Map<DotName, AnnotationInstance>, Boolean>() {
+            @Override
+            public Boolean apply(Map<DotName, AnnotationInstance> anns) {
+                if (skipAllNotMethodParameter) {
+                    return anns.size() > 0
+                            && JAX_RS_ANNOTATIONS_FOR_FIELDS.stream().noneMatch(dotName -> anns.containsKey(dotName));
+                }
+                return false;
+            }
+        };
+    }
+
+    protected boolean skipParameter(Map<DotName, AnnotationInstance> anns) {
+        return skipMethodParameter != null && skipMethodParameter.test(anns);
+    }
+
+    private String[] applyDefaultProducesAndAddCharsets(DotName httpMethod, Type nonAsyncReturnType, String[] produces) {
+        return addDefaultCharsets(applyDefaultProduces(produces, nonAsyncReturnType, httpMethod));
+    }
+
     protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
 
     }
 
+    private String getStreamAnnotationValue(AnnotationTarget target) {
+        String value = getAnnotationValueAsString(target, REST_STREAM_ELEMENT_TYPE);
+        if (value == null) {
+            value = getAnnotationValueAsString(target, REST_SSE_ELEMENT_TYPE);
+        }
+
+        return value;
+    }
+
+    private String getAnnotationValueAsString(AnnotationTarget target, DotName annotationType) {
+        String value = null;
+        AnnotationInstance annotation = getAnnotationStore().getAnnotation(target, annotationType);
+        if (annotation != null) {
+            value = annotation.value().asString();
+        }
+
+        return value;
+    }
+
+    private boolean isRunOnVirtualThread(MethodInfo info, BlockingDefault defaultValue) {
+        boolean isRunOnVirtualThread = false;
+        Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
+                RUN_ON_VIRTUAL_THREAD);
+
+        if (runOnVirtualThreadAnnotation != null) {
+            if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' uses @RunOnVirtualThread but the JDK version '" + Runtime.version() +
+                        "' and doesn't support virtual threads");
+            }
+            if (targetJavaVersion.isJava19OrHigher() == Status.FALSE) {
+                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                        + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
+            }
+            isRunOnVirtualThread = true;
+        }
+
+        //BlockingDefault.BLOCKING should mean "block a platform thread" ? here it does
+        if (defaultValue == BlockingDefault.BLOCKING) {
+            return false;
+        } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
+            isRunOnVirtualThread = true;
+        } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
+            return false;
+        }
+
+        if (isRunOnVirtualThread && !isBlocking(info, defaultValue)) {
+            throw new DeploymentException(
+                    "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                            + "' is considered a non blocking method. @RunOnVirtualThread can only be used on " +
+                            " methods considered blocking");
+        } else if (isRunOnVirtualThread) {
+            return true;
+        }
+
+        return false;
+    }
+
     private boolean isBlocking(MethodInfo info, BlockingDefault defaultValue) {
         Map.Entry<AnnotationTarget, AnnotationInstance> blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
+        Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
+                RUN_ON_VIRTUAL_THREAD);
         Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info,
                 NON_BLOCKING);
+
         if ((blockingAnnotation != null) && (nonBlockingAnnotation != null)) {
             if (blockingAnnotation.getKey().kind() == nonBlockingAnnotation.getKey().kind()) {
                 if (blockingAnnotation.getKey().kind() == AnnotationTarget.Kind.METHOD) {
-                    throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                            + "' contains both @Blocking and @NonBlocking annotations.");
+                    throw new DeploymentException(
+                            "Method '" + info.name() + "' of class '" + info.declaringClass().name()
+                                    + "' contains both @Blocking and @NonBlocking annotations.");
                 } else {
                     throw new DeploymentException("Class '" + info.declaringClass().name()
                             + "' contains both @Blocking and @NonBlocking annotations.");
@@ -641,13 +901,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return false;
         }
         Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
-        if (transactional != null) {
-            return true;
-        }
         if (defaultValue == BlockingDefault.BLOCKING) {
             return true;
+        } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
+            return false;
         } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
             return false;
+        } else if (transactional != null) {
+            return true;
         }
         return doesMethodHaveBlockingSignature(info);
     }
@@ -656,21 +917,24 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return true;
     }
 
-    private String determineReturnType(MethodInfo info, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
+    private String determineReturnType(Type returnType, TypeArgMapper typeArgMapper, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index) {
-        Type type = info.returnType();
-        if (type.kind() == Type.Kind.TYPE_VARIABLE) {
-            type = resolveTypeVariable(type.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
+        if (returnType.kind() == Type.Kind.TYPE_VARIABLE) {
+            returnType = resolveTypeVariable(returnType.asTypeVariable(), currentClassInfo, actualEndpointInfo, index);
         }
-        return AsmUtil.getSignature(type, typeArgMapper);
+        return AsmUtil.getSignature(returnType, typeArgMapper);
     }
 
     protected abstract boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
-            int i);
+            int i, Set<String> fileFormNames);
 
     protected void handleAdditionalMethodProcessing(METHOD method, ClassInfo currentClassInfo, MethodInfo info,
             AnnotationStore annotationStore) {
 
+    }
+
+    public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
+        return false;
     }
 
     protected abstract InjectableBean scanInjectableBean(ClassInfo currentClassInfo,
@@ -682,9 +946,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected abstract MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             boolean encoded, Type paramType, PARAM parameterResult, String name, String defaultValue,
-            ParameterType type, String elementType, boolean single, String signature);
+            ParameterType type, String elementType, boolean single, String signature,
+            Set<String> fileFormNames);
 
-    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType) {
+    private String[] applyDefaultProduces(String[] produces, Type nonAsyncReturnType,
+            DotName httpMethod) {
+        setupApplyDefaults(nonAsyncReturnType, httpMethod);
         if (produces != null && produces.length != 0)
             return produces;
         return applyAdditionalDefaults(nonAsyncReturnType);
@@ -704,6 +971,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         return result.toArray(EMPTY_STRING_ARRAY);
+    }
+
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
+
     }
 
     protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
@@ -727,6 +998,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         || COMPLETABLE_FUTURE.equals(parameterizedType.name())
                         || UNI.equals(parameterizedType.name())
                         || MULTI.equals(parameterizedType.name())
+                        || REST_MULTI.equals(parameterizedType.name())
                         || REST_RESPONSE.equals(parameterizedType.name())) {
                     return parameterizedType.arguments().get(0);
                 }
@@ -761,7 +1033,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     }
 
     private static String methodDescriptor(MethodInfo info) {
-        return info.name() + ":" + AsmUtil.getDescriptor(info, s -> null);
+        return info.name() + ":" + info.descriptor();
     }
 
     private static boolean moreThanOne(AnnotationInstance... annotations) {
@@ -835,7 +1107,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             case WILDCARD_TYPE:
                 WildcardType wildcardType = indexType.asWildcardType();
                 Type extendsBound = wildcardType.extendsBound();
-                if (extendsBound.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+                if (extendsBound.name().equals(OBJECT)) {
                     // this is a super bound type that we don't support
                     throw new RuntimeException("Cannot handle wildcard type " + indexType);
                 }
@@ -868,17 +1140,41 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         }
         if (pos != -1) {
-            List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
-                    indexView);
-
-            Type resolved = params.get(pos);
-            if (resolved.kind() != Type.Kind.TYPE_VARIABLE
-                    || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
+            Type resolved = resolveTypeParameters(pos, actualEndpointClass, currentClass, indexView);
+            if (resolved != null
+                    && (resolved.kind() != Type.Kind.TYPE_VARIABLE
+                            || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier()))) {
                 return resolved;
             }
         }
 
         return typeVariable.bounds().get(0);
+    }
+
+    private static Type resolveTypeParameters(int position, ClassInfo actualEndpointClass, ClassInfo currentClass,
+            IndexView indexView) {
+        List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
+                indexView);
+
+        if (position < params.size()) {
+            return params.get(position);
+        }
+
+        // if not found, try to find the type from the methods
+        for (MethodInfo method : actualEndpointClass.methods()) {
+            for (int paramIndex = 0; paramIndex < method.parametersCount(); paramIndex++) {
+                Type paramType = method.parameterType(paramIndex);
+                if (paramType.kind() == Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType parameterizedType = paramType.asParameterizedType();
+                    if (parameterizedType.name().equals(currentClass.name())
+                            && position < parameterizedType.arguments().size()) {
+                        return parameterizedType.arguments().get(position);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private static String appendPath(String prefix, String suffix) {
@@ -957,10 +1253,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (queryParam != null) {
             builder.setName(queryParam.value().asString());
             builder.setType(ParameterType.QUERY);
+            builder.setSeparator(getSeparator(anns));
             convertible = true;
         } else if (restQueryParam != null) {
             builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
             builder.setType(ParameterType.QUERY);
+            builder.setSeparator(getSeparator(anns));
             convertible = true;
         } else if (cookieParam != null) {
             builder.setName(cookieParam.value().asString());
@@ -976,7 +1274,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             convertible = true;
         } else if (restHeaderParam != null) {
             if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
-                builder.setName(StringUtil.hyphenate(sourceName));
+                builder.setName(StringUtil.hyphenateWithCapitalFirstLetter(sourceName));
             } else {
                 builder.setName(restHeaderParam.value().asString());
             }
@@ -985,11 +1283,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         } else if (formParam != null) {
             builder.setName(formParam.value().asString());
             builder.setType(ParameterType.FORM);
-            convertible = true;
+            convertible = isFormParamConvertible(paramType);
         } else if (restFormParam != null) {
             builder.setName(valueOrDefault(restFormParam.value(), sourceName));
             builder.setType(ParameterType.FORM);
-            convertible = true;
+            convertible = isFormParamConvertible(paramType);
         } else if (matrixParam != null) {
             builder.setName(matrixParam.value().asString());
             builder.setType(ParameterType.MATRIX);
@@ -1021,34 +1319,29 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     && isContextType(paramType.asClassType())) {
                 // no name required
                 builder.setType(ParameterType.CONTEXT);
+            } else if (!field
+                    && paramType.kind() == Kind.CLASS
+                    && isParameterContainerType(paramType.asClassType())) {
+                // auto @BeanParam/@MultipartForm parameters
+                builder.setType(ParameterType.BEAN);
             } else if (!field && pathParameters.contains(sourceName)) {
                 builder.setName(sourceName);
                 builder.setType(ParameterType.PATH);
                 builder.setErrorLocation(builder.getErrorLocation()
                         + " (this parameter name matches the @Path parameter name, so it has been implicitly assumed to be an @PathParam and not the request body)");
                 convertible = true;
+            } else if (!field && paramType.name().equals(MULTI_PART_DATA_INPUT)) {
+                builder.setType(ParameterType.MULTI_PART_DATA_INPUT);
+                builder.setSingle(true);
+                return builder;
             } else {
                 //un-annotated field
                 //just ignore it
                 if (field) {
                     return builder;
                 }
-                if ((declaredConsumes != null) && (declaredConsumes.length == 1)
-                        && (MediaType.MULTIPART_FORM_DATA.equals(declaredConsumes[0]))) {
-                    // in this case it is safe to assume that we are consuming multipart data
-                    // we already don't allow multipart to be used along with body in the same method,
-                    // so this is completely safe
-                    var type = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);
-                    var typeInfo = index.getClassByName(DotName.createSimple(type));
-                    if (typeInfo != null && typeInfo.annotations().containsKey(REST_FORM_PARAM)) {
-                        builder.setType(ParameterType.MULTI_PART_FORM);
-                    } else {
-                        //if the paramater does not have @RestForm annotations we treat it as a normal body
-                        builder.setType(ParameterType.BODY);
-                    }
-                } else {
-                    builder.setType(ParameterType.BODY);
-                }
+                builder.setName(sourceName);
+                builder.setType(ParameterType.BODY);
             }
         }
         builder.setSingle(true);
@@ -1082,12 +1375,21 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 typeHandled = true;
                 elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, index);
                 if (convertible) {
-                    handleOptionalParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+                    String genericElementType = null;
+                    if (pt.arguments().get(0).kind() == Kind.PARAMETERIZED_TYPE) {
+                        genericElementType = toClassName(pt.arguments().get(0).asParameterizedType().arguments().get(0),
+                                currentClassInfo, actualEndpointInfo, index);
+                    }
+
+                    handleOptionalParam(existingConverters, anns, errorLocation, hasRuntimeConverters, builder, elementType,
+                            genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
             } else if (convertible) {
-                throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
-            } else {
+                typeHandled = true;
+                elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
+                handleOtherParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            } else if (builder.getType() != ParameterType.BEAN) {
                 // the "element" type is not of importance as in this case the signature is used at runtime to determine the proper types
                 elementType = DUMMY_ELEMENT_TYPE.toString();
                 addReaderForType(additionalReaders, pt);
@@ -1098,16 +1400,44 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             handlePathSegmentParam(builder);
             typeHandled = true;
         } else if (SUPPORT_TEMPORAL_PARAMS.contains(paramType.name())
-                && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM)) {
+                && (type == ParameterType.PATH || type == ParameterType.QUERY || type == ParameterType.FORM
+                        || type == ParameterType.COOKIE || type == ParameterType.HEADER)) {
             elementType = paramType.name().toString();
             handleTemporalParam(builder, paramType.name(), anns, currentMethodInfo);
             typeHandled = true;
-        } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY)) { // RESTEasy Classic handles the non-generic List type
+        } else if (paramType.name().equals(LIST) && (type == ParameterType.QUERY
+                || type == ParameterType.HEADER)) { // RESTEasy Classic handles the non-generic List type
             elementType = String.class.getName();
             typeHandled = true;
             builder.setSingle(false);
             if (convertible) {
                 handleListParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.name().equals(SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic Set type
+            elementType = String.class.getName();
+            typeHandled = true;
+            builder.setSingle(false);
+            if (convertible) {
+                handleSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.name().equals(SORTED_SET) && type == ParameterType.HEADER) { // RESTEasy Classic handles the non-generic SortedSet type
+            elementType = String.class.getName();
+            typeHandled = true;
+            builder.setSingle(false);
+            if (convertible) {
+                handleSortedSetParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
+            }
+        } else if (paramType.kind() == Kind.ARRAY) {
+            ArrayType at = paramType.asArrayType();
+            typeHandled = true;
+            // special case do not treat byte[] for multipart form values
+            if (builder.type != ParameterType.FORM
+                    || convertible) {
+                builder.setSingle(false);
+            }
+            elementType = toClassName(at.constituent(), currentClassInfo, actualEndpointInfo, index);
+            if (convertible) {
+                handleArrayParam(existingConverters, errorLocation, hasRuntimeConverters, builder, elementType);
             }
         }
 
@@ -1126,8 +1456,22 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
             throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
         }
+        if (builder.isSingle() && builder.getSeparator() != null) {
+            throw new DeploymentException("Single parameters should not be marked with @Separator");
+        }
         builder.setElementType(elementType);
         return builder;
+    }
+
+    private boolean isFormParamConvertible(Type paramType) {
+        // let's not call the array converter for byte[] for multipart
+        if (paramType.kind() == Kind.ARRAY
+                && paramType.asArrayType().constituent().kind() == Kind.PRIMITIVE
+                && paramType.asArrayType().constituent().asPrimitiveType().primitive() == Primitive.BYTE) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, PARAM builder, Type paramType, boolean field,
@@ -1170,8 +1514,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean hasRuntimeConverters, PARAM builder, String elementType) {
     }
 
-    protected void handleOptionalParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, PARAM builder, String elementType) {
+    protected void handleOptionalParam(Map<String, String> existingConverters,
+            Map<DotName, AnnotationInstance> parameterAnnotations,
+            String errorLocation,
+            boolean hasRuntimeConverters, PARAM builder, String elementType, String genericElementType,
+            MethodInfo currentMethodInfo) {
     }
 
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
@@ -1182,8 +1529,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             PARAM builder, String elementType) {
     }
 
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType) {
+    }
+
     final boolean isContextType(ClassType klass) {
         return contextTypes.contains(klass.name());
+    }
+
+    final boolean isParameterContainerType(ClassType klass) {
+        return parameterContainerTypes.contains(klass.name());
     }
 
     private String valueOrDefault(AnnotationValue annotation, String defaultValue) {
@@ -1205,11 +1560,116 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return annotationStore;
     }
 
+    protected String getPartMime(Map<DotName, AnnotationInstance> annotations) {
+        AnnotationInstance partType = annotations.get(ResteasyReactiveDotNames.PART_TYPE_NAME);
+        String mimeType = null;
+        if (partType != null && partType.value() != null) {
+            mimeType = partType.value().asString();
+            // remove what ends up being the default
+            if (MediaType.TEXT_PLAIN.equals(mimeType)) {
+                mimeType = null;
+            }
+        }
+        return mimeType;
+    }
+
+    protected String getSeparator(Map<DotName, AnnotationInstance> annotations) {
+        AnnotationInstance separator = annotations.get(ResteasyReactiveDotNames.SEPARATOR);
+        String result = null;
+        if (separator != null && separator.value() != null) {
+            result = separator.value().asString();
+        }
+        return result;
+    }
+
+    protected boolean hasJson(String[] types) {
+        if (types == null) {
+            return false;
+        }
+        for (String type : types) {
+            if (isJson(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isJson(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.startsWith(MediaType.APPLICATION_JSON);
+    }
+
+    protected boolean hasJson(ResourceMethod method) {
+        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
+    }
+
+    protected boolean hasNoTypesDefined(ResourceMethod method) {
+        return (method.getProduces() == null || method.getProduces().length == 0) &&
+                (method.getConsumes() == null || method.getConsumes().length == 0) &&
+                (method.getStreamElementType() == null);
+    }
+
+    protected boolean isDefaultJson(DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        List<MediaType> mediaTypes = jsonDefaultProducersHandler.handle(context);
+        for (MediaType mediaType : mediaTypes) {
+            if (isJson(mediaType.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected SerializerScanningResult getSerializerScanningResult() {
+        if (serializerScanningResult == null) {
+            serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+        }
+        return serializerScanningResult;
+    }
+
+    protected void warnAboutMissingJsonProviderIfNeeded(ResourceMethod method, MethodInfo info,
+            DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson(jsonDefaultProducersHandler, context))) {
+            if (STRING.toString().equals(method.getSimpleReturnType())) { // when returning string, we assume that the method implementation is actually handling to conversion
+                return;
+            }
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
+            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
+                logMissingJsonWarning(info);
+            }
+        }
+    }
+
+    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
+        boolean appProvidedJsonReaderExists = false;
+        for (ScannedSerializer provider : providers) {
+            for (String mt : provider.getMediaTypeStrings()) {
+                if (isJson(mt)) {
+                    appProvidedJsonReaderExists = true;
+                    break;
+                }
+            }
+            if (appProvidedJsonReaderExists) {
+                break;
+            }
+        }
+        return appProvidedJsonReaderExists;
+    }
+
+    protected void logMissingJsonWarning(MethodInfo info) {
+
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static abstract class Builder<T extends EndpointIndexer<T, ?, METHOD>, B extends Builder<T, B, METHOD>, METHOD extends ResourceMethod> {
         private Function<String, BeanFactory<Object>> factoryCreator;
         private BlockingDefault defaultBlocking = BlockingDefault.AUTOMATIC;
         private IndexView index;
+        private IndexView applicationIndex;
         private Map<String, String> existingConverters = new HashMap<>();
         private Map<DotName, String> scannedResourcePaths;
         private ResteasyReactiveConfig config;
@@ -1219,10 +1679,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private AdditionalWriters additionalWriters;
         private boolean hasRuntimeConverters;
         private Map<DotName, Map<String, String>> classLevelExceptionMappers;
-        private Consumer<ResourceMethodCallbackData> resourceMethodCallback;
-        private Collection<AnnotationsTransformer> annotationsTransformers;
+        private Consumer<ResourceMethodCallbackEntry> resourceMethodCallback;
+        private Collection<AnnotationTransformation> annotationsTransformers;
         private ApplicationScanningResult applicationScanningResult;
-        private Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private final Set<DotName> contextTypes = new HashSet<>(DEFAULT_CONTEXT_TYPES);
+        private final Set<DotName> parameterContainerTypes = new HashSet<>();
         private MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension = new MultipartReturnTypeIndexerExtension() {
             @Override
             public boolean handleMultipartForReturnType(AdditionalWriters additionalWriters, ClassInfo multipartClassInfo,
@@ -1230,19 +1691,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return false;
             }
         };
-        public MultipartParameterIndexerExtension multipartParameterIndexerExtension = new MultipartParameterIndexerExtension() {
-            @Override
-            public void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView indexView) {
-            }
-        };
+        private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
+
+        private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
+
+        private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
+
+        private boolean skipNotRestParameters = false;
 
         public B setMultipartReturnTypeIndexerExtension(MultipartReturnTypeIndexerExtension multipartReturnTypeHandler) {
             this.multipartReturnTypeIndexerExtension = multipartReturnTypeHandler;
-            return (B) this;
-        }
-
-        public B setMultipartParameterIndexerExtension(MultipartParameterIndexerExtension multipartParameterHandler) {
-            this.multipartParameterIndexerExtension = multipartParameterHandler;
             return (B) this;
         }
 
@@ -1261,6 +1719,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
+        public B setApplicationIndex(IndexView index) {
+            this.applicationIndex = index;
+            return (B) this;
+        }
+
         public B addContextType(DotName contextType) {
             this.contextTypes.add(contextType);
             return (B) this;
@@ -1268,6 +1731,16 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B addContextTypes(Collection<DotName> contextTypes) {
             this.contextTypes.addAll(contextTypes);
+            return (B) this;
+        }
+
+        public B addParameterContainerType(DotName parameterContainerType) {
+            this.parameterContainerTypes.add(parameterContainerType);
+            return (B) this;
+        }
+
+        public B addParameterContainerTypes(Collection<DotName> parameterContainerTypes) {
+            this.parameterContainerTypes.addAll(parameterContainerTypes);
             return (B) this;
         }
 
@@ -1316,18 +1789,51 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return (B) this;
         }
 
-        public B setResourceMethodCallback(Consumer<ResourceMethodCallbackData> resourceMethodCallback) {
+        public B setResourceMethodCallback(Consumer<ResourceMethodCallbackEntry> resourceMethodCallback) {
             this.resourceMethodCallback = resourceMethodCallback;
             return (B) this;
         }
 
+        /**
+         * @deprecated use {@link #setAnnotationTransformations(Collection)}
+         */
+        @Deprecated(forRemoval = true)
         public B setAnnotationsTransformers(Collection<AnnotationsTransformer> annotationsTransformers) {
-            this.annotationsTransformers = annotationsTransformers;
+            List<AnnotationTransformation> transformations = new ArrayList<>(annotationsTransformers.size());
+            transformations.addAll(annotationsTransformers);
+            this.annotationsTransformers = transformations;
+            return (B) this;
+        }
+
+        public B setAnnotationTransformations(Collection<AnnotationTransformation> annotationTransformations) {
+            this.annotationsTransformers = annotationTransformations;
             return (B) this;
         }
 
         public B setApplicationScanningResult(ApplicationScanningResult applicationScanningResult) {
             this.applicationScanningResult = applicationScanningResult;
+            return (B) this;
+        }
+
+        public B setTargetJavaVersion(TargetJavaVersion targetJavaVersion) {
+            this.targetJavaVersion = targetJavaVersion;
+            return (B) this;
+        }
+
+        public B setIsDisabledCreator(
+                Function<ClassInfo, Supplier<Boolean>> isDisabledCreator) {
+            this.isDisabledCreator = isDisabledCreator;
+            return (B) this;
+        }
+
+        public B setSkipMethodParameter(
+                Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter) {
+            this.skipMethodParameter = skipMethodParameter;
+            return (B) this;
+        }
+
+        public B skipNotRestParameters(boolean skipNotRestParameters) {
+            this.skipNotRestParameters = skipNotRestParameters;
             return (B) this;
         }
 
@@ -1339,15 +1845,15 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         private final String[] produces;
         private final String[] consumes;
         private final Set<String> pathParameters;
-        private final String sseElementType;
+        private final String streamElementType;
 
         public BasicResourceClassInfo(String path, String[] produces, String[] consumes, Set<String> pathParameters,
-                String sseElementType) {
+                String streamElementType) {
             this.path = path;
             this.produces = produces;
             this.consumes = consumes;
             this.pathParameters = pathParameters;
-            this.sseElementType = sseElementType;
+            this.streamElementType = streamElementType;
         }
 
         public String getPath() {
@@ -1366,19 +1872,27 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return pathParameters;
         }
 
-        public String getSseElementType() {
-            return sseElementType;
+        public String getStreamElementType() {
+            return streamElementType;
         }
     }
 
-    public static class ResourceMethodCallbackData {
+    @SuppressWarnings("rawtypes")
+    public static class ResourceMethodCallbackEntry {
+
+        private final EndpointIndexer indexer;
+        private final IndexView index;
         private final BasicResourceClassInfo basicResourceClassInfo;
         private final ClassInfo actualEndpointInfo;
         private final MethodInfo methodInfo;
         private final ResourceMethod resourceMethod;
 
-        public ResourceMethodCallbackData(BasicResourceClassInfo basicResourceClassInfo, ClassInfo actualEndpointInfo,
+        public ResourceMethodCallbackEntry(EndpointIndexer indexer, IndexView index,
+                BasicResourceClassInfo basicResourceClassInfo,
+                ClassInfo actualEndpointInfo,
                 MethodInfo methodInfo, ResourceMethod resourceMethod) {
+            this.indexer = indexer;
+            this.index = index;
             this.basicResourceClassInfo = basicResourceClassInfo;
             this.methodInfo = methodInfo;
             this.actualEndpointInfo = actualEndpointInfo;
@@ -1399,6 +1913,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public ResourceMethod getResourceMethod() {
             return resourceMethod;
+        }
+
+        public boolean additionalRegisterClassForReflectionCheck() {
+            return indexer.additionalRegisterClassForReflectionCheck(this);
         }
     }
 
@@ -1433,5 +1951,19 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
      */
     public interface MultipartParameterIndexerExtension {
         void handleMultipartParameter(ClassInfo multipartClassInfo, IndexView index);
+    }
+
+    private static final class FoundEndpoint {
+        private final ClassInfo classInfo;
+        private final Set<String> classNameBindings;
+        private final MethodInfo methodInfo;
+        private final DotName httpMethod;
+
+        private FoundEndpoint(ClassInfo classInfo, Set<String> classNameBindings, MethodInfo methodInfo, DotName httpMethod) {
+            this.classInfo = classInfo;
+            this.classNameBindings = classNameBindings;
+            this.methodInfo = methodInfo;
+            this.httpMethod = httpMethod;
+        }
     }
 }

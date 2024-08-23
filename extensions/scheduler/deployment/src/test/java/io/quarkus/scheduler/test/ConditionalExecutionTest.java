@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,8 +24,7 @@ public class ConditionalExecutionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class));
+            .withApplicationRoot(root -> root.addClasses(Jobs.class, IsDisabled.class));
 
     @Test
     public void testExecution() {
@@ -79,14 +78,12 @@ public class ConditionalExecutionTest {
 
         void onSkip(@Observes SkippedExecution event) {
             if (event.triggerId.equals("foo")) {
-
                 SKIPPED_LATCH.countDown();
             }
         }
 
     }
 
-    @Singleton
     public static class OtherIsDisabled implements Scheduled.SkipPredicate {
 
         static final AtomicBoolean TESTED = new AtomicBoolean(false);

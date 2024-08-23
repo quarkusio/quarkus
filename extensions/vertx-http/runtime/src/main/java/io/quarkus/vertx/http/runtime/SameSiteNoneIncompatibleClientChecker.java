@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * were marked `SameSite=Strict`. This bug has been fixed on newer versions of iOS and MacOS.
  * </ul>
  * <p>
- * 
+ *
  * @see <a href="https://www.chromium.org/updates/same-site/incompatible-clients">SameSite=None: Known Incompatible Clients</a>.
  */
 final class SameSiteNoneIncompatibleClientChecker {

@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.core.multipart;
 
-import java.util.List;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 
 public interface MultipartOutputInjectionTarget {
-    List<PartItem> mapFrom(Object pojo);
+    MultipartFormDataOutput mapFrom(Object pojo);
 }

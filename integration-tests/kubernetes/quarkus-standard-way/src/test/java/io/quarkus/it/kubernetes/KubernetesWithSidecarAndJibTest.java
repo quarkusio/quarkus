@@ -4,16 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -27,9 +27,8 @@ public class KubernetesWithSidecarAndJibTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-with-sidecar-and-jib.properties")
             .setLogFileName("k8s.log")
-            .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -68,7 +67,7 @@ public class KubernetesWithSidecarAndJibTest {
                     assertThat(c.getArgs()).isEmpty();
                     assertThat(c.getWorkingDir()).isNull();
                     assertThat(c.getVolumeMounts()).isEmpty();
-                    assertThat(c.getPorts()).singleElement().satisfies(p -> assertThat(p.getContainerPort()).isEqualTo(8080));
+                    assertThat(c.getPorts()).anySatisfy(p -> assertThat(p.getContainerPort()).isEqualTo(8080));
                     assertThat(c.getEnv()).allSatisfy(e -> assertThat(e.getName()).isNotEqualToIgnoringCase("foo"));
                 });
     }
@@ -91,6 +90,12 @@ public class KubernetesWithSidecarAndJibTest {
                     assertThat(c.getEnv()).singleElement().satisfies(e -> {
                         assertThat(e.getName()).isEqualTo("FOO");
                         assertThat(e.getValue()).isEqualTo("bar");
+                    });
+                    assertThat(c.getResources()).satisfies(r -> {
+                        assertThat(r.getRequests().get("cpu")).isEqualTo(new Quantity("102m"));
+                        assertThat(r.getRequests().get("memory")).isEqualTo(new Quantity("201Mi"));
+                        assertThat(r.getLimits().get("cpu")).isEqualTo(new Quantity("100m"));
+                        assertThat(r.getLimits().get("memory")).isEqualTo(new Quantity("200Mi"));
                     });
                 });
     }

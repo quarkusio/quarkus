@@ -46,7 +46,7 @@ import io.quarkus.runtime.annotations.Recorder;
  * <p>
  * If field injection is used then every {@code BuildStep} method on the class will be a producer/consumer of these
  * items, while method parameter injection is specific to an individual build step. In general method parameter injection
- * should be the preferred approach as it is more fine grained.
+ * should be the preferred approach as it is more fine-grained.
  * <p>
  * Note that a {@code BuildStep} will only be run if there is a consumer for items it produces. If nothing is
  * interested in the produced item then it will not be run. A consequence of this is that it must be capable of producing

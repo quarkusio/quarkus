@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
@@ -20,7 +20,7 @@ import io.restassured.RestAssured;
 import io.smallrye.health.api.AsyncHealthCheck;
 import io.smallrye.mutiny.Uni;
 
-public class AsyncDispatchedThreadTest {
+class AsyncDispatchedThreadTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -29,7 +29,7 @@ public class AsyncDispatchedThreadTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void check() {
+    void check() {
         RestAssured.when().get("/q/health/live").then()
                 .body("status", is("UP"),
                         "checks.status", contains("UP"),

@@ -1,11 +1,10 @@
 package io.quarkus.it.mockbean;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 public class SuffixServiceSingletonProducer {
 
-    @Produces
+    //@Produces // intentionally commented out to test that auto-producers work with `@InjectMock`
     @Singleton
     public SuffixServiceSingleton dummyService() {
         return new SuffixServiceSingleton();

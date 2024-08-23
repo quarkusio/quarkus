@@ -12,7 +12,7 @@ kubernetesYml.withInputStream { stream ->
     //Check that its parse-able
     KubernetesList list = Serialization.unmarshalAsList(stream)
     assert list != null
-
+    
     //Check that it contains the existing Service provided
     Service service = list.items.find{ r -> r.kind == "Service" && r.metadata.name == "postgres"}
     assert service != null
@@ -36,13 +36,15 @@ kubernetesYml.withInputStream { stream ->
     assert container.name == "postgres"
     assert container.ports.find{p -> p.protocol = "TCP"}.containerPort == 5432
 
+    String version = "0.1-SNAPSHOT"
+
     //Check that it created the application's Deployment with right labels and selector
     Deployment deployment = list.items.find{r -> r.kind == "Deployment" && r.metadata.name == "minikube-with-existing-manifest"}
     assert deployment != null
     assert deployment.metadata.labels.get("app.kubernetes.io/name") == "minikube-with-existing-manifest"
-    assert deployment.metadata.labels.get("app.kubernetes.io/version") == "0.1-SNAPSHOT"
+    assert deployment.metadata.labels.get("app.kubernetes.io/version") == version
     assert deployment.spec.replicas == 1
 
     assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/name") == "minikube-with-existing-manifest"
-    assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/version") == "0.1-SNAPSHOT"
+    assert deployment.spec.selector.matchLabels.get("app.kubernetes.io/version") == version
 }

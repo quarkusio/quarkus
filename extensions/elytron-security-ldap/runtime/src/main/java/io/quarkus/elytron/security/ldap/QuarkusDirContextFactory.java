@@ -1,7 +1,6 @@
 package io.quarkus.elytron.security.ldap;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
+import java.time.Duration;
 import java.util.Hashtable;
 
 import javax.naming.NamingException;
@@ -14,7 +13,6 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
-import org.wildfly.security.manager.action.SetContextClassLoaderAction;
 
 public class QuarkusDirContextFactory implements DirContextFactory {
     //    private static final ElytronMessages log = Logger.getMessageLogger(ElytronMessages.class, "org.wildfly.security");
@@ -24,18 +22,20 @@ public class QuarkusDirContextFactory implements DirContextFactory {
     public static final String INITIAL_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
     private static final String SECURITY_AUTHENTICATION = "simple";
 
-    private static final String DEFAULT_CONNECT_TIMEOUT = "5000"; // ms
-    private static final String DEFAULT_READ_TIMEOUT = "60000"; // ms
-
     private final String providerUrl;
     private final String securityPrincipal;
     private final String securityCredential;
+    private final Duration connectTimeout;
+    private final Duration readTimeout;
     private final ClassLoader targetClassLoader;
 
-    public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential) {
+    public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
+            Duration connectTimeout, Duration readTimeout) {
         this.providerUrl = providerUrl;
         this.securityPrincipal = securityPrincipal;
         this.securityCredential = securityCredential;
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
         this.targetClassLoader = getClass().getClassLoader();
     }
 
@@ -93,8 +93,8 @@ public class QuarkusDirContextFactory implements DirContextFactory {
                 env.put(InitialDirContext.SECURITY_CREDENTIALS, securityCredential);
             }
             env.put(InitialDirContext.REFERRAL, mode == null ? ReferralMode.IGNORE.getValue() : mode.getValue());
-            env.put(CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT);
-            env.put(READ_TIMEOUT, DEFAULT_READ_TIMEOUT);
+            env.put(CONNECT_TIMEOUT, "" + connectTimeout.toMillis());
+            env.put(READ_TIMEOUT, "" + readTimeout.toMillis());
 
             //            if (log.isDebugEnabled()) {
             //                log.debugf("Creating [" + InitialDirContext.class + "] with environment:");
@@ -139,10 +139,10 @@ public class QuarkusDirContextFactory implements DirContextFactory {
     }
 
     private ClassLoader setClassLoaderTo(final ClassLoader targetClassLoader) {
-        return doPrivileged(new SetContextClassLoaderAction(targetClassLoader));
+        final Thread currentThread = Thread.currentThread();
+        final ClassLoader original = currentThread.getContextClassLoader();
+        currentThread.setContextClassLoader(targetClassLoader);
+        return original;
     }
 
-    private static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
-    }
 }

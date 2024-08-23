@@ -159,8 +159,6 @@ public class RegistriesConfigLocator {
     }
 
     /**
-     * TODO: compare set *.json.RegistriesConfigLocator#initFromEnvironmentOrNull
-     * 
      * @param map A Map containing environment variables, e.g. {@link System#getenv()}
      * @return A RegistriesConfig object initialized from environment variables.
      */

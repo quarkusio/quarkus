@@ -4,12 +4,11 @@ plugins {
 }
 
 repositories {
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
         }
-    } else {
-        mavenLocal()
     }
     mavenCentral()
 }
@@ -53,4 +52,9 @@ task functionalTest(type: Test, description: 'Functional tests', dependsOn: [pro
         showStandardStreams = true
     }
     systemProperty 'quarkus.http.host', 'localhost'
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

@@ -1,20 +1,7 @@
 package io.quarkus.devtools.testing.codestarts;
 
-import static io.quarkus.devtools.testing.RegistryClientTestHelper.disableRegistryClientTestConfig;
-import static io.quarkus.devtools.testing.RegistryClientTestHelper.enableRegistryClientTestConfig;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getBuiltWithQuarkusCore;
 
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -28,6 +15,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+
 /**
  * Builder for {@link QuarkusCodestartTest}
  */
@@ -37,6 +35,8 @@ public class QuarkusCodestartTestBuilder {
     public Map<String, Object> data = new HashMap<>();
     public Collection<String> artifacts = new ArrayList<>();
     public String packageName = DEFAULT_PACKAGE_FOR_TESTING;
+    public String quarkusBomGroupId;
+    public String quarkusBomVersion;
     BuildTool buildTool;
     Set<String> codestarts = new HashSet<>();
     Set<Language> languages;
@@ -46,7 +46,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the package name to use in the generated projects
-     * 
+     *
      * @param packageName
      * @return
      */
@@ -57,7 +57,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of codestarts that should be added to the generated projects
-     * 
+     *
      * @param codestarts the list of codestarts
      * @return
      */
@@ -68,7 +68,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of languages in which we should generated projects
-     * 
+     *
      * @param languages the list of languages
      * @return
      */
@@ -79,7 +79,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the build tool to use for testing (default is maven)
-     * 
+     *
      * @param buildTool
      * @return
      */
@@ -90,7 +90,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add some custom codestart data for testing
-     * 
+     *
      * @param key
      * @param value
      * @return
@@ -102,7 +102,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add some custom codestart data for testing
-     * 
+     *
      * @param key
      * @param value
      * @return
@@ -114,7 +114,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the list of extensions (and their codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extensions the list of extensions
      * @return
      */
@@ -125,7 +125,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the extension (and its codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extension the extension
      * @return
      */
@@ -136,7 +136,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Set the extension (and its codestarts) that should be added to the generated projects
-     * 
+     *
      * @param extension the extension
      * @return
      */
@@ -147,7 +147,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Add artifacts which contains codestarts
-     * 
+     *
      * @param artifacts the artifacts coords
      * @return
      */
@@ -158,7 +158,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Specify a custom quarkus codestart catalog, by default it will use the extension catalog to get it.
-     * 
+     *
      * @param quarkusCodestartCatalog the quarkusCodestartCatalog
      * @return
      */
@@ -169,7 +169,7 @@ public class QuarkusCodestartTestBuilder {
 
     /**
      * Specify a custom extensionCatalog, by default it will use the test registry to get it.
-     * 
+     *
      * @param extensionCatalog
      * @return
      */
@@ -178,20 +178,34 @@ public class QuarkusCodestartTestBuilder {
         return this;
     }
 
-    /**
-     * This should be use in standalone/quarkiverse extension to add the local extension as part of the catalog, so it can be
-     * tested
-     * 
-     * @return
-     */
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
-        return this.standaloneExtensionCatalog(null, null);
+    public QuarkusCodestartTestBuilder withQuarkusBomVersion(String quarkusBomVersion) {
+        this.quarkusBomVersion = quarkusBomVersion;
+        return this;
     }
 
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog(String quarkusBomGroupId, String quarkusBomVersion) {
+    public QuarkusCodestartTestBuilder withQuarkusBom(String quarkusBomGroupId, String quarkusBomVersion) {
+        this.quarkusBomGroupId = quarkusBomGroupId;
+        this.quarkusBomVersion = quarkusBomVersion;
+        return this;
+    }
+
+    /**
+     * Automatically set up the extension catalog for a standalone extension.
+     */
+    public QuarkusCodestartTestBuilder setupStandaloneExtensionTest() {
+        return this.setupStandaloneExtensionTest(null);
+    }
+
+    /**
+     * Automatically set up the extension catalog for a standalone extension.
+     *
+     * Add the given extension using the version from the current project.
+     *
+     * @param extensionGA the extension groupId:ArtifactId
+     */
+    public QuarkusCodestartTestBuilder setupStandaloneExtensionTest(String extensionGA) {
         try {
             String buildWithQuarkusCoreVersion = null;
-            final ArrayList<Extension> extensions = new ArrayList<>();
             for (URL url : Collections
                     .list(Thread.currentThread().getContextClassLoader().getResources("META-INF/quarkus-extension.yaml"))) {
                 final Extension extension = ResourceLoaders.processAsPath(url, path -> {
@@ -201,25 +215,45 @@ public class QuarkusCodestartTestBuilder {
                         throw new UncheckedIOException(e);
                     }
                 });
-                extensions.add(extension);
-                if (buildWithQuarkusCoreVersion == null) {
+                if (extension.getArtifact() == null) {
+                    throw new IllegalStateException(
+                            "Artifact is null. Check that the runtime extension descriptor is built correctly with all versions defined.");
+                }
+                if (extensionGA != null) {
+                    if (extension.managementKey().equals(extensionGA)) {
+                        this.extension(extension.getArtifact());
+                        buildWithQuarkusCoreVersion = getBuiltWithQuarkusCore(extension);
+                        break;
+                    }
+                } else if (buildWithQuarkusCoreVersion == null) {
                     buildWithQuarkusCoreVersion = getBuiltWithQuarkusCore(extension);
+                    break;
                 }
             }
             Objects.requireNonNull(buildWithQuarkusCoreVersion, "quarkus version not found in extensions");
-            String quarkusVersion = quarkusBomVersion != null ? quarkusBomVersion : buildWithQuarkusCoreVersion;
-            enableRegistryClientTestConfig(quarkusBomGroupId != null ? quarkusBomGroupId : "io.quarkus", quarkusVersion);
-            final ExtensionCatalog extensionCatalog = QuarkusProjectHelper.getExtensionCatalog(quarkusVersion);
-            disableRegistryClientTestConfig();
-            final ExtensionCatalog.Mutable mutableCatalog = extensionCatalog instanceof ExtensionCatalog.Mutable
-                    ? (ExtensionCatalog.Mutable) extensionCatalog
-                    : extensionCatalog.mutable();
-            extensions.forEach(mutableCatalog::addExtension);
-            this.extensionCatalog = mutableCatalog.build();
+            this.quarkusBomVersion = buildWithQuarkusCoreVersion;
         } catch (IOException e) {
             throw new IllegalStateException("Error while reading standalone extension catalog", e);
         }
         return this;
+    }
+
+    /**
+     * Use withQuarkusBom instead
+     */
+    @Deprecated(forRemoval = true)
+    public QuarkusCodestartTestBuilder standaloneExtensionCatalog(String quarkusBomGroupId, String quarkusBomVersion) {
+        this.quarkusBomGroupId = quarkusBomGroupId;
+        this.quarkusBomVersion = quarkusBomVersion;
+        return this;
+    }
+
+    /**
+     * Use setupStandaloneExtensionTest instead
+     */
+    @Deprecated
+    public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
+        return this.setupStandaloneExtensionTest();
     }
 
     public QuarkusCodestartTest build() {

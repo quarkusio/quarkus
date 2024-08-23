@@ -9,7 +9,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
- * Instances of this classes are created in order to check if a method parameter
+ * Instances of these classes are created in order to check if a method parameter
  * inside a Spring Security expression matches the principal name
  *
  * Access to the property of the object is performed by delegating to a purpose generated

@@ -28,7 +28,7 @@ public class RepositoryReloadTest {
 
         TEST.modifySourceFile("BookResource.java", s -> s.replace("// <placeholder>",
                 "@GET @Path(\"/{id}\") @Produces(MediaType.APPLICATION_JSON)\n" +
-                        "    public java.util.Optional<Book> findById(@javax.ws.rs.PathParam(\"id\") Integer id) {\n" +
+                        "    public java.util.Optional<Book> findById(@jakarta.ws.rs.PathParam(\"id\") Integer id) {\n" +
                         "        return bookRepository.findById(id);\n" +
                         "    }"));
 

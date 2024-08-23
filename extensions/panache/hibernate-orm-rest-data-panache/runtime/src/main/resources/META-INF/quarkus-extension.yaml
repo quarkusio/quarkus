@@ -10,8 +10,13 @@ metadata:
   - "rest"
   - "jaxrs"
   - "resteasy"
+  - "jakarta-rest"
   guide: "https://quarkus.io/guides/rest-data-panache"
   categories:
   - "data"
   - "web"
-  status: "experimental"
+  status: "stable"
+  codestart:
+    name: "hibernate-orm-rest-data"
+    languages: [ "java" ]
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

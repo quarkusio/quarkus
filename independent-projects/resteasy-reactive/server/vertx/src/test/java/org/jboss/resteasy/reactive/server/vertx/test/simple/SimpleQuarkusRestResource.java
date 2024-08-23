@@ -1,44 +1,47 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.HEAD;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.OPTIONS;
-import javax.ws.rs.PATCH;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Providers;
+
+import jakarta.inject.Inject;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HEAD;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.OPTIONS;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.Providers;
+
 import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
+
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 @Path("/simple")
 public class SimpleQuarkusRestResource {
@@ -51,6 +54,12 @@ public class SimpleQuarkusRestResource {
     @GET
     public String get() {
         return "GET";
+    }
+
+    @GET
+    @Path("empty")
+    public String empty() {
+        return null;
     }
 
     @Path("sub")
@@ -70,13 +79,33 @@ public class SimpleQuarkusRestResource {
         return "GET:" + id;
     }
 
+    @GET
+    @Path("arrayHeaders")
+    public String arrayHeaders(@HeaderParam("h1") String[] h1, @HeaderParam("h2") String[] h2, @HeaderParam("h3") Integer[] h3,
+            @HeaderParam("h4") int[] h4) {
+        return "h1: " + Arrays.toString(h1) + ", h2: " + Arrays.toString(h2) + ", h3: " + Arrays.toString(h3) + ", h4: "
+                + Arrays.toString(
+                        h4);
+    }
+
+    @POST
+    @Path("arrayForms")
+    public String arrayForms(@FormParam("f1") String[] f1, @FormParam("f2") String[] f2, @FormParam("f3") Integer[] f3,
+            @FormParam("f4") int[] f4) {
+        return "f1: " + Arrays.toString(f1) + ", f2: " + Arrays.toString(f2) + ", f3: " + Arrays.toString(f3) + ", f4: "
+                + Arrays.toString(
+                        f4);
+    }
+
     @POST
     @Path("params/{p}")
     public String params(@PathParam("p") String p,
             @QueryParam("q") String q,
             @HeaderParam("h") int h,
+            @HeaderParam("h2") char h2,
+            @HeaderParam("h3") Character h3,
             @FormParam("f") String f) {
-        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f;
+        return "params: p: " + p + ", q: " + q + ", h: " + h + ", h2: " + h2 + ", h3: " + h3 + ", f: " + f;
     }
 
     @POST
@@ -211,6 +240,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("uni-writer")
+    public Uni<TestClass> uniWriter() {
+        return Uni.createFrom().item(new TestClass());
+    }
+
+    @GET
     @Path("fast-writer")
     @Produces("text/plain")
     public String fastWriter() {
@@ -227,6 +262,12 @@ public class SimpleQuarkusRestResource {
     @Path("writer/vertx-buffer")
     public Buffer vertxBuffer() {
         return Buffer.buffer("VERTX-BUFFER");
+    }
+
+    @GET
+    @Path("writer/mutiny-buffer")
+    public io.vertx.mutiny.core.buffer.Buffer mutinyBuffer() {
+        return io.vertx.mutiny.core.buffer.Buffer.buffer("MUTINY-BUFFER");
     }
 
     @GET

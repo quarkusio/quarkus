@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -23,7 +25,10 @@ public class KubernetesWithQuarkusAppNameTest {
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("kubernetes-with-quarkus-app-name")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-quarkus-app-name.properties");
+            .withConfigurationResource("kubernetes-with-quarkus-app-name.properties")
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-container-image-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -48,7 +53,7 @@ public class KubernetesWithQuarkusAppNameTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
         assertThat(openshiftList).allSatisfy(h -> {
-            assertThat(h.getMetadata().getName()).isIn("ofoo", "s2ifoo", "s2i-java");
+            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-17");
             assertThat(h.getMetadata().getLabels()).contains(entry("app.kubernetes.io/name", "ofoo"),
                     entry("app.kubernetes.io/version", "1.0-openshift"));
         });

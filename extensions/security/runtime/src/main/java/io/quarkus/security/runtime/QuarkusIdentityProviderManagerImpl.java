@@ -1,18 +1,18 @@
 package io.quarkus.security.runtime;
 
+import static io.quarkus.security.spi.runtime.BlockingSecurityExecutor.createBlockingExecutor;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
@@ -21,8 +21,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 
 /**
  * A manager that can be used to get a specific type of identity provider.
@@ -31,49 +31,18 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private static final Logger log = Logger.getLogger(QuarkusIdentityProviderManagerImpl.class);
 
     private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers;
-    private final List<SecurityIdentityAugmentor> augmenters;
-    private final Executor blockingExecutor;
-
-    private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
-        @Override
-        public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
-                @Override
-                public Uni<SecurityIdentity> get() {
-                    if (BlockingOperationControl.isBlockingAllowed()) {
-                        try {
-                            SecurityIdentity result = function.get();
-                            return Uni.createFrom().item(result);
-                        } catch (Throwable t) {
-                            return Uni.createFrom().failure(t);
-                        }
-                    } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-                            @Override
-                            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                                blockingExecutor.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-            });
-
-        }
-    };
+    private final SecurityIdentityAugmentor[] augmenters;
+    private final AuthenticationRequestContext blockingRequestContext;
 
     QuarkusIdentityProviderManagerImpl(Builder builder) {
         this.providers = builder.providers;
-        this.augmenters = builder.augmentors;
-        this.blockingExecutor = builder.blockingExecutor;
+        this.augmenters = builder.augmentors.toArray(SecurityIdentityAugmentor[]::new);
+        this.blockingRequestContext = new AuthenticationRequestContext() {
+            @Override
+            public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
+                return builder.blockingExecutor.executeBlocking(function);
+            }
+        };
     }
 
     /**
@@ -95,23 +64,31 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             if (providers.size() == 1) {
                 return handleSingleProvider(providers.get(0), request);
             }
-            return handleProvider(0, (List) providers, request, blockingRequestContext);
+            return handleProvider(0, (List) providers, request);
         } catch (Throwable t) {
             return Uni.createFrom().failure(t);
         }
     }
 
     private Uni<SecurityIdentity> handleSingleProvider(IdentityProvider identityProvider, AuthenticationRequest request) {
-        if (augmenters.isEmpty()) {
-            return identityProvider.authenticate(request, blockingRequestContext);
+        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext)
+                .onItem().ifNull().failWith(new Supplier<Throwable>() {
+                    @Override
+                    public Throwable get() {
+                        // reject request with the invalid credential
+                        return new AuthenticationFailedException();
+                    }
+                });
+        if (augmenters.length > 0) {
+            authenticated = authenticated
+                    .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                        @Override
+                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                            return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
+                        }
+                    });
         }
-        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext);
-        return authenticated.flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-            @Override
-            public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(0, securityIdentity, blockingRequestContext);
-            }
-        });
+        return authenticated;
     }
 
     /**
@@ -129,47 +106,48 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             throw new IllegalArgumentException(
                     "No IdentityProviders were registered to handle AuthenticationRequest " + request);
         }
-        return (SecurityIdentity) handleProvider(0, (List) providers, request, blockingRequestContext).await().indefinitely();
+        return (SecurityIdentity) handleProvider(0, (List) providers, request).await().indefinitely();
     }
 
     private <T extends AuthenticationRequest> Uni<SecurityIdentity> handleProvider(int pos,
-            List<IdentityProvider<T>> providers, T request, AuthenticationRequestContext context) {
+            List<IdentityProvider<T>> providers, T request) {
         if (pos == providers.size()) {
             //we failed to authentication
             log.debug("Authentication failed as providers would authenticate the request");
             return Uni.createFrom().failure(new AuthenticationFailedException());
         }
         IdentityProvider<T> current = providers.get(pos);
-        Uni<SecurityIdentity> cs = current.authenticate(request, context)
+        Uni<SecurityIdentity> cs = current.authenticate(request, blockingRequestContext)
                 .onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {
                             return Uni.createFrom().item(securityIdentity);
                         }
-                        return handleProvider(pos + 1, providers, request, context);
+                        return handleProvider(pos + 1, providers, request);
                     }
                 });
         return cs.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(0, securityIdentity, context);
+                return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
             }
         });
     }
 
     private Uni<SecurityIdentity> handleIdentityFromProvider(int pos, SecurityIdentity identity,
-            AuthenticationRequestContext context) {
-        if (pos == augmenters.size()) {
+            Map<String, Object> attributes) {
+        if (pos == augmenters.length) {
             return Uni.createFrom().item(identity);
         }
-        SecurityIdentityAugmentor a = augmenters.get(pos);
-        return a.augment(identity, context).flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-            @Override
-            public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(pos + 1, securityIdentity, context);
-            }
-        });
+        SecurityIdentityAugmentor a = augmenters[pos];
+        return a.augment(identity, blockingRequestContext, attributes)
+                .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                        return handleIdentityFromProvider(pos + 1, securityIdentity, attributes);
+                    }
+                });
     }
 
     /**
@@ -191,7 +169,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
 
         private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers = new HashMap<>();
         private final List<SecurityIdentityAugmentor> augmentors = new ArrayList<>();
-        private Executor blockingExecutor;
+        private BlockingSecurityExecutor blockingExecutor;
         private boolean built = false;
 
         /**
@@ -223,8 +201,17 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
          * @param blockingExecutor The executor to use for blocking tasks
          * @return this builder
          */
-        public Builder setBlockingExecutor(Executor blockingExecutor) {
+        public Builder setBlockingExecutor(BlockingSecurityExecutor blockingExecutor) {
             this.blockingExecutor = blockingExecutor;
+            return this;
+        }
+
+        /**
+         * @param blockingExecutor The executor to use for blocking tasks
+         * @return this builder
+         */
+        public Builder setBlockingExecutor(Executor blockingExecutor) {
+            this.blockingExecutor = createBlockingExecutor(() -> blockingExecutor);
             return this;
         }
 
@@ -236,6 +223,14 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             if (!providers.containsKey(AnonymousAuthenticationRequest.class)) {
                 throw new IllegalStateException(
                         "No AnonymousIdentityProvider registered. An instance of AnonymousIdentityProvider must be provided to allow the Anonymous identity to be created.");
+            }
+            for (List<IdentityProvider> providers : providers.values()) {
+                providers.sort(new Comparator<IdentityProvider>() {
+                    @Override
+                    public int compare(IdentityProvider o1, IdentityProvider o2) {
+                        return Integer.compare(o2.priority(), o1.priority());
+                    }
+                });
             }
             if (blockingExecutor == null) {
                 throw new IllegalStateException("no blocking executor specified");

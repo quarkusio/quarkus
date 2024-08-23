@@ -6,8 +6,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 
 import org.junit.jupiter.api.Assertions;
 
@@ -39,14 +39,22 @@ class Utils {
     }
 
     static void callTheEndpoint(String endpoint) {
+        Response response = RestAssured
+                .given()
+                .delete(endpoint)
+                .andReturn();
+        Assertions.assertEquals(200, response.statusCode());
+
         List<Book> list = get(endpoint).as(new TypeRef<List<Book>>() {
         });
-        Assertions.assertEquals(0, list.size());
+        List<Book> finalList = list;
+        Assertions.assertEquals(0, list.size(), () -> finalList.toString());
 
         Book book1 = new Book().setAuthor("Victor Hugo").setTitle("Les Misérables")
                 .setCategories(Arrays.asList("long", "very long"))
                 .setDetails(new BookDetail().setRating(3).setSummary("A very long book"));
-        Response response = RestAssured
+
+        response = RestAssured
                 .given()
                 .header("Content-Type", "application/json")
                 .body(book1)

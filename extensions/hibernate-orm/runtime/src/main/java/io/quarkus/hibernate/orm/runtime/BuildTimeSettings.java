@@ -1,36 +1,57 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+
+import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
 public class BuildTimeSettings {
 
-    private Map<String, Object> settings;
+    private RecordedConfig source;
+    private Map<String, Object> quarkusConfigSettings;
+    private Map<String, String> databaseOrmCompatibilitySettings;
+    private Map<String, Object> allSettings;
 
-    public BuildTimeSettings(Map<String, Object> settings) {
-        this.settings = Collections.unmodifiableMap(new HashMap<>(settings));
+    public BuildTimeSettings(RecordedConfig source,
+            Map<String, Object> quarkusConfigSettings,
+            Map<String, String> databaseOrmCompatibilitySettings,
+            Map<String, Object> allSettings) {
+        this.source = source;
+        this.quarkusConfigSettings = Map.copyOf(quarkusConfigSettings);
+        this.databaseOrmCompatibilitySettings = Map.copyOf(databaseOrmCompatibilitySettings);
+        this.allSettings = Map.copyOf(allSettings);
     }
 
     public Object get(String key) {
-        return settings.get(key);
+        return allSettings.get(key);
     }
 
     public boolean getBoolean(String key) {
-        Object propertyValue = settings.get(key);
+        Object propertyValue = allSettings.get(key);
         return propertyValue != null && Boolean.parseBoolean(propertyValue.toString());
     }
 
     public boolean isConfigured(String key) {
-        return settings.containsKey(key);
+        return allSettings.containsKey(key);
     }
 
-    public Map<String, Object> getSettings() {
-        return settings;
+    public RecordedConfig getSource() {
+        return source;
+    }
+
+    public Map<String, Object> getQuarkusConfigSettings() {
+        return quarkusConfigSettings;
+    }
+
+    public Map<String, String> getDatabaseOrmCompatibilitySettings() {
+        return databaseOrmCompatibilitySettings;
+    }
+
+    public Map<String, Object> getAllSettings() {
+        return allSettings;
     }
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " {" + settings.toString() + "}";
+        return this.getClass().getSimpleName() + " {" + allSettings.toString() + "}";
     }
 }

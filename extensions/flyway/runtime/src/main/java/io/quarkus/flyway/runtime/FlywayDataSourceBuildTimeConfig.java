@@ -30,7 +30,7 @@ public final class FlywayDataSourceBuildTimeConfig {
     /**
      * Comma-separated list of fully qualified class names of Callback implementations
      * to use to hook into the Flyway lifecycle.
-     * The {@link org.flywaydb.core.api.callback.Callback} sub-class must have a no-args constructor and must not be abstract.
+     * The {@link org.flywaydb.core.api.callback.Callback} subclass must have a no-args constructor and must not be abstract.
      * These classes must also not have any fields that hold state (unless that state is initialized in the constructor).
      */
     @ConfigItem

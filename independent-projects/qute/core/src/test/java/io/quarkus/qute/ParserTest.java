@@ -3,11 +3,10 @@ package io.quarkus.qute;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.TemplateLocator.TemplateLocation;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -18,34 +17,57 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.TemplateException.Builder;
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class ParserTest {
 
     @Test
     public void testSectionEndValidation() {
-        assertParserError("{#if test}Hello {name}!{/for}",
-                "Parser error on line 1: section end tag [for] does not match the start tag [if]", 1);
+        assertParserError("{#if test}Hello {name}!{/for}", ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                "Parser error: section end tag [for] does not match the start tag [if]", 1);
+        assertParserError("{#for i in items}{#if test}Hello {name}!{/for}", ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                "Parser error: section end tag [for] does not match the start tag [if]", 1);
+    }
+
+    @Test
+    public void testSectionBlockEndValidation() {
+        assertParserError("{#if test}Hello{#else}Hi{/elsa}{/if}", ParserError.SECTION_BLOCK_END_DOES_NOT_MATCH_START,
+                "Parser error: section block end tag [elsa] does not match the start tag [else]", 1);
     }
 
     @Test
     public void testUnterminatedTag() {
-        assertParserError("{#if test}Hello {name}",
-                "Parser error on line 1: unterminated section [if] detected", 1);
+        assertParserError("{#if test}Hello {name}", ParserError.UNTERMINATED_SECTION,
+                "Parser error: unterminated section [if] detected", 1);
+        assertParserError("{#if test}Hello {#for i in items}", ParserError.UNTERMINATED_SECTION,
+                "Parser error: unterminated section [for] detected", 1);
     }
 
     @Test
     public void testSectionEndWithoutStart() {
-        assertParserError("Hello {/}",
-                "Parser error on line 1: no section start tag found for {/}", 1);
-        assertParserError("{#if true}Bye...{/if} Hello {/if}",
-                "Parser error on line 1: no section start tag found for {/if}", 1);
+        assertParserError("Hello {/}", ParserError.SECTION_START_NOT_FOUND,
+                "Parser error: section start tag found for {/}", 1);
+        assertParserError("{#if true}Bye...{/if} Hello {/if}", ParserError.SECTION_START_NOT_FOUND,
+                "Parser error: section start tag found for {/if}", 1);
     }
 
     @Test
     public void testNonexistentHelper() {
-        assertParserError("Hello!\n {#foo test/}",
-                "Parser error on line 2: no section helper found for {#foo test/}", 2);
+        assertParserError("Hello!\n {#foo test/}", ParserError.NO_SECTION_HELPER_FOUND,
+                "Parser error: no section helper found for {#foo test/}", 2);
+    }
+
+    @Test
+    public void testNoSectionName() {
+        assertParserError("Hello! {# foo=1 /}", ParserError.NO_SECTION_NAME,
+                "Parser error: no section name declared for {# foo=1 /}", 1);
+        assertParserError("Hello! {# for i in items}{/for}", ParserError.NO_SECTION_NAME,
+                "Parser error: no section name declared for {# for i in items}", 1);
     }
 
     @Test
@@ -76,6 +98,7 @@ public class ParserTest {
                 + "{/for}"
                 + "{#each labels}"
                 + "{it.name}"
+                + "{it_hasNext}"
                 + "{/each}"
                 + "{inject:bean.name}"
                 + "{#each inject:bean.labels('foo')}"
@@ -89,7 +112,8 @@ public class ParserTest {
                 + "{foo.baz}"
                 + "{/for}"
                 + "{foo.call(labels,bar)}"
-                + "{#when machine.status}{#is OK}..{#is NOK}{/when}");
+                + "{#when machine.status}{#is OK}..{#is NOK}{/when}"
+                + "{not_typesafe}");
         List<Expression> expressions = template.getExpressions();
 
         assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
@@ -117,6 +141,9 @@ public class ParserTest {
 
         Expression machineStatusExpr = find(expressions, "machine.status");
         assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
+
+        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<metadata>");
+        assertExpr(expressions, "not_typesafe", 1, null);
     }
 
     @Test
@@ -133,12 +160,16 @@ public class ParserTest {
                 + "{/}");
         Origin fooItemsOrigin = find(template.getExpressions(), "foo.items").getOrigin();
         assertEquals(6, fooItemsOrigin.getLine());
-        assertEquals(14, fooItemsOrigin.getLineCharacterStart());
+        assertEquals(1, fooItemsOrigin.getLineCharacterStart());
         assertEquals(24, fooItemsOrigin.getLineCharacterEnd());
         Origin itemNameOrigin = find(template.getExpressions(), "item.name").getOrigin();
         assertEquals(8, itemNameOrigin.getLine());
         assertEquals(1, itemNameOrigin.getLineCharacterStart());
         assertEquals(11, itemNameOrigin.getLineCharacterEnd());
+        ParameterDeclaration pd = template.getParameterDeclarations().get(0);
+        assertEquals(1, pd.getOrigin().getLine());
+        assertEquals("foo", pd.getKey());
+        assertNull(pd.getDefaultValue());
     }
 
     @Test
@@ -168,7 +199,7 @@ public class ParserTest {
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.getTemplate("foo.html"))
                 .withMessage(
-                        "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [condition]")
+                        "Parser error in template [foo.html] line 1: mandatory section parameters not declared for {#if}: [condition]")
                 .hasFieldOrProperty("origin");
     }
 
@@ -179,17 +210,18 @@ public class ParserTest {
         assertParams("(item.active && (item.sold || false)) || user.loggedIn", "(item.active && (item.sold || false))", "||",
                 "user.loggedIn");
         assertParams("this.get('name') is null", "this.get('name')", "is", "null");
-        assertParserError("{#if 'foo is null}{/}",
-                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if 'foo is null}{/}",
+        assertParserError("{#if 'foo is null}{/}", ParserError.UNTERMINATED_STRING_LITERAL,
+                "Parser error: unexpected non-text buffer at the end of the template - unterminated string literal: #if 'foo is null}{/}",
                 1);
-        assertParserError("{#if (foo || bar}{/}",
-                "Parser error on line 1: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
+        assertParserError("{#if (foo || bar}{/}", ParserError.UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER,
+                "Parser error: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
         assertParams("item.name == 'foo' and item.name is false", "item.name", "==", "'foo'", "and", "item.name", "is",
                 "false");
         assertParams("(item.name == 'foo') and (item.name is false)", "(item.name == 'foo')", "and", "(item.name is false)");
         assertParams("(item.name != 'foo') || (item.name == false)", "(item.name != 'foo')", "||", "(item.name == false)");
         assertParams("foo.codePointCount(0, foo.length) baz=bar", "foo.codePointCount(0, foo.length)", "baz=bar");
         assertParams("foo.codePointCount( 0 , foo.length( 1)) baz=bar", "foo.codePointCount( 0 , foo.length( 1))", "baz=bar");
+        assertParams("item.name = 'foo' item.surname  = 'bar'", "item.name='foo'", "item.surname='bar'");
     }
 
     @Test
@@ -207,10 +239,7 @@ public class ParserTest {
         String jsSnippet = "<script>const foo = function(){alert('bar');};</script>";
         assertThatExceptionOfType(Exception.class)
                 .isThrownBy(() -> engine.parse("Hello {name} " + jsSnippet));
-        assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {["
-                + jsSnippet
-                + "]}").data("name", "world").render());
-        assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
+
         assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {|"
                 + jsSnippet
                 + "|}").data("name", "world").render());
@@ -246,17 +275,17 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaults().build();
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{foo\nfoo}"))
-                .withMessage("Parser error on line 1: invalid identifier found {foo\nfoo}");
+                .withMessage("Parser error: invalid identifier found [foo\nfoo]");
     }
 
     @Test
     public void testTextNodeCollapse() {
-        TemplateImpl template = (TemplateImpl) Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
-        List<TemplateNode> rootNodes = template.root.blocks.get(0).nodes;
+        Template template = Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
+        List<TemplateNode> rootNodes = template.getNodes();
         assertEquals(3, rootNodes.size());
-        assertEquals("Hello\nworld!", ((TextNode) rootNodes.get(0)).getValue());
-        assertEquals(1, ((ExpressionNode) rootNodes.get(1)).getExpressions().size());
-        assertEquals("next", ((TextNode) rootNodes.get(2)).getValue());
+        assertEquals("Hello\nworld!", rootNodes.get(0).asText().getValue());
+        assertTrue(rootNodes.get(1).isExpression());
+        assertEquals("next", rootNodes.get(2).asText().getValue());
     }
 
     @Test
@@ -272,15 +301,36 @@ public class ParserTest {
     }
 
     @Test
+    public void testFindExpression() {
+        Template template = Engine.builder().addDefaults().build()
+                .parse("{foo}{#each items}{it.name}{#for foo in foos}\n{foo.name}{/for}{/each}");
+        Expression fooExpr = template.findExpression(e -> e.toOriginalString().equals("foo"));
+        assertNotNull(fooExpr);
+        assertEquals(1, fooExpr.getOrigin().getLine());
+        Expression itemsExpr = template.findExpression(e -> e.toOriginalString().equals("items"));
+        assertNotNull(itemsExpr);
+        Expression fooNameExpr = template.findExpression(e -> e.toOriginalString().equals("foo.name"));
+        assertNotNull(fooNameExpr);
+        assertEquals(2, fooNameExpr.getOrigin().getLine());
+    }
+
+    @Test
     public void testParserHook() {
         Template template = Engine.builder().addDefaults().addParserHook(new ParserHook() {
             @Override
             public void beforeParsing(ParserHelper parserHelper) {
                 parserHelper.addContentFilter(contents -> contents.replace("bard", "bar"));
                 parserHelper.addContentFilter(contents -> contents.replace("${", "$\\{"));
+                parserHelper.addParameter("foo", String.class.getName());
             }
         }).build().parse("${foo}::{bard}");
         assertEquals("${foo}::true", template.data("bar", true).render());
+        List<ParameterDeclaration> paramDeclarations = template.getParameterDeclarations();
+        assertEquals(1, paramDeclarations.size());
+        ParameterDeclaration pd = paramDeclarations.get(0);
+        assertEquals("foo", pd.getKey());
+        assertEquals("|java.lang.String|", pd.getTypeInfo());
+        assertTrue(pd.getOrigin().isSynthetic());
     }
 
     @Test
@@ -294,8 +344,8 @@ public class ParserTest {
         template = engine.parse("{#for line in map.get(foo).lines}{line}{/for}");
         assertEquals("/foo/bar", template.data("map", map, "foo", "path").render());
 
-        assertParserError("{#if map.get(\"{foo})}Bye...{/if}",
-                "Parser error on line 1: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
+        assertParserError("{#if map.get(\"{foo})}Bye...{/if}", ParserError.UNTERMINATED_STRING_LITERAL,
+                "Parser error: unexpected non-text buffer at the end of the template - unterminated string literal: #if map.get(\"{foo})}Bye...{/if}",
                 1);
     }
 
@@ -344,34 +394,41 @@ public class ParserTest {
 
     @Test
     public void testInvalidNamespaceExpression() {
-        assertParserError("{data: }",
-                "Parser error on line 1: empty expression found {data:}", 1);
+        assertParserError("{data: }", ParserError.EMPTY_EXPRESSION,
+                "Parser error: empty expression found {data:}", 1);
     }
 
     @Test
     public void testInvalidVirtualMethod() {
-        assertParserError("{foo.baz()(}",
-                "Parser error on line 1: invalid virtual method in {foo.baz()(}", 1);
+        assertParserError("{foo.baz()(}", ParserError.INVALID_VIRTUAL_METHOD,
+                "Parser error: invalid virtual method in {foo.baz()(}", 1);
     }
 
     @Test
     public void testInvalidBracket() {
-        assertParserError("{foo.baz[}",
-                "Parser error on line 1: invalid bracket notation expression in {foo.baz[}", 1);
+        assertParserError("{foo.baz[}", ParserError.INVALID_BRACKET_EXPRESSION,
+                "Parser error: invalid bracket notation expression in {foo.baz[}", 1);
     }
 
     @Test
     public void testInvalidParamDeclaration() {
-        assertParserError("{@com.foo }",
-                "Parser error on line 1: invalid parameter declaration {@com.foo }", 1);
-        assertParserError("{@ com.foo }",
-                "Parser error on line 1: invalid parameter declaration {@ com.foo }", 1);
-        assertParserError("{@com.foo.Bar bar baz}",
-                "Parser error on line 1: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
-        assertParserError("{@}",
-                "Parser error on line 1: invalid parameter declaration {@}", 1);
-        assertParserError("{@\n}",
-                "Parser error on line 1: invalid parameter declaration {@\n}", 1);
+        assertParserError("{@com.foo }", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo }", 1);
+        assertParserError("{@ com.foo }", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@ com.foo }", 1);
+        assertParserError("{@com.foo.Bar bar baz}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo.Bar bar baz}", 1);
+        assertParserError("{@}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@}", 1);
+        assertParserError("{@\n}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@\n}", 1);
+        assertParserError("{@com.foo.Bar<String baz}", ParserError.INVALID_PARAM_DECLARATION,
+                "Parser error: invalid parameter declaration {@com.foo.Bar<String baz}", 1);
+
+        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
+        Template template = engine.parse("{@com.foo.Bar<? extends org.acme.Baz, String> bar} {bar.name}");
+        Expression bar = find(template.getExpressions(), "bar.name");
+        assertEquals("|com.foo.Bar<org.acme.Baz, String>|", bar.getParts().get(0).getTypeInfo());
     }
 
     @Test
@@ -381,6 +438,42 @@ public class ParserTest {
         engine.putTemplate("form-template", engine.parse("{it}"));
         Template foo = engine.parse("{#form foo.codePointCount(0, foo.length) /}");
         assertEquals("3", foo.data("foo", "foo").render());
+    }
+
+    @Test
+    public void testInvalidIdentifier() {
+        assertParserError("{fo\to}", ParserError.INVALID_IDENTIFIER,
+                "Parser error: invalid identifier found [fo\to]", 1);
+    }
+
+    @Test
+    public void testMandatorySectionParas() {
+        assertParserError("{#include /}", ParserError.MANDATORY_SECTION_PARAMS_MISSING,
+                "Parser error: mandatory section parameters not declared for {#include /}: [template]", 1);
+    }
+
+    @Test
+    public void testSectionParameterWithNestedSingleQuotationMark() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertSectionParams(engine, "{#let id=\"'Foo'\"}", Map.of("id", "\"'Foo'\""));
+        assertSectionParams(engine, "{#let id=\"'Foo \"}", Map.of("id", "\"'Foo \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \"}", Map.of("id", "\"'Foo ' \""));
+        assertSectionParams(engine, "{#let id=\"'Foo ' \" bar='baz'}", Map.of("id", "\"'Foo ' \"", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let my=bad id=(\"'Foo ' \" + 1) bar='baz'}",
+                Map.of("my", "bad", "id", "(\"'Foo ' \" + 1)", "bar", "'baz'"));
+        assertSectionParams(engine, "{#let id = 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let id= 'Foo'}", Map.of("id", "'Foo'"));
+        assertSectionParams(engine, "{#let my = (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+        assertSectionParams(engine, "{#let my= (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
+
+    }
+
+    private void assertSectionParams(Engine engine, String content, Map<String, String> expectedParams) {
+        Template template = engine.parse(content);
+        SectionNode node = template.findNodes(n -> n.isSection() && n.asSection().name.equals("let")).iterator().next()
+                .asSection();
+        Map<String, String> params = node.getBlocks().get(0).parameters;
+        assertEquals(expectedParams, params);
     }
 
     public static class Foo {
@@ -399,12 +492,13 @@ public class ParserTest {
 
     }
 
-    private void assertParserError(String template, String message, int line) {
+    static void assertParserError(String template, ErrorCode code, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {
             engine.parse(template);
             fail("No parser error found");
         } catch (TemplateException expected) {
+            assertEquals(code, expected.getCode());
             assertNotNull(expected.getOrigin());
             assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
             assertEquals(message, expected.getMessage());
@@ -423,7 +517,18 @@ public class ParserTest {
     }
 
     private void assertParams(String content, String... expectedParams) {
-        Iterator<String> iter = Parser.splitSectionParams(content, s -> new RuntimeException(s));
+        class Dummy implements ErrorInitializer, WithOrigin {
+            @Override
+            public Origin getOrigin() {
+                return null;
+            }
+
+            @Override
+            public Builder error(String message) {
+                return TemplateException.builder().message(message);
+            }
+        }
+        Iterator<String> iter = Parser.splitSectionParams(content, new Dummy());
         List<String> params = new ArrayList<>();
         while (iter.hasNext()) {
             params.add(iter.next());

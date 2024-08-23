@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -29,10 +29,10 @@ public class SecurityTransformerUtils {
     }
 
     public static boolean hasStandardSecurityAnnotation(ClassInfo classInfo) {
-        return hasStandardSecurityAnnotation(classInfo.classAnnotations());
+        return hasStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
-    private static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+    static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
         for (AnnotationInstance instance : instances) {
             if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return true;
@@ -46,10 +46,10 @@ public class SecurityTransformerUtils {
     }
 
     public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(ClassInfo classInfo) {
-        return findFirstStandardSecurityAnnotation(classInfo.classAnnotations());
+        return findFirstStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
-    private static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+    static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
         for (AnnotationInstance instance : instances) {
             if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return Optional.of(instance);

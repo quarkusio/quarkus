@@ -27,9 +27,9 @@ class PropertyNotFoundThrowException implements ResultMapper {
         } else {
             propertyMessage = "Property not found";
         }
-        throw new TemplateException(expression.getOrigin(),
-                String.format("%s in expression {%s} in template %s on line %s", propertyMessage, expression.toOriginalString(),
-                        expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
+        throw TemplateException.builder().origin(expression.getOrigin())
+                .message("{}{#if origin.hasNonGeneratedTemplateId??} in{origin}{/if}: expression \\{{}}")
+                .arguments(propertyMessage, expression.toOriginalString()).build();
     }
 
 }

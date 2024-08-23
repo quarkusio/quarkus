@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -67,7 +67,7 @@ public class TransactionalAsBlockingTest {
     }
 
     @Test
-    void shouldNotOffloadNonBlockingMethodOnTransacactionalClass() {
+    void shouldNotOffloadNonBlockingMethodOnTransactionalClass() {
         Uni<ThreadName> reply = client2.returnThread2(EMPTY);
         ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
         assertThat(threadName.getName()).contains("eventloop");

@@ -12,14 +12,14 @@ public class RESTEasyReactiveCodestartsTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("resteasy-reactive", "resteasy-reactive-qute")
+            .codestarts("rest", "rest-qute")
             .languages(JAVA, KOTLIN)
             .build();
 
     @Test
     void testContent() throws Throwable {
         codestartTest.checkGeneratedSource("org.acme.SomePage");
-        codestartTest.checkGeneratedSource("org.acme.ReactiveGreetingResource");
+        codestartTest.checkGeneratedSource("org.acme.GreetingResource");
         codestartTest.assertThatGeneratedFileMatchSnapshot(JAVA, "src/main/resources/templates/page.qute.html");
     }
 

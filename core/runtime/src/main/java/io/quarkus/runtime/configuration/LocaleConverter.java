@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
@@ -23,10 +23,14 @@ public class LocaleConverter implements Converter<Locale>, Serializable {
 
     @Override
     public Locale convert(final String value) {
-        String localeValue = value.trim();
+        final String localeValue = value.trim();
 
         if (localeValue.isEmpty()) {
             return null;
+        }
+
+        if ("all".equals(localeValue)) {
+            return Locale.ROOT;
         }
 
         Locale locale = Locale.forLanguageTag(NORMALIZE_LOCALE_PATTERN.matcher(localeValue).replaceAll("-"));

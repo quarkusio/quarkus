@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;

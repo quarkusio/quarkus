@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.core.Application;
+
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
@@ -13,6 +15,7 @@ import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class DeploymentInfo {
@@ -23,17 +26,19 @@ public class DeploymentInfo {
     private Features features;
     private DynamicFeatures dynamicFeatures;
     private ServerSerialisers serialisers;
+
+    private ServerRestHandler preExceptionMapperHandler;
     private List<ResourceClass> resourceClasses;
     private List<ResourceClass> locatableResourceClasses;
     private ParamConverterProviders paramConverterProviders;
     private Supplier<Application> applicationSupplier;
     private Function<Class<?>, BeanFactory<?>> factoryCreator;
-    private ResteasyReactiveConfig config;
+    private ResteasyReactiveConfig resteasyReactiveConfig;
     private Function<Object, Object> clientProxyUnwrapper;
     private String applicationPath;
     private List<HandlerChainCustomizer> globalHandlerCustomizers = new ArrayList<>();
     private boolean developmentMode;
-    private boolean resumeOn404;
+    private boolean servletPresent = false;
 
     public ResourceInterceptors getInterceptors() {
         return interceptors;
@@ -86,6 +91,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setSerialisers(ServerSerialisers serialisers) {
         this.serialisers = serialisers;
+        return this;
+    }
+
+    public ServerRestHandler getPreExceptionMapperHandler() {
+        return preExceptionMapperHandler;
+    }
+
+    public DeploymentInfo setPreExceptionMapperHandler(ServerRestHandler preExceptionMapperHandler) {
+        this.preExceptionMapperHandler = preExceptionMapperHandler;
         return this;
     }
 
@@ -143,12 +157,12 @@ public class DeploymentInfo {
         return this;
     }
 
-    public ResteasyReactiveConfig getConfig() {
-        return config;
+    public ResteasyReactiveConfig getResteasyReactiveConfig() {
+        return resteasyReactiveConfig;
     }
 
-    public DeploymentInfo setConfig(ResteasyReactiveConfig config) {
-        this.config = config;
+    public DeploymentInfo setResteasyReactiveConfig(ResteasyReactiveConfig resteasyReactiveConfig) {
+        this.resteasyReactiveConfig = resteasyReactiveConfig;
         return this;
     }
 
@@ -179,12 +193,12 @@ public class DeploymentInfo {
         return this;
     }
 
-    public boolean isResumeOn404() {
-        return resumeOn404;
+    public boolean isServletPresent() {
+        return servletPresent;
     }
 
-    public DeploymentInfo setResumeOn404(boolean resumeOn404) {
-        this.resumeOn404 = resumeOn404;
+    public DeploymentInfo setServletPresent(boolean servletPresent) {
+        this.servletPresent = servletPresent;
         return this;
     }
 }

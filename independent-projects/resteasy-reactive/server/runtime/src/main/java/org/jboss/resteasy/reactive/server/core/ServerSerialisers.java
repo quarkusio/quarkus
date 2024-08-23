@@ -13,22 +13,26 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Variant;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.WriterInterceptor;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
 import org.jboss.resteasy.reactive.common.PreserveTargetException;
@@ -40,10 +44,12 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedMap;
+import org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterArray;
 import org.jboss.resteasy.reactive.server.jaxrs.WriterInterceptorContextImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataOutput;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerBooleanMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerByteArrayMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerCharArrayMessageBodyHandler;
@@ -58,6 +64,7 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathBodyHa
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerPathPartBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerStringMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.providers.serialisers.StreamingOutputMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -71,18 +78,14 @@ public class ServerSerialisers extends Serialisers {
         }
     };
 
-    private static final String CONTENT_TYPE = "Content-Type"; // use this instead of the Vert.x constant because the TCK expects upper case
-
-    static {
-        primitivesToWrappers.put(boolean.class, Boolean.class);
-        primitivesToWrappers.put(char.class, Character.class);
-        primitivesToWrappers.put(byte.class, Byte.class);
-        primitivesToWrappers.put(short.class, Short.class);
-        primitivesToWrappers.put(int.class, Integer.class);
-        primitivesToWrappers.put(long.class, Long.class);
-        primitivesToWrappers.put(float.class, Float.class);
-        primitivesToWrappers.put(double.class, Double.class);
-    }
+    private static final String CONTENT = "Content";
+    private static final String CONTENT_LOWER = "content";
+    private static final String LOCATION = "Location";
+    private static final String TYPE = "Type";
+    private static final String TYPE_LOWER = "type";
+    private static final String LENGTH = "Length";
+    private static final String LENGTH_LOWER = "length";
+    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
@@ -119,12 +122,16 @@ public class ServerSerialisers extends Serialisers {
                     MediaType.APPLICATION_FORM_URLENCODED),
             new Serialisers.BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
                     MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(StreamingOutput.class, StreamingOutputMessageBodyWriter.class,
+                    MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(File.class, ServerFileBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
                     MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(MultipartFormDataOutput.class, MultipartMessageBodyWriter.class,
+                    MediaType.MULTIPART_FORM_DATA),
             new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,
@@ -185,16 +192,19 @@ public class ServerSerialisers extends Serialisers {
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
         context.serverResponse().setPreCommitListener(HEADER_FUNCTION);
+
+        RuntimeResource target = context.getTarget();
+        Type genericType;
+        if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
+            genericType = context.getGenericReturnType();
+        } else {
+            genericType = target == null ? null : target.getReturnType();
+        }
+
         try {
             if (writer instanceof ServerMessageBodyWriter && writerInterceptors == null && !outputStreamSet) {
                 ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
-                RuntimeResource target = context.getTarget();
-                Type genericType;
-                if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
-                    genericType = context.getGenericReturnType();
-                } else {
-                    genericType = target == null ? null : target.getReturnType();
-                }
+
                 Class<?> entityClass = entity.getClass();
                 if (quarkusRestWriter.isWriteable(
                         entityClass,
@@ -217,8 +227,8 @@ public class ServerSerialisers extends Serialisers {
                         context.setResponseContentType(mediaType);
                     }
                     if (writerInterceptors == null) {
-                        writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
-                                context.getAllAnnotations(), response.getMediaType(), response.getHeaders(),
+                        writer.writeTo(entity, entity.getClass(), genericType,
+                                context.getAllAnnotations(), context.getResponseMediaType(), response.getHeaders(),
                                 context.getOrCreateOutputStream());
                         context.getOrCreateOutputStream().close();
                     } else {
@@ -234,6 +244,9 @@ public class ServerSerialisers extends Serialisers {
             //the error handling will want to write out its own response
             //and the pre commit listener will interfere with that
             context.serverResponse().setPreCommitListener(null);
+            // also clear the stream in order to try to avoid writing out any data that
+            // might have been put on the stream before the exception occurred
+            context.setOutputStream(null);
             if (e instanceof RuntimeException) {
                 throw new PreserveTargetException(e);
             } else if (e instanceof IOException) {
@@ -484,13 +497,30 @@ public class ServerSerialisers extends Serialisers {
         MultivaluedMap<String, Object> headers = response.getHeaders();
         for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             if (entry.getValue().size() == 1) {
+                String header = entry.getKey();
+                boolean useSet = requireSingleHeader(header);
                 Object o = entry.getValue().get(0);
                 if (o == null) {
-                    vertxResponse.setResponseHeader(entry.getKey(), "");
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, "");
+                    } else {
+                        vertxResponse.addResponseHeader(header, "");
+                    }
                 } else if (o instanceof CharSequence) {
-                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) o);
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, (CharSequence) o);
+                    } else {
+                        vertxResponse.addResponseHeader(header, (CharSequence) o);
+                    }
                 } else {
-                    vertxResponse.setResponseHeader(entry.getKey(), (CharSequence) HeaderUtil.headerToString(o));
+                    if (useSet) {
+                        vertxResponse.setResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                    } else {
+                        vertxResponse.addResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
+                    }
+                }
+                if (header.equalsIgnoreCase("Transfer-Encoding")) { // using both headers together is not allowed
+                    vertxResponse.removeResponseHeader("Content-Length");
                 }
             } else {
                 List<CharSequence> strValues = new ArrayList<>(entry.getValue().size());
@@ -500,6 +530,17 @@ public class ServerSerialisers extends Serialisers {
                 vertxResponse.setResponseHeader(entry.getKey(), strValues);
             }
         }
+    }
+
+    private static boolean requireSingleHeader(String header) {
+        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER) || header.startsWith(LOCATION))) {
+            return false;
+        }
+        if (header.length() < CONTENT.length() + 2) {
+            return false;
+        }
+        String substring = header.substring(CONTENT.length() + 1).toLowerCase(Locale.ROOT);
+        return substring.equals(TYPE_LOWER) || substring.equals(LENGTH_LOWER);
     }
 
 }

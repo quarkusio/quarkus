@@ -1,0 +1,62 @@
+name: Jakarta Rewrite
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 22pm every weekday + saturday
+    - cron: '0 22 * * 1-6'
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    name: Rewrite to Jakarta
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    env:
+      MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.JAKARTA_PUSH_PAT }}
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: maven
+      - name: Configure Git author
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      - name: Install JBang
+        run: |
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+        shell: bash
+      - name: Transform sources
+        run: |
+          export PATH="$HOME/.jbang/bin:$PATH"
+          git checkout -b temp-jakarta-rewrite
+          REWRITE_NO_TESTS=true ./jakarta/transform.sh
+          git push --force origin temp-jakarta-rewrite:jakarta-rewrite
+        shell: bash
+      - name: Build and Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          ./mvnw -e -B --settings .github/mvn-settings.xml \
+            -DskipITs -DskipTests -Dskip.gradle.tests -Dno-format -Dinvoker.skip=true \
+            -DretryFailedDeploymentCount=10 \
+            -pl !integration-tests/gradle \
+            clean deploy
+      - name: Report status
+        if: "always() && github.repository == 'quarkusio/quarkus'"
+        shell: bash
+        run: |
+          curl -Ls https://sh.jbang.dev | bash -s - app setup
+          ~/.jbang/bin/jbang .github/NativeBuildReport.java \
+            issueNumber=24396 \
+            runId=${{ github.run_id }} \
+            status=${{ job.status }} \
+            token=${{ secrets.GITHUB_API_TOKEN }} \
+            issueRepo=${{ github.repository }} \
+            thisRepo=${{ github.repository }}

@@ -1,5 +1,0 @@
-quarkus:
-  http:
-    root-path: {root-context-path}
-  package:
-    type: uber-jar

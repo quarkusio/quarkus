@@ -3,10 +3,12 @@ package io.quarkus.bootstrap.model;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.maven.dependency.GACTV;
 import java.util.Arrays;
 import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.GACTV;
 
 public class PlatformStreamInfoTest {
 

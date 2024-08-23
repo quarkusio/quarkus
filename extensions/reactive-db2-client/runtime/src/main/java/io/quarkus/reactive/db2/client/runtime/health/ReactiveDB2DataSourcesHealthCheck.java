@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.Bean;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.Bean;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -20,14 +20,14 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.runtime.DataSourcesHealthSupport;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.vertx.mutiny.db2client.DB2Pool;
 
 @Readiness
 @ApplicationScoped
 /**
- * Implementation note: this healthcheck doesn't extend ReactiveDatasourceHealthCheck
+ * Implementation note: this health check doesn't extend ReactiveDatasourceHealthCheck
  * as a DB2Pool is based on Mutiny: does not extend io.vertx.sqlclient.Pool
  */
 class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {
@@ -37,8 +37,8 @@ class ReactiveDB2DataSourcesHealthCheck implements HealthCheck {
     @PostConstruct
     protected void init() {
         ArcContainer container = Arc.container();
-        DataSourcesHealthSupport excluded = container.instance(DataSourcesHealthSupport.class).get();
-        Set<String> excludedNames = excluded.getExcludedNames();
+        DataSourceSupport support = container.instance(DataSourceSupport.class).get();
+        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
         for (InstanceHandle<DB2Pool> handle : container.select(DB2Pool.class, Any.Literal.INSTANCE).handles()) {
             String db2PoolName = getDB2PoolName(handle.getBean());
             if (!excludedNames.contains(db2PoolName)) {

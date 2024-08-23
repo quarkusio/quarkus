@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.handlers.MediaTypeMapper;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
@@ -14,6 +15,7 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 class RuntimeMappingDeployment {
 
     private final Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> classTemplates;
@@ -21,7 +23,7 @@ class RuntimeMappingDeployment {
     private final SortedMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nullMethod;
 
     private String currentHttpMethod;
-    private List<RequestMapper.RequestPath<RuntimeResource>> currentMapperPerMethodTemplates;
+    private ArrayList<RequestMapper.RequestPath<RuntimeResource>> currentMapperPerMethodTemplates;
 
     private Map<String, RequestMapper<RuntimeResource>> classMapper;
     private int maxMethodTemplateNameCount = -1;
@@ -85,9 +87,11 @@ class RuntimeMappingDeployment {
             //now we just create a fake RuntimeResource
             //we could add another layer of indirection, however this is not a common case
             //so we don't want to add any extra latency into the common case
+
             RuntimeResource fake = new RuntimeResource(currentHttpMethod, path, null, null, Collections.emptyList(),
                     null, null,
-                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false, null, null, null, null, null,
+                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false,
+                    false, null, null, null, null, null,
                     Collections.emptyMap());
             currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
         }

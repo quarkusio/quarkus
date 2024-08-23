@@ -5,41 +5,28 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
-    public static SourceSet getSourceSet(Project project, String sourceSetName) {
-        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention == null) {
-            throw new IllegalArgumentException("The project does not include the Java plugin");
-        }
-        return javaConvention.getSourceSets().getByName(sourceSetName);
+    public static SourceSetContainer getSourceSets(Project project) {
+        return project.getExtensions().getByType(SourceSetContainer.class);
     }
 
-    public static PathsCollection getOutputPaths(Project project) {
-        final SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
-        final PathsCollection.Builder builder = PathsCollection.builder();
-        mainSourceSet.getOutput().getClassesDirs().filter(f -> f.exists()).forEach(f -> builder.add(f.toPath()));
-        final File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
-        if (resourcesDir != null && resourcesDir.exists()) {
-            final Path p = resourcesDir.toPath();
-            if (!builder.contains(p)) {
-                builder.add(p);
-            }
-        }
-        return builder.build();
+    public static SourceSet getSourceSet(Project project, String sourceSetName) {
+        return getSourceSets(project).getByName(sourceSetName);
     }
 
     public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean test) {
@@ -47,23 +34,30 @@ public class QuarkusGradleUtils {
     }
 
     public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean populated, boolean test) {
-        FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
-        Set<File> classDirFiles = classesDirs.getFiles();
+        final FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
+        final Set<File> classDirFiles = classesDirs.getFiles();
         if (classDirFiles.size() == 1) {
             return classesDirs.getAsPath();
         }
+        final Set<Path> classesPaths = new HashSet<>(classDirFiles.size());
+        classesDirs.forEach(f -> classesPaths.add(f.toPath()));
+        final Path merged = mergeClassesDirs(classesPaths, tmpDir, populated, test);
+        return merged == null ? null : merged.toString();
+    }
+
+    public static Path mergeClassesDirs(Collection<Path> classesDirs, File tmpDir, boolean populated, boolean test) {
         Path classesDir = null;
-        final Iterator<File> i = classDirFiles.iterator();
+        final Iterator<Path> i = classesDirs.iterator();
         int dirCount = 0;
         while (i.hasNext()) {
-            final File next = i.next();
-            if (!next.exists()) {
+            final Path next = i.next();
+            if (!Files.exists(next)) {
                 continue;
             }
             try {
                 switch (dirCount++) {
                     case 0:
-                        classesDir = next.toPath();
+                        classesDir = next;
                         break;
                     case 1:
                         //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
@@ -71,7 +65,7 @@ public class QuarkusGradleUtils {
                         //all in a temp dir
                         final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes" + (test ? "-test" : ""));
                         if (!populated) {
-                            return tmpClassesDir.toString();
+                            return tmpClassesDir;
                         }
                         if (Files.exists(tmpClassesDir)) {
                             IoUtils.recursiveDelete(tmpClassesDir);
@@ -79,7 +73,7 @@ public class QuarkusGradleUtils {
                         IoUtils.copy(classesDir, tmpClassesDir);
                         classesDir = tmpClassesDir;
                     default:
-                        IoUtils.copy(next.toPath(), classesDir);
+                        IoUtils.copy(next, classesDir);
 
                 }
             } catch (IOException e) {
@@ -89,7 +83,7 @@ public class QuarkusGradleUtils {
         if (classesDir == null) {
             return null;
         }
-        return classesDir.toString();
+        return classesDir;
     }
 
 }

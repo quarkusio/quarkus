@@ -1,7 +1,7 @@
 package io.quarkus.it.ide.launcher;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/hello")
 public class HelloResource {

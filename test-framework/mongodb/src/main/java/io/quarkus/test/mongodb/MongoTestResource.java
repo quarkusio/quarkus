@@ -1,39 +1,48 @@
 package io.quarkus.test.mongodb;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
-import de.flapdoodle.embed.mongo.Command;
-import de.flapdoodle.embed.mongo.MongodExecutable;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.Defaults;
-import de.flapdoodle.embed.mongo.config.MongodConfig;
+import de.flapdoodle.embed.mongo.commands.MongodArguments;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.distribution.IFeatureAwareVersion;
 import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.config.RuntimeConfig;
-import de.flapdoodle.embed.process.config.io.ProcessOutput;
-import de.flapdoodle.embed.process.runtime.Network;
+import de.flapdoodle.embed.mongo.distribution.Versions;
+import de.flapdoodle.embed.mongo.transitions.Mongod;
+import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
+import de.flapdoodle.reverse.TransitionWalker;
+import de.flapdoodle.reverse.transitions.Start;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
     public static final String PORT = "port";
-    private static final int DEFAULT_PORT = 27017;
-    private static MongodExecutable MONGO;
+    public static final String VERSION = "version";
+    static final int DEFAULT_PORT = 27017;
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestResource.class);
-    private Integer port;
 
-    @Override
-    public void init(Map<String, String> initArgs) {
-        port = Optional.ofNullable(initArgs.get(PORT)).map(Integer::parseInt).orElse(DEFAULT_PORT);
+    private Integer port;
+    private IFeatureAwareVersion version;
+
+    private TransitionWalker.ReachedState<RunningMongodProcess> startedServer;
+
+    public static int port(Map<String, String> initArgs) {
+        return Optional.ofNullable(initArgs.get(PORT)).map(Integer::parseInt).orElse(DEFAULT_PORT);
     }
 
-    @Override
-    public Map<String, String> start() {
+    public static IFeatureAwareVersion version(Map<String, String> initArgs) {
+        Optional<String> versionArg = Optional.ofNullable(initArgs.get(VERSION));
+
+        return versionArg.<IFeatureAwareVersion> map(Version.Main::valueOf)
+                .orElseGet(() -> versionArg.map(
+                        versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
+                        .orElse(Version.Main.V4_4));
+    }
+
+    public static void forceExtendedSocketOptionsClassInit() {
         try {
             //JDK bug workaround
             //https://github.com/quarkusio/quarkus/issues/14424
@@ -41,53 +50,34 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException e) {
         }
-        try {
-            Version.Main version = Version.Main.V4_0;
-            LOGGER.infof("Starting Mongo %s on port %s", version, port);
-            MongodConfig config = MongodConfig.builder()
-                    .version(version)
-                    .net(new Net(port, Network.localhostIsIPv6()))
-                    .build();
-            MONGO = getMongodExecutable(config);
-            try {
-                MONGO.start();
-            } catch (Exception e) {
-                //every so often mongo fails to start on CI runs
-                //see if this helps
-                Thread.sleep(1000);
-                MONGO.start();
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return Collections.emptyMap();
     }
 
-    private MongodExecutable getMongodExecutable(MongodConfig config) {
-        try {
-            return doGetExecutable(config);
-        } catch (Exception e) {
-            // sometimes the download process can timeout so just sleep and try again
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-
-            }
-            return doGetExecutable(config);
-        }
+    @Override
+    public void init(Map<String, String> initArgs) {
+        port = port(initArgs);
+        version = version(initArgs);
     }
 
-    private MongodExecutable doGetExecutable(MongodConfig config) {
-        RuntimeConfig runtimeConfig = Defaults.runtimeConfigFor(Command.MongoD)
-                .processOutput(ProcessOutput.silent())
-                .build();
-        return MongodStarter.getInstance(runtimeConfig).prepare(config);
+    @Override
+    public Map<String, String> start() {
+        forceExtendedSocketOptionsClassInit();
+
+        LOGGER.infof("Starting Mongo %s on port %s", version, port);
+
+        startedServer = Mongod.instance().withNet(Start.to(Net.class)
+                .initializedWith(Net.builder().from(Net.defaults()).port(port).build()))
+                .withMongodArguments(Start.to(MongodArguments.class)
+                        .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
+                .start(version);
+
+        return Collections.singletonMap("quarkus.mongodb.hosts", String.format("127.0.0.1:%d", port));
     }
 
     @Override
     public void stop() {
-        if (MONGO != null) {
-            MONGO.stop();
+        if (startedServer != null) {
+            startedServer.close();
+            startedServer = null;
         }
     }
 }

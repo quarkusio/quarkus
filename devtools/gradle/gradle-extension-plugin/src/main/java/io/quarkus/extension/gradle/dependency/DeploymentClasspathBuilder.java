@@ -15,7 +15,6 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
-import io.quarkus.gradle.tooling.dependency.LocalExtensionDependency;
 
 public class DeploymentClasspathBuilder {
 
@@ -29,30 +28,26 @@ public class DeploymentClasspathBuilder {
     public void exportDeploymentClasspath(String configurationName) {
 
         String deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(configurationName);
-        project.getConfigurations().create(deploymentConfigurationName);
+        project.getConfigurations().create(deploymentConfigurationName, config -> {
+            Configuration configuration = DependencyUtils.duplicateConfiguration(project,
+                    project.getConfigurations().getByName(configurationName));
+            Set<ExtensionDependency<?>> extensionDependencies = collectFirstMetQuarkusExtensions(configuration);
 
-        Configuration configuration = DependencyUtils.duplicateConfiguration(project,
-                project.getConfigurations().getByName(configurationName));
-        Set<ExtensionDependency> extensionDependencies = collectFirstMetQuarkusExtensions(configuration);
+            DependencyHandler dependencies = project.getDependencies();
 
-        DependencyHandler dependencies = project.getDependencies();
-
-        for (ExtensionDependency extension : extensionDependencies) {
-            if (extension instanceof LocalExtensionDependency) {
-                DependencyUtils.addLocalDeploymentDependency(deploymentConfigurationName, (LocalExtensionDependency) extension,
-                        dependencies);
-            } else {
-                DependencyUtils.requireDeploymentDependency(deploymentConfigurationName, extension, dependencies);
+            for (ExtensionDependency<?> extension : extensionDependencies) {
                 if (!alreadyProcessed.add(extension.getExtensionId())) {
                     continue;
                 }
-                extension.installDeploymentVariant(dependencies);
+
+                dependencies.add(deploymentConfigurationName,
+                        DependencyUtils.createDeploymentDependency(dependencies, extension));
             }
-        }
+        });
     }
 
-    private Set<ExtensionDependency> collectFirstMetQuarkusExtensions(Configuration configuration) {
-        Set<ExtensionDependency> firstLevelExtensions = new HashSet<>();
+    private Set<ExtensionDependency<?>> collectFirstMetQuarkusExtensions(Configuration configuration) {
+        Set<ExtensionDependency<?>> firstLevelExtensions = new HashSet<>();
         Set<ResolvedDependency> firstLevelModuleDependencies = configuration.getResolvedConfiguration()
                 .getFirstLevelModuleDependencies();
 
@@ -64,16 +59,16 @@ public class DeploymentClasspathBuilder {
         return firstLevelExtensions;
     }
 
-    private Set<ExtensionDependency> collectQuarkusExtensions(ResolvedDependency dependency,
+    private Set<ExtensionDependency<?>> collectQuarkusExtensions(ResolvedDependency dependency,
             Set<ModuleVersionIdentifier> visitedArtifacts) {
         if (visitedArtifacts.contains(dependency.getModule().getId())) {
             return Collections.emptySet();
         } else {
             visitedArtifacts.add(dependency.getModule().getId());
         }
-        Set<ExtensionDependency> extensions = new LinkedHashSet<>();
+        Set<ExtensionDependency<?>> extensions = new LinkedHashSet<>();
         for (ResolvedArtifact moduleArtifact : dependency.getModuleArtifacts()) {
-            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, moduleArtifact);
+            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(project, moduleArtifact);
             if (extension != null) {
                 extensions.add(extension);
                 return extensions;
@@ -83,7 +78,7 @@ public class DeploymentClasspathBuilder {
         for (ResolvedDependency child : dependency.getChildren()) {
             extensions.addAll(collectQuarkusExtensions(child, visitedArtifacts));
         }
+
         return extensions;
     }
-
 }

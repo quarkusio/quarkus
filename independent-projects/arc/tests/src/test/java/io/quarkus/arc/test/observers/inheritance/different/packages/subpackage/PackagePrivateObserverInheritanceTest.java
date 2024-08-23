@@ -1,13 +1,14 @@
 package io.quarkus.arc.test.observers.inheritance.different.packages.subpackage;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.observers.inheritance.different.packages.OriginalBean;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class PackagePrivateObserverInheritanceTest {
 

@@ -8,6 +8,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.smallrye.config.PropertiesConfigSource;
 
 public class ConfigDescriptionsManagerUnitTest {
@@ -156,6 +157,24 @@ public class ConfigDescriptionsManagerUnitTest {
             Assertions.assertEquals("The named min size", configDescription.getDescription());
             Assertions.assertNull(configDescription.getConfigValue().getValue());
             Assertions.assertNull(configDescription.getConfigValue().getConfigSourceName());
+        }
+    }
+
+    /**
+     * Make sure a config key with a quoted dot works
+     */
+    @Test
+    public void testQuotedDot() {
+        //dot is quoted in the config
+        char[] quotedDot = { '\"', '.', '\"' };
+
+        String configWithQuotedDotIn = "bla.bla." + String.valueOf(quotedDot);
+        try (var handle = setupConfig(Map.of(configWithQuotedDotIn, "foo"))) {
+            ConfigDescriptionsManager manager = new ConfigDescriptionsManager();
+            ConfigDescription configDescription = find(manager, configWithQuotedDotIn);
+            Assertions.assertNotNull(configDescription);
+            Assertions.assertEquals(configWithQuotedDotIn, configDescription.getName());
+            Assertions.assertEquals("foo", configDescription.getConfigValue().getRawValue());
         }
     }
 

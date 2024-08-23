@@ -1,12 +1,18 @@
 package com.example.reactive;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import java.util.Objects;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+
+import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -15,6 +21,9 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 public class ReactiveService implements ReactiveTest {
 
     BroadcastProcessor<Item> broadcast = BroadcastProcessor.create();
+
+    @Inject
+    Mutiny.SessionFactory sessionFactory;
 
     @Inject
     ContextChecker contextChecker;
@@ -28,11 +37,15 @@ public class ReactiveService implements ReactiveTest {
 
     @Override
     public Uni<Test.Empty> add(Test.Item request) {
-        contextChecker.newContextId("ReactiveService#add");
-        return Panache.withTransaction(() -> {
+        assert VertxContext.isOnDuplicatedContext();
+        int contextId = contextChecker.newContextId("ReactiveService#add");
+        return sessionFactory.withTransaction(session -> {
             Item newItem = new Item();
             newItem.text = request.getText();
-            return Item.persist(newItem)
+            if (!Objects.equals(ContextLocals.get("context-id").get(), contextId)) {
+                throw new RuntimeException("Different context on `ContextLocals` and `ReactiveService#add` method");
+            }
+            return session.persist(newItem)
                     .replaceWith(newItem);
         }).onItem().invoke(newItem -> broadcast.onNext(newItem))
                 .replaceWith(Test.Empty.getDefaultInstance());
@@ -44,8 +57,10 @@ public class ReactiveService implements ReactiveTest {
         Multi<Item> cached = broadcast.cache();
         cached.subscribe().with(i -> {
         });
-        Multi<Test.Item> existing = Item.<Item> streamAll()
-                .map(item -> Test.Item.newBuilder().setText(item.text).build());
+
+        Multi<Test.Item> existing = Panache.withSession(() -> Item.<Item> listAll()).toMulti().flatMap(list -> {
+            return Multi.createFrom().iterable(list);
+        }).map(item -> Test.Item.newBuilder().setText(item.text).build());
         return Multi.createBy().concatenating()
                 .streams(existing, cached.map(i -> i.text)
                         .map(Test.Item.newBuilder()::setText)

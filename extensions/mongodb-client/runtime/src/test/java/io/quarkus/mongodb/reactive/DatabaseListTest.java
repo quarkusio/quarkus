@@ -44,6 +44,6 @@ public class DatabaseListTest extends MongoTestBase {
                 .await().indefinitely().size()).isBetween(2, 3);
         assertThat(
                 client.listDatabases((DatabaseListOptions) null).collect().asList().await().indefinitely().size())
-                        .isBetween(2, 3);
+                .isBetween(2, 3);
     }
 }

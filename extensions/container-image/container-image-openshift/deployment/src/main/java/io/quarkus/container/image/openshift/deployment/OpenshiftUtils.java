@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.api.model.ObjectReference;
 import io.fabric8.openshift.api.model.ImageStreamTag;
 import io.fabric8.openshift.api.model.SourceBuildStrategyFluent;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 
 /**
  * This class is copied from Dekorate, with the difference that the {@code waitForImageStreamTags} method
@@ -27,6 +28,11 @@ import io.fabric8.openshift.client.OpenShiftClient;
  * TODO: Update dekorate to take the client as an argument and then remove this class
  */
 public class OpenshiftUtils {
+
+    private static final String OPENSHIFT_NAMESPACE = "quarkus.openshift.namespace";
+    private static final String KUBERNETES_NAMESPACE = "quarkus.kubernetes.namespace";
+    private static final String OPENSHIFT_DEPLOY_STRATEGY = "quarkus.openshift.deploy-strategy";
+    private static final String KUBERNETES_DEPLOY_STRATEGY = "quarkus.kubernetes.deploy-strategy";
 
     /**
      * Wait for the references ImageStreamTags to become available.
@@ -81,14 +87,15 @@ public class OpenshiftUtils {
     }
 
     /**
-     * Merges {@link OpenshiftConfig} with {@link S2iConfig} prioritizing in the former.
-     * 
+     * Merges {@link ContainerImageOpenshiftConfig} with {@link S2iConfig} prioritizing in the former.
+     *
      * @param openshiftConfig the Openshift config
      * @param s2iConfig the s2i config
-     * @param an instance of {@link OpenshiftConfig} with the merged configuration.
+     * @return an instance of {@link ContainerImageOpenshiftConfig} with the merged configuration.
      */
-    public static OpenshiftConfig mergeConfig(OpenshiftConfig openshiftConfig, S2iConfig s2iConfig) {
-        OpenshiftConfig result = openshiftConfig != null ? openshiftConfig : new OpenshiftConfig();
+    public static ContainerImageOpenshiftConfig mergeConfig(ContainerImageOpenshiftConfig openshiftConfig,
+            S2iConfig s2iConfig) {
+        ContainerImageOpenshiftConfig result = openshiftConfig != null ? openshiftConfig : new ContainerImageOpenshiftConfig();
         if (s2iConfig == null) {
             return result;
         }
@@ -141,5 +148,22 @@ public class OpenshiftUtils {
         result.buildStrategy = openshiftConfig.buildStrategy;
 
         return result;
+    }
+
+    /**
+     * @return the openshift namespace set in the OpenShift extension.
+     */
+    public static Optional<String> getNamespace() {
+        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_NAMESPACE, String.class)
+                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_NAMESPACE, String.class));
+    }
+
+    /**
+     * @return the openshift deploy strategy set in the OpenShift/Kubernetes extensions.
+     */
+    public static DeployStrategy getDeployStrategy() {
+        return ConfigProvider.getConfig().getOptionalValue(OPENSHIFT_DEPLOY_STRATEGY, DeployStrategy.class)
+                .or(() -> ConfigProvider.getConfig().getOptionalValue(KUBERNETES_DEPLOY_STRATEGY, DeployStrategy.class))
+                .orElse(DeployStrategy.CreateOrUpdate);
     }
 }

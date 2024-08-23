@@ -1,13 +1,16 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
+import io.quarkus.hibernate.orm.TestTags;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
+@Tag(TestTags.DEVMODE)
 public class AddNewSqlLoadScriptTestCase {
     @RegisterExtension
     static QuarkusDevModeTest runner = new QuarkusDevModeTest()

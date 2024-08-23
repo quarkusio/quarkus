@@ -17,10 +17,11 @@ import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 
@@ -59,9 +60,6 @@ public class GraphicsResource {
         } else if ("ConvolveOp".equals(entrypoint)) {
             final ConvolveOp cop = new ConvolveOp(new Kernel(1, 1, new float[] { 0f }), ConvolveOp.EDGE_NO_OP, null);
             LOG.infof("ConvolveOp: %s", cop.toString());
-        } else if ("Font".equals(entrypoint)) {
-            final Font f = new Font("Arial", Font.PLAIN, 16);
-            LOG.infof("Font: %s", f.getFamily());
         } else if ("Path2D".equals(entrypoint)) {
             final Path2D p = new Path2D.Double();
             LOG.infof("Path2D: %s", p.toString());

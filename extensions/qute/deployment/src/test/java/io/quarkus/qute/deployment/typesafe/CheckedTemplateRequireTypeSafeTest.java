@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ public class CheckedTemplateRequireTypeSafeTest {
                                     + "{inject:fool.getJoke(null)} "
                                     + "{inject:fool.getJoke(identifier)} "
                                     + "{#each name.chars.iterator}"
-                                    // {it_index} is not considered an error because the binding is registered by the loop section !}
+                                    // {it_index} is not considered an error because the binding is registered by the loop section !
                                     + "{it_index}."
                                     // however, {index} is an error
                                     + "{index}"
@@ -46,7 +46,7 @@ public class CheckedTemplateRequireTypeSafeTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (3)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (3)"), te.getMessage());
                 assertTrue(te.getMessage().contains("any"), te.getMessage());
                 assertTrue(te.getMessage().contains("identifier"), te.getMessage());
                 assertTrue(te.getMessage().contains("index"), te.getMessage());
@@ -57,7 +57,7 @@ public class CheckedTemplateRequireTypeSafeTest {
         fail();
     }
 
-    @CheckedTemplate // requireTypeSafeExpressions=true by default 
+    @CheckedTemplate // requireTypeSafeExpressions=true by default
     static class Templates {
 
         static native TemplateInstance hola(String name);

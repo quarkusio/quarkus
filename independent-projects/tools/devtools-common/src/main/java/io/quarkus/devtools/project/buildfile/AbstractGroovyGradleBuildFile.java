@@ -1,9 +1,10 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.nio.file.Path;
+
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class AbstractGroovyGradleBuildFile extends AbstractGradleBuildFile {
 

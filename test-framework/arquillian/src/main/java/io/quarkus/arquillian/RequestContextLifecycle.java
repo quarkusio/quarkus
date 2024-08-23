@@ -1,7 +1,7 @@
 package io.quarkus.arquillian;
 
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
-import org.jboss.arquillian.core.api.InstanceProducer;
+import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
 import org.jboss.arquillian.test.spi.event.suite.After;
@@ -21,12 +21,13 @@ public class RequestContextLifecycle {
 
     @Inject
     @DeploymentScoped
-    private InstanceProducer<ClassLoader> appClassloader;
+    private Instance<QuarkusDeployment> deployment;
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) Before event) throws Throwable {
         //we are outside the runtime class loader, so we don't have direct access to the container
-        ClassLoader classLoader = appClassloader.get();
-        if (classLoader != null) {
+        QuarkusDeployment deployment = this.deployment.get();
+        if (deployment != null && deployment.hasAppClassLoader()) {
+            ClassLoader classLoader = deployment.getAppClassLoader();
             Class<?> arcClz = classLoader.loadClass(Arc.class.getName());
             Object container = arcClz.getMethod("container").invoke(null);
             if (container != null) {
@@ -42,8 +43,9 @@ public class RequestContextLifecycle {
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) After event) throws Throwable {
         //we are outside the runtime class loader, so we don't have direct access to the container
-        ClassLoader classLoader = appClassloader.get();
-        if (classLoader != null) {
+        QuarkusDeployment deployment = this.deployment.get();
+        if (deployment != null && deployment.hasAppClassLoader()) {
+            ClassLoader classLoader = deployment.getAppClassLoader();
             Class<?> arcClz = classLoader.loadClass(Arc.class.getName());
             Object container = arcClz.getMethod("container").invoke(null);
             if (container != null) {

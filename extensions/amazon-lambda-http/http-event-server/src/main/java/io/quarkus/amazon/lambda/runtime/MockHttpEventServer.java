@@ -35,7 +35,7 @@ public class MockHttpEventServer extends MockEventServer {
     }
 
     @Override
-    protected void defaultHanderSetup() {
+    protected void defaultHandlerSetup() {
         router.route().handler(this::handleHttpRequests);
     }
 
@@ -56,9 +56,16 @@ public class MockHttpEventServer extends MockEventServer {
         event.setRequestContext(new APIGatewayV2HTTPEvent.RequestContext());
         event.getRequestContext().setHttp(new APIGatewayV2HTTPEvent.RequestContext.Http());
         event.getRequestContext().getHttp().setMethod(ctx.request().method().name());
+        event.getRequestContext().getHttp().setSourceIp(ctx.request().connection().remoteAddress().hostAddress());
         event.setRawPath(ctx.request().path());
         event.setRawQueryString(ctx.request().query());
         for (String header : ctx.request().headers().names()) {
+            if (header.equalsIgnoreCase("Expect")) {
+                String expect = ctx.request().getHeader("Expect");
+                if (expect != null && expect.equalsIgnoreCase(CONTINUE)) {
+                    continue;
+                }
+            }
             if (event.getHeaders() == null)
                 event.setHeaders(new HashMap<>());
             List<String> values = ctx.request().headers().getAll(header);
@@ -111,9 +118,19 @@ public class MockHttpEventServer extends MockEventServer {
                 HttpServerResponse response = pending.response();
                 if (res.getHeaders() != null) {
                     for (Map.Entry<String, String> header : res.getHeaders().entrySet()) {
-                        for (String val : header.getValue().split(",")) {
-                            response.headers().add(header.getKey(), val);
+                        if (canHaveCommaValue(header.getKey())) {
+                            response.headers().add(header.getKey(), header.getValue());
+
+                        } else {
+                            for (String val : header.getValue().split(",")) {
+                                response.headers().add(header.getKey(), val);
+                            }
                         }
+                    }
+                }
+                if (res.getCookies() != null) {
+                    for (String cookie : res.getCookies()) {
+                        response.headers().add("set-cookie", cookie);
                     }
                 }
                 response.setStatusCode(res.getStatusCode());

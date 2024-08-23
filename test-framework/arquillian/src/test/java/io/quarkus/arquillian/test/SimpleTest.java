@@ -1,25 +1,28 @@
 package io.quarkus.arquillian.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.arquillian.junit.InSequence;
+import org.jboss.arquillian.junit5.ArquillianExtension;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@RunWith(Arquillian.class)
+@ExtendWith(ArquillianExtension.class)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleTest {
 
     final static AtomicInteger BEFORE = new AtomicInteger();
@@ -34,18 +37,18 @@ public class SimpleTest {
     @Inject
     SimpleClass simple;
 
-    @Before
+    @BeforeEach
     public void before() {
         BEFORE.incrementAndGet();
     }
 
-    @After
+    @AfterEach
     public void after() {
         AFTER.incrementAndGet();
     }
 
     @Test
-    @InSequence(1)
+    @Order(1)
     public void testRunner() {
         assertNotNull(simple);
         assertNotNull(simple.config);
@@ -54,7 +57,7 @@ public class SimpleTest {
     }
 
     @Test
-    @InSequence(2)
+    @Order(2)
     public void testAfter() {
         assertEquals(2, BEFORE.get());
         assertEquals(1, AFTER.get());

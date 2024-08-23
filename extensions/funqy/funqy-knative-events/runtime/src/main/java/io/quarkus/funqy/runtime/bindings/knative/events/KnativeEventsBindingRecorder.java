@@ -74,8 +74,12 @@ public class KnativeEventsBindingRecorder {
             String trigger;
             CloudEventMapping annotation = method.getAnnotation(CloudEventMapping.class);
             final List<Predicate<CloudEvent>> filter;
-            if (annotation != null && !annotation.trigger().isEmpty()) {
-                trigger = annotation.trigger();
+            if (annotation != null) {
+                if (!annotation.trigger().isEmpty()) {
+                    trigger = annotation.trigger();
+                } else {
+                    trigger = invoker.getName();
+                }
                 filter = filter(invoker.getName(), annotation);
             } else {
                 trigger = invoker.getName();
@@ -181,7 +185,7 @@ public class KnativeEventsBindingRecorder {
         FunctionConstructor.CONTAINER = beanContainer;
 
         // This needs to happen in start at RUNTIME so that
-        // mappings can be overriden by environment variables
+        // mappings can be overridden by environment variables
         FunctionInvoker defaultInvoker = null;
         if (funqyConfig.export.isPresent()) {
             defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export.get());
@@ -235,9 +239,9 @@ public class KnativeEventsBindingRecorder {
         List<Predicate<CloudEvent>> filters = new ArrayList<>();
         for (EventAttribute attribute : mapping.attributes()) {
             Objects.requireNonNull(attribute.name(),
-                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+                    "Attribute name of the EventAttribute on function " + functionName + " is required");
             Objects.requireNonNull(attribute.value(),
-                    "Attribute name of the EventAttribure on function " + functionName + " is required");
+                    "Attribute name of the EventAttribute on function " + functionName + " is required");
 
             filters.add(new CEAttributeLiteralEqualsFilter(attribute.name(), attribute.value()));
 

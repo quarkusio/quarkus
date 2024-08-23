@@ -1,6 +1,6 @@
 package io.quarkus.it.picocli;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import picocli.CommandLine;
 

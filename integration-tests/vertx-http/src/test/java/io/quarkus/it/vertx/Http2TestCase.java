@@ -4,8 +4,8 @@ import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.junit.jupiter.api.Assertions;
@@ -49,7 +49,7 @@ public class Http2TestCase {
         ExecutionException exc = Assertions.assertThrows(ExecutionException.class,
                 () -> runHttp2EnabledSsl("client-keystore-2.jks"));
 
-        Assertions.assertEquals("SSLHandshakeException: Received fatal alert: bad_certificate",
+        Assertions.assertEquals("VertxException: Connection was closed",
                 ExceptionUtils.getRootCauseMessage(exc));
     }
 

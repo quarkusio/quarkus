@@ -1,20 +1,25 @@
 package io.quarkus.qute.deployment.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TimeTemplateExtensionsTest {
@@ -29,6 +34,9 @@ public class TimeTemplateExtensionsTest {
     @Inject
     Template foo;
 
+    @Inject
+    Engine engine;
+
     @Test
     public void testFormat() {
         Calendar nowCal = Calendar.getInstance();
@@ -42,6 +50,19 @@ public class TimeTemplateExtensionsTest {
                 .data("nowDate", nowDate)
                 .data("nowCalendar", nowCal)
                 .data("myLocale", Locale.ENGLISH).render());
+    }
+
+    @Test
+    public void testInvalidParameter() {
+        try {
+            // input.birthday cannot be resolved
+            engine.parse("{time:format(input.birthday, 'uuuu')}").data("input", Map.of("name", "Quarkus Qute")).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(
+                    expected.getMessage().startsWith("Rendering error: Key \"birthday\" not found in the map with keys [name]"),
+                    expected.getMessage());
+        }
     }
 
 }

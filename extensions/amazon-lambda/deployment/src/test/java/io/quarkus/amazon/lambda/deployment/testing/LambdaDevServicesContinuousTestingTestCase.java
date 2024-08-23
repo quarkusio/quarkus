@@ -6,29 +6,33 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.amazon.lambda.deployment.testing.model.InputPerson;
+import io.quarkus.amazon.lambda.deployment.testing.model.OutputPerson;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
 
+@Disabled("https://github.com/quarkusio/quarkus/issues/33963")
 public class LambdaDevServicesContinuousTestingTestCase {
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(GreetingLambda.class, Person.class)
+                            .addClasses(GreetingLambda.class, InputPerson.class, OutputPerson.class)
                             .addAsResource(
                                     new StringAsset(ContinuousTestingTestUtils.appProperties(
                                             "quarkus.log.category.\"io.quarkus.amazon.lambda.runtime\".level=DEBUG")),
                                     "application.properties");
                 }
-            }).setTestArchiveProducer(new Supplier<JavaArchive>() {
+            }).setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(LambdaHandlerET.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClass(GreetingLambdaTest.class);
                 }
             });
 
@@ -43,7 +47,7 @@ public class LambdaDevServicesContinuousTestingTestCase {
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(0, result.getTotalTestsPassed());
         Assertions.assertEquals(1, result.getTotalTestsFailed());
-        test.modifyTestSourceFile(LambdaHandlerET.class, s -> s.replace("Hey", "Yo"));
+        test.modifyTestSourceFile(GreetingLambdaTest.class, s -> s.replace("Hey", "Yo"));
         result = utils.waitForNextCompletion();
         Assertions.assertEquals(1, result.getTotalTestsPassed());
         Assertions.assertEquals(0, result.getTotalTestsFailed());

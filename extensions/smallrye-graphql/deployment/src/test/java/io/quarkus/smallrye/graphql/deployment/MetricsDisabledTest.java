@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
@@ -24,7 +24,7 @@ public class MetricsDisabledTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            BusinessException.class, TestUnion.class, TestUnionMember.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject

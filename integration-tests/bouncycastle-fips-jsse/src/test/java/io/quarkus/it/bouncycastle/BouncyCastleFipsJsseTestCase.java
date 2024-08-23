@@ -16,13 +16,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
 import org.awaitility.core.ThrowingRunnable;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.Vertx;
@@ -40,9 +39,6 @@ public class BouncyCastleFipsJsseTestCase {
     @TestHTTPResource(ssl = true)
     URL url;
 
-    @Inject
-    Vertx vertx;
-
     @Test
     public void testListProviders() throws Exception {
         doTestListProviders();
@@ -50,12 +46,17 @@ public class BouncyCastleFipsJsseTestCase {
     }
 
     protected void doTestListProviders() throws Exception {
-        WebClientOptions options = createWebClientOptions();
-        WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
-        HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
-                .indefinitely();
-        String providers = resp.bodyAsString();
-        assertTrue(providers.contains("BCFIPS,BCJSSE"));
+        Vertx vertx = Vertx.vertx();
+        try {
+            WebClientOptions options = createWebClientOptions();
+            WebClient webClient = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/jsse/listProviders").send().await()
+                    .indefinitely();
+            String providers = resp.bodyAsString();
+            assertTrue(providers.contains("BCFIPS,BCJSSE"));
+        } finally {
+            vertx.close();
+        }
     }
 
     private WebClientOptions createWebClientOptions() throws Exception {
@@ -107,12 +108,12 @@ public class BouncyCastleFipsJsseTestCase {
                             while ((line = reader.readLine()) != null) {
                                 sbLog.append(line).append("/r/n");
                                 if (!checkServerPassed && line.contains("ProvTlsServer")
-                                        && (line.contains("Server selected protocol version: TLSv1.2")
-                                                || line.contains("Server selected protocol version: TLSv1.3"))) {
+                                        && (line.contains("selected protocol version: TLSv1.2")
+                                                || line.contains("selected protocol version: TLSv1.3"))) {
                                     checkServerPassed = true;
                                 } else if (!checkClientPassed && line.contains("ProvTlsClient")
-                                        && (line.contains("Client notified of selected protocol version: TLSv1.2")
-                                                || line.contains("Client notified of selected protocol version: TLSv1.3"))) {
+                                        && (line.contains("notified of selected protocol version: TLSv1.2")
+                                                || line.contains("notified of selected protocol version: TLSv1.3"))) {
                                     checkClientPassed = true;
                                 }
                                 if (checkClientPassed && checkServerPassed) {
@@ -130,7 +131,8 @@ public class BouncyCastleFipsJsseTestCase {
 
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
-        final InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path.toString());
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);

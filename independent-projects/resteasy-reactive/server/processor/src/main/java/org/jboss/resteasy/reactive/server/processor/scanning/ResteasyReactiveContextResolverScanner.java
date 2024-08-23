@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -69,7 +70,7 @@ public class ResteasyReactiveContextResolverScanner {
     }
 
     private static List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
+        AnnotationInstance produces = classInfo.declaredAnnotation(ResteasyReactiveDotNames.PRODUCES);
         if (produces == null) {
             return Collections.emptyList();
         }

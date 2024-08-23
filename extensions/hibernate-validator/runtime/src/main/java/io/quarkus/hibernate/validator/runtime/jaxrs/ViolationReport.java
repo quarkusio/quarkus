@@ -2,7 +2,7 @@ package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.util.List;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 /**
  * As spec doesn't say anything about the report format,

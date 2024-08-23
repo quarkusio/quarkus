@@ -1,8 +1,7 @@
 package io.quarkus.smallrye.openapi.runtime.filter;
 
-import org.eclipse.microprofile.openapi.OASFactory;
-import org.eclipse.microprofile.openapi.models.security.OAuthFlow;
-import org.eclipse.microprofile.openapi.models.security.OAuthFlows;
+import java.util.Map;
+
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 
 /**
@@ -10,62 +9,36 @@ import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
  */
 public class OpenIDConnectSecurityFilter extends AutoSecurityFilter {
 
-    private AutoUrl authorizationUrl;
-    private AutoUrl refreshUrl;
-    private AutoUrl tokenUrl;
+    private AutoUrl openIdConnectUrl;
 
     public OpenIDConnectSecurityFilter() {
         super();
     }
 
     public OpenIDConnectSecurityFilter(String securitySchemeName, String securitySchemeDescription,
-            AutoUrl authorizationUrl,
-            AutoUrl refreshUrl,
-            AutoUrl tokenUrl) {
-        super(securitySchemeName, securitySchemeDescription);
-        this.authorizationUrl = authorizationUrl;
-        this.refreshUrl = refreshUrl;
-        this.tokenUrl = tokenUrl;
+            Map<String, String> securitySchemeExtensions,
+            AutoUrl openIdConnectUrl) {
+        super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
+        this.openIdConnectUrl = openIdConnectUrl;
     }
 
-    public AutoUrl getAuthorizationUrl() {
-        return authorizationUrl;
+    public AutoUrl getOpenIdConnectUrl() {
+        return openIdConnectUrl;
     }
 
-    public void setAuthorizationUrl(AutoUrl authorizationUrl) {
-        this.authorizationUrl = authorizationUrl;
-    }
-
-    public AutoUrl getRefreshUrl() {
-        return refreshUrl;
-    }
-
-    public void setRefreshUrl(AutoUrl refreshUrl) {
-        this.refreshUrl = refreshUrl;
-    }
-
-    public AutoUrl getTokenUrl() {
-        return tokenUrl;
-    }
-
-    public void setTokenUrl(AutoUrl tokenUrl) {
-        this.tokenUrl = tokenUrl;
+    public void setOpenIdConnectUrl(AutoUrl openIdConnectUrl) {
+        this.openIdConnectUrl = openIdConnectUrl;
     }
 
     @Override
-    protected SecurityScheme getSecurityScheme() {
-        SecurityScheme securityScheme = OASFactory.createSecurityScheme();
+    public boolean runtimeRequired() {
+        return true;
+    }
 
-        securityScheme.setType(SecurityScheme.Type.OAUTH2);
-        OAuthFlows oAuthFlows = OASFactory.createOAuthFlows();
-        OAuthFlow oAuthFlow = OASFactory.createOAuthFlow();
-        oAuthFlow.authorizationUrl(this.authorizationUrl.getFinalUrlValue());
-        oAuthFlow.refreshUrl(this.refreshUrl.getFinalUrlValue());
-        oAuthFlow.tokenUrl(this.tokenUrl.getFinalUrlValue());
-        oAuthFlows.setImplicit(oAuthFlow);
-        securityScheme.setFlows(oAuthFlows);
-
-        return securityScheme;
+    @Override
+    protected void updateSecurityScheme(SecurityScheme securityScheme) {
+        securityScheme.setType(SecurityScheme.Type.OPENIDCONNECT);
+        securityScheme.setOpenIdConnectUrl(openIdConnectUrl.getFinalUrlValue());
     }
 
 }

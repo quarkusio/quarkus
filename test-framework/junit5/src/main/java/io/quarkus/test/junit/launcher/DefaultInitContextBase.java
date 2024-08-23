@@ -2,6 +2,7 @@ package io.quarkus.test.junit.launcher;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkus.test.common.ArtifactLauncher;
 
@@ -11,15 +12,20 @@ class DefaultInitContextBase {
     private final Duration waitTime;
     private final String testProfile;
     private final List<String> argLine;
+
+    private final Map<String, String> env;
     private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
-    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
+    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+            List<String> argLine,
+            Map<String, String> env,
             ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
         this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.waitTime = waitTime;
         this.testProfile = testProfile;
         this.argLine = argLine;
+        this.env = env;
         this.devServicesLaunchResult = devServicesLaunchResult;
     }
 
@@ -41,6 +47,10 @@ class DefaultInitContextBase {
 
     public List<String> argLine() {
         return argLine;
+    }
+
+    public Map<String, String> env() {
+        return env;
     }
 
     public ArtifactLauncher.InitContext.DevServicesLaunchResult getDevServicesLaunchResult() {

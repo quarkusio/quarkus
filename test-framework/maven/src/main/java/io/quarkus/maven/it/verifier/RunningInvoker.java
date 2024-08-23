@@ -21,7 +21,7 @@ import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
 
 import io.quarkus.maven.it.MojoTestBase;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 /**
  * Implementation of verifier using a forked process that is still running while verifying. The process is stop when
@@ -97,7 +97,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         // Kill all processes that were (indirectly) spawned by the current process.
         // It's important to do it this way (instead of calling result.destroy() first)
         // because otherwise children of that process can become orphaned zombies.
-        DevModeTestUtils.killDescendingProcesses();
+        DevModeClient.killDescendingProcesses();
         // This is now more or less "symbolic" since the previous call should have also killed that result's process.
         result.destroy();
     }
@@ -112,6 +112,7 @@ public class RunningInvoker extends MavenProcessInvoker {
 
         DefaultInvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(goals);
+        request.setShowErrors(true);
         request.setDebug(debug);
         if (parallel) {
             request.setThreads("1C");
@@ -128,7 +129,7 @@ public class RunningInvoker extends MavenProcessInvoker {
             //running at once, if they add default to 75% of total mem we can easily run out
             //of physical memory as they will consume way more than what they need instead of
             //just running GC
-            request.setMavenOpts("-Xmx128m");
+            request.setMavenOpts("-Xmx192m");
         }
 
         request.setShellEnvironmentInherited(true);

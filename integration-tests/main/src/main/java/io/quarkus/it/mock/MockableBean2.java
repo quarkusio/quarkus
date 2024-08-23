@@ -1,6 +1,6 @@
 package io.quarkus.it.mock;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class MockableBean2 {

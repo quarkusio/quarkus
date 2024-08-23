@@ -30,7 +30,7 @@ import io.quarkus.test.common.DevServicesContext;
  * {@link @QuarkusTest} so the test class structure must take this into account.
  */
 @Target(ElementType.TYPE)
-@ExtendWith({ DisabledOnIntegrationTestCondition.class, QuarkusTestExtension.class, QuarkusIntegrationTestExtension.class })
+@ExtendWith({ DisabledOnIntegrationTestCondition.class, QuarkusIntegrationTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface QuarkusIntegrationTest {
 

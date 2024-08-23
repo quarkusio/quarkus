@@ -34,9 +34,9 @@ public final class RestClientBuilderHelper {
     }
 
     public static RestClientBuilder createRestClientBuilder(ElasticsearchConfig config) {
-        List<HttpHost> hosts = new ArrayList<>(config.hosts.size());
-        for (InetSocketAddress host : config.hosts) {
-            hosts.add(new HttpHost(host.getHostString(), host.getPort(), config.protocol));
+        List<HttpHost> hosts = new ArrayList<>(config.hosts().size());
+        for (InetSocketAddress host : config.hosts()) {
+            hosts.add(new HttpHost(host.getHostString(), host.getPort(), config.protocol()));
         }
 
         RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
@@ -45,8 +45,8 @@ public final class RestClientBuilderHelper {
             @Override
             public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
                 return requestConfigBuilder
-                        .setConnectTimeout((int) config.connectionTimeout.toMillis())
-                        .setSocketTimeout((int) config.socketTimeout.toMillis())
+                        .setConnectTimeout((int) config.connectionTimeout().toMillis())
+                        .setSocketTimeout((int) config.socketTimeout().toMillis())
                         .setConnectionRequestTimeout(0); // Avoid requests being flagged as timed out even when they didn't time out.
             }
         });
@@ -54,28 +54,28 @@ public final class RestClientBuilderHelper {
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                if (config.username.isPresent()) {
-                    if (!"https".equalsIgnoreCase(config.protocol)) {
+                if (config.username().isPresent()) {
+                    if (!"https".equalsIgnoreCase(config.protocol())) {
                         LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
                                 "use the HTTPS protocol instead.");
                     }
                     CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                     credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials(config.username.get(), config.password.orElse(null)));
+                            new UsernamePasswordCredentials(config.username().get(), config.password().orElse(null)));
                     httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                 }
 
-                if (config.ioThreadCounts.isPresent()) {
+                if (config.ioThreadCounts().isPresent()) {
                     IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
-                            .setIoThreadCount(config.ioThreadCounts.get())
+                            .setIoThreadCount(config.ioThreadCounts().get())
                             .build();
                     httpClientBuilder.setDefaultIOReactorConfig(ioReactorConfig);
                 }
 
-                httpClientBuilder.setMaxConnTotal(config.maxConnections);
-                httpClientBuilder.setMaxConnPerRoute(config.maxConnectionsPerRoute);
+                httpClientBuilder.setMaxConnTotal(config.maxConnections());
+                httpClientBuilder.setMaxConnPerRoute(config.maxConnectionsPerRoute());
 
-                if ("http".equalsIgnoreCase(config.protocol)) {
+                if ("http".equalsIgnoreCase(config.protocol())) {
                     // In this case disable the SSL capability as it might have an impact on
                     // bootstrap time, for example consuming entropy for no reason
                     httpClientBuilder.setSSLStrategy(NoopIOSessionStrategy.INSTANCE);
@@ -99,10 +99,10 @@ public final class RestClientBuilderHelper {
 
     public static Sniffer createSniffer(RestClient client, ElasticsearchConfig config) {
         SnifferBuilder builder = Sniffer.builder(client)
-                .setSniffIntervalMillis((int) config.discovery.refreshInterval.toMillis());
+                .setSniffIntervalMillis((int) config.discovery().refreshInterval().toMillis());
 
         // https discovery support
-        if ("https".equalsIgnoreCase(config.protocol)) {
+        if ("https".equalsIgnoreCase(config.protocol())) {
             NodesSniffer hostsSniffer = new ElasticsearchNodesSniffer(
                     client,
                     ElasticsearchNodesSniffer.DEFAULT_SNIFF_REQUEST_TIMEOUT, // 1sec

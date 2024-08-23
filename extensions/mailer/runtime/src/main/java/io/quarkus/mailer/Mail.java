@@ -1,9 +1,13 @@
 package io.quarkus.mailer;
 
 import java.io.File;
-import java.util.*;
-
-import org.reactivestreams.Publisher;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Flow.Publisher;
 
 /**
  * Represents an e-mail.
@@ -17,7 +21,7 @@ public class Mail {
     private List<String> bcc = new ArrayList<>();
     private List<String> cc = new ArrayList<>();
     private String from;
-    private List<String> replyTo = new ArrayList<>();
+    private final List<String> replyTo = new ArrayList<>();
     private String bounceAddress;
     private String subject;
     private String text;
@@ -113,11 +117,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setBcc(List<String> bcc) {
-        if (bcc == null) {
-            this.bcc = new ArrayList<>();
-        } else {
-            this.bcc = bcc;
-        }
+        this.bcc = Objects.requireNonNullElseGet(bcc, ArrayList::new);
         return this;
     }
 
@@ -135,11 +135,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setCc(List<String> cc) {
-        if (cc == null) {
-            this.cc = new ArrayList<>();
-        } else {
-            this.cc = cc;
-        }
+        this.cc = Objects.requireNonNullElseGet(cc, ArrayList::new);
         return this;
     }
 
@@ -299,11 +295,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setTo(List<String> to) {
-        if (to == null) {
-            this.to = new ArrayList<>();
-        } else {
-            this.to = to;
-        }
+        this.to = Objects.requireNonNullElseGet(to, ArrayList::new);
         return this;
     }
 
@@ -351,11 +343,7 @@ public class Mail {
      * @return the current {@link Mail}
      */
     public Mail setHeaders(Map<String, List<String>> headers) {
-        if (headers == null) {
-            this.headers = new HashMap<>();
-        } else {
-            this.headers = headers;
-        }
+        this.headers = Objects.requireNonNullElseGet(headers, HashMap::new);
         return this;
     }
 
@@ -365,7 +353,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param file the file to be attached. Note that the file will be read asynchronously.
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */
@@ -419,7 +407,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param data the binary data to be attached
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */
@@ -434,7 +422,7 @@ public class Mail {
      * @param name the name of the attachment, generally a file name.
      * @param data the binary data to be attached
      * @param contentType the content type
-     * @param contentId the content id. It must follows the {@code <some-id@some-domain>} syntax. Then the HTML
+     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
      *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
      * @return the current {@link Mail}
      */

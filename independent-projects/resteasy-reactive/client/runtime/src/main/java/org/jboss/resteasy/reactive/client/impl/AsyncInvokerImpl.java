@@ -1,25 +1,30 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpClient;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import javax.ws.rs.client.AsyncInvoker;
-import javax.ws.rs.client.CompletionStageRxInvoker;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.InvocationCallback;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.client.AsyncInvoker;
+import jakarta.ws.rs.client.CompletionStageRxInvoker;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.InvocationCallback;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
 
 public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker {
 
@@ -42,10 +47,28 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
         this.httpClient = httpClient;
         this.uri = uri;
         this.requestSpec = new RequestSpec(requestSpec);
+        addUserInfoIfNecessary(this.uri, this.requestSpec);
         this.configuration = configuration;
         this.properties = new HashMap<>(properties);
         this.handlerChain = handlerChain;
         this.requestContext = requestContext;
+    }
+
+    private void addUserInfoIfNecessary(URI uri, RequestSpec requestSpec) {
+        String userInfo = uri.getUserInfo();
+        if (userInfo == null) {
+            return;
+        }
+        String[] parts = userInfo.split(":");
+        if (parts.length != 2) {
+            return;
+        }
+        ClientRequestHeaders specHeaders = requestSpec.headers;
+        String authorizationHeader = specHeaders.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authorizationHeader == null) {
+            specHeaders.header(HttpHeaders.AUTHORIZATION,
+                    "Basic " + Base64.getEncoder().encodeToString((parts[0] + ":" + parts[1]).getBytes()));
+        }
     }
 
     public Map<String, Object> getProperties() {

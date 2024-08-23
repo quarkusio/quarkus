@@ -179,7 +179,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
         if (data != null) {
             return data;
         }
-        if (dataContentType() != null && dataContentType().startsWith("application/json") && !byte[].class.equals(dataType)) {
+        if ((dataContentType() == null || dataContentType().startsWith("application/json")) && !byte[].class.equals(dataType)) {
             try {
                 data = reader.readValue(event.get("data"));
                 return data;

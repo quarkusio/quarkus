@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.mapping.xml.modern.app.xmlmappingonly.attributeconverter;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.AttributeConverter;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.AttributeConverter;
 
 @ApplicationScoped
 public class MyConverter implements AttributeConverter<MyData, String> {

@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
+
 public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extends Closeable {
 
     void init(T t);
@@ -30,6 +32,13 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
         List<String> argLine();
 
+        /**
+         * Additional environment variables to be passed to the launched process.
+         * Note: When Quarkus launches the new process, it will always include the environment
+         * variables of the current process
+         */
+        Map<String, String> env();
+
         ArtifactLauncher.InitContext.DevServicesLaunchResult getDevServicesLaunchResult();
 
         interface DevServicesLaunchResult extends AutoCloseable {
@@ -39,6 +48,8 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
             String networkId();
 
             boolean manageNetwork();
+
+            CuratedApplication getCuratedApplication();
 
             void close();
         }

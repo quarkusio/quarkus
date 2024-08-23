@@ -1,28 +1,37 @@
 package io.quarkus.arc.impl;
 
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 
-    protected final ComputingCache<String, ContextInstanceHandle<?>> instances;
+    protected final ContextInstances instances;
 
     public AbstractSharedContext() {
-        this.instances = new ComputingCache<>();
+        this(new ComputingCacheContextInstances());
+    }
+
+    public AbstractSharedContext(ContextInstances instances) {
+        this.instances = Objects.requireNonNull(instances);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
+        Objects.requireNonNull(creationalContext, "CreationalContext must not be null");
         InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
         return (T) instances.computeIfAbsent(bean.getIdentifier(), new Supplier<ContextInstanceHandle<?>>() {
             @Override
             public ContextInstanceHandle<?> get() {
@@ -34,8 +43,12 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual) {
+        Objects.requireNonNull(contextual, "Contextual must not be null");
         InjectableBean<T> bean = (InjectableBean<T>) contextual;
-        ContextInstanceHandle<?> handle = instances.getValueIfPresent(bean.getIdentifier());
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
+        ContextInstanceHandle<?> handle = instances.getIfPresent(bean.getIdentifier());
         return handle != null ? (T) handle.get() : null;
     }
 
@@ -51,7 +64,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public Map<InjectableBean<?>, Object> getContextualInstances() {
-        return instances.getPresentValues().stream()
+        return instances.getAllPresent().stream()
                 .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
     }
 
@@ -71,19 +84,24 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public synchronized void destroy() {
-        Set<ContextInstanceHandle<?>> values = instances.getPresentValues();
+        // Note that shared contexts are usually only destroyed when the app stops
+        // I.e. we don't need to use the optimized ContextInstances methods here
+        Set<ContextInstanceHandle<?>> values = instances.getAllPresent();
+        if (values.isEmpty()) {
+            return;
+        }
         // Destroy the producers first
-        for (Iterator<ContextInstanceHandle<?>> iterator = values.iterator(); iterator.hasNext();) {
-            ContextInstanceHandle<?> instanceHandle = iterator.next();
+        for (Iterator<ContextInstanceHandle<?>> it = values.iterator(); it.hasNext();) {
+            ContextInstanceHandle<?> instanceHandle = it.next();
             if (instanceHandle.getBean().getDeclaringBean() != null) {
                 instanceHandle.destroy();
-                iterator.remove();
+                it.remove();
             }
         }
         for (ContextInstanceHandle<?> instanceHandle : values) {
             instanceHandle.destroy();
         }
-        instances.clear();
+        instances.removeEach(null);
     }
 
     @Override

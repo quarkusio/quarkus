@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -71,7 +72,11 @@ public class OidcClientConfig extends OidcCommonConfig {
              * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
              */
             EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
-
+            /**
+             * 'urn:ietf:params:oauth:grant-type:jwt-bearer' grant requiring an OIDC client authentication as well as
+             * at least an 'assertion' parameter which must be passed to OidcClient at the token request time.
+             */
+            JWT("urn:ietf:params:oauth:grant-type:jwt-bearer"),
             /**
              * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
              * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh
@@ -81,7 +86,18 @@ public class OidcClientConfig extends OidcCommonConfig {
              * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
              * tokens.
              */
-            REFRESH("refresh_token");
+            REFRESH("refresh_token"),
+            /**
+             * 'urn:openid:params:grant-type:ciba' grant requiring an OIDC client authentication as well as 'auth_req_id'
+             * parameter which must be passed to OidcClient at the token request time.
+             */
+            CIBA("urn:openid:params:grant-type:ciba"),
+            /**
+             * 'urn:ietf:params:oauth:grant-type:device_code' grant requiring an OIDC client authentication as well as
+             * 'device_code'
+             * parameter which must be passed to OidcClient at the token request time.
+             */
+            DEVICE("urn:ietf:params:oauth:grant-type:device_code");
 
             private String grantType;
 
@@ -169,6 +185,7 @@ public class OidcClientConfig extends OidcCommonConfig {
      * Grant options
      */
     @ConfigItem
+    @ConfigDocMapKey("grant-name")
     public Map<String, Map<String, String>> grantOptions;
 
     /**
@@ -240,5 +257,13 @@ public class OidcClientConfig extends OidcCommonConfig {
 
     public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
         this.absoluteExpiresIn = absoluteExpiresIn;
+    }
+
+    public void setGrant(Grant grant) {
+        this.grant = grant;
+    }
+
+    public Grant getGrant() {
+        return grant;
     }
 }

@@ -6,11 +6,6 @@ import static io.quarkus.devtools.codestarts.core.CodestartData.buildCodestartPr
 import static io.quarkus.devtools.codestarts.core.CodestartData.buildDependenciesData;
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
-import io.quarkus.devtools.codestarts.CodestartProjectInput;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -20,6 +15,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
+import io.quarkus.devtools.codestarts.CodestartProjectInput;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 public final class DefaultCodestartProjectDefinition implements CodestartProjectDefinition {
 

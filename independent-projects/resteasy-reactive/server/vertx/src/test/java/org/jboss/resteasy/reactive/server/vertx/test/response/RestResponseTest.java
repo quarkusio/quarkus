@@ -1,7 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx.test.response;
 
-import io.restassured.RestAssured;
+import static org.hamcrest.CoreMatchers.endsWith;
+
 import java.util.function.Supplier;
+
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -9,10 +11,12 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.restassured.RestAssured;
+
 public class RestResponseTest {
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -24,6 +28,18 @@ public class RestResponseTest {
     @Test
     public void test() {
         RestAssured.get("/rest-response")
+                .then().statusCode(200)
+                .and().body(Matchers.equalTo("Hello"))
+                .and().contentType("text/plain");
+        RestAssured.get("/rest-response-empty")
+                .then().statusCode(499)
+                .and().body(Matchers.is(Matchers.emptyOrNullString()))
+                .and().contentType(Matchers.is(Matchers.emptyOrNullString()));
+        RestAssured.get("/response-empty")
+                .then().statusCode(499)
+                .and().body(Matchers.is(Matchers.emptyOrNullString()))
+                .and().contentType(Matchers.is(Matchers.emptyOrNullString()));
+        RestAssured.get("/rest-response-wildcard")
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Hello"))
                 .and().contentType("text/plain");
@@ -93,5 +109,11 @@ public class RestResponseTest {
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Uni<RestResponse> request filter"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-location")
+                .then().statusCode(200)
+                .header("Location", endsWith("/en%2Fus?user=John"));
+        RestAssured.get("/rest-response-content-location")
+                .then().statusCode(200)
+                .header("Content-Location", endsWith("/en%2Fus?user=John"));
     }
 }

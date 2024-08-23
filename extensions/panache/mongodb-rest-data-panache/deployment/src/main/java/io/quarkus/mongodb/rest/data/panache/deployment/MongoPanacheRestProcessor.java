@@ -1,11 +1,12 @@
 package io.quarkus.mongodb.rest.data.panache.deployment;
 
 import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getEntityFields;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
 
-import javax.ws.rs.Priorities;
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -71,16 +72,15 @@ class MongoPanacheRestProcessor {
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo resourceInterface : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String entityType = generics.get(0).toString();
             String idType = generics.get(1).toString();
 
@@ -89,7 +89,8 @@ class MongoPanacheRestProcessor {
                     classOutput, dataAccessImplementor, resourceInterface, entityType);
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
@@ -103,16 +104,15 @@ class MongoPanacheRestProcessor {
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo resourceInterface : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), resourceInterface);
 
-            List<Type> generics = getGenericTypes(classInfo);
-            String resourceInterface = classInfo.name().toString();
+            List<Type> generics = getGenericTypes(resourceInterface);
             String repositoryClassName = generics.get(0).toString();
             String entityType = generics.get(1).toString();
             String idType = generics.get(2).toString();
@@ -124,7 +124,8 @@ class MongoPanacheRestProcessor {
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
@@ -157,7 +158,7 @@ class MongoPanacheRestProcessor {
 
     /**
      * Annotate Mongo entity ID fields with a RESTEasy links annotation.
-     * Otherwise RESTEasy will not be able to generate links that use ID as path parameter.
+     * Otherwise, RESTEasy will not be able to generate links that use ID as path parameter.
      */
     private BytecodeTransformerBuildItem getEntityIdAnnotationTransformer(String entityClassName, String idFieldName) {
         return new BytecodeTransformerBuildItem(entityClassName,

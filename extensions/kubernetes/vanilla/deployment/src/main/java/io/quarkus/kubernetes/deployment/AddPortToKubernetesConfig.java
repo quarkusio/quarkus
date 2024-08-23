@@ -23,13 +23,13 @@ public class AddPortToKubernetesConfig extends Configurator<KubernetesConfigFlue
 
     /**
      * Check if the {@link KubernetesConfig} already has port.
-     * 
+     *
      * @param config The port.
      * @return True if port with same container port exists.
      */
     private boolean hasPort(KubernetesConfigFluent<?> config) {
-        for (Port p : config.getPorts()) {
-            if (p.getContainerPort() == port.getContainerPort()) {
+        for (Port p : config.buildPorts()) {
+            if (Objects.equals(p.getContainerPort(), port.getContainerPort())) {
                 return true;
             }
         }

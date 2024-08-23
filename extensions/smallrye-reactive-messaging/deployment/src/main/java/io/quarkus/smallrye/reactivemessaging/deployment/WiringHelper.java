@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -49,24 +48,28 @@ public class WiringHelper {
     }
 
     static void produceIncomingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, name);
+        String channelName = normalizeChannelName(name);
+
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.INCOMING, channelName);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled(ChannelDirection.INCOMING, name)) {
-                producer.produce(ChannelBuildItem.incoming(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.INCOMING, channelName)) {
+                producer.produce(ChannelBuildItem.incoming(channelName, managingConnector.get()));
             }
         } else {
-            producer.produce(ChannelBuildItem.incoming(name, null));
+            producer.produce(ChannelBuildItem.incoming(channelName, null));
         }
     }
 
     static void produceOutgoingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
-        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, name);
+        String channelName = normalizeChannelName(name);
+
+        Optional<String> managingConnector = getManagingConnector(ChannelDirection.OUTGOING, channelName);
         if (managingConnector.isPresent()) {
-            if (isChannelEnabled(ChannelDirection.OUTGOING, name)) {
-                producer.produce(ChannelBuildItem.outgoing(name, managingConnector.get()));
+            if (isChannelEnabled(ChannelDirection.OUTGOING, channelName)) {
+                producer.produce(ChannelBuildItem.outgoing(channelName, managingConnector.get()));
             }
         } else {
-            producer.produce(ChannelBuildItem.outgoing(name, null));
+            producer.produce(ChannelBuildItem.outgoing(channelName, null));
         }
     }
 
@@ -80,7 +83,7 @@ public class WiringHelper {
      */
     static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig().getOptionalValue(
-                "mp.messaging." + direction.name().toLowerCase() + "." + channel + ".connector",
+                "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".connector",
                 String.class);
     }
 
@@ -93,7 +96,8 @@ public class WiringHelper {
      */
     static boolean isChannelEnabled(ChannelDirection direction, String channel) {
         return ConfigProvider.getConfig()
-                .getOptionalValue("mp.messaging." + direction.name().toLowerCase() + "." + channel + ".enabled",
+                .getOptionalValue(
+                        "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
                         Boolean.class)
                 .orElse(true);
     }
@@ -105,8 +109,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the inbound connector interface
      */
     static boolean isInboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.INCOMING_CONNECTOR_FACTORY)
+                || ci.interfaceNames().contains(ReactiveMessagingDotNames.INBOUND_CONNECTOR);
     }
 
     /**
@@ -116,8 +120,8 @@ public class WiringHelper {
      * @return {@code true} if the class implements the outbound connector interface
      */
     static boolean isOutboundConnector(ClassInfo ci) {
-        // TODO Add the internal interface support
-        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY);
+        return ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTGOING_CONNECTOR_FACTORY)
+                || ci.interfaceNames().contains(ReactiveMessagingDotNames.OUTBOUND_CONNECTOR);
     }
 
     /**
@@ -131,10 +135,10 @@ public class WiringHelper {
     static List<ConnectorAttribute> getConnectorAttributes(BeanInfo bi, CombinedIndexBuildItem index,
             ConnectorAttribute.Direction... directions) {
         List<AnnotationInstance> attributes = bi.getImplClazz()
-                .classAnnotationsWithRepeatable(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTES, index.getIndex())
+                .declaredAnnotationsWithRepeatable(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTES, index.getIndex())
                 .stream().flatMap(ai -> Arrays.stream(ai.value().asNestedArray())).collect(Collectors.toList());
         if (attributes.isEmpty()) {
-            AnnotationInstance attribute = bi.getImplClazz().classAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
+            AnnotationInstance attribute = bi.getImplClazz().declaredAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
             if (attribute != null) {
                 attributes = Collections.singletonList(attribute);
             }
@@ -193,6 +197,21 @@ public class WiringHelper {
     }
 
     /**
+     * Normalize the name of a given channel.
+     *
+     * Concatenate the channel name with double quotes when it contains dots.
+     * <p>
+     * Otherwise, the SmallRye Reactive Messaging only considers the
+     * text up to the first occurrence of a dot as the channel name.
+     *
+     * @param name the channel name.
+     * @return normalized channel name.
+     */
+    private static String normalizeChannelName(String name) {
+        return name != null && !name.startsWith("\"") && name.contains(".") ? "\"" + name + "\"" : name;
+    }
+
+    /**
      * Finds a connector by name and direction in the given list.
      *
      * @param connectors the list of connectors
@@ -244,18 +263,13 @@ public class WiringHelper {
     static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
             InjectionPointInfo injectionPoint,
             DotName annotationName) {
-        Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(injectionPoint.getTarget());
+        // For field IP -> set of field annotations
+        // For method param IP -> set of param annotations
+        Collection<AnnotationInstance> annotations = transformedAnnotations
+                .getAnnotations(injectionPoint.getAnnotationTarget());
         for (AnnotationInstance annotation : annotations) {
             if (annotationName.equals(annotation.name())) {
-                // For method parameter we must check the position
-                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
-                        && injectionPoint.isParam()
-                        && annotation.target().asMethodParameter().position() == injectionPoint.getPosition()) {
-                    return Optional.of(annotation);
-                } else if (annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    // For other kind, no need to check anything else
-                    return Optional.of(annotation);
-                }
+                return Optional.of(annotation);
             }
         }
         return Optional.empty();

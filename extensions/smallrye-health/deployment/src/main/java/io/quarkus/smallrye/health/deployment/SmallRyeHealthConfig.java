@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.health.deployment;
 
+import java.util.Optional;
+import java.util.OptionalInt;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -10,6 +13,8 @@ public class SmallRyeHealthConfig {
     /**
      * Root path for health-checking endpoints.
      * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
+     * If the management interface is enabled, the value will be resolved as a path relative to
+     * `${quarkus.management.root-path}`.
      */
     @ConfigItem(defaultValue = "health")
     String rootPath;
@@ -54,6 +59,25 @@ public class SmallRyeHealthConfig {
      */
     @ConfigItem(defaultValue = "false")
     boolean contextPropagation;
+
+    /**
+     * The number of the maximum health groups that can be created.
+     */
+    @ConfigItem
+    OptionalInt maxGroupRegistriesCount;
+
+    /**
+     * The name of the default health group used when no other health group is defined on the health check.
+     */
+    @ConfigItem
+    Optional<String> defaultHealthGroup;
+
+    /**
+     * If management interface is turned on the health endpoints and ui will be published under the management interface. This
+     * allows you to exclude Health from management by setting the value to false
+     */
+    @ConfigItem(name = "management.enabled", defaultValue = "true")
+    public boolean managementEnabled;
 
     /**
      * SmallRye Health UI configuration

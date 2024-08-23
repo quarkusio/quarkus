@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -33,6 +33,7 @@ public class ModifyingQueryWithFlushAndClearTest {
     public void setUp() {
         final User user = getUser("JOHN");
         user.setLoginCounter(0);
+        user.getLoginEvents().clear();
         repo.save(user);
     }
 
@@ -69,8 +70,9 @@ public class ModifyingQueryWithFlushAndClearTest {
 
         final User verifyUser = getUser("JOHN");
         // processLoginEvents did not see the new login event
+        assertThat(verifyUser.getLoginEvents()).hasSize(1);
         final boolean allProcessed = verifyUser.getLoginEvents().stream()
-                .allMatch(loginEvent -> loginEvent.isProcessed());
+                .allMatch(LoginEvent::isProcessed);
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isFalse();
     }
 
@@ -83,8 +85,9 @@ public class ModifyingQueryWithFlushAndClearTest {
         repo.processLoginEventsPlainAutoClearAndFlush();
 
         final User verifyUser = getUser("JOHN");
+        assertThat(verifyUser.getLoginEvents()).hasSize(1);
         final boolean allProcessed = verifyUser.getLoginEvents().stream()
-                .allMatch(loginEvent -> loginEvent.isProcessed());
+                .allMatch(LoginEvent::isProcessed);
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isTrue();
     }
 

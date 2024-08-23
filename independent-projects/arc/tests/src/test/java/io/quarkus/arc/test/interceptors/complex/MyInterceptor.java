@@ -1,13 +1,14 @@
 package io.quarkus.arc.test.interceptors.complex;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Priority;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 @Interceptor
 @Priority(1)
@@ -20,13 +21,15 @@ public class MyInterceptor {
     public static AtomicBoolean aroundInvokeInvoked = new AtomicBoolean(false);
 
     @PreDestroy
-    public void preDestroy(InvocationContext ic) {
+    public void preDestroy(InvocationContext ic) throws Exception {
         preDestroyInvoked.set(true);
+        ic.proceed();
     }
 
     @PostConstruct
-    public void postConstruct(InvocationContext ic) {
+    public void postConstruct(InvocationContext ic) throws Exception {
         postConstructInvoked.set(true);
+        ic.proceed();
     }
 
     @AroundConstruct

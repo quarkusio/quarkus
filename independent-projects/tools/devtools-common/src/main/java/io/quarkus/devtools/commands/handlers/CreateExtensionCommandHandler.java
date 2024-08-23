@@ -1,5 +1,17 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -9,16 +21,6 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.PomTransformer;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.model.Model;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance
@@ -67,19 +69,19 @@ public class CreateExtensionCommandHandler {
             final String extensionDirName = newExtensionDir.getFileName().toString();
             if (extensionsParentDir != null) {
                 updateExtensionsParentPom(extensionDirName, extensionsParentDir);
-                log.info(MessageIcons.OK_ICON + " New extension module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New extension module '%s' added to %s", extensionDirName,
                         extensionsParentDir);
             }
 
             if (itTestParentDir != null) {
                 updateITParentPomAndMoveDir(extensionDirName, newExtensionDir, itTestParentDir);
-                log.info(MessageIcons.OK_ICON + " New integration test module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New integration test module '%s' added to %s", extensionDirName,
                         itTestParentDir);
             }
 
             if (bomDir != null) {
                 updateBom(groupId, artifactId, bomDir);
-                log.info(MessageIcons.OK_ICON
+                log.info(MessageIcons.SUCCESS_ICON
                         + " The extension runtime and deployment artifacts have been added to the bom dependenciesManagement: %s",
                         bomDir);
             }

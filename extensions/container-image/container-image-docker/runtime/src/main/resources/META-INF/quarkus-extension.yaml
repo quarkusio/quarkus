@@ -9,3 +9,5 @@ metadata:
   categories:
     - "cloud"
   status: "preview"
+  config:
+    - "quarkus.docker."

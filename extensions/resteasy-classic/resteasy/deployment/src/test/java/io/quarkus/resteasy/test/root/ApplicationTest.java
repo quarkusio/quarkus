@@ -9,15 +9,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.container.*;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.container.*;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ class ApplicationTest {
                             ResponseFilter1.class, ResponseFilter2.class,
                             ResponseFilter3.class, ResponseFilter4.class, ResponseFilter5.class, ResponseFilter6.class,
                             Feature1.class, Feature2.class, DynamicFeature1.class, DynamicFeature2.class,
-                            ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class));
+                            ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class, AppTest2.class));
 
     @DisplayName("Should access to ok of resource 1 and provide a response with the expected headers")
     @Test
@@ -308,5 +308,9 @@ class ApplicationTest {
                     Arrays.asList(
                             new ResponseFilter1(), new DynamicFeature1()));
         }
+    }
+
+    public static abstract class AppTest2 extends Application {
+
     }
 }

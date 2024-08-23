@@ -4,29 +4,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.maven.ArtifactCoords;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.Constants;
 import io.quarkus.registry.util.PlatformArtifacts;
-import org.junit.jupiter.api.Test;
 
 public class PlatformArtifactsTest {
 
     @Test
     public void getCatalogArtifactForBom() {
-        final ArtifactCoords catalog = new ArtifactCoords("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json",
+        final ArtifactCoords catalog = ArtifactCoords.of("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json",
                 "1.0");
         assertEquals(catalog,
-                PlatformArtifacts.getCatalogArtifactForBom(new ArtifactCoords("org.acme", "acme-bom", null, "pom", "1.0")));
+                PlatformArtifacts.getCatalogArtifactForBom(ArtifactCoords.of("org.acme", "acme-bom", null, "pom", "1.0")));
         assertEquals(catalog, PlatformArtifacts.getCatalogArtifactForBom("org.acme", "acme-bom", "1.0"));
     }
 
     @Test
     public void ensureCatalogArtifact() {
-        final ArtifactCoords catalog = new ArtifactCoords("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json",
+        final ArtifactCoords catalog = ArtifactCoords.of("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json",
                 "1.0");
         assertEquals(catalog, PlatformArtifacts.ensureCatalogArtifact(catalog));
         assertEquals(catalog,
-                PlatformArtifacts.ensureCatalogArtifact(new ArtifactCoords("org.acme", "acme-bom", null, "pom", "1.0")));
+                PlatformArtifacts.ensureCatalogArtifact(ArtifactCoords.of("org.acme", "acme-bom", null, "pom", "1.0")));
     }
 
     @Test
@@ -45,8 +46,8 @@ public class PlatformArtifactsTest {
     @Test
     public void isCatalogArtifact() {
         assertTrue(PlatformArtifacts.isCatalogArtifact(
-                new ArtifactCoords("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json", "1.0")));
-        assertFalse(PlatformArtifacts.isCatalogArtifact(new ArtifactCoords("org.acme", "acme-bom", null, "pom", "1.0")));
+                ArtifactCoords.of("org.acme", "acme-bom-quarkus-platform-descriptor", "1.0", "json", "1.0")));
+        assertFalse(PlatformArtifacts.isCatalogArtifact(ArtifactCoords.of("org.acme", "acme-bom", null, "pom", "1.0")));
     }
 
     @Test
@@ -58,10 +59,10 @@ public class PlatformArtifactsTest {
 
     @Test
     public void ensureBomArtifact() {
-        final ArtifactCoords bom = new ArtifactCoords("org.acme", "acme-bom", null, "pom", "1.0");
+        final ArtifactCoords bom = ArtifactCoords.of("org.acme", "acme-bom", null, "pom", "1.0");
         assertEquals(bom, PlatformArtifacts.ensureBomArtifact(bom));
         assertEquals(bom,
-                PlatformArtifacts.ensureBomArtifact(new ArtifactCoords(bom.getGroupId(),
+                PlatformArtifacts.ensureBomArtifact(ArtifactCoords.of(bom.getGroupId(),
                         bom.getArtifactId() + Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, bom.getVersion(), "json",
                         bom.getVersion())));
     }

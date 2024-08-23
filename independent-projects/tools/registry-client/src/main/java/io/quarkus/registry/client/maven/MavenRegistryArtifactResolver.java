@@ -1,10 +1,12 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.nio.file.Path;
+
 import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResult;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 
 public interface MavenRegistryArtifactResolver {
 

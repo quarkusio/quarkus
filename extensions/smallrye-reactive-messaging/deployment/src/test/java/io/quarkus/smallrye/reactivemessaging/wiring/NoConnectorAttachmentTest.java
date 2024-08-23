@@ -2,9 +2,9 @@ package io.quarkus.smallrye.reactivemessaging.wiring;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;

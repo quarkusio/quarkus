@@ -3,7 +3,7 @@ package io.quarkus.deployment.dev;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class CurrentClassState {
 
@@ -19,15 +19,15 @@ public class CurrentClassState {
 
     public static class CurrentModuleState {
 
-        private final AppArtifactKey module;
+        private final ArtifactKey module;
         private final Map<String, String> fileToHash;
 
-        public CurrentModuleState(AppArtifactKey module, Map<String, String> fileToHash) {
+        public CurrentModuleState(ArtifactKey module, Map<String, String> fileToHash) {
             this.module = module;
             this.fileToHash = fileToHash;
         }
 
-        public AppArtifactKey getModule() {
+        public ArtifactKey getModule() {
             return module;
         }
 

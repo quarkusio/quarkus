@@ -1,0 +1,314 @@
+---
+extends: substitution
+ignorecase: false
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: Use '%s' rather than '%s'.
+# source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  "(?<!/)var": VAR
+  "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
+  "(?<!Microsoft )Azure": Microsoft Azure
+  "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
+  "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
+  "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
+  "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
+  "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
+  "(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS": Red Hat JBoss BRMS
+  "[dD]ay-0|day 0": Day 0
+  "[dD]ay-1|day 1": Day 1
+  "[dD]ay-2|day 2": Day 2
+  "BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)": Red Hat JBoss BPM Suite
+  "DM(?![ -]Multipath)|directory manager": Directory Manager
+  "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
+  "JBoss Console|Red Hat Console": AMQ Console
+  "Kernel(?!-based Virtual Machine)": kernel
+  "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
+  "OD": Red Hat OpenShift Dedicated
+  '(?<!\.)yaml|Yaml': YAML
+  '(?<!Realtime )Decision\sServer': Realtime Decision Server
+  '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
+  '\s\.Net Core|\s\.Net|\s\.NET\sCore|dotNet': .NET
+  'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
+  'A-MQ\sBroker': AMQ Broker
+  'A-MQ\sClients': AMQ Clients
+  'A-MQ\sConsole': AMQ Console
+  'A-MQ\sInterconnect': AMQ Interconnect
+  'ack\spacket|ACK(?!\sflag)|ack': ACK flag
+  'ActiveMQ\sArtemis|ActiveMQ(?!\sArtemis)': built-in messaging|JBoss EAP built-in messaging|JBoss EAP messaging
+  'Admin\sPortal|webadmin\sportal|webadmin|Administrator\sPortal|Administration\sportal': Administration Portal
+  'BRMS\sengine': inference engine
+  'GUI\seditor|Business\sCentral\seditor': guided editor
+  'JBoss\.org': JBoss Community
+  'JBoss\sAMQ': AMQ
+  'JBoss\sInterconnect': AMQ Interconnect
+  'Kie(?!\sServer)': KIE
+  'Kie\sServer': Intelligent Process Server
+  'O\.K\.D|okd|OpenShift Kubernetes Distribution|OpenShift\sOrigin': OKD
+  'Red\sHat\sInterconnect': AMQ Interconnect
+  'Red\sHat\sVirtualization\sHypervisor|RHV\sHost|RHV-H': Red Hat Virtualization Host
+  'RHVM|RHV-M|RHV\sManager': Red Hat Virtualization Manager
+  'self-hosted\sengine\svirtual\smachine|engine\sVM': Manager virtual machine
+  Appliance Console: Appliance console
+  Applix|ApplixWare: Applixware
+  asciidoctor|AsciiDoctor: Asciidoctor
+  asciidoc|Asciidoc: AsciiDoc
+  assertj|Assertj: AssertJ
+  auto-link|AutoLink: autolink
+  basic authentication|Basic Authentication|basic auth|Basic auth|Basic Auth: Basic HTTP authentication (first instance)|Basic authentication
+  BC: Business Central
+  Bios: BIOS
+  blue print|BluePrint: blueprint
+  bluestore|Blue Store: BlueStore
+  btrfs: Btrfs
+  Capex|capex|capEx: CapEx
+  Capsule server: Capsule Server
+  CD 1: CD #1
+  CDS|Cds: CDs
+  Ceph Ansible: ceph-ansible
+  Ceph block device|Ceph block devices: Ceph Block Device
+  Ceph filesystem|Ceph file system: Ceph File System
+  Ceph monitor: Ceph Monitor
+  Ceph object gateway|Ceph object gateways: Ceph Object Gateway
+  ceph-osd|Object Storage Device|OSD daemon: OSD
+  cephfs: CephFS
+  CGroup|c group: cgroup
+  cidr|Classless Interdomain Routing|Classless Inter-domain Routing: CIDR
+  classic mode: GNOME Classic
+  CloudForms Management Engine|CFME: Red Hat CloudForms|Red Hat CloudForms Appliance
+  command prompt: shell prompt|Command Prompt (Windows product)
+  Composite Content view|composite content view|Composite View|composite view: Composite Content View
+  configmap: config map
+  configuration map: config map
+  Content view|content view: Content View
+  control key|ctrl: Ctrl
+  crush map|crushmap: CRUSH map
+  csv: CSV
+  CygMon|cygmon|CYGMON: Cygmon
+  Data Grid Administration Console: Data Grid Console
+  Data Grid console: Data Grid Console
+  Denial of Service: denial of service
+  Denial-of-Service: denial-of-service
+  Dev mode|Dev Mode: dev mode
+  Development Preview|Developer preview|dev preview: Developer Preview
+  devops|Devops|Dev-Ops|Dev Ops: DevOps
+  Dev services|DevServices: Dev Services
+  directory server: Directory Server
+  Disk druid|disk druid|diskdruid: Disk Druid
+  DM|directory manager: Directory Manager
+  dns: DNS
+  DVD burner|burner: DVD writer
+  DWH|data warehouse|Dataware House: Data Warehouse
+  Etcd|ETCD: etcd
+  Exec Shield: Exec-Shield
+  EXIF|exif: Exif
+  Extranet: extranet
+  facter: Facter
+  Faq|faq|F.A.Q: FAQ
+  fault tolerant: fault-tolerant
+  fault-tolerance: fault tolerance
+  fedora project: Fedora™ Project
+  filestore|File Store: FileStore
+  Firewalld|firewallD|FirewallD: firewalld
+  Firewire|firewire: FireWire
+  FlatHub: Flathub
+  FlatPak: Flatpak
+  fortran: Fortran
+  Fqdn|fqdn: FQDN
+  gb|Gb: GB
+  gbps|GBPS: Gbps
+  GDBTK: Insight
+  gid|Gid: GID
+  Gimp|gimp: GIMP
+  git|GIT: Git
+  Gnome|gnome: GNOME
+  Gnu|gnu: GNU
+  Gpl|gpl: GPL
+  gradle: Gradle
+  Graalvm|graalVM: GraalVM
+  Greenboot|green boots: greenboot
+  Grub: GRUB
+  GTK|Gtk|gtk: GTK+
+  hiberbate ORM: Hibernate ORM
+  hot rod|HotRod|hotrod: Hot Rod
+  HP Proliant: HP ProLiant
+  HTTP interface: management console
+  hyperthreading|hyper-threading: Hyper-Threading
+  HyperVisor|Hyperviser: hypervisor
+  IA64|ia64: Itanium
+  IBM z Systems: IBM Z
+  Ignite|Fuse Ignite: Fuse Online|Red Hat Fuse Online|Syndesis
+  ignition config: Ignition config
+  Image Builder: image builder
+  Istio Service Mesh : Istio service mesh
+  INSTALL_DIR|installDir: FUSE_HOME
+  Iops|IOPs: IOPS
+  Ip: IP
+  IPSec: IPsec
+  ipv4|IPV4|Ipv4: IPv4
+  ipv6|IPV6|Ipv6: IPv6
+  iSeries: ISeries
+  iso: ISO
+  Itanium2: Itanium 2
+  jar file: JAR file
+  JBoss.org: JBoss Community
+  JBoss Clients: AMQ Clients
+  JBoss Data Grid: Data Grid
+  jetbrains|Jetbrains: JetBrains
+  Junit|junit: JUnit
+  Jvm|jvm: JVM
+  kbase|knowledge base: KIE base
+  kernel-based virtual machine: Kernel-based Virtual Machine
+  kernelspace: kernel space
+  key store: keystore
+  kickstart: Kickstart
+  kie API|Kie API|knowledge API: KIE API
+  kjar|kJAR: KJAR
+  knowledgebase: Knowledgebase
+  ksession|knowledge session: KIE session
+  Kubelet: kubelet
+  kubernetes|k8s: Kubernetes
+  kvm: KVM
+  Lan|lan: LAN
+  Librados|LIBRADOS: librados
+  Librbd|LIBRBD: librbd
+  Lightweight Directory Access Protocol over Secure Socket Layer: LDAPS
+  LINUX|linux: Linux
+  live-backup group: master-slave group
+  Lun|lun: LUN
+  master CA: IdM CA renewal server
+  master server: IdM server and replicas
+  Maven failsafe|Maven FailSafe: Maven Failsafe
+  Microprofile|micro-profile: MicroProfile
+  Microsoft Azure Portal: Microsoft Azure portal
+  Microsoft Windows Server: Windows Server
+  MoM|Mom|mom: MOM
+  Mongo\sDB|mongoDB|Mongodb|Mongo-db: MongoDB
+  MS(?!-DOS?)|MSFT|MicroSoft: Microsoft
+  MS-dos|Ms-Dos|ms-dos|MSDOS|msdos: MS-DOS
+  MTLS|m-TLS: mTLS
+  mutual tls|Mutual tls|Mutual TLS: mutual TLS
+  MYSQL|mySQL: MySQL
+  native interface: management CLI
+  network interface card: network interface controller (NIC)
+  objectclass: objectClass
+  Objective-C: Objective C
+  OCP: Red Hat OpenShift Container Platform
+  ODF: Red Hat OpenShift Data Foundation
+  Open InfiniBand|Infiniband: InfiniBand
+  Open JDK|openjdk|JDK: OpenJDK
+  openid connect|Openid Connect: OpenID Connect
+  openrewrite|Openrewrite|Open Rewrite: OpenRewrite
+  Openshift online|OO: Red Hat OpenShift Online
+  Operating Environment: operating environment
+  Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
+  Opex|Opex|OPEX|opEx: OpEx
+  ORAN: O-RAN
+  Organization administrator|Org Admin|org admin: Organization Administrator
+  OS|Operating System: operating system
+  Overcloud: overcloud
+  Podman desktop: Podman Desktop
+  podman: Podman
+  popup|Pop-up: pop-up
+  Posix|posix: POSIX
+  Postscript: PostScript
+  Powershell|powershell: PowerShell
+  PPC|P-PC|PPC64: PowerPC
+  Ppp|ppp: PPP
+  prom|Prom: PROM
+  prometheus: Prometheus
+  proof key for code exchange: Proof Key for Code Exchange
+  proof of concepts: proofs of concept
+  Properties editor: Properties View
+  pSeries: IBM eServer System p
+  puppet forge: Puppet Forge
+  puppet: Puppet
+  q & a|q&a|Q & A|Q&A: Q and A
+  qcow2|Qcow2: QCOW2
+  Qdmanage|QDMANAGE: qdmanage
+  Qdstat|QDSTAT: qdstat
+  Qeth|QETH: qeth
+  RAMdisk|ramdisk|RAM-disk: RAM disk
+  Ram|ram: RAM
+  RAW: raw
+  Red Hat JBoss Data Grid|JDG: Red Hat Data Grid
+  Red Hat Network Satellite server: Red Hat Network Satellite Server
+  Red Hat Proxy: Red Hat Network Proxy Server
+  Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server
+  Red Hat Satellite server: Red Hat Satellite Server
+  Red Hat satellite: Red Hat Satellite
+  Redboot|Red Boot: RedBoot
+  redis: Redis
+  RESTEASY|resteasy|Resteasy: RESTEasy
+  RHDS: Red Hat Directory Server
+  RHEL host|RHEL-H: Red Hat Enterprise Linux host
+  RHV: Red Hat Virtualization
+  Rom|rom: ROM
+  Router: AMQ Interconnect
+  rpm: RPM
+  S90: IBM S 390
+  s-record|S-Record|s-Record|SREC: S-record
+  samba|SAMBA: Samba
+  Satellite server: Satellite Server
+  SE-Linux|S-E Linux|SE Linux|selinux: SELinux
+  Shadow Man|ShadowMan: Shadowman
+  Shadow passwords: shadow passwords
+  Shadow utilities: shadow utilities
+  Smallrye: SmallRye
+  smart NIC|Smart-NIC: SmartNIC
+  Smart State|smart state|Smart state|Smartstate|Analysis: SmartState analysis
+  socks: SOCKS
+  software collection|Software collection: Software Collection
+  Source Navigator: Source-Navigator^TM^
+  Spec: spec
+  Spice|spice: SPICE
+  Spring boot: Spring Boot
+  SR IOV: SR-IOV
+  Ssh|ssh: SSH
+  SSL handshake: TLS handshake
+  SSL(?!/TLS): SSL/TLS
+  standard Manager|standard environment: standalone Manager
+  Staroffice|Star Office: StarOffice
+  StartTLS|startTLS: STARTTLS
+  StartX: startx
+  STI|source to image: Source-to-Image (S2I)
+  SU: su
+  Subscription manifest: Subscription Manifest
+  Sys V|System V: SysV
+  system D|system D|SystemD|system d: systemd
+  Technology preview|technology preview: Technology Preview
+  The Operator Lifecycle Manager: Operator Lifecycle Manager
+  Tolapai|Intel Tolapai: Intel(R) EP80579 Integrated Processor
+  ttl: TTL
+  uid: UID
+  ULTRASPARC|UltraSparc: UltraSPARC
+  Unix|unix|UNIX-like: UNIX
+  unix socket|unix Socket|UNIX Socket: Unix socket
+  url: URL
+  urn: URN
+  VCPU|vcpu: vCPU
+  VI: vi
+  VIM|vim: Vim
+  Virtual Desktop Server Management: VDSM
+  virtual-console|Virtual Console: virtual console
+  vlan|vLAN: VLAN
+  VM portal|vm portal|Virtual Machine Portal|User Portal: VM Portal
+  vnic|VNIC|Virtual Network Interface Card: vNIC
+  vnuma|VNUMA: vNUMA node
+  vpn: VPN
+  VS Code|VSCode|VisualStudioCode|VisualStudio Code: Visual Studio Code
+  VT-i|VT: Intel Virtualization Technology
+  wan: WAN
+  wca: WCA
+  web-UI|webUI: web UI
+  Webauthn|webAuthn|WebAuthN: WebAuthn
+  webservices|web services|Web Services: Web services
+  websocket|Websocket: WebSocket
+  Window-Maker|WindowMaker: Window Maker
+  XDS|xds: xDS
+  Xemacs: XEmacs
+  xplat-cli|x-plat-cli|xplat cli|x-plat cli|X-PLAT CLI|X-PLAT-CLI|XPLAT-CLI|XPLAT CLI: Microsoft Azure Cross-Platform Command-Line Interface
+  Xp|xp: XP
+  Xterm: xterm

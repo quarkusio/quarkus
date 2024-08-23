@@ -3,37 +3,19 @@ package org.jboss.resteasy.reactive.multipart;
 import java.nio.file.Path;
 
 /**
- * Represents a file-upload from an HTTP multipart form submission.
+ * Represent a file that has been uploaded.
+ * <p>
+ * This type is usually used on server, but it is also supported in the REST Client.
  */
-public interface FileUpload {
+public interface FileUpload extends FilePart {
 
     /**
-     * @return the name of the upload as provided in the form submission.
+     * Use this constant as form parameter name in order to get all file uploads from a multipart form, regardless of their
+     * names
      */
-    String name();
+    public final static String ALL = "*";
 
-    /**
-     * @return the actual temporary file name on the server where the file was uploaded to.
-     */
-    Path uploadedFile();
-
-    /**
-     * @return the file name of the upload as provided in the form submission.
-     */
-    String fileName();
-
-    /**
-     * @return the size of the upload, in bytes
-     */
-    long size();
-
-    /**
-     * @return the content type (MIME type) of the upload.
-     */
-    String contentType();
-
-    /**
-     * @return the charset of the upload.
-     */
-    String charSet();
+    default Path uploadedFile() {
+        return filePath();
+    }
 }

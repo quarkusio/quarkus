@@ -1,10 +1,11 @@
 package io.quarkus.devservices.db2.deployment;
 
-import java.io.Closeable;
-import java.io.IOException;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -12,52 +13,68 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.Db2Container;
 import org.testcontainers.utility.DockerImageName;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
+import io.quarkus.devservices.common.Labels;
+import io.quarkus.devservices.common.Volumes;
 import io.quarkus.runtime.LaunchMode;
 
 public class DB2DevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(DB2DevServicesProcessor.class);
 
-    /**
-     * If you update this remember to update the container-license-acceptance.txt in the tests
-     */
-    public static final String TAG = "11.5.5.1";
-
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2(
-            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            GlobalDevServicesConfig globalDevServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt fixedExposedPort, LaunchMode launchMode, Optional<Duration> startupTimeout) {
-                QuarkusDb2Container container = new QuarkusDb2Container(imageName, fixedExposedPort,
-                        !devServicesSharedNetworkBuildItem.isEmpty());
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+
+                boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(globalDevServicesConfig,
+                        devServicesSharedNetworkBuildItem);
+                QuarkusDb2Container container = new QuarkusDb2Container(containerConfig.getImageName(),
+                        containerConfig.getFixedExposedPort(),
+                        useSharedNetwork);
                 startupTimeout.ifPresent(container::withStartupTimeout);
-                container.withPassword(password.orElse("quarkus"))
-                        .withUsername(username.orElse("quarkus"))
-                        .withDatabaseName(datasourceName.orElse("default"));
-                additionalProperties.forEach(container::withUrlParam);
+
+                String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                String effectiveDbName = containerConfig.getDbName().orElse(
+                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+
+                container.withUsername(effectiveUsername)
+                        .withPassword(effectivePassword)
+                        .withDatabaseName(effectiveDbName)
+                        .withReuse(containerConfig.isReuse());
+                Labels.addDataSourceLabel(container, datasourceName);
+                Volumes.addVolumes(container, containerConfig.getVolumes());
+
+                container.withEnv(containerConfig.getContainerEnv());
+
+                containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
+                containerConfig.getCommand().ifPresent(container::setCommand);
+                containerConfig.getInitScriptPath().ifPresent(container::withInitScript);
                 container.start();
 
                 LOG.info("Dev Services for IBM Db2 started.");
 
-                return new RunningDevServicesDatasource(container.getEffectiveJdbcUrl(), container.getUsername(),
+                return new RunningDevServicesDatasource(container.getContainerId(),
+                        container.getEffectiveJdbcUrl(),
+                        container.getReactiveUrl(),
+                        container.getUsername(),
                         container.getPassword(),
-                        new Closeable() {
-                            @Override
-                            public void close() throws IOException {
-                                container.stop();
-
-                                LOG.info("Dev Services for IBM Db2 shut down.");
-                            }
-                        });
+                        new ContainerShutdownCloseable(container, "IBM Db2"));
             }
         });
     }
@@ -69,8 +86,8 @@ public class DB2DevServicesProcessor {
         private String hostName = null;
 
         public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
-            super(DockerImageName.parse(imageName.orElse("ibmcom/db2:" + DB2DevServicesProcessor.TAG))
-                    .asCompatibleSubstituteFor(DockerImageName.parse("ibmcom/db2")));
+            super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
+                    .asCompatibleSubstituteFor(DockerImageName.parse("icr.io/db2_community/db2")));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
         }
@@ -105,6 +122,10 @@ public class DB2DevServicesProcessor {
             } else {
                 return super.getJdbcUrl();
             }
+        }
+
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
         }
     }
 }

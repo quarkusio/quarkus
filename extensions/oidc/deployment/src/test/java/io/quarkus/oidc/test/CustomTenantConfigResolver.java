@@ -1,11 +1,14 @@
 package io.quarkus.oidc.test;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -19,13 +22,17 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus");
             config.setClientId("quarkus-web-app");
             config.getCredentials().setSecret("secret");
-            config.applicationType = ApplicationType.WEB_APP;
+            config.setApplicationType(ApplicationType.WEB_APP);
             return Uni.createFrom().item(config);
+        }
+        context.remove(OidcUtils.TENANT_ID_ATTRIBUTE);
+        if (context.request().path().endsWith("/null-tenant")) {
+            return null;
         }
         return Uni.createFrom().nullItem();
     }
 
     private String getIssuerUrl() {
-        return System.getProperty("keycloak.url");
+        return ConfigProvider.getConfig().getValue("keycloak.url", String.class);
     }
 }

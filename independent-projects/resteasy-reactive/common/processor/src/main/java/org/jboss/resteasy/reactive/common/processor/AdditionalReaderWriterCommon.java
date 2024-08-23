@@ -2,7 +2,8 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.ws.rs.RuntimeType;
+
+import jakarta.ws.rs.RuntimeType;
 
 @SuppressWarnings({ "rawtypes" })
 abstract class AdditionalReaderWriterCommon implements AdditionalReaderWriter {

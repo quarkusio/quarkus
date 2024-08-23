@@ -1,6 +1,6 @@
 package io.quarkus.security.jpa;
 
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 
 import org.wildfly.security.password.Password;
 import org.wildfly.security.password.interfaces.SimpleDigestPassword;

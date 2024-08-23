@@ -19,19 +19,22 @@ public class CompilerFlags {
     private final String releaseJavaVersion; //can be null
     private final String sourceJavaVersion; //can be null
     private final String targetJavaVersion; //can be null
+    private final List<String> annotationProcessors; //can be null
 
     public CompilerFlags(
             Set<String> defaultFlags,
             Collection<String> userFlags,
             String releaseJavaVersion,
             String sourceJavaVersion,
-            String targetJavaVersion) {
+            String targetJavaVersion,
+            List<String> annotationProcessors) {
 
         this.defaultFlags = defaultFlags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(defaultFlags);
         this.userFlags = userFlags == null ? new ArrayList<>() : new ArrayList<>(userFlags);
         this.releaseJavaVersion = releaseJavaVersion;
         this.sourceJavaVersion = sourceJavaVersion;
         this.targetJavaVersion = targetJavaVersion;
+        this.annotationProcessors = annotationProcessors;
     }
 
     public List<String> toList() {
@@ -44,18 +47,26 @@ public class CompilerFlags {
 
         flagList.addAll(effectiveDefaultFlags);
 
-        // Add --release and -source and -target flags.
+        // Prefer --release over -source and -target flags to make sure to not run into:
+        // "error: option --source cannot be used together with --release"
+        // This is *not* checking defaultFlags; it is not expected that defaultFlags ever contain --release etc.!
         if (releaseJavaVersion != null) {
             flagList.add("--release");
             flagList.add(releaseJavaVersion);
+        } else {
+            if (sourceJavaVersion != null) {
+                flagList.add("-source");
+                flagList.add(sourceJavaVersion);
+            }
+            if (targetJavaVersion != null) {
+                flagList.add("-target");
+                flagList.add(targetJavaVersion);
+            }
         }
-        if (sourceJavaVersion != null) {
-            flagList.add("-source");
-            flagList.add(sourceJavaVersion);
-        }
-        if (targetJavaVersion != null) {
-            flagList.add("-target");
-            flagList.add(targetJavaVersion);
+
+        if (annotationProcessors != null && !annotationProcessors.isEmpty()) {
+            flagList.add("-processor");
+            flagList.add(String.join(",", annotationProcessors));
         }
 
         flagList.addAll(userFlags);

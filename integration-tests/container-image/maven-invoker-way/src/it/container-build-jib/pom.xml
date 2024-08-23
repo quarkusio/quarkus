@@ -7,10 +7,10 @@
   <version>0.1-SNAPSHOT</version>
   <properties>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
-    <maven.compiler.source>11</maven.compiler.source>
+    <surefire-plugin.version>3.4.0</surefire-plugin.version>
+    <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.target>17</maven.compiler.target>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -32,6 +32,19 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-container-image-jib</artifactId>
     </dependency>
+
+    <!-- dependencies added to make sure that OpenTelemetry doesn't mess up building the container images -->
+    <!-- See https://github.com/quarkusio/quarkus/issues/22864 -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-opentelemetry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-grpc-1.6</artifactId>
+      <version>1.9.2-alpha</version>
+    </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
@@ -78,7 +91,7 @@
         </property>
       </activation>
       <properties>
-        <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
       </properties>
       <build>
         <plugins>

@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,8 @@ public class NamedBeanValidationFailureTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(NamedFoo.class)
-                    .addAsResource(new StringAsset("{#each inject:foo.list}{it.ping}{/each}}"), "templates/fooping.html"))
+                    .addAsResource(new StringAsset("{#each inject:foo.list}{it.ping}{/each}{cdi:foo.bar}"),
+                            "templates/fooping.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -34,8 +35,9 @@ public class NamedBeanValidationFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (1)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (2)"), te.getMessage());
                 assertTrue(te.getMessage().contains("it.ping"), te.getMessage());
+                assertTrue(te.getMessage().contains("cdi:foo.bar"), te.getMessage());
             });
 
     @Test

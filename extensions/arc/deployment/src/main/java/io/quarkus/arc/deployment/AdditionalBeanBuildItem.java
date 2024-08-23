@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 
 /**
  * This build item is used to specify one or more additional bean classes to be analyzed during bean discovery.
@@ -21,6 +22,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * An additional bean may have the scope defaulted via {@link #defaultScope} and {@link Builder#setDefaultScope(DotName)}. The
  * default scope is only used if there is no scope declared on the bean class. The default scope should be used in cases where a
  * bean class source is not controlled by the extension and the scope annotation cannot be declared directly on the class.
+ *
+ * <h2>Generated Classes</h2>
+ *
+ * This build item should never be produced for a generated class - {@link GeneratedBeanBuildItem} and
+ * {@link GeneratedBeanGizmoAdaptor} should be used instead.
  */
 public final class AdditionalBeanBuildItem extends MultiBuildItem {
 
@@ -30,10 +36,11 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
 
     /**
      * Convenient factory method to create an unremovable build item for a single bean class.
-     * 
+     *
      * @param beanClass
      * @return a new build item
      */
+    @CheckReturnValue
     public static AdditionalBeanBuildItem unremovableOf(Class<?> beanClass) {
         return new AdditionalBeanBuildItem(Collections.singletonList(beanClass.getName()), false, null);
     }
@@ -44,6 +51,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
      * @param beanClass
      * @return a new build item
      */
+    @CheckReturnValue
     public static AdditionalBeanBuildItem unremovableOf(String beanClass) {
         return new AdditionalBeanBuildItem(Collections.singletonList(beanClass), false, null);
     }
@@ -128,11 +136,12 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
         }
 
         /**
-         * The default scope is only used if there is no scope declared on the bean class.
+         * The default scope is only used if there is no scope declared on the bean class or added by an annotation transformer
+         * with priority higher than {@code io.quarkus.arc.processor.BuildExtension.DEFAULT_PRIORITY}
          * <p>
          * The default scope should be used in cases where a bean class source is not controlled by the extension and the
          * scope annotation cannot be declared directly on the class.
-         * 
+         *
          * @param defaultScope
          * @return self
          */

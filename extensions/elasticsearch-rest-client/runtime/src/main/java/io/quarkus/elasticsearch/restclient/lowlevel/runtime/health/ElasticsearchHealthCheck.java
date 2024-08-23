@@ -1,7 +1,7 @@
 package io.quarkus.elasticsearch.restclient.lowlevel.runtime.health;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.apache.http.util.EntityUtils;
 import org.eclipse.microprofile.health.HealthCheck;

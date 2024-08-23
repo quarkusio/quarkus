@@ -6,7 +6,7 @@ import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -114,6 +114,16 @@ public class SpringPreAuthorizeTest {
                 ANONYMOUS);
         assertFailureFor(() -> springComponent.principalNameFromObject(new Person("whatever")), ForbiddenException.class, USER);
         assertSuccess(() -> springComponent.principalNameFromObject(new Person("user")), "user", USER);
+    }
+
+    @Test
+    public void testPrincipalNameFromObjectIsNot() {
+        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")),
+                UnauthorizedException.class,
+                ANONYMOUS);
+        assertSuccess(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")), "whatever", USER);
+        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("user")), ForbiddenException.class,
+                USER);
     }
 
     @Test

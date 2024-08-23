@@ -10,6 +10,10 @@ public final class QuarkusApplicationClassBuildItem extends SimpleBuildItem {
         this.className = quarkusApplicationClass.getName();
     }
 
+    public QuarkusApplicationClassBuildItem(String quarkusApplicationClassName) {
+        this.className = quarkusApplicationClassName;
+    }
+
     public String getClassName() {
         return className;
     }

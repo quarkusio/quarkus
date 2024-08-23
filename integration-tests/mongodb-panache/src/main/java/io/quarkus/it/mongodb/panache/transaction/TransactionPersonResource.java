@@ -1,19 +1,22 @@
 package io.quarkus.it.mongodb.panache.transaction;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.transaction.Transactional;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import com.mongodb.client.MongoClient;
 
+import io.quarkus.mongodb.panache.Panache;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/transaction")
@@ -42,6 +45,7 @@ public class TransactionPersonResource {
     @Transactional
     public Response addPerson(TransactionPerson person) {
         person.persist();
+        assertNotNull(Panache.getSession(TransactionPerson.class));
         return Response.created(URI.create("/transaction/" + person.id.toString())).build();
     }
 

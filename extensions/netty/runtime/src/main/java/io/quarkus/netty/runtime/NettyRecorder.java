@@ -35,8 +35,8 @@ public class NettyRecorder {
         }).start();
     }
 
-    public Supplier<Object> createEventLoop(int nThreads) {
-        return new Supplier<Object>() {
+    public Supplier<EventLoopGroup> createEventLoop(int nThreads) {
+        return new Supplier<EventLoopGroup>() {
 
             volatile EventLoopGroup val;
 

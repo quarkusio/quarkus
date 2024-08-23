@@ -1,8 +1,9 @@
 package io.quarkus.arc.test.injection.superclass.foo;
 
+import jakarta.inject.Inject;
+
 import io.quarkus.arc.test.injection.superclass.SuperclassInjectionTest.Head;
 import io.quarkus.arc.test.injection.superclass.SuperclassInjectionTest.SuperHarvester;
-import javax.inject.Inject;
 
 public abstract class FooHarvester extends SuperHarvester {
 

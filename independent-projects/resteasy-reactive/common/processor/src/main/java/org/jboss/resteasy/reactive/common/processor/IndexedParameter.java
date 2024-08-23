@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.Map;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -28,6 +29,7 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     protected String elementType;
     protected boolean single;
     protected boolean optional;
+    protected String separator;
 
     public boolean isObtainedAsCollection() {
         return !single
@@ -205,6 +207,15 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
 
     public T setOptional(boolean optional) {
         this.optional = optional;
+        return (T) this;
+    }
+
+    public String getSeparator() {
+        return separator;
+    }
+
+    public T setSeparator(String separator) {
+        this.separator = separator;
         return (T) this;
     }
 }

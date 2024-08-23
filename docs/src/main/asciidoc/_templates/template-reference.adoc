@@ -1,0 +1,68 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="..."]
+= Title using sentence capitalization
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+A short introduction that describes the content of this reference.
+This summary should help a reader determine if this document is likely to contain the information they are looking for.
+
+////
+TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Add additional sections
+
+- xref:../doc-concept.adoc#reference[Quarkus documentation content types: Reference guides]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:../doc-reference.adoc#cross-references[Cross-references]
+
+== Guidelines for a good reference
+
+- Be consistent
+- Be accurate
+- Do nothing but describe
+    - Include examples where appropriate, e.g. an example usage of a command
+    - Link to tutorials, how-to guides, or concepts/explainers as necessary
+
+.Language tips:
+--
+- State facts about how things work: X is an example of Y.
+- List commands, options, operations, features, flags, limitations, error messages, etc.
+- Provide warnings where appropriate
+--
+
+////
+TODO: If this is an extension reference, include the relevant configuration
+== Configuration Reference
+
+include::{generated-dir}/<<generated-filename>>.adoc[opts=optional, leveloffset=+1]
+////
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.

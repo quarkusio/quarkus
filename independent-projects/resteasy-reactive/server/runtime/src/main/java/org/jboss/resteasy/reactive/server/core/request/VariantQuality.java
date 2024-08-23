@@ -2,7 +2,8 @@ package org.jboss.resteasy.reactive.server.core.request;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * A individual variant quality bean for the RVSA (Remote Variant Selection Algorithm).

@@ -6,6 +6,7 @@ metadata:
   - "jdbc-derby"
   - "jdbc"
   - "derby"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"
   status: "stable"

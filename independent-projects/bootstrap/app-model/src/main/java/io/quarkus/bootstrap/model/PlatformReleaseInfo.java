@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
-import io.quarkus.maven.dependency.GACTV;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 
 /**
  * Platform release info that is encoded into a property in a platform properties artifact
@@ -12,6 +13,7 @@ import java.util.List;
  */
 public class PlatformReleaseInfo implements Serializable {
 
+    private static final long serialVersionUID = 7751600738849301644L;
     private final String platformKey;
     private final String stream;
     private final String version;

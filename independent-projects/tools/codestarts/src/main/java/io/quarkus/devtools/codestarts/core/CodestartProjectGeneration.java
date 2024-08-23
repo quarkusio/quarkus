@@ -2,18 +2,19 @@ package io.quarkus.devtools.codestarts.core;
 
 import static io.quarkus.devtools.codestarts.core.CodestartProcessor.buildStrategies;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategy;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategy;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 final class CodestartProjectGeneration {
 

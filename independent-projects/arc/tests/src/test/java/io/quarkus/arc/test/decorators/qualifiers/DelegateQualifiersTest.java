@@ -2,18 +2,19 @@ package io.quarkus.arc.test.decorators.qualifiers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import jakarta.annotation.Priority;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.MyQualifier;
-import javax.annotation.Priority;
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Inject;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DelegateQualifiersTest {
 
@@ -25,8 +26,7 @@ public class DelegateQualifiersTest {
     public void testDecoration() {
         @SuppressWarnings("serial")
         ToUpperCaseConverter converter = Arc.container()
-                .instance(ToUpperCaseConverter.class, new AnnotationLiteral<MyQualifier>() {
-                }).get();
+                .instance(ToUpperCaseConverter.class, new MyQualifier.Literal()).get();
         assertEquals("HOLA!", converter.convert(" holA!"));
         assertEquals(" HOLA!", converter.convertNoDelegation(" holA!"));
     }

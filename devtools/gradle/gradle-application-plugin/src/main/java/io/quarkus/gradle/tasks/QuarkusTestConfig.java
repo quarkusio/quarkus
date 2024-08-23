@@ -2,7 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import org.gradle.api.tasks.TaskAction;
 
-public class QuarkusTestConfig extends QuarkusTask {
+public abstract class QuarkusTestConfig extends QuarkusTask {
 
     public QuarkusTestConfig() {
         super("Deprecated. Used to set the necessary system properties for the Quarkus tests to run. Replaced with an action configured for every test by the Quarkus plugin");

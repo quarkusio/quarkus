@@ -30,10 +30,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.narayana.lra.runtime.LRAConfiguration;
 import io.quarkus.narayana.lra.runtime.NarayanaLRAProducers;
 import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
+import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 
 class NarayanaLRAProcessor {
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
     void registerFeature(BuildProducer<FeatureBuildItem> feature, Capabilities capabilities) {
@@ -42,12 +43,12 @@ class NarayanaLRAProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-jackson' or 'quarkus-resteasy-jackson' is present");
         }
 
-        if (!capabilities.isPresent(Capability.REST_CLIENT)) {
+        if (!capabilities.isCapabilityWithPrefixPresent(Capability.REST_CLIENT)) {
             throw new IllegalStateException(
-                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-rest-client-reactive' is present");
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-resteasy-client' is present");
         }
 
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));
@@ -83,7 +84,7 @@ class NarayanaLRAProcessor {
                 continue;
             }
 
-            int modifiers = classInfo.getClass().getModifiers();
+            int modifiers = classInfo.flags();
 
             if (Modifier.isInterface(modifiers) || Modifier.isAbstract(modifiers) || !isLRAParticipant(index, classInfo)) {
                 continue;
@@ -120,7 +121,7 @@ class NarayanaLRAProcessor {
         ClassInfo classInfo = index.getClassByName(name);
 
         if (classInfo != null) {
-            annotations.putAll(classInfo.annotations());
+            annotations.putAll(classInfo.annotationsMap());
             annotations.putAll(getInterfaceAnnotations(classInfo.interfaceNames(), index));
             annotations.putAll(getAllAnnotationsFromClassInfoHierarchy(classInfo.superName(), index));
         }
@@ -135,7 +136,7 @@ class NarayanaLRAProcessor {
 
         for (DotName interfaceName : interfaceNames) {
             interfaceClassInfo = index.getClassByName(interfaceName);
-            Map<DotName, List<AnnotationInstance>> interfaceAnnotations = interfaceClassInfo.annotations();
+            Map<DotName, List<AnnotationInstance>> interfaceAnnotations = interfaceClassInfo.annotationsMap();
             annotations.forEach((k, v) -> interfaceAnnotations.merge(k, v, (v1, v2) -> {
                 v1.addAll(v2);
                 return v1;
@@ -152,5 +153,15 @@ class NarayanaLRAProcessor {
                 .addBeanClass(ParticipantProxyResource.class)
                 .build());
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaLRAProducers.class));
+    }
+
+    @BuildStep
+    public void filterOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
+            Capabilities capabilities, LRABuildTimeConfiguration lraBuildTimeConfig) {
+
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(lraBuildTimeConfig.openapiIncluded);
+            openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(lraOpenAPIFilter));
+        }
     }
 }

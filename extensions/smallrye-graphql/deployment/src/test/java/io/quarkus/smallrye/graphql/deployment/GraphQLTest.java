@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            TestUnion.class, TestUnionMember.class, CustomDirective.class, BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -51,6 +51,10 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("type TestGenericsPojo_String {"));
         Assertions.assertTrue(body.contains("enum SomeEnum {"));
         Assertions.assertTrue(body.contains("enum Number {"));
+        Assertions.assertTrue(body.contains("type TestPojo @customDirective(fields : [\"test-pojo\"])"));
+        Assertions.assertTrue(body.contains("message: String @customDirective(fields : [\"message\"])"));
+        Assertions.assertTrue(body.contains("union TestUnion = TestUnionMember"));
+        Assertions.assertTrue(body.contains("testUnion: TestUnion"));
     }
 
     @Test
@@ -213,6 +217,70 @@ public class GraphQLTest extends AbstractGraphQLTest {
                         "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
     }
 
+    @Test
+    public void testFailureUniNonBlocking() {
+        String request = getPayload("{failureUniNonBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureUniBlocking() {
+        String request = getPayload("{failureUniBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureSyncNonBlocking() {
+        String request = getPayload("{failureSyncNonBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureSyncBlocking() {
+        String request = getPayload("{failureSyncBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
     /**
      * Send a query in JSON that contains raw unescaped line breaks and tabs inside the "query" string,
      * which technically is forbidden by the JSON spec, but we want to seamlessly support
@@ -250,9 +318,34 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .body(CoreMatchers.containsString("{\"data\":{\"context\":\"/context\"}}"));
     }
 
+    @Test
+    public void testUnion() {
+        String unionRequest = getPayload("{\n" +
+                "  testUnion {\n" +
+                "    __typename\n" +
+                "    ... on TestUnionMember {\n" +
+                "      name\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(unionRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body(CoreMatchers.containsString(
+                        "{\"data\":{\"testUnion\":{\"__typename\":\"TestUnionMember\",\"name\":\"what is my name\"}}}"));
+    }
+
     private static Map<String, String> configuration() {
         Map<String, String> m = new HashMap<>();
         m.put("quarkus.smallrye-graphql.events.enabled", "true");
+        m.put("quarkus.smallrye-graphql.schema-include-directives", "true");
         return m;
     }
 }

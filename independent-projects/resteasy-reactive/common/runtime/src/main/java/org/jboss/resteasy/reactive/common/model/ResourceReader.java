@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyReader;
+
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResourceReader {
 
     private BeanFactory<MessageBodyReader<?>> factory;
@@ -114,7 +117,11 @@ public class ResourceReader {
      */
     public static class ResourceReaderComparator implements Comparator<ResourceReader> {
 
-        public static final ResourceReaderComparator INSTANCE = new ResourceReaderComparator();
+        private final List<MediaType> produces;
+
+        public ResourceReaderComparator(List<MediaType> produces) {
+            this.produces = produces;
+        }
 
         @Override
         public int compare(ResourceReader o1, ResourceReader o2) {
@@ -142,6 +149,14 @@ public class ResourceReader {
             int mediaTypeCompare = MediaTypeHelper.compareWeight(mediaTypes1.get(0), mediaTypes2.get(0));
             if (mediaTypeCompare != 0) {
                 return mediaTypeCompare;
+            }
+
+            // try to compare using the number of matching produces media types
+            if (!produces.isEmpty()) {
+                mediaTypeCompare = MediaTypeHelper.compareMatchingMediaTypes(produces, mediaTypes1, mediaTypes2);
+                if (mediaTypeCompare != 0) {
+                    return mediaTypeCompare;
+                }
             }
 
             // done to make the sorting result deterministic

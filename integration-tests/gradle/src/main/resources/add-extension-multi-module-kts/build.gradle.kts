@@ -1,10 +1,11 @@
 buildscript {
 
     repositories {
-        if (System.getProperties().containsKey("maven.repo.local")) {
-            maven(url = System.getProperties().get("maven.repo.local")!!)
-        } else {
-            mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
+            }
         }
         mavenCentral()
         gradlePluginPortal()
@@ -25,8 +26,8 @@ subprojects {
     apply(plugin = "java")
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     tasks {
@@ -34,14 +35,16 @@ subprojects {
           dependsOn("cleanTest")
           useJUnitPlatform()
           setForkEvery(1)
+          systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
       }
     }
 
     repositories {
-        if (System.getProperties().containsKey("maven.repo.local")) {
-            maven(url = System.getProperties().get("maven.repo.local")!!)
-        } else {
-            mavenLocal()
+        mavenLocal {
+            content {
+                includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
+            }
         }
         mavenCentral()
     }

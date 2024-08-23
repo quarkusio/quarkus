@@ -6,9 +6,14 @@ import static io.quarkus.deployment.util.ReflectUtil.reportError;
 import static io.quarkus.deployment.util.ReflectUtil.toError;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.unwrapInvocationTargetException;
+import static io.quarkus.runtime.configuration.PropertiesUtil.isPropertyInRoots;
+import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
+import static io.smallrye.config.Expressions.withoutExpansion;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
+import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
 import static java.util.stream.Collectors.toSet;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -22,10 +27,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
@@ -33,6 +40,10 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
+import io.quarkus.deployment.configuration.definition.ClassDefinition.ClassMember;
+import io.quarkus.deployment.configuration.definition.ClassDefinition.GroupMember;
+import io.quarkus.deployment.configuration.definition.ClassDefinition.ItemMember;
+import io.quarkus.deployment.configuration.definition.ClassDefinition.MapMember;
 import io.quarkus.deployment.configuration.definition.GroupDefinition;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
@@ -40,6 +51,7 @@ import io.quarkus.deployment.configuration.matching.Container;
 import io.quarkus.deployment.configuration.matching.FieldContainer;
 import io.quarkus.deployment.configuration.matching.MapContainer;
 import io.quarkus.deployment.configuration.matching.PatternMapBuilder;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingInterceptor;
 import io.quarkus.deployment.configuration.type.ArrayOf;
 import io.quarkus.deployment.configuration.type.CollectionOf;
 import io.quarkus.deployment.configuration.type.ConverterType;
@@ -49,6 +61,8 @@ import io.quarkus.deployment.configuration.type.MinMaxValidated;
 import io.quarkus.deployment.configuration.type.OptionalOf;
 import io.quarkus.deployment.configuration.type.PatternValidated;
 import io.quarkus.deployment.configuration.type.UpperBoundCheckOf;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -57,14 +71,21 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.PropertiesUtil;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
-import io.smallrye.config.Expressions;
+import io.smallrye.config.ProfileConfigSourceInterceptor;
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
+import io.smallrye.config.common.AbstractConfigSource;
 
 /**
  * A configuration reader.
@@ -72,15 +93,53 @@ import io.smallrye.config.SysPropConfigSource;
 public final class BuildTimeConfigurationReader {
     private static final Logger log = Logger.getLogger("io.quarkus.config.build");
 
+    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
+
+    private static List<Class<?>> collectConfigRoots(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+        Assert.checkNotNullParam("classLoader", classLoader);
+        // populate with all known types
+        List<Class<?>> roots = new ArrayList<>();
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
+            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
+            if (annotation == null) {
+                log.warnf("Ignoring configuration root %s because it has no annotation", clazz);
+            } else {
+                roots.add(clazz);
+            }
+        }
+        return roots;
+    }
+
+    final ClassLoader classLoader;
+
     final ConfigPatternMap<Container> buildTimePatternMap;
     final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
-    final ConfigPatternMap<Container> bootstrapPatternMap;
     final ConfigPatternMap<Container> runTimePatternMap;
 
-    final List<RootDefinition> buildTimeVisibleRoots;
     final List<RootDefinition> allRoots;
+    final List<RootDefinition> buildTimeVisibleRoots;
 
-    final boolean bootstrapRootsEmpty;
+    final List<ConfigClassWithPrefix> buildTimeMappings;
+    final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+    final List<ConfigClassWithPrefix> runTimeMappings;
+    final List<ConfigClassWithPrefix> buildTimeVisibleMappings;
+
+    final Set<String> deprecatedProperties;
+    final Set<String> deprecatedRuntimeProperties;
+
+    final ConfigTrackingInterceptor buildConfigTracker;
+
+    /**
+     * Initializes a new instance with located configuration root classes on the classpath
+     * of a given classloader.
+     *
+     * @param classLoader class loader to load configuration root classes from
+     * @throws IOException in case a classpath resource couldn't be read
+     * @throws ClassNotFoundException in case a config root class could not be found
+     */
+    public BuildTimeConfigurationReader(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+        this(classLoader, collectConfigRoots(classLoader));
+    }
 
     /**
      * Construct a new instance.
@@ -88,14 +147,54 @@ public final class BuildTimeConfigurationReader {
      * @param configRoots the configuration root class list (must not be {@code null})
      */
     public BuildTimeConfigurationReader(final List<Class<?>> configRoots) {
-        Assert.checkNotNullParam("configRoots", configRoots);
+        this(null, configRoots);
+    }
 
-        List<RootDefinition> bootstrapRoots = new ArrayList<>();
-        List<RootDefinition> runTimeRoots = new ArrayList<>();
-        List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
+    private BuildTimeConfigurationReader(ClassLoader classLoader, final List<Class<?>> configRoots) {
+
+        Assert.checkNotNullParam("configRoots", configRoots);
+        this.classLoader = classLoader;
+
         List<RootDefinition> buildTimeRoots = new ArrayList<>();
+        List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
+        List<RootDefinition> runTimeRoots = new ArrayList<>();
+
+        buildTimeMappings = new ArrayList<>();
+        buildTimeRunTimeMappings = new ArrayList<>();
+        runTimeMappings = new ArrayList<>();
+
         Map<Class<?>, GroupDefinition> groups = new HashMap<>();
         for (Class<?> configRoot : configRoots) {
+            boolean isMapping = configRoot.isAnnotationPresent(ConfigMapping.class);
+            if (isMapping) {
+                ConfigPhase phase = ConfigPhase.BUILD_TIME;
+                // To retrieve config phase
+                ConfigRoot annotation = configRoot.getAnnotation(ConfigRoot.class);
+                if (annotation != null) {
+                    if (!annotation.prefix().equals("quarkus")) {
+                        throw reportError(configRoot,
+                                "@ConfigRoot.prefix() is not allowed in combination with @ConfigMapping, please use @ConfigMapping.prefix()");
+                    }
+
+                    if (!annotation.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+                        throw reportError(configRoot, "@ConfigRoot.name() is not allowed in combination with @ConfigMapping");
+                    }
+
+                    phase = annotation.phase();
+                }
+
+                ConfigClassWithPrefix mapping = configClassWithPrefix(configRoot);
+                if (phase.equals(ConfigPhase.BUILD_TIME)) {
+                    buildTimeMappings.add(mapping);
+                } else if (phase.equals(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+                    buildTimeRunTimeMappings.add(mapping);
+                } else if (phase.equals(ConfigPhase.RUN_TIME)) {
+                    runTimeMappings.add(mapping);
+                }
+
+                continue;
+            }
+
             String prefix = "quarkus";
             String name = ConfigItem.HYPHENATED_ELEMENT_NAME;
             ConfigPhase phase = ConfigPhase.BUILD_TIME;
@@ -115,32 +214,34 @@ public final class BuildTimeConfigurationReader {
                 buildTimeRoots.add(definition);
             } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                 buildTimeRunTimeRoots.add(definition);
-            } else if (phase == ConfigPhase.BOOTSTRAP) {
-                bootstrapRoots.add(definition);
             } else {
                 assert phase == ConfigPhase.RUN_TIME;
                 runTimeRoots.add(definition);
             }
         }
 
-        bootstrapPatternMap = PatternMapBuilder.makePatterns(bootstrapRoots);
-        runTimePatternMap = PatternMapBuilder.makePatterns(runTimeRoots);
-        buildTimeRunTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRunTimeRoots);
+        // ConfigRoots
         buildTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRoots);
+        buildTimeRunTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRunTimeRoots);
+        runTimePatternMap = PatternMapBuilder.makePatterns(runTimeRoots);
 
         buildTimeVisibleRoots = new ArrayList<>(buildTimeRoots.size() + buildTimeRunTimeRoots.size());
         buildTimeVisibleRoots.addAll(buildTimeRoots);
         buildTimeVisibleRoots.addAll(buildTimeRunTimeRoots);
 
-        bootstrapRootsEmpty = bootstrapRoots.isEmpty();
-
-        List<RootDefinition> allRoots = new ArrayList<>(
-                buildTimeVisibleRoots.size() + bootstrapRoots.size() + runTimeRoots.size());
+        allRoots = new ArrayList<>(buildTimeVisibleRoots.size() + runTimeRoots.size());
         allRoots.addAll(buildTimeVisibleRoots);
-        allRoots.addAll(bootstrapRoots);
         allRoots.addAll(runTimeRoots);
 
-        this.allRoots = allRoots;
+        // ConfigMappings
+        buildTimeVisibleMappings = new ArrayList<>(buildTimeMappings.size() + buildTimeRunTimeMappings.size());
+        buildTimeVisibleMappings.addAll(buildTimeMappings);
+        buildTimeVisibleMappings.addAll(buildTimeRunTimeMappings);
+
+        deprecatedProperties = getDeprecatedProperties(allRoots);
+        deprecatedRuntimeProperties = getDeprecatedProperties(runTimeRoots);
+
+        buildConfigTracker = new ConfigTrackingInterceptor();
     }
 
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,
@@ -259,23 +360,128 @@ public final class BuildTimeConfigurationReader {
         return allRoots;
     }
 
+    public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+        return buildTimeMappings;
+    }
+
+    public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+        return buildTimeRunTimeMappings;
+    }
+
+    public List<ConfigClassWithPrefix> getBuildTimeVisibleMappings() {
+        return buildTimeVisibleMappings;
+    }
+
+    /**
+     * Builds a new configuration instance.
+     *
+     * @param launchMode target launch mode
+     * @param buildSystemProps build system properties to add as a configuration source
+     * @param platformProperties Quarkus platform properties to add as a configuration source
+     * @return configuration instance
+     */
+    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps,
+            Map<String, String> platformProperties) {
+        // now prepare & load the build configuration
+        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
+        if (classLoader != null) {
+            builder.forClassLoader(classLoader);
+        }
+
+        DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
+        DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
+        PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+        if (platformProperties.isEmpty()) {
+            builder.withSources(ds1, ds2, pcs);
+        } else {
+            // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+            // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+            DefaultValuesConfigSource platformConfigSource = new DefaultValuesConfigSource(platformProperties,
+                    "Quarkus platform", Integer.MIN_VALUE + 1000);
+            builder.withSources(ds1, ds2, platformConfigSource, pcs);
+        }
+
+        for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {
+            builder.withMapping(mapping.getKlass(), mapping.getPrefix());
+        }
+
+        builder.withInterceptors(buildConfigTracker);
+        builder.withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance());
+        var config = builder.build();
+        buildConfigTracker.configure(config);
+        return config;
+    }
+
     public ReadResult readConfiguration(final SmallRyeConfig config) {
-        return new ReadOperation(config).run();
+        return SecretKeys.doUnlocked(() -> new ReadOperation(config, buildConfigTracker).run());
+    }
+
+    private Set<String> getDeprecatedProperties(Iterable<RootDefinition> rootDefinitions) {
+        Set<String> ret = new HashSet<>();
+        StringBuilder nameBuilder = new StringBuilder();
+        for (RootDefinition rootDefinition : rootDefinitions) {
+            int len = nameBuilder.length();
+            try {
+                nameBuilder.append(rootDefinition.getName());
+                collectDeprecatedConfigItems(rootDefinition, ret, nameBuilder);
+            } finally {
+                nameBuilder.setLength(len);
+            }
+        }
+        return Set.copyOf(ret);
+    }
+
+    private void collectDeprecatedConfigItems(ClassDefinition classDefinition, Set<String> deprecatedConfigItems,
+            StringBuilder nameBuilder) {
+        for (ClassMember m : classDefinition.getMembers()) {
+            collectDeprecatedConfigItems(m, deprecatedConfigItems, nameBuilder);
+        }
+    }
+
+    private void collectDeprecatedConfigItems(ClassMember classMember, Set<String> deprecatedConfigItems,
+            StringBuilder nameBuilder) {
+        if (classMember instanceof ItemMember) {
+            ItemMember im = (ItemMember) classMember;
+            if (im.getField().isAnnotationPresent(Deprecated.class)) {
+                int len = nameBuilder.length();
+                try {
+                    nameBuilder.append(".").append(im.getPropertyName());
+                    deprecatedConfigItems.add(nameBuilder.toString());
+                } finally {
+                    nameBuilder.setLength(len);
+                }
+            }
+        } else if (classMember instanceof GroupMember) {
+            GroupMember gm = (GroupMember) classMember;
+            int len = nameBuilder.length();
+            try {
+                nameBuilder.append(".").append(gm.getPropertyName());
+                collectDeprecatedConfigItems(gm.getGroupDefinition(), deprecatedConfigItems, nameBuilder);
+            } finally {
+                nameBuilder.setLength(len);
+            }
+
+        } else if (classMember instanceof MapMember) {
+            MapMember mm = (MapMember) classMember;
+            collectDeprecatedConfigItems(mm.getNested(), deprecatedConfigItems, nameBuilder);
+        }
     }
 
     final class ReadOperation {
         final SmallRyeConfig config;
+        final ConfigTrackingInterceptor buildConfigTracker;
         final Set<String> processedNames = new HashSet<>();
-
-        final Map<Class<?>, Object> objectsByRootClass = new HashMap<>();
-        final Map<String, String> specifiedRunTimeDefaultValues = new TreeMap<>();
-        final Map<String, String> buildTimeRunTimeVisibleValues = new TreeMap<>();
+        final Map<Class<?>, Object> objectsByClass = new HashMap<>();
         final Map<String, String> allBuildTimeValues = new TreeMap<>();
+        final Map<String, String> buildTimeRunTimeValues = new TreeMap<>();
+        final Map<String, String> runTimeDefaultValues = new TreeMap<>();
+        final Map<String, String> runTimeValues = new TreeMap<>();
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
-        ReadOperation(final SmallRyeConfig config) {
+        ReadOperation(final SmallRyeConfig config, ConfigTrackingInterceptor buildConfigTracker) {
             this.config = config;
+            this.buildConfigTracker = buildConfigTracker;
         }
 
         ReadResult run() {
@@ -297,111 +503,192 @@ public final class BuildTimeConfigurationReader {
                 } catch (NoSuchMethodException e) {
                     throw toError(e);
                 }
-                objectsByRootClass.put(clazz, instance);
+                objectsByClass.put(clazz, instance);
                 nameBuilder.append(root.getName());
                 readConfigGroup(root, instance, nameBuilder);
                 nameBuilder.setLength(0);
             }
 
-            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getPrefix).collect(toSet());
-            // sweep-up
-            SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
-            for (String propertyName : getAllProperties(registeredRoots)) {
+            SmallRyeConfig runtimeConfig = getConfigForRuntimeRecording();
+
+            // Register defaults for Roots
+            allBuildTimeValues.putAll(getDefaults(config, buildTimePatternMap));
+            buildTimeRunTimeValues.putAll(getDefaults(config, buildTimeRunTimePatternMap));
+            runTimeDefaultValues.putAll(getDefaults(runtimeConfig, runTimePatternMap));
+
+            Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getName).collect(toSet());
+            registeredRoots.add("quarkus");
+            Set<String> allProperties = getAllProperties(registeredRoots);
+            Set<String> unknownBuildProperties = new HashSet<>();
+            for (String propertyName : allProperties) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
                 }
+                if (deprecatedProperties.contains(propertyName)) {
+                    log.warnf("The '%s' config property is deprecated and should not be used anymore", propertyName);
+                }
 
                 NameIterator ni = new NameIterator(propertyName);
-                if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
+                if (ni.hasNext() && PropertiesUtil.isPropertyInRoots(propertyName, registeredRoots)) {
                     // build time patterns
                     Container matched = buildTimePatternMap.match(ni);
+                    boolean knownProperty = matched != null;
                     if (matched instanceof FieldContainer) {
-                        allBuildTimeValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        ni.goToEnd();
-                        // cursor is located after group property key (if any)
-                        getGroup((FieldContainer) matched, ni);
-                        // we don't have to set the field because the group object init does it for us
-                        continue;
+                        ConfigValue configValue = config.getConfigValue(propertyName);
+                        if (configValue.getValue() != null) {
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            ni.goToEnd();
+                            // cursor is located after group property key (if any)
+                            getGroup((FieldContainer) matched, ni);
+                            // we don't have to set the field because the group object init does it for us
+                        }
                     } else if (matched != null) {
                         assert matched instanceof MapContainer;
-                        // it's a leaf value within a map
-                        // these must always be explicitly set
-                        ni.goToEnd();
-                        // cursor is located after the map key
-                        final String key = ni.getPreviousSegment();
-                        final Map<String, Object> map = getMap((MapContainer) matched, ni);
-                        // we always have to set the map entry ourselves
-                        Field field = matched.findField();
-                        Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.getValue(propertyName, converter));
-                        allBuildTimeValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        continue;
+                        ConfigValue configValue = config.getConfigValue(propertyName);
+                        if (configValue.getValue() != null) {// it's a leaf value within a map
+                            // these must always be explicitly set
+                            ni.goToEnd();
+                            // cursor is located after the map key
+                            String key = ni.getPreviousSegment();
+                            Map<String, Object> map = getMap((MapContainer) matched, ni);
+                            // we always have to set the map entry ourselves
+                            Field field = matched.findField();
+                            Converter<?> converter = getConverter(config, field, ConverterType.of(field));
+                            map.put(key, config.convertValue(configValue, converter));
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        }
                     }
                     // build time (run time visible) patterns
                     ni.goToStart();
                     matched = buildTimeRunTimePatternMap.match(ni);
+                    knownProperty = knownProperty || matched != null;
                     if (matched instanceof FieldContainer) {
-                        ni.goToEnd();
-                        // cursor is located after group property key (if any)
-                        getGroup((FieldContainer) matched, ni);
-                        allBuildTimeValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        buildTimeRunTimeVisibleValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        continue;
+                        ConfigValue configValue = config.getConfigValue(propertyName);
+                        if (configValue.getValue() != null) {
+                            ni.goToEnd();
+                            // cursor is located after group property key (if any)
+                            getGroup((FieldContainer) matched, ni);
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        }
                     } else if (matched != null) {
                         assert matched instanceof MapContainer;
-                        // it's a leaf value within a map
-                        // these must always be explicitly set
-                        ni.goToEnd();
-                        // cursor is located after the map key
-                        final String key = ni.getPreviousSegment();
-                        final Map<String, Object> map = getMap((MapContainer) matched, ni);
-                        // we always have to set the map entry ourselves
-                        Field field = matched.findField();
-                        Converter<?> converter = getConverter(config, field, ConverterType.of(field));
-                        map.put(key, config.getValue(propertyName, converter));
-                        // cache the resolved value
-                        buildTimeRunTimeVisibleValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        allBuildTimeValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                        continue;
+                        ConfigValue configValue = config.getConfigValue(propertyName);
+                        if (configValue.getValue() != null) {// it's a leaf value within a map
+                            // these must always be explicitly set
+                            ni.goToEnd();
+                            // cursor is located after the map key
+                            String key = ni.getPreviousSegment();
+                            Map<String, Object> map = getMap((MapContainer) matched, ni);
+                            // we always have to set the map entry ourselves
+                            Field field = matched.findField();
+                            Converter<?> converter = getConverter(config, field, ConverterType.of(field));
+                            map.put(key, config.convertValue(configValue, converter));
+                            // cache the resolved value
+                            allBuildTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            buildTimeRunTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        }
                     }
                     // run time patterns
                     ni.goToStart();
                     matched = runTimePatternMap.match(ni);
+                    knownProperty = knownProperty || matched != null;
                     if (matched != null) {
-                        // it's a specified run-time default (record for later)
-                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                                () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
-
-                        continue;
+                        // it's a run-time default (record for later)
+                        ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
+                        if (configValue.getValue() != null) {
+                            runTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        }
                     }
-                    // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
-                    ni.goToStart();
-                    matched = bootstrapPatternMap.match(ni);
-                    if (matched != null) {
-                        // it's a specified run-time default (record for later)
-                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                                () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
+
+                    if (!knownProperty) {
+                        unknownBuildProperties.add(propertyName);
                     }
                 } else {
                     // it's not managed by us; record it
-                    specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
-                            () -> runtimeDefaultsConfig.getOptionalValue(propertyName, String.class).orElse("")));
+                    ConfigValue configValue = withoutExpansion(() -> runtimeConfig.getConfigValue(propertyName));
+                    if (configValue.getValue() != null) {
+                        runTimeValues.put(propertyName, configValue.getValue());
+                    }
+
+                    // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
+                    if (PropertiesUtil.isPropertyQuarkusCompoundName(ni)) {
+                        unknownBuildProperties.add(propertyName);
+                    }
                 }
             }
 
-            filterActiveProfileProperties(buildTimeRunTimeVisibleValues);
-            filterActiveProfileProperties(specifiedRunTimeDefaultValues);
+            // Remove properties coming from the Build System, because most likely they are used in build scripts
+            config.getConfigSource("PropertiesConfigSource[source=Build system]").ifPresent(
+                    configSource -> unknownBuildProperties.removeAll(configSource.getPropertyNames()));
 
-            return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
-                    allBuildTimeValues,
-                    buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
-                    bootstrapRootsEmpty);
+            // ConfigMappings
+            for (ConfigClassWithPrefix mapping : buildTimeVisibleMappings) {
+                objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
+            }
+
+            // Build Time Values Recording
+            for (ConfigClassWithPrefix mapping : buildTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = config.getConfigValue(property);
+                    if (value.getRawValue() != null) {
+                        allBuildTimeValues.put(value.getNameProfiled(), value.getRawValue());
+                    }
+                }
+            }
+
+            // Build Time and Run Time Values Recording
+            for (ConfigClassWithPrefix mapping : buildTimeRunTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = config.getConfigValue(property);
+                    if (value.getRawValue() != null) {
+                        allBuildTimeValues.put(value.getNameProfiled(), value.getRawValue());
+                        buildTimeRunTimeValues.put(value.getNameProfiled(), value.getRawValue());
+                    }
+                }
+            }
+
+            // Run Time Values Recording
+            for (ConfigClassWithPrefix mapping : runTimeMappings) {
+                Set<String> mappedProperties = ConfigMappings.mappedProperties(mapping, allProperties);
+                for (String property : mappedProperties) {
+                    unknownBuildProperties.remove(property);
+                    ConfigValue value = runtimeConfig.getConfigValue(property);
+                    if (value.getRawValue() != null) {
+                        runTimeValues.put(value.getNameProfiled(), value.getRawValue());
+                    }
+                }
+            }
+
+            Set<String> relocatesOrFallbacks = new HashSet<>();
+            for (String unknownBuildProperty : unknownBuildProperties) {
+                ConfigValue configValue = config.getConfigValue(unknownBuildProperty);
+                if (!unknownBuildProperties.contains(configValue.getName())) {
+                    relocatesOrFallbacks.add(unknownBuildProperty);
+                }
+            }
+            unknownBuildProperties.removeAll(relocatesOrFallbacks);
+
+            return new ReadResult.Builder().setObjectsByClass(objectsByClass)
+                    .setAllBuildTimeValues(allBuildTimeValues)
+                    .setBuildTimeRunTimeValues(filterActiveProfileProperties(buildTimeRunTimeValues))
+                    .setRunTimeDefaultValues(filterActiveProfileProperties(runTimeDefaultValues))
+                    .setRuntimeValues(runTimeValues)
+                    .setBuildTimePatternMap(buildTimePatternMap)
+                    .setBuildTimeRunTimePatternMap(buildTimeRunTimePatternMap)
+                    .setRunTimePatternMap(runTimePatternMap)
+                    .setAllRoots(allRoots)
+                    .setBuildTimeMappings(buildTimeMappings)
+                    .setBuildTimeRunTimeMappings(buildTimeRunTimeMappings)
+                    .setRunTimeMappings(runTimeMappings)
+                    .setUnknownBuildProperties(unknownBuildProperties)
+                    .setDeprecatedRuntimeProperties(deprecatedRuntimeProperties)
+                    .setBuildConfigTracker(buildConfigTracker)
+                    .createReadResult();
         }
 
         /**
@@ -417,7 +704,7 @@ public final class BuildTimeConfigurationReader {
             Class<?> configurationClass = definition.getConfigurationClass();
             if (definition instanceof RootDefinition) {
                 // found the root
-                return objectsByRootClass.get(configurationClass);
+                return objectsByClass.get(configurationClass);
             }
             Container parent = matched.getParent();
             final boolean consume = !classMember.getPropertyName().isEmpty();
@@ -735,126 +1022,293 @@ public final class BuildTimeConfigurationReader {
 
         /**
          * We collect all properties from eligible ConfigSources, because Config#getPropertyNames exclude the active
-         * profiled properties, meaning that the property is written in the default config source without the profile
-         * prefix. This may cause issues if we run with a different profile and fallback to defaults.
-         *
-         * We also filter the properties coming from the System with the registered roots, because we don't want to
-         * record properties set by the compiling JVM (or other properties that are only related to the build).
+         * profiled properties (the property name omits the active profile prefix). If we record properties as is, we
+         * can have an issue when running in a different profile from the one recorded. This list includes all available
+         * properties in all profiles (active or not), so it is safe to fall back to different default on another
+         * profile.
+         * <br>
+         * We also filter the properties coming from System, Env or Build with the registered roots, because we don't
+         * want to record properties set by the compiling JVM (or other properties that are only related to the build).
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
-            Set<String> properties = new HashSet<>();
+            // Collects all properties from allowed sources
+            Set<String> sourcesProperties = new HashSet<>();
             for (ConfigSource configSource : config.getConfigSources()) {
-                if (configSource instanceof SysPropConfigSource) {
-                    for (String propertyName : configSource.getProperties().keySet()) {
-                        NameIterator ni = new NameIterator(propertyName);
-                        if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {
-                            properties.add(propertyName);
+                if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource
+                        || "PropertiesConfigSource[source=Build system]".equals(configSource.getName())) {
+                    for (String property : configSource.getPropertyNames()) {
+                        String unprofiledProperty = property;
+                        if (property.startsWith("%")) {
+                            int profileDot = property.indexOf('.');
+                            if (profileDot != -1) {
+                                unprofiledProperty = property.substring(profileDot + 1);
+                            }
+                        }
+                        if (PropertiesUtil.isPropertyInRoots(unprofiledProperty, registeredRoots)) {
+                            sourcesProperties.add(property);
                         }
                     }
                 } else {
-                    properties.addAll(configSource.getPropertyNames());
+                    sourcesProperties.addAll(configSource.getPropertyNames());
                 }
             }
-            for (String propertyName : config.getPropertyNames()) {
-                properties.add(propertyName);
+
+            AbstractConfigSource sourceProperties = new AbstractConfigSource("SourceProperties", 100) {
+                @Override
+                public Set<String> getPropertyNames() {
+                    return sourcesProperties;
+                }
+
+                @Override
+                public String getValue(final String propertyName) {
+                    // Required because some interceptors call getValue when iterating names
+                    return config.getRawValue(propertyName);
+                }
+            };
+
+            Set<String> properties = new HashSet<>();
+
+            // We build a new Config to also apply the interceptor chain to generate any additional properties.
+            SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            builder.getSources().clear();
+            builder.getSourceProviders().clear();
+            builder.setAddDefaultSources(false)
+                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
+                    .addDiscoveredCustomizers()
+                    .withProfiles(config.getProfiles())
+                    .withSources(sourceProperties);
+            for (String property : builder.build().getPropertyNames()) {
+                properties.add(property);
             }
+
+            // We also need an empty profile Config to record the properties that are not on the active profile
+            builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
+            builder.getSources().clear();
+            builder.getSourceProviders().clear();
+            builder.setAddDefaultSources(false)
+                    .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
+                    .addDiscoveredCustomizers()
+                    .withSources(sourceProperties);
+
+            List<String> profiles = config.getProfiles();
+            for (String property : builder.build().getPropertyNames()) {
+                String activeProperty = ProfileConfigSourceInterceptor.activeName(property, profiles);
+                // keep the profile parent in the original form; if we use the active profile it may mess the profile ordering
+                if (activeProperty.equals("quarkus.config.profile.parent") && !activeProperty.equals(property)) {
+                    properties.remove(activeProperty);
+                }
+                properties.add(property);
+            }
+
             return properties;
         }
 
         /**
-         * Use this Config instance to record the specified runtime default values. We cannot use the main Config
-         * instance because it may record values coming from the EnvSource in build time. Environment variable values
-         * may be completely different between build and runtime, so it doesn't make sense to record these.
+         * Use this Config instance to record the runtime default values. We cannot use the main Config
+         * instance because it may record values coming from local development sources (Environment Variables,
+         * System Properties, etc.) in at build time. Local config source values may be completely different between the
+         * build environment and the runtime environment, so it doesn't make sense to record these.
          *
-         * We do exclude the properties coming from the EnvSource, but a call to getValue may still provide a result
-         * coming from the EnvSource, so we need to exclude it from the sources when recording values for runtime.
-         *
-         * We also do not want to completely exclude the EnvSource, because it may provide values for the build. This
-         * is only specific when recording the defaults.
-         *
-         * @return a new SmallRye instance without the EnvSources.
+         * @return a new {@link SmallRyeConfig} instance without the local sources, including SysPropConfigSource,
+         *         EnvConfigSource, .env, and Build system sources.
          */
-        private SmallRyeConfig getConfigForRuntimeDefaults() {
-            SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-            builder.withDefaultValue(SMALLRYE_CONFIG_PROFILE, ProfileManager.getActiveProfile());
-            builder.addDefaultInterceptors();
+        private SmallRyeConfig getConfigForRuntimeRecording() {
+            SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
+            // Do not use a profile, so we can record both profile properties and main properties of the active profile
+            builder.getProfiles().add("");
+            builder.getSources().clear();
+            builder.getSourceProviders().clear();
+            builder.setAddDefaultSources(false)
+                    // Customizers may duplicate sources, but not much we can do about it, we need to run them
+                    .addDiscoveredCustomizers()
+                    .addPropertiesSources();
+
+            // TODO - Should we reset quarkus.config.location to not record from these sources?
             for (ConfigSource configSource : config.getConfigSources()) {
+                if (configSource instanceof SysPropConfigSource) {
+                    continue;
+                }
                 if (configSource instanceof EnvConfigSource) {
+                    continue;
+                }
+                if ("PropertiesConfigSource[source=Build system]".equals(configSource.getName())) {
                     continue;
                 }
                 builder.withSources(configSource);
             }
+            builder.withSources(new AbstractConfigSource("Profiles", Integer.MAX_VALUE) {
+                private final Set<String> profiles = Set.of(
+                        "quarkus.profile",
+                        "quarkus.config.profile.parent",
+                        "quarkus.test.profile",
+                        SMALLRYE_CONFIG_PROFILE,
+                        SMALLRYE_CONFIG_PROFILE_PARENT,
+                        Config.PROFILE);
+
+                @Override
+                public Set<String> getPropertyNames() {
+                    return Collections.emptySet();
+                }
+
+                @Override
+                public String getValue(final String propertyName) {
+                    if (profiles.contains(propertyName)) {
+                        return config.getConfigValue(propertyName).getValue();
+                    }
+                    return null;
+                }
+            });
             return builder.build();
         }
 
-        private void filterActiveProfileProperties(final Map<String, String> properties) {
+        private Map<String, String> filterActiveProfileProperties(final Map<String, String> properties) {
             Set<String> propertiesToRemove = new HashSet<>();
             for (String property : properties.keySet()) {
-                String profiledProperty = "%" + ProfileManager.getActiveProfile() + "." + property;
-                if (properties.containsKey(profiledProperty)) {
-                    propertiesToRemove.add(property);
+                for (String profile : config.getProfiles()) {
+                    String profiledProperty = "%" + profile + "." + property;
+                    if (properties.containsKey(profiledProperty)) {
+                        propertiesToRemove.add(property);
+                    }
                 }
             }
             properties.keySet().removeAll(propertiesToRemove);
+            return properties;
+        }
+
+        private static Map<String, String> getDefaults(final SmallRyeConfig config,
+                final ConfigPatternMap<Container> patternMap) {
+            Map<String, String> defaultValues = new TreeMap<>();
+            getDefaults(config, defaultValues, new StringBuilder(), patternMap);
+            return defaultValues;
+        }
+
+        private static void getDefaults(
+                final SmallRyeConfig config,
+                final Map<String, String> defaultValues,
+                final StringBuilder propertyName,
+                final ConfigPatternMap<Container> patternMap) {
+
+            Container matched = patternMap.getMatched();
+            if (matched != null) {
+                ClassDefinition.ClassMember member = matched.getClassMember();
+                assert member instanceof ClassDefinition.ItemMember;
+                ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
+                String defaultValue = itemMember.getDefaultValue();
+                if (defaultValue != null) {
+                    // lookup config to make sure we catch relocates or fallbacks and override the value
+                    ConfigValue configValue = config.getConfigValue(propertyName.toString());
+                    if (configValue.getValue() != null && !configValue.getName().equals(propertyName.toString())) {
+                        defaultValues.put(propertyName.toString(), configValue.getValue());
+                    } else {
+                        defaultValues.put(propertyName.toString(), defaultValue);
+                    }
+                }
+            }
+
+            if (propertyName.length() != 0 && patternMap.childNames().iterator().hasNext()) {
+                propertyName.append(".");
+            }
+
+            for (String childName : patternMap.childNames()) {
+                getDefaults(config, defaultValues,
+                        new StringBuilder(propertyName).append(childName.equals(ConfigPatternMap.WILD_CARD) ? "*" : childName),
+                        patternMap.getChild(childName));
+            }
         }
     }
 
     public static final class ReadResult {
-        final Map<Class<?>, Object> objectsByRootClass;
-        final Map<String, String> specifiedRunTimeDefaultValues;
-        final Map<String, String> buildTimeRunTimeVisibleValues;
+        final Map<Class<?>, Object> objectsByClass;
+
         final Map<String, String> allBuildTimeValues;
+        final Map<String, String> buildTimeRunTimeValues;
+        final Map<String, String> runTimeDefaultValues;
+        final Map<String, String> runTimeValues;
+
         final ConfigPatternMap<Container> buildTimePatternMap;
         final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
-        final ConfigPatternMap<Container> bootstrapPatternMap;
         final ConfigPatternMap<Container> runTimePatternMap;
-        final Map<Class<?>, RootDefinition> runTimeRootsByClass;
-        final List<RootDefinition> allRoots;
-        final boolean bootstrapRootsEmpty;
 
-        ReadResult(final Map<Class<?>, Object> objectsByRootClass, final Map<String, String> specifiedRunTimeDefaultValues,
-                final Map<String, String> buildTimeRunTimeVisibleValues,
-                Map<String, String> allBuildTimeValues,
-                final ConfigPatternMap<Container> buildTimePatternMap,
-                final ConfigPatternMap<Container> buildTimeRunTimePatternMap,
-                final ConfigPatternMap<Container> bootstrapPatternMap,
-                final ConfigPatternMap<Container> runTimePatternMap, final List<RootDefinition> allRoots,
-                boolean bootstrapRootsEmpty) {
-            this.objectsByRootClass = objectsByRootClass;
-            this.specifiedRunTimeDefaultValues = specifiedRunTimeDefaultValues;
-            this.buildTimeRunTimeVisibleValues = buildTimeRunTimeVisibleValues;
-            this.buildTimePatternMap = buildTimePatternMap;
-            this.buildTimeRunTimePatternMap = buildTimeRunTimePatternMap;
-            this.bootstrapPatternMap = bootstrapPatternMap;
-            this.runTimePatternMap = runTimePatternMap;
-            this.allRoots = allRoots;
-            this.bootstrapRootsEmpty = bootstrapRootsEmpty;
-            this.allBuildTimeValues = allBuildTimeValues;
+        final List<RootDefinition> allRoots;
+        final Map<Class<?>, RootDefinition> allRootsByClass;
+
+        final List<ConfigClassWithPrefix> buildTimeMappings;
+        final List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+        final List<ConfigClassWithPrefix> runTimeMappings;
+        final Map<Class<?>, ConfigClassWithPrefix> allMappings;
+
+        final Set<String> unknownBuildProperties;
+        final Set<String> deprecatedRuntimeProperties;
+        final ConfigTrackingInterceptor.ReadOptionsProvider readOptionsProvider;
+
+        public ReadResult(final Builder builder) {
+            this.objectsByClass = builder.getObjectsByClass();
+
+            this.allBuildTimeValues = builder.getAllBuildTimeValues();
+            this.buildTimeRunTimeValues = builder.getBuildTimeRunTimeValues();
+            this.runTimeDefaultValues = builder.getRunTimeDefaultValues();
+            this.runTimeValues = builder.getRuntimeValues();
+
+            this.buildTimePatternMap = builder.getBuildTimePatternMap();
+            this.buildTimeRunTimePatternMap = builder.getBuildTimeRunTimePatternMap();
+            this.runTimePatternMap = builder.getRunTimePatternMap();
+
+            this.allRoots = builder.getAllRoots();
+            this.allRootsByClass = rootsToMap(builder);
+
+            this.buildTimeMappings = builder.getBuildTimeMappings();
+            this.buildTimeRunTimeMappings = builder.getBuildTimeRunTimeMappings();
+            this.runTimeMappings = builder.getRunTimeMappings();
+            this.allMappings = mappingsToMap(builder);
+
+            this.unknownBuildProperties = builder.getUnknownBuildProperties();
+            this.deprecatedRuntimeProperties = builder.deprecatedRuntimeProperties;
+            this.readOptionsProvider = builder.buildConfigTracker == null ? null
+                    : builder.buildConfigTracker.getReadOptionsProvider();
+        }
+
+        private static Map<Class<?>, RootDefinition> rootsToMap(Builder builder) {
             Map<Class<?>, RootDefinition> map = new HashMap<>();
-            for (RootDefinition root : allRoots) {
+            for (RootDefinition root : builder.getAllRoots()) {
                 map.put(root.getConfigurationClass(), root);
             }
-            runTimeRootsByClass = map;
+            return map;
         }
 
-        public Map<Class<?>, Object> getObjectsByRootClass() {
-            return objectsByRootClass;
-        }
-
-        public Object requireRootObjectForClass(Class<?> clazz) {
-            Object obj = objectsByRootClass.get(clazz);
-            if (obj == null) {
-                throw new IllegalStateException("No root found for " + clazz);
+        private static Map<Class<?>, ConfigClassWithPrefix> mappingsToMap(Builder builder) {
+            Map<Class<?>, ConfigClassWithPrefix> map = new HashMap<>();
+            for (ConfigClassWithPrefix mapping : builder.getBuildTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
             }
-            return obj;
+            for (ConfigClassWithPrefix mapping : builder.getBuildTimeRunTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
+            }
+            for (ConfigClassWithPrefix mapping : builder.getRunTimeMappings()) {
+                map.put(mapping.getKlass(), mapping);
+            }
+            return map;
         }
 
-        public Map<String, String> getSpecifiedRunTimeDefaultValues() {
-            return specifiedRunTimeDefaultValues;
+        public Map<Class<?>, Object> getObjectsByClass() {
+            return objectsByClass;
         }
 
-        public Map<String, String> getBuildTimeRunTimeVisibleValues() {
-            return buildTimeRunTimeVisibleValues;
+        public Map<String, String> getAllBuildTimeValues() {
+            return allBuildTimeValues;
+        }
+
+        public Map<String, String> getBuildTimeRunTimeValues() {
+            return buildTimeRunTimeValues;
+        }
+
+        public Map<String, String> getRunTimeDefaultValues() {
+            return runTimeDefaultValues;
+        }
+
+        public Map<String, String> getRunTimeValues() {
+            return runTimeValues;
         }
 
         public ConfigPatternMap<Container> getBuildTimePatternMap() {
@@ -865,32 +1319,201 @@ public final class BuildTimeConfigurationReader {
             return buildTimeRunTimePatternMap;
         }
 
-        public ConfigPatternMap<Container> getBootstrapPatternMap() {
-            return bootstrapPatternMap;
-        }
-
         public ConfigPatternMap<Container> getRunTimePatternMap() {
             return runTimePatternMap;
-        }
-
-        public Map<String, String> getAllBuildTimeValues() {
-            return allBuildTimeValues;
         }
 
         public List<RootDefinition> getAllRoots() {
             return allRoots;
         }
 
-        public boolean isBootstrapRootsEmpty() {
-            return bootstrapRootsEmpty;
+        public Map<Class<?>, RootDefinition> getAllRootsByClass() {
+            return allRootsByClass;
         }
 
-        public RootDefinition requireRootDefinitionForClass(Class<?> clazz) {
-            final RootDefinition def = runTimeRootsByClass.get(clazz);
-            if (def == null) {
-                throw new IllegalStateException("No root definition found for " + clazz);
+        public List<ConfigClassWithPrefix> getBuildTimeMappings() {
+            return buildTimeMappings;
+        }
+
+        public List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+            return buildTimeRunTimeMappings;
+        }
+
+        public List<ConfigClassWithPrefix> getRunTimeMappings() {
+            return runTimeMappings;
+        }
+
+        public Map<Class<?>, ConfigClassWithPrefix> getAllMappings() {
+            return allMappings;
+        }
+
+        public Set<String> getUnknownBuildProperties() {
+            return unknownBuildProperties;
+        }
+
+        public Set<String> getDeprecatedRuntimeProperties() {
+            return deprecatedRuntimeProperties;
+        }
+
+        public Object requireObjectForClass(Class<?> clazz) {
+            Object obj = objectsByClass.get(clazz);
+            if (obj == null) {
+                throw new IllegalStateException("No config found for " + clazz);
             }
-            return def;
+            return obj;
+        }
+
+        public ConfigTrackingInterceptor.ReadOptionsProvider getReadOptionsProvider() {
+            return readOptionsProvider;
+        }
+
+        static class Builder {
+            private Map<Class<?>, Object> objectsByClass;
+            private Map<String, String> allBuildTimeValues;
+            private Map<String, String> buildTimeRunTimeValues;
+            private Map<String, String> runTimeDefaultValues;
+            private Map<String, String> runtimeValues;
+            private ConfigPatternMap<Container> buildTimePatternMap;
+            private ConfigPatternMap<Container> buildTimeRunTimePatternMap;
+            private ConfigPatternMap<Container> runTimePatternMap;
+            private List<RootDefinition> allRoots;
+            private List<ConfigClassWithPrefix> buildTimeMappings;
+            private List<ConfigClassWithPrefix> buildTimeRunTimeMappings;
+            private List<ConfigClassWithPrefix> runTimeMappings;
+            private Set<String> unknownBuildProperties;
+            private Set<String> deprecatedRuntimeProperties;
+            private ConfigTrackingInterceptor buildConfigTracker;
+
+            Map<Class<?>, Object> getObjectsByClass() {
+                return objectsByClass;
+            }
+
+            Builder setObjectsByClass(final Map<Class<?>, Object> objectsByClass) {
+                this.objectsByClass = objectsByClass;
+                return this;
+            }
+
+            Map<String, String> getAllBuildTimeValues() {
+                return allBuildTimeValues;
+            }
+
+            Builder setAllBuildTimeValues(final Map<String, String> allBuildTimeValues) {
+                this.allBuildTimeValues = allBuildTimeValues;
+                return this;
+            }
+
+            Map<String, String> getBuildTimeRunTimeValues() {
+                return buildTimeRunTimeValues;
+            }
+
+            Builder setBuildTimeRunTimeValues(final Map<String, String> buildTimeRunTimeValues) {
+                this.buildTimeRunTimeValues = buildTimeRunTimeValues;
+                return this;
+            }
+
+            Map<String, String> getRunTimeDefaultValues() {
+                return runTimeDefaultValues;
+            }
+
+            Builder setRunTimeDefaultValues(final Map<String, String> runTimeDefaultValues) {
+                this.runTimeDefaultValues = runTimeDefaultValues;
+                return this;
+            }
+
+            Map<String, String> getRuntimeValues() {
+                return runtimeValues;
+            }
+
+            Builder setRuntimeValues(final Map<String, String> runtimeValues) {
+                this.runtimeValues = runtimeValues;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getBuildTimePatternMap() {
+                return buildTimePatternMap;
+            }
+
+            Builder setBuildTimePatternMap(final ConfigPatternMap<Container> buildTimePatternMap) {
+                this.buildTimePatternMap = buildTimePatternMap;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getBuildTimeRunTimePatternMap() {
+                return buildTimeRunTimePatternMap;
+            }
+
+            Builder setBuildTimeRunTimePatternMap(final ConfigPatternMap<Container> buildTimeRunTimePatternMap) {
+                this.buildTimeRunTimePatternMap = buildTimeRunTimePatternMap;
+                return this;
+            }
+
+            ConfigPatternMap<Container> getRunTimePatternMap() {
+                return runTimePatternMap;
+            }
+
+            Builder setRunTimePatternMap(final ConfigPatternMap<Container> runTimePatternMap) {
+                this.runTimePatternMap = runTimePatternMap;
+                return this;
+            }
+
+            List<RootDefinition> getAllRoots() {
+                return allRoots;
+            }
+
+            Builder setAllRoots(final List<RootDefinition> allRoots) {
+                this.allRoots = allRoots;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getBuildTimeMappings() {
+                return buildTimeMappings;
+            }
+
+            Builder setBuildTimeMappings(final List<ConfigClassWithPrefix> buildTimeMappings) {
+                this.buildTimeMappings = buildTimeMappings;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getBuildTimeRunTimeMappings() {
+                return buildTimeRunTimeMappings;
+            }
+
+            Builder setBuildTimeRunTimeMappings(final List<ConfigClassWithPrefix> buildTimeRunTimeMappings) {
+                this.buildTimeRunTimeMappings = buildTimeRunTimeMappings;
+                return this;
+            }
+
+            List<ConfigClassWithPrefix> getRunTimeMappings() {
+                return runTimeMappings;
+            }
+
+            Builder setRunTimeMappings(final List<ConfigClassWithPrefix> runTimeMappings) {
+                this.runTimeMappings = runTimeMappings;
+                return this;
+            }
+
+            Set<String> getUnknownBuildProperties() {
+                return unknownBuildProperties;
+            }
+
+            Builder setUnknownBuildProperties(final Set<String> unknownBuildProperties) {
+                this.unknownBuildProperties = unknownBuildProperties;
+                return this;
+            }
+
+            Builder setDeprecatedRuntimeProperties(Set<String> deprecatedRuntimeProperties) {
+                this.deprecatedRuntimeProperties = deprecatedRuntimeProperties;
+                return this;
+            }
+
+            Builder setBuildConfigTracker(ConfigTrackingInterceptor buildConfigTracker) {
+                this.buildConfigTracker = buildConfigTracker;
+                return this;
+            }
+
+            ReadResult createReadResult() {
+                return new ReadResult(this);
+            }
         }
     }
 }

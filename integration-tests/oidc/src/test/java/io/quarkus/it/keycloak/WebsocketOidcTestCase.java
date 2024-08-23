@@ -1,28 +1,27 @@
 package io.quarkus.it.keycloak;
 
-import static io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakXTestResourceLifecycleManager.getAccessToken;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.Session;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.quarkus.websockets.BearerTokenClientEndpointConfigurator;
 
 @QuarkusTest
-@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@WithTestResource(value = KeycloakXTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
 public class WebsocketOidcTestCase {
 
     @TestHTTPResource("secured-hello")

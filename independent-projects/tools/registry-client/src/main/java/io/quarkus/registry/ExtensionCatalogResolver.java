@@ -1,24 +1,5 @@
 package io.quarkus.registry;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.Platform;
-import io.quarkus.registry.catalog.PlatformCatalog;
-import io.quarkus.registry.catalog.PlatformRelease;
-import io.quarkus.registry.catalog.PlatformReleaseVersion;
-import io.quarkus.registry.catalog.PlatformStream;
-import io.quarkus.registry.catalog.PlatformStreamCoords;
-import io.quarkus.registry.catalog.selection.OriginPreference;
-import io.quarkus.registry.client.RegistryClientFactory;
-import io.quarkus.registry.client.maven.MavenRegistryClientFactory;
-import io.quarkus.registry.client.spi.RegistryClientEnvironment;
-import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
-import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.config.RegistriesConfigLocator;
-import io.quarkus.registry.config.RegistryConfig;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -36,13 +17,36 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Function;
+
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.Platform;
+import io.quarkus.registry.catalog.PlatformCatalog;
+import io.quarkus.registry.catalog.PlatformRelease;
+import io.quarkus.registry.catalog.PlatformReleaseVersion;
+import io.quarkus.registry.catalog.PlatformStream;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
+import io.quarkus.registry.catalog.selection.OriginPreference;
+import io.quarkus.registry.client.RegistryClientFactory;
+import io.quarkus.registry.client.maven.MavenRegistryClientFactory;
+import io.quarkus.registry.client.spi.RegistryClientEnvironment;
+import io.quarkus.registry.client.spi.RegistryClientFactoryProvider;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.config.RegistriesConfigLocator;
+import io.quarkus.registry.config.RegistryConfig;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class ExtensionCatalogResolver {
 
     public static ExtensionCatalogResolver empty() {
         final ExtensionCatalogResolver resolver = new ExtensionCatalogResolver();
         resolver.registries = Collections.emptyList();
+        resolver.log = MessageWriter.info();
         return resolver;
     }
 
@@ -418,8 +422,8 @@ public class ExtensionCatalogResolver {
         int platformIndex = 0;
         for (Platform platform : pc.getPlatforms()) {
             platformIndex++;
+            int releaseIndex = 0;
             for (PlatformStream stream : platform.getStreams()) {
-                int releaseIndex = 0;
                 for (PlatformRelease release : stream.getReleases()) {
                     releaseIndex++;
                     final String quarkusVersion = release.getQuarkusCoreVersion();
@@ -484,78 +488,98 @@ public class ExtensionCatalogResolver {
 
         ensureRegistriesConfigured();
 
-        final String platformKey = streamCoords.getPlatformKey();
-        final String streamId = streamCoords.getStreamId();
-
-        PlatformStream stream = null;
-        int registryIndex = 0;
-        while (registryIndex < registries.size()) {
-            final RegistryExtensionResolver qer = registries.get(registryIndex++);
-            final PlatformCatalog platforms = qer.resolvePlatformCatalog();
-            if (platforms == null) {
-                continue;
-            }
-            if (platformKey == null) {
-                for (Platform p : platforms.getPlatforms()) {
-                    stream = p.getStream(streamId);
-                    if (stream != null) {
-                        break;
-                    }
-                }
-            } else {
-                final Platform platform = platforms.getPlatform(platformKey);
-                if (platform == null) {
-                    continue;
-                }
-                stream = platform.getStream(streamId);
-            }
-            break;
-        }
-
-        if (stream == null) {
-            Platform requestedPlatform = null;
-            final List<Platform> knownPlatforms = new ArrayList<>();
-            for (RegistryExtensionResolver qer : registries) {
-                final PlatformCatalog platforms = qer.resolvePlatformCatalog();
-                if (platforms == null) {
-                    continue;
-                }
-                if (platformKey != null) {
-                    requestedPlatform = platforms.getPlatform(platformKey);
-                    if (requestedPlatform != null) {
-                        break;
-                    }
-                }
-                for (Platform platform : platforms.getPlatforms()) {
-                    knownPlatforms.add(platform);
-                }
-            }
-
-            final StringBuilder buf = new StringBuilder();
-            if (requestedPlatform != null) {
-                buf.append("Failed to locate stream ").append(streamId)
-                        .append(" in platform " + requestedPlatform.getPlatformKey());
-            } else if (knownPlatforms.isEmpty()) {
-                buf.append("None of the registries provided any platform");
-            } else {
-                if (platformKey == null) {
-                    buf.append("Failed to locate stream ").append(streamId).append(" in platform(s): ");
-                } else {
-                    buf.append("Failed to locate platform ").append(platformKey).append(" among available platform(s): ");
-                }
-                buf.append(knownPlatforms.get(0).getPlatformKey());
-                for (int i = 1; i < knownPlatforms.size(); ++i) {
-                    buf.append(", ").append(knownPlatforms.get(i).getPlatformKey());
-                }
-            }
-            throw new RegistryResolutionException(buf.toString());
-        }
-
+        final PlatformStream stream = findPlatformStreamOrFail(streamCoords);
         final List<ExtensionCatalog> catalogs = new ArrayList<>();
         for (PlatformRelease release : stream.getReleases()) {
             catalogs.add(resolveExtensionCatalog(release.getMemberBoms()));
         }
         return CatalogMergeUtility.merge(catalogs);
+    }
+
+    protected PlatformStream findPlatformStreamOrFail(PlatformStreamCoords streamCoords)
+            throws RegistryResolutionException {
+        var stream = findPlatformStreamOrNull(streamCoords, true);
+        if (stream != null) {
+            return stream;
+        }
+        stream = findPlatformStreamOrNull(streamCoords, false);
+        if (stream != null) {
+            return stream;
+        }
+        throw unknownStreamException(streamCoords, false);
+    }
+
+    protected PlatformStream findPlatformStreamOrNull(PlatformStreamCoords streamCoords, boolean amongRecommended)
+            throws RegistryResolutionException {
+        int registryIndex = 0;
+        while (registryIndex < registries.size()) {
+            final RegistryExtensionResolver qer = registries.get(registryIndex++);
+            final PlatformCatalog platforms = amongRecommended ? qer.resolvePlatformCatalog()
+                    : qer.resolvePlatformCatalog(Constants.QUARKUS_VERSION_CLASSIFIER_ALL);
+            if (platforms == null) {
+                continue;
+            }
+            if (streamCoords.getPlatformKey() == null) {
+                for (Platform p : platforms.getPlatforms()) {
+                    var stream = p.getStream(streamCoords.getStreamId());
+                    if (stream != null) {
+                        return stream;
+                    }
+                }
+            } else {
+                final Platform platform = platforms.getPlatform(streamCoords.getPlatformKey());
+                if (platform == null) {
+                    continue;
+                }
+                var stream = platform.getStream(streamCoords.getStreamId());
+                if (stream != null) {
+                    return stream;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected RegistryResolutionException unknownStreamException(PlatformStreamCoords stream, boolean amongRecommended)
+            throws RegistryResolutionException {
+        Platform requestedPlatform = null;
+        final List<Platform> knownPlatforms = new ArrayList<>();
+        for (RegistryExtensionResolver qer : registries) {
+            final PlatformCatalog platforms = amongRecommended ? qer.resolvePlatformCatalog()
+                    : qer.resolvePlatformCatalog(Constants.QUARKUS_VERSION_CLASSIFIER_ALL);
+            if (platforms == null) {
+                continue;
+            }
+            if (stream.getPlatformKey() != null) {
+                requestedPlatform = platforms.getPlatform(stream.getPlatformKey());
+                if (requestedPlatform != null) {
+                    break;
+                }
+            }
+            for (Platform platform : platforms.getPlatforms()) {
+                knownPlatforms.add(platform);
+            }
+        }
+
+        final StringBuilder buf = new StringBuilder();
+        if (requestedPlatform != null) {
+            buf.append("Failed to locate stream ").append(stream.getStreamId())
+                    .append(" in platform " + requestedPlatform.getPlatformKey());
+        } else if (knownPlatforms.isEmpty()) {
+            buf.append("None of the registries provided any platform");
+        } else {
+            if (stream.getPlatformKey() == null) {
+                buf.append("Failed to locate stream ").append(stream.getStreamId()).append(" in platform(s): ");
+            } else {
+                buf.append("Failed to locate platform ").append(stream.getPlatformKey())
+                        .append(" among available platform(s): ");
+            }
+            buf.append(knownPlatforms.get(0).getPlatformKey());
+            for (int i = 1; i < knownPlatforms.size(); ++i) {
+                buf.append(", ").append(knownPlatforms.get(i).getPlatformKey());
+            }
+        }
+        return new RegistryResolutionException(buf.toString());
     }
 
     @SuppressWarnings("unchecked")
@@ -577,7 +601,7 @@ public class ExtensionCatalogResolver {
                 final StringBuilder buf = new StringBuilder();
                 buf.append(
                         "The following registries were configured as exclusive providers of the ");
-                buf.append(bom);
+                buf.append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords());
                 buf.append("platform: ").append(e.conflictingRegistries.get(0).getId());
                 for (int i = 1; i < e.conflictingRegistries.size(); ++i) {
                     buf.append(", ").append(e.conflictingRegistries.get(i).getId());
@@ -586,7 +610,7 @@ public class ExtensionCatalogResolver {
             }
 
             if (registries.isEmpty()) {
-                log.warn("None of the configured registries recognizes platform %s", bom);
+                log.warn("None of the configured registries recognizes platform " + bom.toCompactCoords());
                 continue;
             }
 
@@ -598,15 +622,21 @@ public class ExtensionCatalogResolver {
                     catalog = registry.resolvePlatformExtensions(bom);
                     break;
                 } catch (RegistryResolutionException e) {
+                    if (registries.size() == i + 1) {
+                        throw e;
+                    }
+                    log.debug("%s", e.getLocalizedMessage());
                 }
             }
 
             if (catalog == null) {
                 final StringBuilder buf = new StringBuilder();
-                buf.append("Failed to resolve platform ").append(bom).append(" using the following registries: ");
+                buf.append("Failed to resolve extension catalog of ")
+                        .append(PlatformArtifacts.ensureBomArtifact(bom).toCompactCoords())
+                        .append(" from ");
                 buf.append(registries.get(0).getId());
                 for (int i = 1; i < registries.size(); ++i) {
-                    buf.append(", ").append(registries.get(i++));
+                    buf.append(", ").append(registries.get(i));
                 }
                 log.warn(buf.toString());
                 throw new RegistryResolutionException(buf.toString());
@@ -663,6 +693,24 @@ public class ExtensionCatalogResolver {
             catalogBuilder.addCatalog(catalog);
         }
 
+        if (quarkusVersion == null) {
+            if (catalogBuilder.catalogs.isEmpty()) {
+                final StringBuilder buf = new StringBuilder();
+                final Iterator<ArtifactCoords> boms = preferredPlatforms.iterator();
+                buf.append(PlatformArtifacts.ensureBomArtifact(boms.next()).toCompactCoords());
+                while (boms.hasNext()) {
+                    buf.append(", ").append(PlatformArtifacts.ensureBomArtifact(boms.next()).toCompactCoords());
+                }
+                buf.append(" could not be resolved from ");
+                RegistryExtensionResolver registry = registries.get(0);
+                buf.append(registry.getId());
+                for (int i = 1; i < registries.size(); ++i) {
+                    buf.append(", ").append(registries.get(i).getId());
+                }
+                throw new RegistryResolutionException(buf.toString());
+            }
+            return catalogBuilder.catalogs.isEmpty() ? null : catalogBuilder.build();
+        }
         return preferredPlatforms.isEmpty() ? catalogBuilder.build()
                 : resolveExtensionCatalog(quarkusVersion, catalogBuilder, preferredPlatformKeys);
     }
@@ -747,8 +795,8 @@ public class ExtensionCatalogResolver {
             RegistryExtensionResolver registry, int platformIndex,
             Platform p) throws RegistryResolutionException {
 
+        int releaseIndex = 0;
         for (PlatformStream s : p.getStreams()) {
-            int releaseIndex = 0;
             for (PlatformRelease r : s.getReleases()) {
                 ++releaseIndex;
                 int memberIndex = 0;

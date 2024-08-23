@@ -1,11 +1,5 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.client.RegistryCache;
-import io.quarkus.registry.config.RegistryConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +7,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
+
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.client.RegistryCache;
+import io.quarkus.registry.config.RegistryConfig;
 
 public class MavenRegistryCache implements RegistryCache {
 
@@ -50,8 +53,8 @@ public class MavenRegistryCache implements RegistryCache {
                 throw new RegistryResolutionException("Failed to resolve " + coords + " locally", e);
             }
             if (Files.exists(dir)) {
-                try {
-                    Files.list(dir).forEach(path -> {
+                try (Stream<Path> dirPaths = Files.list(dir)) {
+                    dirPaths.forEach(path -> {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 public class ClassComparisonUtil {
+    private static final Set<DotName> IGNORED_ANNOTATIONS = Set.of(
+            DotName.createSimple("kotlin.jvm.internal.SourceDebugExtension"),
+            DotName.createSimple("kotlin.Metadata"));
+
     static boolean isSameStructure(ClassInfo clazz, ClassInfo old) {
         if (clazz.flags() != old.flags()) {
             return false;
@@ -29,7 +34,7 @@ public class ClassComparisonUtil {
         if (!clazz.interfaceNames().equals(old.interfaceNames())) {
             return false;
         }
-        if (!compareAnnotations(clazz.classAnnotations(), old.classAnnotations())) {
+        if (!compareAnnotations(clazz.declaredAnnotations(), old.declaredAnnotations())) {
             return false;
         }
         if (old.fields().size() != clazz.fields().size()) {
@@ -66,7 +71,7 @@ public class ClassComparisonUtil {
                 if (!i.returnType().equals(method.returnType())) {
                     continue;
                 }
-                if (i.parameters().size() != method.parameters().size()) {
+                if (i.parametersCount() != method.parametersCount()) {
                     continue;
                 }
                 if (i.flags() != method.flags()) {
@@ -76,9 +81,9 @@ public class ClassComparisonUtil {
                     continue;
                 }
                 boolean paramEqual = true;
-                for (int j = 0; j < method.parameters().size(); ++j) {
-                    Type a = method.parameters().get(j);
-                    Type b = i.parameters().get(j);
+                for (int j = 0; j < method.parametersCount(); ++j) {
+                    Type a = method.parameterType(j);
+                    Type b = i.parameterType(j);
                     if (!a.equals(b)) {
                         paramEqual = false;
                         break;
@@ -161,6 +166,9 @@ public class ClassComparisonUtil {
     }
 
     private static boolean compareAnnotation(AnnotationInstance a, AnnotationInstance b) {
+        if (IGNORED_ANNOTATIONS.contains(a.name())) {
+            return true;
+        }
         List<AnnotationValue> valuesA = a.values();
         List<AnnotationValue> valuesB = b.values();
         if (valuesA.size() != valuesB.size()) {

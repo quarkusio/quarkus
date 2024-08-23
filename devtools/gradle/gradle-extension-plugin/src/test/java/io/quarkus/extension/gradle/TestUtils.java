@@ -25,7 +25,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class TestUtils {
 
-    public static String getDefaultGradleBuildFileContent(boolean disableValidation, List<String> implementationDependencies)
+    public static String getDefaultGradleBuildFileContent(boolean disableValidation, List<String> implementationDependencies,
+            String customPluginConfiguration)
             throws IOException {
         StringBuilder implementationBuilder = new StringBuilder();
         for (String implementationDependency : implementationDependencies) {
@@ -43,7 +44,7 @@ public class TestUtils {
                 "}\n" +
                 QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { \n" +
                 "disableValidation = " + disableValidation + "\n" +
-
+                customPluginConfiguration +
                 "}\n" +
                 "dependencies { \n" +
                 "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
@@ -93,7 +94,7 @@ public class TestUtils {
         File runtimeModule = new File(testProjectDir, "runtime");
         runtimeModule.mkdir();
         writeFile(new File(runtimeModule, "build.gradle"),
-                getDefaultGradleBuildFileContent(disableValidation, runtimeDependencies));
+                getDefaultGradleBuildFileContent(disableValidation, runtimeDependencies, ""));
         File runtimeTestFile = new File(runtimeModule, "src/main/java/runtime/Test.java");
         runtimeTestFile.getParentFile().mkdirs();
         writeFile(runtimeTestFile, "package runtime; public class Test {}");

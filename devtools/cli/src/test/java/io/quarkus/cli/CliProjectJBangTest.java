@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
@@ -51,9 +51,9 @@ public class CliProjectJBangTest {
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
 
-        String source = CliDriver.readFileAsString(project, javaMain);
+        String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("quarkus-resteasy"),
                 "Generated source should reference resteasy. Found:\n" + source);
 
@@ -87,9 +87,9 @@ public class CliProjectJBangTest {
                 "Wrapper should exist by default");
 
         validateBasicIdentifiers(project, "silly", "my-project", "0.1.0");
-        Path javaMain = valdiateJBangSourcePackage(project, "");
+        Path javaMain = validateJBangSourcePackage(project, "");
 
-        String source = CliDriver.readFileAsString(project, javaMain);
+        String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("quarkus-reactive-routes"),
                 "Generated source should reference quarkus-reactive-routes. Found:\n" + source);
 
@@ -112,9 +112,9 @@ public class CliProjectJBangTest {
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
 
-        String source = CliDriver.readFileAsString(project, javaMain);
+        String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertFalse(source.contains("quarkus-resteasy"),
                 "Generated source should reference resteasy. Found:\n" + source);
         Assertions.assertTrue(source.contains("quarkus-picocli"),
@@ -167,6 +167,36 @@ public class CliProjectJBangTest {
                 "jbang command should not specify offline\n" + result);
     }
 
+    @Test
+    public void testCreateArgJava17() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "17");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 17"),
+                "Generated source should contain //JAVA 17. Found:\n" + source);
+    }
+
+    @Test
+    public void testCreateArgJava21() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "21");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 21"),
+                "Generated source should contain //JAVA 21. Found:\n" + source);
+    }
+
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {
         Assertions.assertTrue(project.resolve("README.md").toFile().exists(),
                 "README.md should exist: " + project.resolve("README.md").toAbsolutePath().toString());
@@ -175,7 +205,7 @@ public class CliProjectJBangTest {
         // Should the version be stored in metadata anywhere? Is that useful for script management?
     }
 
-    Path valdiateJBangSourcePackage(Path project, String name) {
+    Path validateJBangSourcePackage(Path project, String name) {
         Path packagePath = project.resolve("src/" + name);
         Assertions.assertTrue(packagePath.toFile().exists(),
                 "Package directory should exist: " + packagePath.toAbsolutePath().toString());

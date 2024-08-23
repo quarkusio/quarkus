@@ -22,6 +22,7 @@
             <artifactId>quarkus-project-core-extension-codestarts</artifactId>
             <type>pom</type>
             <scope>test</scope>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -68,6 +69,9 @@
                                 <resource>
                                     <directory>${basedir}/src/test/resources</directory>
                                     <filtering>true</filtering>
+                                    <excludes>
+                                        <exclude>__snapshots__/**</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -92,15 +96,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

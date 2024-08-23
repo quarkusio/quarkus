@@ -23,7 +23,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            TestUnion.class, TestUnionMember.class, CustomDirective.class, BusinessException.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -41,7 +41,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 "  }\n" +
                 "}");
 
-        // Do a request 
+        // Do a request
         RestAssured.given().when()
                 .accept(MEDIATYPE_JSON)
                 .contentType(MEDIATYPE_JSON)
@@ -52,7 +52,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error of type FieldUndefined: Field 'foo' in type 'TestPojo' is undefined @ 'foo/foo'\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
         LOG.info("Initial request done");
 
         // Make a code change (add a field)
@@ -94,7 +94,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString(
-                        "{\"errors\":[{\"message\":\"Validation error of type FieldUndefined: Field 'foo' in type 'TestPojo' is undefined @ 'foo/foo'\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
+                        "{\"errors\":[{\"message\":\"Validation error (FieldUndefined@[foo/foo]) : Field 'foo' in type 'TestPojo' is undefined\",\"locations\":[{\"line\":7,\"column\":5}],\"extensions\":{\"classification\":\"ValidationError\"}}],\"data\":null}"));
 
         LOG.info("Code change done - field removed");
 
@@ -102,7 +102,7 @@ public class HotReloadTest extends AbstractGraphQLTest {
 
     @Test
     public void testCodeChange() {
-        // Do a request 
+        // Do a request
         pingTest();
         LOG.info("Initial ping done");
 

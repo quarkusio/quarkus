@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Infinispan Cache"
+metadata:
+  keywords:
+    - "infinispan"
+    - "cache"
+  guide: "https://quarkus.io/guides/cache-infinispan-reference"
+  categories:
+    - "data"
+    - "reactive"
+  status: "preview"
+  config:
+  - "quarkus.cache.infinispan"

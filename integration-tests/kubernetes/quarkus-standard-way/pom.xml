@@ -22,19 +22,22 @@
         <enforcer.requiresMinimalDeploymentDependency.nonSuperfluous>
             quarkus-container-image-docker-deployment,
             quarkus-container-image-jib-deployment,
-            quarkus-container-image-openshift-deployment,
-            quarkus-container-image-s2i-deployment
+            quarkus-container-image-openshift-deployment
         </enforcer.requiresMinimalDeploymentDependency.nonSuperfluous>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -101,8 +104,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -119,6 +122,37 @@
             <groupId>io.dekorate</groupId>
             <artifactId>servicebinding-annotations</artifactId>
             <classifier>noapt</classifier>
+             <exclusions>
+                 <exclusion>
+                     <groupId>io.fabric8</groupId>
+                     <artifactId>kubernetes-client</artifactId>
+                 </exclusion>
+             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.dekorate</groupId>
+            <artifactId>prometheus-annotations</artifactId>
+            <classifier>noapt</classifier>
+             <exclusions>
+                 <exclusion>
+                     <groupId>io.fabric8</groupId>
+                     <artifactId>kubernetes-client</artifactId>
+                 </exclusion>
+             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-okhttp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-httpclient-vertx</artifactId>
         </dependency>
 
         <!-- needed for the customization of the build chain -->
@@ -150,7 +184,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -202,7 +236,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-s2i-deployment</artifactId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -214,7 +248,7 @@
             </exclusions>
         </dependency>
     </dependencies>
-    
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -228,5 +262,5 @@
             </properties>
         </profile>
     </profiles>
-    
+
 </project>

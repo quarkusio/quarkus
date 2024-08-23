@@ -9,8 +9,10 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -56,6 +58,9 @@ public class ConfigOptionalsTest {
         assertFalse(usingOptionals.missingOptionalInt.isPresent());
         assertFalse(usingOptionals.missingOptionalLong.isPresent());
         assertFalse(usingOptionals.missingOptionalDouble.isPresent());
+
+        assertFalse(usingOptionals.instanceOptional.get().isPresent());
+        assertFalse(usingOptionals.providerOptional.get().isPresent());
     }
 
     @Singleton
@@ -107,6 +112,13 @@ public class ConfigOptionalsTest {
         @Inject
         @ConfigProperty(name = "missing")
         OptionalDouble missingOptionalDouble;
-    }
 
+        @Inject
+        @ConfigProperty(name = "missing")
+        Instance<Optional<String>> instanceOptional;
+
+        @Inject
+        @ConfigProperty(name = "missing")
+        Provider<Optional<String>> providerOptional;
+    }
 }

@@ -2,11 +2,12 @@ package io.quarkus.arc.test.bean.lifecycle.inheritance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Tests the behavior of overrided pre-destroy and post construct methods in beans.
@@ -18,7 +19,7 @@ public class BeanLifecycleMethodsOverridenTest {
     ArcTestContainer container = new ArcTestContainer(Bird.class, Eagle.class, Falcon.class);
 
     @Test
-    public void testOverridenMethodWithNoAnnotation() {
+    public void testOverriddenMethodWithNoAnnotation() {
         resetAll();
         InstanceHandle<Falcon> falconInstanceHandle = Arc.container().instance(Falcon.class);
         falconInstanceHandle.get().ping();
@@ -30,7 +31,7 @@ public class BeanLifecycleMethodsOverridenTest {
     }
 
     @Test
-    public void testOverridenMethodWithLifecycleAnnotation() {
+    public void testOverriddenMethodWithLifecycleAnnotation() {
         resetAll();
         InstanceHandle<Eagle> eagleInstanceHandle = Arc.container().instance(Eagle.class);
         eagleInstanceHandle.get().ping();

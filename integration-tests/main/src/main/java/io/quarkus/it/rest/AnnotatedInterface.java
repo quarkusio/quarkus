@@ -1,7 +1,7 @@
 package io.quarkus.it.rest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/interface")
 public interface AnnotatedInterface {

@@ -6,13 +6,17 @@ import static io.quarkus.devtools.codestarts.jbang.QuarkusJBangCodestartCatalog.
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatDirectoryTreeMatchSnapshots;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 
-import io.quarkus.devtools.testing.SnapshotTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusJBangCodestartGenerationTest {
 
@@ -29,6 +33,9 @@ class QuarkusJBangCodestartGenerationTest {
                 .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
                 .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
                 .putData(QUARKUS_BOM_VERSION, "999-MOCK")
+                // define the version here as it is now autodetecting the best LTS version at runtime
+                // and we want a static version for the snapshots
+                .addData(NestedMaps.unflatten(Map.of("java.version", "11")))
                 .build();
         final Path projectDir = testDirPath.resolve("default");
         getCatalog().createProject(input).generate(projectDir);
@@ -43,6 +50,9 @@ class QuarkusJBangCodestartGenerationTest {
                 .putData(QUARKUS_BOM_GROUP_ID, "io.quarkus")
                 .putData(QUARKUS_BOM_ARTIFACT_ID, "quarkus-bom")
                 .putData(QUARKUS_BOM_VERSION, "999-MOCK")
+                // define the version here as it is now autodetecting the best LTS version at runtime
+                // and we want a static version for the snapshots
+                .addData(NestedMaps.unflatten(Map.of("java.version", "11")))
                 .build();
         final Path projectDir = testDirPath.resolve("picocli");
         getCatalog().createProject(input).generate(projectDir);

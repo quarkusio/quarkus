@@ -1,6 +1,5 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -8,7 +7,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 public interface ExtensionCatalog extends ExtensionOrigin {
+
+    String MD_MINIMUM_JAVA_VERSION = "project.properties.minimum-java-version";
+    String MD_RECOMMENDED_JAVA_VERSION = "project.properties.recommended-java-version";
 
     /**
      * All the origins this catalog is derived from.

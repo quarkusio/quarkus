@@ -9,6 +9,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
 import io.quarkus.elasticsearch.restclient.lowlevel.runtime.ElasticsearchRestClientProducer;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -40,7 +41,12 @@ class ElasticsearchLowLevelClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
+    }
+
+    @BuildStep
+    DevservicesElasticsearchBuildItem devServices() {
+        return new DevservicesElasticsearchBuildItem("quarkus.elasticsearch.hosts");
     }
 
 }

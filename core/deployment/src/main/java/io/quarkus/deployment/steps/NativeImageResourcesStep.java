@@ -53,8 +53,8 @@ public class NativeImageResourcesStep {
             NativeConfig nativeConfig,
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeImageResourcePatterns) {
 
-        final Optional<List<String>> includes = nativeConfig.resources.includes;
-        final Optional<List<String>> excludes = nativeConfig.resources.excludes;
+        final Optional<List<String>> includes = nativeConfig.resources().includes();
+        final Optional<List<String>> excludes = nativeConfig.resources().excludes();
         if (includes.isPresent() || excludes.isPresent()) {
             final Builder builder = NativeImageResourcePatternsBuildItem.builder();
             includes.ifPresent(builder::includeGlobs);

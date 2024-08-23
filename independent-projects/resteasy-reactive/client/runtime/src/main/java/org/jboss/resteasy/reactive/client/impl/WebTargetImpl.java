@@ -1,20 +1,26 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.http.HttpClient;
 import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
+
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.http.HttpClient;
 
 public class WebTargetImpl implements WebTarget {
 
@@ -29,6 +35,7 @@ public class WebTargetImpl implements WebTarget {
     // an additional handler that is passed to the handlerChain
     // used to support observability features
     private ClientRestHandler preClientSendHandler = null;
+    private List<ParamConverterProvider> paramConverterProviders = Collections.emptyList();
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
@@ -75,6 +82,10 @@ public class WebTargetImpl implements WebTarget {
     public UriBuilder getUriBuilder() {
         abortIfClosed();
         return uriBuilder.clone();
+    }
+
+    public UriBuilderImpl getUriBuilderUnsafe() {
+        return (UriBuilderImpl) uriBuilder;
     }
 
     @Override
@@ -213,21 +224,37 @@ public class WebTargetImpl implements WebTarget {
         return stringValues;
     }
 
+    @SuppressWarnings("unused")
+    public WebTargetImpl queryParam(String name, Collection<String> values) throws NullPointerException {
+        return queryParam(name, values.toArray(new Object[0]));
+    }
+
     @Override
     public WebTargetImpl queryParam(String name, Object... values) throws NullPointerException {
         abortIfClosed();
         if (name == null)
             throw new NullPointerException("Param was null");
         UriBuilder copy = uriBuilder.clone();
-        if (values == null || (values.length == 1 && values[0] == null)) {
-            copy.replaceQueryParam(name, (Object[]) null);
+        if (copy instanceof UriBuilderImpl) {
+            var impl = (UriBuilderImpl) copy;
+            if (values == null || values.length == 0 || (values.length == 1 && values[0] == null)) {
+                impl.replaceQueryParam(name, (Object[]) null);
+            } else {
+                String[] stringValues = toStringValues(values);
+                impl.clientQueryParam(name, (Object[]) stringValues);
+            }
         } else {
-            String[] stringValues = toStringValues(values);
-            copy.queryParam(name, (Object[]) stringValues);
+            if (values == null || values.length == 0 || (values.length == 1 && values[0] == null)) {
+                copy.replaceQueryParam(name, (Object[]) null);
+            } else {
+                String[] stringValues = toStringValues(values);
+                copy.queryParam(name, (Object[]) stringValues);
+            }
         }
         return newInstance(client, copy, configuration);
     }
 
+    @SuppressWarnings("unused")
     public WebTargetImpl queryParams(MultivaluedMap<String, Object> parameters)
             throws IllegalArgumentException, NullPointerException {
         abortIfClosed();
@@ -304,8 +331,43 @@ public class WebTargetImpl implements WebTarget {
 
     protected InvocationBuilderImpl createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             ConfigurationImpl configuration) {
-        return new InvocationBuilderImpl(uri.build(), restClient, client, this, configuration,
+        URI actualUri = uri.build();
+        registerStorkFilterIfNeeded(configuration, actualUri);
+        return new InvocationBuilderImpl(actualUri, restClient, client, this, configuration,
                 handlerChain.setPreClientSendHandler(preClientSendHandler), requestContext);
+    }
+
+    /**
+     * If the URI starts with stork:// or storks://, then register the StorkClientRequestFilter automatically.
+     *
+     * @param configuration the configuration
+     * @param actualUri the uri
+     */
+    private static void registerStorkFilterIfNeeded(ConfigurationImpl configuration, URI actualUri) {
+        if (actualUri.getScheme() != null && actualUri.getScheme().startsWith("stork")
+                && !isStorkAlreadyRegistered(configuration)) {
+            configuration.register(StorkClientRequestFilter.class);
+        }
+    }
+
+    /**
+     * Checks if the Stork request filter is already registered.
+     * We cannot use configuration.isRegistered, as the user registration uses a subclass, and so fail the equality
+     * expectation.
+     * <p>
+     * This method prevents having the stork filter registered twice: once because the uri starts with stork:// and,
+     * once from the user.
+     *
+     * @param configuration the configuration
+     * @return {@code true} if stork is already registered.
+     */
+    private static boolean isStorkAlreadyRegistered(ConfigurationImpl configuration) {
+        for (Class<?> clazz : configuration.getClasses()) {
+            if (clazz.getName().startsWith(StorkClientRequestFilter.class.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -378,8 +440,13 @@ public class WebTargetImpl implements WebTarget {
         return this;
     }
 
+    public WebTargetImpl setParamConverterProviders(List<ParamConverterProvider> providers) {
+        this.paramConverterProviders = providers;
+        return this;
+    }
+
     public <T> T proxy(Class<?> clazz) {
-        return restClient.getClientContext().getClientProxies().get(clazz, this);
+        return restClient.getClientContext().getClientProxies().get(clazz, this, paramConverterProviders);
     }
 
     public ClientImpl getRestClient() {

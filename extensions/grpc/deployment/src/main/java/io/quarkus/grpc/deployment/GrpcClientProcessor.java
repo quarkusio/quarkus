@@ -5,6 +5,7 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.ADD_BLOCKING_CLIENT_INTERC
 import static io.quarkus.grpc.deployment.GrpcDotNames.CONFIGURE_STUB;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
+import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static io.quarkus.grpc.deployment.ResourceRegistrationUtils.registerResourcesForProperties;
 
 import java.util.ArrayList;
@@ -18,12 +19,14 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -60,12 +63,17 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.grpc.MutinyClient;
 import io.quarkus.grpc.RegisterClientInterceptor;
 import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientInfo;
 import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 import io.quarkus.grpc.runtime.ClientInterceptorStorage;
 import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.GrpcClientRecorder;
+import io.quarkus.grpc.runtime.config.GrpcClientBuildTimeConfig;
+import io.quarkus.grpc.runtime.stork.GrpcStorkRecorder;
+import io.quarkus.grpc.runtime.stork.StorkMeasuringGrpcInterceptor;
+import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.IOThreadClientInterceptor;
@@ -85,6 +93,18 @@ public class GrpcClientProcessor {
         beans.produce(new AdditionalBeanBuildItem(GrpcClient.class, RegisterClientInterceptor.class));
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(GrpcClientConfigProvider.class,
                 GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class).build());
+    }
+
+    @BuildStep
+    void registerStorkInterceptor(BuildProducer<AdditionalBeanBuildItem> beans) {
+        beans.produce(new AdditionalBeanBuildItem(StorkMeasuringGrpcInterceptor.class));
+        beans.produce(new AdditionalBeanBuildItem(VertxStorkMeasuringGrpcInterceptor.class));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
+        storkRecorder.init(config.storkProactiveConnections);
     }
 
     @BuildStep
@@ -233,9 +253,12 @@ public class GrpcClientProcessor {
                     String clientName = client.getClientName();
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(clientInfo.className)
                             .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName).done()
-                            .scope(Singleton.class)
+                            // Only the mutiny client can use the Application scope, the others are "final" and so need Singleton.
+                            // Using @ApplicationScoped allows the usage of @InjectMock
+                            .scope(clientInfo.type == ClientType.MUTINY_CLIENT ? ApplicationScoped.class : Singleton.class)
                             .unremovable()
                             .forceApplicationClass()
+                            .addType(MutinyClient.class)
                             .creator(new Consumer<>() {
                                 @Override
                                 public void accept(MethodCreator mc) {
@@ -284,14 +307,14 @@ public class GrpcClientProcessor {
                 FieldInfo field = injectAnnotation.target().asField();
                 if (serviceInterfaces.contains(field.type().name()) && field.annotations().size() == 1) {
                     // e.g. @Inject Greeter
-                    throw new IllegalStateException("A gRPC service injection is missing the @GrcpClient qualifier: "
+                    throw new IllegalStateException("A gRPC service injection is missing the @GrpcClient qualifier: "
                             + field.declaringClass().name() + "#" + field.name());
                 }
             } else if (injectAnnotation.target().kind() == Kind.METHOD) {
                 // CDI initializer
                 MethodInfo method = injectAnnotation.target().asMethod();
                 short position = 0;
-                for (Type param : method.parameters()) {
+                for (Type param : method.parameterTypes()) {
                     position++;
                     if (serviceInterfaces.contains(param.name())) {
                         // e.g. @Inject void setGreeter(Greeter greeter)
@@ -303,7 +326,7 @@ public class GrpcClientProcessor {
                             }
                         }
                         if (annotations.size() > 1) {
-                            throw new IllegalStateException("A gRPC service injection is missing the @GrcpClient qualifier: "
+                            throw new IllegalStateException("A gRPC service injection is missing the @GrpcClient qualifier: "
                                     + method.declaringClass().name() + "#" + method.name() + "()");
                         }
                     }
@@ -318,21 +341,23 @@ public class GrpcClientProcessor {
 
             @Override
             public void transform(TransformationContext ctx) {
-                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(), 
+                // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(),
                 // then we need to determine the service name from the annotated element and transform the injection point
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {
                     String clientName = null;
-                    if (ctx.getTarget().kind() == Kind.FIELD) {
+                    AnnotationTarget annotationTarget = ctx.getAnnotationTarget();
+                    if (ctx.getAnnotationTarget().kind() == Kind.FIELD) {
                         clientName = clientAnnotation.target().asField().name();
-                    } else if (ctx.getTarget().kind() == Kind.METHOD_PARAMETER) {
+                    } else if (annotationTarget.kind() == Kind.METHOD_PARAMETER) {
                         MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
                         // We don't need to check if parameter names are recorded - that's validated elsewhere
                         clientName = param.method().parameterName(param.position());
                     }
                     if (clientName != null) {
                         ctx.transform().remove(GrpcDotNames::isGrpcClient)
-                                .add(GrpcDotNames.GRPC_CLIENT, AnnotationValue.createStringValue("value", clientName)).done();
+                                .add(AnnotationInstance.builder(GrpcDotNames.GRPC_CLIENT).value(clientName).build())
+                                .done();
                     }
                 }
             }
@@ -359,6 +384,11 @@ public class GrpcClientProcessor {
         // The rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
 
+        // Remove the metrics interceptors
+        for (String MICROMETER_INTERCEPTOR : MICROMETER_INTERCEPTORS) {
+            superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
+        }
+
         List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR));
         for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR_LIST)) {
             for (AnnotationInstance nested : annotation.value().asNestedArray()) {
@@ -379,6 +409,9 @@ public class GrpcClientProcessor {
             globalInterceptors.add(recorderContext.classProxy(globalInterceptor));
         }
 
+        // it's okay if this one is not used:
+        superfluousInterceptors.remove(StorkMeasuringGrpcInterceptor.class.getName());
+        superfluousInterceptors.remove(VertxStorkMeasuringGrpcInterceptor.class.getName());
         if (!superfluousInterceptors.isEmpty()) {
             LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, " +
                     "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));

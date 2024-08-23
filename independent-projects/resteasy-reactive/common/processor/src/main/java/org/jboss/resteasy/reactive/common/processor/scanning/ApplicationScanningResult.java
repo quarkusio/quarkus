@@ -1,7 +1,9 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import java.util.Set;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.core.Application;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -43,7 +45,7 @@ public final class ApplicationScanningResult {
                         : KeepProviderResult.DISCARD;
             }
         }
-        return providerClass.classAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
+        return providerClass.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
                 : KeepProviderResult.DISCARD;
     }
 

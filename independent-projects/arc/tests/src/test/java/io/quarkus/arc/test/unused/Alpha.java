@@ -7,12 +7,15 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.interceptor.InterceptorBinding;
+
+import jakarta.enterprise.util.AnnotationLiteral;
+import jakarta.interceptor.InterceptorBinding;
 
 @Target({ TYPE, METHOD })
 @Retention(RUNTIME)
 @Documented
 @InterceptorBinding
 public @interface Alpha {
-
+    class Literal extends AnnotationLiteral<Alpha> implements Alpha {
+    }
 }

@@ -2,8 +2,8 @@ package io.quarkus.it.picocli;
 
 import static io.quarkus.it.picocli.TestUtils.createConfig;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ public class TestParsedCommand {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("hello-app", ParsedCommand.class,
             ConfigFromParseResult.class, ConfigProducer.class)
-                    .setCommandLineParameters("-p", "FromConfig");
+            .setCommandLineParameters("-p", "FromConfig");
 
     @Test
     public void simpleTest() {

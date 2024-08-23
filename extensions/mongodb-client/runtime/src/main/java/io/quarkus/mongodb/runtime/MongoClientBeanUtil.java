@@ -1,8 +1,8 @@
 package io.quarkus.mongodb.runtime;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 public final class MongoClientBeanUtil {
 

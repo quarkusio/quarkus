@@ -7,10 +7,10 @@ import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.UUID;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -23,7 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class HealthCheckContextPropagationTest {
+class HealthCheckContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -32,7 +32,7 @@ public class HealthCheckContextPropagationTest {
                     .addClasses(RequestScopedBean.class, ContextualHC.class));
 
     @Test
-    public void testContextPropagatedToHealthChecks() {
+    void testContextPropagatedToHealthChecks() {
         try {
             RestAssured.defaultParser = Parser.JSON;
 

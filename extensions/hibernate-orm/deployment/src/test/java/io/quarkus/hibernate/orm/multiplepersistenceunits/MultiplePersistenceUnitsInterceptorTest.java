@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.transaction.UserTransaction;
 
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Session;
@@ -60,8 +60,12 @@ public class MultiplePersistenceUnitsInterceptorTest {
         transaction.begin();
         DefaultEntity entity = new DefaultEntity("default");
         defaultSession.persist(entity);
+        transaction.commit();
+        transaction.begin();
         User user = new User("user");
         usersSession.persist(user);
+        transaction.commit();
+        transaction.begin();
         Plane plane = new Plane("plane");
         inventorySession.persist(plane);
         transaction.commit();

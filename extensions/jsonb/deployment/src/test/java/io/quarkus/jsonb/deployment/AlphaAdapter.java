@@ -1,7 +1,7 @@
 package io.quarkus.jsonb.deployment;
 
-import javax.inject.Inject;
-import javax.json.bind.adapter.JsonbAdapter;
+import jakarta.inject.Inject;
+import jakarta.json.bind.adapter.JsonbAdapter;
 
 // scope annotation is added automatically
 public class AlphaAdapter implements JsonbAdapter<Alpha, String> {

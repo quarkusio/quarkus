@@ -12,9 +12,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,7 +32,8 @@ public class MessageConsumerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class, Transformer.class));
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class, Transformer.class))
+            .overrideConfigKey("foo", "foo-config");
 
     @Inject
     SimpleBean simpleBean;
@@ -54,6 +56,23 @@ public class MessageConsumerMethodTest {
             }
         });
         assertEquals("HELLO", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSendGenericType() throws InterruptedException {
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foos", List.of(1, 2), ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals(3, synchronizer.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -182,6 +201,40 @@ public class MessageConsumerMethodTest {
         assertTrue(message.contains("hello::true"));
     }
 
+    @Test
+    public void testConfiguredAddress() throws InterruptedException {
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foo-config", "hello", ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals("HELLO!", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConfiguredAddressDefault() throws InterruptedException {
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foo-config-default", "hello", ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals("hello!", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
     static class SimpleBean {
 
         static volatile CountDownLatch latch;
@@ -252,6 +305,22 @@ public class MessageConsumerMethodTest {
         String blockingRequestContextActive(String message) {
             return transformer.transform(message);
         }
+
+        @ConsumeEvent("foos")
+        int reply(List<Integer> numbers) {
+            return numbers.stream().collect(Collectors.summingInt(Integer::intValue));
+        }
+
+        @ConsumeEvent("${foo}")
+        String replyFooConfig(String message) {
+            return (message + "!").toUpperCase();
+        }
+
+        @ConsumeEvent("${non-existent.address:foo-config-default}")
+        String replyFooConfigDefault(String message) {
+            return (message + "!").toLowerCase();
+        }
+
     }
 
     @RequestScoped

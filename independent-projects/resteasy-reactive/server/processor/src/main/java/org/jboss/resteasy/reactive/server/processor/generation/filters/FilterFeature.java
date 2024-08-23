@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.server.processor.generation.filters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
+
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
@@ -32,7 +34,7 @@ public class FilterFeature implements FeatureScanner {
     public FeatureScanResult integrate(IndexView application, ScannedApplication scannedApplication) {
         List<GeneratedClass> generatedClasses = new ArrayList<>();
         List<FilterGeneration.GeneratedFilter> result = FilterGeneration.generate(application, unwrappableTypes,
-                additionalBeanAnnotations);
+                additionalBeanAnnotations, (m) -> false);
         for (var i : result) {
             generatedClasses.addAll(i.getGeneratedClasses());
             if (i.isRequestFilter()) {

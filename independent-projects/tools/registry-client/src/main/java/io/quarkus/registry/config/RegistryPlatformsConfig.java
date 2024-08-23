@@ -1,6 +1,6 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * Configuration related to the resolution of catalogs of available platforms.

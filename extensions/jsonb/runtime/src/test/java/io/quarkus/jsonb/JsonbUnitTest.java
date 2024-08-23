@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;
 
-import javax.json.bind.JsonbBuilder;
-import javax.json.bind.adapter.JsonbAdapter;
-import javax.json.bind.annotation.JsonbProperty;
-import javax.json.bind.annotation.JsonbTypeAdapter;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.adapter.JsonbAdapter;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbTypeAdapter;
 
 import org.junit.jupiter.api.Test;
 

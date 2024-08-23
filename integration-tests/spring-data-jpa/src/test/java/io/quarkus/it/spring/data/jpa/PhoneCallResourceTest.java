@@ -18,18 +18,18 @@ public class PhoneCallResourceTest {
     }
 
     @Test
-    public void testFindByAreaCode() {
-        when().get("/phonecall/1010").then()
-                .statusCode(200)
-                .body(containsString("11111"))
-                .body(containsString("13"));
-    }
-
-    @Test
     public void testFindAllIds() {
         when().get("/phonecall/ids").then()
                 .statusCode(200)
                 .body(containsString("11111"))
                 .body(containsString("56789"));
+    }
+
+    @Test
+    public void testFindAllCallAgents() {
+        when().get("/phonecall/call-agents").then()
+                .statusCode(200)
+                .body(containsString("General")).body(containsString("Specific"))
+                .body(containsString("Major")).body(containsString("Minor"));
     }
 }

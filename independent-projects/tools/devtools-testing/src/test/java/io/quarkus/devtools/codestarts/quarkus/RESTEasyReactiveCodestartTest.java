@@ -6,9 +6,10 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Lan
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_EXTENSION_CATALOG;
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 
-import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 
 class RESTEasyReactiveCodestartTest {
 
@@ -22,9 +23,9 @@ class RESTEasyReactiveCodestartTest {
 
     @Test
     void testContent() throws Throwable {
-        codestartTest.checkGeneratedSource("org.acme.ReactiveGreetingResource");
-        codestartTest.checkGeneratedTestSource("org.acme.ReactiveGreetingResourceTest");
-        codestartTest.checkGeneratedTestSource("org.acme.NativeReactiveGreetingResourceIT");
+        codestartTest.checkGeneratedSource("org.acme.GreetingResource");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingResourceTest");
+        codestartTest.checkGeneratedTestSource("org.acme.GreetingResourceIT");
     }
 
 }

@@ -4,13 +4,13 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Configuration Reference Guide
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: core
+:summary: Learn more about how to configure your Quarkus applications.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
+:topics: configuration
 
 IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the <<additional-information,Additional Information>> section.
 
@@ -59,8 +59,55 @@ the value `youshallnotpass` to the attribute `quarkus.datasource.password`.
 * For a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
-NOTE: Environment variables names follow the conversion rules specified by
+Environment variables names follow the conversion rules specified by
 link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[MicroProfile Config].
+Config searches three environment variables for a given property name (e.g. `foo.BAR.baz`):
+
+- `foo.BAR.baz` - Exact match
+- `foo_BAR_baz` - Replace each character that is neither alphanumeric nor `\_` with `_`
+- `FOO_BAR_BAZ` - Replace each character that is neither alphanumeric nor `\_` with `_`;
+then convert the name to upper case
+
+SmallRye Config specifies link:https://smallrye.io/smallrye-config/Main/config/environment-variables/[additional conversion rules].
+
+- A property with double quotes `foo."bar".baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO\__BAR__BAZ`
+- A property with dashes `foo.bar-baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO_BAR_BAZ`
+- An indexed property `foo.bar[0]` or `foo.bar[0].baz`, replace each character that is neither alphanumeric
+nor `\_` with `_`: `FOO_BAR_0_` or `FOO_BAR_0__BAZ`
+
+[CAUTION]
+====
+In some situations, looking up the exact property name is impossible. This is the case for configuration names that
+contain user defined path segments.
+
+Applying the conversion rules for Environment Variables names, `quarkus.datasource."datasource-name".jdbc.url` becomes
+`QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL`. The configuration will work as expected if both properties are
+available in the Config system.
+
+If only `QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL` is present, the Config system needs to reconvert the
+configuration name to its most likely dotted format. This works fine for fixed configuration segments, but not for
+names that contain dynamic segments. In this case, Quarkus is unable to determine if `DATASOURCE_NAME` should be
+converted to `datasource.name` or `datasource-name` (or any other special character separator).
+
+For this reason, such properties always require their dotted version name in another source (the value can be left
+empty) to disambiguate the Environment Variable name. It will provide additional information to perform a two-way
+conversion and match the property names together.
+
+[source,properties]
+----
+# value can be left empty
+quarkus.datasource."datasource-name".jdbc.url=
+----
+
+[source,bash]
+----
+EXPORT QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_URL=jdbc:postgresql://localhost:5432/database
+----
+
+====
+
 
 [[env-file]]
 === `.env` file in the current working directory
@@ -70,10 +117,10 @@ link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/as
 ----
 QUARKUS_DATASOURCE_PASSWORD=youshallnotpass <1>
 ----
-<1> The name `QUARKUS_DATASOURCE_PASSWORD` the same conversion rules used for <<environment-variables>>.
+<1> The name `QUARKUS_DATASOURCE_PASSWORD` follows the same conversion rules used for <<environment-variables>>.
 
 For `dev` mode, this file can be placed in the root of the project, but it is advised to **not** check it in to version
-control.
+control because it typically contains passwords, access tokens, API keys or other secrets.
 
 IMPORTANT: Environment variables in the `.env` file are not available via the `System.getenv(String)` API.
 
@@ -117,13 +164,33 @@ quarkus.http.port=9090 <2>
 TIP: It works in the exact same way as Quarkus Application configuration file `application.properties`. Recommendation
 is to use Quarkus `application.properties`.
 
+=== Locations
+
+Additionally to the default config locations, Quarkus provides a way to scan additional locations for configuration
+properties files.
+
+The `quarkus.config.locations` configuration property accepts multiple locations separated by a comma `,` and each
+must represent a valid `URI`. The supported `URI` schemes are:
+
+- file or directory (`file:`)
+- classpath resource
+- jar resource (`jar:`)
+- http resource (`http:`)
+
+All loaded sources use the same ordinal of the source that found the `quarkus.config.locations` configuration
+property. For instance, if `quarkus.config.locations` is set as a system property, then all loaded sources have their
+ordinals set to `400` (system properties use `400` as their ordinal). The ordinal may be overridden directly for each
+config source by setting the `config_ordinal` property and the ordinal value. The `config_ordinal` property only
+affects the ordinal of the source in which is being set. Sources are sorted first by their ordinal, then by location
+order, and finally by loading order.
+
 === Additional Config Sources
 
 Quarkus provides additional extensions which cover other configuration formats and stores:
 
 * xref:config-yaml.adoc[YAML]
-* xref:vault.adoc[HashiCorp Vault]
-* xref:consul-config.adoc[Consul]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul]
 * xref:spring-cloud-config-client.adoc[Spring Cloud]
 
 TIP: It is also possible to create a xref:config-extending-support.adoc#custom-config-source[Custom Config Source].
@@ -154,11 +221,66 @@ String suffix;
 @ConfigProperty(name = "greeting.name")
 Optional<String> name; <3>
 ----
-<1> If you do not provide a value for this property, the application startup fails with `javax.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
 <2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
 <3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
 
 TIP: Use xref:config-mappings.adoc#config-mappings[Config Mappings] to group similar configuration properties.
+
+=== Default Values
+
+If a property is associated with a default value (by way of the `defaultValue` attribute), and no configuration value
+is supplied for the property, then rather than throwing a `jakarta.enterprise.inject.spi.DeploymentException`, the
+default value will be used. The `defaultValue` value is expressed as a `String`, and uses the same conversion mechanism
+used to process configuration values. Several Built-in Converters already exist for primitives, boxed primitives, and
+other classes; for example:
+
+* Primitives: `boolean`, `byte`, `short`, etc.
+* Boxed primitives: `java.lang.Boolean`, `java.lang.Byte`, `java.lang.Short`, etc.
+* Optional containers: `java.util.Optional`, `java.util.OptionalInt`, `java.util.OptionalLong`, and `java.util.OptionalDouble`
+* Java `enum` types
+* JSR 310 `java.time.Duration`
+* JDK networking `java.net.SocketAddress`, `java.net.InetAddress`, etc.
+
+As you might expect, these converters are `org.eclipse.microprofile.config.spi.Converter` implementations. Therefore,
+these converters comply with the Microprofile or custom implementation providers expression rules like:
+
+* Boolean values will be `true` in cases "true", "1", "YES", "Y" "ON". Otherwise, value will be interpreted as false
+* For float and double values the fractional digits must be separated by a dot `.`
+
+Note that when a combination of `Optional*` types and the `defaultValue` attribute are used, the defined `defaultValue`
+will still be used and if no value is given for the property, the `Optional*` will be present and populated with the
+converted default value. However, when the property is explicitly empty, the default value is not used and the
+`Optional` will be empty. Consider this example:
+
+[source,properties]
+----
+# missing value, optional property
+greeting.name=
+----
+
+In this case, since `greeting.name` was configured to be `Optional*` up above, the corresponding property value will
+be an empty `Optional` and execution will continue normally. This would be the case even if there was a default value
+configured: the default value is *not* used if the property is explicitly cleared in the configuration.
+
+On the other hand, this example:
+
+[source,properties]
+----
+# missing value, non-optional
+greeting.suffix=
+----
+
+will result in a `java.util.NoSuchElementException: SRCFG02004: Required property greeting.message not found` on
+startup and the default value will not be assigned.
+
+Below is an example of a Quarkus-supplied converter:
+
+[source,java]
+----
+@ConfigProperty(name = "server.address", defaultValue = "192.168.1.1")
+InetAddress serverAddress;
+----
 
 == Programmatically access
 
@@ -177,7 +299,7 @@ APIs are not configuration aware and do not support the features described in th
 [[profiles]]
 == Profiles
 
-We often need to configure differently our application depending on the target _environment_. For example, the local
+We often need to configure our application differently depending on the target _environment_. For example, the local
 development environment may be different from the production environment.
 
 Configuration Profiles allow for multiple configurations in the same file or separate files and select between them via
@@ -219,6 +341,7 @@ With the `dev` profile enabled, the property `bar` has the value `hallo`, but th
 `bonjour`. If the `prod` profile is enabled, `bar` has the value `hello` (as there is no specific value for the `prod`
 profile), and `baz` the value `bonjour`.
 
+[[default-profiles]]
 === Default Profiles
 
 By default, Quarkus provides three profiles, that activate automatically in certain conditions:
@@ -227,6 +350,7 @@ By default, Quarkus provides three profiles, that activate automatically in cert
 * *test* - Activated when running tests
 * *prod* - The default profile when not running in development or test mode
 
+[[custom-profiles]]
 === Custom Profiles
 
 It is also possible to create additional profiles and activate them with the `quarkus.profile` configuration property. A
@@ -241,14 +365,9 @@ quarkus.http.port=9090
 
 Setting `quarkus.profile`  to `staging` will activate the `staging` profile.
 
-IMPORTANT: Only a single profile may be active at a time.
-
 [NOTE]
 ====
-The `io.quarkus.runtime.configuration.ProfileManager#getActiveProfile` API provides a way to retrieve the active profile
-programmatically.
-
-Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
+The `io.smallrye.config.SmallRyeConfig#getProfiles` API provides a way to retrieve the active profiles programmatically.
 ====
 
 === Profile aware files
@@ -275,6 +394,16 @@ quarkus.http.test-port=9191
 In this style, the configuration names in the profile aware file do not need to be prefixed with the profile name.
 
 Properties in the profile aware file have priority over profile aware properties defined in the main file.
+====
+
+[WARNING]
+====
+Do not use profile aware files to set `quarkus.profile` or `quarkus.test.profile`. This will not work because the
+profile is required in advance to load the profile aware files.
+
+A profile aware file is only loaded if the unprofiled `application.properties` is also available in the same location
+and the file extension matches between the files. This is required to keep a consistent loading order and pair all the
+resources together.
 ====
 
 === Parent Profile
@@ -304,13 +433,73 @@ Then
 * `quarkus.http.port` is 9090
 * `quarkus.http.ssl-port` is 9443
 
+[WARNING]
+====
+Do not use Profile aware files to set `quarkus.config.profile.parent`. This will not work because the profile is
+required in advance to load the profile aware files.
+====
+
+=== Multiple Profiles
+
+Multiple Profiles may be active at the same time. The configuration `quarkus.profile` accepts a comma-separated list
+of profile names: `quarkus.profile=common,dev`. Both `common` and `dev` are separate profiles.
+
+When multiple profiles are active, the rules for profile configuration are the same. If two profiles define the same
+configuration, then the last listed profile has priority. Consider:
+
+.application.properties
+[source,properties]
+----
+quarkus.profile=common,dev
+
+my.prop=1234
+%common.my.prop=1234
+%dev.my.prop=5678
+
+%common.commom.prop=common
+%dev.dev.prop=dev
+%test.test.prop=test
+----
+
+Then
+
+* `common.prop` value is `common`
+* `dev.prop` value is `dev`
+* `my.prop` value is `5678`
+* `test.prop` does not have a `value`
+
+It is also possible to define multiple profile properties, with a comma-separated list of profile names. If the same
+property name exists in multiple profile properties then, the property name with the most specific profile wins:
+
+.application.properties
+[source,properties]
+----
+quarkus.profile=dev
+
+%prod,dev.my.prop=1234
+%dev.my.prop=5678
+
+%prod,dev.another.prop=1234
+----
+
+Then
+
+* `my.prop` value is 5678.
+* `another.prop` value is 1234.
+
+[WARNING]
+====
+Multiple profiles priority work in reverse order. With `quarkus.profile=common,dev`, Quarkus first checks the `dev`
+profile and then the `common` profile.
+====
+
 === Default Runtime Profile
 
 The default Quarkus runtime profile is set to the profile used to build the application:
 
 [source,bash]
 ----
-./mvnw package -Pnative -Dquarkus.profile=prod-aws
+./mvnw package -Dnative -Dquarkus.profile=prod-aws
 ./target/my-app-1.0-runner // <1>
 ----
 <1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` configuration.
@@ -381,6 +570,32 @@ application.host=${HOST:${remote.host}}
 This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value
 if `HOST` is not set.
 
+== Secret Keys Expressions
+
+A secret configuration may be expressed as `${handler::value}`, where the `handler` is the name of a
+`io.smallrye.config.SecretKeysHandler` to decode or decrypt the `value`. Consider:
+
+.application.properties
+[source,properties]
+----
+my.secret=${aes-gcm-nopadding::DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg}
+
+# the encryption key required to decode the secret. It can be set in any source.
+smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key=somearbitrarycrazystringthatdoesnotmatter
+----
+
+A lookup to `my.secret` will use the `SecretKeysHandler` name `aes-gcm-nopadding` to decode the value
+`DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg`.
+
+For more information, please check SmallRye Config
+link:https://smallrye.io/smallrye-config/Main/config/secret-keys/[Secret Keys] documentation.
+
+[WARNING]
+====
+SmallRye Config may provide handlers not fully supported by Quarkus. Currently, only `smallrye-config-crypto` is
+supported.
+====
+
 == Accessing a generating UUID
 
 The default config source from Quarkus provides a random UUID value.
@@ -388,7 +603,7 @@ It generates the UUID at startup time.
 So, the value changes between startups, including reloads in dev mode.
 
 You can access the generated value using the `quarkus.uuid` property.
-Use <<property-expressions, expressions>> to access it: `${quarkus.uuid}`.
+Use <<property-expressions,expressions>> to access it: `${quarkus.uuid}`.
 For example, it can be useful to configure a Kafka client with a unique consumer group:
 
 [source, properties]
@@ -418,7 +633,7 @@ becomes cumbersome and limited for more advanced cases.
 
 Indexed Properties provide a way to use indexes in config property names to map specific elements in a `Collection`
 type. Since the indexed element is part of the property name and not contained in the value, this can also be used to
-map complex object types as `Collectionª elements. Consider:
+map complex object types as `Collection` elements. Consider:
 
 .application.properties
 [source,properties]
@@ -434,14 +649,12 @@ The indexed property syntax uses the property name and square brackets `[ ] with
 
 A call to `Config#getValues("my.collection", String.class)`, will automatically create and convert a `List<String>`
 that contains the values `dog`, `cat` and `turtle`. A call to `Config#getValues("my.indexed.collection", String.class)`
-returns the exact same result. If the same property name exists in both froms (regular and indexed), the regular
+returns the exact same result. If the same property name exists in both forms (regular and indexed), the regular
 value has priority.
 
 The indexed property is sorted by their index before being added to the target `Collection`. Any gaps contained in the
 indexes do not resolve to the target `Collection`, which means that the `Collection` result will store all values
 without any gaps.
-
-IMPORTANT: Indexed Properties are not supported in Environment Variables.
 
 [[configuring_quarkus]]
 == Configuring Quarkus
@@ -458,7 +671,7 @@ extensions. Therefore, the `quarkus.` prefix should **never** be used for applic
 
 === Build Time configuration
 
-Some Quarkus configurations only take effect during build time, meaning is not possible to change them at runtime. These
+Some Quarkus configurations only take effect during build time, meaning it is not possible to change them at runtime. These
 configurations are still available at runtime but as read-only and have no effect in Quarkus behaviour. A change to any
 of these configurations requires a rebuild of the application itself to reflect changes of such properties.
 
@@ -472,31 +685,166 @@ application behaviour at runtime.
 
 If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how xref:reaugmentation.adoc[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
 
+== Tracking effective build time configuration used at build time
+
+Given that configuration sources usually provide more options than actually used during the build, it might be useful to know which configuration options have actually been used during a Quarkus build process.
+
+=== Dumping build time configuration options read during the build
+
+Setting `quarkus.config-tracking.enabled` to `true` will enable a configuration interceptor that will record every configuration option that was read during the build process along with their values. The resulting report will be stored in `${project.basedir}/.quarkus/quarkus-prod-config-dump` by default. The target file could be configured using the following options:
+
+* `quarkus.config-tracking.directory` - directory in which the configuration dump should be stored, the default is `${project.basedir}/.quarkus`
+* `quarkus.config-tracking.file-prefix` - file name prefix, the default value is `quarkus`
+* `quarkus.config-tracking.file-suffix` - file name suffix, the default value is `-config-dump`
+* `quarkus.config-tracking.file` - path to a file in which the configuration dump should be stored. This option supersedes the `file-prefix` and `file-suffix` options. Also supersedes the value of `quarkus.config-tracking.directory`, unless the value is a relative path.
+
+The `prod` part of the `quarkus-prod-config-dump` file name refers to the Quarkus build mode, indicating that the dump was taken for the production build.
+
+The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Develocity Build Cache]) whether the application binary has to be re-built.
+
+==== Filtering configuration options
+
+Configuration tracker could be instructed to exclude some of the options from the report by configuring `quarkus.config-tracking.exclude` with a comma-separated list of configuration option names that should be filtered out.
+
+==== Path values
+
+Configuration options with *absolute* path values that begin with a user home directory are, by default, transformed with Unix home directory alias '~' replacing the user home directory part and using `/` as a path element separator.
+
+This transformation can be disabled by setting `quarkus.config-tracking.use-user-home-alias-in-paths` to `false`.
+
+==== Hashing recorded configuration values
+
+Configuration values can be hashed using `SHA-512` algorithm before they are written to a file. Configuration option names whose values should be hashed can be configured in `quarkus.config-tracking.hash-options` as a comma separated list.
+
+=== Tracking build time configuration changes between builds
+
+While `quarkus.config-tracking.enabled` enables effective build time configuration report generation, there is also a way to check whether the values stored in that report have changed before the next build of the project is launched.
+
+Maven projects could add the following goal to their `quarkus-maven-plugin` configuration:
+[source,xml]
+----
+      <plugin>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>track-prod-config-changes</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>track-config-changes</goal>
+            </goals>
+          </execution>
+          <!-- other executions would follow below -->
+----
+
+The `track-config-changes` goal looks for `${project.basedir}/.quarkus/quarkus-prod-config-dump` (file name and directory are configurable) and, if the file already exists, checks whether the values stored in the config dump have changed.
+It will log the changed options and save the current values of each of the options present in `${project.basedir}/.quarkus/quarkus-prod-config-dump` in `${project.basedir}/target/quarkus-prod-config.check` (the target file name and location can be configured). If the build time configuration has not changed since the last build both `${project.basedir}/.quarkus/quarkus-prod-config-dump` and `${project.basedir}/.quarkus/quarkus-prod-config-dump` will be identical.
+
+==== Dump Quarkus application dependencies
+
+In addition to dumping configuration values, `track-config-changes` goal also dumps all the Quarkus application dependencies, including Quarkus build time dependencies.
+This file could be used to check whether Quarkus build classpath has changed since the previous run, for instance together with Develocity's ability to checksum a classpath.
+By default, the list of dependencies will be stored under `target/quarkus-prod-dependencies.txt` file. A different location could be configured using plugin parameters.
+
+==== Dump current build configuration when the recorded configuration isn't found
+
+By default, `track-config-changes` looks for the configuration recorded during previous build and does nothing if it's not found. Enabling `dumpCurrentWhenRecordedUnavailable` parameter will make it dump the current build configuration
+options taking into account `quarkus.config-tracking.*` configuration.
+
+[IMPORTANT]
+====
+Unlike the build configuration options recorded during the `quarkus:build` goal, configuration options saved by `quarkus:track-config-changes` with `dumpCurrentWhenRecordedUnavailable` enabled will include all the build configuration
+options exposed by a `org.eclipse.microprofile.config.Config` instance. Which means this report may include some build configuration options that will not be used by the Quarkus application build process but also may be missing some
+build configuration options since MicroProfile Config specification allows configuration sources not to expose all the property names they provide to users.
+====
+
+== Config property values injected during static initialization phase
+
+Quarkus collects the config property values injected in CDI beans during xref:writing-extensions.adoc#bootstrap-three-phases[static initialization phase].
+The collected values are then compared with their runtime initialization counterparts and if a mismatch is detected the application startup fails.
+How can it happen?
+For example, let's have a CDI bean `org.acme.MyBean`.
+`MyBean` injects a `@ConfigProperty` of name `foo` and is initialized during the native build.
+The config property does not exist during the native build and so the default value `bar` is used.
+But later, when the application is started the property is defined with a system property: `-Dfoo=baz`.
+This would lead to inconsistent state and unexpected behavior.
+Therefore, Quarkus would fail in this situation by default.
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.Initialized;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+public class MyBean {
+
+   @ConfigProperty(name = "foo", defaultValue = "bar") <1>
+   String foo;
+
+    void onInit(@Observes @Initialized(ApplicationScoped.class) Object event) { <2>
+       // this observer method is notified during STATIC_INIT...
+    }
+}
+----
+<1> The config property is injected when the bean is created and the value is fixed.
+<2> In this particular case, the observer `@Initialized(ApplicationScoped.class)` caused the initialization of the bean. However, there are other possibilities. For example, some extensions initialize components during static initialization phase.
+
+You can annotate an injected field/parameter with `@io.quarkus.runtime.annotations.StaticInitSafe` to mark the injected configuration object as safe to be initialized during the static initialization phase.
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.Initialized;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import io.quarkus.runtime.annotations.StaticInitSafe;
+
+@ApplicationScoped
+public class MyBeanNoFailure {
+
+   @StaticInitSafe <1>
+   @ConfigProperty(name = "foo", defaultValue = "bar")
+   String foo;
+
+    void onInit(@Observes @Initialized(ApplicationScoped.class) Object event) {
+       // this observer method is notified during STATIC_INIT...
+    }
+}
+----
+<1> Instructs Quarkus not to fail if a mismatch is detected.
+
+
 [[additional-information]]
 == Additional Information
 
 * xref:config-yaml.adoc[YAML ConfigSource Extension]
-* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
-* xref:consul-config.adoc[Consul ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul ConfigSource Extension]
 * xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
 * xref:config-mappings.adoc[Mapping configuration to objects]
 * xref:config-extending-support.adoc[Extending configuration support]
 
 Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Config] and inherits its features:
 
-* Additional ``ConfigSource``s
-* Additional ``Converter``s
-* Indexed properties
-* Parent profile
-* Interceptors for configuration value resolution
-* Relocate configuration properties
-* Fallback configuration properties
-* Logging
-* Hide secrets
+* link:https://smallrye.io/smallrye-config/Main/config-sources/custom/[Additional Config Sources]
+* link:https://smallrye.io/smallrye-config/Main/config-sources/factories/[Config Source Factories]
+* link:https://smallrye.io/smallrye-config/Main/converters/custom/[Additional Converters]
+* link:https://smallrye.io/smallrye-config/Main/extensions/interceptors/[Interceptors]
+* link:https://smallrye.io/smallrye-config/Main/extensions/relocate/[Relocate Configuration]
+* link:https://smallrye.io/smallrye-config/Main/extensions/fallback/[Fallback Configuration]
+* link:https://smallrye.io/smallrye-config/Main/config/secret-keys/[Secret Keys]
 
 For more information, please check the
-link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].
+link:https://smallrye.io/smallrye-config/Main[SmallRye Config documentation].
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-config-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-core_quarkus.config.adoc[opts=optional, leveloffset=+1]

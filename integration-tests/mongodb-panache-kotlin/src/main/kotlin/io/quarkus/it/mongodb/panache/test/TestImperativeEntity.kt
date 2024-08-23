@@ -9,6 +9,7 @@ class TestImperativeEntity : PanacheMongoEntity {
     lateinit var title: String
     lateinit var category: String
     lateinit var description: String
+    var ctp = 1
 
     constructor() {}
     constructor(title: String, category: String, description: String) {

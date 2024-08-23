@@ -2,21 +2,22 @@ package io.quarkus.arc;
 
 import java.util.Map;
 import java.util.function.Function;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.NormalScope;
-import javax.enterprise.context.spi.AlterableContext;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
+
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  * A context implementing this interface makes it possible to capture and view its state via the {@link ContextState}.
- * 
+ * <p>
  * It also allows users to destroy all contextual instances within this context.
  */
 public interface InjectableContext extends AlterableContext {
 
     /**
-     * Destroy all existing contextual instances.
+     * Destroys the current context and all existing contextual instances.
      */
     void destroy();
 
@@ -28,7 +29,7 @@ public interface InjectableContext extends AlterableContext {
 
     /**
      * If the context is active then return the current state.
-     * 
+     *
      * @return the current state or {@code null} if the context is not active
      */
     default ContextState getStateIfActive() {
@@ -38,7 +39,7 @@ public interface InjectableContext extends AlterableContext {
     /**
      * If the context is active then return an existing instance of certain contextual type or create a new instance, otherwise
      * return a null value.
-     * 
+     *
      * This allows for the {@link #isActive()} check and the actual creation to happen in a single method, which gives a
      * performance benefit by performing fewer thread local operations.
      *
@@ -64,7 +65,7 @@ public interface InjectableContext extends AlterableContext {
      * <p>
      * The default implementation is not optimized and does not guarantee proper sychronization. Implementations of this
      * interface are encouraged to provide an optimized implementation of this method.
-     * 
+     *
      * @param state
      */
     default void destroy(ContextState state) {
@@ -78,22 +79,29 @@ public interface InjectableContext extends AlterableContext {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if this context represents a normal scope
      */
     default boolean isNormal() {
         return getScope().isAnnotationPresent(NormalScope.class);
     }
 
-    /**
-    *
-    */
     interface ContextState {
 
         /**
          * @return an immutable map of contextual instances
          */
         Map<InjectableBean<?>, Object> getContextualInstances();
+
+        /**
+         * Context state is typically invalidated once the context to which is belongs is being destroyed.
+         * This flag is then used by context propagation to indicate that the given state shouldn't be reused anymore.
+         *
+         * @return true if the context state is valid, false otherwise
+         */
+        default boolean isValid() {
+            return true;
+        }
 
     }
 }

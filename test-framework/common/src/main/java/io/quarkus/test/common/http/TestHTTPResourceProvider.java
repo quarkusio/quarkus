@@ -1,7 +1,6 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 
 public interface TestHTTPResourceProvider<T> {
 
@@ -13,6 +12,6 @@ public interface TestHTTPResourceProvider<T> {
      * Note that there is no need to directly call set() on the field, it is only provided
      * to allow you to examine the generic type and any additional annotations.
      */
-    T provide(URI testUri, Field field);
+    T provide(String testUri, Field field);
 
 }

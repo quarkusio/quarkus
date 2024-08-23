@@ -3,8 +3,8 @@ package io.quarkus.websockets.test;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
 
 @ClientEndpoint
 public class TestWebSocketClient {

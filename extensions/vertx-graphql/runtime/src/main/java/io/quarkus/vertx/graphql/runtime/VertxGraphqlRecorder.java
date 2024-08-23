@@ -1,9 +1,11 @@
 package io.quarkus.vertx.graphql.runtime;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -12,12 +14,12 @@ import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 
 @Recorder
 public class VertxGraphqlRecorder {
-    public Handler<RoutingContext> handler() {
+    public Handler<RoutingContext> handler(Supplier<Vertx> vertx) {
 
         GraphiQLHandlerOptions options = new GraphiQLHandlerOptions();
         options.setEnabled(true);
 
-        Handler<RoutingContext> handler = GraphiQLHandler.create(options);
+        Handler<RoutingContext> handler = GraphiQLHandler.create(vertx.get(), options);
 
         return new Handler<RoutingContext>() {
             @Override

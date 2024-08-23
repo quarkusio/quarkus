@@ -8,9 +8,11 @@ import java.util.function.Consumer;
 
 public interface HotReplacementContext {
 
-    Path getClassesDir();
+    List<Path> getClassesDir();
 
     List<Path> getSourcesDir();
+
+    List<Path> getTestSourcesDir();
 
     List<Path> getResourcesDir();
 
@@ -28,7 +30,7 @@ public interface HotReplacementContext {
 
     /**
      * Returns the type of the development mode
-     * 
+     *
      * @return the dev mode type
      */
     DevModeType getDevModeType();
@@ -66,4 +68,9 @@ public interface HotReplacementContext {
      * @return A set of changed files
      */
     Set<String> syncState(Map<String, String> fileHashes);
+
+    /**
+     * Adds a task that is run after the restart is performed.
+     */
+    void addPostRestartStep(Runnable runnable);
 }

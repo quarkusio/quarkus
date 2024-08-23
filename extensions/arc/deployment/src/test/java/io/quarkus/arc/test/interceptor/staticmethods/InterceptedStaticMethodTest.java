@@ -4,6 +4,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.annotation.Retention;
@@ -12,11 +13,11 @@ import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InterceptorBinding;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InterceptorBinding;
+import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -120,6 +121,11 @@ public class InterceptedStaticMethodTest {
                 throw new AssertionFailedError("Not a static method!");
             }
             assertNull(ctx.getTarget());
+            // verify annotations can be inspected
+            if (ctx.getMethod().getDeclaringClass().getName().equals(Simple.class.getName())) {
+                assertEquals(1, ctx.getMethod().getAnnotations().length);
+                assertNotNull(ctx.getMethod().getAnnotation(InterceptMe.class));
+            }
             Object ret = ctx.proceed();
             if (ret != null) {
                 if (ret instanceof String) {

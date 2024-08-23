@@ -1,9 +1,9 @@
 package io.quarkus.it.main;
 
-import javax.inject.Inject;
-import javax.transaction.Status;
-import javax.transaction.Transactional;
-import javax.transaction.UserTransaction;
+import jakarta.inject.Inject;
+import jakarta.transaction.Status;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

@@ -1,25 +1,24 @@
 package io.quarkus.arc.impl;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
+
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Consumer;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.CreationalContext;
-import org.jboss.logging.Logger;
 
 abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
-
-    private static final Logger LOGGER = Logger.getLogger(AbstractInstanceHandle.class.getName());
 
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<AbstractInstanceHandle> DESTROYED_UPDATER = AtomicIntegerFieldUpdater
             .newUpdater(AbstractInstanceHandle.class, "destroyed");
 
-    private final InjectableBean<T> bean;
+    protected final InjectableBean<T> bean;
     private final CreationalContext<T> creationalContext;
     private final CreationalContext<?> parentCreationalContext;
     private final Consumer<T> destroyLogic;
@@ -57,7 +56,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
         if (isInstanceCreated() && DESTROYED_UPDATER.compareAndSet(this, 0, 1)) {
             if (destroyLogic != null) {
                 destroyLogic.accept(instanceInternal());
-            } else {
+            } else if (bean != null) {
                 if (bean.getScope().equals(Dependent.class)) {
                     destroyInternal();
                 } else {
@@ -76,16 +75,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {
-            try {
-                bean.destroy(instanceInternal(), creationalContext);
-            } catch (Throwable t) {
-                String msg = "Error occurred while destroying instance of bean [%s]";
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.errorf(t, msg, bean.getClass().getName());
-                } else {
-                    LOGGER.errorf(msg + ": %s", bean.getClass().getName(), t);
-                }
-            }
+            bean.destroy(instanceInternal(), creationalContext);
         }
     }
 

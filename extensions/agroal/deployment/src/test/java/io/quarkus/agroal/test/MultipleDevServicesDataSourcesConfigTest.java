@@ -6,13 +6,14 @@ import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
+import io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultipleDevServicesDataSourcesConfigTest {
@@ -38,12 +39,16 @@ public class MultipleDevServicesDataSourcesConfigTest {
 
     @Test
     public void testDataSourceInjection() throws SQLException {
-        testDataSource("default", defaultDataSource,
-                "jdbc:h2:tcp://localhost:" + extractPort(defaultDataSource) + "/mem:default;DB_CLOSE_DELAY=-1", "sa", 20);
+        testDataSource(DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME, defaultDataSource,
+                "jdbc:h2:tcp://localhost:" + extractPort(defaultDataSource) + "/mem:"
+                        + DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME + ";DB_CLOSE_DELAY=-1",
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
         testDataSource("users", dataSource1,
-                "jdbc:h2:tcp://localhost:" + extractPort(dataSource1) + "/mem:users;DB_CLOSE_DELAY=-1", "sa", 20);
+                "jdbc:h2:tcp://localhost:" + extractPort(dataSource1) + "/mem:users;DB_CLOSE_DELAY=-1",
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
         testDataSource("inventory", dataSource2,
-                "jdbc:h2:tcp://localhost:" + extractPort(dataSource2) + "/mem:inventory;DB_CLOSE_DELAY=-1", "sa", 20);
+                "jdbc:h2:tcp://localhost:" + extractPort(dataSource2) + "/mem:inventory;DB_CLOSE_DELAY=-1",
+                DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME, 20);
     }
 
     public int extractPort(AgroalDataSource ds) {

@@ -3,12 +3,14 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Variant;
+
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Variant;
+
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -34,6 +36,7 @@ public class RequestImpl implements Request {
         return true;//todo: do we need config for this?
     }
 
+    @Override
     public Variant selectVariant(List<Variant> variants) throws IllegalArgumentException {
         if (variants == null || variants.size() == 0)
             throw new IllegalArgumentException("Variant list must not be empty");
@@ -51,7 +54,7 @@ public class RequestImpl implements Request {
         return negotiation.getBestMatch(variants);
     }
 
-    public List<EntityTag> convertEtag(List<String> tags) {
+    private List<EntityTag> convertEtag(List<String> tags) {
         ArrayList<EntityTag> result = new ArrayList<EntityTag>();
         for (String tag : tags) {
             String[] split = tag.split(",");
@@ -62,7 +65,7 @@ public class RequestImpl implements Request {
         return result;
     }
 
-    public Response.ResponseBuilder ifMatch(List<EntityTag> ifMatch, EntityTag eTag) {
+    private Response.ResponseBuilder ifMatch(List<EntityTag> ifMatch, EntityTag eTag) {
         boolean match = false;
         for (EntityTag tag : ifMatch) {
             if (tag.equals(eTag) || tag.getValue().equals("*")) {
@@ -76,7 +79,7 @@ public class RequestImpl implements Request {
 
     }
 
-    public Response.ResponseBuilder ifNoneMatch(List<EntityTag> ifMatch, EntityTag eTag) {
+    private Response.ResponseBuilder ifNoneMatch(List<EntityTag> ifMatch, EntityTag eTag) {
         boolean match = false;
         for (EntityTag tag : ifMatch) {
             if (tag.equals(eTag) || tag.getValue().equals("*")) {
@@ -94,6 +97,7 @@ public class RequestImpl implements Request {
         return null;
     }
 
+    @Override
     public Response.ResponseBuilder evaluatePreconditions(EntityTag eTag) {
         if (eTag == null)
             throw new IllegalArgumentException("ETag was null");
@@ -116,26 +120,36 @@ public class RequestImpl implements Request {
         return builder;
     }
 
-    public Response.ResponseBuilder ifModifiedSince(String strDate, Date lastModified) {
+    private Response.ResponseBuilder ifModifiedSince(String strDate, Date lastModified) {
         Date date = DateUtil.parseDate(strDate);
 
-        if (date.getTime() >= lastModified.getTime()) {
+        if (date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
             return Response.notModified();
         }
         return null;
 
     }
 
-    public Response.ResponseBuilder ifUnmodifiedSince(String strDate, Date lastModified) {
+    private Response.ResponseBuilder ifUnmodifiedSince(String strDate, Date lastModified) {
         Date date = DateUtil.parseDate(strDate);
 
-        if (date.getTime() >= lastModified.getTime()) {
+        if (date.getTime() >= millisecondsWithSecondsPrecision(lastModified)) {
             return null;
         }
         return Response.status(Response.Status.PRECONDITION_FAILED).lastModified(lastModified);
 
     }
 
+    /**
+     * We must compare header dates (seconds-precision) with dates that have the same precision,
+     * otherwise they may include milliseconds and they will never match the Last-Modified
+     * values that we generate from them (since we drop their milliseconds when we write the headers)
+     */
+    private long millisecondsWithSecondsPrecision(Date lastModified) {
+        return (lastModified.getTime() / 1000) * 1000;
+    }
+
+    @Override
     public Response.ResponseBuilder evaluatePreconditions(Date lastModified) {
         if (lastModified == null)
             throw new IllegalArgumentException("Param cannot be null");
@@ -157,6 +171,7 @@ public class RequestImpl implements Request {
         return builder;
     }
 
+    @Override
     public Response.ResponseBuilder evaluatePreconditions(Date lastModified, EntityTag eTag) {
         if (lastModified == null)
             throw new IllegalArgumentException("Last modified was null");
@@ -180,6 +195,7 @@ public class RequestImpl implements Request {
         return rtn;
     }
 
+    @Override
     public Response.ResponseBuilder evaluatePreconditions() {
         List<String> ifMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaders.IF_MATCH);
         if (ifMatch == null || ifMatch.size() == 0) {

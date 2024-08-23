@@ -2,21 +2,23 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.ExtensionCatalogResolver;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.stream.Collectors;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformBomsTestBase {
 
@@ -37,7 +39,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
                 .newRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("acme-foo").release()
                 .stream().platform()
@@ -46,7 +48,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
                 // 1.0.1 release
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("acme-foo").release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
                 .registry()
@@ -89,7 +91,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
 
         p = TestRegistryClientBuilder.getRegistryMemberCatalogPath(
                 TestRegistryClientBuilder.getRegistryDir(configDir(), "registry.acme.org"),
-                new ArtifactCoords(MAIN_PLATFORM_KEY, memberArtifactId, null, "pom", baseRecommendedVersion));
+                ArtifactCoords.pom(MAIN_PLATFORM_KEY, memberArtifactId, baseRecommendedVersion));
         final String jsonContent = Files.readString(p).replace(baseRecommendedVersion, nonRecommendedVersion);
         String jsonName = p.getFileName().toString().replace(baseRecommendedVersion, nonRecommendedVersion);
         Files.writeString(p.getParent().resolve(jsonName), jsonContent);

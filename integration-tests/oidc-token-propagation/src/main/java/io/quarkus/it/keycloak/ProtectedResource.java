@@ -2,10 +2,10 @@ package io.quarkus.it.keycloak;
 
 import java.security.Principal;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.quarkus.security.Authenticated;
 
@@ -19,6 +19,12 @@ public class ProtectedResource {
     @GET
     @RolesAllowed("user")
     public String principalName() {
+        return principal.getName();
+    }
+
+    @GET
+    @Path("client")
+    public String clientName() {
         return principal.getName();
     }
 }

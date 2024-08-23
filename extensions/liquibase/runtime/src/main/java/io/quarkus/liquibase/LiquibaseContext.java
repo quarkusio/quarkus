@@ -41,7 +41,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
 
     /**
      * Gets the liquibase configuration
-     * 
+     *
      * @return the liquibase configuration
      */
     public LiquibaseConfig getConfiguration() {
@@ -50,7 +50,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
 
     /**
      * Gets the change log file path
-     * 
+     *
      * @return the change log file path
      */
     public String getChangeLog() {

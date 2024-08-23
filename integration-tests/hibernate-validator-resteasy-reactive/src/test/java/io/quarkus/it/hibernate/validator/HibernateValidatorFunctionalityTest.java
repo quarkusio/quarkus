@@ -8,8 +8,8 @@ import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 
-import javax.validation.ConstraintViolationException;
-import javax.ws.rs.core.Response;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.AfterEach;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationException;
 import io.quarkus.test.InMemoryLogHandler;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -26,7 +26,7 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 
 @QuarkusTest
-@QuarkusTestResource(H2DatabaseTestResource.class)
+@WithTestResource(value = H2DatabaseTestResource.class, restrictToAnnotatedClass = false)
 public class HibernateValidatorFunctionalityTest {
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
     private static final java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("io.quarkus");
@@ -164,6 +164,15 @@ public class HibernateValidatorFunctionalityTest {
     public void testNoProduces() {
         RestAssured.given()
                 .get("/hibernate-validator/test/no-produces/plop/")
+                .then()
+                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
+                .body(containsString("numeric value out of bounds"));
+    }
+
+    @Test
+    public void testNoProducesWithResponse() {
+        RestAssured.given()
+                .get("/hibernate-validator/test/no-produces-with-response/plop/")
                 .then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
                 .body(containsString("numeric value out of bounds"));

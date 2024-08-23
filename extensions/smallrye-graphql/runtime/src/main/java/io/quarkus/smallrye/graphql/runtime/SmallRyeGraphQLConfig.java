@@ -7,7 +7,6 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.spi.config.LogPayloadOption;
 
 @ConfigRoot(name = "smallrye-graphql", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -21,28 +20,41 @@ public class SmallRyeGraphQLConfig {
     public String rootPath;
 
     /**
-     * Enable metrics. By default this is false. If set to true, a metrics extension is required.
+     * Enable Apollo Federation. If this value is unspecified, then federation will be enabled
+     * automatically if any GraphQL Federation annotations are detected in the application.
+     */
+    @ConfigItem(name = "federation.enabled")
+    public Optional<Boolean> federationEnabled;
+
+    /**
+     * Enable batch resolving for federation. Disabled by default.
+     */
+    @ConfigItem(name = "federation.batch-resolving-enabled")
+    public Optional<Boolean> federationBatchResolvingEnabled;
+
+    /**
+     * Enable metrics. By default, this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")
     public Optional<Boolean> metricsEnabled;
 
     /**
-     * Enable tracing. By default this will be enabled if the tracing extension is added.
+     * Enable tracing. By default, this will be enabled if the tracing extension is added.
      */
     @ConfigItem(name = "tracing.enabled")
     public Optional<Boolean> tracingEnabled;
-
-    /**
-     * Enable validation. By default this will be enabled if the Hibernate Validator extension is added.
-     */
-    @ConfigItem(name = "validation.enabled")
-    public Optional<Boolean> validationEnabled;
 
     /**
      * Enable eventing. Allow you to receive events on bootstrap and execution.
      */
     @ConfigItem(name = "events.enabled", defaultValue = "false")
     public boolean eventsEnabled;
+
+    /**
+     * Enable non-blocking support. Default is true.
+     */
+    @ConfigItem(name = "nonblocking.enabled")
+    public Optional<Boolean> nonBlockingEnabled;
 
     /**
      * Enable GET Requests. Allow queries via HTTP GET.
@@ -58,13 +70,14 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * Change the type naming strategy.
+     * All possible strategies are: default, merge-inner-class, full
      */
     @ConfigItem(defaultValue = "Default")
-    public TypeAutoNameStrategy autoNameStrategy;
+    public String autoNameStrategy;
 
     /**
      * List of extension fields that should be included in the error response.
-     * By default none will be included. Examples of valid values include
+     * By default, none will be included. Examples of valid values include
      * [exception,classification,code,description,validationErrorType,queryPath]
      */
     @ConfigItem
@@ -72,14 +85,14 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * List of Runtime Exceptions class names that should show the error message.
-     * By default Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
+     * By default, Runtime Exception messages will be hidden and a generic `Server Error` message will be returned.
      */
     @ConfigItem
     public Optional<List<String>> showRuntimeExceptionMessage;
 
     /**
      * List of Checked Exceptions class names that should hide the error message.
-     * By default Checked Exception messages will show the exception message.
+     * By default, Checked Exception messages will show the exception message.
      */
     @ConfigItem
     public Optional<List<String>> hideCheckedExceptionMessage;
@@ -146,9 +159,74 @@ public class SmallRyeGraphQLConfig {
     public Optional<List<String>> unwrapExceptions;
 
     /**
+     * Subprotocols that should be supported by the server for graphql-over-websocket use cases.
+     * Allowed subprotocols are "graphql-ws" and "graphql-transport-ws". By default, both are enabled.
+     */
+    @ConfigItem
+    public Optional<List<String>> websocketSubprotocols;
+
+    /**
+     * Set to true if ignored chars should be captured as AST nodes. Default to false
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureIgnoredChars;
+
+    /**
+     * Set to true if `graphql.language.Comment`s should be captured as AST nodes
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureLineComments;
+
+    /**
+     * Set to true true if `graphql.language.SourceLocation`s should be captured as AST nodes. Default to true
+     */
+    @ConfigItem
+    public Optional<Boolean> parserCaptureSourceLocation;
+
+    /**
+     * The maximum number of raw tokens the parser will accept, after which an exception will be thrown. Default to 15000
+     */
+    @ConfigItem
+    public Optional<Integer> parserMaxTokens;
+
+    /**
+     * The maximum number of raw whitespace tokens the parser will accept, after which an exception will be thrown. Default to
+     * 200000
+     */
+    @ConfigItem
+    public Optional<Integer> parserMaxWhitespaceTokens;
+
+    /**
+     * Abort a query if the total number of data fields queried exceeds the defined limit. Default to no limit
+     */
+    @ConfigItem
+    public Optional<Integer> instrumentationQueryComplexity;
+
+    /**
+     * Abort a query if the total depth of the query exceeds the defined limit. Default to no limit
+     */
+    @ConfigItem
+    public Optional<Integer> instrumentationQueryDepth;
+
+    /**
      * SmallRye GraphQL UI configuration
      */
     @ConfigItem
     @ConfigDocSection
     public SmallRyeGraphQLUIConfig ui;
+
+    /**
+     * Additional scalars to register in the schema.
+     * These are taken from the `graphql-java-extended-scalars` library.
+     */
+    @ConfigItem
+    public Optional<List<ExtraScalar>> extraScalars;
+
+    /**
+     * Excludes all the 'null' fields in the GraphQL response's <code>data</code> field,
+     * except for the non-successfully resolved fields (errors).
+     * Disabled by default.
+     */
+    @ConfigItem
+    public Optional<Boolean> excludeNullFieldsInResponses;
 }

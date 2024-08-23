@@ -1,0 +1,22 @@
+package org.acme.quarkus.sample;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.acme.libb.LibB;
+
+@Path("/hello")
+public class HelloResource {
+
+    @Inject
+    LibB libB;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello " + libB.getName();
+    }
+}

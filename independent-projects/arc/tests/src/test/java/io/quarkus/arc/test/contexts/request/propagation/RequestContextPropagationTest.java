@@ -6,14 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import jakarta.enterprise.context.ContextNotActiveException;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.ContextNotActiveException;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RequestContextPropagationTest {
 

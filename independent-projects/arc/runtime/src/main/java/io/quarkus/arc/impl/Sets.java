@@ -1,6 +1,7 @@
 package io.quarkus.arc.impl;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public final class Sets {
@@ -11,7 +12,7 @@ public final class Sets {
     /**
      * Unlike {@link Set#of(Object...)} this method does not throw an {@link IllegalArgumentException} if there are duplicate
      * elements.
-     * 
+     *
      * @param <E>
      * @param elements
      * @return the set
@@ -30,4 +31,9 @@ public final class Sets {
         }
     }
 
+    public static <E> HashSet<E> singletonHashSet(E element) {
+        HashSet<E> result = new HashSet<>();
+        result.add(element);
+        return result;
+    }
 }

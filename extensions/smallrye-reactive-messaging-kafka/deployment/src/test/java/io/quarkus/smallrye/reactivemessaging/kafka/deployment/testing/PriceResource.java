@@ -4,10 +4,10 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 //import org.eclipse.microprofile.reactive.messaging.Channel;
 //import org.reactivestreams.Publisher;
 //
-//import javax.ws.rs.GET;
-//import javax.ws.rs.Path;
-//import javax.ws.rs.Produces;
-//import javax.ws.rs.core.MediaType;
+//import jakarta.ws.rs.GET;
+//import jakarta.ws.rs.Path;
+//import jakarta.ws.rs.Produces;
+//import jakarta.ws.rs.core.MediaType;
 //
 //@Path("/prices")
 public class PriceResource {

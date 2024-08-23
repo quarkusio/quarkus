@@ -1,10 +1,13 @@
 package io.quarkus.maven.dependency;
 
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import java.io.Serializable;
 import java.util.Objects;
 
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
+
 public class GAV implements WorkspaceModuleId, Serializable {
+
+    private static final long serialVersionUID = -1110768961345248967L;
 
     private final String groupId;
     private final String artifactId;

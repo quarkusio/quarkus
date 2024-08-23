@@ -5,9 +5,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import java.util.Set;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -35,7 +38,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
     }
 
     @Override
-    public FormDataParser create(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (forceCreation || (mimeType != null && mimeType.startsWith(APPLICATION_X_WWW_FORM_URLENCODED))) {
 

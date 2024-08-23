@@ -3,24 +3,6 @@ package io.quarkus.qute.generator;
 import static java.util.function.Predicate.not;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.CatchBlockCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.FunctionCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.gizmo.TryBlock;
-import io.quarkus.qute.EvalContext;
-import io.quarkus.qute.EvaluatedParams;
-import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.TemplateData;
-import io.quarkus.qute.ValueResolver;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,10 +18,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -53,12 +36,33 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.Switch;
+import io.quarkus.gizmo.TryBlock;
+import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.EvaluatedParams;
+import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.TemplateData;
+import io.quarkus.qute.ValueResolver;
+
 /**
  * Generates value resolvers backed by classes.
- * 
+ *
  * @see ValueResolver
  */
-public class ValueResolverGenerator {
+public class ValueResolverGenerator extends AbstractGenerator {
 
     public static Builder builder() {
         return new Builder();
@@ -72,7 +76,6 @@ public class ValueResolverGenerator {
     public static final String NESTED_SEPARATOR = "$_";
 
     private static final Logger LOGGER = Logger.getLogger(ValueResolverGenerator.class);
-
     public static final String GET_PREFIX = "get";
     public static final String IS_PREFIX = "is";
     public static final String HAS_PREFIX = "has";
@@ -85,9 +88,6 @@ public class ValueResolverGenerator {
 
     public static final int DEFAULT_PRIORITY = 10;
 
-    private final Set<String> generatedTypes;
-    private final IndexView index;
-    private final ClassOutput classOutput;
     private final Map<DotName, ClassInfo> nameToClass;
     private final Map<DotName, AnnotationInstance> nameToTemplateData;
 
@@ -96,16 +96,10 @@ public class ValueResolverGenerator {
     ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, ClassInfo> nameToClass,
             Map<DotName, AnnotationInstance> nameToTemplateData,
             Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction) {
-        this.generatedTypes = new HashSet<>();
-        this.classOutput = classOutput;
-        this.index = index;
+        super(index, classOutput);
         this.nameToClass = new HashMap<>(nameToClass);
         this.nameToTemplateData = new HashMap<>(nameToTemplateData);
         this.forceGettersFunction = forceGettersFunction;
-    }
-
-    public Set<String> getGeneratedTypes() {
-        return generatedTypes;
     }
 
     /**
@@ -170,7 +164,7 @@ public class ValueResolverGenerator {
         AnnotationInstance templateData = nameToTemplateData.get(className);
         if (templateData == null) {
             // @TemplateData declared on the class
-            for (AnnotationInstance annotation : clazz.classAnnotations()) {
+            for (AnnotationInstance annotation : clazz.declaredAnnotations()) {
                 if (annotation.name().equals(TEMPLATE_DATA)) {
                     AnnotationValue targetValue = annotation.value(TARGET);
                     if (targetValue == null || targetValue.asClass().name().equals(className)) {
@@ -273,15 +267,24 @@ public class ValueResolverGenerator {
         Function<FieldInfo, String> fieldToGetterFun = forceGettersFunction != null ? forceGettersFunction.apply(clazz) : null;
 
         // First collect and sort methods (getters must come before is/has properties, etc.)
-        List<MethodKey> methods = clazz.methods().stream().filter(filter::test).map(MethodKey::new).sorted()
-                .collect(Collectors.toList());
+        List<MethodKey> methods = new ArrayList<>();
+        for (MethodInfo method : clazz.methods()) {
+            if (filter.test(method)) {
+                methods.add(new MethodKey(method));
+            }
+        }
+        methods.sort(null);
+
         if (!ignoreSuperclasses && !clazz.isEnum()) {
             DotName superName = clazz.superName();
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 ClassInfo superClass = index.getClassByName(superName);
                 if (superClass != null) {
-                    methods.addAll(
-                            superClass.methods().stream().filter(filter::test).map(MethodKey::new).collect(Collectors.toSet()));
+                    for (MethodInfo method : superClass.methods()) {
+                        if (filter.test(method)) {
+                            methods.add(new MethodKey(method));
+                        }
+                    }
                     superName = superClass.superName();
                 } else {
                     superName = null;
@@ -290,137 +293,163 @@ public class ValueResolverGenerator {
             }
         }
 
-        List<FieldInfo> fields = clazz.fields().stream().filter(filter::test).collect(Collectors.toList());
-        if (!fields.isEmpty()) {
-            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : fields) {
-                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
-                if (getterName != null && noneMethodMatches(methods, getterName)) {
-                    LOGGER.debugf("Forced getter added: %s", field);
-                    BytecodeCreator getterMatch = zeroParamsBranch.createScope();
-                    // Match the getter name
-                    BytecodeCreator notMatched = getterMatch.ifNonZero(getterMatch.invokeVirtualMethod(Descriptors.EQUALS,
-                            getterMatch.load(getterName),
-                            name))
-                            .falseBranch();
-                    // Match the property name
-                    notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
-                            notMatched.load(field.name()),
-                            name)).falseBranch().breakScope(getterMatch);
-                    ResultHandle value = getterMatch.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
-                                    DescriptorUtils.typeToString(field.type())),
-                            base);
-                    getterMatch.returnValue(getterMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-                } else {
-                    LOGGER.debugf("Field added: %s", field);
-                    // Match field name
-                    BytecodeCreator fieldMatch = zeroParamsBranch
-                            .ifNonZero(
-                                    zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                            resolve.load(field.name()), name))
-                            .trueBranch();
-                    ResultHandle value = fieldMatch
-                            .readInstanceField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
-                                    base);
-                    fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
-                }
+        List<FieldInfo> fields = new ArrayList<>();
+        for (FieldInfo field : clazz.fields()) {
+            if (filter.test(field)) {
+                fields.add(field);
             }
         }
 
         if (methods.isEmpty() && fields.isEmpty()) {
+            // No members
             return false;
         }
 
-        if (!methods.isEmpty()) {
-            // name, number of params -> list of methods
-            Map<Match, List<MethodInfo>> matches = new HashMap<>();
-            Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
+        // Collect methods
+        List<MethodKey> noParamMethods = new ArrayList<>();
+        // name, number of params -> list of methods
+        Map<Match, List<MethodInfo>> matches = new HashMap<>();
+        Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-            for (MethodKey methodKey : methods) {
-                MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameters();
-                if (methodParams.isEmpty()) {
-                    // No params - just invoke the method
-                    LOGGER.debugf("Method added %s", method);
-                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
-                            params, paramsCount)) {
-                        ResultHandle ret;
-                        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
-                        ResultHandle invokeRet;
-                        if (Modifier.isInterface(clazz.flags())) {
-                            invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                        } else {
-                            invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
-                        }
-                        if (hasCompletionStage) {
-                            ret = invokeRet;
-                        } else {
-                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
-                        }
-                        matchScope.returnValue(ret);
-                    }
-                } else {
-                    // Collect methods with params
-                    Match match = new Match(method.name(), method.parameters().size());
-                    List<MethodInfo> methodMatches = matches.get(match);
+        for (MethodKey methodKey : methods) {
+            MethodInfo method = methodKey.method;
+            if (method.parametersCount() == 0) {
+                noParamMethods.add(methodKey);
+            } else {
+                Match match = new Match(method.name(), method.parametersCount());
+                List<MethodInfo> methodMatches = matches.get(match);
+                if (methodMatches == null) {
+                    methodMatches = new ArrayList<>();
+                    matches.put(match, methodMatches);
+                }
+                methodMatches.add(method);
+
+                if (isVarArgs(method)) {
+                    // The last argument is a sequence of arguments -> match name and min number of params
+                    // getList(int age, String... names) -> "getList", 1
+                    match = new Match(method.name(), method.parametersCount() - 1);
+                    methodMatches = varargsMatches.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
-                        matches.put(match, methodMatches);
+                        varargsMatches.put(match, methodMatches);
                     }
                     methodMatches.add(method);
-
-                    if (isVarArgs(method)) {
-                        // The last argument is a sequence of arguments -> match name and min number of params
-                        // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parameters().size() - 1);
-                        methodMatches = varargsMatches.get(match);
-                        if (methodMatches == null) {
-                            methodMatches = new ArrayList<>();
-                            varargsMatches.put(match, methodMatches);
-                        }
-                        methodMatches.add(method);
-                    }
                 }
-            }
-
-            // Match methods by name and number of params
-            for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
-                Match match = entry.getKey();
-
-                // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
-                Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
-                varargsMatches.entrySet().stream()
-                        .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
-                        .forEach(e -> methodMatches.addAll(e.getValue()));
-
-                if (methodMatches.size() == 1) {
-                    // Single method matches the name and number of params
-                    matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
-                } else {
-                    // Multiple methods match the name and number of params
-                    matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
-                            params, paramsCount, evalContext);
-                }
-            }
-
-            // For varargs methods we also need to match name and any number of params
-            Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
-            for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
-                List<MethodInfo> list = varargsMap.get(entry.getKey().name);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    varargsMap.put(entry.getKey().name, list);
-                }
-                list.addAll(entry.getValue());
-            }
-            for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
-                matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
-                        paramsCount, evalContext);
             }
         }
+
+        if (!noParamMethods.isEmpty() || !fields.isEmpty()) {
+
+            BytecodeCreator zeroParamsBranch = resolve.ifZero(paramsCount).trueBranch();
+
+            Switch.StringSwitch nameSwitch = zeroParamsBranch.stringSwitch(name);
+            Set<String> matchedNames = new HashSet<>();
+
+            for (MethodKey methodKey : noParamMethods) {
+                // No params - just invoke the method if the name matches
+                MethodInfo method = methodKey.method;
+                List<String> matchingNames = new ArrayList<>();
+                if (matchedNames.add(method.name())) {
+                    matchingNames.add(method.name());
+                }
+                String propertyName = isGetterName(method.name(), method.returnType()) ? getPropertyName(method.name()) : null;
+                if (propertyName != null && matchedNames.add(propertyName)) {
+                    matchingNames.add(propertyName);
+                }
+                if (matchingNames.isEmpty()) {
+                    continue;
+                }
+                LOGGER.debugf("No-args method added %s", method);
+                Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                    @Override
+                    public void accept(BytecodeCreator bc) {
+                        Type returnType = method.returnType();
+                        ResultHandle invokeRet;
+                        if (Modifier.isInterface(clazz.flags())) {
+                            invokeRet = bc.invokeInterfaceMethod(MethodDescriptor.of(method), base);
+                        } else {
+                            invokeRet = bc.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                        }
+                        processReturnVal(bc, returnType, invokeRet, valueResolver);
+                    }
+                };
+                nameSwitch.caseOf(matchingNames, invokeMethod);
+            }
+
+            for (FieldInfo field : fields) {
+                String getterName = fieldToGetterFun != null ? fieldToGetterFun.apply(field) : null;
+                if (getterName != null && noneMethodMatches(methods, getterName) && matchedNames.add(getterName)) {
+                    LOGGER.debugf("Forced getter added: %s", field);
+                    List<String> matching;
+                    if (matchedNames.add(field.name())) {
+                        matching = List.of(getterName, field.name());
+                    } else {
+                        matching = List.of(getterName);
+                    }
+                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                        @Override
+                        public void accept(BytecodeCreator bc) {
+                            ResultHandle value = bc.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(clazz.name().toString(), getterName,
+                                            DescriptorUtils.typeToString(field.type())),
+                                    base);
+                            bc.returnValue(bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value));
+                        }
+                    };
+                    nameSwitch.caseOf(matching, invokeMethod);
+                } else if (matchedNames.add(field.name())) {
+                    LOGGER.debugf("Field added: %s", field);
+                    Consumer<BytecodeCreator> invokeMethod = new Consumer<BytecodeCreator>() {
+                        @Override
+                        public void accept(BytecodeCreator bc) {
+                            ResultHandle value = bc.readInstanceField(
+                                    FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()),
+                                    base);
+                            ResultHandle ret = bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value);
+                            bc.returnValue(ret);
+                        }
+                    };
+                    nameSwitch.caseOf(field.name(), invokeMethod);
+                }
+            }
+        }
+
+        // Match methods by name and number of params
+        for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
+            Match match = entry.getKey();
+
+            // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
+            // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
+            Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
+            varargsMatches.entrySet().stream()
+                    .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
+                    .forEach(e -> methodMatches.addAll(e.getValue()));
+
+            if (methodMatches.size() == 1) {
+                // Single method matches the name and number of params
+                matchMethod(methodMatches.iterator().next(), clazz, resolve, base, name, params, paramsCount, evalContext);
+            } else {
+                // Multiple methods match the name and number of params
+                matchMethods(match.name, match.paramsCount, methodMatches, clazz, resolve, base, name,
+                        params, paramsCount, evalContext);
+            }
+        }
+
+        // For varargs methods we also need to match name and any number of params
+        Map<String, List<MethodInfo>> varargsMap = new HashMap<>();
+        for (Entry<Match, List<MethodInfo>> entry : varargsMatches.entrySet()) {
+            List<MethodInfo> list = varargsMap.get(entry.getKey().name);
+            if (list == null) {
+                list = new ArrayList<>();
+                varargsMap.put(entry.getKey().name, list);
+            }
+            list.addAll(entry.getValue());
+        }
+        for (Entry<String, List<MethodInfo>> entry : varargsMap.entrySet()) {
+            matchMethods(entry.getKey(), Integer.MIN_VALUE, entry.getValue(), clazz, resolve, base, name, params,
+                    paramsCount, evalContext);
+        }
+
         resolve.returnValue(resolve.invokeStaticMethod(Descriptors.RESULTS_NOT_FOUND_EC, evalContext));
         return true;
     }
@@ -437,70 +466,69 @@ public class ValueResolverGenerator {
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
 
         // First collect static members
-        List<MethodKey> methods = clazz.methods().stream()
-                .filter(filter::test)
-                .map(MethodKey::new)
-                .sorted()
-                .collect(Collectors.toList());
-
-        List<FieldInfo> fields = clazz.fields().stream()
-                .filter(filter::test)
-                .collect(Collectors.toList());
-
-        if (methods.isEmpty() && fields.isEmpty()) {
-            return false;
+        List<MethodKey> staticMethods = new ArrayList<>();
+        for (MethodInfo method : clazz.methods()) {
+            if (filter.test(method)) {
+                staticMethods.add(new MethodKey(method));
+            }
         }
+        staticMethods.sort(null);
 
-        // Static fields
-        if (!fields.isEmpty()) {
-            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
-            for (FieldInfo field : fields) {
-                LOGGER.debugf("Static field added: %s", field);
-                // Match field name
-                BytecodeCreator fieldMatch = zeroParamsBranch
-                        .ifNonZero(
-                                zeroParamsBranch.invokeVirtualMethod(Descriptors.EQUALS,
-                                        resolve.load(field.name()), name))
-                        .trueBranch();
-                ResultHandle value = fieldMatch
-                        .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
-                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE, value));
+        List<FieldInfo> staticFields = new ArrayList<>();
+        for (FieldInfo field : clazz.fields()) {
+            if (filter.test(field)) {
+                staticFields.add(field);
             }
         }
 
-        // Static methods
-        if (!methods.isEmpty()) {
+        if (staticMethods.isEmpty() && staticFields.isEmpty()) {
+            return false;
+        }
+
+        if (!staticFields.isEmpty()) {
+            BytecodeCreator zeroParamsBranch = resolve.ifNonZero(paramsCount).falseBranch();
+            for (FieldInfo field : staticFields) {
+                LOGGER.debugf("Static field added: %s", field);
+                // Match field name
+                BytecodeCreator fieldMatch = zeroParamsBranch
+                        .ifTrue(Gizmo.equals(zeroParamsBranch, resolve.load(field.name()), name))
+                        .trueBranch();
+                ResultHandle value = fieldMatch
+                        .readStaticField(FieldDescriptor.of(clazzName, field.name(), field.type().name().toString()));
+                fieldMatch.returnValue(fieldMatch.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, value));
+            }
+        }
+
+        if (!staticMethods.isEmpty()) {
             // name, number of params -> list of methods
             Map<Match, List<MethodInfo>> matches = new HashMap<>();
             Map<Match, List<MethodInfo>> varargsMatches = new HashMap<>();
 
-            for (MethodKey methodKey : methods) {
+            for (MethodKey methodKey : staticMethods) {
                 MethodInfo method = methodKey.method;
-                List<Type> methodParams = method.parameters();
+                List<Type> methodParams = method.parameterTypes();
                 if (methodParams.isEmpty()) {
                     // No params - just invoke the method
                     LOGGER.debugf("Static method added %s", method);
                     try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
                             params, paramsCount)) {
                         ResultHandle ret;
-                        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
                         ResultHandle invokeRet;
                         if (Modifier.isInterface(clazz.flags())) {
                             invokeRet = matchScope.invokeStaticInterfaceMethod(MethodDescriptor.of(method));
                         } else {
                             invokeRet = matchScope.invokeStaticMethod(MethodDescriptor.of(method));
                         }
-                        if (hasCompletionStage) {
+                        if (hasCompletionStage(method.returnType())) {
                             ret = invokeRet;
                         } else {
-                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE, invokeRet);
+                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, invokeRet);
                         }
                         matchScope.returnValue(ret);
                     }
                 } else {
                     // Collect methods with params
-                    Match match = new Match(method.name(), method.parameters().size());
+                    Match match = new Match(method.name(), method.parametersCount());
                     List<MethodInfo> methodMatches = matches.get(match);
                     if (methodMatches == null) {
                         methodMatches = new ArrayList<>();
@@ -511,7 +539,7 @@ public class ValueResolverGenerator {
                     if (isVarArgs(method)) {
                         // The last argument is a sequence of arguments -> match name and min number of params
                         // getList(int age, String... names) -> "getList", 1
-                        match = new Match(method.name(), method.parameters().size() - 1);
+                        match = new Match(method.name(), method.parametersCount() - 1);
                         methodMatches = varargsMatches.get(match);
                         if (methodMatches == null) {
                             methodMatches = new ArrayList<>();
@@ -527,7 +555,7 @@ public class ValueResolverGenerator {
                 Match match = entry.getKey();
 
                 // The set of matching methods is made up of the methods matching the name and number of params + varargs methods matching the name and minimal number of params
-                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param 
+                // For example both the methods getList(int age, String... names) and getList(int age) match "getList" and 1 param
                 Set<MethodInfo> methodMatches = new HashSet<>(entry.getValue());
                 varargsMatches.entrySet().stream()
                         .filter(e -> e.getKey().name.equals(match.name) && e.getKey().paramsCount >= match.paramsCount)
@@ -565,7 +593,7 @@ public class ValueResolverGenerator {
 
     private void matchMethod(MethodInfo method, ClassInfo clazz, MethodCreator resolve, ResultHandle base, ResultHandle name,
             ResultHandle params, ResultHandle paramsCount, ResultHandle evalContext) {
-        List<Type> methodParams = method.parameters();
+        List<Type> methodParams = method.parameterTypes();
 
         LOGGER.debugf("Method added %s", method);
 
@@ -574,11 +602,8 @@ public class ValueResolverGenerator {
                 paramsCount);
 
         // Invoke the method
-        ResultHandle ret;
-        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
         // Evaluate the params first
-        ret = matchScope
+        ResultHandle ret = matchScope
                 .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
         // The CompletionStage upon which we invoke whenComplete()
@@ -608,7 +633,7 @@ public class ValueResolverGenerator {
         BytecodeCreator success = throwableIsNull.trueBranch();
 
         // Check type parameters and return NO_RESULT if failed
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         ResultHandle paramTypesHandle = success.newArray(Class.class, parameterTypes.size());
         int idx = 0;
         for (Type parameterType : parameterTypes) {
@@ -643,25 +668,45 @@ public class ValueResolverGenerator {
         exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
                 exception.getCaughtException());
 
+        ResultHandle[] realParamsHandle = paramsHandle;
+        if (isVarArgs(method)) {
+            // For varargs the number of results may be higher than the number of method params
+            // First get the regular params
+            realParamsHandle = new ResultHandle[parameterTypes.size()];
+            for (int i = 0; i < parameterTypes.size() - 1; i++) {
+                ResultHandle resultHandle = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                        whenEvaluatedParams, tryCatch.load(i));
+                realParamsHandle[i] = resultHandle;
+            }
+            // Then we need to create an array for the last argument
+            Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
+            ResultHandle componentType = tryCatch
+                    .loadClass(varargsParam.asArrayType().constituent().name().toString());
+            ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
+                    evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
+            // E.g. String, String, String -> String, String[]
+            realParamsHandle[parameterTypes.size() - 1] = varargsResults;
+        }
+
         if (Modifier.isStatic(method.flags())) {
             if (Modifier.isInterface(clazz.flags())) {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), paramsHandle));
+                        tryCatch.invokeStaticInterfaceMethod(MethodDescriptor.of(method), realParamsHandle));
             } else {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), paramsHandle));
+                        tryCatch.invokeStaticMethod(MethodDescriptor.of(method), realParamsHandle));
             }
         } else {
             if (Modifier.isInterface(clazz.flags())) {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             } else {
                 tryCatch.assign(invokeRet,
-                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, realParamsHandle));
             }
         }
 
-        if (hasCompletionStage) {
+        if (hasCompletionStage(method.returnType())) {
             FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
             tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
                     invokeWhenCompleteFun.getInstance());
@@ -748,7 +793,7 @@ public class ValueResolverGenerator {
             boolean isVarArgs = isVarArgs(method);
             // Try to match parameter types
             try (BytecodeCreator paramMatchScope = success.createScope()) {
-                List<Type> parameterTypes = method.parameters();
+                List<Type> parameterTypes = method.parameterTypes();
                 ResultHandle paramTypesHandle = paramMatchScope.newArray(Class.class, parameterTypes.size());
                 int idx = 0;
                 for (Type parameterType : parameterTypes) {
@@ -759,9 +804,6 @@ public class ValueResolverGenerator {
                         .ifNonZero(paramMatchScope.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_PARAM_TYPES_MATCH,
                                 whenEvaluatedParams, paramMatchScope.load(isVarArgs), paramTypesHandle))
                         .falseBranch().breakScope(paramMatchScope);
-
-                boolean hasCompletionStage = !skipMemberType(method.returnType())
-                        && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
                 AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
                 // try
@@ -784,7 +826,8 @@ public class ValueResolverGenerator {
                     }
                     // Then we need to create an array for the last argument
                     Type varargsParam = parameterTypes.get(parameterTypes.size() - 1);
-                    ResultHandle componentType = tryCatch.loadClass(varargsParam.asArrayType().component().name().toString());
+                    ResultHandle componentType = tryCatch
+                            .loadClass(varargsParam.asArrayType().constituent().name().toString());
                     ResultHandle varargsResults = tryCatch.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_VARARGS_RESULTS,
                             evaluatedParams, tryCatch.load(parameterTypes.size()), componentType);
                     // E.g. String, String, String -> String, String[]
@@ -809,7 +852,7 @@ public class ValueResolverGenerator {
                     }
                 }
 
-                if (hasCompletionStage) {
+                if (hasCompletionStage(method.returnType())) {
                     FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
                     tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
                             invokeWhenCompleteFun.getInstance());
@@ -880,19 +923,21 @@ public class ValueResolverGenerator {
             Type returnType, ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
+
         // Match name
-        BytecodeCreator notMatched = matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
-                matchScope.load(methodName),
-                name))
-                .falseBranch();
-        // Match the property name for getters,  ie. "foo" for "getFoo"
-        if (methodParams == 0 && isGetterName(methodName, returnType)) {
-            notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
-                    notMatched.load(getPropertyName(methodName)),
-                    name)).falseBranch().breakScope(matchScope);
+        if (methodParams <= 0 && isGetterName(methodName, returnType)) {
+            // Getter found - match the property name first
+            BytecodeCreator notMatched = matchScope
+                    .ifTrue(Gizmo.equals(matchScope, matchScope.load(getPropertyName(methodName)), name))
+                    .falseBranch();
+            // If the property does not match then use the exact method name
+            notMatched.ifTrue(Gizmo.equals(notMatched, matchScope.load(methodName), name)).falseBranch().breakScope(matchScope);
         } else {
-            notMatched.breakScope(matchScope);
+            // No getter - only match the exact method name
+            matchScope.ifTrue(Gizmo.equals(matchScope, matchScope.load(methodName), name))
+                    .falseBranch().breakScope(matchScope);
         }
+
         // Match number of params
         if (methodParams >= 0) {
             matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);
@@ -943,7 +988,7 @@ public class ValueResolverGenerator {
          * the given field</li>
          * <li>{@code null} if getters are not forced for the given class</li>
          * </ul>
-         * 
+         *
          * @param forceGettersFunction
          * @return self
          */
@@ -970,33 +1015,33 @@ public class ValueResolverGenerator {
 
     }
 
-    private boolean skipMemberType(Type type) {
-        switch (type.kind()) {
-            case VOID:
-            case PRIMITIVE:
-            case ARRAY:
-            case TYPE_VARIABLE:
-            case UNRESOLVED_TYPE_VARIABLE:
-            case WILDCARD_TYPE:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     private Predicate<AnnotationTarget> initFilters(AnnotationInstance templateData) {
         Predicate<AnnotationTarget> filter = ValueResolverGenerator::defaultFilter;
         if (templateData != null) {
             // @TemplateData is present
             AnnotationValue ignoreValue = templateData.value(IGNORE);
             if (ignoreValue != null) {
-                List<Pattern> ignore = Arrays.asList(ignoreValue.asStringArray()).stream().map(Pattern::compile)
-                        .collect(Collectors.toList());
+                List<Pattern> ignores = new ArrayList<>();
+                for (String pattern : Arrays.asList(ignoreValue.asStringArray())) {
+                    ignores.add(Pattern.compile(pattern));
+                }
                 filter = filter.and(t -> {
                     if (t.kind() == Kind.FIELD) {
-                        return !ignore.stream().anyMatch(p -> p.matcher(t.asField().name()).matches());
+                        String fieldName = t.asField().name();
+                        for (Pattern p : ignores) {
+                            if (p.matcher(fieldName).matches()) {
+                                return false;
+                            }
+                        }
+                        return true;
                     } else {
-                        return !ignore.stream().anyMatch(p -> p.matcher(t.asMethod().name()).matches());
+                        String methodName = t.asMethod().name();
+                        for (Pattern p : ignores) {
+                            if (p.matcher(methodName).matches()) {
+                                return false;
+                            }
+                        }
+                        return true;
                     }
                 });
             }
@@ -1013,7 +1058,7 @@ public class ValueResolverGenerator {
 
     static boolean propertiesFilter(AnnotationTarget target) {
         if (target.kind() == Kind.METHOD) {
-            return target.asMethod().parameters().size() == 0;
+            return target.asMethod().parametersCount() == 0;
         }
         return true;
     }
@@ -1037,8 +1082,8 @@ public class ValueResolverGenerator {
                 return Modifier.isPublic(method.flags())
                         && !isSynthetic(method.flags())
                         && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
-                        && !method.name().equals("<init>")
-                        && !method.name().equals("<clinit>");
+                        && !method.name().equals(MethodDescriptor.INIT)
+                        && !method.name().equals(MethodDescriptor.CLINIT);
             case FIELD:
                 FieldInfo field = target.asField();
                 return Modifier.isPublic(field.flags())
@@ -1101,7 +1146,7 @@ public class ValueResolverGenerator {
     }
 
     /**
-     * 
+     *
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
@@ -1130,7 +1175,7 @@ public class ValueResolverGenerator {
      * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
      * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
-     * 
+     *
      * @param name
      * @return the simple name
      */
@@ -1164,38 +1209,6 @@ public class ValueResolverGenerator {
             }
         }
         return true;
-    }
-
-    public static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
-            IndexView index) {
-        return hasClassInTypeClosure(classInfo, DotNames.COMPLETION_STAGE, index);
-    }
-
-    public static boolean hasClassInTypeClosure(ClassInfo classInfo, DotName className,
-            IndexView index) {
-
-        if (classInfo == null) {
-            // TODO cannot perform analysis
-            return false;
-        }
-        if (classInfo.name().equals(className)) {
-            return true;
-        }
-        // Interfaces
-        for (Type interfaceType : classInfo.interfaceTypes()) {
-            ClassInfo interfaceClassInfo = index.getClassByName(interfaceType.name());
-            if (interfaceClassInfo != null && hasCompletionStageInTypeClosure(interfaceClassInfo, index)) {
-                return true;
-            }
-        }
-        // Superclass
-        if (classInfo.superClassType() != null) {
-            ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
-            if (superClassInfo != null && hasClassInTypeClosure(superClassInfo, className, index)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static boolean isVarArgs(MethodInfo method) {
@@ -1248,18 +1261,14 @@ public class ValueResolverGenerator {
             this.method = method;
             this.name = method.name();
             this.params = new ArrayList<>();
-            for (Type i : method.parameters()) {
+            for (Type i : method.parameterTypes()) {
                 params.add(i.name());
             }
         }
 
-        public MethodInfo getMethod() {
-            return method;
-        }
-
         @Override
         public int compareTo(MethodKey other) {
-            // compare the name, then number of params and param type names 
+            // compare the name, then number of params and param type names
             int res = name.compareTo(other.name);
             if (res == 0) {
                 res = Integer.compare(params.size(), other.params.size());

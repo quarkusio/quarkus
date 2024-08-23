@@ -10,8 +10,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import javax.crypto.Cipher;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateKey;
@@ -25,8 +27,8 @@ public class BouncyCastleEndpoint {
     @Path("listProviders")
     public String listProviders() {
         return Arrays.asList(Security.getProviders()).stream()
-                .filter(p -> p.getName().equals("BC"))
-                .map(p -> p.getName()).collect(Collectors.joining());
+                .filter(p -> (p.getName().equals("BC") || p.getName().equals("SunPKCS11")))
+                .map(p -> p.getName()).collect(Collectors.joining(","));
     }
 
     @GET
@@ -46,11 +48,26 @@ public class BouncyCastleEndpoint {
     }
 
     @GET
+    @Path("generateEcDsaKeyPair")
+    public String generateEcDsaKeyPair() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "BC");
+        keyPairGenerator.generateKeyPair();
+        return "success";
+    }
+
+    @GET
     @Path("generateRsaKeyPair")
     public String generateRsaKeyPair() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
         keyPairGenerator.generateKeyPair();
         return "success";
+    }
+
+    @GET
+    @Path("checkAesCbcPKCS7PaddingCipher")
+    public String checkAesCbcPKCS7PaddingCipher() throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "BC");
+        return cipher.getAlgorithm();
     }
 
     @GET

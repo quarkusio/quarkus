@@ -2,9 +2,9 @@ package io.quarkus.oidc.token.propagation;
 
 import java.io.IOException;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.client.ClientRequestContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.client.ClientRequestContext;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -20,7 +20,7 @@ public class JsonWebTokenRequestFilter extends AbstractTokenRequestFilter {
     Instance<org.eclipse.microprofile.jwt.JsonWebToken> jwtAccessToken;
 
     @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation.secure-json-web-token")
+    @ConfigProperty(name = "quarkus.resteasy-client-oidc-token-propagation.secure-json-web-token")
     boolean resignToken;
 
     @Override

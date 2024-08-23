@@ -37,6 +37,30 @@ public interface DataAccessImplementor {
     ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort);
 
     /**
+     * Find all entities.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @param query HQL query to list entities.
+     * @param queryParams Map of parameters to use by the HQL query.
+     * @return Entity list
+     */
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams);
+
+    /**
+     * Find all entities.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @param sort Sort instance that should be used in a query.
+     * @param query HQL query to list entities.
+     * @param queryParams Map of parameters to use by the HQL query.
+     * @return Entity list
+     */
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams);
+
+    /**
      * Persist a new entity.
      *
      * @param creator Bytecode creator that should be used for implementation.
@@ -67,7 +91,18 @@ public interface DataAccessImplementor {
      * Available number of pages given a page instance.
      *
      * @param creator Bytecode creator that should be used for implementation.
-     * @param page Page instance.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
+     * @param query HQL query to list entities.
+     * @param queryParams Map of parameters to use by the HQL query.
+     * @return int page count.
+     */
+    ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams);
+
+    /**
+     * Available number of pages given a page instance.
+     *
+     * @param creator Bytecode creator that should be used for implementation.
+     * @param page Page instance that should be used in a query. Might be null if pagination is disabled.
      * @return int page count.
      */
     ResultHandle pageCount(BytecodeCreator creator, ResultHandle page);

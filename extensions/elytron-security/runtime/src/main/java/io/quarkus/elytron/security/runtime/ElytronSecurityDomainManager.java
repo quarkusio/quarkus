@@ -1,7 +1,7 @@
 package io.quarkus.elytron.security.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.wildfly.security.auth.server.SecurityDomain;
 

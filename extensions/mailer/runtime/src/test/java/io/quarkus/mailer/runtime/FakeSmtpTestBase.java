@@ -17,8 +17,8 @@ import io.vertx.mutiny.core.Vertx;
 public class FakeSmtpTestBase {
 
     protected static final int FAKE_SMTP_PORT = 1465;
-    protected static final String SERVER_JKS = "certs/server2.jks";
-    protected static final String CLIENT_JKS = "certs/client.jks";
+    protected static final String SERVER_JKS = "certs/keystore.jks";
+    protected static final String CLIENT_JKS = "certs/truststore.jks";
 
     protected static final String FROM = "test@test.org";
     protected static final String TO = "foo@quarkus.io";

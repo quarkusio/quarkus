@@ -2,6 +2,8 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.FormParam;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 
 import org.hamcrest.Matchers;
 import org.jboss.resteasy.reactive.DateFormat;
+import org.jboss.resteasy.reactive.Separator;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,6 +37,12 @@ public class LocalDateParamTest {
     }
 
     @Test
+    public void localDateCollectionAsQueryParam() {
+        RestAssured.get("/hello?dates=08-08-1984,25-04-1992")
+                .then().statusCode(200).body(Matchers.equalTo("hello#08-08-1984,25-04-1992"));
+    }
+
+    @Test
     public void localDateAsPathParam() {
         RestAssured.get("/hello/1995-09-21")
                 .then().statusCode(200).body(Matchers.equalTo("hello@1995-09-21"));
@@ -43,6 +52,12 @@ public class LocalDateParamTest {
     public void localDateAsFormParam() {
         RestAssured.given().formParam("date", "1995/09/22").post("/hello")
                 .then().statusCode(200).body(Matchers.equalTo("hello:1995-09-22"));
+    }
+
+    @Test
+    public void localDateCollectionAsFormParam() {
+        RestAssured.given().formParam("date", "1995/09/22").post("/hello")
+                .then().statusCode(200).body(Matchers.equalTo("hello:08-08-1984,25-04-1992"));
     }
 
     @Test
@@ -68,6 +83,18 @@ public class LocalDateParamTest {
         }
 
         @GET
+        public String helloQuerySet(
+                @Separator(",")
+                @QueryParam("dates")
+                @DateFormat(pattern = "dd-MM-yyyy") Set<LocalDate> dates) {
+            String formattedDates = dates.stream()
+                    .map(date -> date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")))
+                    .collect(Collectors.joining(","));
+            return "hello#" + formattedDates;
+        }
+
+
+        @GET
         @Path("{date}")
         public String helloPath(@PathParam("date") LocalDate date) {
             return "hello@" + date;
@@ -77,6 +104,15 @@ public class LocalDateParamTest {
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDate date) {
             return "hello:" + date;
+        }
+
+        @POST
+        public String helloFormSet(
+                @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDate> dates) {
+            String formattedDates = dates.stream()
+                    .map(date -> date.format(CustomDateTimeFormatterProvider.FORMATTER))
+                    .collect(Collectors.joining(","));
+            return "hello:" + formattedDates;
         }
 
         @GET
@@ -95,9 +131,12 @@ public class LocalDateParamTest {
     }
 
     public static class CustomDateTimeFormatterProvider implements DateFormat.DateTimeFormatterProvider {
+
+        static DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+
         @Override
         public DateTimeFormatter get() {
-            return DateTimeFormatter.ofPattern("yyyy/MM/dd");
+            return FORMATTER;
         }
     }
 

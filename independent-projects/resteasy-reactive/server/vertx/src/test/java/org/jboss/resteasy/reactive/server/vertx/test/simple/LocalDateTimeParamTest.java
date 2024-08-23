@@ -3,6 +3,8 @@ package org.jboss.resteasy.reactive.server.vertx.test.simple;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
@@ -15,6 +17,7 @@ import org.jboss.resteasy.reactive.RestCookie;
 import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestPath;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.Separator;
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -34,6 +37,12 @@ public class LocalDateTimeParamTest {
     public void localDateTimeAsQueryParam() {
         RestAssured.get("/hello?date=1984-08-08T01:02:03")
                 .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
+    }
+
+    @Test
+    public void localDateTimeCollectionAsQueryParam() {
+        RestAssured.get("/hello?date=1984-08-08T01:02:03,1992-04-25T01:02:03")
+                .then().statusCode(200).body(Matchers.equalTo("hello#1984,1992"));
     }
 
     @Test
@@ -58,6 +67,12 @@ public class LocalDateTimeParamTest {
     }
 
     @Test
+    public void localDateTimeCollectionAsFormParam() {
+        RestAssured.given().formParam("date", "1995/09/22 01:02", "1992/04/25 01:02").post("/hello")
+                .then().statusCode(200).body(Matchers.equalTo("hello:22,25"));
+    }
+
+    @Test
     public void localDateTimeAsHeader() {
         RestAssured.with().header("date", "1984-08-08 01:02:03")
                 .get("/hello/header")
@@ -79,6 +94,16 @@ public class LocalDateTimeParamTest {
             return "hello#" + date.getYear();
         }
 
+        @GET
+        public String helloQuerySet(@RestQuery @Separator(",") Set<LocalDateTime> date) {
+            String joinedYears = date.stream()
+                    .map(LocalDateTime::getYear)
+                    .sorted()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(","));
+            return "hello#" + joinedYears;
+        }
+
         @Path("optional")
         @GET
         public String helloOptionalQuery(@RestQuery Optional<LocalDateTime> date) {
@@ -95,6 +120,18 @@ public class LocalDateTimeParamTest {
         public String helloForm(
                 @FormParam("date") @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) LocalDateTime date) {
             return "hello:" + date.getDayOfMonth();
+        }
+
+        @POST
+        public String helloFormSet(
+                @FormParam("date")
+                @DateFormat(dateTimeFormatterProvider = CustomDateTimeFormatterProvider.class) Set<LocalDateTime> dates) {
+            String joinedDays = dates.stream()
+                    .map(LocalDateTime::getDayOfMonth)
+                    .sorted()
+                    .map(Object::toString)
+                    .collect(Collectors.joining(","));
+            return "hello:" + joinedDays;
         }
 
         @Path("cookie")

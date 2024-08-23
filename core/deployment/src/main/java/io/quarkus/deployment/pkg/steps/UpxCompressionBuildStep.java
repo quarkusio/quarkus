@@ -124,7 +124,7 @@ public class UpxCompressionBuildStep {
         commandLine.add("--rm");
         commandLine.add("--entrypoint=upx");
 
-        String containerName = "upx-" + RandomStringUtils.random(5, true, false);
+        String containerName = "upx-" + RandomStringUtils.insecure().next(5, true, false);
         commandLine.add("--name");
         commandLine.add(containerName);
 

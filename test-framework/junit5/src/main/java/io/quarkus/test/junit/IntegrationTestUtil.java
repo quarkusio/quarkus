@@ -319,7 +319,7 @@ public final class IntegrationTestUtil {
                 if (networkIdOpt.isPresent()) {
                     networkId = networkIdOpt.get();
                 } else {
-                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
                     manageNetwork = true;
                 }
             }

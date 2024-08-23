@@ -50,7 +50,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
     private boolean isSsl;
-    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Optional<String> entryPoint;

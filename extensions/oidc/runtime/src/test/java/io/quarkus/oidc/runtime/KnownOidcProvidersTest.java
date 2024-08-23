@@ -529,10 +529,12 @@ public class KnownOidcProvidersTest {
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
         assertFalse(config.discoveryEnabled.get());
         assertEquals("https://discord.com/api/oauth2", config.getAuthServerUrl().get());
         assertEquals("authorize", config.getAuthorizationPath().get());
         assertEquals("token", config.getTokenPath().get());
+        assertEquals("keys", config.getJwksPath().get());
         assertEquals("https://discord.com/api/users/@me", config.getUserInfoPath().get());
         assertEquals(List.of("identify", "email"), config.authentication.scopes.get());
         assertFalse(config.getAuthentication().idTokenRequired.get());

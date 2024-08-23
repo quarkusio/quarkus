@@ -465,10 +465,10 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         try {
             builder.setConverter(extractConverter(elementType, index,
-                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns()));
+                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo));
         } catch (Throwable throwable) {
             throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
                     + " of type " + builder.getType(), throwable);
@@ -477,9 +477,9 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType) {
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
@@ -493,7 +493,7 @@ public class ServerEndpointIndexer
 
         if (genericElementType != null) {
             ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
-                    errorLocation, hasRuntimeConverters, builder.getAnns());
+                    errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
             if (LIST.toString().equals(elementType)) {
                 converter = new ListConverter.ListSupplier(genericTypeConverter);
                 builder.setSingle(false);
@@ -512,7 +512,7 @@ public class ServerEndpointIndexer
         if (converter == null) {
             // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
             converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters,
-                    builder.getAnns());
+                    builder.getAnns(), currentMethodInfo);
         }
 
         builder.setConverter(new OptionalConverter.OptionalSupplier(converter));
@@ -520,25 +520,25 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SetConverter.SetSupplier(converter));
     }
 
     @Override
     protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
     @Override
     protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType) {
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns());
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
@@ -643,7 +643,7 @@ public class ServerEndpointIndexer
 
     private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            Map<DotName, AnnotationInstance> annotations) {
+            Map<DotName, AnnotationInstance> annotations, MethodInfo currentMethodInfo) {
         // no converter if we have a RestForm mime type: this goes via message body readers in MultipartFormParamExtractor
         if (getPartMime(annotations) != null)
             return null;
@@ -676,7 +676,14 @@ public class ServerEndpointIndexer
                 || elementType.equals(InputStream.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
+        } else {
+            DotName typeName = DotName.createSimple(elementType);
+            if (SUPPORT_TEMPORAL_PARAMS.contains(typeName)) {
+                //It might be a LocalDate[Time] object
+                return determineTemporalConverter(typeName, annotations, currentMethodInfo);
+            }
         }
+
         return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
                 hasRuntimeConverters);
     }

@@ -20,8 +20,13 @@ import io.quarkus.test.common.QuarkusTestResource.List;
  * <p>
  * Note that test resources are never restarted when running {@code @Nested} test classes.
  *
- * @deprecated Use the new {@link WithTestResource} instead. It will be a long while before this is removed, but better to move
- *             to the replacement sooner than later.
+ * @deprecated Use the new {@link WithTestResource} instead. Be careful, {@link WithTestResource} doesn't have the same behavior
+ *             by default and you might want to set {@code restrictToAnnotatedClass} to {@code false} to keep your current
+ *             behavior. If you don't, the test resource will be local to the annotated test and Quarkus will be restarted for
+ *             each annotated test. While it is a saner behavior in general, it might not be what you want for your project if
+ *             the default behavior of {@code QuarkusTestResource} was fine for you.
+ *             Please see the <a href="https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.13">Quarkus 3.13 migration
+ *             guide</a> for more information.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

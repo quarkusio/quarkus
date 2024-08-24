@@ -9,13 +9,13 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     protected final String sourceClass;
     protected final String sourceName;
-    protected final String path;
+    protected final Path path;
 
     protected final String type;
 
     protected boolean deprecated;
 
-    public AbstractConfigItem(String sourceClass, String sourceName, String path, String type, boolean deprecated) {
+    public AbstractConfigItem(String sourceClass, String sourceName, Path path, String type, boolean deprecated) {
         this.sourceClass = sourceClass;
         this.sourceName = sourceName;
         this.path = path;
@@ -31,8 +31,14 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
         return sourceName;
     }
 
-    public String getPath() {
+    public Path getPath() {
         return path;
+    }
+
+    @Deprecated
+    @JsonIgnore
+    public String getPath$$bridge() {
+        return path.property();
     }
 
     public String getType() {
@@ -53,4 +59,9 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
     public abstract boolean hasMemorySizeType();
 
     protected abstract void walk(ConfigItemVisitor visitor);
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+    public interface Path {
+        String property();
+    }
 }

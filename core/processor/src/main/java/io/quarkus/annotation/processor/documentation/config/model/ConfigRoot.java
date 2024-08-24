@@ -77,7 +77,7 @@ public class ConfigRoot implements ConfigItemCollection {
 
         for (AbstractConfigItem otherItem : other.getItems()) {
             if (otherItem instanceof ConfigSection otherConfigSection) {
-                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath());
+                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath().property());
 
                 if (similarConfigSection == null) {
                     this.items.add(otherConfigSection);
@@ -97,7 +97,7 @@ public class ConfigRoot implements ConfigItemCollection {
     private void collectConfigSections(Map<String, ConfigSection> configSections, ConfigItemCollection configItemCollection) {
         for (AbstractConfigItem item : configItemCollection.getItems()) {
             if (item instanceof ConfigSection configSection) {
-                configSections.put(item.getPath(), configSection);
+                configSections.put(item.getPath().property(), configSection);
 
                 collectConfigSections(configSections, configSection);
             }

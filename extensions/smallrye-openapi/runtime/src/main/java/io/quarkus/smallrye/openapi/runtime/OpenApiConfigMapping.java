@@ -28,7 +28,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
 
     @Override
     public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
-        final Converter<OperationIdStrategy> implicitConverter = Converters.getImplicitConverter(OperationIdStrategy.class);
         ConfigValue configValue = super.getValue(context, name);
         // Special case for enum. The converter run after the interceptors, so we have to do this here.
         if (name.equals(io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY)) {

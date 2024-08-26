@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Cookie;
@@ -380,20 +381,38 @@ public class ResteasyReactiveJacksonProcessor {
 
         IndexView indexView = jaxRsIndex.getIndexView();
 
-        Map<String, ClassInfo> jsonClasses = new HashMap<>();
+        Map<String, ClassInfo> serializedClasses = new HashMap<>();
+        Map<String, ClassInfo> deserializedClasses = new HashMap<>();
+
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
             if (effectiveReturnClassInfo != null) {
-                jsonClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+                serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+            }
+
+            if (methodInfo.hasAnnotation(POST.class)) {
+                for (Type paramType : methodInfo.parameterTypes()) {
+                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView);
+                    if (effectiveParamClassInfo != null) {
+                        deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
+                    }
+                }
             }
         }
 
-        if (!jsonClasses.isEmpty()) {
+        if (!serializedClasses.isEmpty()) {
             JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(jsonClasses.values())
+            factory.create(serializedClasses.values())
                     .forEach(recorder::recordGeneratedSerializer);
+        }
+
+        if (!deserializedClasses.isEmpty()) {
+            JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
+                    index.getComputingIndex());
+            factory.create(deserializedClasses.values())
+                    .forEach(recorder::recordGeneratedDeserializer);
         }
     }
 
@@ -434,7 +453,7 @@ public class ResteasyReactiveJacksonProcessor {
                 continue;
             }
 
-            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
             if (effectiveReturnClassInfo == null) {
                 continue;
             }
@@ -463,17 +482,16 @@ public class ResteasyReactiveJacksonProcessor {
         }
     }
 
-    private static ClassInfo getEffectiveReturnClassInfo(MethodInfo methodInfo, IndexView indexView) {
-        Type returnType = methodInfo.returnType();
-        if (returnType.kind() == Type.Kind.VOID) {
+    private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView) {
+        if (type.kind() == Type.Kind.VOID) {
             return null;
         }
-        Type effectiveReturnType = getEffectiveReturnType(returnType);
+        Type effectiveReturnType = getEffectiveType(type);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
-    private static Type getEffectiveReturnType(Type returnType) {
-        Type effectiveReturnType = returnType;
+    private static Type getEffectiveType(Type type) {
+        Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
@@ -484,7 +502,7 @@ public class ResteasyReactiveJacksonProcessor {
                 return null;
             }
 
-            effectiveReturnType = returnType.asParameterizedType().arguments().get(0);
+            effectiveReturnType = type.asParameterizedType().arguments().get(0);
         }
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||

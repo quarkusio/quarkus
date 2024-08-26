@@ -20,6 +20,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
@@ -40,6 +41,7 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
 
         private static SimpleModule createMappingModule() {
             SimpleModule module = new SimpleModule();
+
             for (Class<? extends StdSerializer> serClass : ResteasyReactiveServerJacksonRecorder.getGeneratedSerializers()) {
                 try {
                     StdSerializer serializer = serClass.getConstructor().newInstance();
@@ -49,6 +51,18 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
                     throw new RuntimeException(e);
                 }
             }
+
+            for (Class<? extends StdDeserializer> deserClass : ResteasyReactiveServerJacksonRecorder
+                    .getGeneratedDeserializers()) {
+                try {
+                    StdDeserializer deserializer = deserClass.getConstructor().newInstance();
+                    module.addDeserializer(deserializer.handledType(), deserializer);
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                        | NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             return module;
         }
     }

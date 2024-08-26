@@ -61,6 +61,7 @@ import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -156,6 +157,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.AggregatedParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
@@ -302,22 +304,62 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    AggregatedParameterContainersBuildItem aggregateParameterContainers(
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            List<ParameterContainersBuildItem> parameterContainersBuildItems) {
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            return new AggregatedParameterContainersBuildItem(Set.of(), Set.of());
+        }
+        Set<DotName> scannedParameterContainers = new HashSet<>();
+
+        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
+            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
+        }
+        IndexView index = resourceScanningResultBuildItem.get().getResult().getIndex();
+        Set<DotName> nonRecordParameterContainers = new HashSet<>();
+        for (DotName parameterContainer : scannedParameterContainers) {
+            ClassInfo parameterContainerClass = index.getClassByName(parameterContainer);
+            if (parameterContainerClass != null && !parameterContainerClass.isRecord()) {
+                nonRecordParameterContainers.add(parameterContainer);
+            }
+        }
+        return new AggregatedParameterContainersBuildItem(scannedParameterContainers, nonRecordParameterContainers);
+    }
+
+    @BuildStep
     void generateCustomProducer(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
 
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = resourceScanningResultBuildItem.get().getResult()
                 .getResourcesThatNeedCustomProducer();
-        Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
-                .getBeanParams();
-        if (!resourcesThatNeedCustomProducer.isEmpty() || !beanParams.isEmpty()) {
-            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer, beanParams,
+        Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
+                aggregatedParameterContainersBuildItem.getNonRecordClassNames());
+        if (!resourcesThatNeedCustomProducer.isEmpty()
+                || !parameterContainers.isEmpty()) {
+            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer,
+                    parameterContainers,
                     generatedBeanBuildItemBuildProducer,
                     additionalBeanBuildItemBuildProducer);
         }
+    }
+
+    private Set<DotName> getPotentialBeans(IndexView indexView, Set<DotName> paramContainerClassNames) {
+        // FIXME: this filters out parameter containers with non-default constructor, which are used by REST client,
+        // but not supported by REST server (yet). We should produce a better error message if they are used in the
+        // server, but we don't have logic to detect client/server usage yet
+        Set<DotName> ret = new HashSet<>(paramContainerClassNames.size());
+        for (DotName paramContainerName : paramContainerClassNames) {
+            ClassInfo paramContainer = indexView.getClassByName(paramContainerName);
+            if (paramContainer.hasNoArgsConstructor()) {
+                ret.add(paramContainerName);
+            }
+        }
+        return ret;
     }
 
     //TODO: replace with MethodLevelExceptionMappingFeature
@@ -364,13 +406,15 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
-        Set<String> beanParams = resourceScanningResultBuildItem.get().getResult()
-                .getBeanParams();
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(beanParams.toArray(EMPTY_STRING_ARRAY)));
+        Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
+                aggregatedParameterContainersBuildItem.getNonRecordClassNames());
+        unremovableBeans.produce(UnremovableBeanBuildItem
+                .beanClassNames(parameterContainers.stream().map(DotName::toString).collect(Collectors.toSet())));
     }
 
     @BuildStep
@@ -408,7 +452,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             ApplicationResultBuildItem applicationResultBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
-            List<ParameterContainersBuildItem> parameterContainersBuildItems,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
@@ -440,11 +484,6 @@ public class ResteasyReactiveProcessor {
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
         QuarkusServerEndpointIndexer serverEndpointIndexer;
-        Set<DotName> scannedParameterContainers = new HashSet<>();
-
-        for (ParameterContainersBuildItem parameterContainersBuildItem : parameterContainersBuildItems) {
-            scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
-        }
 
         ParamConverterProviders paramConverterProviders = paramConverterProvidersBuildItem.getParamConverterProviders();
         Function<String, BeanFactory<?>> factoryFunction = s -> FactoryUtils.factory(s, singletonClasses, recorder,
@@ -477,7 +516,7 @@ public class ResteasyReactiveProcessor {
                             methodScanners.stream().map(MethodScannerBuildItem::getMethodScanner).collect(toList()))
                     .setIndex(index)
                     .setApplicationIndex(applicationIndexBuildItem.getIndex())
-                    .addParameterContainerTypes(scannedParameterContainers)
+                    .addParameterContainerTypes(aggregatedParameterContainersBuildItem.getClassNames())
                     .addContextTypes(additionalContextTypes(contextTypeBuildItems))
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(
@@ -798,16 +837,13 @@ public class ResteasyReactiveProcessor {
             ResourceScanningResultBuildItem resourceScanningResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             BuildProducer<io.quarkus.arc.deployment.AnnotationsTransformerBuildItem> annotationsTransformer,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
 
         // all found resources and sub-resources
         Set<DotName> allResources = new HashSet<>();
         allResources.addAll(resourceScanningResultBuildItem.getResult().getScannedResources().keySet());
         allResources.addAll(resourceScanningResultBuildItem.getResult().getPossibleSubResources().keySet());
-
-        // all found bean params
-        Set<String> beanParams = resourceScanningResultBuildItem.getResult()
-                .getBeanParams();
 
         // discovered filters and interceptors
         Set<String> filtersAndInterceptors = new HashSet<>();
@@ -829,39 +865,66 @@ public class ResteasyReactiveProcessor {
         containerResponseFilters.getGlobalResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
         containerResponseFilters.getNameResourceInterceptors().forEach(i -> filtersAndInterceptors.add(i.getClassName()));
 
+        // parameter containers
+        Set<DotName> nonRecordParameterContainerClassNames = aggregatedParameterContainersBuildItem.getNonRecordClassNames();
+
         annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
                 new io.quarkus.arc.processor.AnnotationsTransformer() {
 
                     @Override
                     public boolean appliesTo(AnnotationTarget.Kind kind) {
-                        return kind == AnnotationTarget.Kind.CLASS;
+                        return kind == AnnotationTarget.Kind.CLASS || kind == AnnotationTarget.Kind.FIELD;
                     }
 
                     @Override
                     public void transform(TransformationContext context) {
-                        ClassInfo clazz = context.getTarget().asClass();
-                        // check if the class is one of resources/sub-resources
-                        if (allResources.contains(clazz.name())
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
+                        if (context.getTarget().kind() == AnnotationTarget.Kind.CLASS) {
+                            ClassInfo clazz = context.getTarget().asClass();
+                            // check if the class is one of resources/sub-resources
+                            if (allResources.contains(clazz.name())
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                            // check if the class is one of providers, either explicitly declaring the annotation
+                            // or discovered as resource interceptor or filter
+                            if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
+                                    || filtersAndInterceptors.contains(clazz.name().toString()))
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                // Add @Typed(MyResource.class)
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                            // check if the class is a parameter container
+                            if (nonRecordParameterContainerClassNames.contains(clazz.name())
+                                    && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
+                                // Add @Typed(MyBean.class)
+                                context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
+                                return;
+                            }
+                        } else if (context.getTarget().kind() == AnnotationTarget.Kind.FIELD) {
+                            FieldInfo field = context.getTarget().asField();
+                            ClassInfo declaringClass = field.declaringClass();
+                            // remove @BeanParam annotations from record fields
+                            if (declaringClass.isRecord()
+                                    && field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null) {
+                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
+                                return;
+                            }
+                            // also remove @BeanParam annotations targeting records
+                            if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
+                                    && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
+                                            field.type().asClassType().name())) {
+                                context.transform().remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM)).done();
+                                return;
+                            }
+
                         }
-                        // check if the class is one of providers, either explicitly declaring the annotation
-                        // or discovered as resource interceptor or filter
-                        if ((clazz.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null
-                                || filtersAndInterceptors.contains(clazz.name().toString()))
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            // Add @Typed(MyResource.class)
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
-                        }
-                        // check if the class is a bean param
-                        if (beanParams.contains(clazz.name().toString())
-                                && clazz.declaredAnnotation(ResteasyReactiveDotNames.TYPED) == null) {
-                            // Add @Typed(MyBean.class)
-                            context.transform().add(createTypedAnnotationInstance(clazz, beanArchiveIndexBuildItem)).done();
-                            return;
-                        }
+                    }
+
+                    private boolean isRecord(IndexView index, DotName name) {
+                        ClassInfo classInfo = index.getClassByName(name);
+                        return classInfo.isRecord();
                     }
                 }));
     }

@@ -394,6 +394,30 @@ public class Endpoint {
 ----
 <1> `BeanParam` is required to comply with the Jakarta REST specification so that libraries like OpenAPI can introspect the parameters.
 
+Record classes are also supported, so you could rewrite the previous example as a record:
+
+[source,java]
+----
+    public record Parameters(
+        @RestPath
+        String type,
+
+        @RestMatrix
+        String variant,
+
+        @RestQuery
+        String age,
+
+        @RestCookie
+        String level,
+
+        @RestHeader("X-Cheese-Secret-Handshake")
+        String secretHandshake,
+
+        @RestForm
+        String smell){}
+----
+
 [[uri-parameters]]
 === [[declaring-uri-parameters]] Declaring URI parameters
 

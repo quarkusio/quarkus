@@ -270,6 +270,7 @@ public final class ResteasyReactiveDotNames {
             .createSimple("org.jboss.resteasy.reactive.server.WithFormRead");
 
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+    public static final DotName RECORD = DotName.createSimple(Record.class.getName());
 
     public static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
     public static final DotName KOTLIN_UNIT = DotName.createSimple("kotlin.Unit");

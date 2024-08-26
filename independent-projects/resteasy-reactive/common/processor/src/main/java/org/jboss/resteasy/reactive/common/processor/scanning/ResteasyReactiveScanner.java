@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +32,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -377,59 +375,8 @@ public class ResteasyReactiveScanner {
             toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
         }
 
-        Set<String> beanParams = new HashSet<>();
-
-        Set<ClassInfo> beanParamAsBeanUsers = new HashSet<>(scannedResources.values());
-        beanParamAsBeanUsers.addAll(possibleSubResources.values());
-
-        Collection<AnnotationInstance> unregisteredBeanParamAnnotations = new ArrayList<>(
-                index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM));
-        boolean newBeanParamsRegistered;
-        do {
-            newBeanParamsRegistered = false;
-            for (Iterator<AnnotationInstance> iterator = unregisteredBeanParamAnnotations.iterator(); iterator.hasNext();) {
-                AnnotationInstance beanParamAnnotation = iterator.next();
-                AnnotationTarget target = beanParamAnnotation.target();
-                // FIXME: this isn't right wrt generics
-                switch (target.kind()) {
-                    case FIELD:
-                        FieldInfo field = target.asField();
-                        ClassInfo beanParamDeclaringClass = field.declaringClass();
-                        if (beanParamAsBeanUsers.contains(beanParamDeclaringClass)
-                                || beanParams.contains(beanParamDeclaringClass.name().toString())) {
-                            newBeanParamsRegistered |= beanParams.add(field.type().name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    case METHOD:
-                        MethodInfo setterMethod = target.asMethod();
-                        if (beanParamAsBeanUsers.contains(setterMethod.declaringClass())
-                                || beanParams.contains(setterMethod.declaringClass().name().toString())) {
-                            Type setterParamType = setterMethod.parameterType(0);
-
-                            newBeanParamsRegistered |= beanParams.add(setterParamType.name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    case METHOD_PARAMETER:
-                        MethodInfo method = target.asMethodParameter().method();
-                        if (beanParamAsBeanUsers.contains(method.declaringClass())
-                                || beanParams.contains(method.declaringClass().name().toString())) {
-                            int paramIndex = target.asMethodParameter().position();
-                            Type paramType = method.parameterType(paramIndex);
-                            newBeanParamsRegistered |= beanParams.add(paramType.name().toString());
-                            iterator.remove();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        } while (newBeanParamsRegistered);
-
         return new ResourceScanningResult(index, scannedResources,
                 scannedResourcePaths, possibleSubResources, pathInterfaces, clientInterfaces, resourcesThatNeedCustomProducer,
-                beanParams,
                 httpAnnotationToMethod, methodExceptionMappers);
     }
 

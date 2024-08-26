@@ -368,6 +368,8 @@ public class ServerEndpointIndexer
         // LinkedHashMap the TCK expects that fields annotated with @BeanParam are handled last
         Map<FieldInfo, ServerIndexedParameter> fieldExtractors = new LinkedHashMap<>();
         Map<FieldInfo, ServerIndexedParameter> beanParamFields = new LinkedHashMap<>();
+        // records do not have field injection, we use their constructor, so field rules do not apply
+        boolean applyFieldRules = !currentClassInfo.isRecord();
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
@@ -375,7 +377,7 @@ public class ServerEndpointIndexer
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
                     additionalReaders,
-                    annotations, field.type(), field.toString(), true, hasRuntimeConverters,
+                    annotations, field.type(), field.toString(), applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
@@ -421,7 +423,9 @@ public class ServerEndpointIndexer
 
         DotName superClassName = currentClassInfo.superName();
         boolean superTypeIsInjectable = false;
-        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)) {
+        if (superClassName != null
+                && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)
+                && !superClassName.equals(ResteasyReactiveDotNames.RECORD)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 InjectableBean superInjectableBean = scanInjectableBean(superClass, actualEndpointInfo,
@@ -617,6 +621,11 @@ public class ServerEndpointIndexer
     }
 
     private void validateMethodsForInjectableBean(ClassInfo currentClassInfo) {
+        // do not check methods of records, they get the annotations from their record components, but that's automatic:
+        // they are actually placed on the constructor parameters and also end up on the fields and methods
+        if (currentClassInfo.isRecord()) {
+            return;
+        }
         for (MethodInfo method : currentClassInfo.methods()) {
             for (AnnotationInstance annotation : method.annotations()) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
@@ -624,7 +633,7 @@ public class ServerEndpointIndexer
                         if (annotation.name().equals(annotationForField)) {
                             throw new DeploymentException(String.format(
                                     "Method '%s' of class '%s' is annotated with @%s annotation which is prohibited. "
-                                            + "Classes uses as @BeanParam parameters must have a JAX-RS parameter annotation on "
+                                            + "Classes used as @BeanParam parameters must have a JAX-RS parameter annotation on "
                                             + "fields only.",
                                     method.name(), currentClassInfo.name().toString(),
                                     annotation.name().withoutPackagePrefix()));

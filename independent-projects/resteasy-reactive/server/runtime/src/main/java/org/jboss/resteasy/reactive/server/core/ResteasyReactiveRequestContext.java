@@ -17,6 +17,14 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Configuration;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -26,13 +34,17 @@ import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.ReaderInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
@@ -42,7 +54,9 @@ import org.jboss.resteasy.reactive.server.jaxrs.ContainerResponseContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.RequestImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
+import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -938,6 +952,95 @@ public abstract class ResteasyReactiveRequestContext
         }
         return strings;
 
+    }
+
+    @Override
+    public <T> T getBeanParameter(Class<T> type) {
+        // FIXME: we don't check if it's a bean parameter at all, but this is only called from ClassInjectorTransformer
+        Instance<T> select = CDI.current().select(type);
+        if (select != null) {
+            T instance = select.get();
+            if (instance != null) {
+                registerCompletionCallback(new CompletionCallback() {
+                    @Override
+                    public void onComplete(Throwable throwable) {
+                        select.destroy(instance);
+                    }
+                });
+                return (T) instance;
+            }
+        }
+        throw new IllegalStateException("Unsupported bean param type: " + type);
+    }
+
+    @Override
+    public <T> T getContextParameter(Class<T> type) {
+        // NOTE: Same list for CDI at ContextProducers and in EndpointIndexer.CONTEXT_TYPES
+        if (type.equals(ServerRequestContext.class)) {
+            return (T) this;
+        }
+        if (type.equals(HttpHeaders.class)) {
+            return (T) getHttpHeaders();
+        }
+        if (type.equals(UriInfo.class)) {
+            return (T) getUriInfo();
+        }
+        if (type.equals(Configuration.class)) {
+            return (T) getDeployment().getConfiguration();
+        }
+        if (type.equals(AsyncResponse.class)) {
+            AsyncResponseImpl asyncResponse = getAsyncResponse();
+            if (asyncResponse == null) {
+                asyncResponse = new AsyncResponseImpl(this);
+                setAsyncResponse(asyncResponse);
+            }
+            return (T) response;
+        }
+        if (type.equals(SseEventSink.class)) {
+            SseEventSinkImpl sseEventSink = getSseEventSink();
+            if (sseEventSink == null) {
+                sseEventSink = new SseEventSinkImpl(this);
+                setSseEventSink(sseEventSink);
+            }
+            return (T) sseEventSink;
+        }
+        if (type.equals(Request.class)) {
+            return (T) getRequest();
+        }
+        if (type.equals(Providers.class)) {
+            return (T) getProviders();
+        }
+        if (type.equals(Sse.class)) {
+            return (T) SseImpl.INSTANCE;
+        }
+        if (type.equals(ResourceInfo.class)) {
+            return (T) getTarget().getLazyMethod();
+        }
+        if (type.equals(SimpleResourceInfo.class)) {
+            return (T) getTarget().getSimplifiedResourceInfo();
+        }
+        if (type.equals(Application.class)) {
+            return (T) CDI.current().select(Application.class).get();
+        }
+        if (type.equals(SecurityContext.class)) {
+            return (T) getSecurityContext();
+        }
+        if (type.equals(ResourceContext.class)) {
+            return (T) ResourceContextImpl.INSTANCE;
+        }
+        Object instance = unwrap(type);
+        if (instance != null) {
+            return (T) instance;
+        }
+        Instance<T> select = CDI.current().select(type);
+        if (select != null) {
+            instance = select.get();
+        }
+        if (instance != null) {
+            return (T) instance;
+        }
+        // FIXME: move to build time
+        throw new IllegalStateException("Unsupported contextual type: " + type);
     }
 
     @Override

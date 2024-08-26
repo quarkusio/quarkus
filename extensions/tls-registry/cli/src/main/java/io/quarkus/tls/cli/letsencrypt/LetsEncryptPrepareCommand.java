@@ -1,15 +1,16 @@
 package io.quarkus.tls.cli.letsencrypt;
 
-import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.*;
+import static io.quarkus.tls.cli.DotEnvHelper.addOrReplaceProperty;
+import static io.quarkus.tls.cli.DotEnvHelper.deleteQuietly;
+import static io.quarkus.tls.cli.DotEnvHelper.readDotEnvFile;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.CA_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.CERT_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.KEY_FILE;
 import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.LETS_ENCRYPT_DIR;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -72,9 +73,7 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         }
 
         // Delete the CA file, we do not use it.
-        if (CA_FILE.isFile()) {
-            CA_FILE.delete();
-        }
+        deleteQuietly(CA_FILE);
 
         // Step 3 - Create .env file or append if exists
         List<String> dotEnvContent = readDotEnvFile();
@@ -95,31 +94,6 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
                 domain,
                 tlsConfigurationName != null ? " -tls-configuration-name=" + tlsConfigurationName : "");
         return 0;
-    }
-
-    List<String> readDotEnvFile() throws IOException {
-        if (!DOT_ENV_FILE.exists()) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(Files.readAllLines(DOT_ENV_FILE.toPath()));
-    }
-
-    void addOrReplaceProperty(List<String> content, String key, String value) {
-        var line = hasLine(content, key);
-        if (line != -1) {
-            content.set(line, key + "=" + value);
-        } else {
-            content.add(key + "=" + value);
-        }
-    }
-
-    private int hasLine(List<String> content, String key) {
-        for (int i = 0; i < content.size(); i++) {
-            if (content.get(i).startsWith(key + "=") || content.get(i).startsWith(key + " =")) {
-                return i;
-            }
-        }
-        return -1;
     }
 
 }

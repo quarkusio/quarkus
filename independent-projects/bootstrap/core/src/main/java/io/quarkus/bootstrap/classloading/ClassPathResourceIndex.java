@@ -152,6 +152,10 @@ public class ClassPathResourceIndex {
      * Probably something we will have to tweak for corner cases but let's try to keep it fast.
      */
     static String getResourceKey(String resource) {
+        if (resource.isEmpty()) {
+            return resource;
+        }
+
         // we don't really care about this part, it can be slower
         if (resource.startsWith(META_INF_MAVEN)) {
             return META_INF_MAVEN;

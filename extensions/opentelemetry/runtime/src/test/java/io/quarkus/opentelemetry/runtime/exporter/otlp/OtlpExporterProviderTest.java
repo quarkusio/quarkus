@@ -17,10 +17,32 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTrac
 
 class OtlpExporterProviderTest {
 
+    static String resolveTraceEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.traces().endpoint()
+                .filter(OtlpExporterProviderTest::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OtlpExporterProviderTest::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
+        String endpoint = runtimeConfig.metrics().endpoint()
+                .filter(OtlpExporterProviderTest::excludeDefaultEndpoint)
+                .orElse(runtimeConfig.endpoint()
+                        .filter(OtlpExporterProviderTest::excludeDefaultEndpoint)
+                        .orElse(DEFAULT_GRPC_BASE_URI));
+        return endpoint.trim();
+    }
+
+    private static boolean excludeDefaultEndpoint(String endpoint) {
+        return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
+    }
+
     @Test
     public void resolveTraceEndpoint_newWins() {
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
+                resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         "http://localhost:2222/")));
     }
@@ -28,7 +50,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveTraceEndpoint_globalWins() {
         assertEquals("http://localhost:1111/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
+                resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         DEFAULT_GRPC_BASE_URI)));
     }
@@ -36,7 +58,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveTraceEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
+                resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         "http://localhost:2222/")));
     }
@@ -44,7 +66,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveTraceEndpoint_legacyGlobalWins() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
+                resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         null)));
     }
@@ -52,7 +74,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveTraceEndpoint_testIsSet() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
+                resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));
     }
@@ -60,7 +82,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveMetricEndpoint_newWins() {
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         "http://localhost:2222/")));
     }
@@ -68,7 +90,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveMetricEndpoint_globalWins() {
         assertEquals("http://localhost:1111/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         DEFAULT_GRPC_BASE_URI)));
     }
@@ -76,7 +98,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveMetricEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         "http://localhost:2222/")));
     }
@@ -84,7 +106,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveMetricEndpoint_legacyGlobalWins() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         null)));
     }
@@ -92,7 +114,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveMetricEndpoint_testIsSet() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
+                resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));
     }

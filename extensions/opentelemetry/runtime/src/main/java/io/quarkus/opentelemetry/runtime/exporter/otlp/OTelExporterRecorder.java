@@ -310,7 +310,7 @@ public class OTelExporterRecorder {
     }
 
     private URI getTracesUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        String endpoint = exporterRuntimeConfig.traces().endpoint().orElse(DEFAULT_GRPC_BASE_URI);
         if (endpoint.isEmpty()) {
             return null;
         }
@@ -318,33 +318,11 @@ public class OTelExporterRecorder {
     }
 
     private URI getMetricsUri(OtlpExporterRuntimeConfig exporterRuntimeConfig) {
-        String endpoint = resolveTraceEndpoint(exporterRuntimeConfig);
+        String endpoint = exporterRuntimeConfig.metrics().endpoint().orElse(DEFAULT_GRPC_BASE_URI);
         if (endpoint.isEmpty()) {
             return null;
         }
         return ExporterBuilderUtil.validateEndpoint(endpoint);
-    }
-
-    static String resolveTraceEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
-        String endpoint = runtimeConfig.traces().endpoint()
-                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                .orElse(runtimeConfig.endpoint()
-                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(DEFAULT_GRPC_BASE_URI));
-        return endpoint.trim();
-    }
-
-    static String resolveMetricEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
-        String endpoint = runtimeConfig.metrics().endpoint()
-                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                .orElse(runtimeConfig.endpoint()
-                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
-                        .orElse(DEFAULT_GRPC_BASE_URI));
-        return endpoint.trim();
-    }
-
-    private static boolean excludeDefaultEndpoint(String endpoint) {
-        return !DEFAULT_GRPC_BASE_URI.equals(endpoint);
     }
 
     static class HttpClientOptionsConsumer implements Consumer<HttpClientOptions> {

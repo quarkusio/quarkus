@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.runtime.config;
 
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,7 +46,7 @@ public class HierarchicalOTelConnectionConfigInterceptor extends FallbackConfigS
 
     @Override
     public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
-        Set<String> names = new HashSet<>();
+        Set<String> names = new LinkedHashSet<>();
         Iterator<String> namesIterator = context.iterateNames();
         while (namesIterator.hasNext()) {
             String name = namesIterator.next();
@@ -69,6 +69,28 @@ public class HierarchicalOTelConnectionConfigInterceptor extends FallbackConfigS
             }
         }
         return names.iterator();
+    }
+
+    @Override
+    public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
+        ConfigValue configValue = context.proceed(name);
+        String map = getMapping().apply(name);
+
+        if (name.equals(map)) {
+            return configValue;
+        }
+
+        // not a default
+        if (configValue != null && configValue.getConfigSourceOrdinal() > Integer.MIN_VALUE) {
+            return configValue;
+        }
+
+        ConfigValue fallbackValue = context.proceed(map);
+        if (fallbackValue != null) {
+            return fallbackValue.withName(name);
+        }
+
+        return configValue;
     }
 
     static class MappingFunction implements Function<String, String> {

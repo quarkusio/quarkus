@@ -20,7 +20,8 @@ import io.smallrye.openapi.api.OpenApiConfig.OperationIdStrategy;
  */
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final Map<String, String> RELOCATIONS = relocations();
-    private final Converter<OperationIdStrategy> enumConverter = Converters.getImplicitConverter(OperationIdStrategy.class);
+    private static final Converter<OperationIdStrategy> OPERATION_ID_STRATEGY_CONVERTER = Converters
+            .getImplicitConverter(OperationIdStrategy.class);
 
     public OpenApiConfigMapping() {
         super(RELOCATIONS);
@@ -32,7 +33,7 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
         // Special case for enum. The converter run after the interceptors, so we have to do this here.
         if (name.equals(io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY)) {
             if (configValue != null) {
-                String correctValue = enumConverter.convert(configValue.getValue()).toString();
+                String correctValue = OPERATION_ID_STRATEGY_CONVERTER.convert(configValue.getValue()).toString();
                 configValue = configValue.withValue(correctValue);
             }
         }

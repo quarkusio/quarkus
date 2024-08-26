@@ -1141,6 +1141,7 @@ public class ResteasyReactiveProcessor {
             SetupEndpointsResultBuildItem setupEndpointsResult,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
+            ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             BuildProducer<ReflectiveClassBuildItem> producer) {
         List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -1185,6 +1186,13 @@ public class ResteasyReactiveProcessor {
                 }
             }
         }
+
+        // when a ContainerResponseFilter exists, it can potentially do responseContext.setEntityStream()
+        // which then forces the use of the slow path for calling writers
+        if (!resourceInterceptorsBuildItem.getResourceInterceptors().getContainerResponseFilters().isEmpty()) {
+            serializersRequireResourceReflection = true;
+        }
+
         if (serializersRequireResourceReflection) {
             producer.produce(ReflectiveClassBuildItem
                     .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new))

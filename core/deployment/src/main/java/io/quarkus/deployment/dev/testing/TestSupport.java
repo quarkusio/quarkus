@@ -513,20 +513,20 @@ public class TestSupport implements TestController {
     private void handleApplicationPropertiesChange() {
         SmallRyeConfig updatedConfig = getMinimalConfig();
 
-        List<String> includeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-tags").orElse(List.of());
-        List<String> excludeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-tags").orElse(List.of());
+        List<String> includeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-tags").orElse(null);
+        List<String> excludeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-tags").orElse(null);
         String includePattern = updatedConfig.getOptionalValue("quarkus.test.include-pattern", String.class).orElse(null);
         String excludePattern = updatedConfig.getOptionalValue("quarkus.test.exclude-pattern", String.class).orElse(null);
-        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines").orElse(List.of());
-        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines").orElse(List.of());
+        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines").orElse(null);
+        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines").orElse(null);
         TestType testType = updatedConfig.getOptionalValue("quarkus.test.type", TestType.class).orElse(TestType.ALL);
 
         if (!firstRun) {
             if (!Objects.equals(includeTags, appPropertiesIncludeTags)) {
-                this.includeTags = includeTags;
+                this.includeTags = Objects.requireNonNullElse(includeTags, Collections.emptyList());
             }
             if (!Objects.equals(excludeTags, appPropertiesExcludeTags)) {
-                this.excludeTags = excludeTags;
+                this.excludeTags = Objects.requireNonNullElse(excludeTags, Collections.emptyList());
             }
             if (!Objects.equals(includePattern, appPropertiesIncludePattern)) {
                 if (includePattern == null) {
@@ -543,10 +543,10 @@ public class TestSupport implements TestController {
                 }
             }
             if (!Objects.equals(includeEngines, appPropertiesIncludeEngines)) {
-                this.includeEngines = includeEngines;
+                this.includeEngines = Objects.requireNonNullElse(includeEngines, Collections.emptyList());
             }
             if (!Objects.equals(excludeEngines, appPropertiesExcludeEngines)) {
-                this.excludeEngines = excludeEngines;
+                this.excludeEngines = Objects.requireNonNullElse(excludeEngines, Collections.emptyList());
             }
             if (!Objects.equals(testType, appPropertiesTestType)) {
                 this.testType = testType;

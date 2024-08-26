@@ -185,6 +185,8 @@ public class JarResource implements ClassLoadingResource {
 
     @Override
     public int hashCode() {
-        return Objects.hash(manifestInfo, jarPath);
+        int result = Objects.hashCode(manifestInfo);
+        result = 31 * result + Objects.hashCode(jarPath);
+        return result;
     }
 }

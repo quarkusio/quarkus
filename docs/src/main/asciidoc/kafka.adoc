@@ -2236,7 +2236,7 @@ Create a Quarkus Test using the test resource created above:
 import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
-@WithTestResource(KafkaTestResourceLifecycleManager.class)
+@QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
     @Inject
@@ -2295,7 +2295,7 @@ public class BeverageProcessor {
 import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
-@WithTestResource(KafkaTestResourceLifecycleManager.class)
+@QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
     @Inject
@@ -2380,7 +2380,7 @@ For using `KafkaCompanion` API in tests, start by adding the following dependenc
 
 which provides `io.quarkus.test.kafka.KafkaCompanionResource` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
 
-Then use `@WithTestResource` to configure the Kafka Companion in tests, for example:
+Then use `@QuarkusTestResource` to configure the Kafka Companion in tests, for example:
 
 [source, java]
 ----
@@ -2391,7 +2391,7 @@ import java.util.UUID;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
@@ -2399,7 +2399,7 @@ import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
 @QuarkusTest
-@WithTestResource(KafkaCompanionResource.class)
+@QuarkusTestResource(KafkaCompanionResource.class)
 public class OrderProcessorTest {
 
     @InjectKafkaCompanion // <1>
@@ -2430,7 +2430,7 @@ If the Kafka Dev Service is available during tests, `KafkaCompanionResource` use
 The configuration of the created Kafka broker can be customized using `@ResourceArg`, for example:
 [source,java]
 ----
-@WithTestResource(value = KafkaCompanionResource.class, initArgs = {
+@QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
         @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi-test-container/test-container:0.106.0-kafka-3.7.0"), // Image name
         @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
         @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode

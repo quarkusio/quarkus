@@ -5,12 +5,12 @@ import org.junit.jupiter.api.BeforeAll;
 import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.apicurio.rest.client.VertxHttpClientProvider;
 import io.quarkus.it.kafka.avro.AvroKafkaCreator;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.vertx.core.Vertx;
 
 @QuarkusIntegrationTest
-@WithTestResource(KafkaResource.class)
+@QuarkusTestResource(value = KafkaResource.class, restrictToAnnotatedClass = true)
 public class KafkaAvroIT extends KafkaAvroTestBase {
 
     AvroKafkaCreator creator;

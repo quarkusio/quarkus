@@ -468,7 +468,7 @@ what we send.
 ----
 package org.acme.kafka;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -635,7 +635,7 @@ public class KafkaAndSchemaRegistryTestResource implements QuarkusTestResourceLi
 [source,java]
 ----
 @QuarkusTest
-@WithTestResource(KafkaAndSchemaRegistryTestResource.class)
+@QuarkusTestResource(KafkaAndSchemaRegistryTestResource.class)
 public class MovieResourceTest {
     ...
 }

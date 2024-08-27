@@ -703,7 +703,7 @@ Create a `@QuarkusTest` using the test resource created above:
 
 [source, java]
 ----
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.reactive.messaging.memory.InMemoryConnector;
 import io.smallrye.reactive.messaging.memory.InMemorySink;
@@ -718,7 +718,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.awaitility.Awaitility.await;
 
 @QuarkusTest
-@WithTestResource(InMemoryConnectorLifecycleManager.class)
+@QuarkusTestResource(InMemoryConnectorLifecycleManager.class)
 class MyMessagingApplicationTest {
 
     @Inject

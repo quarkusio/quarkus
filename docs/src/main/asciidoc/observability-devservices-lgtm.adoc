@@ -118,11 +118,11 @@ And for the least 'auto-magical' usage in the tests, simply disable both (Dev Re
 quarkus.observability.enabled=false
 ----
 
-And then explicitly list LGTM Dev Resource in the test as a `@WithTestResource` resource:
+And then explicitly list LGTM Dev Resource in the test as a `@QuarkusTestResource` resource:
 [source, java]
 ----
 @QuarkusTest
-@WithTestResource(LgtmResource.class)
+@QuarkusTestResource(value = LgtmResource.class, restrictToAnnotatedClass = true)
 @TestProfile(QuarkusTestResourceTestProfile.class)
 public class LgtmLifecycleTest extends LgtmTestBase {
 }

@@ -8,12 +8,12 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@WithTestResource(value = KafkaSaslTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KafkaSaslTestResource.class)
 public class KafkaSaslTest {
 
     protected static final TypeRef<List<String>> TYPE_REF = new TypeRef<List<String>>() {

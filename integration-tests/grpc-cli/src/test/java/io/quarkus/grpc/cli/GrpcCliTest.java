@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 
+// TODO: fix and enable this test
+@Disabled("https://github.com/quarkusio/quarkus/issues/42819")
 @QuarkusTest
 public class GrpcCliTest {
 

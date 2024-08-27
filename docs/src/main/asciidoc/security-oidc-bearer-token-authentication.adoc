@@ -48,6 +48,7 @@ If you need to authenticate and authorize users by using OIDC authorization code
 Also, if you use Keycloak and bearer tokens, see the Quarkus xref:security-keycloak-authorization.adoc[Using Keycloak to centralize authorization] guide.
 
 To learn about how you can protect service applications by using OIDC Bearer token authentication, see the following tutorial:
+
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a web application by using OpenID Connect (OIDC) authorization code flow].
 
 For information about how to support multiple tenants, see the Quarkus xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide.
@@ -183,7 +184,7 @@ public class ProtectedResource {
     @GET
     @Path("/order")
     public List<Order> listOrders() {
-        return List.of(new Order(1));
+        return List.of(new Order("1"));
     }
 
     public static class Order {
@@ -1018,7 +1019,6 @@ import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.ConfigMetadata;
 import io.quarkus.test.security.oidc.OidcSecurity;
-import io.quarkus.test.security.oidc.OidcConfigurationMetadata;
 import io.quarkus.test.security.oidc.UserInfo;
 import io.restassured.RestAssured;
 
@@ -1122,8 +1122,8 @@ public class TestSecurityAuthTest {
         }
     )
     public void testOidcWithClaimsUserInfoAndMetadata() {
-        RestAssured.when().get("test-security-oidc-claims-userinfo-metadata").then()
-                .body(is("userOidc:viewer:userOidc:viewer"));
+        RestAssured.when().get("test-security-oidc-opaque-token").then()
+                .body(is("userOidc:viewer:userOidc:viewer:user@gmail.com"));
     }
 
 }
@@ -1315,7 +1315,7 @@ public class OrderService {
 
     @Blocking
     @ConsumeEvent("product-order")
-    void processOrder(Product product) {
+    void processOrder(OrderResource.Product product) {
         AccessTokenCredential tokenCredential = new AccessTokenCredential(product.customerAccessToken);
         SecurityIdentity securityIdentity = identityProvider.authenticate(tokenCredential).await().indefinitely(); <2>
         ...

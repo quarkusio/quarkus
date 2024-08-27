@@ -301,7 +301,8 @@ triage:
       title: "rest.client"
       notify: [cescoffier, geoand]
       directories:
-        - extensions/rest-client/
+        - extensions/resteasy-classic/rest-client/
+        - extensions/resteasy-reactive/rest-client/
     - id: smallrye
       labels: [area/smallrye]
       title: "smallrye"

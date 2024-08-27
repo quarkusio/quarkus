@@ -1,12 +1,12 @@
 package io.quarkus.it.rest.client;
 
 import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.with;
 import static java.util.stream.Collectors.counting;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import java.time.Duration;
 import java.util.List;
@@ -40,26 +40,26 @@ public class BasicTest {
 
     @Test
     public void shouldMakeTextRequest() {
-        Response response = RestAssured.with().body(helloUrl).post("/call-hello-client");
+        Response response = with().body(helloUrl).post("/call-hello-client");
         assertThat(response.asString()).isEqualTo("Hello, JohnJohn");
     }
 
     @Test
     public void shouldMakeJsonRequestAndGetTextResponse() {
-        Response response = RestAssured.with().body(helloUrl).post("/call-helloFromMessage-client");
+        Response response = with().body(helloUrl).post("/call-helloFromMessage-client");
         assertThat(response.asString()).isEqualTo("Hello world");
     }
 
     @Test
     public void restResponseShouldWorkWithNonSuccessfulResponse() {
-        Response response = RestAssured.with().body(helloUrl).post("/rest-response");
+        Response response = with().body(helloUrl).post("/rest-response");
         assertThat(response.asString()).isEqualTo("405");
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Test
     void shouldMakeJsonRequest() {
-        List<Map> results = RestAssured.with().body(appleUrl).post("/call-client")
+        List<Map> results = with().body(appleUrl).post("/call-client")
                 .then()
                 .statusCode(200)
                 .contentType("application/json")
@@ -73,7 +73,7 @@ public class BasicTest {
 
     @Test
     void shouldRetryOnFailure() {
-        RestAssured.with().body(appleUrl).post("/call-client-retry")
+        with().body(appleUrl).post("/call-client-retry")
                 .then()
                 .statusCode(200)
                 .body(equalTo("4"));
@@ -81,42 +81,42 @@ public class BasicTest {
 
     @Test
     void shouldLogWithExplicitLogger() {
-        RestAssured.with().body(baseUrl).post("/call-client-with-explicit-client-logger")
+        with().body(baseUrl).post("/call-client-with-explicit-client-logger")
                 .then()
                 .statusCode(200);
     }
 
     @Test
     void shouldLogWithGlobalLogger() {
-        RestAssured.with().body(baseUrl).post("/call-client-with-global-client-logger")
+        with().body(baseUrl).post("/call-client-with-global-client-logger")
                 .then()
                 .statusCode(200);
     }
 
     @Test
     void shouldLogCdiWithGlobalLogger() {
-        RestAssured.with().body(baseUrl).post("/call-cdi-client-with-global-client-logger")
+        with().body(baseUrl).post("/call-cdi-client-with-global-client-logger")
                 .then()
                 .statusCode(200);
     }
 
     @Test
     void shouldMapException() {
-        RestAssured.with().body(baseUrl).post("/call-client-with-exception-mapper")
+        with().body(baseUrl).post("/call-client-with-exception-mapper")
                 .then()
                 .statusCode(200);
     }
 
     @Test
     void shouldMapExceptionCdi() {
-        RestAssured.with().body(baseUrl).post("/call-cdi-client-with-exception-mapper")
+        with().body(baseUrl).post("/call-cdi-client-with-exception-mapper")
                 .then()
                 .statusCode(200);
     }
 
     @Test
     void shouldInterceptDefaultMethod() {
-        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance")
+        with().body(baseUrl).post("/call-with-fault-tolerance")
                 .then()
                 .statusCode(200)
                 .body(equalTo("Hello fallback!"));
@@ -125,13 +125,13 @@ public class BasicTest {
     @Test
     void shouldApplyInterfaceLevelInterceptorBinding() {
         for (int i = 0; i < 2; i++) {
-            RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+            with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
                     .then()
                     .statusCode(200)
                     .body(equalTo("ClientWebApplicationException"));
         }
 
-        RestAssured.with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
+        with().body(baseUrl).post("/call-with-fault-tolerance-on-interface")
                 .then()
                 .statusCode(200)
                 .body(equalTo("CircuitBreakerOpenException"));
@@ -142,7 +142,7 @@ public class BasicTest {
         // Reset captured traces
         RestAssured.given().when().get("/export-clear").then().statusCode(200);
 
-        Response response = RestAssured.with().body(helloUrl).post("/call-hello-client-trace");
+        Response response = with().body(helloUrl).post("/call-hello-client-trace");
         assertThat(response.asString()).isEqualTo("Hello, MaryMaryMary");
 
         String serverSpanId = null;
@@ -243,10 +243,27 @@ public class BasicTest {
 
     @Test
     public void shouldConvertParamFirstToOneUsingCustomConverter() {
-        RestAssured.with().body(paramsUrl).post("/call-params-client-with-param-first")
+        with().body(paramsUrl).post("/call-params-client-with-param-first")
                 .then()
                 .statusCode(200)
                 .body(equalTo("1"));
+    }
+
+    @Test
+    void shouldPreserveResponseEntity() {
+        with().body(baseUrl).post("/preserve-response-entity")
+                .then()
+                .statusCode(200)
+                .body(is(equalTo("true")));
+    }
+
+    @Test
+    void shouldPreserveResponseEntityAsync() {
+        with().body(baseUrl).post("/preserve-response-entity-async")
+                .then()
+                .log().all()
+                .statusCode(200)
+                .body(is(equalTo("true")));
     }
 
     private List<Map<String, Object>> getServerSpansFromPath(final String spanName, final String urlPath) {

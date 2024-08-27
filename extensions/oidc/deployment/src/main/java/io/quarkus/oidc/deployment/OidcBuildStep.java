@@ -64,6 +64,7 @@ import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
+import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcConfigurationMetadataProducer;
@@ -137,6 +138,12 @@ public class OidcBuildStep {
                 .addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    public void initJose4J(Jose4jRecorder recorder) {
+        recorder.initialize();
     }
 
     @BuildStep(onlyIf = IsCacheEnabled.class)

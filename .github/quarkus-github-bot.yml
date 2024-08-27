@@ -611,8 +611,8 @@ triage:
       labels: [area/reactive-streams-operators]
       directories:
         - extensions/reactive-streams-operators/
-    - id: resteasy
-      labels: [area/resteasy]
+    - id: resteasy-classic
+      labels: [area/resteasy-classic]
       directories:
         - extensions/resteasy-classic/
         - extensions/resteasy-classic/resteasy
@@ -625,8 +625,8 @@ triage:
         - integration-tests/resteasy-jackson/
         - integration-tests/elytron-resteasy/
         - integration-tests/virtual-http-resteasy/
-    - id: resteasy-reactive
-      labels: [area/resteasy-reactive]
+    - id: rest
+      labels: [area/rest]
       title: resteasy.reactive
       notify: [geoand, FroMage, stuartwdouglas]
       directories:

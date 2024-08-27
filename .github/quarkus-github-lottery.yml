@@ -118,7 +118,7 @@ participants:
       days: ["WEDNESDAY", "FRIDAY"]
       maxIssues: 3
     maintenance:
-      labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/resteasy-reactive", "area/kubernetes"]
+      labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/rest", "area/kubernetes"]
       days: ["WEDNESDAY", "FRIDAY"]
       feedback:
         needed:

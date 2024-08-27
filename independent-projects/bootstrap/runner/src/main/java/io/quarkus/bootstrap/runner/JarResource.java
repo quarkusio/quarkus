@@ -180,11 +180,11 @@ public class JarResource implements ClassLoadingResource {
         if (o == null || getClass() != o.getClass())
             return false;
         JarResource that = (JarResource) o;
-        return Objects.equals(manifestInfo, that.manifestInfo) && jarPath.equals(that.jarPath);
+        return jarPath.equals(that.jarPath);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(manifestInfo, jarPath);
+        return Objects.hashCode(jarPath);
     }
 }

@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -13,7 +14,7 @@ import io.vertx.ext.web.RoutingContext;
  * An HTTP Security policy, that controls which requests are allowed to proceed.
  * CDI beans implementing this interface are invoked on every request unless they define {@link #name()}.
  * The policy with {@link #name()} can then be referenced in the application.properties path matching rules,
- * which allows this policy to be applied only to specific requests.
+ * or from the {@link AuthorizationPolicy#name()} annotation attribute.
  */
 public interface HttpSecurityPolicy {
 
@@ -21,9 +22,12 @@ public interface HttpSecurityPolicy {
             AuthorizationRequestContext requestContext);
 
     /**
-     * HTTP Security policy name referenced in the application.properties path matching rules, which allows this
-     * policy to be applied to specific requests. The name must not be blank. When the name is {@code null}, policy
-     * will be applied to every request.
+     * If HTTP Security policy name is not null, then this policy is only called in two cases:
+     * - winning path-matching policy references this name in the application.properties
+     * - invoked Jakarta REST endpoint references this name in the {@link AuthorizationPolicy#name()} annotation attribute
+     * <p>
+     * When the name is null, this policy is considered global and is applied on every single request.
+     * More details and examples can be found in Quarkus documentation.
      *
      * @return policy name
      */
@@ -68,6 +72,18 @@ public interface HttpSecurityPolicy {
         public SecurityIdentity getAugmentedIdentity() {
             return augmentedIdentity;
         }
+
+        public Uni<SecurityIdentity> getAugmentedIdentityAsUni() {
+            return Uni.createFrom().item(augmentedIdentity);
+        }
+
+        public static Uni<CheckResult> permit() {
+            return Uni.createFrom().item(PERMIT);
+        }
+
+        public static Uni<CheckResult> deny() {
+            return Uni.createFrom().item(DENY);
+        }
     }
 
     /**
@@ -86,7 +102,7 @@ public interface HttpSecurityPolicy {
     class DefaultAuthorizationRequestContext implements AuthorizationRequestContext {
         private final BlockingSecurityExecutor blockingExecutor;
 
-        public DefaultAuthorizationRequestContext(BlockingSecurityExecutor blockingExecutor) {
+        DefaultAuthorizationRequestContext(BlockingSecurityExecutor blockingExecutor) {
             this.blockingExecutor = blockingExecutor;
         }
 

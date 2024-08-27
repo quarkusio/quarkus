@@ -1,7 +1,7 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.security.deployment.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.hasStandardSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -41,7 +41,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.security.deployment.AdditionalSecurityCheckBuildItem;
-import io.quarkus.security.deployment.SecurityTransformerUtils;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.di.deployment.SpringBeanNameToDotNameBuildItem;
@@ -139,7 +138,7 @@ class SpringSecurityProcessor {
 
     //Validates that there is no @Secured with the standard security annotations at class level
     private void checksStandardSecurity(AnnotationInstance instance, ClassInfo classInfo) {
-        if (hasStandardSecurityAnnotation(classInfo)) {
+        if (hasSecurityAnnotation(classInfo)) {
             Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(classInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
                 String securityAnnotationName = findFirstStandardSecurityAnnotation(classInfo).get().name()
@@ -153,11 +152,10 @@ class SpringSecurityProcessor {
 
     //Validates that there is no @Secured with the standard security annotations at method level
     private void checksStandardSecurity(AnnotationInstance instance, MethodInfo methodInfo) {
-        if (SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)) {
-            Optional<AnnotationInstance> firstStandardSecurityAnnotation = SecurityTransformerUtils
-                    .findFirstStandardSecurityAnnotation(methodInfo);
+        if (hasSecurityAnnotation(methodInfo)) {
+            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(methodInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
-                String securityAnnotationName = SecurityTransformerUtils.findFirstStandardSecurityAnnotation(methodInfo).get()
+                String securityAnnotationName = findFirstStandardSecurityAnnotation(methodInfo).get()
                         .name()
                         .withoutPackagePrefix();
                 throw new IllegalArgumentException("An invalid security annotation combination was detected: Found "

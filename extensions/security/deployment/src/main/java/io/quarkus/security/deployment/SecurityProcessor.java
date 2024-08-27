@@ -7,9 +7,9 @@ import static io.quarkus.security.deployment.DotNames.DENY_ALL;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
 import static io.quarkus.security.deployment.DotNames.PERMIT_ALL;
 import static io.quarkus.security.deployment.DotNames.ROLES_ALLOWED;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.hasStandardSecurityAnnotation;
 import static io.quarkus.security.runtime.SecurityProviderUtils.findProviderIndex;
+import static io.quarkus.security.spi.SecurityTransformerUtils.findFirstStandardSecurityAnnotation;
+import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
@@ -110,12 +111,14 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem.ClassStorageBuilder;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
+import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -561,11 +564,13 @@ public class SecurityProcessor {
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
-            SecurityCheckRecorder recorder,
+            SecurityCheckRecorder recorder, List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems,
             BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
+        var hasAdditionalSecAnn = hasAdditionalSecurityAnnotation(additionalSecurityAnnotationItems.stream()
+                .map(AdditionalSecurityAnnotationBuildItem::getSecurityAnnotationName).collect(Collectors.toSet()));
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
 
         final Map<MethodDescription, AdditionalSecured> additionalSecured = new HashMap<>();
@@ -580,7 +585,8 @@ public class SecurityProcessor {
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
                 additionalSecured.values(), config.denyUnannotated(), recorder, configBuilderProducer,
                 reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems,
-                registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer);
+                registerClassSecurityCheckBuildItems, classSecurityCheckStorageProducer, hasAdditionalSecAnn,
+                additionalSecurityAnnotationItems);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -657,23 +663,85 @@ public class SecurityProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
             List<RegisterClassSecurityCheckBuildItem> registerClassSecurityCheckBuildItems,
-            BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer) {
-
+            BuildProducer<ClassSecurityCheckStorageBuildItem> classSecurityCheckStorageProducer,
+            Predicate<MethodInfo> hasAdditionalSecurityAnnotations,
+            List<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationItems) {
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, SecurityCheck> result = new HashMap<>();
-        gatherSecurityAnnotations(index, PERMIT_ALL, methodToInstanceCollector, classAnnotations,
-                ((m, i) -> result.put(m, recorder.permitAll())));
-        gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
-                ((m, i) -> result.put(m, recorder.authenticated())));
-        gatherSecurityAnnotations(index, DENY_ALL, methodToInstanceCollector, classAnnotations,
-                ((m, i) -> result.put(m, recorder.denyAll())));
-
+        var permitAllGatherer = new SecurityAnnotationGatherer(index.getAnnotations(PERMIT_ALL), methodToInstanceCollector,
+                ((m, i) -> result.put(m, recorder.permitAll())), classAnnotations, hasAdditionalSecurityAnnotations);
+        var authenticatedGatherer = new SecurityAnnotationGatherer(index.getAnnotations(DotNames.AUTHENTICATED),
+                methodToInstanceCollector, ((m, i) -> result.put(m, recorder.authenticated())), classAnnotations,
+                hasAdditionalSecurityAnnotations);
+        var denyAllGatherer = new SecurityAnnotationGatherer(index.getAnnotations(DENY_ALL), methodToInstanceCollector,
+                ((m, i) -> result.put(m, recorder.denyAll())), classAnnotations, hasAdditionalSecurityAnnotations);
         // here we just collect all methods annotated with @RolesAllowed
         Map<MethodInfo, String[]> methodToRoles = new HashMap<>();
-        gatherSecurityAnnotations(
-                index, ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
-                ((methodInfo, instance) -> methodToRoles.put(methodInfo, instance.value().asStringArray())));
+        var rolesAllowedGatherer = new SecurityAnnotationGatherer(index.getAnnotations(ROLES_ALLOWED),
+                methodToInstanceCollector,
+                ((methodInfo, instance) -> methodToRoles.put(methodInfo, instance.value().asStringArray())), classAnnotations,
+                hasAdditionalSecurityAnnotations);
+
+        // gather method-level instances for @Authenticated, @RolesAllowed, @PermitAll, @DenyAll
+        permitAllGatherer.gatherMethodSecurityAnnotations();
+        authenticatedGatherer.gatherMethodSecurityAnnotations();
+        denyAllGatherer.gatherMethodSecurityAnnotations();
+        rolesAllowedGatherer.gatherMethodSecurityAnnotations();
+
+        // gather @PermissionsAllowed security checks
+        final Map<DotName, SecurityCheck> classNameToPermCheck;
+        List<AnnotationInstance> permissionInstances = new ArrayList<>(
+                index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+        if (!permissionInstances.isEmpty()) {
+            var additionalClassInstances = registerClassSecurityCheckBuildItems
+                    .stream()
+                    .filter(i -> PERMISSIONS_ALLOWED.equals(i.securityAnnotationInstance.name()))
+                    .map(i -> i.securityAnnotationInstance)
+                    .toList();
+            var securityChecks = new PermissionSecurityChecksBuilder(recorder)
+                    .gatherPermissionsAllowedAnnotations(permissionInstances, methodToInstanceCollector, classAnnotations,
+                            additionalClassInstances, hasAdditionalSecurityAnnotations)
+                    .validatePermissionClasses(index)
+                    .createPermissionPredicates()
+                    .build();
+            result.putAll(securityChecks.getMethodSecurityChecks());
+            classNameToPermCheck = securityChecks.getClassNameSecurityChecks();
+
+            // register used permission classes for reflection
+            for (String permissionClass : securityChecks.permissionClasses()) {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(permissionClass).constructors().fields().methods().build());
+                log.debugf("Register Permission class for reflection: %s", permissionClass);
+            }
+        } else {
+            classNameToPermCheck = Map.of();
+        }
+
+        // gather class-level instances for @Authenticated, @RolesAllowed, @PermitAll, @DenyAll
+        permitAllGatherer.gatherClassSecurityAnnotations();
+        authenticatedGatherer.gatherClassSecurityAnnotations();
+        denyAllGatherer.gatherClassSecurityAnnotations();
+        rolesAllowedGatherer.gatherClassSecurityAnnotations();
+
+        // validate additional annotations on class level are not accompanied by standard security annotations
+        additionalSecurityAnnotationItems
+                .stream()
+                .map(AdditionalSecurityAnnotationBuildItem::getSecurityAnnotationName)
+                .forEach(additionalSecAnnName -> index
+                        .getAnnotations(additionalSecAnnName)
+                        .stream()
+                        .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                        .map(ai -> ai.target().asClass())
+                        .filter(SecurityTransformerUtils::hasSecurityAnnotation)
+                        .findFirst()
+                        .ifPresent(ci -> {
+                            var securityAnnotation = findFirstStandardSecurityAnnotation(ci).get().name();
+                            throw new RuntimeException("""
+                                    Class '%s' is annotated with '%s' and '%s' security annotations,
+                                    however security annotations cannot be combined.
+                                    """.formatted(ci.name(), additionalSecAnnName, securityAnnotation));
+                        }));
 
         /*
          * Handle additional secured methods by adding the denyAll/rolesAllowed check to all public non-static methods
@@ -681,6 +749,9 @@ public class SecurityProcessor {
          */
         for (AdditionalSecured additionalSecuredMethod : additionalSecuredMethods) {
             if (!isPublicNonStaticNonConstructor(additionalSecuredMethod.methodInfo)) {
+                continue;
+            }
+            if (hasAdditionalSecurityAnnotations.test(additionalSecuredMethod.methodInfo)) {
                 continue;
             }
             AnnotationInstance alreadyExistingInstance = methodToInstanceCollector.get(additionalSecuredMethod.methodInfo);
@@ -715,34 +786,6 @@ public class SecurityProcessor {
             final MethodInfo methodInfo = entry.getKey();
             result.put(methodInfo,
                     computeRolesAllowedCheck(cache, hasRolesAllowedCheckWithConfigExp, keyIndex, recorder, entry.getValue()));
-        }
-
-        final Map<DotName, SecurityCheck> classNameToPermCheck;
-        List<AnnotationInstance> permissionInstances = new ArrayList<>(
-                index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
-        if (!permissionInstances.isEmpty()) {
-            var additionalClassInstances = registerClassSecurityCheckBuildItems
-                    .stream()
-                    .filter(i -> PERMISSIONS_ALLOWED.equals(i.securityAnnotationInstance.name()))
-                    .map(i -> i.securityAnnotationInstance)
-                    .toList();
-            var securityChecks = new PermissionSecurityChecksBuilder(recorder)
-                    .gatherPermissionsAllowedAnnotations(permissionInstances, methodToInstanceCollector, classAnnotations,
-                            additionalClassInstances)
-                    .validatePermissionClasses(index)
-                    .createPermissionPredicates()
-                    .build();
-            result.putAll(securityChecks.getMethodSecurityChecks());
-            classNameToPermCheck = securityChecks.getClassNameSecurityChecks();
-
-            // register used permission classes for reflection
-            for (String permissionClass : securityChecks.permissionClasses()) {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(permissionClass).constructors().fields().methods().build());
-                log.debugf("Register Permission class for reflection: %s", permissionClass);
-            }
-        } else {
-            classNameToPermCheck = Map.of();
         }
 
         if (!registerClassSecurityCheckBuildItems.isEmpty()) {
@@ -810,6 +853,9 @@ public class SecurityProcessor {
                         continue;
                     }
                     if (methodToInstanceCollector.containsKey(methodInfo)) { // the method already has a security check
+                        continue;
+                    }
+                    if (hasAdditionalSecurityAnnotations.test(methodInfo)) {
                         continue;
                     }
                     result.put(methodInfo, recorder.denyAll());
@@ -883,50 +929,6 @@ public class SecurityProcessor {
                 && !"<init>".equals(methodInfo.name());
     }
 
-    private static void gatherSecurityAnnotations(
-            IndexView index, DotName dotName,
-            Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
-            Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
-            BiConsumer<MethodInfo, AnnotationInstance> putResult) {
-
-        Collection<AnnotationInstance> instances = index.getAnnotations(dotName);
-        // make sure we process annotations on methods first
-        for (AnnotationInstance instance : instances) {
-            AnnotationTarget target = instance.target();
-            if (target.kind() == AnnotationTarget.Kind.METHOD) {
-                MethodInfo methodInfo = target.asMethod();
-                if (alreadyCheckedMethods.containsKey(methodInfo)) {
-                    throw new IllegalStateException("Method " + methodInfo.name() + " of class " + methodInfo.declaringClass()
-                            + " is annotated with multiple security annotations");
-                }
-                alreadyCheckedMethods.put(methodInfo, instance);
-                putResult.accept(methodInfo, instance);
-            }
-        }
-        // now add the class annotations to methods if they haven't already been annotated
-        for (AnnotationInstance instance : instances) {
-            AnnotationTarget target = instance.target();
-            if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                List<MethodInfo> methods = target.asClass().methods();
-                AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
-                if (existingClassInstance == null) {
-                    classLevelAnnotations.put(target.asClass(), instance);
-                    for (MethodInfo methodInfo : methods) {
-                        AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
-                        if ((alreadyExistingInstance == null)) {
-                            putResult.accept(methodInfo, instance);
-                        }
-                    }
-                } else {
-                    throw new IllegalStateException(
-                            "Class " + target.asClass() + " is annotated with multiple security annotations " + instance.name()
-                                    + " and " + existingClassInstance.name());
-                }
-            }
-
-        }
-    }
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SECURITY);
@@ -963,7 +965,7 @@ public class SecurityProcessor {
                 .map(ObserverInfo::getObserverMethod)
                 .filter(Objects::nonNull) // synthetic observer method created for @Startup is null and not secured
                 .forEach(mi -> {
-                    if (hasStandardSecurityAnnotation(annotationStore.getAnnotations(mi))
+                    if (hasSecurityAnnotation(annotationStore.getAnnotations(mi))
                             || hasClassLevelStandardSecurityAnnotation(mi, annotationStore)) {
                         var declaringClass = mi.declaringClass();
                         findFirstStandardSecurityAnnotation(annotationStore.getAnnotations(mi))
@@ -995,7 +997,7 @@ public class SecurityProcessor {
                     .flatMap(Collection::stream)
                     .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
                     .map(ai -> ai.target().asClass())
-                    .filter(SecurityTransformerUtils::hasStandardSecurityAnnotation)
+                    .filter(SecurityTransformerUtils::hasSecurityAnnotation)
                     .map(c -> new RegisterClassSecurityCheckBuildItem(c.name(), findFirstStandardSecurityAnnotation(c).get()))
                     .forEach(producer::produce);
         }
@@ -1003,7 +1005,7 @@ public class SecurityProcessor {
 
     private static boolean hasClassLevelStandardSecurityAnnotation(MethodInfo method, AnnotationStore annotationStore) {
         return applyClassLevenInterceptor(method, annotationStore)
-                && hasStandardSecurityAnnotation(annotationStore.getAnnotations(method.declaringClass()));
+                && hasSecurityAnnotation(annotationStore.getAnnotations(method.declaringClass()));
     }
 
     private static boolean applyClassLevenInterceptor(MethodInfo method, AnnotationStore store) {
@@ -1045,6 +1047,77 @@ public class SecurityProcessor {
 
         MethodSecurityChecks(Map<MethodInfo, SecurityCheck> securityChecks) {
             this.securityChecks = securityChecks;
+        }
+    }
+
+    private static Predicate<MethodInfo> hasAdditionalSecurityAnnotation(Set<DotName> additionalSecAnnotations) {
+        return new Predicate<MethodInfo>() {
+            @Override
+            public boolean test(MethodInfo methodInfo) {
+                return additionalSecAnnotations.stream().anyMatch(methodInfo::hasDeclaredAnnotation);
+            }
+        };
+    }
+
+    private static final class SecurityAnnotationGatherer {
+        private final Collection<AnnotationInstance> annotationInstances;
+        private final Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods;
+        private final BiConsumer<MethodInfo, AnnotationInstance> putResult;
+        private final Map<ClassInfo, AnnotationInstance> classLevelAnnotations;
+        private final Predicate<MethodInfo> hasAdditionalSecurityAnnotation;
+
+        private SecurityAnnotationGatherer(Collection<AnnotationInstance> annotationInstances,
+                Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods, BiConsumer<MethodInfo, AnnotationInstance> putResult,
+                Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
+                Predicate<MethodInfo> hasAdditionalSecurityAnnotation) {
+            this.annotationInstances = annotationInstances;
+            this.alreadyCheckedMethods = alreadyCheckedMethods;
+            this.putResult = putResult;
+            this.classLevelAnnotations = classLevelAnnotations;
+            this.hasAdditionalSecurityAnnotation = hasAdditionalSecurityAnnotation;
+        }
+
+        private void gatherClassSecurityAnnotations() {
+            // now add the class annotations to methods if they haven't already been annotated
+            for (AnnotationInstance instance : annotationInstances) {
+                AnnotationTarget target = instance.target();
+                if (target.kind() == AnnotationTarget.Kind.CLASS) {
+                    List<MethodInfo> methods = target.asClass().methods();
+                    AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
+                    if (existingClassInstance == null) {
+                        classLevelAnnotations.put(target.asClass(), instance);
+                        for (MethodInfo methodInfo : methods) {
+                            AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
+                            if ((alreadyExistingInstance == null) && !hasAdditionalSecurityAnnotation.test(methodInfo)) {
+                                putResult.accept(methodInfo, instance);
+                            }
+                        }
+                    } else {
+                        throw new IllegalStateException(
+                                "Class " + target.asClass() + " is annotated with multiple security annotations "
+                                        + instance.name()
+                                        + " and " + existingClassInstance.name());
+                    }
+                }
+
+            }
+        }
+
+        private void gatherMethodSecurityAnnotations() {
+            // make sure we process annotations on methods first
+            for (AnnotationInstance instance : annotationInstances) {
+                AnnotationTarget target = instance.target();
+                if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                    MethodInfo methodInfo = target.asMethod();
+                    if (alreadyCheckedMethods.containsKey(methodInfo) || hasAdditionalSecurityAnnotation.test(methodInfo)) {
+                        throw new IllegalStateException(
+                                "Method " + methodInfo.name() + " of class " + methodInfo.declaringClass()
+                                        + " is annotated with multiple security annotations");
+                    }
+                    alreadyCheckedMethods.put(methodInfo, instance);
+                    putResult.accept(methodInfo, instance);
+                }
+            }
         }
     }
 }

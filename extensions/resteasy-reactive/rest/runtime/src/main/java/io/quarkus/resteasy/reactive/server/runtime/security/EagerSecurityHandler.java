@@ -23,6 +23,7 @@ import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
+import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -77,7 +78,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
                     @Override
                     public Uni<?> get() {
-                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null);
+                        return EagerSecurityContext.instance.getPermissionCheck(requestContext, null, invokedMethodDesc);
                     }
                 });
             }
@@ -91,7 +92,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                                return EagerSecurityContext.instance.getPermissionCheck(requestContext, securityIdentity);
+                                return EagerSecurityContext.instance.getPermissionCheck(requestContext, securityIdentity,
+                                        invokedMethodDesc);
                             }
                         })
                         .chain(checkRequiringIdentity);
@@ -228,6 +230,10 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     public static abstract class Customizer implements HandlerChainCustomizer {
 
+        public static HandlerChainCustomizer newInstanceWithAuthorizationPolicy() {
+            return new AuthZPolicyCustomizer();
+        }
+
         public static HandlerChainCustomizer newInstance(boolean onlyCheckForHttpPermissions) {
             return onlyCheckForHttpPermissions ? new HttpPermissionsOnlyCustomizer()
                     : new HttpPermissionsAndSecurityChecksCustomizer();
@@ -238,6 +244,9 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
                 if (onlyCheckForHttpPermissions()) {
+                    if (applyAuthorizationPolicy()) {
+                        return createHandlerForAuthZPolicy(serverResourceMethod);
+                    }
                     return Collections.singletonList(HTTP_PERMS_ONLY);
                 }
 
@@ -270,12 +279,52 @@ public class EagerSecurityHandler implements ServerRestHandler {
             return Collections.emptyList();
         }
 
+        private static List<ServerRestHandler> createHandlerForAuthZPolicy(ServerResourceMethod serverResourceMethod) {
+            var desc = ResourceMethodDescription.of(serverResourceMethod);
+            var authorizationPolicyStorage = Arc.container().select(AuthorizationPolicyStorage.class).get();
+            final MethodDescription securedMethod;
+            if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.invokedMethodDesc())) {
+                securedMethod = desc.invokedMethodDesc();
+            } else if (authorizationPolicyStorage.requiresAuthorizationPolicy(desc.fallbackMethodDesc())) {
+                securedMethod = desc.fallbackMethodDesc();
+            } else {
+                throw new IllegalStateException(
+                        """
+                                @AuthorizationPolicy annotation placed on resource method '%s#%s' wasn't detected by Quarkus during the build time.
+                                Please consult https://quarkus.io/guides/cdi-reference#bean_discovery on how to make the module containing the code discoverable by Quarkus.
+                                """
+                                .formatted(desc.invokedMethodDesc().getClassName(),
+                                        desc.invokedMethodDesc().getMethodName()));
+            }
+            return Collections.singletonList(new EagerSecurityHandler(null, false, securedMethod));
+        }
+
         protected abstract boolean onlyCheckForHttpPermissions();
+
+        protected abstract boolean applyAuthorizationPolicy();
 
         public static final class HttpPermissionsOnlyCustomizer extends Customizer {
 
             @Override
             protected boolean onlyCheckForHttpPermissions() {
+                return true;
+            }
+
+            @Override
+            protected boolean applyAuthorizationPolicy() {
+                return false;
+            }
+        }
+
+        public static final class AuthZPolicyCustomizer extends Customizer {
+
+            @Override
+            protected boolean onlyCheckForHttpPermissions() {
+                return true;
+            }
+
+            @Override
+            protected boolean applyAuthorizationPolicy() {
                 return true;
             }
         }
@@ -284,6 +333,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
             @Override
             protected boolean onlyCheckForHttpPermissions() {
+                return false;
+            }
+
+            @Override
+            protected boolean applyAuthorizationPolicy() {
                 return false;
             }
         }

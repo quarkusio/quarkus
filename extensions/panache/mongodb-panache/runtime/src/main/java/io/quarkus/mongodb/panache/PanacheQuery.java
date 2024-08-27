@@ -214,7 +214,7 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return the single result
-     * @throws PanacheQueryException if there is not exactly one result.
+     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there is not exactly one result.
      * @see #firstResult()
      */
     public <T extends Entity> T singleResult();
@@ -223,7 +223,7 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
-     * @throws PanacheQueryException if there is more than one result.
+     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there is more than one result.
      * @see #firstResultOptional()
      */
     public <T extends Entity> Optional<T> singleResultOptional();

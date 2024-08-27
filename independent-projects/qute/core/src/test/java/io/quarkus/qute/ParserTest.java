@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -466,6 +467,15 @@ public class ParserTest {
         assertSectionParams(engine, "{#let my = (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
         assertSectionParams(engine, "{#let my= (bad or not) id=1}", Map.of("my", "(bad or not)", "id", "1"));
 
+    }
+
+    @Test
+    public void testNonLiteralBracketNotation() {
+        TemplateException e = assertThrows(TemplateException.class,
+                () -> Engine.builder().addDefaults().build().parse("{foo[bar]}", null, "baz"));
+        assertNotNull(e.getOrigin());
+        assertEquals("Non-literal value [bar] used in bracket notation in expression {foo[bar]} in template [baz] line 1",
+                e.getMessage());
     }
 
     private void assertSectionParams(Engine engine, String content, Map<String, String> expectedParams) {

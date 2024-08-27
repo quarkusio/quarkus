@@ -262,16 +262,16 @@ public class ParserTest {
 
     @Test
     public void testValidIdentifiers() {
-        assertTrue(Parser.isValidIdentifier("foo"));
-        assertTrue(Parser.isValidIdentifier("_foo"));
-        assertTrue(Parser.isValidIdentifier("foo$$bar"));
-        assertTrue(Parser.isValidIdentifier("1Foo_$"));
-        assertTrue(Parser.isValidIdentifier("1"));
-        assertTrue(Parser.isValidIdentifier("1?"));
-        assertTrue(Parser.isValidIdentifier("1:"));
-        assertTrue(Parser.isValidIdentifier("-foo"));
-        assertTrue(Parser.isValidIdentifier("foo["));
-        assertTrue(Parser.isValidIdentifier("foo^"));
+        assertTrue(Identifiers.isValid("foo"));
+        assertTrue(Identifiers.isValid("_foo"));
+        assertTrue(Identifiers.isValid("foo$$bar"));
+        assertTrue(Identifiers.isValid("1Foo_$"));
+        assertTrue(Identifiers.isValid("1"));
+        assertTrue(Identifiers.isValid("1?"));
+        assertTrue(Identifiers.isValid("1:"));
+        assertTrue(Identifiers.isValid("-foo"));
+        assertTrue(Identifiers.isValid("foo["));
+        assertTrue(Identifiers.isValid("foo^"));
         Engine engine = Engine.builder().addDefaults().build();
         assertThatExceptionOfType(TemplateException.class)
                 .isThrownBy(() -> engine.parse("{foo\nfoo}"))

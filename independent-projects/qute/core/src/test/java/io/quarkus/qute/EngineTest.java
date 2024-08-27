@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -114,6 +115,13 @@ public class EngineTest {
         assertFalse(engine2.getEvaluator().strictRendering());
         assertTrue(engine2.useAsyncTimeout());
         assertEquals(engine1.getSectionHelperFactories().size(), engine2.getSectionHelperFactories().size());
+    }
+
+    @Test
+    public void testInvalidTemplateIdentifier() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> Engine.builder().build().putTemplate("foo o", null));
+        assertEquals("Invalid identifier found: [foo o]", e.getMessage());
     }
 
 }

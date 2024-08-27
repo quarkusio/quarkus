@@ -400,20 +400,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 || Character.isAlphabetic(character);
     }
 
-    static boolean isValidIdentifier(String value) {
-        int offset = 0;
-        int length = value.length();
-        while (offset < length) {
-            int c = value.codePointAt(offset);
-            if (!Character.isWhitespace(c)) {
-                offset += Character.charCount(c);
-                continue;
-            }
-            return false;
-        }
-        return true;
-    }
-
     private boolean isLineSeparatorStart(char character) {
         return character == LINE_SEPARATOR_CR || character == LINE_SEPARATOR_LF;
     }
@@ -1084,7 +1070,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         .build();
             }
         } else {
-            if (!isValidIdentifier(value)) {
+            if (!Identifiers.isValid(value)) {
                 throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
                         .argument("value", value)
                         .build();

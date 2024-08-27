@@ -5,7 +5,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,10 +38,8 @@ import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
-import io.quarkus.test.common.WithTestResource;
 
 public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithContextExtension {
 
@@ -268,43 +265,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         }
 
         return null;
-    }
-
-    protected static boolean hasPerTestResources(ExtensionContext extensionContext) {
-        return hasPerTestResources(extensionContext.getRequiredTestClass());
-    }
-
-    public static boolean hasPerTestResources(Class<?> requiredTestClass) {
-        while (requiredTestClass != Object.class) {
-            for (WithTestResource testResource : requiredTestClass.getAnnotationsByType(WithTestResource.class)) {
-                if (testResource.restrictToAnnotatedClass()) {
-                    return true;
-                }
-            }
-
-            for (QuarkusTestResource testResource : requiredTestClass.getAnnotationsByType(QuarkusTestResource.class)) {
-                if (testResource.restrictToAnnotatedClass()) {
-                    return true;
-                }
-            }
-            // scan for meta-annotations
-            for (Annotation annotation : requiredTestClass.getAnnotations()) {
-                // skip TestResource annotations
-                var annotationType = annotation.annotationType();
-
-                if ((annotationType != WithTestResource.class) && (annotationType != QuarkusTestResource.class)) {
-                    // look for a TestResource on the annotation itself
-                    if ((annotationType.getAnnotationsByType(WithTestResource.class).length > 0)
-                            || (annotationType.getAnnotationsByType(QuarkusTestResource.class).length > 0)) {
-                        // meta-annotations are per-test scoped for now
-                        return true;
-                    }
-                }
-            }
-            // look up
-            requiredTestClass = requiredTestClass.getSuperclass();
-        }
-        return false;
     }
 
     protected static class PrepareResult {

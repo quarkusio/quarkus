@@ -3,10 +3,10 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineBuildOutputDirectory;
 import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndProperties;
-import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
+import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -122,7 +122,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
                 testResourceManager = new TestResourceManager(requiredTestClass, profile,
-                        getAdditionalTestResources(testProfileAndProperties.testProfile,
+                        copyEntriesFromProfile(testProfileAndProperties.testProfile,
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.testProfile != null
                                 && testProfileAndProperties.testProfile.disableGlobalTestResources());

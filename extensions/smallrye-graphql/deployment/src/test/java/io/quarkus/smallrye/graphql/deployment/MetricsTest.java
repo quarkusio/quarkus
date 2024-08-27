@@ -1,9 +1,9 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import static io.quarkus.smallrye.graphql.runtime.JsonProviderProvider.JSON_PROVIDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.metrics.MetricID;
@@ -71,9 +71,9 @@ public class MetricsTest {
     private JsonObject createRequestBody(String graphQL, JsonObject variables) {
         // Create the request
         if (variables == null || variables.isEmpty()) {
-            variables = Json.createObjectBuilder().build();
+            variables = JSON_PROVIDER.createObjectBuilder().build();
         }
-        return Json.createObjectBuilder().add("query", graphQL).add("variables", variables).build();
+        return JSON_PROVIDER.createObjectBuilder().add("query", graphQL).add("variables", variables).build();
     }
 
 }

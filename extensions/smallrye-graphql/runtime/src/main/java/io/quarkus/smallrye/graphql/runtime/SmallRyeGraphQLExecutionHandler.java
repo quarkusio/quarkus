@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.runtime;
 
+import static io.quarkus.smallrye.graphql.runtime.JsonProviderProvider.JSON_PROVIDER;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
@@ -8,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
@@ -16,11 +17,7 @@ import jakarta.json.stream.JsonParsingException;
 
 import org.jboss.logging.Logger;
 
-import graphql.ErrorType;
-import graphql.ExecutionResult;
-import graphql.ExecutionResultImpl;
-import graphql.GraphQLError;
-import graphql.GraphqlErrorBuilder;
+import graphql.*;
 import graphql.execution.AbortExecutionException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -106,7 +103,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
                 if (jsonObjectFromBody != null) {
-                    mergedJsonObject = Json.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                    mergedJsonObject = JSON_PROVIDER.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
                             .asJsonObject();
                 } else {
                     mergedJsonObject = jsonObjectFromQueryParameters;
@@ -153,7 +150,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
-        JsonObjectBuilder input = Json.createObjectBuilder();
+        JsonObjectBuilder input = JSON_PROVIDER.createObjectBuilder();
         // Query
         String query = stripNewlinesAndTabs(readQueryParameter(ctx, QUERY));
         if (query != null && !query.isEmpty()) {
@@ -189,7 +186,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
         // If the content type is application/graphql, the query is in the body
         if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
-            JsonObjectBuilder input = Json.createObjectBuilder();
+            JsonObjectBuilder input = JSON_PROVIDER.createObjectBuilder();
             input.add(QUERY, body);
             return input.build();
             // Else we expect a Json in the content

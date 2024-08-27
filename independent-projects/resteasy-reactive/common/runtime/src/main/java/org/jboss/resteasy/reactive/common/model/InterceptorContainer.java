@@ -33,6 +33,10 @@ public class InterceptorContainer<T> {
         Collections.sort(nameResourceInterceptors);
     }
 
+    public boolean isEmpty() {
+        return globalResourceInterceptors.isEmpty() && nameResourceInterceptors.isEmpty();
+    }
+
     public ResourceInterceptor<T> create() {
         return new ResourceInterceptor<>();
     }

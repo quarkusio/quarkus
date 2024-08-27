@@ -452,13 +452,15 @@ public class ApplicationLifecycleManager {
             }
             //take a reliable reference before changing the application state:
             final Application app = currentApplication;
-            if (app.isStarted()) {
-                // On CLI apps, SIGINT won't call io.quarkus.runtime.Application#stop(),
-                // making the awaitShutdown() below block the application termination process
-                // It should be a noop if called twice anyway
-                app.stop();
+            if (app != null) {
+                if (app.isStarted()) {
+                    // On CLI apps, SIGINT won't call io.quarkus.runtime.Application#stop(),
+                    // making the awaitShutdown() below block the application termination process
+                    // It should be a noop if called twice anyway
+                    app.stop();
+                }
+                app.awaitShutdown();
             }
-            app.awaitShutdown();
             currentApplication = null;
             System.out.flush();
             System.err.flush();

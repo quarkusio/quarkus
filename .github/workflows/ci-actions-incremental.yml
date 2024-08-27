@@ -1248,7 +1248,7 @@ jobs:
           fi
           for directory in ./build-stats-*/; do
             echo "Processing $directory"
-            cd $directory
+            cd "$directory"
             tar -xvf build-stats.tgz
             cd -
           done

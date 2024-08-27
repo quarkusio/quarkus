@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -209,33 +209,33 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a BSON query.
      *
-     * @param query a {@link Document} query
+     * @param query a {@link Bson} query
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(Document, Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Document query) {
+    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find entities using a BSON query and a BSON sort.
      *
-     * @param query a {@link Document} query
-     * @param sort the {@link Document} sort
+     * @param query a {@link Bson} query
+     * @param sort the {@link Bson} sort
      * @return a new {@link ReactivePanacheQuery} instance for the given query
-     * @see #find(Document)
-     * @see #list(Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #list(Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Document query, Document sort) {
+    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -385,16 +385,16 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Find entities using a BSON query.
      * This method is a shortcut for <code>find(query).list()</code>.
      *
-     * @param query a {@link Document} query
+     * @param query a {@link Bson} query
      * @return a {@link List} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Document query) {
+    public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -402,17 +402,17 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
-     * @param query a {@link Document} query
-     * @param sort the {@link Document} sort
+     * @param query a {@link Bson} query
+     * @param sort the {@link Bson} sort
      * @return a {@link List} containing all results, without paging
-     * @see #find(Document)
-     * @see #find(Document, Document)
-     * @see #list(Document, Document)
-     * @see #stream(Document)
-     * @see #stream(Document, Document)
+     * @see #find(Bson)
+     * @see #find(Bson, Bson)
+     * @see #list(Bson, Bson)
+     * @see #stream(Bson)
+     * @see #stream(Bson, Bson)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Document query, Document sort) {
+    public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -561,7 +561,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Find entities using a BSON query.
      * This method is a shortcut for <code>find(query).stream()</code>.
      *
-     * @param query a {@link Document} query
+     * @param query a {@link Bson} query
      * @return a {@link Multi} containing all results, without paging
      * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
@@ -570,7 +570,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #stream(String, Sort, Parameters)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Document query) {
+    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -578,8 +578,8 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
-     * @param query a {@link Document} query
-     * @param sort the {@link Document} sort
+     * @param query a {@link Bson} query
+     * @param sort the {@link Bson} sort
      * @return a {@link Multi} containing all results, without paging
      * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
@@ -588,7 +588,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #stream(String, Sort, Parameters)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Document query, Document sort) {
+    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Bson query, Bson sort) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -682,14 +682,14 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query
      *
-     * @param query a {@link Document} query
+     * @param query a {@link Bson} query
      * @return he number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public static Uni<Long> count(Document query) {
+    public static Uni<Long> count(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -765,14 +765,14 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query
      *
-     * @param query a {@link Document} query
+     * @param query a {@link Bson} query
      * @return he number of entities counted.
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
      */
     @GenerateBridge
-    public static Uni<Long> delete(Document query) {
+    public static Uni<Long> delete(Bson query) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
@@ -905,7 +905,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
-     * @see #update(Document)
+     * @see #update(Bson)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Object... params) {
@@ -924,7 +924,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     * @see #update(Document)
+     * @see #update(Bson)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update,
@@ -944,7 +944,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Map)
-     * @see #update(Document)
+     * @see #update(Bson)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Parameters params) {
@@ -956,7 +956,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
      * update should be applied.
      *
-     * @param update the update document, as a {@link org.bson.Document}.
+     * @param update the update document, as a {@link org.bson.conversions.Bson}.
      * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given update
      *         document
      * @see #update(String, Object...)
@@ -964,7 +964,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(String, Parameters)
      */
     @GenerateBridge
-    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Document update) {
+    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Bson update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

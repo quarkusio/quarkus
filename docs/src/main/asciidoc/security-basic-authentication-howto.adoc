@@ -43,7 +43,7 @@ quarkus.http.auth.basic=true
 +
 [source,properties]
 ----
-security.users.embedded.enabled=true
+quarkus.security.users.embedded.enabled=true
 ----
 
 .. You can also configure the required user credentials, user name, secret, and roles.

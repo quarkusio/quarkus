@@ -180,6 +180,12 @@ public class InfinispanClientRuntimeConfig {
     Optional<String> sniHostName;
 
     /**
+     * Configures the socket timeout.
+     */
+    @ConfigItem
+    Optional<Integer> socketTimeout;
+
+    /**
      * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
      * By default the propagation of the context is propagated from the client to the Infinispan Server.
      */

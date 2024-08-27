@@ -297,8 +297,12 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 final HttpRequest httpRequest,
                 final HttpResponse httpResponse,
                 final Throwable error) {
-            attributes.put(HTTP_REQUEST_BODY_SIZE, getContentLength(httpRequest.headers()));
-            attributes.put(HTTP_RESPONSE_BODY_SIZE, getContentLength(httpResponse.headers()));
+            if (httpRequest != null) {
+                attributes.put(HTTP_REQUEST_BODY_SIZE, getContentLength(httpRequest.headers()));
+            }
+            if (httpResponse != null) {
+                attributes.put(HTTP_RESPONSE_BODY_SIZE, getContentLength(httpResponse.headers()));
+            }
         }
 
         private static Long getContentLength(final MultiMap headers) {

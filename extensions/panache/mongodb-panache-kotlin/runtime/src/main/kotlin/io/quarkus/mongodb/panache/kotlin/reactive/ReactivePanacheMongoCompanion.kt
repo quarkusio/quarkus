@@ -9,7 +9,7 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
 import java.util.stream.Stream
-import org.bson.Document
+import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 
 /**
@@ -138,7 +138,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     /**
      * Find entities using a BSON query.
      *
-     * @param query a [Document] query
+     * @param query a [Bson] query
      * @return a new [ReactivePanacheQuery] instance for the given query
      * @see [find]
      * @see [list]
@@ -147,14 +147,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document): ReactivePanacheQuery<Entity> =
+    fun find(query: Bson): ReactivePanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort.
      *
-     * @param query a [Document] query
-     * @param sort the [Document] sort
+     * @param query a [Bson] query
+     * @param sort the [Bson] sort
      * @return a new [ReactivePanacheQuery] instance for the given query
      * @see [find]
      * @see [list]
@@ -163,7 +163,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document, sort: Document): ReactivePanacheQuery<Entity> =
+    fun find(query: Bson, sort: Bson): ReactivePanacheQuery<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -298,7 +298,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     /**
      * Find entities using a BSON query. This method is a shortcut for `find(query).list()`.
      *
-     * @param query a [Document] query
+     * @param query a [Bson] query
      * @return a [List] containing all results, without paging
      * @see [find]
      * @see [find]
@@ -307,14 +307,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: Document): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: Bson): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
      * sort).list()`.
      *
-     * @param query a [Document] query
-     * @param sort the [Document] sort
+     * @param query a [Bson] query
+     * @param sort the [Bson] sort
      * @return a [List] containing all results, without paging
      * @see [find]
      * @see [find]
@@ -323,7 +323,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: Document, sort: Document): Uni<List<Entity>> =
+    fun list(query: Bson, sort: Bson): Uni<List<Entity>> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -458,7 +458,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     /**
      * Find entities using a BSON query. This method is a shortcut for `find(query).stream()`.
      *
-     * @param query a [Document] query
+     * @param query a [Bson] query
      * @return a [Multi] containing all results, without paging
      * @see [find]
      * @see [find]
@@ -467,14 +467,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun stream(query: Document): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: Bson): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
      * sort).stream()`.
      *
-     * @param query a [Document] query
-     * @param sort the [Document] sort
+     * @param query a [Bson] query
+     * @param sort the [Bson] sort
      * @return a [Multi] containing all results, without paging
      * @see [find]
      * @see [find]
@@ -483,7 +483,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun stream(query: Document, sort: Document): Multi<Entity> =
+    fun stream(query: Bson, sort: Bson): Multi<Entity> =
         throw INSTANCE.implementationInjectionMissing()
 
     /**
@@ -565,14 +565,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     /**
      * Counts the number of this type of entity matching the given query
      *
-     * @param query a [Document] query
+     * @param query a [Bson] query
      * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]
      */
     @GenerateBridge
-    fun count(query: Document): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun count(query: Bson): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete all entities of this type from the database.
@@ -638,14 +638,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     /**
      * Delete all entities of this type matching the given query
      *
-     * @param query a [Document] query
+     * @param query a [Bson] query
      * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]
      */
     @GenerateBridge
-    fun delete(query: Document): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun delete(query: Bson): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Insert all given entities.
@@ -810,7 +810,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: Document): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+    fun update(update: Bson): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
     /** Allow to access the underlying Mongo Collection. */

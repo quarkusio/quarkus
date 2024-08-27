@@ -79,12 +79,16 @@ The instructions in this example tutorial use a PostgreSQL database for the iden
 You can create a new Maven project with the Security Jakarta Persistence extension or add the extension to an existing Maven project.
 You can use either Hibernate ORM or Hibernate Reactive.
 
+==== Creating new Maven project
+
 * To create a new Maven project with the Jakarta Persistence extension, complete one of the following steps:
 ** To create the Maven project with Hibernate ORM, use the following command:
 
 :create-app-artifact-id: security-jpa-quickstart
 :create-app-extensions: security-jpa,jdbc-postgresql,rest,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
+
+==== Adding Jakarta Persistence extension to existing project
 
 * To add the Jakarta Persistence extension to an existing Maven project, complete one of the following steps:
 
@@ -415,7 +419,7 @@ In this scenario, `Dev Services for PostgreSQL` launches and configures a `Postg
 %prod.quarkus.datasource.db-kind=postgresql
 %prod.quarkus.datasource.username=quarkus
 %prod.quarkus.datasource.password=quarkus
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql:elytron_security_jpa
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
@@ -505,7 +509,7 @@ Dev Services for PostgreSQL supports testing while you develop by providing a se
 [source,bash]
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
-           -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=elytron_security_jpa \
+           -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
            -p 5432:5432 postgres:14.1
 ----
 === Compile and run the application

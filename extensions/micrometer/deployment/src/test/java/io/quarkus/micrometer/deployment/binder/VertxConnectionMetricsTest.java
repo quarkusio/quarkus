@@ -7,13 +7,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -31,6 +35,8 @@ import io.vertx.mutiny.ext.web.Router;
  */
 public class VertxConnectionMetricsTest {
 
+    private static final Logger log = Logger.getLogger(VertxConnectionMetricsTest.class.getName());
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("test-logging.properties")
@@ -40,6 +46,18 @@ public class VertxConnectionMetricsTest {
             // Close the connection after 1s of inactivity, otherwise, the connection are kept open for 30min
             .overrideConfigKey("quarkus.http.idle-timeout", "1s")
             .withApplicationRoot(jar -> jar.addClasses(App.class));
+
+    final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void setRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll()
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
 
     @Inject
     App app;
@@ -65,7 +83,7 @@ public class VertxConnectionMetricsTest {
         for (int i = 0; i < concurrency; i++) {
             executor.submit(() -> {
                 try {
-                    RestAssured.get("/ok").statusCode();
+                    log.info("status code received: " + RestAssured.get("/ok").statusCode());
                 } catch (Exception e) {
                     // RestAssured considers the rejection as an error.
                     rejected.incrementAndGet();
@@ -76,18 +94,18 @@ public class VertxConnectionMetricsTest {
         }
 
         Assertions.assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-        Gauge max = Metrics.globalRegistry.find("vertx.http.connections.max").gauge();
-        Gauge current = Metrics.globalRegistry.find("vertx.http.connections.current").gauge();
+        Gauge max = registry.find("vertx.http.connections.max").gauge();
+        Gauge current = registry.find("vertx.http.connections.current").gauge();
         Assertions.assertThat(max).isNotNull();
         Assertions.assertThat(current).isNotNull();
 
-        Assertions.assertThat(max.value()).isEqualTo(2);
+        Assertions.assertThat(max.value()).isEqualTo(2);// this is time windowed test... Set time window to large value
 
         // All requests are done, and connection closed (idle timeout)
         await().untilAsserted(() -> Assertions.assertThat(current.value()).isEqualTo(0));
 
         if (rejected.get() > 0) {
-            Counter counter = Metrics.globalRegistry.find("vertx.http.connections.rejected").counter();
+            Counter counter = registry.find("vertx.http.connections.rejected").counter();
             Assertions.assertThat(counter).isNotNull();
             Assertions.assertThat(counter.count()).isGreaterThan(0);
         }

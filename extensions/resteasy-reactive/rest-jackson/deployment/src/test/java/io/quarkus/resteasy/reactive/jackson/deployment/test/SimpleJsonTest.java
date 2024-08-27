@@ -614,7 +614,7 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .body("publicName", Matchers.is("Leo"))
                 .body("privateName", Matchers.nullValue())
-                .body("publicAge", Matchers.is(5))
+                .body("age", Matchers.is(5))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.nullValue());
         TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
@@ -637,7 +637,7 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .body("publicName", Matchers.is("Leo"))
                 .body("privateName", Matchers.is("Jack"))
-                .body("publicAge", Matchers.is(5))
+                .body("age", Matchers.is(5))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.is("VMD"));
     }

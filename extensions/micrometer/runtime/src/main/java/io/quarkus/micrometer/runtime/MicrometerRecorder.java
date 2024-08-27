@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.quarkus.arc.Arc;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
@@ -56,10 +57,12 @@ public class MicrometerRecorder {
 
     @StaticInit
     public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
-        factory = new MicrometerMetricsFactory(config, Metrics.globalRegistry);
+
+        CompositeMeterRegistry globalRegistry = Metrics.globalRegistry;
+        factory = new MicrometerMetricsFactory(config, globalRegistry);
         nonApplicationUri = qUri;
         httpRootUri = httpUri;
-        return new RuntimeValue<>(Metrics.globalRegistry);
+        return new RuntimeValue<>(globalRegistry);
     }
 
     @RuntimeInit

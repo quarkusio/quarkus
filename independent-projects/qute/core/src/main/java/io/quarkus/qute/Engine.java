@@ -78,6 +78,7 @@ public interface Engine extends ErrorInitializer {
     String mapResult(Object result, Expression expression);
 
     /**
+     * A valid identifier is a sequence of non-whitespace characters.
      *
      * @param id
      * @param template

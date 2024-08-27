@@ -255,10 +255,13 @@ This includes the globally configured handlers and formatters.
 ====
 [source, properties]
 ----
-quarkus.log.handlers=console,mylog
+quarkus.log.handlers=con,mylog
+
+quarkus.log.handler.console.con.enable=true
+quarkus.log.handler.file.mylog.enable=true
 ----
 
-In this example, the root category is configured to use two handlers: `console` and `mylog`.
+In this example, the root category is configured to use two named handlers: `con` and `mylog`.
 ====
 
 .An example of a per-category configuration:

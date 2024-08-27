@@ -33,4 +33,14 @@ public class ResolvedModel {
     public List<ConfigRoot> getConfigRoots() {
         return configRoots;
     }
+
+    public void walk(ConfigItemVisitor visitor) {
+        for (ConfigRoot configRoot : configRoots) {
+            configRoot.walk(visitor);
+        }
+    }
+
+    public boolean isEmpty() {
+        return configRoots.isEmpty();
+    }
 }

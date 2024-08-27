@@ -51,4 +51,6 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     @JsonIgnore
     public abstract boolean hasMemorySizeType();
+
+    protected abstract void walk(ConfigItemVisitor visitor);
 }

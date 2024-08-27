@@ -102,11 +102,32 @@ public class FilerUtil {
     }
 
     /**
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     */
+    public void writeYaml(String filePath, Object value) {
+        if (value == null) {
+            return;
+        }
+
+        try {
+            final FileObject yamlResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
+                    filePath.toString());
+
+            try (OutputStream os = yamlResource.openOutputStream()) {
+                JacksonMappers.yamlObjectWriter().writeValue(os, value);
+            }
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
+            return;
+        }
+    }
+
+    /**
      * The model files are written outside of target/classes as we don't want to include them in the jar.
      * <p>
      * They are not written by the annotation processor Filer API so we can use proper Paths.
      */
-    public Path writeModel(Path filePath, Object value) {
+    public Path writeModel(String filePath, Object value) {
         Path yamlModelPath = getTargetPath().resolve(filePath);
         try {
             Files.createDirectories(yamlModelPath.getParent());

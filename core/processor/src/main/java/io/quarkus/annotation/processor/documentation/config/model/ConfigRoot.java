@@ -131,4 +131,10 @@ public class ConfigRoot implements ConfigItemCollection {
 
         return prefixSegments[0] + Markers.DOT + prefixSegments[1];
     }
+
+    public void walk(ConfigItemVisitor visitor) {
+        for (AbstractConfigItem item : items) {
+            item.walk(visitor);
+        }
+    }
 }

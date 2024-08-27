@@ -38,4 +38,8 @@ public class MergedModel {
     public Map<Extension, List<ConfigSection>> getGeneratedConfigSections() {
         return generatedConfigSections;
     }
+
+    public boolean isEmpty() {
+        return configRoots.isEmpty();
+    }
 }

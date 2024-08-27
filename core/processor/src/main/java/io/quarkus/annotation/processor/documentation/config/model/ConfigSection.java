@@ -106,4 +106,12 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
         }
         return false;
     }
+
+    @Override
+    protected void walk(ConfigItemVisitor visitor) {
+        visitor.visit(this);
+        for (AbstractConfigItem item : items) {
+            item.walk(visitor);
+        }
+    }
 }

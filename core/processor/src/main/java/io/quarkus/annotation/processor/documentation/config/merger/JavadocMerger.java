@@ -1,6 +1,7 @@
 package io.quarkus.annotation.processor.documentation.config.merger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -26,8 +27,8 @@ public final class JavadocMerger {
                 continue;
             }
 
-            try {
-                JavadocElements javadocElements = JacksonMappers.yamlObjectReader().readValue(javadocPath.toFile(),
+            try (InputStream javadocIs = Files.newInputStream(javadocPath)) {
+                JavadocElements javadocElements = JacksonMappers.yamlObjectReader().readValue(javadocIs,
                         JavadocElements.class);
 
                 if (javadocElements.elements() == null || javadocElements.elements().isEmpty()) {

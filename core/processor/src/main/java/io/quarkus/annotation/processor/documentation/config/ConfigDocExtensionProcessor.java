@@ -96,6 +96,5 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
                 }
             }
         }
-
     }
 }

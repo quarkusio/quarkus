@@ -36,7 +36,7 @@ public final class ConfigProperty extends AbstractConfigItem {
             boolean deprecated) {
         super(sourceClass, sourceName, path, type, deprecated);
         this.phase = phase;
-        this.additionalPaths = additionalPaths;
+        this.additionalPaths = additionalPaths != null ? additionalPaths : List.of();
         this.environmentVariable = environmentVariable;
         this.typeDescription = typeDescription;
         this.map = map;
@@ -144,5 +144,10 @@ public final class ConfigProperty extends AbstractConfigItem {
     @Override
     public boolean hasMemorySizeType() {
         return Types.MEMORY_SIZE_TYPE.equals(type);
+    }
+
+    @Override
+    protected void walk(ConfigItemVisitor visitor) {
+        visitor.visit(this);
     }
 }

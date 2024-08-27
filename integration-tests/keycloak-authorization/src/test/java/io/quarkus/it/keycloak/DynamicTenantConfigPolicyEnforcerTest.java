@@ -21,13 +21,13 @@ import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig;
 import io.quarkus.runtime.util.StringUtil;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
-@WithTestResource(value = KeycloakLifecycleManager.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KeycloakLifecycleManager.class)
 @TestProfile(DynamicTenantConfigPolicyEnforcerTest.DynamicTenantConfigResolverProfile.class)
 public class DynamicTenantConfigPolicyEnforcerTest extends AbstractPolicyEnforcerTest {
 

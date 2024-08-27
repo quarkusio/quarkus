@@ -9,13 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusIntegrationTest
-@WithTestResource(value = MongoTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(MongoTestResource.class)
 @DisabledOnOs(OS.WINDOWS)
 class NativeFruitResourceTestIT {
     @Test

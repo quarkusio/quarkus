@@ -14,14 +14,14 @@ import org.junit.jupiter.api.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@WithTestResource(value = OidcWiremockTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(OidcWiremockTestResource.class)
 public class BearerOpaqueTokenAuthorizationTest {
 
     @OidcWireMock

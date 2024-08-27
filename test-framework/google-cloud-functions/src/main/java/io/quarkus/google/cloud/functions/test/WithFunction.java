@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
 /**
  * This annotation can be used to start a Google Cloud Function for a test.
@@ -15,7 +15,7 @@ import io.quarkus.test.common.WithTestResource;
  *
  * @see CloudFunctionTestResource
  */
-@WithTestResource(CloudFunctionTestResource.class)
+@QuarkusTestResource(value = CloudFunctionTestResource.class, restrictToAnnotatedClass = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithFunction {

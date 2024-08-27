@@ -5,12 +5,12 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@WithTestResource(BadHostServiceTestResource.class)
-@WithTestResource(value = ExternalTlsTrustAllTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = BadHostServiceTestResource.class, restrictToAnnotatedClass = true)
+@QuarkusTestResource(ExternalTlsTrustAllTestResource.class)
 public class ExternalTlsTrustAllTestCase {
 
     @Test

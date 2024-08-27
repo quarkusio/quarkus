@@ -13,6 +13,10 @@ import io.quarkus.test.common.WithTestResource.List;
 /**
  * Used to define a test resource, which can affect various aspects of the application lifecycle.
  * <p>
+ * WARNING: this annotation, introduced in 3.13, caused some issues so it was decided to undeprecate
+ * {@link QuarkusTestResource} and rework the behavior of this annotation. For now, we recommend not using it
+ * until we improve its behavior.
+ * <p>
  * Note: When using the {@code restrictToAnnotatedClass=true} (which is the default), each test that is annotated
  * with {@code @WithTestResource} will result in the application being re-augmented and restarted (in a similar fashion
  * as happens in dev-mode when a change is detected) in order to incorporate the settings configured by the annotation.
@@ -25,7 +29,7 @@ import io.quarkus.test.common.WithTestResource.List;
  * <p>
  * Note that test resources are never restarted when running {@code @Nested} test classes.
  * <p>
- * This replaces {@link QuarkusTestResource}. The only difference is that the default value for
+ * The only difference with {@link QuarkusTestResource} is that the default value for
  * {@link #restrictToAnnotatedClass()} {@code == true}.
  * </p>
  * <p>

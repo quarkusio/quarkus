@@ -18,13 +18,13 @@ import org.junit.jupiter.api.condition.OS;
 import com.mongodb.client.ListIndexesIterable;
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
-@WithTestResource(value = MongoTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(MongoTestResource.class)
 @DisabledOnOs(OS.WINDOWS)
 class FruitResourceTest {
 

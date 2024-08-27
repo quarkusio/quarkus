@@ -20,9 +20,9 @@ import io.quarkus.redis.datasource.codecs.Codecs;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
-@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(RedisTestResource.class)
 public class CustomCodecTest {
 
     @RegisterExtension

@@ -21,11 +21,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.IdToken;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
-@WithTestResource(value = KeycloakTestResourceLifecycleManager.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class ImplicitBasicAuthAndCodeFlowAuthCombinationTest {
 
     @RegisterExtension

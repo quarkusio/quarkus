@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.common.WithTestResource;
 
 /**
  * Validates the injection of {@link WireMockServer} objects into test instances by {@link OidcWiremockTestResource}.
@@ -24,7 +24,7 @@ class OidcWiremockTestResourceInjectionTest {
         assertNotNull(test.server);
     }
 
-    @WithTestResource(value = OidcWiremockTestResource.class, restrictToAnnotatedClass = false)
+    @QuarkusTestResource(OidcWiremockTestResource.class)
     public static class CustomTest {
         @OidcWireMock
         WireMockServer server;

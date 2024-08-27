@@ -14,9 +14,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
-@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(RedisTestResource.class)
 public class NamedRedisCacheTest {
 
     private static final String KEY_1 = "1";

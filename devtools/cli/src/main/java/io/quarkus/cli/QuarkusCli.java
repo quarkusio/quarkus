@@ -176,7 +176,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                         .collect(Collectors.toList());
                 if (!unmatchedSubcommands.isEmpty()) {
                     missingCommand.append("-").append(unmatchedSubcommands.get(0));
-                    return Optional.of(missingCommand.toString());
+                    // We don't want the root itself to be added to the result
+                    return Optional.of(stripRootPrefix(missingCommand.toString(), root.getCommandName() + "-"));
                 }
 
                 currentParseResult = currentParseResult.subcommand();
@@ -191,6 +192,14 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             // This will be handled by Picocli at a later step.
             return Optional.empty();
         }
+    }
+
+    private static String stripRootPrefix(String command, String rootPrefix) {
+        if (!command.startsWith(rootPrefix)) {
+            return command;
+        }
+
+        return command.substring(rootPrefix.length());
     }
 
     @Override

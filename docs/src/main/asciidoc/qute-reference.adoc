@@ -1525,6 +1525,8 @@ If you want to use Qute in your Quarkus application, add the following dependenc
 In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@ApplicationScoped`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
 Moreover, all templates located in the `src/main/resources/templates` directory are validated and can be easily injected.
 
+NOTE: A valid template file name is a sequence of non-whitespace characters. For example, a template file named `foo and bar.html` will be ignored.
+
 [source,java]
 ----
 import io.quarkus.qute.Engine;

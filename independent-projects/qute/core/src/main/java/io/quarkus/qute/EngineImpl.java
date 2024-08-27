@@ -117,6 +117,9 @@ class EngineImpl implements Engine {
     }
 
     public Template putTemplate(String id, Template template) {
+        if (!Identifiers.isValid(id)) {
+            throw new IllegalArgumentException("Invalid identifier found: [" + id + "]");
+        }
         return templates.put(id, template);
     }
 

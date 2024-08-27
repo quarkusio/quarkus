@@ -177,6 +177,19 @@ Dependent beans injected into the fields and test method arguments are correctly
 
 NOTE: Arguments of a `@ParameterizedTest` method that are provided by an `ArgumentsProvider`, for example with `@org.junit.jupiter.params.provider.ValueArgumentsProvider`, must be annotated with `@SkipInject`. 
 
+=== Tested components
+
+The initial set of tested components is derived from the test class:
+
+1. The types of all fields annotated with `@jakarta.inject.Inject` are considered the component types.
+2. The types of test methods parameters that are not annotated with `@InjectMock`, `@SkipInject`, or `@org.mockito.Mock` are also considered the component types.
+3. If `@QuarkusComponentTest#addNestedClassesAsComponents()` is set to `true` (default) then all static nested classes declared on the test class are components too.
+
+NOTE: `@Inject Instance<T>` and `@Inject @All List<T>` injection points are handled specifically. The actual type argument is registered as a component. However, if the type argument is an interface the implementations _are not registered_ automatically. 
+
+Additional component classes can be set using `@QuarkusComponentTest#value()` or `QuarkusComponentTestExtensionBuilder#addComponentClasses()`.
+
+
 [[auto_mocking]]
 === Auto Mocking Unsatisfied Dependencies
 

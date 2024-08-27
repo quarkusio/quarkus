@@ -3,9 +3,12 @@ package io.quarkus.test.component.paraminject;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.function.Supplier;
+
+import jakarta.enterprise.inject.Instance;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -43,7 +46,8 @@ public class ParameterInjectionTest {
             // And so no matching bean exists
             @SkipInject Supplier<Object> shouldBeTrue,
             // @All List<> needs special handling
-            @All List<MyComponent> allMyComponents) {
+            @All List<MyComponent> allMyComponents,
+            Instance<MyComponent> instance) {
         Mockito.when(charlie.ping()).thenReturn("foo");
         assertNotNull(testInfo);
         assertEquals("foo and BAZ", myComponent.ping());
@@ -51,6 +55,8 @@ public class ParameterInjectionTest {
         assertEquals(1, allMyComponents.size());
         assertEquals(myComponent.ping(), allMyComponents.get(0).ping());
         assertEquals(Boolean.TRUE, shouldBeTrue.get());
+        assertNotNull(instance);
+        assertTrue(instance.isResolvable());
     }
 
     public static class MyParamResolver implements ParameterResolver {

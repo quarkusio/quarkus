@@ -241,10 +241,17 @@ class PluginMangerState {
         return this.projectRoot;
     }
 
+    public void invalidateCatalogs() {
+        _projectCatalog = null;
+        _userCatalog = null;
+        _combinedCatalog = null;
+    }
+
     public void invalidateInstalledPlugins() {
         _userPlugins = null;
         _projectPlugins = null;
         _installedPlugins = null;
+        invalidateCatalogs();
     }
 
     public void invalidate() {

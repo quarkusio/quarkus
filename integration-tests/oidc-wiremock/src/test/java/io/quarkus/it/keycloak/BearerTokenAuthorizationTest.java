@@ -94,37 +94,42 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testAccessAdminResource() {
+        doTestAccessAdminResource("bearer");
+        doTestAccessAdminResource("custombearer");
+    }
+
+    private static void doTestAccessAdminResource(String tenant) {
         String token = Jwt.preferredUserName("admin")
                 .groups(Set.of("admin"))
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
-                .jws().header("customize", true)
+                .jws().header("customize_" + tenant, true)
                 .sign();
 
         // 1st pass with `RS256` - OK
         RestAssured.given().auth().oauth2(token)
-                .when().get("/api/admin/bearer")
+                .when().get("/api/admin/" + tenant)
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
 
         // 2nd pass with `RS256` - 401 because the customizer removes `customize` header
         RestAssured.given().auth().oauth2(token)
-                .when().get("/api/admin/bearer")
+                .when().get("/api/admin/" + tenant)
                 .then()
                 .statusCode(401);
 
         // replacing RS256 with RS384 fails - the customizer does nothing
         token = setTokenAlgorithm(token, "RS384");
         RestAssured.given().auth().oauth2(token)
-                .when().get("/api/admin/bearer")
+                .when().get("/api/admin/" + tenant)
                 .then()
                 .statusCode(401);
 
         // replacing RS256 with RS512 - OK, customizer sets the algorithm to the original RS256
         token = setTokenAlgorithm(token, "RS512");
         RestAssured.given().auth().oauth2(token)
-                .when().get("/api/admin/bearer")
+                .when().get("/api/admin/" + tenant)
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));

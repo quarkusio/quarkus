@@ -338,8 +338,29 @@ public class MethodNameParser {
     }
 
     /**
+     * Resolves a nested field within an entity class based on a given field path expression.
+     * This method traverses through the entity class and potentially its related classes,
+     * identifying and returning the appropriate field. It handles complex field paths that may
+     * include multiple levels of nested fields, separated by underscores ('_').
+     *
      * See:
+     * *
      * https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-property-expressions
+     *
+     * @param repositoryMethodDescription A description of the repository method,
+     *        typically used for error reporting.
+     * @param fieldPathExpression The expression representing the path of the field within
+     *        the entity class. Fields at different levels of nesting
+     *        should be separated by underscores ('_').
+     * @param fieldPathBuilder A StringBuilder used to construct and return the resolved field path.
+     *        It will contain the fully qualified field path once the method completes.
+     * @return The {@link FieldInfo} object representing the resolved field. If the field cannot be resolved,
+     *         an exception is thrown.
+     * @throws UnableToParseMethodException If the field cannot be resolved from the given
+     *         field path expression, this exception is thrown
+     *         with a detailed error message.
+     * @throws IllegalStateException If the resolved entity class referenced by the field is not found
+     *         in the Quarkus index, or if a typed field could not be resolved properly.
      */
     private FieldInfo resolveNestedField(String repositoryMethodDescription, String fieldPathExpression,
             StringBuilder fieldPathBuilder) {
@@ -353,19 +374,30 @@ public class MethodNameParser {
 
         MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
         int fieldStartIndex = 0;
+        ClassInfo parentFieldInfo = null;
         while (fieldStartIndex < fieldPathExpression.length()) {
+            // The underscore character is treated as reserved character to manually define traversal points.
+            // This means that path expression may have multiple levels separated by the '_' character. For example: person_address_city.
             if (fieldPathExpression.charAt(fieldStartIndex) == '_') {
+                // See issue #34395
+                // For resolving correctly nested fields added using '_' we need to get the previous fieldInfo which will be the class containing the field starting by '_' in this loop.
+                DotName parentFieldInfoName;
+                if (fieldInfo != null && fieldInfo.type().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    parentFieldInfoName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get().name();
+                    parentFieldInfo = indexView.getClassByName(parentFieldInfoName);
+                }
                 fieldStartIndex++;
                 if (fieldStartIndex >= fieldPathExpression.length()) {
                     throw new UnableToParseMethodException(fieldNotResolvableMessage + offendingMethodMessage);
                 }
             }
-            // the underscore character is treated as reserved character to manually define traversal points.
             int firstSeparator = fieldPathExpression.indexOf('_', fieldStartIndex);
             int fieldEndIndex = firstSeparator == -1 ? fieldPathExpression.length() : firstSeparator;
             while (fieldEndIndex >= fieldStartIndex) {
-                String simpleFieldName = lowerFirstLetter(fieldPathExpression.substring(fieldStartIndex, fieldEndIndex));
-                fieldInfo = getFieldInfo(simpleFieldName, parentClassInfo, parentSuperClassInfos);
+                String fieldName = fieldPathExpression.substring(fieldStartIndex, fieldEndIndex);
+                String simpleFieldName = lowerFirstLetter(fieldName);
+                fieldInfo = getFieldInfo(simpleFieldName, parentFieldInfo == null ? parentClassInfo : parentFieldInfo,
+                        parentSuperClassInfos);
                 if (fieldInfo != null) {
                     break;
                 }
@@ -390,6 +422,8 @@ public class MethodNameParser {
                 if (fieldInfo.type().kind() == Type.Kind.TYPE_VARIABLE) {
                     typed = true;
                     parentClassName = getParentNameFromTypedFieldViaHierarchy(fieldInfo, mappedSuperClassInfos);
+                } else if (fieldInfo.type().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    parentClassName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get().name();
                 } else {
                     parentClassName = fieldInfo.type().name();
                 }

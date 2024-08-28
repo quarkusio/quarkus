@@ -235,16 +235,7 @@ public class SectionNode implements TemplateNode {
                 // Use the main block
                 block = blocks.get(0);
             }
-            int size = block.nodes.size();
-            if (size == 1) {
-                // Single node in the block
-                return resolveWith(block.nodes.get(0), context);
-            }
-            List<CompletionStage<ResultNode>> results = new ArrayList<>(size);
-            for (TemplateNode node : block.nodes) {
-                results.add(resolveWith(node, context));
-            }
-            return Results.process(results);
+            return Results.resolveAndProcess(block.nodes, context);
         }
 
         @Override
@@ -263,26 +254,6 @@ public class SectionNode implements TemplateNode {
             return params;
         }
 
-    }
-
-    /**
-     * This method is trying to speed-up the resolve method which could become a virtual dispatch, harming
-     * the performance of trivial implementations like TextNode::resolve, which is as simple as a field access.
-     */
-    private static CompletionStage<ResultNode> resolveWith(TemplateNode templateNode, ResolutionContext context) {
-        if (templateNode instanceof TextNode txtNode) {
-            return txtNode.resolve(context);
-        }
-        if (templateNode instanceof ExpressionNode expressionNode) {
-            return expressionNode.resolve(context);
-        }
-        if (templateNode instanceof ParameterDeclarationNode paramNode) {
-            return paramNode.resolve(context);
-        }
-        if (templateNode instanceof SectionNode sectionNode) {
-            return sectionNode.resolve(context);
-        }
-        return templateNode.resolve(context);
     }
 
 }

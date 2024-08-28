@@ -11,12 +11,15 @@ import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -28,11 +31,14 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
@@ -89,6 +95,11 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
+    private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
+    private static final DotName CLAIM_VALUE_NAME = DotName.createSimple(ClaimValue.class);
+    private static final DotName REQUEST_SCOPED_NAME = DotName.createSimple(RequestScoped.class);
+    private static final Set<DotName> ALL_PROVIDER_NAMES = Set.of(DotNames.PROVIDER, DotNames.INSTANCE,
+            DotNames.INJECTABLE_INSTANCE);
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
@@ -106,6 +117,37 @@ public class OidcBuildStep {
         // Also look at other options (web-app, hybrid)
         securityInformationProducer
                 .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
+    }
+
+    @BuildStep
+    void checkClaim(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
+
+        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+            if (injectionPoint.hasDefaultedQualifier()) {
+                continue;
+            }
+            AnnotationInstance claimQualifier = injectionPoint.getRequiredQualifier(CLAIM_NAME);
+            if (claimQualifier != null) {
+                Type actualType = injectionPoint.getRequiredType();
+
+                Optional<BeanInfo> bean = injectionPoint.getTargetBean();
+                if (bean.isPresent()) {
+                    DotName scope = bean.get().getScope().getDotName();
+                    if (!REQUEST_SCOPED_NAME.equals(scope)
+                            && (!ALL_PROVIDER_NAMES.contains(injectionPoint.getType().name())
+                                    && !CLAIM_VALUE_NAME.equals(actualType.name()))) {
+                        String error = String.format(
+                                "%s type can not be used to represent JWT claims in @Singleton or @ApplicationScoped beans"
+                                        + ", make the bean @RequestScoped or wrap this type with org.eclipse.microprofile.jwt.ClaimValue"
+                                        + " or jakarta.inject.Provider or jakarta.enterprise.inject.Instance",
+                                actualType.name());
+                        throw new IllegalStateException(error);
+                    }
+                }
+            }
+
+        }
     }
 
     @BuildStep

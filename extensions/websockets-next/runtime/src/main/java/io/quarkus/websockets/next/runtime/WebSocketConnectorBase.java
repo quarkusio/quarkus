@@ -123,6 +123,9 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     }
 
     String replacePathParameters(String path) {
+        if (path.isEmpty()) {
+            return path;
+        }
         StringBuilder sb = new StringBuilder();
         Matcher m = PATH_PARAM_PATTERN.matcher(path);
         while (m.find()) {

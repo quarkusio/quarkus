@@ -599,6 +599,9 @@ public class WebSocketProcessor {
     }
 
     static String getPath(String path) {
+        if (path.isEmpty()) {
+            return path;
+        }
         StringBuilder sb = new StringBuilder();
         Matcher m = PATH_PARAM_PATTERN.matcher(path);
         while (m.find()) {

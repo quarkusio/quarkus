@@ -265,26 +265,26 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
     }
 
     private String mergePath(String path1, String path2) {
-        StringBuilder path = new StringBuilder();
+        StringBuilder ret = new StringBuilder();
         if (path1 != null) {
-            path.append(path1);
+            ret.append(path1);
         }
         if (path2 != null) {
             if (path1.endsWith("/")) {
                 if (path2.startsWith("/")) {
-                    path.append(path2.substring(1));
+                    ret.append(path2.substring(1));
                 } else {
-                    path.append(path2);
+                    ret.append(path2);
                 }
             } else {
                 if (path2.startsWith("/")) {
-                    path.append(path2);
+                    ret.append(path2);
                 } else {
-                    path.append(path2.substring(1));
+                    ret.append("/").append(path2);
                 }
             }
         }
-        return path.toString();
+        return ret.toString();
     }
 
 }

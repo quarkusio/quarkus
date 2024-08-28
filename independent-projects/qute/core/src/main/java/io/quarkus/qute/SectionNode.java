@@ -235,16 +235,7 @@ public class SectionNode implements TemplateNode {
                 // Use the main block
                 block = blocks.get(0);
             }
-            int size = block.nodes.size();
-            if (size == 1) {
-                // Single node in the block
-                return block.nodes.get(0).resolve(context);
-            }
-            List<CompletionStage<ResultNode>> results = new ArrayList<>(size);
-            for (TemplateNode node : block.nodes) {
-                results.add(node.resolve(context));
-            }
-            return Results.process(results);
+            return Results.resolveAndProcess(block.nodes, context);
         }
 
         @Override

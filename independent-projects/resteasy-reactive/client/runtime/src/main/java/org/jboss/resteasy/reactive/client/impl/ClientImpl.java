@@ -192,7 +192,7 @@ public class ClientImpl implements Client {
             options.setShared(true);
         }
 
-        var httpClientBuilder = this.vertx.httpClientBuilder().with(options);
+        var httpClientBuilder = this.vertx.httpClientBuilder().with(options).with(options.getPoolOptions());
         AdvancedRedirectHandler advancedRedirectHandler = configuration.getFromContext(AdvancedRedirectHandler.class);
         if (advancedRedirectHandler != null) {
             httpClientBuilder.withRedirectHandler(new WrapperVertxAdvancedRedirectHandlerImpl(advancedRedirectHandler));

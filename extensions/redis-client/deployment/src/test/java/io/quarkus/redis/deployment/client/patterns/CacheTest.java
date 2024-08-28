@@ -15,9 +15,9 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
-@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(RedisTestResource.class)
 public class CacheTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()

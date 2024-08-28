@@ -2,11 +2,11 @@ package io.quarkus.it.keycloak;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@WithTestResource(value = KeycloakLifecycleManager.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(value = KeycloakLifecycleManager.class)
 public class StaticTenantConfigPolicyEnforcerTest extends AbstractPolicyEnforcerTest {
 
     @Test

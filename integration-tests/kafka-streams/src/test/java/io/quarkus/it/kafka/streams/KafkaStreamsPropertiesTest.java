@@ -11,10 +11,10 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
-@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KafkaSSLTestResource.class)
 @QuarkusTest
 public class KafkaStreamsPropertiesTest {
 

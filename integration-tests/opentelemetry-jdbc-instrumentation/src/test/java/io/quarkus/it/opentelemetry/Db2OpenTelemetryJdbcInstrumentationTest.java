@@ -3,12 +3,12 @@ package io.quarkus.it.opentelemetry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @EnabledIfSystemProperty(named = "enable-db2", matches = "true")
 @QuarkusTest
-@WithTestResource(Db2LifecycleManager.class)
+@QuarkusTestResource(value = Db2LifecycleManager.class, restrictToAnnotatedClass = true)
 public class Db2OpenTelemetryJdbcInstrumentationTest extends OpenTelemetryJdbcInstrumentationTest {
 
     @Test

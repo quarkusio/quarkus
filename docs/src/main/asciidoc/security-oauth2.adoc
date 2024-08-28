@@ -348,13 +348,13 @@ testImplementation("org.wiremock:wiremock:${wiremock.version}") <1>
 ----
 <1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
 
-In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.WithTestResource`
+In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
 annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
 values that Quarkus will use.
 
 [NOTE]
 ====
-For more details about `@WithTestResource` refer to xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
+For more details about `@QuarkusTestResource` refer to xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
 ====
 
 Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `MockAuthorizationServerTestResource` like so:
@@ -402,14 +402,14 @@ public class MockAuthorizationServerTestResource implements QuarkusTestResourceL
 <5> When all tests have finished, shutdown Wiremock.
 
 
-Your test class needs to be annotated like with `@WithTestResource(MockAuthorizationServerTestResource.class)` to use this `QuarkusTestResourceLifecycleManager`.
+Your test class needs to be annotated like with `@QuarkusTestResource(MockAuthorizationServerTestResource.class)` to use this `QuarkusTestResourceLifecycleManager`.
 
 Below is an example of a test that uses the `MockAuthorizationServerTestResource`.
 
 [source,java]
 ----
 @QuarkusTest
-@WithTestResource(MockAuthorizationServerTestResource.class) // <1>
+@QuarkusTestResource(MockAuthorizationServerTestResource.class) // <1>
 class TokenSecuredResourceTest {
     // use whatever token you want as the mock OAuth server will accept all tokens
     private static final String BEARER_TOKEN = "337aab0f-b547-489b-9dbd-a54dc7bdf20d"; // <2>
@@ -441,6 +441,13 @@ class TokenSecuredResourceTest {
 <1> Use the previously created `MockAuthorizationServerTestResource` as a Quarkus test resource.
 <2> Define whatever token you want, it will not be validated by the OAuth2 mock authorization server.
 <3> Use this token inside the `Authorization` header to trigger OAuth2 authentication.
+
+
+[WARNING]
+====
+`@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
+====
+
 
 == References
 

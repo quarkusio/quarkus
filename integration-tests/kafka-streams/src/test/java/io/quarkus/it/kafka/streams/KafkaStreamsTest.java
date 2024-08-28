@@ -29,11 +29,11 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
-@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KafkaSSLTestResource.class)
 @QuarkusTest
 public class KafkaStreamsTest {
 

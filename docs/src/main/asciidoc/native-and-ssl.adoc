@@ -45,7 +45,7 @@ which configures our REST client to connect to an SSL REST service.
 For the purposes of this guide, we also need to remove the configuration that starts the embedded WireMock server that stubs REST client responses so the tests actually propagate calls to the https://stage.code.quarkus.io/api. Update the test file `src/test/java/org/acme/rest/client/ExtensionsResourceTest.java` and remove the line:
 [source,java]
 ----
-@WithTestResource(WireMockExtensions.class)
+@QuarkusTestResource(WireMockExtensions.class)
 ----
 from the `ExtensionsResourceTest` class.
 

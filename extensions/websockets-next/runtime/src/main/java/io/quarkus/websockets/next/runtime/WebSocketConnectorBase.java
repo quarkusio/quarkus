@@ -161,18 +161,18 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     protected WebSocketConnectOptions newConnectOptions(URI serverEndpointUri) {
         WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
-                .setSsl(isHttps(serverEndpointUri))
+                .setSsl(isSecure(serverEndpointUri))
                 .setHost(serverEndpointUri.getHost());
         if (serverEndpointUri.getPort() != -1) {
             connectOptions.setPort(serverEndpointUri.getPort());
-        } else if (isHttps(serverEndpointUri)) {
-            // If port is undefined and https is used then use 443 by default
+        } else if (isSecure(serverEndpointUri)) {
+            // If port is undefined and https/wss is used then use 443 by default
             connectOptions.setPort(443);
         }
         return connectOptions;
     }
 
-    protected boolean isHttps(URI uri) {
-        return "https".equals(uri.getScheme());
+    protected boolean isSecure(URI uri) {
+        return "https".equals(uri.getScheme()) || "wss".equals(uri.getScheme());
     }
 }

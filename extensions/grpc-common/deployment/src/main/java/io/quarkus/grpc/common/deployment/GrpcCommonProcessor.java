@@ -54,14 +54,14 @@ public class GrpcCommonProcessor {
         }
 
         // Built-In providers:
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DnsNameResolverProvider.class).methods()
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(DnsNameResolverProvider.class, PickFirstLoadBalancerProvider.class, NettyChannelProvider.class)
+                .methods()
+                .reason(getClass().getName() + " built-in provider")
                 .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(PickFirstLoadBalancerProvider.class)
-                .methods().build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.grpc.util.SecretRoundRobinLoadBalancerProvider$Provider")
+                .reason(getClass().getName() + " built-in provider")
                 .methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(NettyChannelProvider.class).methods()
-                .build());
     }
 
     @BuildStep

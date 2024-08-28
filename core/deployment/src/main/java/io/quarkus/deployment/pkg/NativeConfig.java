@@ -485,6 +485,12 @@ public interface NativeConfig {
     boolean enableDashboardDump();
 
     /**
+     * Include a reasons entries in the generated json configuration files.
+     */
+    @WithDefault("false")
+    boolean includeReasonsInConfigFiles();
+
+    /**
      * Configure native executable compression using UPX.
      */
     Compression compression();

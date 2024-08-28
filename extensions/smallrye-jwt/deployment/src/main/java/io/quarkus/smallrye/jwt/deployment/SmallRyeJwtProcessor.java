@@ -115,10 +115,9 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class).methods().fields().build());
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(KeyEncryptionAlgorithm.class).methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class, KeyEncryptionAlgorithm.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     /**

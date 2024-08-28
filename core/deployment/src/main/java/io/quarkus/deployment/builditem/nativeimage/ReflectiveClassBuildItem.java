@@ -24,6 +24,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean weak;
     private final boolean serialization;
     private final boolean unsafeAllocated;
+    private final String reason;
 
     public static Builder builder(Class<?>... classes) {
         String[] classNames = stream(classes)
@@ -43,10 +44,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     }
 
     private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean getClasses, boolean weak, boolean serialization,
-            boolean unsafeAllocated, Class<?>... classes) {
+            boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
+            Class<?>... classes) {
         this(constructors, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
-                unsafeAllocated, stream(classes).map(Class::getName).toArray(String[]::new));
+                unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
     /**
@@ -64,7 +65,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.0", forRemoval = true)
     public ReflectiveClassBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, false, methods, false, fields, false, false, false, false, classes);
+        this(constructors, false, methods, false, fields, false, false, false, false, null, classes);
     }
 
     /**
@@ -118,12 +119,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             boolean fields, boolean weak, boolean serialization,
             boolean unsafeAllocated, String... className) {
         this(constructors, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
-                className);
+                null, className);
     }
 
     ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,
-            boolean unsafeAllocated, String... className) {
+            boolean unsafeAllocated, String reason, String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();
@@ -153,6 +154,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.weak = weak;
         this.serialization = serialization;
         this.unsafeAllocated = unsafeAllocated;
+        this.reason = reason;
     }
 
     public List<String> getClassNames() {
@@ -204,6 +206,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return unsafeAllocated;
     }
 
+    public String getReason() {
+        return reason;
+    }
+
     public static class Builder {
         private String[] className;
         private boolean constructors = true;
@@ -215,6 +221,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean weak;
         private boolean serialization;
         private boolean unsafeAllocated;
+        private String reason;
 
         private Builder() {
         }
@@ -341,13 +348,18 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder reason(String reason) {
+            this.reason = reason;
+            return this;
+        }
+
         public Builder unsafeAllocated() {
             return unsafeAllocated(true);
         }
 
         public ReflectiveClassBuildItem build() {
             return new ReflectiveClassBuildItem(constructors, queryConstructors, methods, queryMethods, fields, classes, weak,
-                    serialization, unsafeAllocated, className);
+                    serialization, unsafeAllocated, reason, className);
         }
     }
 }

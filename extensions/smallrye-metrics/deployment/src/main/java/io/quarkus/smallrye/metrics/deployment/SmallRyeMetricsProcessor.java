@@ -288,9 +288,9 @@ public class SmallRyeMetricsProcessor {
             }
         }
         if (!classNames.isEmpty()) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
-                            .methods(true).constructors(true).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
+                    .reason(getClass().getName())
+                    .methods(true).build());
         }
     }
 

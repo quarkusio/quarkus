@@ -44,6 +44,7 @@ public class KeycloakAdminClientProcessor {
                 StringListMapDeserializer.class,
                 StringOrArrayDeserializer.class,
                 StringOrArraySerializer.class)
+                .reason(getClass().getName())
                 .methods().build();
     }
 

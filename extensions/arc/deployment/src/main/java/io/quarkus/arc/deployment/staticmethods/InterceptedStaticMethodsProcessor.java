@@ -351,7 +351,7 @@ public class InterceptedStaticMethodsProcessor {
                 chainHandle, methodHandle, bindingsHandle, forwardingFunc);
 
         // Needed when running on native image
-        reflectiveMethods.produce(new ReflectiveMethodBuildItem(method));
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), method));
 
         // Call InterceptedStaticMethods.register()
         init.invokeStaticMethod(INTERCEPTED_STATIC_METHODS_REGISTER, init.load(interceptedStaticMethod.getHash()),

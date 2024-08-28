@@ -120,8 +120,9 @@ public class WebsocketClientProcessor {
             annotated.add(i.className);
         }
         reflection.produce(
-                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()])).methods()
-                        .build());
+                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()]))
+                        .reason(getClass().getName())
+                        .methods().build());
 
         registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
 

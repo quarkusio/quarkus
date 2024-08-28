@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import static io.quarkus.smallrye.graphql.runtime.JsonProviderProvider.JSON_PROVIDER;
+import static io.quarkus.jsonp.runtime.JsonProviderHolder.JSON_PROVIDER;
 
 import java.io.IOException;
 import java.io.StringReader;

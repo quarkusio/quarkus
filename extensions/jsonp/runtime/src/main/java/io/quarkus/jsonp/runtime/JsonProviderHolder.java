@@ -1,7 +1,11 @@
-package io.quarkus.smallrye.graphql.runtime;
+package io.quarkus.jsonp.runtime;
 
 import jakarta.json.spi.JsonProvider;
 
-public class JsonProviderProvider {
+public final class JsonProviderHolder {
+
+    private JsonProviderHolder() {
+    }
+
     public static final JsonProvider JSON_PROVIDER = JsonProvider.provider();
 }

@@ -30,6 +30,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -59,6 +60,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -454,9 +456,19 @@ public class InterceptedStaticMethodsProcessor {
                 MethodCreator newMethod = transformer.addMethod(originalDescriptor)
                         .setModifiers(interceptedMethod.flags())
                         .setSignature(interceptedMethod.genericSignatureIfRequired());
-                // Copy over all annotations
-                for (AnnotationInstance annotationInstance : interceptedMethod.annotations()) {
-                    newMethod.addAnnotation(annotationInstance);
+                // Copy over all annotations with RetentionPolicy.RUNTIME
+                for (AnnotationInstance annotationInstance : interceptedMethod.declaredAnnotations()) {
+                    if (annotationInstance.runtimeVisible()) {
+                        newMethod.addAnnotation(annotationInstance);
+                    }
+                }
+                for (MethodParameterInfo param : interceptedMethod.parameters()) {
+                    AnnotatedElement newParam = newMethod.getParameterAnnotations(param.position());
+                    for (AnnotationInstance paramAnnotation : param.declaredAnnotations()) {
+                        if (paramAnnotation.runtimeVisible()) {
+                            newParam.addAnnotation(paramAnnotation);
+                        }
+                    }
                 }
                 for (Type exceptionType : interceptedMethod.exceptions()) {
                     newMethod.addException(exceptionType.name().toString());

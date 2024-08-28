@@ -17,7 +17,11 @@ import jakarta.json.stream.JsonParsingException;
 
 import org.jboss.logging.Logger;
 
-import graphql.*;
+import graphql.ErrorType;
+import graphql.ExecutionResult;
+import graphql.ExecutionResultImpl;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
 import graphql.execution.AbortExecutionException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;

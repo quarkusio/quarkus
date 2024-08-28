@@ -438,16 +438,17 @@ A good example is a Jakarta REST resource class or a bean which declares a `@Sch
 
 An _unremovable_ bean:
 
-* is excluded from removal by an extension, or
+* is <<eliminate_false_positives,excluded from removal>>, or
 * has a name designated via `@Named`, or
 * declares an observer method.
 
 An _unused_ bean:
 
 * is not _unremovable_, and
-* is not eligible for injection to any injection point in the dependency tree, and
+* is not eligible for injection to any injection point in the dependency tree of _unremovable_ beans, and
 * does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
-* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point.
+* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point, and
+* is not eligible for injection into any <<injecting-multiple-bean-instances-intuitively,`@Inject @All List<>`>> injection point.
 
 Unused interceptors and decorators are not associated with any bean.
 
@@ -955,6 +956,7 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+[[injecting-multiple-bean-instances-intuitively]]
 === Injecting Multiple Bean Instances Intuitively
 
 In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `jakarta.enterprise.inject.Instance` which implements `java.lang.Iterable`.

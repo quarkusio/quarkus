@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 import io.quarkus.runtime.Application;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 
-@WithTestResource(value = KafkaSSLTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KafkaSSLTestResource.class)
 @TestProfile(KafkaStreamsStartupFailureTest.NonExistingTopicProfile.class)
 @QuarkusTest
 public class KafkaStreamsStartupFailureTest {

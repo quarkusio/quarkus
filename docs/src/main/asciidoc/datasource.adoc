@@ -700,8 +700,8 @@ This will allow you to test your application even when it is compiled into a nat
 
 . Add the following specific annotation on any class in your integration tests for running integration tests in both JVM or native executables:
 +
-* `@WithTestResource(H2DatabaseTestResource.class)`
-* `@WithTestResource(DerbyDatabaseTestResource.class)`
+* `@QuarkusTestResource(H2DatabaseTestResource.class)`
+* `@QuarkusTestResource(DerbyDatabaseTestResource.class)`
 +
 This ensures that the test suite starts and terminates the managed database in a separate process as required for test execution.
 +
@@ -710,10 +710,10 @@ This ensures that the test suite starts and terminates the managed database in a
 ----
 package my.app.integrationtests.db;
 
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 
-@WithTestResource(H2DatabaseTestResource.class)
+@QuarkusTestResource(H2DatabaseTestResource.class)
 public class TestResources {
 }
 ----

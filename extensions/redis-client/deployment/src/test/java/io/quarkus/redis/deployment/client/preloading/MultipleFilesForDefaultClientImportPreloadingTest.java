@@ -16,9 +16,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
-@WithTestResource(value = RedisTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(RedisTestResource.class)
 public class MultipleFilesForDefaultClientImportPreloadingTest {
 
     @RegisterExtension

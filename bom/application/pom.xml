@@ -33,7 +33,7 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.39.0</opentelemetry.version>
         <opentelemetry-alpha.version>2.5.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-semconv.version>1.25.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-semconv.version>1.26.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.1</quarkus-http.version>
         <micrometer.version>1.12.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -55,7 +55,7 @@
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.10.0</smallrye-open-api.version>
-        <smallrye-graphql.version>2.9.1</smallrye-graphql.version>
+        <smallrye-graphql.version>2.9.2</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.4.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.5.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.2</smallrye-context-propagation.version>
@@ -120,10 +120,10 @@
         <cronutils.version>9.2.1</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.3.232</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
-        <postgresql-jdbc.version>42.7.3</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.4</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.4.1</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
-        <mssql-jdbc.version>12.8.0.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>12.8.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.5.0.24.07</oracle-jdbc.version>
         <derby-jdbc.version>10.16.1.1</derby-jdbc.version>

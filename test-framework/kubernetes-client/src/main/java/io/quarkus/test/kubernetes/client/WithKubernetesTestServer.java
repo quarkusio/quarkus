@@ -7,13 +7,13 @@ import java.lang.annotation.Target;
 import java.util.function.Consumer;
 
 import io.fabric8.kubernetes.client.server.mock.KubernetesServer;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
 /**
  * Use on your test resource to get a mock {@link KubernetesServer} spawn up, and injectable with {@link KubernetesTestServer}.
  * This annotation is only active when used on a test class, and only for this test class.
  */
-@WithTestResource(KubernetesServerTestResource.class)
+@QuarkusTestResource(value = KubernetesServerTestResource.class, restrictToAnnotatedClass = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithKubernetesTestServer {

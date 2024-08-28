@@ -21,10 +21,10 @@ import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.restassured.RestAssured;
 
-@WithTestResource(value = KeycloakRealmClientCredentialsJwtSecretManager.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(KeycloakRealmClientCredentialsJwtSecretManager.class)
 public class OidcClientCredentialsJwtSecretTestCase {
 
     private static Class<?>[] testClasses = {

@@ -7,13 +7,13 @@ import java.lang.annotation.Target;
 import java.util.function.Consumer;
 
 import io.fabric8.openshift.client.server.mock.OpenShiftServer;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 
 /**
  * Use on your test resource to get a mock {@link OpenShiftServer} spawn up, and injectable with {@link OpenShiftTestServer}.
  * This annotation is only active when used on a test class, and only for this test class.
  */
-@WithTestResource(OpenShiftServerTestResource.class)
+@QuarkusTestResource(value = OpenShiftServerTestResource.class, restrictToAnnotatedClass = true)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface WithOpenShiftTestServer {

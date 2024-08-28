@@ -2,6 +2,9 @@ package io.quarkus.tls.cli;
 
 import static io.quarkus.tls.cli.Constants.CA_FILE;
 import static io.quarkus.tls.cli.Constants.PK_FILE;
+import static io.quarkus.tls.cli.DotEnvHelper.addOrReplaceProperty;
+import static io.quarkus.tls.cli.DotEnvHelper.readDotEnvFile;
+import static io.quarkus.tls.cli.letsencrypt.LetsEncryptConstants.DOT_ENV_FILE;
 import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
@@ -9,14 +12,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -105,17 +109,13 @@ public class GenerateCertificateCommand implements Callable<Integer> {
             path = path.replace("\\", "\\\\");
         }
 
-        // .env format
-        String env = String.format("""
-                _DEV_QUARKUS_TLS_KEY_STORE_P12_PATH=%s
-                _DEV_QUARKUS_TLS_KEY_STORE_P12_PASSWORD=%s
-                """, path, password);
-
-        var dotEnvFile = new File(".env");
-        try (var writer = new FileWriter(dotEnvFile, dotEnvFile.isFile())) {
-            writer.write(env);
+        try {
+            List<String> dotEnvContent = readDotEnvFile();
+            addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.path", path);
+            addOrReplaceProperty(dotEnvContent, "%dev.quarkus.tls.key-store.p12.password", password);
+            Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
         } catch (IOException e) {
-            LOGGER.log(ERROR, "Failed to write to .env file", e);
+            LOGGER.log(ERROR, "Failed to read .env file", e);
         }
 
         LOGGER.log(INFO, """

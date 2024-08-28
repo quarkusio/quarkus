@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.test.common.WithTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 
-@WithTestResource(value = OidcWiremockTestResource.class, restrictToAnnotatedClass = false)
+@QuarkusTestResource(OidcWiremockTestResource.class)
 public class OidcTokenPropagationWithSecurityIdentityAugmentorLazyAuthTest {
 
     private static Class<?>[] testClasses = {

@@ -319,6 +319,7 @@ For example:
 ----
 package io.quarkus.it.keycloak;
 
+import io.quarkus.oidc.OidcConfigurationMetadata;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
@@ -350,6 +351,8 @@ Alternatively, you can use `OidcRequestFilter.Endpoint` enum to apply this filte
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
@@ -480,6 +483,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.Redirect;
+import io.quarkus.oidc.Redirect.Location;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.build.Jwt;
@@ -526,12 +530,15 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/session-expired-page")
 public class SessionExpiredResource {
+    @Inject
+    RoutingContext context;
 
     @Inject
     TenantConfigBean tenantConfig; <1>
@@ -572,6 +579,8 @@ You can access ID token claims by injecting `JsonWebToken` with an `IdToken` qua
 [source, java]
 ----
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.security.Authenticated;
@@ -597,6 +606,8 @@ You can access the raw access token as follows:
 [source, java]
 ----
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.Authenticated;
@@ -765,8 +776,7 @@ For example:
 By default, `quarkus.oidc.authentication.cookie-path` is set to `/` but you can change this to a more specific path if required, for example, `/web-app`.
 
 To set the cookie path dynamically, configure the `quarkus.oidc.authentication.cookie-path-header` property.
-Set the `quarkus.oidc.authentication.cookie-path-header` property.
-For example, to set the cookie path dynamically by using the value of the`X-Forwarded-Prefix` HTTP header, configure the property to `quarkus.oidc.authentication.cookie-path-header=X-Forwarded-Prefix`.
+For example, to set the cookie path dynamically by using the value of the `X-Forwarded-Prefix` HTTP header, configure the property to `quarkus.oidc.authentication.cookie-path-header=X-Forwarded-Prefix`.
 
 If `quarkus.oidc.authentication.cookie-path-header` is set but no configured HTTP header is available in the current request, then the `quarkus.oidc.authentication.cookie-path` will be checked.
 
@@ -783,10 +793,10 @@ State cookies are used to support authorization code flow completion.
 When an authorization code flow is started, Quarkus creates a state cookie and a matching `state` query parameter, before redirecting the user to the OIDC provider.
 When the user is redirected back to Quarkus to complete the authorization code flow, Quarkus expects that the request URI must contain the `state` query parameter and it must match the current state cookie value.
 
-The default state cookie age is 5 mins and you can change it with a `quarkus.oidc.authenticaion.state-cookie-age` Duration property.
+The default state cookie age is 5 mins and you can change it with a `quarkus.oidc.authentication.state-cookie-age` Duration property.
 
 Quarkus creates a unique state cookie name every time a new authorization code flow is started to support multi-tab authentication. Many concurrent authentication requests on behalf of the same user may cause a lot of state cookies be created.
-If you do not want to allow your users use multiple browser tabs to authenticate then it is recommended to disable it with `quarkus.oidc.authenticaion.allow-multiple-code-flows=false`. It also ensures that the same state cookie name is created for every new user authentication.
+If you do not want to allow your users use multiple browser tabs to authenticate then it is recommended to disable it with `quarkus.oidc.authentication.allow-multiple-code-flows=false`. It also ensures that the same state cookie name is created for every new user authentication.
 
 [[token-state-manager]]
 ==== Session cookie and default TokenStateManager
@@ -891,14 +901,14 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            AuthorizationCodeTokens sessionContent, TokenStateManager.CreateTokenStateRequestContext requestContext) {
+            AuthorizationCodeTokens sessionContent, OidcRequestContext<String> requestContext) {
         return tokenStateManager.createTokenState(routingContext, oidcConfig, sessionContent, requestContext)
                 .map(t -> (t + "|custom"));
     }
 
     @Override
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
-            String tokenState, TokenStateManager.GetTokensRequestContext requestContext) {
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
@@ -908,7 +918,7 @@ public class CustomTokenStateManager implements TokenStateManager {
 
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            TokenStateManager.DeleteTokensRequestContext requestContext) {
+            OidcRequestContext<Void> requestContext) {
         if (!tokenState.endsWith("|custom")) {
             throw new IllegalStateException();
         }
@@ -1184,8 +1194,9 @@ public class ServiceResource {
     @Path("logout")
     public String logout() {
         oidcSession.logout().await().indefinitely();
-        return "You are logged out".
+        return "You are logged out";
     }
+}
 ----
 
 [[oidc-session]]
@@ -1287,10 +1298,8 @@ To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be 
 Even though you configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` is generated to standardize the way `quarkus-oidc` operates.
 You use an internal `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request.
 In this case, the `IdToken` age is set to the value of a standard `expires_in` property in the authorization code flow response.
-You can use a `quarkus.oidc.authentication.internal-id-token-lifespan`property to customize the ID token age.
-The default ID token age is 5 minutes.
-
-, which you can extend further as described in the <<session-management,session management>> section.
+You can use a `quarkus.oidc.authentication.internal-id-token-lifespan` property to customize the ID token age.
+The default ID token age is 5 minutes, which you can extend further as described in the <<session-management,session management>> section.
 
 This simplifies how you handle an application that supports multiple OIDC providers.
 ====
@@ -1345,6 +1354,8 @@ This is all that is needed for an endpoint like this one to return the currently
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -1417,6 +1428,8 @@ Now, the following code will work when the user signs into your application by u
 
 [source,java]
 ----
+package io.quarkus.it.keycloak;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -1435,15 +1448,15 @@ public class TokenResource {
     @GET
     @Path("/google")
     @Produces("application/json")
-    public String getUserName() {
+    public String getGoogleUserName() {
         return identity.getPrincipal().getName();
     }
 
     @GET
     @Path("/github")
     @Produces("application/json")
-    public String getUserName() {
-        return identity.getPrincipal().getUserName();
+    public String getGitHubUserName() {
+        return identity.getPrincipal().getName();
     }
 }
 ----
@@ -1451,7 +1464,7 @@ public class TokenResource {
 Possibly a simpler alternative is to inject both `@IdToken JsonWebToken` and `UserInfo` and use `JsonWebToken` when handling the providers that return `IdToken` and use `UserInfo` with the providers that do not return `IdToken`.
 
 You must ensure that the callback path you enter in the GitHub OAuth application configuration matches the endpoint path where you want the user to be redirected after a successful GitHub authentication and application authorization.
-In this case, it has to be set to `http:localhost:8080/github/userinfo`.
+In this case, it has to be set to `http://localhost:8080/github/userinfo`.
 
 [[listen-to-authentication-events]]
 === Listening to important authentication events
@@ -1466,9 +1479,7 @@ For example:
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
-import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.SecurityEvent;
-import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -1640,8 +1651,8 @@ For example, name it as `OktaSaml`:
 image::okta-saml-general-settings.png[alt=Okta SAML General Settings,role="center"]
 
 Next, configure it to point to a Keycloak SAML broker endpoint.
-At this point, you need to know the name of the Keycloak realm, for example, `quarkus`, and, assuming that the Keycloak SAML broker alias is `saml`, enter the endpoint address as `http:localhost:8081/realms/quarkus/broker/saml/endpoint`.
-Enter the service provider (SP) entity ID as `http:localhost:8081/realms/quarkus`, where `http://localhost:8081` is a Keycloak base address and `saml` is a broker alias:
+At this point, you need to know the name of the Keycloak realm, for example, `quarkus`, and, assuming that the Keycloak SAML broker alias is `saml`, enter the endpoint address as `http://localhost:8081/realms/quarkus/broker/saml/endpoint`.
+Enter the service provider (SP) entity ID as `http://localhost:8081/realms/quarkus`, where `http://localhost:8081` is a Keycloak base address and `saml` is a broker alias:
 
 image::okta-saml-configuration.png[alt=Okta SAML Configuration,role="center"]
 
@@ -1658,7 +1669,7 @@ Now, in the `quarkus` realm properties, navigate to `Identity Providers` and add
 
 image::keycloak-add-saml-provider.png[alt=Keycloak Add SAML Provider,role="center"]
 
-Note the alias is set to `saml`, `Redirect URI` is `http:localhost:8081/realms/quarkus/broker/saml/endpoint` and `Service provider entity ID` is `http:localhost:8081/realms/quarkus` - these are the same values you entered when creating the Okta SAML integration in the previous step.
+Note the alias is set to `saml`, `Redirect URI` is `http://localhost:8081/realms/quarkus/broker/saml/endpoint` and `Service provider entity ID` is `http://localhost:8081/realms/quarkus` - these are the same values you entered when creating the Okta SAML integration in the previous step.
 
 Finally, set `Service entity descriptor` to point to the Okta SAML Integration Metadata URL you noted at the end of the previous step.
 
@@ -1776,7 +1787,7 @@ public class CodeFlowAuthorizationTest {
 
             page = form.getInputByValue("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
         }
     }
 
@@ -1901,7 +1912,7 @@ endif::no-deprecated-test-resource[]
 [[code-flow-integration-testing-security-annotation]]
 === TestSecurity annotation
 
-You can use @TestSecurity and @OidcSecurity annotations to test the `web-app` application endpoint code, which depends on either one of the following injections, or all four:
+You can use `@TestSecurity` and `@OidcSecurity` annotations to test the `web-app` application endpoint code, which depends on either one of the following injections, or all four:
 
 * ID `JsonWebToken`
 * Access `JsonWebToken`

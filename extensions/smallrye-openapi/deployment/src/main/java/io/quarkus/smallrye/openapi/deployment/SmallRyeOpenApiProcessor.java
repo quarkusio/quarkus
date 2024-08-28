@@ -73,7 +73,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -102,7 +101,6 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
-import io.quarkus.smallrye.openapi.runtime.RuntimeOnlyBuilder;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBasicSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBearerTokenSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
@@ -195,12 +193,6 @@ public class SmallRyeOpenApiProcessor {
     @BuildStep
     void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(OASFactoryResolver.class.getName()));
-    }
-
-    @BuildStep
-    void runtimeOnly(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        // To map from smallrye and mp config to quarkus
-        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(RuntimeOnlyBuilder.class.getName()));
     }
 
     @BuildStep

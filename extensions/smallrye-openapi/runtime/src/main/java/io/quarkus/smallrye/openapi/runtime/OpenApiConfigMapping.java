@@ -2,10 +2,7 @@ package io.quarkus.smallrye.openapi.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
@@ -38,21 +35,6 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
             }
         }
         return configValue;
-    }
-
-    @Override
-    public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
-        final Set<String> names = new HashSet<>();
-        final Iterator<String> namesIterator = context.iterateNames();
-        while (namesIterator.hasNext()) {
-            final String name = namesIterator.next();
-            names.add(name);
-            final String mappedName = RELOCATIONS.get(name);
-            if (mappedName != null) {
-                names.add(mappedName);
-            }
-        }
-        return names.iterator();
     }
 
     private static Map<String, String> relocations() {

@@ -9,12 +9,16 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.util.stream.Stream;
 
+import jakarta.inject.Inject;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.AttributeType;
 import io.quarkus.test.security.SecurityAttribute;
@@ -22,6 +26,9 @@ import io.quarkus.test.security.TestSecurity;
 
 @QuarkusTest
 class TestSecurityTestCase {
+
+    @Inject
+    BeanSecuredWithPermissions beanSecuredWithPermissions;
 
     @Test
     @TestSecurity(authorizationEnabled = false)
@@ -140,6 +147,39 @@ class TestSecurityTestCase {
                 .body(containsString("\"B\""))
                 .and()
                 .body(containsString("\"C\""));
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", permissions = "wrong-permissions")
+    void testInsufficientPermissions() {
+        Assertions.assertThrows(ForbiddenException.class, beanSecuredWithPermissions::getDetail);
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", permissions = { "see:all", "create:all" })
+    void testPermissionsAndActions_AllAction() {
+        Assertions.assertEquals("detail", beanSecuredWithPermissions.getDetail());
+        Assertions.assertEquals("created", beanSecuredWithPermissions.create());
+        // fails as requires "modify" permission
+        Assertions.assertThrows(ForbiddenException.class, beanSecuredWithPermissions::modify);
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", permissions = "see:detail")
+    void testPermissionsAndActions_DetailAction() { // check both actions are added to possessed permission
+        Assertions.assertEquals("detail", beanSecuredWithPermissions.getDetail());
+        // fails as missing "create:all"
+        Assertions.assertThrows(ForbiddenException.class, beanSecuredWithPermissions::create);
+        // fails as requires "modify" permission
+        Assertions.assertThrows(ForbiddenException.class, beanSecuredWithPermissions::modify);
+    }
+
+    @Test
+    @TestSecurity(user = "testUser", permissions = "modify")
+    void testPermissionsOnly() {
+        Assertions.assertEquals("modified", beanSecuredWithPermissions.modify());
+        // fails as requires "see:all" or "see:detail"
+        Assertions.assertThrows(ForbiddenException.class, beanSecuredWithPermissions::getDetail);
     }
 
     static Stream<Arguments> arrayParams() {

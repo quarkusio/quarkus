@@ -133,6 +133,29 @@ The feature is only available for `@QuarkusTest` and will **not** work on a `@Qu
 This is particularly useful if the same set of security settings needs to be used in multiple test methods.
 ====
 
+The `@TestSecurity` annotation also works with the `@PermissionsAllowed` security annotation.
+Consider following example:
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", permissions = "see:detail")
+void someTestMethod() {
+    ...
+}
+----
+
+This will run the test with an identity possessing permission `see` and action `detail`.
+Consequently, call to the `getDetail` method declared in the example below will succeed:
+
+[source,java]
+----
+@PermissionsAllowed("see:detail")
+public String getDetail() {
+    return "detail";
+}
+----
+
 === Mixing security tests
 
 If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth

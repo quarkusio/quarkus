@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
@@ -16,7 +15,6 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
-import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -32,35 +30,17 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 @ApplicationScoped
 public class OpenApiDocumentService implements OpenApiDocumentHolder {
 
-    private static final String OPENAPI_SERVERS = "mp.openapi.servers";
     private static final IndexView EMPTY_INDEX = new Indexer().complete();
     private final OpenApiDocumentHolder documentHolder;
-    private final String previousOpenApiServersSystemPropertyValue;
 
     @Inject
     public OpenApiDocumentService(OASFilter autoSecurityFilter,
             OpenApiRecorder.UserDefinedRuntimeFilters userDefinedRuntimeFilters, Config config) {
-        String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);
-        this.previousOpenApiServersSystemPropertyValue = System.getProperty(OPENAPI_SERVERS);
-        if (servers != null && !servers.isEmpty()) {
-            System.setProperty(OPENAPI_SERVERS, servers);
-        }
 
         if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
             this.documentHolder = new DynamicDocument(config, autoSecurityFilter, userDefinedRuntimeFilters.filters());
         } else {
             this.documentHolder = new StaticDocument(config, autoSecurityFilter, userDefinedRuntimeFilters.filters());
-        }
-    }
-
-    void reset(@Observes ShutdownEvent event) {
-        // Reset the value of the System property "mp.openapi.servers" to prevent side effects on tests since
-        // the value of System property "mp.openapi.servers" takes precedence over the value of
-        // "quarkus.smallrye-openapi.servers" due to the configuration mapping
-        if (previousOpenApiServersSystemPropertyValue == null) {
-            System.clearProperty(OPENAPI_SERVERS);
-        } else {
-            System.setProperty(OPENAPI_SERVERS, previousOpenApiServersSystemPropertyValue);
         }
     }
 

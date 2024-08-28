@@ -1,4 +1,4 @@
-package io.quarkus.jsonp.runtime;
+package io.quarkus.jsonp;
 
 import jakarta.json.spi.JsonProvider;
 

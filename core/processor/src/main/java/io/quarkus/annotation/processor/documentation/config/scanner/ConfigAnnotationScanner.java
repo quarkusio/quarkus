@@ -193,9 +193,7 @@ public class ConfigAnnotationScanner {
                 debug("Detected superinterface: " + superInterfaceTypeElement, clazz);
 
                 applyListeners(listeners, l -> l.onInterface(configRootElement, superInterfaceTypeElement));
-                if (!isConfigRootAlreadyHandled(superInterfaceTypeElement)) {
-                    scanElement(listeners, configRootElement, superInterfaceTypeElement);
-                }
+                scanElement(listeners, configRootElement, superInterfaceTypeElement);
             }
         } else {
             TypeMirror superclass = clazz.getSuperclass();
@@ -205,9 +203,7 @@ public class ConfigAnnotationScanner {
                 debug("Detected superclass: " + superclassTypeElement, clazz);
 
                 applyListeners(listeners, l -> l.onSuperclass(configRootElement, clazz));
-                if (!isConfigRootAlreadyHandled(superclassTypeElement)) {
-                    scanElement(listeners, configRootElement, superclassTypeElement);
-                }
+                scanElement(listeners, configRootElement, superclassTypeElement);
             }
         }
 
@@ -263,6 +259,17 @@ public class ConfigAnnotationScanner {
 
                     if (resolvedType.isEnum()) {
                         handleEnum(listeners, resolvedType.unwrappedTypeElement());
+                    } else if (resolvedType.isClass()) {
+                        TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
+                        if (utils.element().isAnnotationPresent(unwrappedTypeElement, Types.ANNOTATION_CONFIG_GROUP)
+                                && !isConfigGroupAlreadyHandled(unwrappedTypeElement)) {
+                            debug("Detected config group: " + resolvedType + " on field: "
+                                    + field, clazz);
+
+                            DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
+                                    l -> l.onConfigGroup(unwrappedTypeElement));
+                            scanElement(listeners, discoveryConfigGroup, unwrappedTypeElement);
+                        }
                     }
 
                     debug("Detected enclosed field: " + field, clazz);

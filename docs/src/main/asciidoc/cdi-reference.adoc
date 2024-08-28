@@ -18,10 +18,11 @@ Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifi
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
 See also <<supported_features_and_limitations,the list of supported features and limitations>>.
+Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
-TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
+TIP: If you're new to CDI we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
-NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
+TIP: The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related integration use cases, and example code for solutions.
 
 [[bean_discovery]]
 == Bean Discovery

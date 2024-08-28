@@ -32,6 +32,7 @@ import io.quarkus.resteasy.runtime.vertx.JsonArrayWriter;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectReader;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectWriter;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
+import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
 
 public class ResteasyBuiltinsProcessor {
 
@@ -67,6 +68,7 @@ public class ResteasyBuiltinsProcessor {
             providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
             transformEagerSecurityNativeMethod(bytecodeTransformerProducer);
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPathMatchingHttpSecurityPolicy.class));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPermissionChecker.class));
             additionalBeanBuildItem.produce(
                     AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));

@@ -68,7 +68,7 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
                                         public Uni<CheckResult> apply(PathConfig pathConfig) {
                                             if (pathConfig != null
                                                     && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
-                                                return Uni.createFrom().item(CheckResult.DENY);
+                                                return CheckResult.deny();
                                             }
                                             return checkPermissionInternal(routingContext, identity);
                                         }
@@ -121,7 +121,7 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
 
         if (credential == null) {
             // SecurityIdentity has been created by the authentication mechanism other than quarkus-oidc
-            return Uni.createFrom().item(CheckResult.PERMIT);
+            return CheckResult.permit();
         }
 
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), resolver.getReadTimeout());

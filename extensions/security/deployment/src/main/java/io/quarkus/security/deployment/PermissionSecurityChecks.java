@@ -1,6 +1,5 @@
 package io.quarkus.security.deployment;
 
-import static io.quarkus.arc.processor.DotNames.CLASS;
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.security.PermissionsAllowed.AUTODETECTED;
 import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
@@ -17,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -206,7 +206,8 @@ interface PermissionSecurityChecks {
         PermissionSecurityChecksBuilder gatherPermissionsAllowedAnnotations(List<AnnotationInstance> instances,
                 Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
                 Map<ClassInfo, AnnotationInstance> alreadyCheckedClasses,
-                List<AnnotationInstance> additionalClassInstances) {
+                List<AnnotationInstance> additionalClassInstances,
+                Predicate<MethodInfo> hasAdditionalSecurityAnnotations) {
 
             // make sure we process annotations on methods first
             instances.sort(new Comparator<AnnotationInstance>() {
@@ -230,7 +231,7 @@ interface PermissionSecurityChecks {
                     final MethodInfo methodInfo = target.asMethod();
 
                     // we don't allow combining @PermissionsAllowed with other security annotations as @DenyAll, ...
-                    if (alreadyCheckedMethods.containsKey(methodInfo)) {
+                    if (alreadyCheckedMethods.containsKey(methodInfo) || hasAdditionalSecurityAnnotations.test(methodInfo)) {
                         throw new IllegalStateException(
                                 String.format("Method %s of class %s is annotated with multiple security annotations",
                                         methodInfo.name(), methodInfo.declaringClass()));
@@ -261,6 +262,10 @@ interface PermissionSecurityChecks {
                                     continue;
                                 }
 
+                                if (hasAdditionalSecurityAnnotations.test(methodInfo)) {
+                                    continue;
+                                }
+
                                 // ignore method annotated with other security annotation
                                 boolean noMethodLevelSecurityAnnotation = !alreadyCheckedMethods.containsKey(methodInfo);
                                 // ignore method annotated with method-level @PermissionsAllowed
@@ -284,7 +289,44 @@ interface PermissionSecurityChecks {
             for (var instance : additionalClassInstances) {
                 gatherPermissionKeys(instance, instance.target(), cache, targetToPermissionKeys);
             }
+
+            // for validation purposes, so that we detect correctly combinations with other security annotations
+            var targetInstances = new ArrayList<>(instances);
+            targetInstances.addAll(additionalClassInstances);
+            targetToPermissionKeys.keySet().forEach(at -> {
+                if (at.kind() == AnnotationTarget.Kind.CLASS) {
+                    var classInfo = at.asClass();
+                    alreadyCheckedClasses.put(classInfo, getAnnotationInstance(classInfo, targetInstances));
+                } else {
+                    var methodInfo = at.asMethod();
+                    var methodLevelAnn = getAnnotationInstance(methodInfo, targetInstances);
+                    if (methodLevelAnn != null) {
+                        alreadyCheckedMethods.put(methodInfo, methodLevelAnn);
+                    } else {
+                        var classInfo = methodInfo.declaringClass();
+                        alreadyCheckedClasses.put(classInfo, getAnnotationInstance(classInfo, targetInstances));
+                    }
+                }
+            });
+
             return this;
+        }
+
+        private static AnnotationInstance getAnnotationInstance(ClassInfo classInfo,
+                List<AnnotationInstance> annotationInstances) {
+            return annotationInstances.stream()
+                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                    .filter(ai -> ai.target().asClass().name().equals(classInfo.name()))
+                    .findFirst().orElseThrow();
+        }
+
+        private static AnnotationInstance getAnnotationInstance(MethodInfo methodInfo,
+                List<AnnotationInstance> annotationInstances) {
+            return annotationInstances.stream()
+                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.METHOD)
+                    .filter(ai -> ai.target().asMethod().name().equals(methodInfo.name()))
+                    .findFirst()
+                    .orElse(null);
         }
 
         private static <T extends AnnotationTarget> void gatherPermissionKeys(AnnotationInstance instance, T annotationTarget,

@@ -208,11 +208,15 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.spi.SecurityTransformerUtils;
+import io.quarkus.vertx.http.deployment.AuthorizationPolicyInstancesBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorMethodsBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.RouteConstants;
+import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -1570,10 +1574,12 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
+            Optional<AuthorizationPolicyInstancesBuildItem> authorizationPolicyInstancesItemOpt,
             List<EagerSecurityInterceptorMethodsBuildItem> eagerSecurityInterceptors, JaxRsSecurityConfig securityConfig) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
+        var authZPolicyInstancesItem = authorizationPolicyInstancesItemOpt.get();
 
         final boolean applySecurityInterceptors = !eagerSecurityInterceptors.isEmpty();
         final var interceptedMethods = applySecurityInterceptors ? collectInterceptedMethods(eagerSecurityInterceptors) : null;
@@ -1585,40 +1591,50 @@ public class ResteasyReactiveProcessor {
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
                 var endpointImpl = ServerEndpointIndexer.findEndpointImplementation(method, actualEndpointClass, index);
+                boolean applyAuthorizationPolicy = shouldApplyAuthZPolicy(method, endpointImpl, authZPolicyInstancesItem);
                 if (applySecurityInterceptors) {
                     boolean isMethodIntercepted = interceptedMethods.containsKey(endpointImpl);
                     if (isMethodIntercepted) {
                         return createEagerSecCustomizerWithInterceptor(interceptedMethods, endpointImpl, method, endpointImpl,
-                                withDefaultSecurityCheck);
+                                withDefaultSecurityCheck, applyAuthorizationPolicy);
                     } else {
                         isMethodIntercepted = interceptedMethods.containsKey(method);
                         if (isMethodIntercepted && !endpointImpl.equals(method)) {
                             return createEagerSecCustomizerWithInterceptor(interceptedMethods, method, method, endpointImpl,
-                                    withDefaultSecurityCheck);
+                                    withDefaultSecurityCheck, applyAuthorizationPolicy);
                         }
                     }
                 }
-                return List.of(newEagerSecurityHandlerCustomizerInstance(method, endpointImpl, withDefaultSecurityCheck));
+                return List.of(newEagerSecurityHandlerCustomizerInstance(method, endpointImpl, withDefaultSecurityCheck,
+                        applyAuthorizationPolicy));
             }
         });
     }
 
+    private static boolean shouldApplyAuthZPolicy(MethodInfo method, MethodInfo endpointImpl,
+            AuthorizationPolicyInstancesBuildItem item) {
+        return item.applyAuthorizationPolicy(method) || item.applyAuthorizationPolicy(endpointImpl);
+    }
+
     private static List<HandlerChainCustomizer> createEagerSecCustomizerWithInterceptor(
             Map<MethodInfo, Boolean> interceptedMethods, MethodInfo method, MethodInfo originalMethod, MethodInfo endpointImpl,
-            boolean withDefaultSecurityCheck) {
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy) {
         var requiresSecurityCheck = interceptedMethods.get(method);
         final HandlerChainCustomizer eagerSecCustomizer;
-        if (requiresSecurityCheck) {
+        if (requiresSecurityCheck && !applyAuthorizationPolicy) {
             eagerSecCustomizer = EagerSecurityHandler.Customizer.newInstance(false);
         } else {
             eagerSecCustomizer = newEagerSecurityHandlerCustomizerInstance(originalMethod, endpointImpl,
-                    withDefaultSecurityCheck);
+                    withDefaultSecurityCheck, applyAuthorizationPolicy);
         }
         return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(), eagerSecCustomizer);
     }
 
     private static HandlerChainCustomizer newEagerSecurityHandlerCustomizerInstance(MethodInfo method, MethodInfo endpointImpl,
-            boolean withDefaultSecurityCheck) {
+            boolean withDefaultSecurityCheck, boolean applyAuthorizationPolicy) {
+        if (applyAuthorizationPolicy) {
+            return EagerSecurityHandler.Customizer.newInstanceWithAuthorizationPolicy();
+        }
         if (withDefaultSecurityCheck || consumesStandardSecurityAnnotations(method, endpointImpl)) {
             return EagerSecurityHandler.Customizer.newInstance(false);
         }
@@ -1675,7 +1691,7 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    void registerSecurityInterceptors(Capabilities capabilities,
+    void registerSecurityBeans(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> beans) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             // Register interceptors for standard security annotations to prevent repeated security checks
@@ -1683,7 +1699,9 @@ public class ResteasyReactiveProcessor {
                     StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
                     StandardSecurityCheckInterceptor.PermitAllInterceptor.class,
                     StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
+
             beans.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityContext.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPathMatchingHttpSecurityPolicy.class));
         }
     }
 
@@ -1698,8 +1716,13 @@ public class ResteasyReactiveProcessor {
     }
 
     private static boolean consumesStandardSecurityAnnotations(MethodInfo methodInfo) {
-        return SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo)
-                || SecurityTransformerUtils.hasStandardSecurityAnnotation(methodInfo.declaringClass());
+        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo)
+                || (SecurityTransformerUtils.hasSecurityAnnotation(methodInfo.declaringClass())
+                        // security annotations cannot be combined
+                        // and the most specific wins, so if we have both class-level security check
+                        // and the method-level @AuthorizationPolicy, the policy wins as it is more specific
+                        // as would any other security annotation
+                        && !HttpSecurityUtils.hasAuthorizationPolicyAnnotation(methodInfo));
     }
 
     private Optional<String> getAppPath(Optional<String> newPropertyValue) {

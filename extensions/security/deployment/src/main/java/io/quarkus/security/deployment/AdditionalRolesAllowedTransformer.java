@@ -1,21 +1,24 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.security.deployment.SecurityProcessor.createMethodDescription;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.ROLES_ALLOWED;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.annotation.security.RolesAllowed;
+
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.security.spi.runtime.MethodDescription;
 
 public class AdditionalRolesAllowedTransformer implements AnnotationsTransformer {
 
+    private static final DotName ROLES_ALLOWED = DotName.createSimple(RolesAllowed.class.getName());
     private final Set<MethodDescription> methods;
     private final AnnotationValue[] rolesAllowed;
 

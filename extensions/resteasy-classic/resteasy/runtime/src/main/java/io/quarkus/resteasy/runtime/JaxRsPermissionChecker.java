@@ -2,13 +2,11 @@ package io.quarkus.resteasy.runtime;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
-import static io.quarkus.vertx.http.runtime.PolicyMappingConfig.AppliesTo.JAXRS;
 
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
@@ -20,13 +18,11 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
-import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.DefaultAuthorizationRequestContext;
+import io.quarkus.vertx.http.runtime.security.JaxRsPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.ext.web.RoutingContext;
 
@@ -37,8 +33,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class JaxRsPermissionChecker {
-    private final AbstractPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
-    private final HttpSecurityPolicy.AuthorizationRequestContext authorizationRequestContext;
+    private final JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
 
     @Inject
@@ -47,18 +42,14 @@ public class JaxRsPermissionChecker {
     @Inject
     CurrentIdentityAssociation identityAssociation;
 
-    JaxRsPermissionChecker(HttpConfiguration httpConfig, Instance<HttpSecurityPolicy> installedPolicies,
-            HttpBuildTimeConfig httpBuildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor, BeanManager beanManager,
+    JaxRsPermissionChecker(BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
-            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
-        var jaxRsPathMatchingPolicy = new AbstractPathMatchingHttpSecurityPolicy(httpConfig.auth.permissions,
-                httpConfig.auth.rolePolicy, httpBuildTimeConfig.rootPath, installedPolicies, JAXRS);
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
         if (jaxRsPathMatchingPolicy.hasNoPermissions()) {
             this.jaxRsPathMatchingPolicy = null;
-            this.authorizationRequestContext = null;
         } else {
             this.jaxRsPathMatchingPolicy = jaxRsPathMatchingPolicy;
-            this.authorizationRequestContext = new DefaultAuthorizationRequestContext(blockingSecurityExecutor);
         }
         this.eventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
@@ -68,9 +59,9 @@ public class JaxRsPermissionChecker {
         return jaxRsPathMatchingPolicy != null;
     }
 
-    void applyPermissionChecks() {
+    void applyPermissionChecks(MethodDescription methodDescription) {
         HttpSecurityPolicy.CheckResult checkResult = jaxRsPathMatchingPolicy
-                .checkPermission(routingContext, identityAssociation.getDeferredIdentity(), authorizationRequestContext)
+                .checkPermission(routingContext, identityAssociation.getDeferredIdentity(), methodDescription)
                 .await().indefinitely();
         final SecurityIdentity newIdentity;
         if (checkResult.getAugmentedIdentity() == null) {
@@ -110,6 +101,19 @@ public class JaxRsPermissionChecker {
                     Map.of(RoutingContext.class.getName(), routingContext)));
         }
         throw exception;
+    }
+
+    MethodDescription getMethodSecuredWithAuthZPolicy(MethodDescription invokedMethodDesc,
+            MethodDescription fallbackMethodDesc) {
+        if (shouldRunPermissionChecks()) {
+            if (jaxRsPathMatchingPolicy.requiresAuthorizationPolicy(invokedMethodDesc)) {
+                return invokedMethodDesc;
+            }
+            if (jaxRsPathMatchingPolicy.requiresAuthorizationPolicy(fallbackMethodDesc)) {
+                return fallbackMethodDesc;
+            }
+        }
+        return null;
     }
 
     SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> getEventHelper() {

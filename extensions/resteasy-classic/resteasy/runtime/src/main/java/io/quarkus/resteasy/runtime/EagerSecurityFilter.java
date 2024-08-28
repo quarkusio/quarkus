@@ -68,11 +68,15 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
             if (interceptorStorage != null) {
                 applyEagerSecurityInterceptors(description);
             }
+            var authZPolicyMethod = jaxRsPermissionChecker.getMethodSecuredWithAuthZPolicy(description.invokedMethodDesc(),
+                    description.fallbackMethodDesc());
             if (jaxRsPermissionChecker.shouldRunPermissionChecks()) {
-                jaxRsPermissionChecker.applyPermissionChecks();
+                jaxRsPermissionChecker.applyPermissionChecks(authZPolicyMethod);
             }
 
-            applySecurityChecks(description);
+            if (authZPolicyMethod == null) { // if we didn't run check for @AuthorizationPolicy
+                applySecurityChecks(description);
+            }
         }
     }
 

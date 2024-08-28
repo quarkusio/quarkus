@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.deployment;
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static io.quarkus.arc.processor.DotNames.DEFAULT_BEAN;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
+import static io.quarkus.vertx.http.deployment.HttpSecurityUtils.AUTHORIZATION_POLICY;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.BASIC_AUTH_ANNOTATION_DETECTED;
 import static io.quarkus.vertx.http.runtime.security.HttpAuthenticator.TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED;
 import static java.util.stream.Collectors.toMap;
@@ -31,11 +32,17 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
+import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
@@ -50,15 +57,20 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.AdditionalSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.AdditionalSecurityConstrainerEventPropsBuildItem;
-import io.quarkus.security.spi.SecurityTransformerUtils;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
@@ -74,13 +86,13 @@ import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
+import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
 public class HttpSecurityProcessor {
 
     private static final DotName AUTH_MECHANISM_NAME = DotName.createSimple(HttpAuthenticationMechanism.class);
-
     private static final DotName BASIC_AUTH_MECH_NAME = DotName.createSimple(BasicAuthenticationMechanism.class);
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
 
@@ -408,6 +420,173 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @BuildStep
+    AuthorizationPolicyInstancesBuildItem gatherAuthorizationPolicyInstances(CombinedIndexBuildItem combinedIndex,
+            Capabilities capabilities) {
+        if (!capabilities.isPresent(Capability.SECURITY)) {
+            return null;
+        }
+        var methodToPolicy = combinedIndex.getIndex()
+                // @AuthorizationPolicy(name = "policy-name")
+                .getAnnotations(AUTHORIZATION_POLICY)
+                .stream()
+                .flatMap(ai -> {
+                    var policyName = ai.value("name").asString();
+                    if (policyName.isBlank()) {
+                        var targetName = ai.target().kind() == AnnotationTarget.Kind.CLASS
+                                ? ai.target().asClass().name().toString()
+                                : ai.target().asMethod().name();
+                        throw new RuntimeException("""
+                                The @AuthorizationPolicy annotation placed on '%s' must not have blank policy name.
+                                """.formatted(targetName));
+                    }
+                    return getPolicyTargetEndpointCandidates(ai.target())
+                            .map(mi -> Map.entry(mi, policyName));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new AuthorizationPolicyInstancesBuildItem(methodToPolicy);
+    }
+
+    /**
+     * Implements {@link io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage} as a bean.
+     * If no {@link AuthorizationPolicy} are detected, generated bean will look like this:
+     *
+     * <pre>
+     * {@code
+     * public class AuthorizationPolicyStorage_Imp extends AuthorizationPolicyStorage {
+     *     AuthorizationPolicyStorage_Imp() {
+     *         super();
+     *     }
+     *
+     *     @Override
+     *     protected Map<MethodDescription, String> getMethodToPolicyName() {
+     *         return Map.of();
+     *     }
+     * }
+     * }
+     * </pre>
+     *
+     * On the other hand, if {@link AuthorizationPolicy} is detected, <code>getMethodToPolicyName</code> returns
+     * method descriptions of detected annotation instances.
+     */
+    @BuildStep
+    void generateAuthorizationPolicyStorage(BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
+            Capabilities capabilities,
+            AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem,
+            BuildProducer<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationProducer) {
+        if (!capabilities.isPresent(Capability.SECURITY)) {
+            return;
+        }
+
+        // provide support for JAX-RS HTTP Security Policies to extensions that supports them
+        if (capabilities.isPresent(Capability.REST) || capabilities.isPresent(Capability.RESTEASY)) {
+            // generates:
+            // public class AuthorizationPolicyStorage_Impl extends AuthorizationPolicyStorage
+            GeneratedBeanGizmoAdaptor beanAdaptor = new GeneratedBeanGizmoAdaptor(generatedBeanProducer);
+            var generatedClassName = AuthorizationPolicyStorage.class.getName() + "_Impl";
+            try (ClassCreator cc = ClassCreator.builder().className(generatedClassName)
+                    .superClass(AuthorizationPolicyStorage.class).classOutput(beanAdaptor).build()) {
+                cc.addAnnotation(Singleton.class);
+
+                // generate matching constructor that calls the super
+                var constructor = cc.getConstructorCreator(new String[] {});
+                constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AuthorizationPolicyStorage.class),
+                        constructor.getThis());
+
+                var mapDescriptorType = DescriptorUtils.typeToString(
+                        ParameterizedType.create(Map.class, Type.create(MethodDescription.class), Type.create(String.class)));
+                if (authZPolicyInstancesItem.methodToPolicyName.isEmpty()) {
+                    // generate:
+                    // protected Map<MethodDescription, String> getMethodToPolicyName() { Map.of(); }
+                    try (var mc = cc.getMethodCreator(MethodDescriptor.ofMethod(AuthorizationPolicyStorage.class,
+                            "getMethodToPolicyName", mapDescriptorType))) {
+                        var map = mc.invokeStaticInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "of", Map.class));
+                        mc.returnValue(map);
+                    }
+                } else {
+                    // detected @AuthorizationPolicy annotation instances
+                    additionalSecurityAnnotationProducer
+                            .produce(new AdditionalSecurityAnnotationBuildItem(AUTHORIZATION_POLICY));
+
+                    // generates:
+                    // private final Map<MethodDescription, String> methodToPolicyName;
+                    var methodToPolicyNameField = cc.getFieldCreator("methodToPolicyName", mapDescriptorType)
+                            .setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
+
+                    // generates:
+                    // protected Map<MethodDescription, String> getMethodToPolicyName() { this.methodToPolicyName; }
+                    try (var mc = cc.getMethodCreator(MethodDescriptor.ofMethod(AuthorizationPolicyStorage.class,
+                            "getMethodToPolicyName", mapDescriptorType))) {
+                        var map = mc.readInstanceField(methodToPolicyNameField.getFieldDescriptor(), mc.getThis());
+                        mc.returnValue(map);
+                    }
+
+                    // === constructor
+                    // initializes 'methodToPolicyName' private field in the constructor
+                    // this.methodToPolicyName = new MethodsToPolicyBuilder()
+                    //      .addMethodToPolicyName(policyName, className, methodName, parameterTypes)
+                    //      .build();
+
+                    // create builder
+                    var builder = constructor.newInstance(
+                            MethodDescriptor.ofConstructor(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class));
+
+                    var addMethodToPolicyNameType = MethodDescriptor.ofMethod(
+                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "addMethodToPolicyName",
+                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class, String.class,
+                            String[].class);
+                    for (var e : authZPolicyInstancesItem.methodToPolicyName.entrySet()) {
+                        MethodInfo securedMethod = e.getKey();
+                        String policyNameStr = e.getValue();
+
+                        // String policyName
+                        var policyName = constructor.load(policyNameStr);
+                        // String methodName
+                        var methodName = constructor.load(securedMethod.name());
+                        // String declaringClassName
+                        var declaringClassName = constructor.load(securedMethod.declaringClass().name().toString());
+                        // String[] paramTypes
+                        var paramTypes = constructor.marshalAsArray(String[].class, securedMethod.parameterTypes().stream()
+                                .map(pt -> pt.name().toString()).map(constructor::load).toArray(ResultHandle[]::new));
+
+                        // builder.addMethodToPolicyName(policyName, className, methodName, paramTypes)
+                        builder = constructor.invokeVirtualMethod(addMethodToPolicyNameType, builder, policyName,
+                                declaringClassName, methodName, paramTypes);
+                    }
+
+                    // builder.build()
+                    var resultMapType = DescriptorUtils
+                            .typeToString(ParameterizedType.create(Map.class, TypeVariable.create(MethodDescription.class),
+                                    TypeVariable.create(String.class)));
+                    var buildMethodType = MethodDescriptor.ofMethod(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class,
+                            "build", resultMapType);
+                    var resultMap = constructor.invokeVirtualMethod(buildMethodType, builder);
+                    // assign builder to the private field
+                    constructor.writeInstanceField(methodToPolicyNameField.getFieldDescriptor(), constructor.getThis(),
+                            resultMap);
+                }
+
+                // late return from constructor in case we need to write value to the field
+                constructor.returnVoid();
+            }
+        }
+    }
+
+    private static Stream<MethodInfo> getPolicyTargetEndpointCandidates(AnnotationTarget target) {
+        if (target.kind() == AnnotationTarget.Kind.METHOD) {
+            var method = target.asMethod();
+            if (!hasProperEndpointModifiers(method)) {
+                throw new RuntimeException("""
+                        Found method annotated with the @AuthorizationPolicy annotation that is not an endpoint: %s#%s
+                        """.formatted(method.asClass().name().toString(), method.name()));
+            }
+            return Stream.of(method);
+        }
+        return target.asClass().methods().stream()
+                .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
+                .filter(mi -> !HttpSecurityUtils.hasSecurityAnnotation(mi));
+    }
+
     private static void validateAuthMechanismAnnotationUsage(Capabilities capabilities, HttpBuildTimeConfig buildTimeConfig,
             DotName[] annotationNames) {
         if (buildTimeConfig.auth.proactive
@@ -425,18 +604,18 @@ public class HttpSecurityProcessor {
     private static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
         return classes
                 .stream()
-                .filter(c -> !SecurityTransformerUtils.hasSecurityAnnotation(c))
+                .filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c))
                 .map(ClassInfo::methods)
                 .flatMap(Collection::stream)
                 .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
-                .filter(m -> !SecurityTransformerUtils.hasSecurityAnnotation(m))
+                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 
     private static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
         return methods
                 .stream()
-                .filter(m -> !SecurityTransformerUtils.hasSecurityAnnotation(m))
+                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
                 .collect(Collectors.toSet());
     }
 

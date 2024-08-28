@@ -292,12 +292,12 @@ public class LoopSectionHelper implements SectionHelper {
             }
             if (metadataPrefix != null) {
                 if (key.startsWith(metadataPrefix)) {
-                    key = key.substring(metadataPrefix.length(), key.length());
+                    return getCompletedStage(key, metadataPrefix.length(), index + 1);
                 } else {
                     return Results.notFound(key);
                 }
             }
-            // Iteration metadata
+            // Iteration metadata without a prefix
             final int count = index + 1;
             return switch (key) {
                 case "count" -> CompletedStage.of(count);
@@ -310,6 +310,60 @@ public class LoopSectionHelper implements SectionHelper {
                 case "isEven", "even" -> count % 2 == 0 ? Results.TRUE : Results.FALSE;
                 default -> Results.notFound(key);
             };
+        }
+
+        /**
+         * This method exists for the purpose of saving the cost of creating a substring of the key and
+         * computing its hashCode.
+         */
+        private CompletionStage<Object> getCompletedStage(String key, int keyStartIndex, int count) {
+            assert keyStartIndex != 0;
+            switch (key.length() - keyStartIndex) {
+                case 3:
+                    if (key.indexOf("odd", keyStartIndex) == keyStartIndex) {
+                        return count % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 4:
+                    if (key.indexOf("even", keyStartIndex) == keyStartIndex) {
+                        return count % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 5:
+                    if (key.indexOf("count", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(count);
+                    }
+                    if (key.indexOf("index", keyStartIndex) == keyStartIndex) {
+                        return CompletedStage.of(index);
+                    }
+                    if (key.indexOf("isOdd", keyStartIndex) == keyStartIndex) {
+                        return count % 2 != 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 6:
+                    if (key.indexOf("isEven", keyStartIndex) == keyStartIndex) {
+                        return count % 2 == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isLast", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.FALSE : Results.TRUE;
+                    }
+                    return Results.notFound(key);
+                case 7:
+                    if (key.indexOf("hasNext", keyStartIndex) == keyStartIndex) {
+                        return hasNext ? Results.TRUE : Results.FALSE;
+                    }
+                    if (key.indexOf("isFirst", keyStartIndex) == keyStartIndex) {
+                        return index == 0 ? Results.TRUE : Results.FALSE;
+                    }
+                    return Results.notFound(key);
+                case 11:
+                    if (key.indexOf("indexParity", keyStartIndex) == keyStartIndex) {
+                        return count % 2 == 0 ? EVEN : ODD;
+                    }
+                    return Results.notFound(key);
+                default:
+                    return Results.notFound(key);
+            }
         }
 
         @Override

@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services Overview
 include::_attributes.adoc[]
 :categories: core
-:summary: An introduction to dev services and a list of all extensions that support Dev Services and their configuration options.
+:summary: An introduction to Dev Services and a list of all extensions that support Dev Services and their configuration options.
 :topics: dev-services,dev-mode,testing
 
 == What Are Dev Services?

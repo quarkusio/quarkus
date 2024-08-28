@@ -108,7 +108,7 @@ link:https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-re
 
 == Multiple Dev Services for named connections
 The Infinispan Client extension supports connecting to more than one Infinispan Cluster with
-the named connections. If you need to spin an additional dev service for a connection name, configure
+the named connections. If you need to spin an additional Dev Service for a connection name, configure
 at least on property in the application properties:
 
 [source,properties]

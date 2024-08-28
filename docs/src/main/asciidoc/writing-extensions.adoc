@@ -1978,6 +1978,12 @@ in your runtime module, and add a `META-INF/services/io.quarkus.dev.spi.HotRepla
 On startup the `setupHotDeployment` method will be called, and you can use the provided `io.quarkus.dev.spi.HotReplacementContext`
 to initiate a scan for changed files.
 
+==== Dev Services
+
+Where extensions use an external service, adding a Dev Service can improve the user experience in development and test modes.
+See xref:extension-writing-dev-service.adoc[how to write a Dev Service] for more details.
+
+
 === Testing Extensions
 
 Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension.

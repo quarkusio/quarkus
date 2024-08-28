@@ -306,7 +306,7 @@ But what about production? You won't want to use Dev Services in production.
 In fact, Quarkus only starts Dev Services in dev and test modes.
 
 Wouldn't it be nice to configure an external database,
-but have it *only* used in production, so you could still use dev services the rest of the time?
+but have it *only* used in production, so you could still use Dev Services the rest of the time?
 
 Add a `%prod.`
 prefix to the database configuration. This means the configuration

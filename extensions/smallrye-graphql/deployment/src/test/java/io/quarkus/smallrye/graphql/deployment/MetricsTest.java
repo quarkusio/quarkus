@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.jsonp.runtime.JsonProviderHolder.JSON_PROVIDER;
+import static io.quarkus.jsonp.JsonProviderHolder.JSON_PROVIDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

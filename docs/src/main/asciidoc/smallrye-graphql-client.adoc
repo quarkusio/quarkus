@@ -89,6 +89,8 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-smallrye-graphql-client")
 ----
 
+include::{includes}/json-provider-note.adoc[]
+
 == The application
 
 The application we will build makes use of both types of GraphQL clients. In both cases,

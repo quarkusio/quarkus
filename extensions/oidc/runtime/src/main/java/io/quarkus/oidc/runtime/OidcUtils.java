@@ -75,6 +75,7 @@ import io.vertx.ext.web.RoutingContext;
 public final class OidcUtils {
     private static final Logger LOG = Logger.getLogger(OidcUtils.class);
 
+    public static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     public static final String CONFIG_METADATA_ATTRIBUTE = "configuration-metadata";
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
@@ -252,7 +253,7 @@ public final class OidcUtils {
         }
     }
 
-    private static String base64UrlDecode(String encodedContent) {
+    public static String base64UrlDecode(String encodedContent) {
         return new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8);
     }
 

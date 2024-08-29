@@ -4,7 +4,6 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Files;
@@ -16,7 +15,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -42,6 +40,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.RestorableSystemProperties;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.WithTestResource;
 
@@ -148,67 +147,31 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         // clear the test.url system property as the value leaks into the run when using different profiles
         System.clearProperty("test.url");
+        Map<String, String> additional = new HashMap<>();
 
         QuarkusTestProfile profileInstance = null;
         if (profile != null) {
             profileInstance = profile.getConstructor().newInstance();
-
-            Map<String, String> overrides = new HashMap<>(profileInstance.getConfigOverrides());
+            additional.putAll(profileInstance.getConfigOverrides());
             if (!profileInstance.getEnabledAlternatives().isEmpty()) {
-                overrides.put("quarkus.arc.selected-alternatives",
-                        profileInstance.getEnabledAlternatives()
-                                .stream()
-                                .peek((c) -> {
-                                    if (!c.isAnnotationPresent(Alternative.class)) {
-                                        throw new RuntimeException(
-                                                "Enabled alternative " + c + " is not annotated with " +
-                                                        "@Alternative");
-                                    }
-                                })
-                                .map(Class::getName)
-                                .collect(Collectors.joining(",")));
+                additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
+                        .peek((c) -> {
+                            if (!c.isAnnotationPresent(Alternative.class)) {
+                                throw new RuntimeException(
+                                        "Enabled alternative " + c + " is not annotated with @Alternative");
+                            }
+                        })
+                        .map(Class::getName).collect(Collectors.joining(",")));
             }
             if (profileInstance.disableApplicationLifecycleObservers()) {
-                overrides.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+                additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
             }
             if (profileInstance.getConfigProfile() != null) {
-                overrides.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
+                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
             }
-
-            // Creates a temporary application.properties file for the test with a high ordinal (build and runtime)
-            // Note that in the case of the Quarkus Platform, the testClassLocation is actually a jar so we can't
-            // create a temp directory in it.
-            Path tempDirectory;
-            if (Files.isDirectory(testClassLocation) && Files.isWritable(testClassLocation)) {
-                tempDirectory = Files.createTempDirectory(testClassLocation, requiredTestClass.getSimpleName());
-            } else {
-                tempDirectory = Files.createTempDirectory(requiredTestClass.getSimpleName());
-            }
-
-            Path propertiesFile = tempDirectory.resolve("application.properties");
-            Files.createFile(propertiesFile);
-            Properties properties = new Properties();
-            // TODO - radcortez - This should be higher that system properties, but configuration like ports is being
-            // passed around using system properties, meaning that it cannot be overridden. We cannot use system
-            // properties to carry that information. See io.quarkus.vertx.http.runtime.PortSystemProperties
-            properties.put("config_ordinal", "399");
-            properties.putAll(overrides);
-            try (FileOutputStream outputStream = new FileOutputStream(propertiesFile.toFile())) {
-                properties.store(outputStream, "");
-            }
-            addToBuilderIfConditionMet.accept(tempDirectory);
-
-            shutdownTasks.add(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Files.deleteIfExists(propertiesFile);
-                        Files.deleteIfExists(tempDirectory);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+            //we just use system properties for now
+            //it's a lot simpler
+            shutdownTasks.add(RestorableSystemProperties.setProperties(additional)::close);
         }
 
         CuratedApplication curatedApplication;

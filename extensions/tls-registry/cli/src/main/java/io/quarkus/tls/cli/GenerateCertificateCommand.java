@@ -64,7 +64,7 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
     }
 
-    static System.Logger LOGGER = System.getLogger("generate-quarkus-ca");
+    static System.Logger LOGGER = System.getLogger("generate-certificate");
 
     @Override
     public Integer call() throws Exception {

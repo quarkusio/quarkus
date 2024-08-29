@@ -1,6 +1,7 @@
 package io.quarkus.security.webauthn;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.function.Supplier;
 
@@ -72,7 +73,8 @@ public class WebAuthnRecorder {
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName(),
                         config.sessionTimeout().toMillis(),
                         config.newCookieInterval().toMillis(), false, config.cookieSameSite().name(),
-                        config.cookiePath().orElse(null));
+                        config.cookiePath().orElse(null),
+                        config.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
                 String loginPage = config.loginPage().startsWith("/") ? config.loginPage() : "/" + config.loginPage();
                 return new WebAuthnAuthenticationMechanism(loginManager, loginPage);
             }

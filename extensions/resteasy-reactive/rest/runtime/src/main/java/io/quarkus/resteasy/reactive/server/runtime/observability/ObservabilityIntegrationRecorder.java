@@ -5,6 +5,7 @@ import static io.quarkus.resteasy.reactive.server.runtime.observability.Observab
 import jakarta.ws.rs.HttpMethod;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
@@ -112,20 +113,7 @@ public class ObservabilityIntegrationRecorder {
         setUrlPathTemplate(rc, templatePath);
     }
 
-    private static String getPath(RoutingContext rc) {
-        return rc.normalizedPath();
-    }
-
     private static String getPathWithoutPrefix(RoutingContext rc, Deployment deployment) {
-        String path = getPath(rc);
-        if (path != null) {
-            String prefix = deployment.getPrefix();
-            if (!prefix.isEmpty()) {
-                if (path.startsWith(prefix)) {
-                    return path.substring(prefix.length());
-                }
-            }
-        }
-        return path;
+        return PathHelper.getPathWithoutPrefix(rc.normalizedPath(), deployment.getPrefix());
     }
 }

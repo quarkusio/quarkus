@@ -1,8 +1,6 @@
 package io.quarkus.gradle.tasks;
 
 import static io.quarkus.gradle.QuarkusPlugin.DEPLOY_TASK_NAME;
-import static io.quarkus.gradle.QuarkusPlugin.IMAGE_BUILD_TASK_NAME;
-import static io.quarkus.gradle.QuarkusPlugin.IMAGE_PUSH_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_BUILD_TASK_NAME;
@@ -48,10 +46,7 @@ public class TasksConfigurationCacheCompatibilityTest {
     }
 
     private static Stream<String> nonCompatibleQuarkusBuildTasks() {
-        return Stream.of(
-                IMAGE_BUILD_TASK_NAME,
-                IMAGE_PUSH_TASK_NAME,
-                DEPLOY_TASK_NAME);
+        return Stream.of(DEPLOY_TASK_NAME);
     }
 
     @Test

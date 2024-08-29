@@ -48,7 +48,8 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         Map<String, ?> nativeArgsMap = new HashMap<>();
         action.execute(nativeArgsMap);
         for (Map.Entry<String, ?> nativeArg : nativeArgsMap.entrySet()) {
-            additionalForcedProperties.put(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
+            getAdditionalForcedProperties().get().getProperties().put(expandConfigurationKey(nativeArg.getKey()),
+                    nativeArg.getValue().toString());
         }
         return this;
     }

@@ -16,6 +16,8 @@ import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
@@ -28,6 +30,7 @@ import org.gradle.workers.WorkQueue;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.smallrye.config.Expressions;
@@ -44,7 +47,9 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
     static final String QUARKUS_ARTIFACT_PROPERTIES = "quarkus-artifact.properties";
     static final String NATIVE_SOURCES = "native-sources";
     private final QuarkusPluginExtensionView extensionView;
-    protected final Map<String, String> additionalForcedProperties = new HashMap<>();
+
+    @ServiceReference("forcedPropertiesService")
+    abstract Property<ForcedPropertieBuildService> getAdditionalForcedProperties();
 
     QuarkusBuildTask(String description, boolean compatible) {
         super(description, compatible);
@@ -239,7 +244,8 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         SmallRyeConfig config = getExtensionView()
-                .buildEffectiveConfiguration(appModel.getAppArtifact(), additionalForcedProperties).getConfig();
+                .buildEffectiveConfiguration(appModel.getAppArtifact(), getAdditionalForcedProperties().get().getProperties())
+                .getConfig();
         Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
             Map<String, String> values = new HashMap<>();
             for (String key : config.getMapKeys("quarkus").values()) {

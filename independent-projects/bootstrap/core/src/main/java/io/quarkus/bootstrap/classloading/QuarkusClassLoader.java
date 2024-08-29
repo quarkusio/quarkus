@@ -614,11 +614,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
-    public Set<String> getLocalClassNames() {
+    public Set<String> getReloadableClassNames() {
         ensureOpen();
 
         Set<String> ret = new HashSet<>();
-        for (String resourceName : getClassPathResourceIndex().getLocalClassResourceNames()) {
+        for (String resourceName : getClassPathResourceIndex().getReloadableClasses()) {
             ret.add(ClassLoaderHelper.fromResourceNameToClassName(resourceName));
         }
         return ret;

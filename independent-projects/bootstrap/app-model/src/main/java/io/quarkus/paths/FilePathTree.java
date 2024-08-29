@@ -23,8 +23,8 @@ class FilePathTree implements OpenPathTree {
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return true;
+    public boolean isArchiveOrigin() {
+        return false;
     }
 
     @Override

@@ -114,7 +114,7 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public boolean providesLocalResources() {
+    public boolean containsReloadableResources() {
         return true;
     }
 

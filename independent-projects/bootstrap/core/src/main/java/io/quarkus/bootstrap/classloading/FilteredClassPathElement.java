@@ -59,8 +59,8 @@ public class FilteredClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return delegate.providesLocalResources();
+    public boolean containsReloadableResources() {
+        return delegate.containsReloadableResources();
     }
 
     @Override

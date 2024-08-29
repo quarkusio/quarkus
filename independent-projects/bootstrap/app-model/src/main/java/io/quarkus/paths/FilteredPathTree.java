@@ -18,8 +18,8 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return original.providesLocalResources();
+    public boolean isArchiveOrigin() {
+        return original.isArchiveOrigin();
     }
 
     @Override

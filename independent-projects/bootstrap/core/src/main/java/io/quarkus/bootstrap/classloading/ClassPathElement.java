@@ -74,9 +74,9 @@ public interface ClassPathElement extends Closeable {
     Set<String> getProvidedResources();
 
     /**
-     * Whether this class path element contains local resources.
+     * Whether this class path element contains resources that can be reloaded in dev mode.
      */
-    boolean providesLocalResources();
+    boolean containsReloadableResources();
 
     /**
      *
@@ -133,7 +133,7 @@ public interface ClassPathElement extends Closeable {
         }
 
         @Override
-        public boolean providesLocalResources() {
+        public boolean containsReloadableResources() {
             return false;
         }
 

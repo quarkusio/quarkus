@@ -63,25 +63,25 @@ public class ClassPathResourceIndex {
     private final Map<String, ClassPathElement[]> resourceMapping;
     private final Map<String, ClassPathElement> transformedClasses;
 
-    private final Set<String> localClasses;
+    private final Set<String> relodableClasses;
     private final Set<String> parentFirstResources;
     private final Set<String> bannedResources;
 
     private ClassPathResourceIndex(Map<String, ClassPathElement[]> resourceMapping,
             Map<String, ClassPathElement> transformedClasses,
-            Set<String> localClasses,
+            Set<String> reloadableClasses,
             Set<String> parentFirstResources,
             Set<String> bannedResources) {
         this.resourceMapping = resourceMapping.isEmpty() ? Map.of() : Collections.unmodifiableMap(resourceMapping);
         this.transformedClasses = transformedClasses.isEmpty() ? Map.of() : transformedClasses;
-        this.localClasses = localClasses.isEmpty() ? Set.of() : Collections.unmodifiableSet(localClasses);
+        this.relodableClasses = reloadableClasses.isEmpty() ? Set.of() : Collections.unmodifiableSet(reloadableClasses);
         this.parentFirstResources = parentFirstResources.isEmpty() ? Set.of()
                 : Collections.unmodifiableSet(parentFirstResources);
         this.bannedResources = bannedResources.isEmpty() ? Set.of() : Collections.unmodifiableSet(bannedResources);
     }
 
-    public Set<String> getLocalClassResourceNames() {
-        return localClasses;
+    public Set<String> getReloadableClasses() {
+        return relodableClasses;
     }
 
     public boolean isParentFirst(String resource) {
@@ -199,7 +199,7 @@ public class ClassPathResourceIndex {
         private final Map<String, ClassPathElement> transformedClasses = new HashMap<>();
         private final Map<String, List<ClassPathElement>> resourceMapping = new HashMap<>();
 
-        private final Set<String> localClasses = new HashSet<>();
+        private final Set<String> reloadableClasses = new HashSet<>();
         private final Set<String> parentFirstResources = new HashSet<>();
         private final Set<String> bannedResources = new HashSet<>();
 
@@ -215,8 +215,8 @@ public class ClassPathResourceIndex {
         }
 
         public void addResourceMapping(ClassPathElement classPathElement, String resource) {
-            if (classPathElement.providesLocalResources() && resource.endsWith(CLASS_SUFFIX)) {
-                localClasses.add(resource);
+            if (classPathElement.containsReloadableResources() && resource.endsWith(CLASS_SUFFIX)) {
+                reloadableClasses.add(resource);
             }
 
             ClassPathElement transformedClassClassPathElement = transformedClassCandidates.get(resource);
@@ -255,7 +255,7 @@ public class ClassPathResourceIndex {
             }
 
             return new ClassPathResourceIndex(compactedResourceMapping, transformedClasses,
-                    localClasses, parentFirstResources, bannedResources);
+                    reloadableClasses, parentFirstResources, bannedResources);
         }
     }
 }

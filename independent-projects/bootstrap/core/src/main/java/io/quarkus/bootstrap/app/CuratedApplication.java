@@ -496,8 +496,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
 
         @Override
-        public boolean providesLocalResources() {
-            return delegate.providesLocalResources();
+        public boolean containsReloadableResources() {
+            return delegate.containsReloadableResources();
         }
 
         @Override

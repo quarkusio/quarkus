@@ -176,8 +176,8 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return pathTree.providesLocalResources();
+    public boolean containsReloadableResources() {
+        return !pathTree.isArchiveOrigin();
     }
 
     @Override

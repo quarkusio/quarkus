@@ -37,8 +37,8 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return true;
+    public boolean isArchiveOrigin() {
+        return false;
     }
 
     @Override

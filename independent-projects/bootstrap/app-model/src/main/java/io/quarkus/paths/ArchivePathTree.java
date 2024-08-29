@@ -87,8 +87,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
     }
 
     @Override
-    public boolean providesLocalResources() {
-        return false;
+    public boolean isArchiveOrigin() {
+        return true;
     }
 
     @Override
@@ -246,8 +246,8 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         }
 
         @Override
-        public boolean providesLocalResources() {
-            return false;
+        public boolean isArchiveOrigin() {
+            return true;
         }
 
         @Override

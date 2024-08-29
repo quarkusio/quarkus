@@ -652,7 +652,7 @@ public class JunitTestRunner {
             //this is a lot more complex
             //we need to transform the classes to make the tracing magic work
             QuarkusClassLoader deploymentClassLoader = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
-            Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getLocalClassNames());
+            Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getReloadableClassNames());
             Map<String, byte[]> transformedClasses = new HashMap<>();
             for (String i : classesToTransform) {
                 try {

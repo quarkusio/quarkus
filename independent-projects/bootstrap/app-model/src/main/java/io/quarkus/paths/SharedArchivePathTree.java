@@ -123,8 +123,8 @@ class SharedArchivePathTree extends ArchivePathTree {
         }
 
         @Override
-        public boolean providesLocalResources() {
-            return delegate.providesLocalResources();
+        public boolean isArchiveOrigin() {
+            return delegate.isArchiveOrigin();
         }
 
         @Override

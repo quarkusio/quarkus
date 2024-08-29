@@ -16,7 +16,7 @@ public class EmptyPathTree implements OpenPathTree {
     }
 
     @Override
-    public boolean providesLocalResources() {
+    public boolean isArchiveOrigin() {
         return false;
     }
 

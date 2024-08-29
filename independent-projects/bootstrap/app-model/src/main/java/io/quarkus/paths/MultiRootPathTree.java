@@ -26,17 +26,17 @@ public class MultiRootPathTree implements OpenPathTree {
     }
 
     /**
-     * If at least one of the PathTrees contains local resources, we return true.
+     * If at least one of the PathTrees is not an archive, we return false.
      */
     @Override
-    public boolean providesLocalResources() {
+    public boolean isArchiveOrigin() {
         for (PathTree tree : trees) {
-            if (tree.providesLocalResources()) {
-                return true;
+            if (!tree.isArchiveOrigin()) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 
     @Override

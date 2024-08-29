@@ -81,11 +81,11 @@ public interface PathTree {
     }
 
     /**
-     * Whether the PathTree provides local resources.
+     * Whether the content of this tree comes from an archive or not.
      * <p>
-     * For instance a directory or a file provides local resources. A jar does not.
+     * This is useful for instance when you want to determine if the resources can be updated in dev mode.
      */
-    boolean providesLocalResources();
+    boolean isArchiveOrigin();
 
     /**
      * The roots of the path tree.

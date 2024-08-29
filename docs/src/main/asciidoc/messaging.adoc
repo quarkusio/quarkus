@@ -607,7 +607,7 @@ mp.messaging.incoming.data.tracing-enabled=false
 Most Quarkus Messaging extensions provide a Dev Service to simplify the development and testing of applications.
 The Dev Service creates a broker instance configured to work out-of-the-box with the Quarkus Messaging extension.
 
-During testing Quarkus creates a separate brok er instance to run the tests against it.
+During testing Quarkus creates a separate broker instance to run the tests against it.
 
 You can read more about Dev Services in the xref:dev-services.adoc[Dev Services] guide, including a list of Dev Services provided by platform extensions.
 

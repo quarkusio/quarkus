@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import static io.quarkus.jsonp.JsonProviderHolder.JSON_PROVIDER;
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -107,7 +107,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
                 if (jsonObjectFromBody != null) {
-                    mergedJsonObject = JSON_PROVIDER.createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
+                    mergedJsonObject = jsonProvider().createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
                             .asJsonObject();
                 } else {
                     mergedJsonObject = jsonObjectFromQueryParameters;
@@ -154,7 +154,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private JsonObject getJsonObjectFromQueryParameters(RoutingContext ctx) throws UnsupportedEncodingException {
-        JsonObjectBuilder input = JSON_PROVIDER.createObjectBuilder();
+        JsonObjectBuilder input = jsonProvider().createObjectBuilder();
         // Query
         String query = stripNewlinesAndTabs(readQueryParameter(ctx, QUERY));
         if (query != null && !query.isEmpty()) {
@@ -190,7 +190,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
 
         // If the content type is application/graphql, the query is in the body
         if (contentType != null && contentType.startsWith(APPLICATION_GRAPHQL)) {
-            JsonObjectBuilder input = JSON_PROVIDER.createObjectBuilder();
+            JsonObjectBuilder input = jsonProvider().createObjectBuilder();
             input.add(QUERY, body);
             return input.build();
             // Else we expect a Json in the content

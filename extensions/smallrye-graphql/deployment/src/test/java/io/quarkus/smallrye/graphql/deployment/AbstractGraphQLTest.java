@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static io.quarkus.jsonp.JsonProviderHolder.JSON_PROVIDER;
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -64,14 +64,14 @@ public abstract class AbstractGraphQLTest {
 
     protected JsonObject createRequestBody(String graphQL, String variables) {
         // Create the request
-        JsonObject vjo = JSON_PROVIDER.createObjectBuilder().build();
+        JsonObject vjo = jsonProvider().createObjectBuilder().build();
         if (variables != null && !variables.isEmpty()) {
-            try (JsonReader jsonReader = JSON_PROVIDER.createReader(new StringReader(variables))) {
+            try (JsonReader jsonReader = jsonProvider().createReader(new StringReader(variables))) {
                 vjo = jsonReader.readObject();
             }
         }
 
-        JsonObjectBuilder job = JSON_PROVIDER.createObjectBuilder();
+        JsonObjectBuilder job = jsonProvider().createObjectBuilder();
         if (graphQL != null && !graphQL.isEmpty()) {
             job.add(QUERY, graphQL);
         }

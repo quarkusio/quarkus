@@ -151,6 +151,27 @@ public class DevServicesConfig {
     public boolean createRealm;
 
     /**
+     * Specifies whether to create the default client id `quarkus-app` with a secret `secret`and register them as
+     * `quarkus.oidc.client.id` and `quarkus.oidc.credentials.secret` properties, if the {@link #createRealm} property is set to
+     * true.
+     *
+     * Set to `false` if clients have to be created using either the Keycloak Administration Console or
+     * the Keycloak Admin API provided by {@linkplain io.quarkus.test.common.QuarkusTestResourceLifecycleManager}
+     * or registered dynamically.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createClient;
+
+    /**
+     * Specifies whether to start the container even if the default OIDC tenant is disabled.
+     *
+     * Setting this property to true may be necessary in a multi-tenant OIDC setup, especially when OIDC tenants are created
+     * dynamically.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean startWithDisabledTenant = false;
+
+    /**
      * A map of Keycloak usernames to passwords.
      *
      * If empty, default users `alice` and `bob` are created with their names as passwords.

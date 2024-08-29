@@ -37,6 +37,7 @@ import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -72,6 +73,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
+    static final String HTTP_SCHEME = "http";
 
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -964,7 +966,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             Long accessTokenExpiresInSecs) {
         JwtClaimsBuilder builder = Jwt.claims();
         if (currentIdToken != null) {
-            AbstractJsonObjectResponse currentIdTokenJson = new AbstractJsonObjectResponse(
+            AbstractJsonObject currentIdTokenJson = new AbstractJsonObject(
                     OidcUtils.decodeJwtContentAsString(currentIdToken)) {
             };
             for (String claim : currentIdTokenJson.getPropertyNames()) {
@@ -1205,6 +1207,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
+        if (path.startsWith(HTTP_SCHEME)) {
+            return path;
+        }
         String authority = URI.create(context.request().absoluteURI()).getAuthority();
         return buildUri(context, forceHttps, authority, path);
     }
@@ -1347,12 +1352,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String code, String codeVerifier) {
 
         // 'redirect_uri': it must match the 'redirect_uri' query parameter which was used during the code request.
-        String redirectPath = getRedirectPath(configContext.oidcConfig, context);
-        if (configContext.oidcConfig.authentication.redirectPath.isPresent()
-                && !configContext.oidcConfig.authentication.redirectPath.get().equals(context.request().path())) {
-            LOG.warnf("Token redirect path %s does not match the current request path", context.request().path());
-            return Uni.createFrom().failure(new AuthenticationFailedException("Wrong redirect path"));
+        Optional<String> configuredRedirectPath = configContext.oidcConfig.authentication.redirectPath;
+        if (configuredRedirectPath.isPresent()) {
+            String requestPath = configuredRedirectPath.get().startsWith(HTTP_SCHEME)
+                    ? buildUri(context, configContext.oidcConfig.authentication.forceRedirectHttpsScheme.orElse(false),
+                            context.request().path())
+                    : context.request().path();
+            if (!configuredRedirectPath.get().equals(requestPath)) {
+                LOG.warnf("Token redirect path %s does not match the current request path", requestPath);
+                return Uni.createFrom().failure(new AuthenticationFailedException("Wrong redirect path"));
+            }
         }
+
+        String redirectPath = getRedirectPath(configContext.oidcConfig, context);
         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 

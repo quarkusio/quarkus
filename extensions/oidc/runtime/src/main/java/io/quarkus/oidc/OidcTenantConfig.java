@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -20,7 +21,7 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 @ConfigGroup
-public class OidcTenantConfig extends OidcCommonConfig {
+public class OidcTenantConfig extends OidcClientCommonConfig {
 
     /**
      * A unique tenant identifier. It can be set by {@code TenantConfigResolver} providers, which

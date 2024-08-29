@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenID Connect Dynamic Client Registration"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  - "oidc-client"
+  - "oidc-client-registration"
+  guide: "https://quarkus.io/guides/security-openid-connect-client-registration"
+  categories:
+  - "security"
+  status: "experimental"
+  config:
+  - "quarkus.oidc-client-registration."

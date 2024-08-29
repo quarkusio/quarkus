@@ -270,8 +270,8 @@ public class KeycloakDevServicesProcessor {
 
         boolean createDefaultRealm = (realmReps == null || realmReps.isEmpty()) && capturedDevServicesConfiguration.createRealm;
 
-        String oidcClientId = getOidcClientId(createDefaultRealm);
-        String oidcClientSecret = getOidcClientSecret(createDefaultRealm);
+        String oidcClientId = getOidcClientId();
+        String oidcClientSecret = getOidcClientSecret();
         String oidcApplicationType = getOidcApplicationType();
 
         Map<String, String> users = getUsers(capturedDevServicesConfiguration.users, createDefaultRealm);
@@ -307,8 +307,10 @@ public class KeycloakDevServicesProcessor {
         configProperties.put(AUTH_SERVER_URL_CONFIG_KEY, authServerInternalUrl);
         configProperties.put(CLIENT_AUTH_SERVER_URL_CONFIG_KEY, clientAuthServerUrl);
         configProperties.put(APPLICATION_TYPE_CONFIG_KEY, oidcApplicationType);
-        configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
-        configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+        if (capturedDevServicesConfiguration.createClient) {
+            configProperties.put(CLIENT_ID_CONFIG_KEY, oidcClientId);
+            configProperties.put(CLIENT_SECRET_CONFIG_KEY, oidcClientSecret);
+        }
         configProperties.put(OIDC_USERS, users.entrySet().stream()
                 .map(e -> e.toString()).collect(Collectors.joining(",")));
         configProperties.put(KEYCLOAK_REALMS, realmNames.stream().collect(Collectors.joining(",")));
@@ -337,7 +339,7 @@ public class KeycloakDevServicesProcessor {
             LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
             return null;
         }
-        if (!isOidcTenantEnabled()) {
+        if (!isOidcTenantEnabled() && !capturedDevServicesConfiguration.startWithDisabledTenant) {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
             return null;
         }
@@ -665,7 +667,9 @@ public class KeycloakDevServicesProcessor {
             List<String> errors) {
         RealmRepresentation realm = createDefaultRealmRep();
 
-        realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
+        if (capturedDevServicesConfiguration.createClient) {
+            realm.getClients().add(createClient(oidcClientId, oidcClientSecret));
+        }
         for (Map.Entry<String, String> entry : users.entrySet()) {
             realm.getUsers().add(createUser(entry.getKey(), entry.getValue(), getUserRoles(entry.getKey())));
         }
@@ -848,13 +852,17 @@ public class KeycloakDevServicesProcessor {
         return ConfigProvider.getConfig().getOptionalValue(APPLICATION_TYPE_CONFIG_KEY, String.class).orElse("service");
     }
 
-    private static String getOidcClientId(boolean createRealm) {
+    private static String getOidcClientId() {
+        boolean isService = "service".equals(getOidcApplicationType());
+        // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
-                .orElse(createRealm ? "quarkus-app" : "");
+                .orElse(!isService ? "quarkus-app" : "");
     }
 
-    private static String getOidcClientSecret(boolean createRealm) {
+    private static String getOidcClientSecret() {
+        boolean isService = "service".equals(getOidcApplicationType());
+        // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
-                .orElse(createRealm ? "secret" : "");
+                .orElse(!isService ? "secret" : "");
     }
 }

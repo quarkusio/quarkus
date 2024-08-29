@@ -41,9 +41,9 @@ import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Provider;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Provider;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -88,7 +88,7 @@ public class OidcCommonUtils {
         }
     }
 
-    public static void verifyCommonConfiguration(OidcCommonConfig oidcConfig, boolean clientIdOptional,
+    public static void verifyCommonConfiguration(OidcClientCommonConfig oidcConfig, boolean clientIdOptional,
             boolean isServerConfig) {
         final String configPrefix = isServerConfig ? "quarkus.oidc." : "quarkus.oidc-client.";
         if (!clientIdOptional && !oidcConfig.getClientId().isPresent()) {
@@ -386,7 +386,7 @@ public class OidcCommonUtils {
         }
     }
 
-    public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
+    public static String signJwtWithKey(OidcClientCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
         JwtSignatureBuilder builder = Jwt
                 .claims(additionalClaims(oidcConfig.credentials.jwt.getClaims()))
@@ -440,7 +440,7 @@ public class OidcCommonUtils {
 
     }
 
-    public static String initClientSecretBasicAuth(OidcCommonConfig oidcConfig) {
+    public static String initClientSecretBasicAuth(OidcClientCommonConfig oidcConfig) {
         if (isClientSecretBasicAuthRequired(oidcConfig.credentials)) {
             return basicSchemeValue(oidcConfig.getClientId().get(), clientSecret(oidcConfig.credentials));
         }
@@ -453,7 +453,7 @@ public class OidcCommonUtils {
 
     }
 
-    public static Key initClientJwtKey(OidcCommonConfig oidcConfig) {
+    public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig) {
         if (isClientJwtAuthRequired(oidcConfig.credentials)) {
             return clientJwtKey(oidcConfig.credentials);
         }

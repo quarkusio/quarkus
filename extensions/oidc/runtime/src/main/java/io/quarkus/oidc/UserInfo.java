@@ -4,9 +4,9 @@ import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 
-import io.quarkus.oidc.runtime.AbstractJsonObjectResponse;
+import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 
-public class UserInfo extends AbstractJsonObjectResponse {
+public class UserInfo extends AbstractJsonObject {
 
     private static final String EMAIL = "email";
     private static final String NAME = "name";
@@ -26,7 +26,7 @@ public class UserInfo extends AbstractJsonObjectResponse {
     }
 
     public String getUserInfoString() {
-        return getNonNullJsonString();
+        return getJsonString();
     }
 
     public String getName() {

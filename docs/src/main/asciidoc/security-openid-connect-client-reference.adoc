@@ -934,6 +934,42 @@ quarkus.oidc-client.tls.trust-store-password=${trust-store-password}
 #quarkus.oidc-client.tls.trust-store-alias=certAlias
 ----
 
+=== OIDC Client SPI
+
+When your custom extension must acquire OIDC tokens using one of the OIDC token grants supported by OIDC client, this extension can depend on the OIDC Client SPI only and let OIDC client itself acquire and refresh access tokens as necessary.
+
+Add the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client-spi</artifactId>
+</dependency>
+----
+
+Next update your extension to use `io.quarkus.oidc.client.spi.TokenProvider` CDI bean as required, for example:
+
+[source,java]
+----
+package org.acme.extension;
+
+import jakarta.inject.Inject;
+import io.quarkus.oidc.client.spi.TokenProvider;
+
+public class ExtensionOAuth2Support {
+
+   @Inject
+   TokenProvider tokenProvider;
+
+   public Uni<String> getAccessToken() {
+       return tokenProvider.getAccessToken();
+   }
+}
+----
+
+Currently, `io.quarkus.oidc.client.spi.TokenProvider` is only available for default OIDC clients, since custom extensions are unlikely to be aware of multiple named OIDC clients.
+
 [[integration-testing-oidc-client]]
 === Testing
 

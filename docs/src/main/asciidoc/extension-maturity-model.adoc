@@ -19,7 +19,7 @@ What makes a good Quarkus extension? What capabilities is a Quarkus extension ex
 image::extension-maturity-model.svg[A maturity model: Runtime actually works,Works in JVM mode,Works in dev mode, Works in native,Configuration support,Dev service,Dev UI, Use build-time application knowledge to eliminate wasteful runtime code paths (supersonic subatomic performance),Use build-time application knowledge to remove boilerplate,Codestart application template]
 
 The order in this model isn't exact. Different developers will have different views on what capabilities are most important. You may wish to (say) prioritise performance over enhancing your extension's Dev UI tile. That's fine!
-Also, not every step will apply to every extension. For example, you don't need a dev service if your extension doesn't depend on external services.
+Also, not every step will apply to every extension. For example, you don't need a Dev Service if your extension doesn't depend on external services.
 It's completely OK to publish a first version of an extension that doesn't handle everything. In fact, it's ok if your extension _never_ gets to the more advanced features. This is a suggested pathway, not a minimum feature set.
 
 Also note that this list only includes the technical features of your extension.
@@ -53,7 +53,7 @@ The Writing Extensions guide has more guidance on xref:writing-extensions.adoc#h
 
 == Dev service (if there is an external service)
 
-To provide a dev service, use the `DevServicesResultBuildItem` build item.
+To provide a Dev Service, use the `DevServicesResultBuildItem` build item. See the xref:extension-writing-dev-service.adoc[Dev Services how-to] for more information.
 
 == Dev UI
 

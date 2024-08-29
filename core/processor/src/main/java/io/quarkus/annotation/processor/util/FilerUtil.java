@@ -1,6 +1,7 @@
 package io.quarkus.annotation.processor.util;
 
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -159,7 +160,7 @@ public class FilerUtil {
 
                 return Optional.of(extensionMetadata);
             }
-        } catch (NoSuchFileException e) {
+        } catch (NoSuchFileException | FileNotFoundException e) {
             // ignore
             // we could get the URI, create a Path and check that the path exists but it seems a bit overkill
             return Optional.empty();

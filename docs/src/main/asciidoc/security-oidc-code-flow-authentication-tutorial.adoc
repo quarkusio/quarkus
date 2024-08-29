@@ -165,7 +165,7 @@ The OIDC extension allows you to define the configuration by using the `applicat
 
 [source,properties]
 ----
-quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=frontend
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app

@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: writing-extensions
 :topics: extensions
-:summary: Quarkus extensions can do a lot, or a little. This guide explains some of the capabilities extension authors may wish to include.
+:summary: Quarkus extensions can do a lot, or a little. This guide explains some of the capabilities extension authors might want to include.
 ////
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////

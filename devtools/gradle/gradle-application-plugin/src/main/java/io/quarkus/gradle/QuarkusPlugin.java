@@ -43,6 +43,7 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.gradle.extension.SourceSetExtension;
 import io.quarkus.gradle.tasks.Deploy;
 import io.quarkus.gradle.tasks.ImageBuild;
+import io.quarkus.gradle.tasks.ImageCheckRequirementsTask;
 import io.quarkus.gradle.tasks.ImagePush;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusApplicationModelTask;
@@ -64,6 +65,7 @@ import io.quarkus.gradle.tasks.QuarkusShowEffectiveConfig;
 import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusUpdate;
+import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
@@ -120,6 +122,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String INTEGRATION_TEST_SOURCE_SET_NAME = "integrationTest";
     public static final String INTEGRATION_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "integrationTestImplementation";
     public static final String INTEGRATION_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "integrationTestRuntimeOnly";
+    public static final String IMAGE_CHECK_REQUIREMENTS_NAME = "quarkusImageExtensionChecks";
 
     private final ToolingModelBuilderRegistry registry;
 
@@ -135,6 +138,10 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         // Apply the `java` plugin
         project.getPluginManager().apply(JavaPlugin.class);
+
+        project.getGradle().getSharedServices().registerIfAbsent("forcedPropertiesService", ForcedPropertieBuildService.class,
+                spec -> {
+                });
 
         registerModel();
 
@@ -279,8 +286,18 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
         });
 
+        TaskProvider<ImageCheckRequirementsTask> quarkusRequiredExtension = tasks.register(IMAGE_CHECK_REQUIREMENTS_NAME,
+                ImageCheckRequirementsTask.class, task -> {
+                    task.getOutputFile().set(project.getLayout().getBuildDirectory().file("quarkus/image-name"));
+                    task.getApplicationModel()
+                            .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
+
+                });
+
         tasks.register(IMAGE_BUILD_TASK_NAME, ImageBuild.class, task -> {
+            task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, quarkusExt, task, quarkusBuildAppModelTask);
+            task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
             task.getApplicationModel()
                     .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
@@ -288,7 +305,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         });
 
         tasks.register(IMAGE_PUSH_TASK_NAME, ImagePush.class, task -> {
+            task.dependsOn(quarkusRequiredExtension);
             configureQuarkusBuildTask(project, quarkusExt, task, quarkusBuildAppModelTask);
+            task.getBuilderName().set(quarkusRequiredExtension.flatMap(ImageCheckRequirementsTask::getOutputFile));
             task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
             task.getApplicationModel()
                     .set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));

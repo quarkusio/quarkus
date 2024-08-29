@@ -97,7 +97,7 @@ To see the Hibernate ORM REST Data with Panache in action, you can check out the
 * Add the required dependencies to your `pom.xml`
 ** Hibernate Reactive REST Data with Panache extension (`quarkus-hibernate-reactive-rest-data-panache`)
 ** A Vert.x reactive database driver extension (`quarkus-reactive-pg-client`, `quarkus-reactive-mysql-client`, ...)
-** One of the Quarkus REST serialization extensions (`quarkus-rest-jsonb`, `quarkus-rest-jackson`, ...)
+** One of the Quarkus REST serialization extensions (`quarkus-rest-jackson`, `quarkus-rest-jsonb`, ...)
 
 [source,xml]
 ----

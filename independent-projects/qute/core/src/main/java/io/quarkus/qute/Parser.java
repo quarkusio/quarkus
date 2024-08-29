@@ -1064,9 +1064,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 value = literal.toString();
             } else {
                 throw TemplateException.builder()
-                        .message((literal == null ? "Null" : "Non-literal")
-                                + " value used in bracket notation [{value}] {origin}")
+                        .message((literal == null ? "Null value" : "Non-literal value [{value}]")
+                                + " used in bracket notation in expression \\{{expr}\\}{#if origin.hasNonGeneratedTemplateId??} in{origin}{/if}")
                         .argument("value", value)
+                        .argument("expr", exprValue)
+                        .origin(origin)
                         .build();
             }
         } else {

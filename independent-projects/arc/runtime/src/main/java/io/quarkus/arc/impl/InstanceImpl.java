@@ -119,7 +119,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return new Guard<>(result);
     }
 
-    static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
+    public static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
         return new InstanceImpl<>(new CreationalContextImpl<>(null), requiredType, requiredQualifiers,
                 null, null, Collections.emptySet(), null, -1, false, true);
     }
@@ -309,7 +309,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return getBeanInstance(bean());
     }
 
-    void destroy() {
+    public void destroy() {
         creationalContext.release();
     }
 

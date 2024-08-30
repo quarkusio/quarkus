@@ -595,13 +595,8 @@ public class QuarkusUnitTest
                                 //we need to make sure all hot reloadable classes are application classes
                                 context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
                                     @Override
-                                    public boolean test(String s) {
-                                        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                                .getContextClassLoader();
-                                        //if the class file is present in this (and not the parent) CL then it is an application class
-                                        List<ClassPathElement> res = cl
-                                                .getElementsWithResource(s.replace(".", "/") + ".class", true);
-                                        return !res.isEmpty();
+                                    public boolean test(String className) {
+                                        return QuarkusClassLoader.isApplicationClass(className);
                                     }
                                 }));
                             }

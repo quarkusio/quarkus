@@ -37,6 +37,11 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return false;
+    }
+
+    @Override
     protected Path getRootPath() {
         return dir;
     }

@@ -52,7 +52,7 @@ public class MultiReleaseJarTestCase {
     @Test
     public void shouldLoadMultiReleaseJarOnJDK9Plus() throws IOException {
         try (QuarkusClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                .addElement(ClassPathElement.fromPath(jarPath, true))
+                .addNormalPriorityElement(ClassPathElement.fromPath(jarPath, true))
                 .build()) {
             URL resource = cl.getResource("foo.txt");
             assertNotNull(resource, "foo.txt was not found in generated JAR");

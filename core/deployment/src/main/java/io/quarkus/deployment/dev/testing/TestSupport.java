@@ -221,7 +221,7 @@ public class TestSupport implements TestController {
                                             + curatedApplication.getClassLoaderNameSuffix(),
                                             getClass().getClassLoader().getParent(), false);
                                 }
-                                clBuilder.addElement(ClassPathElement.fromDependency(d));
+                                clBuilder.addNormalPriorityElement(ClassPathElement.fromDependency(d));
                             }
                         }
 

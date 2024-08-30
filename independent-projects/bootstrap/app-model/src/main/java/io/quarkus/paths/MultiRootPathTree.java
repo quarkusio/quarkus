@@ -25,6 +25,20 @@ public class MultiRootPathTree implements OpenPathTree {
         roots = tmp;
     }
 
+    /**
+     * If at least one of the PathTrees is not an archive, we return false.
+     */
+    @Override
+    public boolean isArchiveOrigin() {
+        for (PathTree tree : trees) {
+            if (!tree.isArchiveOrigin()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public Collection<Path> getRoots() {
         return roots;

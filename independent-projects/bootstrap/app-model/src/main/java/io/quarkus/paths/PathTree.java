@@ -81,6 +81,13 @@ public interface PathTree {
     }
 
     /**
+     * Whether the content of this tree comes from an archive or not.
+     * <p>
+     * This is useful for instance when you want to determine if the resources can be updated in dev mode.
+     */
+    boolean isArchiveOrigin();
+
+    /**
      * The roots of the path tree.
      * <p>
      * Note that you shouldn't use these roots for browsing except if the PathTree is open.

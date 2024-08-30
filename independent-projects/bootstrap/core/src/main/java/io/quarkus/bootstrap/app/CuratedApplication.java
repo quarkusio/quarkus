@@ -183,10 +183,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             //we always load this from the parent if it is available, as this acts as a bridge between the running
             //app and the dev mode code
             builder.addParentFirstElement(element);
+            builder.addNormalPriorityElement(element);
         } else if (dep.isFlagSet(DependencyFlags.CLASSLOADER_LESSER_PRIORITY)) {
             builder.addLesserPriorityElement(element);
+        } else {
+            builder.addNormalPriorityElement(element);
         }
-        builder.addElement(element);
     }
 
     public synchronized QuarkusClassLoader getOrCreateAugmentClassLoader() {
@@ -212,7 +214,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
-                builder.addElement(ClassPathElement.fromPath(i, false));
+                builder.addNormalPriorityElement(ClassPathElement.fromPath(i, false));
             }
             Map<String, byte[]> banned = new HashMap<>();
             for (Collection<String> i : configuredClassLoading.getRemovedResources().values()) {
@@ -256,7 +258,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 //there is no need to restart so there is no need for an additional CL
 
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
-                    builder.addElement(ClassPathElement.fromPath(root, true));
+                    builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
                 }
             } else {
                 for (Path root : quarkusBootstrap.getApplicationRoot()) {
@@ -269,7 +271,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
                 if (!i.isHotReloadable()) {
                     for (Path root : i.getResolvedPaths()) {
-                        builder.addElement(ClassPathElement.fromPath(root, true));
+                        builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
                     }
                 } else {
                     for (Path root : i.getResolvedPaths()) {
@@ -339,7 +341,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setAggregateParentResources(true);
 
         for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
 
         builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap(), false));
@@ -347,7 +349,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         //additional user class path elements first
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
             for (Path root : i.getResolvedPaths()) {
-                builder.addElement(ClassPathElement.fromPath(root, true));
+                builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
             }
         }
         for (ResolvedDependency dependency : appModel.getDependencies()) {
@@ -361,7 +363,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
     }
@@ -387,15 +389,15 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
 
-        builder.addElement(new MemoryClassPathElement(resources, true));
+        builder.addNormalPriorityElement(new MemoryClassPathElement(resources, true));
         for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
 
         for (AdditionalDependency i : getQuarkusBootstrap().getAdditionalApplicationArchives()) {
             if (i.isHotReloadable()) {
                 for (Path root : i.getResolvedPaths()) {
-                    builder.addElement(ClassPathElement.fromPath(root, true));
+                    builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
                 }
             }
         }
@@ -410,7 +412,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
         }
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
-            builder.addElement(ClassPathElement.fromPath(root, true));
+            builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
         return builder.build();
     }
@@ -491,6 +493,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         @Override
         public Set<String> getProvidedResources() {
             return delegate.getProvidedResources().stream().filter(s -> s.endsWith(".class")).collect(Collectors.toSet());
+        }
+
+        @Override
+        public boolean containsReloadableResources() {
+            return delegate.containsReloadableResources();
         }
 
         @Override

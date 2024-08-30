@@ -18,6 +18,11 @@ public class FilteredPathTree implements PathTree {
     }
 
     @Override
+    public boolean isArchiveOrigin() {
+        return original.isArchiveOrigin();
+    }
+
+    @Override
     public Collection<Path> getRoots() {
         return original.getRoots();
     }

@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.classloading;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -75,6 +74,11 @@ public interface ClassPathElement extends Closeable {
     Set<String> getProvidedResources();
 
     /**
+     * Whether this class path element contains resources that can be reloaded in dev mode.
+     */
+    boolean containsReloadableResources();
+
+    /**
      *
      * @return The protection domain that should be used to define classes from this element
      */
@@ -102,6 +106,7 @@ public interface ClassPathElement extends Closeable {
     }
 
     static ClassPathElement EMPTY = new ClassPathElement() {
+
         @Override
         public Path getRoot() {
             return null;
@@ -124,7 +129,12 @@ public interface ClassPathElement extends Closeable {
 
         @Override
         public Set<String> getProvidedResources() {
-            return Collections.emptySet();
+            return Set.of();
+        }
+
+        @Override
+        public boolean containsReloadableResources() {
+            return false;
         }
 
         @Override

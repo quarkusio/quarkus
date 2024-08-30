@@ -176,6 +176,11 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
+    public boolean containsReloadableResources() {
+        return !pathTree.isArchiveOrigin();
+    }
+
+    @Override
     protected ManifestAttributes readManifest() {
         return apply(OpenPathTree::getManifestAttributes);
     }

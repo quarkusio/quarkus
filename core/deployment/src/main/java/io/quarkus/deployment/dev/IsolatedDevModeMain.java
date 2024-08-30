@@ -30,14 +30,12 @@ import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
@@ -478,14 +476,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     //we need to make sure all hot reloadable classes are application classes
                     context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
                         @Override
-                        public boolean test(String s) {
-                            QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread()
-                                    .getContextClassLoader();
-                            String resourceName = ClassLoaderHelper.fromClassNameToResourceName(s);
-                            //if the class file is present in this (and not the parent) CL then it is an application class
-                            List<ClassPathElement> res = cl
-                                    .getElementsWithResource(resourceName, true);
-                            return !res.isEmpty();
+                        public boolean test(String className) {
+                            return QuarkusClassLoader.isApplicationClass(className);
                         }
                     }));
                 }

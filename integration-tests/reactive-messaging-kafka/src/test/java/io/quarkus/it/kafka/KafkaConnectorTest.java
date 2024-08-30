@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,7 +122,9 @@ public class KafkaConnectorTest {
                 .body(containsString("quarkus_messaging_message_duration_seconds_sum"))
                 .body(containsString("quarkus_messaging_message_duration_seconds_count"))
                 .body(containsString("quarkus_messaging_message_count_total"))
-                .body(containsString("quarkus_messaging_message_acks_total"));
+                .body(containsString("quarkus_messaging_message_acks_total"))
+                .body(containsString("kafka_app_info_start_time_ms"))
+                .body(not(containsString("kafka_version=\"unknown\"")));
     }
 
 }

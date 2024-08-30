@@ -1,21 +1,18 @@
 package io.quarkus.deployment.steps;
 
 import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class CompiledJavaVersionBuildStep {
 
@@ -26,44 +23,49 @@ public class CompiledJavaVersionBuildStep {
      * application .class file that is found
      */
     @BuildStep
-    public CompiledJavaVersionBuildItem compiledJavaVersion(BuildSystemTargetBuildItem buildSystemTarget) {
-        if ((buildSystemTarget.getOutputDirectory() == null) || (!Files.exists(buildSystemTarget.getOutputDirectory()))) {
-            log.debug("Skipping because output directory does not exist");
-            // needed for Arquillian TCK tests
-            return CompiledJavaVersionBuildItem.unknown();
-        }
-        AtomicReference<Integer> majorVersion = new AtomicReference<>(null);
-        try {
-            log.debugf("Walking directory '%s'", buildSystemTarget.getOutputDirectory().toAbsolutePath().toString());
-            Files.walkFileTree(buildSystemTarget.getOutputDirectory(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (file.getFileName().toString().endsWith(".class")) {
-                        log.debugf("Checking file '%s'", file.toAbsolutePath().toString());
-                        try (InputStream in = new FileInputStream(file.toFile())) {
-                            DataInputStream data = new DataInputStream(in);
-                            if (0xCAFEBABE == data.readInt()) {
-                                data.readUnsignedShort(); // minor version -> we don't care about it
-                                int v = data.readUnsignedShort();
-                                majorVersion.set(v);
-                                log.debugf("Determined compile java version to be %d", v);
-                                return FileVisitResult.TERMINATE;
-                            }
-                        } catch (IOException e) {
-                            log.debugf(e, "Encountered exception while processing file '%s'", file.toAbsolutePath().toString());
-                        }
-                    }
-                    // if this was not .class file or there was an error parsing its contents, we continue on to the next file
-                    return FileVisitResult.CONTINUE;
+    public CompiledJavaVersionBuildItem compiledJavaVersion(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        final ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+        Integer majorVersion = getMajorJavaVersion(appArtifact);
+        if (majorVersion == null) {
+            // workspace info isn't available in prod builds though
+            for (ResolvedDependency module : curateOutcomeBuildItem.getApplicationModel()
+                    .getDependencies(DependencyFlags.WORKSPACE_MODULE)) {
+                majorVersion = getMajorJavaVersion(module);
+                if (majorVersion != null) {
+                    break;
                 }
-            });
-        } catch (IOException ignored) {
-
+            }
         }
-        if (majorVersion.get() == null) {
+        if (majorVersion == null) {
             log.debug("No .class files located");
             return CompiledJavaVersionBuildItem.unknown();
         }
-        return CompiledJavaVersionBuildItem.fromMajorJavaVersion(majorVersion.get());
+        return CompiledJavaVersionBuildItem.fromMajorJavaVersion(majorVersion);
+    }
+
+    private static Integer getMajorJavaVersion(ResolvedDependency artifact) {
+        final AtomicReference<Integer> majorVersion = new AtomicReference<>(null);
+        artifact.getContentTree().walk(visit -> {
+            final Path file = visit.getPath();
+            if (file.getFileName() == null) {
+                // this can happen if it's the root of a JAR
+                return;
+            }
+            if (file.getFileName().toString().endsWith(".class") && !Files.isDirectory(file)) {
+                log.debugf("Checking file '%s'", file.toAbsolutePath().toString());
+                try (DataInputStream data = new DataInputStream(Files.newInputStream(file))) {
+                    if (0xCAFEBABE == data.readInt()) {
+                        data.readUnsignedShort(); // minor version -> we don't care about it
+                        int v = data.readUnsignedShort();
+                        majorVersion.set(v);
+                        log.debugf("Determined compile java version to be %d", v);
+                        visit.stopWalking();
+                    }
+                } catch (IOException e) {
+                    log.debugf(e, "Encountered exception while processing file '%s'", file.toAbsolutePath().toString());
+                }
+            }
+        });
+        return majorVersion.get();
     }
 }

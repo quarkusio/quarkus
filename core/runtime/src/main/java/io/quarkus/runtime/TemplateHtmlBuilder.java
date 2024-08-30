@@ -250,16 +250,15 @@ public class TemplateHtmlBuilder {
 
                 for (int i = 0; i < stackTrace.length; ++i) {
                     var elem = stackTrace[i];
-
-                    className = elem.getClassName();
-                    String filename = elem.getFileName();
-                    if (filename != null) {
-                        int dotindex = filename.lastIndexOf(".");
-                        type = elem.getFileName().substring(dotindex + 1);
-                    }
-                    lineNumber = elem.getLineNumber();
-
                     if (knowClasses.contains(elem.getClassName())) {
+                        className = elem.getClassName();
+                        String filename = elem.getFileName();
+                        if (filename != null) {
+                            int dotindex = filename.lastIndexOf(".");
+                            type = elem.getFileName().substring(dotindex + 1);
+                        }
+                        lineNumber = elem.getLineNumber();
+
                         stackTrace[i] = new StackTraceElement(elem.getClassLoaderName(), elem.getModuleName(),
                                 elem.getModuleVersion(),
                                 BRSTI + elem.getClassName()

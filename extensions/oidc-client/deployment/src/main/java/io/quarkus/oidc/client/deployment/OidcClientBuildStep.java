@@ -48,6 +48,7 @@ import io.quarkus.oidc.client.runtime.AbstractTokensProducer;
 import io.quarkus.oidc.client.runtime.OidcClientBuildTimeConfig;
 import io.quarkus.oidc.client.runtime.OidcClientRecorder;
 import io.quarkus.oidc.client.runtime.OidcClientsConfig;
+import io.quarkus.oidc.client.runtime.TokenProviderProducer;
 import io.quarkus.oidc.client.runtime.TokensHelper;
 import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.oidc.token.propagation.AccessToken;
@@ -66,7 +67,10 @@ public class OidcClientBuildStep {
 
     @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(TokensProducer.class));
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        builder.addBeanClass(TokensProducer.class);
+        builder.addBeanClass(TokenProviderProducer.class);
+        additionalBeans.produce(builder.build());
     }
 
     @BuildStep

@@ -9,39 +9,22 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-client</artifactId>
-    <name>Quarkus - OpenID Connect Client - Runtime</name>
-    <description>Get and refresh access tokens from OpenID Connect providers</description>
+    <artifactId>quarkus-oidc-client-spi</artifactId>
+    <name>Quarkus - OIDC Client - SPI</name>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-spi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-extension-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -55,9 +38,6 @@
                                     <version>${project.version}</version>
                                 </path>
                             </annotationProcessorPaths>
-                            <compilerArgs>
-                                <arg>-AlegacyConfigRoot=true</arg>
-                            </compilerArgs>
                         </configuration>
                     </execution>
                 </executions>

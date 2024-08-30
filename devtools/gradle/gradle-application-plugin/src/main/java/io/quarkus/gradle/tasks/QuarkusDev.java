@@ -633,7 +633,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
         Path classesDir = classesDirs.isEmpty() ? null
-                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), root, false);
+                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), true, false);
         Path generatedSourcesPath = sources.getSourceDirs().isEmpty() ? null
                 : sources.getSourceDirs().iterator().next().getAptSourcesDir();
 

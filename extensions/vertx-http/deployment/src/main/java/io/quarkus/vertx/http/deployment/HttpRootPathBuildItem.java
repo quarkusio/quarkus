@@ -50,11 +50,13 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
+     * <li>{@code resolvePath("/")} will return {@literal /}</li>
      * </ul>
      * Given {@literal quarkus.http.root-path=/app}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /app/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
+     * <li>{@code resolvePath("/")} will return {@literal /}</li>
      * </ul>
      * <p>
      * The returned path will not end with a slash.
@@ -64,7 +66,8 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      */
     public String resolvePath(String path) {
-        return UriNormalizationUtil.normalizeWithBase(rootPath, path, false).getPath();
+        var isSlashAbsolutePath = "/".equals(path);
+        return UriNormalizationUtil.normalizeWithBase(rootPath, path, isSlashAbsolutePath).getPath();
     }
 
     /**

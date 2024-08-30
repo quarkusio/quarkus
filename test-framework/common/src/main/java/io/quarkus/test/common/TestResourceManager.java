@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.TestResourceScope.GLOBAL;
+import static io.quarkus.test.common.TestResourceScope.MATCHING_RESOURCE;
 import static io.quarkus.test.common.TestResourceScope.RESTRICTED_TO_CLASS;
 
 import java.io.Closeable;
@@ -424,7 +425,7 @@ public class TestResourceManager implements Closeable {
             Set<TestResourceClassEntry> uniqueEntries) {
 
         addTestResourceEntry(quarkusTestResource.value(), quarkusTestResource.initArgs(), originalAnnotation,
-                quarkusTestResource.parallel(), quarkusTestResource.restrictToAnnotatedClass() ? RESTRICTED_TO_CLASS : GLOBAL,
+                quarkusTestResource.parallel(), quarkusTestResource.scope(),
                 uniqueEntries);
     }
 
@@ -490,7 +491,7 @@ public class TestResourceManager implements Closeable {
     }
 
     private static boolean restrictToAnnotatedClass(AnnotationInstance annotation) {
-        return TestResourceClassEntryHandler.determineScope(annotation) != GLOBAL;
+        return TestResourceClassEntryHandler.determineScope(annotation) == RESTRICTED_TO_CLASS;
     }
 
     /**
@@ -506,11 +507,40 @@ public class TestResourceManager implements Closeable {
      * <ul>
      * <li>at least one the existing test resources is restricted to the test class</li>
      * <li>at least one the next test resources is restricted to the test class</li>
+     * <li>different {@code MATCHING_RESOURCE} scoped test resources are being used</li>
      * </ul>
      */
     public static boolean testResourcesRequireReload(Set<TestResourceComparisonInfo> existing,
             Set<TestResourceComparisonInfo> next) {
-        return hasRestrictedToClassScope(existing) || hasRestrictedToClassScope(next);
+        if (existing.isEmpty() && next.isEmpty()) {
+            return false;
+        }
+
+        if (hasRestrictedToClassScope(existing) || hasRestrictedToClassScope(next)) {
+            return true;
+        }
+
+        // now we need to check whether the sets contain the exact same MATCHING_RESOURCE test resources
+
+        Set<TestResourceComparisonInfo> inExistingAndNotNext = onlyMatchingResourceItems(existing);
+        inExistingAndNotNext.removeAll(next);
+        if (!inExistingAndNotNext.isEmpty()) {
+            return true;
+        }
+
+        Set<TestResourceComparisonInfo> inNextAndNotExisting = onlyMatchingResourceItems(next);
+        inNextAndNotExisting.removeAll(existing);
+        if (!inNextAndNotExisting.isEmpty()) {
+            return true;
+        }
+
+        // the sets contain the same objects, so no need to reload
+        return false;
+    }
+
+    private static Set<TestResourceComparisonInfo> onlyMatchingResourceItems(Set<TestResourceComparisonInfo> set) {
+        return set.stream().filter(i -> i.scope == MATCHING_RESOURCE).collect(
+                Collectors.toSet());
     }
 
     private static boolean hasRestrictedToClassScope(Set<TestResourceComparisonInfo> existing) {
@@ -818,12 +848,10 @@ public class TestResourceManager implements Closeable {
 
         @Override
         public TestResourceScope scope(AnnotationInstance annotation) {
-            TestResourceScope scope = RESTRICTED_TO_CLASS;
-            AnnotationValue restrict = annotation.value("restrictToAnnotatedClass");
+            TestResourceScope scope = MATCHING_RESOURCE;
+            AnnotationValue restrict = annotation.value("scope");
             if (restrict != null) {
-                if (!restrict.asBoolean()) {
-                    scope = GLOBAL;
-                }
+                scope = TestResourceScope.valueOf(restrict.asEnum());
             }
             return scope;
         }

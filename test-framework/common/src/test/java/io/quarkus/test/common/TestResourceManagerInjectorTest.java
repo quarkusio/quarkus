@@ -29,7 +29,7 @@ public class TestResourceManagerInjectorTest {
         Assertions.assertEquals("dummy", foo.dummy.value);
     }
 
-    @WithTestResource(value = UsingTestInjectorLifecycleManager.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = UsingTestInjectorLifecycleManager.class, scope = TestResourceScope.GLOBAL)
     public static class UsingInjectorTest {
     }
 

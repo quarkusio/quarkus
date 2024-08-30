@@ -28,6 +28,7 @@ import org.mockito.quality.Strictness;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.quarkus.test.common.TestResourceScope;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -205,7 +206,8 @@ class QuarkusTestProfileAwareClassOrdererTest {
             Class<? extends QuarkusTestResourceLifecycleManager> managerClass, boolean restrictToAnnotatedClass) {
         WithTestResource withResourceMock = Mockito.mock(WithTestResource.class, withSettings().strictness(Strictness.LENIENT));
         doReturn(managerClass).when(withResourceMock).value();
-        when(withResourceMock.restrictToAnnotatedClass()).thenReturn(restrictToAnnotatedClass);
+        when(withResourceMock.scope()).thenReturn(
+                restrictToAnnotatedClass ? TestResourceScope.RESTRICTED_TO_CLASS : TestResourceScope.MATCHING_RESOURCE);
         when(mock.findRepeatableAnnotations(WithTestResource.class)).thenReturn(List.of(withResourceMock));
     }
 
@@ -223,7 +225,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
 
     // this single made-up test class needs an actual annotation since the orderer will have to do the meta-check directly
     // because ClassDescriptor does not offer any details whether an annotation is directly annotated or meta-annotated
-    @WithTestResource(value = Manager3.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = Manager3.class, scope = TestResourceScope.GLOBAL)
     private static class Test02 {
     }
 

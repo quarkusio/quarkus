@@ -89,4 +89,23 @@ public class GrafanaClient {
                 });
         return ref.get();
     }
+
+    public TempoResult traces(String service, int limit, int spss) {
+        AtomicReference<TempoResult> ref = new AtomicReference<>();
+        String path = "/api/datasources/proxy/uid/tempo/api/search?q=%7Bresource.service.name%3D%22"
+                + service + "%22%7D&limit=" + limit + "&spss=" + spss;
+        handle(
+                path,
+                HttpRequest.Builder::GET,
+                HttpResponse.BodyHandlers.ofString(),
+                (r, b) -> {
+                    try {
+                        TempoResult result = MAPPER.readValue(b, TempoResult.class);
+                        ref.set(result);
+                    } catch (JsonProcessingException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+        return ref.get();
+    }
 }

@@ -28,6 +28,9 @@ public abstract class LgtmTestBase {
         Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
                 () -> client.query("xvalue_X"),
                 result -> !result.data.result.isEmpty());
+        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+                () -> client.traces("quarkus-integration-test-observability-lgtm", 20, 3),
+                result -> !result.traces.isEmpty());
     }
 
 }

@@ -318,7 +318,7 @@ public class JacksonSerializerFactory {
 
         if (primitiveMethodName != null) {
             MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
-                    typeName);
+                    fieldSpecs.writtenType());
             bytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
             return;
         }
@@ -372,7 +372,7 @@ public class JacksonSerializerFactory {
 
     private String writeMethodForPrimitiveFields(String typeName) {
         return switch (typeName) {
-            case "java.lang.String" -> "writeString";
+            case "java.lang.String", "char", "java.lang.Character" -> "writeString";
             case "short", "java.lang.Short", "int", "java.lang.Integer", "long", "java.lang.Long", "float",
                     "java.lang.Float", "double", "java.lang.Double" ->
                 "writeNumber";
@@ -590,8 +590,37 @@ public class JacksonSerializerFactory {
         }
 
         ResultHandle toValueReaderHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
-            return methodInfo != null ? bytecode.invokeVirtualMethod(MethodDescriptor.of(methodInfo), valueHandle)
-                    : bytecode.readInstanceField(FieldDescriptor.of(fieldInfo), valueHandle);
+            ResultHandle handle = accessorHandle(bytecode, valueHandle);
+
+            handle = switch (fieldType.name().toString()) {
+                case "char", "java.lang.Character" -> bytecode.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle);
+                default -> handle;
+            };
+
+            return handle;
+        }
+
+        private ResultHandle accessorHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
+            if (methodInfo != null) {
+                if (methodInfo.declaringClass().isInterface()) {
+                    return bytecode.invokeInterfaceMethod(MethodDescriptor.of(methodInfo), valueHandle);
+                }
+                return bytecode.invokeVirtualMethod(MethodDescriptor.of(methodInfo), valueHandle);
+            }
+            return bytecode.readInstanceField(FieldDescriptor.of(fieldInfo), valueHandle);
+        }
+
+        String writtenType() {
+            return switch (fieldType.name().toString()) {
+                case "char", "java.lang.Character" -> "java.lang.String";
+                case "java.lang.Integer" -> "int";
+                case "java.lang.Short" -> "short";
+                case "java.lang.Long" -> "long";
+                case "java.lang.Double" -> "double";
+                case "java.lang.Float" -> "float";
+                default -> fieldType.name().toString();
+            };
         }
 
         private String[] rolesAllowed() {

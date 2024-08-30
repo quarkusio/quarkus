@@ -402,12 +402,12 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureBaseUrl(QuarkusRestClientBuilder builder) {
-        Optional<String> propertyOptional = oneOf(clientConfigByClassName().uri(),
-                clientConfigByConfigKey().uri());
+        Optional<String> propertyOptional = oneOf(clientConfigByClassName().uriReload(),
+                clientConfigByConfigKey().uriReload());
 
         if (propertyOptional.isEmpty()) {
-            propertyOptional = oneOf(clientConfigByClassName().url(),
-                    clientConfigByConfigKey().url());
+            propertyOptional = oneOf(clientConfigByClassName().urlReload(),
+                    clientConfigByConfigKey().urlReload());
         }
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {

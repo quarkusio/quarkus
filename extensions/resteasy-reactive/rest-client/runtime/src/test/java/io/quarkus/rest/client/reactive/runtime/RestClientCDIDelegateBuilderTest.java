@@ -110,7 +110,7 @@ public class RestClientCDIDelegateBuilderTest {
 
         // then
 
-        verify(restClientBuilderMock).baseUri(URI.create("http://localhost"));
+        verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
         verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         verify(restClientBuilderMock).property(MULTIPART_ENCODER_MODE, HTML5);

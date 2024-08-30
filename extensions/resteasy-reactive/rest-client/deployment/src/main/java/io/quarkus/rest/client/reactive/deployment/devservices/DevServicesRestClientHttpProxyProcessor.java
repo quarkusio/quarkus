@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.UncheckedException;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -31,6 +32,7 @@ import io.quarkus.rest.client.reactive.spi.DevServicesRestClientProxyProvider;
 import io.quarkus.rest.client.reactive.spi.RestClientHttpProxyBuildItem;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig.RestClientBuildConfig;
+import io.smallrye.config.SmallRyeConfig;
 
 @BuildSteps(onlyIfNot = IsNormal.class)
 public class DevServicesRestClientHttpProxyProcessor {
@@ -61,6 +63,7 @@ public class DevServicesRestClientHttpProxyProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Map<String, RestClientBuildConfig> configs = restClientsBuildTimeConfig.clients();
         for (var configEntry : configs.entrySet()) {
             if (!configEntry.getValue().enableLocalProxy()) {
@@ -68,7 +71,9 @@ public class DevServicesRestClientHttpProxyProcessor {
                 break;
             }
 
-            String configKey = sanitizeKey(configEntry.getKey());
+            String configKey = configEntry.getKey();
+            Map<String, String> restClientValues = config.getValues("quarkus.rest-client." + "\"" + configKey + "\"",
+                    String.class, String.class);
 
             RegisteredRestClientBuildItem matchingBI = null;
             // check if the configKey matches one of the @RegisterRestClient values
@@ -80,8 +85,8 @@ public class DevServicesRestClientHttpProxyProcessor {
             }
             if (matchingBI != null) {
                 Optional<String> baseUri = oneOf(
-                        Optional.of(configEntry.getValue().properties().get("url")),
-                        Optional.of(configEntry.getValue().properties().get("url")),
+                        Optional.ofNullable(restClientValues.get("uri")),
+                        Optional.ofNullable(restClientValues.get("url")),
                         matchingBI.getDefaultBaseUri());
 
                 if (baseUri.isEmpty()) {
@@ -99,8 +104,8 @@ public class DevServicesRestClientHttpProxyProcessor {
                     break;
                 }
                 Optional<String> baseUri = oneOf(
-                        Optional.of(configEntry.getValue().properties().get("url")),
-                        Optional.of(configEntry.getValue().properties().get("url")));
+                        Optional.ofNullable(restClientValues.get("uri")),
+                        Optional.ofNullable(restClientValues.get("url")));
                 if (baseUri.isEmpty()) {
                     log.debug("Unable to determine uri or url for config key '" + configKey + "'");
                     break;
@@ -109,13 +114,6 @@ public class DevServicesRestClientHttpProxyProcessor {
                         configEntry.getValue().localProxyProvider()));
             }
         }
-    }
-
-    private String sanitizeKey(String key) {
-        if (key.startsWith("\"") && key.endsWith("\"")) {
-            return key.substring(1, key.length() - 1);
-        }
-        return key;
     }
 
     @BuildStep

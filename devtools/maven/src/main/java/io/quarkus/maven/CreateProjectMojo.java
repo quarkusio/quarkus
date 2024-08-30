@@ -63,7 +63,7 @@ public class CreateProjectMojo extends AbstractMojo {
     private static final String DEFAULT_GROUP_ID = "org.acme";
     private static final String DEFAULT_ARTIFACT_ID = "code-with-quarkus";
     private static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
-    private static final String DEFAULT_EXTENSIONS = "resteasy";
+    private static final String DEFAULT_EXTENSIONS = "rest";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;

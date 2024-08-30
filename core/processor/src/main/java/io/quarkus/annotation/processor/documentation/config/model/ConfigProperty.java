@@ -1,8 +1,10 @@
 package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.annotation.processor.documentation.config.util.Types;
@@ -10,8 +12,7 @@ import io.quarkus.annotation.processor.documentation.config.util.Types;
 public final class ConfigProperty extends AbstractConfigItem {
 
     private final ConfigPhase phase;
-    private final List<String> additionalPaths;
-    private final String environmentVariable;
+    private final List<PropertyPath> additionalPaths;
 
     private final String typeDescription;
     private final boolean map;
@@ -28,16 +29,16 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     private final String javadocSiteLink;
 
-    public ConfigProperty(ConfigPhase phase, String sourceClass, String sourceName, String path, List<String> additionalPaths,
-            String environmentVariable, String type, String typeDescription, boolean map, boolean list, boolean optional,
+    public ConfigProperty(ConfigPhase phase, String sourceClass, String sourceName, PropertyPath path,
+            List<PropertyPath> additionalPaths, String type, String typeDescription, boolean map, boolean list,
+            boolean optional,
             String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
             String defaultValue, String javadocSiteLink,
             boolean deprecated) {
         super(sourceClass, sourceName, path, type, deprecated);
         this.phase = phase;
-        this.additionalPaths = additionalPaths != null ? additionalPaths : List.of();
-        this.environmentVariable = environmentVariable;
+        this.additionalPaths = additionalPaths != null ? Collections.unmodifiableList(additionalPaths) : List.of();
         this.typeDescription = typeDescription;
         this.map = map;
         this.list = list;
@@ -56,12 +57,18 @@ public final class ConfigProperty extends AbstractConfigItem {
         return phase;
     }
 
-    public List<String> getAdditionalPaths() {
+    public PropertyPath getPath() {
+        return (PropertyPath) super.getPath();
+    }
+
+    public List<PropertyPath> getAdditionalPaths() {
         return additionalPaths;
     }
 
+    @Deprecated
+    @JsonIgnore
     public String getEnvironmentVariable() {
-        return environmentVariable;
+        return getPath().environmentVariable();
     }
 
     public String getTypeDescription() {
@@ -149,5 +156,13 @@ public final class ConfigProperty extends AbstractConfigItem {
     @Override
     protected void walk(ConfigItemVisitor visitor) {
         visitor.visit(this);
+    }
+
+    public record PropertyPath(String property, String environmentVariable) implements Path {
+
+        @Override
+        public String toString() {
+            return property();
+        }
     }
 }

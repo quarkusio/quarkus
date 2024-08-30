@@ -154,17 +154,17 @@ public class GenerateAsciidocMojo extends AbstractMojo {
 
             for (ConfigSection generatedConfigSection : extensionConfigSectionsEntry.getValue()) {
                 Path configSectionAdocPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
-                        extension.artifactId(), cleanSectionPath(generatedConfigSection.getPath())));
+                        extension.artifactId(), cleanSectionPath(generatedConfigSection.getPath().property())));
                 String summaryTableId = asciidocFormatter
-                        .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath());
+                        .toAnchor(extension.artifactId() + "_" + generatedConfigSection.getPath().property());
 
                 try {
                     Files.writeString(configSectionAdocPath,
                             generateConfigReference(quteEngine, summaryTableId, extension, generatedConfigSection,
-                                    "_" + generatedConfigSection.getPath(), false));
+                                    "_" + generatedConfigSection.getPath().property(), false));
                 } catch (Exception e) {
                     throw new MojoExecutionException(
-                            "Unable to render config section for section: " + generatedConfigSection.getPath()
+                            "Unable to render config section for section: " + generatedConfigSection.getPath().property()
                                     + " in extension: " + extension,
                             e);
                 }
@@ -275,7 +275,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                                         .artifactId() +
                                 // the additional suffix
                                         ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
-                                        "_" + ((ConfigProperty) ctx.getBase()).getPath()))
+                                        "_" + ((ConfigProperty) ctx.getBase()).getPath().property()))
                         .build())
                 // we need a different anchor for sections as otherwise we can have a conflict
                 // (typically when you have an `enabled` property with parent name just under the section level)
@@ -288,7 +288,7 @@ public class GenerateAsciidocMojo extends AbstractMojo {
                                         .artifactId() +
                                 // the additional suffix
                                         ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
-                                        "_section_" + ((ConfigSection) ctx.getBase()).getPath()))
+                                        "_section_" + ((ConfigSection) ctx.getBase()).getPath().property()))
                         .build())
                 .addValueResolver(ValueResolver.builder()
                         .applyToBaseClass(ConfigProperty.class)

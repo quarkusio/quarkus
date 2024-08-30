@@ -1,7 +1,7 @@
-a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##`{configProperty.path}`##
+a|{#if configProperty.phase.fixedAtBuildTime}icon:lock[title=Fixed at build time]{/if} [[{configProperty.toAnchor(extension, additionalAnchorPrefix)}]] [.property-path]##`{configProperty.path.property}`##
 {#for additionalPath in configProperty.additionalPaths}
 
-`{additionalPath}`
+`{additionalPath.property}`
 {/for}
 
 [.description]

@@ -22,8 +22,10 @@ import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedTy
 import io.quarkus.annotation.processor.documentation.config.model.ConfigItemCollection;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty;
+import io.quarkus.annotation.processor.documentation.config.model.ConfigProperty.PropertyPath;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigRoot;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigSection;
+import io.quarkus.annotation.processor.documentation.config.model.ConfigSection.SectionPath;
 import io.quarkus.annotation.processor.documentation.config.model.EnumAcceptedValues;
 import io.quarkus.annotation.processor.documentation.config.model.EnumAcceptedValues.EnumAcceptedValue;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
@@ -88,7 +90,7 @@ public class ConfigResolver {
 
     private void resolveProperty(ConfigRoot configRoot, Map<String, ConfigSection> existingRootConfigSections,
             ConfigPhase phase, ResolutionContext context, DiscoveryConfigProperty discoveryConfigProperty) {
-        String propertyPath = appendPath(context.getPath(), discoveryConfigProperty.getPath());
+        String path = appendPath(context.getPath(), discoveryConfigProperty.getPath());
 
         List<String> additionalPaths = context.getAdditionalPaths().stream()
                 .map(p -> appendPath(p, discoveryConfigProperty.getPath()))
@@ -100,13 +102,13 @@ public class ConfigResolver {
         if (configCollector.isResolvedConfigGroup(typeQualifiedName)) {
             DiscoveryConfigGroup discoveryConfigGroup = configCollector.getResolvedConfigGroup(typeQualifiedName);
 
-            String potentiallyMappedPath = propertyPath;
+            String potentiallyMappedPath = path;
             if (discoveryConfigProperty.getType().isMap()) {
                 if (discoveryConfigProperty.isUnnamedMapKey()) {
                     ListIterator<String> additionalPathsIterator = additionalPaths.listIterator();
 
                     additionalPathsIterator
-                            .add(propertyPath + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
+                            .add(path + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
                     while (additionalPathsIterator.hasNext()) {
                         additionalPathsIterator.add(additionalPathsIterator.next()
                                 + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
@@ -125,16 +127,16 @@ public class ConfigResolver {
             boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey() || discoveryConfigProperty.isUnnamedMapKey();
 
             if (discoveryConfigProperty.isSection()) {
-                ConfigSection configSection = existingRootConfigSections.get(propertyPath);
+                ConfigSection configSection = existingRootConfigSections.get(path);
 
                 if (configSection != null) {
                     configSection.appendState(discoveryConfigProperty.isSectionGenerated(), deprecated);
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceClass(),
-                            discoveryConfigProperty.getSourceName(), propertyPath, typeQualifiedName,
+                            discoveryConfigProperty.getSourceName(), new SectionPath(path), typeQualifiedName,
                             context.getSectionLevel(), discoveryConfigProperty.isSectionGenerated(), deprecated);
                     context.getItemCollection().addItem(configSection);
-                    existingRootConfigSections.put(propertyPath, configSection);
+                    existingRootConfigSections.put(path, configSection);
                 }
 
                 configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
@@ -172,7 +174,7 @@ public class ConfigResolver {
                 enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
             }
 
-            String potentiallyMappedPath = propertyPath;
+            String potentiallyMappedPath = path;
             boolean optional = discoveryConfigProperty.getType().isOptional();
 
             if (discoveryConfigProperty.getType().isMap()) {
@@ -189,11 +191,17 @@ public class ConfigResolver {
                 typeQualifiedName = discoveryConfigProperty.getType().wrapperType().toString();
             }
 
+            PropertyPath propertyPath = new PropertyPath(potentiallyMappedPath,
+                    ConfigNamingUtil.toEnvVarName(potentiallyMappedPath));
+            List<PropertyPath> additionalPropertyPaths = additionalPaths.stream()
+                    .map(ap -> new PropertyPath(ap, ConfigNamingUtil.toEnvVarName(ap)))
+                    .toList();
+
             // this is a standard property
             ConfigProperty configProperty = new ConfigProperty(phase,
                     discoveryConfigProperty.getSourceClass(),
-                    discoveryConfigProperty.getSourceName(), potentiallyMappedPath, additionalPaths,
-                    ConfigNamingUtil.toEnvVarName(potentiallyMappedPath), typeQualifiedName, typeSimplifiedName,
+                    discoveryConfigProperty.getSourceName(), propertyPath, additionalPropertyPaths,
+                    typeQualifiedName, typeSimplifiedName,
                     discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),
                     optional, discoveryConfigProperty.getMapKey(),
                     discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),

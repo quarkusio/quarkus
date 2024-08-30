@@ -11,7 +11,7 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final int level;
 
-    public ConfigSection(String sourceClass, String sourceName, String path, String type, int level,
+    public ConfigSection(String sourceClass, String sourceName, SectionPath path, String type, int level,
             boolean generated, boolean deprecated) {
         super(sourceClass, sourceName, path, type, deprecated);
         this.generated = generated;
@@ -35,6 +35,10 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
         }
 
         return 0;
+    }
+
+    public SectionPath getPath() {
+        return (SectionPath) super.getPath();
     }
 
     public boolean isSection() {
@@ -71,7 +75,7 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
 
         for (AbstractConfigItem otherItem : other.getItems()) {
             if (otherItem instanceof ConfigSection otherConfigSection) {
-                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath());
+                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath().property());
                 if (similarConfigSection == null) {
                     this.items.add(otherConfigSection);
                 } else {
@@ -112,6 +116,14 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
         visitor.visit(this);
         for (AbstractConfigItem item : items) {
             item.walk(visitor);
+        }
+    }
+
+    public record SectionPath(String property) implements Path {
+
+        @Override
+        public String toString() {
+            return property();
         }
     }
 }

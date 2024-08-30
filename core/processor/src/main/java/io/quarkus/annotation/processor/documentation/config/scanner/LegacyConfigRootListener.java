@@ -129,12 +129,6 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
                 sourceName, SourceType.FIELD, resolvedType);
 
-        AnnotationMirror deprecatedAnnotation = fieldAnnotations.get(Deprecated.class.getName());
-        if (deprecatedAnnotation != null) {
-            builder.deprecated();
-            // TODO add more information about the deprecated forRemoval/since/comment
-        }
-
         AnnotationMirror configItemAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_ITEM);
         if (configItemAnnotation != null) {
             Map<String, Object> configItemValues = utils.element().getAnnotationValues(configItemAnnotation);

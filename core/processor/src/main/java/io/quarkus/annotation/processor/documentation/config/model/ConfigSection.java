@@ -12,8 +12,8 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     private final int level;
 
     public ConfigSection(String sourceClass, String sourceName, SourceType sourceType, SectionPath path, String type, int level,
-            boolean generated, boolean deprecated) {
-        super(sourceClass, sourceName, sourceType, path, type, deprecated);
+            boolean generated, Deprecation deprecation) {
+        super(sourceClass, sourceName, sourceType, path, type, deprecation);
         this.generated = generated;
         this.level = level;
     }
@@ -58,13 +58,13 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
      * It can happen when for instance a path is both used at a given level and in an unnamed map.
      * For instance in: HibernateOrmConfig.
      */
-    public void appendState(boolean generated, boolean deprecated) {
+    public void appendState(boolean generated, Deprecation deprecation) {
         // we generate the section if at least one of the sections should be generated
         // (the output will contain all the items of the section)
         this.generated = this.generated || generated;
         // we unmark the section as deprecated if one of the merged section is not deprecated
         // as we will have to generate the section
-        this.deprecated = this.deprecated && deprecated;
+        this.deprecation = this.deprecation != null && deprecation != null ? this.deprecation : null;
     }
 
     /**
@@ -94,7 +94,7 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     @Override
     public boolean hasDurationType() {
         for (AbstractConfigItem item : items) {
-            if (item.hasDurationType() && !item.deprecated) {
+            if (item.hasDurationType() && !item.isDeprecated()) {
                 return true;
             }
         }
@@ -104,7 +104,7 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     @Override
     public boolean hasMemorySizeType() {
         for (AbstractConfigItem item : items) {
-            if (item.hasMemorySizeType() && !item.deprecated) {
+            if (item.hasMemorySizeType() && !item.isDeprecated()) {
                 return true;
             }
         }

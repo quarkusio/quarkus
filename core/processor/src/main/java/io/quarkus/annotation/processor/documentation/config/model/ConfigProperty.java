@@ -35,8 +35,8 @@ public final class ConfigProperty extends AbstractConfigItem {
             String mapKey, boolean unnamedMapKey, boolean withinMap, boolean converted, @JsonProperty("enum") boolean isEnum,
             EnumAcceptedValues enumAcceptedValues,
             String defaultValue, String javadocSiteLink,
-            boolean deprecated) {
-        super(sourceClass, sourceName, sourceType, path, type, deprecated);
+            Deprecation deprecation) {
+        super(sourceClass, sourceName, sourceType, path, type, deprecation);
         this.phase = phase;
         this.additionalPaths = additionalPaths != null ? Collections.unmodifiableList(additionalPaths) : List.of();
         this.typeDescription = typeDescription;

@@ -47,7 +47,8 @@ public class AbstractJavadocConfigListener implements ConfigAnnotationListener {
             configCollector.addJavadocElement(
                     enumTypeElement.getQualifiedName().toString() + Markers.DOT + enumElement.getSimpleName()
                             .toString(),
-                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc.get()));
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), parsedJavadoc.deprecated(),
+                            rawJavadoc.get()));
         }
     }
 }

@@ -106,7 +106,7 @@ public class ConfigRoot implements ConfigItemCollection {
 
     public boolean hasDurationType() {
         for (AbstractConfigItem item : items) {
-            if (item.hasDurationType() && !item.deprecated) {
+            if (item.hasDurationType() && !item.isDeprecated()) {
                 return true;
             }
         }
@@ -115,7 +115,7 @@ public class ConfigRoot implements ConfigItemCollection {
 
     public boolean hasMemorySizeType() {
         for (AbstractConfigItem item : items) {
-            if (item.hasMemorySizeType() && !item.deprecated) {
+            if (item.hasMemorySizeType() && !item.isDeprecated()) {
                 return true;
             }
         }

@@ -14,16 +14,16 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     protected final String type;
 
-    protected boolean deprecated;
+    protected Deprecation deprecation;
 
     public AbstractConfigItem(String sourceClass, String sourceName, SourceType sourceType, Path path, String type,
-            boolean deprecated) {
+            Deprecation deprecation) {
         this.sourceClass = sourceClass;
         this.sourceName = sourceName;
         this.sourceType = sourceType;
         this.path = path;
         this.type = type;
-        this.deprecated = deprecated;
+        this.deprecation = deprecation;
     }
 
     public String getSourceClass() {
@@ -52,8 +52,13 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
         return type;
     }
 
+    @JsonIgnore
     public boolean isDeprecated() {
-        return deprecated;
+        return deprecation != null;
+    }
+
+    public Deprecation getDeprecation() {
+        return deprecation;
     }
 
     @JsonIgnore

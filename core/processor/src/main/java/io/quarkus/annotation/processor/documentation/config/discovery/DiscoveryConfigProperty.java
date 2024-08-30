@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor.documentation.config.discovery;
 
+import io.quarkus.annotation.processor.documentation.config.model.Deprecation;
 import io.quarkus.annotation.processor.documentation.config.model.SourceType;
 import io.quarkus.annotation.processor.documentation.config.util.TypeUtil;
 import io.quarkus.annotation.processor.util.Strings;
@@ -12,7 +13,7 @@ public class DiscoveryConfigProperty {
     private final SourceType sourceType;
     private final String defaultValue;
     private final String defaultValueForDoc;
-    private final boolean deprecated;
+    private final Deprecation deprecation;
     private final String mapKey;
     private final boolean unnamedMapKey;
     private final ResolvedType type;
@@ -23,7 +24,7 @@ public class DiscoveryConfigProperty {
 
     public DiscoveryConfigProperty(String path, String sourceClass, String sourceName, SourceType sourceType,
             String defaultValue,
-            String defaultValueForDoc, boolean deprecated, String mapKey, boolean unnamedMapKey,
+            String defaultValueForDoc, Deprecation deprecation, String mapKey, boolean unnamedMapKey,
             ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
             boolean section, boolean sectionGenerated) {
         this.path = path;
@@ -32,7 +33,7 @@ public class DiscoveryConfigProperty {
         this.sourceType = sourceType;
         this.defaultValue = defaultValue;
         this.defaultValueForDoc = defaultValueForDoc;
-        this.deprecated = deprecated;
+        this.deprecation = deprecation;
         this.mapKey = mapKey;
         this.unnamedMapKey = unnamedMapKey;
         this.type = type;
@@ -66,8 +67,12 @@ public class DiscoveryConfigProperty {
         return defaultValueForDoc;
     }
 
+    public Deprecation getDeprecation() {
+        return deprecation;
+    }
+
     public boolean isDeprecated() {
-        return deprecated;
+        return deprecation != null;
     }
 
     public String getMapKey() {
@@ -114,7 +119,7 @@ public class DiscoveryConfigProperty {
         if (defaultValueForDoc != null) {
             sb.append(prefix + "defaultValueForDoc = " + defaultValueForDoc + "\n");
         }
-        if (deprecated) {
+        if (deprecation != null) {
             sb.append(prefix + "deprecated = true\n");
         }
         if (mapKey != null) {
@@ -143,7 +148,7 @@ public class DiscoveryConfigProperty {
         private final ResolvedType type;
         private String defaultValue;
         private String defaultValueForDoc;
-        private boolean deprecated = false;
+        private Deprecation deprecation;
         private String mapKey;
         private boolean unnamedMapKey = false;
         private boolean converted = false;
@@ -173,8 +178,8 @@ public class DiscoveryConfigProperty {
             return this;
         }
 
-        public Builder deprecated() {
-            this.deprecated = true;
+        public Builder deprecated(String since, String replacement, String reason) {
+            this.deprecation = new Deprecation(since, replacement, reason);
             return this;
         }
 
@@ -213,7 +218,7 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceClass, sourceName, sourceType, defaultValue, defaultValueForDoc,
-                    deprecated, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
+                    deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
         }
     }
 }

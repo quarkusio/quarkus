@@ -56,13 +56,15 @@ public class JavadocLegacyConfigRootListener extends AbstractJavadocConfigListen
 
             configCollector.addJavadocElement(
                     clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName().toString(),
-                    new JavadocElement(parsedJavadocSection.title(), null, rawJavadoc.get()));
+                    new JavadocElement(parsedJavadocSection.title(), null, parsedJavadocSection.deprecated(),
+                            rawJavadoc.get()));
         } else {
             ParsedJavadoc parsedJavadoc = JavadocToAsciidocTransformer.INSTANCE.parseConfigItemJavadoc(rawJavadoc.get());
 
             configCollector.addJavadocElement(
                     clazz.getQualifiedName().toString() + Markers.DOT + field.getSimpleName().toString(),
-                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), rawJavadoc.get()));
+                    new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), parsedJavadoc.deprecated(),
+                            rawJavadoc.get()));
         }
     }
 }

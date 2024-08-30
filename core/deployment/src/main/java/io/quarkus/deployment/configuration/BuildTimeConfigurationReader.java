@@ -664,6 +664,10 @@ public final class BuildTimeConfigurationReader {
                 }
             }
 
+            // Mappings may map the same property between build and runtime. In that case runtime wins.
+            allBuildTimeValues.keySet().removeAll(runTimeValues.keySet());
+            buildTimeRunTimeValues.keySet().removeAll(runTimeValues.keySet());
+
             Set<String> relocatesOrFallbacks = new HashSet<>();
             for (String unknownBuildProperty : unknownBuildProperties) {
                 ConfigValue configValue = config.getConfigValue(unknownBuildProperty);

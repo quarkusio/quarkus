@@ -11,9 +11,9 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final int level;
 
-    public ConfigSection(String sourceClass, String sourceName, SectionPath path, String type, int level,
+    public ConfigSection(String sourceClass, String sourceName, SourceType sourceType, SectionPath path, String type, int level,
             boolean generated, boolean deprecated) {
-        super(sourceClass, sourceName, path, type, deprecated);
+        super(sourceClass, sourceName, sourceType, path, type, deprecated);
         this.generated = generated;
         this.level = level;
     }

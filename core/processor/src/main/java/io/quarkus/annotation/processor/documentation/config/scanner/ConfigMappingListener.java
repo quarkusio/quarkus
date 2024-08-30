@@ -15,6 +15,7 @@ import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryC
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryRootElement;
 import io.quarkus.annotation.processor.documentation.config.discovery.ResolvedType;
 import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
+import io.quarkus.annotation.processor.documentation.config.model.SourceType;
 import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
 import io.quarkus.annotation.processor.documentation.config.util.Markers;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
@@ -126,7 +127,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
 
         String sourceName = method.getSimpleName().toString();
         DiscoveryConfigProperty.Builder builder = DiscoveryConfigProperty.builder(clazz.getQualifiedName().toString(),
-                sourceName, resolvedType);
+                sourceName, SourceType.METHOD, resolvedType);
 
         AnnotationMirror deprecatedAnnotation = methodAnnotations.get(Deprecated.class.getName());
         if (deprecatedAnnotation != null) {

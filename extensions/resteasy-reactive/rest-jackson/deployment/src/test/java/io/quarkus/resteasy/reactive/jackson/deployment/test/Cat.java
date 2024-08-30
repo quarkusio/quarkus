@@ -14,4 +14,8 @@ public class Cat extends AbstractNamedPet {
     public void setPrivateAge(int privateAge) {
         this.privateAge = privateAge;
     }
+
+    public char getInitial() {
+        return getPublicName().charAt(0);
+    }
 }

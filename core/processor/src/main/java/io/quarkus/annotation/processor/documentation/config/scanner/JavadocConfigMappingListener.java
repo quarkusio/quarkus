@@ -64,7 +64,7 @@ public class JavadocConfigMappingListener extends AbstractJavadocConfigListener 
             configCollector.addJavadocElement(
                     clazz.getQualifiedName().toString() + Markers.DOT + method.getSimpleName().toString(),
                     new JavadocElement(parsedJavadoc.description(), parsedJavadoc.since(), parsedJavadoc.deprecated(),
-                            rawJavadoc.get()));
+                            parsedJavadoc.originalDescription()));
         }
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.maven.config.doc;
+package io.quarkus.maven.config.doc.generator;
 
 import java.text.Normalizer;
 import java.time.Duration;
@@ -13,20 +13,18 @@ import io.quarkus.annotation.processor.documentation.config.model.Extension;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements.JavadocElement;
 import io.quarkus.annotation.processor.documentation.config.util.Types;
 
-final class AsciidocFormatter {
+abstract class AbstractFormatter implements Formatter {
 
-    private static final String TOOLTIP_MACRO = "tooltip:%s[%s]";
-    private static final String MORE_INFO_ABOUT_TYPE_FORMAT = "link:#%s[icon:question-circle[title=More information about the %s format]]";
+    protected final JavadocRepository javadocRepository;
+    protected final boolean enableEnumTooltips;
 
-    private final JavadocRepository javadocRepository;
-    private final boolean enableEnumTooltips;
-
-    AsciidocFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+    AbstractFormatter(JavadocRepository javadocRepository, boolean enableEnumTooltips) {
         this.javadocRepository = javadocRepository;
         this.enableEnumTooltips = enableEnumTooltips;
     }
 
-    boolean displayConfigRootDescription(ConfigRootKey configRootKey, int mapSize) {
+    @Override
+    public boolean displayConfigRootDescription(ConfigRootKey configRootKey, int mapSize) {
         if (mapSize <= 1) {
             return false;
         }
@@ -34,7 +32,8 @@ final class AsciidocFormatter {
         return configRootKey.description() != null;
     }
 
-    String formatDescription(ConfigProperty configProperty) {
+    @Override
+    public String formatDescription(ConfigProperty configProperty) {
         Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getSourceClass(),
                 configProperty.getSourceName());
 
@@ -42,7 +41,7 @@ final class AsciidocFormatter {
             return null;
         }
 
-        String description = javadocElement.get().description();
+        String description = javadoc(javadocElement.get());
         if (description == null || description.isBlank()) {
             return null;
         }
@@ -50,7 +49,8 @@ final class AsciidocFormatter {
         return description + "\n\n";
     }
 
-    String formatTypeDescription(ConfigProperty configProperty) {
+    @Override
+    public String formatTypeDescription(ConfigProperty configProperty) {
         String typeContent = "";
 
         if (configProperty.isEnum() && enableEnumTooltips) {
@@ -62,14 +62,13 @@ final class AsciidocFormatter {
                             return "`" + e.getValue().configValue() + "`";
                         }
 
-                        return String.format(TOOLTIP_MACRO, e.getValue().configValue(),
-                                cleanTooltipContent(javadocElement.get().description()));
+                        return tooltip(e.getValue().configValue(), javadoc(javadocElement.get()));
                     })
                     .collect(Collectors.joining(", "));
         } else {
             typeContent = configProperty.getTypeDescription();
             if (configProperty.getJavadocSiteLink() != null) {
-                typeContent = String.format("link:%s[%s]", configProperty.getJavadocSiteLink(), typeContent);
+                typeContent = link(configProperty.getJavadocSiteLink(), typeContent);
             }
         }
         if (configProperty.isList()) {
@@ -77,17 +76,16 @@ final class AsciidocFormatter {
         }
 
         if (Duration.class.getName().equals(configProperty.getType())) {
-            typeContent += " " + String.format(MORE_INFO_ABOUT_TYPE_FORMAT,
-                    "duration-note-anchor-{summaryTableId}", Duration.class.getSimpleName());
+            typeContent += " " + moreInformationAboutType("duration-note-anchor", Duration.class.getSimpleName());
         } else if (Types.MEMORY_SIZE_TYPE.equals(configProperty.getType())) {
-            typeContent += " " + String.format(MORE_INFO_ABOUT_TYPE_FORMAT,
-                    "memory-size-note-anchor-{summaryTableId}", "MemorySize");
+            typeContent += " " + moreInformationAboutType("memory-size-note-anchor", "MemorySize");
         }
 
         return typeContent;
     }
 
-    String formatDefaultValue(ConfigProperty configProperty) {
+    @Override
+    public String formatDefaultValue(ConfigProperty configProperty) {
         String defaultValue = configProperty.getDefaultValue();
 
         if (defaultValue == null) {
@@ -105,7 +103,7 @@ final class AsciidocFormatter {
                         enumConstant.get());
 
                 if (javadocElement.isPresent()) {
-                    return String.format(TOOLTIP_MACRO, defaultValue, cleanTooltipContent(javadocElement.get().description()));
+                    return tooltip(defaultValue, javadocElement.get().description());
                 }
             }
         }
@@ -113,7 +111,8 @@ final class AsciidocFormatter {
         return "`" + defaultValue + "`";
     }
 
-    int adjustedLevel(ConfigSection configSection, boolean multiRoot) {
+    @Override
+    public int adjustedLevel(ConfigSection configSection, boolean multiRoot) {
         if (multiRoot) {
             return configSection.getLevel() + 1;
         }
@@ -121,7 +120,8 @@ final class AsciidocFormatter {
         return configSection.getLevel();
     }
 
-    String escapeCellContent(String value) {
+    @Override
+    public String escapeCellContent(String value) {
         if (value == null) {
             return null;
         }
@@ -129,7 +129,8 @@ final class AsciidocFormatter {
         return value.replace("|", "\\|");
     }
 
-    String toAnchor(String value) {
+    @Override
+    public String toAnchor(String value) {
         // remove accents
         value = Normalizer.normalize(value, Normalizer.Form.NFKC)
                 .replaceAll("[àáâãäåāąă]", "a")
@@ -185,7 +186,8 @@ final class AsciidocFormatter {
         return value.toLowerCase();
     }
 
-    String formatSectionTitle(ConfigSection configSection) {
+    @Override
+    public String formatSectionTitle(ConfigSection configSection) {
         Optional<JavadocElement> javadocElement = javadocRepository.getElement(configSection.getSourceClass(),
                 configSection.getSourceName());
 
@@ -203,7 +205,8 @@ final class AsciidocFormatter {
         return trimFinalDot(javadoc);
     }
 
-    String formatName(Extension extension) {
+    @Override
+    public String formatName(Extension extension) {
         if (extension.name() == null) {
             return extension.artifactId();
         }
@@ -226,14 +229,11 @@ final class AsciidocFormatter {
         return javadoc.substring(0, dotIndex);
     }
 
-    /**
-     * Note that this is extremely brittle. Apparently, colons breaks the tooltips but if escaped with \, the \ appears in the
-     * output.
-     * <p>
-     * We should probably have some warnings/errors as to what is accepted in enum Javadoc.
-     */
-    private String cleanTooltipContent(String tooltipContent) {
-        return tooltipContent.replace("<p>", "").replace("</p>", "").replace("\n+\n", " ").replace("\n", " ")
-                .replace(":", "\\:").replace("[", "\\]").replace("]", "\\]");
-    }
+    protected abstract String javadoc(JavadocElement javadocElement);
+
+    protected abstract String moreInformationAboutType(String anchorRoot, String type);
+
+    protected abstract String link(String href, String description);
+
+    protected abstract String tooltip(String value, String javadocDescription);
 }

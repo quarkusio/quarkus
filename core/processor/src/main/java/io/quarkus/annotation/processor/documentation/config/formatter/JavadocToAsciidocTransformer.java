@@ -95,14 +95,17 @@ public final class JavadocToAsciidocTransformer {
         Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "));
 
         String description;
+        String originalDescription;
         JavadocFormat originalFormat;
 
         if (isAsciidoc(javadoc)) {
             description = handleEolInAsciidoc(javadoc);
             originalFormat = JavadocFormat.ASCIIDOC;
+            originalDescription = rawJavadoc;
         } else {
             description = htmlJavadocToAsciidoc(javadoc.getDescription());
             originalFormat = JavadocFormat.JAVADOC;
+            originalDescription = filterRawJavadoc(javadoc.getDescription());
         }
 
         Optional<String> since = javadoc.getBlockTags().stream()
@@ -121,7 +124,8 @@ public final class JavadocToAsciidocTransformer {
             description = null;
         }
 
-        return new ParsedJavadoc(description, since.orElse(null), deprecated.orElse(null), originalFormat);
+        return new ParsedJavadoc(description, since.orElse(null), deprecated.orElse(null), originalDescription,
+                originalFormat);
     }
 
     public ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
@@ -545,5 +549,56 @@ public final class JavadocToAsciidocTransformer {
             sb.append("++");
         }
         return sb;
+    }
+
+    /**
+     * This is not definitely not perfect but it can be used to filter the Javadoc included in Markdown.
+     * <p>
+     * We will need to discuss further how to handle passing the Javadoc to the IDE.
+     * In Quarkus, we have Asciidoc, standard Javadoc and soon we might have Markdown javadoc.
+     */
+    private static String filterRawJavadoc(JavadocDescription javadocDescription) {
+        StringBuilder sb = new StringBuilder();
+
+        for (JavadocDescriptionElement javadocDescriptionElement : javadocDescription.getElements()) {
+            if (javadocDescriptionElement instanceof JavadocInlineTag) {
+                JavadocInlineTag inlineTag = (JavadocInlineTag) javadocDescriptionElement;
+                String content = inlineTag.getContent().trim();
+                switch (inlineTag.getType()) {
+                    case CODE:
+                    case VALUE:
+                    case LITERAL:
+                    case SYSTEM_PROPERTY:
+                    case LINK:
+                    case LINKPLAIN:
+                        sb.append("<code>");
+                        sb.append(escapeHtml(content));
+                        sb.append("</code>");
+                        break;
+                    default:
+                        sb.append(content);
+                        break;
+                }
+            } else {
+                sb.append(javadocDescriptionElement.toText());
+            }
+        }
+
+        return sb.toString().trim();
+    }
+
+    private static String escapeHtml(String s) {
+        StringBuilder out = new StringBuilder(Math.max(16, s.length()));
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c > 127 || c == '"' || c == '\'' || c == '<' || c == '>' || c == '&') {
+                out.append("&#");
+                out.append((int) c);
+                out.append(';');
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 }

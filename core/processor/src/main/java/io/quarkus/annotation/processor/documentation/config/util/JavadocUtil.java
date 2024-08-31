@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public final class JavadocUtil {
 
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
-    static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/en/java/javase/17/docs/api/";
+    static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/en/java/javase/17/docs/api/java.base/";
     static final String AGROAL_API_JAVA_DOC_SITE = "https://javadoc.io/doc/io.agroal/agroal-api/latest/";
     static final String LOG_LEVEL_REDIRECT_URL = "https://javadoc.io/doc/org.jboss.logmanager/jboss-logmanager/latest/org/jboss/logmanager/Level.html";
 

@@ -34,10 +34,8 @@ public record ResolvedType(
         return unwrappedType.toString();
     }
 
-    public static ResolvedType ofPrimitive(TypeMirror unwrappedType) {
-        String primitiveName = unwrappedType.toString();
-
-        return new ResolvedType(unwrappedType, unwrappedType, primitiveName, primitiveName, primitiveName, true, false, false,
+    public static ResolvedType ofPrimitive(TypeMirror unwrappedType, String typeName) {
+        return new ResolvedType(unwrappedType, unwrappedType, typeName, typeName, typeName, true, false, false,
                 false, false, false, false, false, false, false);
     }
 

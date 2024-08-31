@@ -29,6 +29,34 @@ public class ElementUtil {
         this.processingEnv = processingEnv;
     }
 
+    public String getQualifiedName(TypeMirror type) {
+        switch (type.getKind()) {
+            case BOOLEAN:
+                return "boolean";
+            case BYTE:
+                return "byte";
+            case CHAR:
+                return "char";
+            case DOUBLE:
+                return "double";
+            case FLOAT:
+                return "float";
+            case INT:
+                return "int";
+            case LONG:
+                return "long";
+            case SHORT:
+                return "short";
+            case DECLARED:
+                return ((TypeElement) ((DeclaredType) type).asElement()).getQualifiedName().toString();
+            default:
+                // note that it includes annotations, which is something we don't want
+                // thus why all this additional work above...
+                // this default should never be triggered AFAIK, it's there to be extra safe
+                return type.toString();
+        }
+    }
+
     public String getBinaryName(TypeElement clazz) {
         return processingEnv.getElementUtils().getBinaryName(clazz).toString();
     }

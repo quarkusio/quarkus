@@ -197,7 +197,8 @@ public class ConfigAnnotationScanner {
             }
         } else {
             TypeMirror superclass = clazz.getSuperclass();
-            if (superclass.getKind() != TypeKind.NONE && !superclass.toString().equals(Object.class.getName())) {
+            if (superclass.getKind() != TypeKind.NONE
+                    && !utils.element().getQualifiedName(superclass).equals(Object.class.getName())) {
                 TypeElement superclassTypeElement = (TypeElement) ((DeclaredType) superclass).asElement();
 
                 debug("Detected superclass: " + superclassTypeElement, clazz);
@@ -324,7 +325,7 @@ public class ConfigAnnotationScanner {
 
     private ResolvedType resolveType(TypeMirror typeMirror) {
         if (typeMirror.getKind().isPrimitive()) {
-            return ResolvedType.ofPrimitive(typeMirror);
+            return ResolvedType.ofPrimitive(typeMirror, utils.element().getQualifiedName(typeMirror));
         }
         if (typeMirror.getKind() == TypeKind.ARRAY) {
             ResolvedType resolvedType = resolveType(((ArrayType) typeMirror).getComponentType());
@@ -369,7 +370,7 @@ public class ConfigAnnotationScanner {
             isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         } else if (typeElement.getKind() == ElementKind.CLASS) {
             isClass = true;
-            isDuration = typeMirror.toString().equals(Duration.class.getName());
+            isDuration = utils.element().getQualifiedName(typeMirror).equals(Duration.class.getName());
             isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         }
 

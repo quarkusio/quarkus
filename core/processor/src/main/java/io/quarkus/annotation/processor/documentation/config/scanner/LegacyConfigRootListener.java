@@ -44,7 +44,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         AnnotationMirror configDocFileNameAnnotation = null;
 
         for (AnnotationMirror annotationMirror : configRoot.getAnnotationMirrors()) {
-            String annotationName = annotationMirror.getAnnotationType().toString();
+            String annotationName = utils.element().getQualifiedName(annotationMirror.getAnnotationType());
 
             if (annotationName.equals(Types.ANNOTATION_CONFIG_ROOT)) {
                 configRootAnnotation = annotationMirror;

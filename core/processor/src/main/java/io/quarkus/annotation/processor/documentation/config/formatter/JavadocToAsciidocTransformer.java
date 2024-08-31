@@ -111,22 +111,34 @@ public final class JavadocToAsciidocTransformer {
                 .map(JavadocDescription::toText)
                 .findFirst();
 
+        Optional<String> deprecated = javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst();
+
         if (description != null && description.isBlank()) {
             description = null;
         }
 
-        return new ParsedJavadoc(description, since.isPresent() ? since.get() : null, originalFormat);
+        return new ParsedJavadoc(description, since.orElse(null), deprecated.orElse(null), originalFormat);
     }
 
     public ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return new ParsedJavadocSection(null, null);
+            return ParsedJavadocSection.empty();
         }
 
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
         javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
         Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
+
+        Optional<String> deprecated = javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst();
 
         String asciidoc;
         if (isAsciidoc(javadoc)) {
@@ -136,7 +148,7 @@ public final class JavadocToAsciidocTransformer {
         }
 
         if (asciidoc == null || asciidoc.isBlank()) {
-            return new ParsedJavadocSection(null, null);
+            return ParsedJavadocSection.empty();
         }
 
         final int newLineIndex = asciidoc.indexOf(NEW_LINE);
@@ -152,12 +164,12 @@ public final class JavadocToAsciidocTransformer {
         if (endOfTitleIndex == -1) {
             final String title = asciidoc.replaceAll("^([^\\w])+", "").trim();
 
-            return new ParsedJavadocSection(title, null);
+            return new ParsedJavadocSection(title, null, deprecated.orElse(null));
         } else {
             final String title = asciidoc.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", "").trim();
             final String details = asciidoc.substring(endOfTitleIndex + 1).trim();
 
-            return new ParsedJavadocSection(title, details.isBlank() ? null : details);
+            return new ParsedJavadocSection(title, details.isBlank() ? null : details, deprecated.orElse(null));
         }
     }
 

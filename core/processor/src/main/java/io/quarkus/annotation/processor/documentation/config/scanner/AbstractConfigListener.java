@@ -69,6 +69,13 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
     protected void handleCommonPropertyAnnotations(DiscoveryConfigProperty.Builder builder,
             Map<String, AnnotationMirror> propertyAnnotations, ResolvedType resolvedType, String sourceName) {
 
+        AnnotationMirror deprecatedAnnotation = propertyAnnotations.get(Deprecated.class.getName());
+        if (deprecatedAnnotation != null) {
+            String since = (String) utils.element().getAnnotationValues(deprecatedAnnotation).get("since");
+            // TODO add more information about the deprecation, typically the reason and a replacement
+            builder.deprecated(since, null, null);
+        }
+
         AnnotationMirror configDocSectionAnnotation = propertyAnnotations.get(Types.ANNOTATION_CONFIG_DOC_SECTION);
         if (configDocSectionAnnotation != null) {
             Boolean sectionGenerated = (Boolean) utils.element().getAnnotationValues(configDocSectionAnnotation)

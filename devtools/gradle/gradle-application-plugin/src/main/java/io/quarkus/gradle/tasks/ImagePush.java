@@ -15,13 +15,13 @@ public abstract class ImagePush extends ImageTask {
     @Inject
     public ImagePush() {
         super("Perform an image push");
-        MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
-        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
-        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
     }
 
     @TaskAction
     public void checkRequiredExtensions() {
+        MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+        forcedProperties.put(QUARKUS_CONTAINER_IMAGE_PUSH, "true");
         List<String> containerImageExtensions = getProject().getConfigurations().stream()
                 .flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())

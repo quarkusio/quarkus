@@ -6,6 +6,7 @@ import java.util.Optional;
 import javax.inject.Inject;
 
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 public abstract class ImageBuild extends ImageTask {
@@ -20,8 +21,14 @@ public abstract class ImageBuild extends ImageTask {
     @Inject
     public ImageBuild() {
         super("Perform an image build");
+    }
+
+    @TaskAction
+    @Override
+    public void checkRequiredExtensions() {
         MapProperty<String, String> forcedProperties = extension().forcedPropertiesProperty();
         forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
         forcedProperties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, getProject().provider(() -> builder().name()));
+        super.checkRequiredExtensions();
     }
 }

@@ -205,6 +205,7 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
 
             /**
              * If provided, indicates that JWT is signed using a secret key.
+             * It is mutually exclusive with {@link #key}, {@link #keyFile} and {@link #keyStore} properties.
              */
             @ConfigItem
             public Optional<String> secret = Optional.empty();
@@ -218,6 +219,7 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
             /**
              * String representation of a private key. If provided, indicates that JWT is signed using a private key in PEM or
              * JWK format.
+             * It is mutually exclusive with {@link #secret}, {@link #keyFile} and {@link #keyStore} properties.
              * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
              */
             @ConfigItem
@@ -225,6 +227,7 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
 
             /**
              * If provided, indicates that JWT is signed using a private key in PEM or JWK format.
+             * It is mutually exclusive with {@link #secret}, {@link #key} and {@link #keyStore} properties.
              * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
              */
             @ConfigItem
@@ -232,6 +235,7 @@ public class OidcClientCommonConfig extends OidcCommonConfig {
 
             /**
              * If provided, indicates that JWT is signed using a private key from a keystore.
+             * It is mutually exclusive with {@link #secret}, {@link #key} and {@link #keyFile} properties.
              */
             @ConfigItem
             public Optional<String> keyStoreFile = Optional.empty();

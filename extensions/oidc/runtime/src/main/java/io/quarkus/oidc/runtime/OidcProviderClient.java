@@ -62,7 +62,7 @@ public class OidcProviderClient implements Closeable {
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcConfig);
-        this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig);
+        this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig, true);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
         this.filters = filters;
         this.clientSecretQueryAuthentication = oidcConfig.credentials.clientSecret.method.orElse(null) == Method.QUERY;

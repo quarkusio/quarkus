@@ -18,10 +18,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -283,9 +285,30 @@ public class OidcCommonUtils {
                         && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
-    public static boolean isClientJwtAuthRequired(Credentials creds) {
-        return creds.jwt.secret.isPresent() || creds.jwt.secretProvider.key.isPresent() || creds.jwt.key.isPresent()
-                || creds.jwt.keyFile.isPresent() || creds.jwt.keyStoreFile.isPresent();
+    public static boolean isClientJwtAuthRequired(Credentials creds, boolean server) {
+        Set<String> props = new HashSet<>();
+        if (creds.jwt.secret.isPresent()) {
+            props.add(".credentials.jwt.secret");
+        }
+        if (creds.jwt.secretProvider.key.isPresent()) {
+            props.add(".credentials.jwt.secret-provider.key");
+        }
+        if (creds.jwt.key.isPresent()) {
+            props.add(".credentials.jwt.key");
+        }
+        if (creds.jwt.keyFile.isPresent()) {
+            props.add(".credentials.jwt.key-file");
+        }
+        if (creds.jwt.keyStoreFile.isPresent()) {
+            props.add(".credentials.jwt.key-store-file");
+        }
+        if (props.size() > 1) {
+            final String prefix = server ? "quarkus.oidc" : "quarkus.oidc-client";
+            throw new ConfigurationException("""
+                    Only a single OIDC JWT credential key property can be configured, but you have configured: %s"""
+                    .formatted(props.stream().map(p -> (prefix + p)).collect(Collectors.joining(","))));
+        }
+        return props.size() == 1;
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -294,7 +317,7 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretPostJwtAuthRequired(Credentials creds) {
-        return clientSecretMethod(creds) == Secret.Method.POST_JWT && isClientJwtAuthRequired(creds);
+        return clientSecretMethod(creds) == Secret.Method.POST_JWT;
     }
 
     public static boolean isJwtAssertion(Credentials creds) {
@@ -388,27 +411,26 @@ public class OidcCommonUtils {
 
     public static String signJwtWithKey(OidcClientCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
-        JwtSignatureBuilder builder = Jwt
+        JwtSignatureBuilder jwtSignatureBuilder = Jwt
                 .claims(additionalClaims(oidcConfig.credentials.jwt.getClaims()))
                 .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
                 .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
                 .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
                         ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
                         : tokenRequestUri)
-                .expiresIn(oidcConfig.credentials.jwt.lifespan)
-                .jws();
+                .expiresIn(oidcConfig.credentials.jwt.lifespan).jws();
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
-            builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
+            jwtSignatureBuilder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
         }
         SignatureAlgorithm signatureAlgorithm = getSignatureAlgorithm(oidcConfig.credentials, null);
         if (signatureAlgorithm != null) {
-            builder.algorithm(signatureAlgorithm);
+            jwtSignatureBuilder.algorithm(signatureAlgorithm);
         }
 
         if (key instanceof SecretKey) {
-            return builder.sign((SecretKey) key);
+            return jwtSignatureBuilder.sign((SecretKey) key);
         } else {
-            return builder.sign((PrivateKey) key);
+            return jwtSignatureBuilder.sign((PrivateKey) key);
         }
     }
 
@@ -453,8 +475,8 @@ public class OidcCommonUtils {
 
     }
 
-    public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig) {
-        if (isClientJwtAuthRequired(oidcConfig.credentials)) {
+    public static Key initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
+        if (isClientJwtAuthRequired(oidcConfig.credentials, server)) {
             return clientJwtKey(oidcConfig.credentials);
         }
         return null;

@@ -1,5 +1,9 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
+import com.fasterxml.jackson.databind.BeanProperty;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -60,5 +64,14 @@ public class JacksonMapperUtil {
                     .instance(RolesAllowedConfigExpStorage.class);
             return rolesAllowedConfigExpStorage.isAvailable() ? rolesAllowedConfigExpStorage.get() : null;
         }
+    }
+
+    public static JavaType[] getGenericsJavaTypes(DeserializationContext context, BeanProperty property) {
+        JavaType wrapperType = property != null ? property.getType() : context.getContextualType();
+        JavaType[] valueTypes = new JavaType[wrapperType.containedTypeCount()];
+        for (int i = 0; i < valueTypes.length; i++) {
+            valueTypes[i] = wrapperType.containedType(0);
+        }
+        return valueTypes;
     }
 }

@@ -334,6 +334,21 @@ export access_token=$(\
  )
 ----
 
+[NOTE]
+====
+When the `quarkus.oidc.authentication.user-info-required` property is set to `true` to require that an access token is used to request `UserInfo`, you must add a `scope=openid` query parameter to the token grant request command, for example:
+
+[source,bash]
+----
+export access_token=$(\
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
+    --user backend-service:secret \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    -d 'username=alice&password=alice&grant_type=password&scope=openid' | jq --raw-output '.access_token' \
+ )
+----
+====
+
 The preceding example obtains an access token for user `alice`.
 
 Any user is allowed to access the

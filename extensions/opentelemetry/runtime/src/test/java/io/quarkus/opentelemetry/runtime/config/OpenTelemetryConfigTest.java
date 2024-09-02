@@ -16,6 +16,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
@@ -39,7 +40,7 @@ class OpenTelemetryConfigTest {
         baseExporterConfig.put("quarkus.otel.exporter.otlp.proxy-options.port", "9999");
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withCustomizers(new OpenTelemetryConfigBuilderCustomizer())
+                .withCustomizers(builder -> new OtlpExporterConfigBuilder().configBuilder(builder))
                 .withMapping(OtlpExporterRuntimeConfig.class)
                 .withDefaultValues(baseExporterConfig)
                 .build();
@@ -160,7 +161,7 @@ class OpenTelemetryConfigTest {
         tracesExporterConfig.put("quarkus.otel.exporter.otlp.traces.proxy-options.port", "6666");
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withCustomizers(new OpenTelemetryConfigBuilderCustomizer())
+                .withCustomizers(builder -> new OtlpExporterConfigBuilder().configBuilder(builder))
                 .withMapping(OtlpExporterRuntimeConfig.class)
                 .withDefaultValues(baseExporterConfig)
                 .withDefaultValues(tracesExporterConfig)

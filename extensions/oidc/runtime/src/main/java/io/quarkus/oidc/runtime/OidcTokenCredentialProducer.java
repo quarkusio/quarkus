@@ -30,7 +30,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     IdTokenCredential currentIdToken() {
-        IdTokenCredential cred = identity.getCredential(IdTokenCredential.class);
+        IdTokenCredential cred = OidcUtils.getTokenCredential(identity, IdTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("IdToken is null");
             cred = new IdTokenCredential();
@@ -43,7 +43,7 @@ public class OidcTokenCredentialProducer {
     @Alternative
     @Priority(1)
     AccessTokenCredential currentAccessToken() {
-        AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
+        AccessTokenCredential cred = OidcUtils.getTokenCredential(identity, AccessTokenCredential.class);
         if (cred == null || cred.getToken() == null) {
             LOG.trace("AccessToken is null");
             cred = new AccessTokenCredential();
@@ -54,7 +54,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     RefreshToken currentRefreshToken() {
-        RefreshToken cred = identity.getCredential(RefreshToken.class);
+        RefreshToken cred = OidcUtils.getTokenCredential(identity, RefreshToken.class);
         if (cred == null) {
             LOG.trace("RefreshToken is null");
             cred = new RefreshToken();
@@ -70,7 +70,7 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     UserInfo currentUserInfo() {
-        UserInfo userInfo = (UserInfo) identity.getAttribute(OidcUtils.USER_INFO_ATTRIBUTE);
+        UserInfo userInfo = OidcUtils.getAttribute(identity, OidcUtils.USER_INFO_ATTRIBUTE);
         if (userInfo == null) {
             LOG.trace("UserInfo is null");
             userInfo = new UserInfo();
@@ -106,8 +106,8 @@ public class OidcTokenCredentialProducer {
     @Produces
     @RequestScoped
     TokenIntrospection tokenIntrospection() {
-        TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) identity
-                .getAttribute(OidcUtils.CODE_ACCESS_TOKEN_RESULT);
+        TokenVerificationResult codeFlowAccessTokenResult = OidcUtils.getAttribute(identity,
+                OidcUtils.CODE_ACCESS_TOKEN_RESULT);
         if (codeFlowAccessTokenResult == null) {
             return tokenIntrospectionFromIdentityAttribute();
         } else {
@@ -116,7 +116,7 @@ public class OidcTokenCredentialProducer {
     }
 
     TokenIntrospection tokenIntrospectionFromIdentityAttribute() {
-        TokenIntrospection introspection = (TokenIntrospection) identity.getAttribute(OidcUtils.INTROSPECTION_ATTRIBUTE);
+        TokenIntrospection introspection = OidcUtils.getAttribute(identity, OidcUtils.INTROSPECTION_ATTRIBUTE);
         if (introspection == null) {
             LOG.trace("TokenIntrospection is null");
             introspection = new TokenIntrospection();

@@ -1,7 +1,5 @@
 package io.quarkus.liquibase.deployment;
 
-import static java.util.function.Predicate.not;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -16,7 +14,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,7 +33,6 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -77,6 +73,7 @@ import liquibase.change.core.SQLFileChange;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
 import liquibase.changelog.DatabaseChangeLog;
+import liquibase.datatype.DataTypeInfo;
 import liquibase.exception.LiquibaseException;
 import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
@@ -97,6 +94,7 @@ class LiquibaseProcessor {
             "www.liquibase.org/xml/ns/dbchangelog/*.xsd"));
 
     private static final DotName DATABASE_CHANGE_PROPERTY = DotName.createSimple(DatabaseChangeProperty.class.getName());
+    private static final DotName DATA_TYPE_INFO_ANNOTATION = DotName.createSimple(DataTypeInfo.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -114,7 +112,6 @@ class LiquibaseProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             CombinedIndexBuildItem combinedIndex,
             CurateOutcomeBuildItem curateOutcome,
-            Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> services,
@@ -126,8 +123,19 @@ class LiquibaseProcessor {
                 liquibase.sqlgenerator.core.LockDatabaseChangeLogGenerator.class.getName()));
 
         reflective.produce(ReflectiveClassBuildItem
-                .builder(liquibase.change.AbstractSQLChange.class, liquibase.database.jvm.JdbcConnection.class).methods()
+                .builder(liquibase.datatype.core.UnknownType.class.getName())
                 .reason(getClass().getName())
+                .constructors().methods()
+                .build());
+
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.AbstractExtensibleObject.class.getName(),
+                liquibase.change.core.DeleteDataChange.class.getName(),
+                liquibase.change.core.EmptyChange.class.getName(),
+                liquibase.database.jvm.JdbcConnection.class.getName(),
+                liquibase.plugin.AbstractPlugin.class.getName())
+                .reason(getClass().getName())
+                .methods()
                 .build());
 
         reflective.produce(ReflectiveClassBuildItem
@@ -146,6 +154,7 @@ class LiquibaseProcessor {
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.changelog.RanChangeSet.class.getName(),
                 liquibase.configuration.LiquibaseConfiguration.class.getName(),
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
                 liquibase.GlobalConfiguration.class.getName(),
@@ -185,6 +194,18 @@ class LiquibaseProcessor {
                         .reason(getClass().getName())
                         .constructors().methods().fields().build());
 
+        // register all liquibase.datatype.core.* data types
+        Set<String> classesAnnotatedWithDataTypeInfo = combinedIndex.getIndex().getAnnotations(DATA_TYPE_INFO_ANNOTATION)
+                .stream()
+                .map(AnnotationInstance::target)
+                .filter(at -> at.kind() == AnnotationTarget.Kind.CLASS)
+                .map(at -> at.asClass().name().toString())
+                .collect(Collectors.toSet());
+        reflective.produce(ReflectiveClassBuildItem.builder(classesAnnotatedWithDataTypeInfo.toArray(String[]::new))
+                .reason(getClass().getName())
+                .constructors().methods()
+                .build());
+
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(JdbcDataSourceBuildItem::getName)
                 .collect(Collectors.toSet());
@@ -200,20 +221,6 @@ class LiquibaseProcessor {
                     .constructors().methods().fields().build());
         });
 
-        // CommandStep implementations are needed
-        consumeService(liquibase.command.CommandStep.class.getName(), (serviceClassName, implementations) -> {
-            var filteredImpls = implementations.stream()
-                    .filter(commandStepPredicate(capabilities))
-                    .toArray(String[]::new);
-            services.produce(new ServiceProviderBuildItem(serviceClassName, filteredImpls));
-            reflective.produce(ReflectiveClassBuildItem.builder(filteredImpls)
-                    .reason(getClass().getName())
-                    .constructors().build());
-            for (String implementation : filteredImpls) {
-                runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(implementation));
-            }
-        });
-
         var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
         resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
                 dependencies, LIQUIBASE_ARTIFACT, LIQUIBASE_RESOURCE_FILTER));
@@ -221,14 +228,6 @@ class LiquibaseProcessor {
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
-    }
-
-    private static Predicate<String> commandStepPredicate(Capabilities capabilities) {
-        if (capabilities.isPresent("io.quarkus.jdbc.h2")) {
-            return (s) -> true;
-        } else {
-            return not("liquibase.command.core.StartH2CommandStep"::equals);
-        }
     }
 
     private void consumeService(String serviceClassName, BiConsumer<String, Collection<String>> consumer) {

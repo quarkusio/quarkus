@@ -853,16 +853,14 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static String getOidcClientId() {
-        boolean isService = "service".equals(getOidcApplicationType());
         // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
-                .orElse(!isService ? "quarkus-app" : "");
+                .orElse(capturedDevServicesConfiguration.createClient ? "quarkus-app" : "");
     }
 
     private static String getOidcClientSecret() {
-        boolean isService = "service".equals(getOidcApplicationType());
         // if the application type is web-app or hybrid, OidcRecorder will enforce that the client id and secret are configured
         return ConfigProvider.getConfig().getOptionalValue(CLIENT_SECRET_CONFIG_KEY, String.class)
-                .orElse(!isService ? "secret" : "");
+                .orElse(capturedDevServicesConfiguration.createClient ? "secret" : "");
     }
 }

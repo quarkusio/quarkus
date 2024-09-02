@@ -617,7 +617,7 @@ public class CodeFlowAuthorizationTest {
                 get(urlEqualTo("/auth/realms/quarkus/protocol/openid-connect/signeduserinfo"))
                         .withHeader("Authorization", containing("Bearer ey"))
                         .willReturn(aResponse()
-                                .withHeader("Content-Type", "application/jwt")
+                                .withHeader("Content-Type", " application/jwt ; charset=UTF-8")
                                 .withBody(
                                         Jwt.preferredUserName("alice")
                                                 .issuer("https://server.example.com")

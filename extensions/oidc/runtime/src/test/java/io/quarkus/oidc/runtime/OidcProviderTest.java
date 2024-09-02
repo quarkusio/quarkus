@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -309,5 +310,16 @@ public class OidcProviderTest {
                 assertTrue(ex.getMessage().contains("Claim2 is not allowed!"));
             }
         }
+    }
+
+    @Test
+    public void testJwtContentTypeCheck() {
+        assertTrue(OidcProvider.isApplicationJwtContentType("application/jwt"));
+        assertTrue(OidcProvider.isApplicationJwtContentType(" application/jwt "));
+        assertTrue(OidcProvider.isApplicationJwtContentType("application/jwt;charset=UTF-8"));
+        assertTrue(OidcProvider.isApplicationJwtContentType(" application/jwt ; charset=UTF-8"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(" application/jwt-custom"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(" application/json"));
+        assertFalse(OidcProvider.isApplicationJwtContentType(null));
     }
 }

@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -62,12 +61,5 @@ public interface RestClientsBuildTimeConfig {
          * </ul>
          */
         Optional<String> localProxyProvider();
-
-        /**
-         * Collects unmapped properties in the REST Client namespace, including available runtime properties.
-         */
-        @WithParentName
-        @ConfigDocIgnore
-        Map<String, String> properties();
     }
 }

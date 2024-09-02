@@ -126,6 +126,7 @@ public class CodeFlowTest {
             // response from Quarkus
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
             assertEquals(401, webResponse.getStatusCode());
+            assertEquals("", webResponse.getContentAsString(), "The reason behind 401 can only be returned in devmode");
             webClient.getCookieManager().clearCookies();
         }
     }

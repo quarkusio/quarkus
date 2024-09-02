@@ -19,7 +19,9 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.ErrorPageAction;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -109,7 +111,14 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 //end here as failing event makes it possible to customize response, however when proactive security is
                 //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
                 //so it is better to send a response than to hang
-                event.response().end();
+
+                if (event.failure() instanceof AuthenticationCompletionException
+                        && event.failure().getMessage() != null
+                        && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                    event.response().end(event.failure().getMessage());
+                } else {
+                    event.response().end();
+                }
                 return;
             }
 

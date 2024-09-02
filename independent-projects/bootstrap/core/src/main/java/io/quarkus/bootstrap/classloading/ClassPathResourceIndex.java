@@ -194,6 +194,7 @@ public class ClassPathResourceIndex {
     public static class Builder {
 
         private static final String CLASS_SUFFIX = ".class";
+        private static final ClassPathElement[] EMPTY_CLASSPATH_ELEMENT = new ClassPathElement[0];
 
         private final Map<String, ClassPathElement> transformedClassCandidates = new HashMap<>();
         private final Map<String, ClassPathElement> transformedClasses = new HashMap<>();
@@ -210,7 +211,7 @@ public class ClassPathResourceIndex {
             }
         }
 
-        public void addTranformedClassCandidate(ClassPathElement classPathElement, String resource) {
+        public void addTransformedClassCandidate(ClassPathElement classPathElement, String resource) {
             transformedClassCandidates.put(resource, classPathElement);
         }
 
@@ -239,11 +240,11 @@ public class ClassPathResourceIndex {
             }
         }
 
-        public void addParentFirstResource(ClassPathElement classPathElement, String resource) {
+        public void addParentFirstResource(String resource) {
             parentFirstResources.add(resource);
         }
 
-        public void addBannedResource(ClassPathElement classPathElement, String resource) {
+        public void addBannedResource(String resource) {
             bannedResources.add(resource);
         }
 
@@ -251,7 +252,7 @@ public class ClassPathResourceIndex {
             Map<String, ClassPathElement[]> compactedResourceMapping = new HashMap<>(resourceMapping.size());
             for (Entry<String, List<ClassPathElement>> resourceMappingEntry : resourceMapping.entrySet()) {
                 compactedResourceMapping.put(resourceMappingEntry.getKey(),
-                        resourceMappingEntry.getValue().toArray(new ClassPathElement[resourceMappingEntry.getValue().size()]));
+                        resourceMappingEntry.getValue().toArray(EMPTY_CLASSPATH_ELEMENT));
             }
 
             return new ClassPathResourceIndex(compactedResourceMapping, transformedClasses,

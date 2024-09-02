@@ -1,13 +1,17 @@
 package io.quarkus.vertx.http.runtime;
 
+import static io.quarkus.vertx.http.runtime.HttpConfiguration.PayloadHint.JSON;
 import static org.jboss.logging.Logger.getLogger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
@@ -21,6 +25,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.ErrorPageAction;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.logging.DecorateStackUtil;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.ForbiddenException;
@@ -34,6 +39,9 @@ import io.vertx.ext.web.impl.ParsableMIMEValue;
 public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     private static final Logger log = getLogger(QuarkusErrorHandler.class);
+    private static final String NL = "\n";
+    private static final String TAB = "\t";
+    private static final String HEADING = "500 - Internal Server Error";
 
     /**
      * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
@@ -181,6 +189,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         if (responseContentType == null) {
             responseContentType = "";
         }
+
         switch (responseContentType) {
             case ContentTypes.TEXT_HTML:
             case ContentTypes.APPLICATION_XHTML:
@@ -190,30 +199,94 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 break;
             case ContentTypes.APPLICATION_JSON:
             case ContentTypes.TEXT_JSON:
-                jsonResponse(event, responseContentType, details, stack);
+                jsonResponse(event, responseContentType, details, stack, exception);
+                break;
+            case ContentTypes.TEXT_PLAIN:
+                textResponse(event, details, stack, exception);
                 break;
             default:
-                // We default to JSON representation
-                switch (contentTypeDefault.orElse(HttpConfiguration.PayloadHint.JSON)) {
-                    case HTML:
-                        htmlResponse(event, details, exception);
-                        break;
-                    case JSON:
-                    default:
-                        jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack);
-                        break;
+                if (contentTypeDefault.isPresent()) {
+                    switch (contentTypeDefault.get()) {
+                        case HTML:
+                            htmlResponse(event, details, exception);
+                            break;
+                        case JSON:
+                            jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack, exception);
+                            break;
+                        case TEXT:
+                            textResponse(event, details, stack, exception);
+                            break;
+                        default:
+                            defaultResponse(event, details, stack, exception);
+                            break;
+                    }
+                } else {
+                    defaultResponse(event, details, stack, exception);
+                    break;
                 }
                 break;
         }
     }
 
-    private void jsonResponse(RoutingContext event, String contentType, String details, String stack) {
+    private void defaultResponse(RoutingContext event, String details, String stack, Throwable throwable) {
+        String userAgent = event.request().getHeader("User-Agent");
+        if (userAgent != null && (userAgent.toLowerCase(Locale.ROOT).startsWith("wget/")
+                || userAgent.toLowerCase(Locale.ROOT).startsWith("curl/"))) {
+            textResponse(event, details, stack, throwable);
+        } else {
+            jsonResponse(event, ContentTypes.APPLICATION_JSON, details, stack, throwable);
+        }
+    }
+
+    private void textResponse(RoutingContext event, String details, String stack, Throwable throwable) {
+        event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, ContentTypes.TEXT_PLAIN + "; charset=utf-8");
+        String decoratedString = null;
+        if (decorateStack && throwable != null) {
+            decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
+        }
+
+        try (StringWriter sw = new StringWriter()) {
+            sw.write(NL + HEADING + NL);
+            sw.write("------------------------" + NL);
+            sw.write(NL);
+            sw.write("Details:");
+            sw.write(NL);
+            sw.write(TAB + details);
+            sw.write(NL);
+            if (decoratedString != null) {
+                sw.write("Decorate (Source code):");
+                sw.write(NL);
+                sw.write(TAB + decoratedString);
+                sw.write(NL);
+            }
+            sw.write("Stack:");
+            sw.write(NL);
+            sw.write(TAB + stack);
+            sw.write(NL);
+            writeResponse(event, sw.toString());
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    private void jsonResponse(RoutingContext event, String contentType, String details, String stack, Throwable throwable) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, contentType + "; charset=utf-8");
         String escapedDetails = escapeJsonString(details);
         String escapedStack = escapeJsonString(stack);
+        String decoratedString = null;
+        if (decorateStack && throwable != null) {
+            decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
+        }
+
         StringBuilder jsonPayload = new StringBuilder("{\"details\":\"")
-                .append(escapedDetails)
-                .append("\",\"stack\":\"")
+                .append(escapedDetails);
+
+        if (decoratedString != null) {
+            jsonPayload = jsonPayload.append("\",\"decorate\":\"")
+                    .append(escapeJsonString(decoratedString));
+        }
+
+        jsonPayload = jsonPayload.append("\",\"stack\":\"")
                 .append(escapedStack)
                 .append("\"}");
         writeResponse(event, jsonPayload.toString());
@@ -306,23 +379,41 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         private static final String APPLICATION_JSON = "application/json";
         private static final String TEXT_JSON = "text/json";
         private static final String TEXT_HTML = "text/html";
+        private static final String TEXT_PLAIN = "text/plain";
         private static final String APPLICATION_XHTML = "application/xhtml+xml";
         private static final String APPLICATION_XML = "application/xml";
         private static final String TEXT_XML = "text/xml";
 
         // WARNING: The order matters for wildcards: if text/json is before text/html, then text/* will match text/json.
-        private static final Collection<MIMEHeader> SUPPORTED = Arrays.asList(
+        private static final MIMEHeader[] BASE_HEADERS = {
                 new ParsableMIMEValue(APPLICATION_JSON).forceParse(),
                 new ParsableMIMEValue(TEXT_JSON).forceParse(),
                 new ParsableMIMEValue(TEXT_HTML).forceParse(),
                 new ParsableMIMEValue(APPLICATION_XHTML).forceParse(),
                 new ParsableMIMEValue(APPLICATION_XML).forceParse(),
-                new ParsableMIMEValue(TEXT_XML).forceParse());
+                new ParsableMIMEValue(TEXT_XML).forceParse()
+        };
+
+        private static final Collection<MIMEHeader> SUPPORTED = new ArrayList<>(Arrays.asList(BASE_HEADERS));
+        private static final Collection<MIMEHeader> SUPPORTED_CURL = new ArrayList<>();
+        static {
+            SUPPORTED_CURL.add(new ParsableMIMEValue(TEXT_PLAIN).forceParse());
+            SUPPORTED_CURL.addAll(Arrays.asList(BASE_HEADERS));
+            ((ArrayList<MIMEHeader>) SUPPORTED).add(new ParsableMIMEValue(TEXT_PLAIN).forceParse());
+        }
 
         static String pickFirstSupportedAndAcceptedContentType(RoutingContext context) {
             List<MIMEHeader> acceptableTypes = context.parsedHeaders().accept();
-            MIMEHeader result = context.parsedHeaders().findBestUserAcceptedIn(acceptableTypes, SUPPORTED);
-            return result == null ? null : result.value();
+
+            String userAgent = context.request().getHeader("User-Agent");
+            if (userAgent != null && (userAgent.toLowerCase(Locale.ROOT).startsWith("wget/")
+                    || userAgent.toLowerCase(Locale.ROOT).startsWith("curl/"))) {
+                MIMEHeader result = context.parsedHeaders().findBestUserAcceptedIn(acceptableTypes, SUPPORTED_CURL);
+                return result == null ? null : result.value();
+            } else {
+                MIMEHeader result = context.parsedHeaders().findBestUserAcceptedIn(acceptableTypes, SUPPORTED);
+                return result == null ? null : result.value();
+            }
         }
     }
 }

@@ -327,5 +327,6 @@ public class HttpConfiguration {
     public enum PayloadHint {
         JSON,
         HTML,
+        TEXT
     }
 }

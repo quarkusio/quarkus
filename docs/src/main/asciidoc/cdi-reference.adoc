@@ -957,6 +957,27 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+if there is more than one bean that matches the required type and qualifiers and is eligible for injection, it is possible to iterate (or stream) available bean instances.
+Beans returned by both stream and iterator methods are sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first.
+
+[source,java]
+----
+ @ApplicationScoped
+ class Client {
+
+    @Inject
+    Instance<Service> serviceInstance;
+
+    void printServiceName() {
+        if(service.isAmbiguous()){
+            for (Service service : serviceInstance) {
+
+            }
+        }
+    }
+ }
+ ----
+
 [[injecting-multiple-bean-instances-intuitively]]
 === Injecting Multiple Bean Instances Intuitively
 

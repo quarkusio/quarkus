@@ -355,7 +355,7 @@ public class NativeImageBuildStep {
             }
             String executableName = getNativeImageExecutableName();
             String errorMessage = "Cannot find the `" + executableName
-                    + "` in the GRAALVM_HOME, JAVA_HOME and System PATH. Install it using `gu install native-image`.";
+                    + "` in the GRAALVM_HOME, JAVA_HOME and System PATH.";
             if (!SystemUtils.IS_OS_LINUX) {
                 // Delay the error: if we're just building native sources, we may not need the build runner at all.
                 return new NativeImageRunnerBuildItem(new NativeImageBuildRunnerError(errorMessage));

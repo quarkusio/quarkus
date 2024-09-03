@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentMap;
 public final class ClassLoaderLimiter implements ClassLoaderEventListener {
 
     //Store which classloader (by name) has loaded each resource as it helps diagnostics
-    private final ConcurrentMap<String, String> atMostOnceResourcesLoaded = new ConcurrentHashMap();
-    private final ConcurrentMap<String, String> allResourcesLoaded = new ConcurrentHashMap();
+    private final ConcurrentMap<String, String> atMostOnceResourcesLoaded = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, String> allResourcesLoaded = new ConcurrentHashMap<>();
 
     private final Set<String> vetoedResources;
     private final Set<String> vetoedClasses;
@@ -96,7 +96,7 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
          * List a resource name as one that you don't expect to be loaded ever.
          * If there is an attempt of loading the matched resource, a runtime exception will be thrown instead:
          * useful for running integration tests to verify your assumptions.
-         *
+         * <p>
          * Limitations: if the resource is being loaded using the bootstrap classloader we
          * can't check it; some frameworks explicitly request using the base classloader
          * for resource loading (or even use the Filesystem API), so they can't be tested via this method.
@@ -122,10 +122,10 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
          * List a fully qualified class name as one that you don't expect to be loaded ever.
          * If there is an attempt of loading the matched class, a runtime exception will be thrown instead:
          * useful for running integration tests to verify your assumptions.
-         *
+         * <p>
          * DO NOT list the name by doing using <code>literal.class.getName()</code> as this will implicitly get you
          * to load the class during the test, and produce a failure.
-         *
+         * <p>
          * Limitations: if the class is being loaded using the bootstrap classloader we
          * can't check it. Most Quarkus extensions and frameworks will not use the bootstrap classloader,
          * but some code could make use of it explicitly.
@@ -146,10 +146,10 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
          * List a fully qualified class name as one that you don't expect to be loaded at runtime.
          * If there is an attempt of loading the matched class, a runtime exception will be thrown instead:
          * useful for running integration tests to verify your assumptions.
-         *
+         * <p>
          * DO NOT list the name by doing using <code>literal.class.getName()</code> as this will implicitly get you
          * to load the class during the test, and produce a failure.
-         *
+         * <p>
          * Limitations: if the class is being loaded using the bootstrap classloader we
          * can't check it. Most Quarkus extensions and frameworks will not use the bootstrap classloader,
          * but some code could make use of it explicitly.
@@ -170,7 +170,7 @@ public final class ClassLoaderLimiter implements ClassLoaderEventListener {
          * Useful to check that a resource is being loaded only once, or never.
          * If there is an attempt of loading the matched resource more than once, a runtime exception will be thrown instead:
          * useful for running integration tests to verify your assumptions.
-         *
+         * <p>
          * Limitations: if the resource is being loaded using the bootstrap classloader we
          * can't check it; some frameworks explicitly request using the base classloader
          * for resource loading (or even use the Filesystem API), so they can't be tested via this method.

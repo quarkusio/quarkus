@@ -42,29 +42,20 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public class ResteasyReactiveScanner {
 
-    public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
-    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS;
-
-    static {
-        Map<DotName, String> map = new HashMap<>();
-        Map<String, DotName> reverseMap = new HashMap<>();
-        map.put(GET, "GET");
-        reverseMap.put("GET", GET);
-        map.put(POST, "POST");
-        reverseMap.put("POST", POST);
-        map.put(HEAD, "HEAD");
-        reverseMap.put("HEAD", HEAD);
-        map.put(PUT, "PUT");
-        reverseMap.put("PUT", PUT);
-        map.put(DELETE, "DELETE");
-        reverseMap.put("DELETE", DELETE);
-        map.put(PATCH, "PATCH");
-        reverseMap.put("PATCH", PATCH);
-        map.put(OPTIONS, "OPTIONS");
-        reverseMap.put("OPTIONS", OPTIONS);
-        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(map);
-        METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
-    }
+    public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Map.of(GET, "GET",
+            POST, "POST",
+            HEAD, "HEAD",
+            PUT, "PUT",
+            DELETE, "DELETE",
+            PATCH, "PATCH",
+            OPTIONS, "OPTIONS");
+    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Map.of("GET", GET,
+            "POST", POST,
+            "HEAD", HEAD,
+            "PUT", PUT,
+            "DELETE", DELETE,
+            "PATCH", PATCH,
+            "OPTIONS", OPTIONS);
 
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
         Collection<ClassInfo> applications = index
@@ -277,7 +268,7 @@ public class ResteasyReactiveScanner {
         });
 
         Map<DotName, String> clientInterfaces = new HashMap<>(pathInterfaces);
-        // for clients it is enough to have @PATH annotations on methods only
+        // for clients, it is enough to have @PATH annotations on methods only
         for (DotName interfaceName : interfacesWithPathOnMethods) {
             if (!clientInterfaces.containsKey(interfaceName)) {
                 clientInterfaces.put(interfaceName, "");
@@ -325,7 +316,7 @@ public class ResteasyReactiveScanner {
             httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
         }
 
-        // for clients it is also enough to only have @GET, @POST, etc on methods and no PATH whatsoever
+        // for clients, it is also enough to only have @GET, @POST, etc on methods and no PATH whatsoever
         Set<DotName> methodAnnotations = httpAnnotationToMethod.keySet();
         for (DotName methodAnnotation : methodAnnotations) {
             for (AnnotationInstance methodAnnotationInstance : index.getAnnotations(methodAnnotation)) {
@@ -333,7 +324,7 @@ public class ResteasyReactiveScanner {
                     MethodInfo annotatedMethod = methodAnnotationInstance.target().asMethod();
                     ClassInfo classWithJaxrsMethod = annotatedMethod.declaringClass();
                     if (Modifier.isAbstract(annotatedMethod.flags())
-                            && Modifier.isAbstract(classWithJaxrsMethod.flags())
+                            && Modifier.isInterface(classWithJaxrsMethod.flags())
                             && !clientInterfaces.containsKey(classWithJaxrsMethod.name())) {
                         clientInterfaces.put(classWithJaxrsMethod.name(), "");
                     }
@@ -369,7 +360,7 @@ public class ResteasyReactiveScanner {
                 continue;
             }
             possibleSubResources.put(classInfo.name(), classInfo);
-            //we need to also look for all sub classes and interfaces
+            //we need to also look for all subclasses and interfaces
             //they may have type variables that need to be handled
             toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
             toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));

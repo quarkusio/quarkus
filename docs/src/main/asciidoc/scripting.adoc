@@ -415,7 +415,7 @@ INFO: Building native image source jar: /tmp/quarkus-jbang8082065952748314720/qu
 Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildStep build
 INFO: Building native image from /tmp/quarkus-jbang8082065952748314720/quarkus-application-native-image-source-jar/quarkus-application-runner.jar
 Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildStep getNativeImageBuildRunner
-WARN: Cannot find the `native-image` in the GRAALVM_HOME, JAVA_HOME and System PATH. Install it using `gu install native-image` Attempting to fall back to container build.
+WARN: Cannot find the `native-image` in the GRAALVM_HOME, JAVA_HOME and System PATH. Attempting to fall back to container build.
 Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildContainerRunner <init>
 INFO: Using docker to run the native image builder
 Mar 22, 2023 9:58:47 A.M. io.quarkus.deployment.pkg.steps.NativeImageBuildContainerRunner setup

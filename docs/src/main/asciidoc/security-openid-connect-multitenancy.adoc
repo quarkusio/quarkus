@@ -657,10 +657,13 @@ public class HelloResource {
 ----
 <1> The `io.quarkus.oidc.Tenant` annotation must be placed on either the resource class or resource method.
 
-[[TIP]]
+[TIP]
+====
 In the example above, authentication of the `sayHello` endpoint is enforced with the `@Authenticated` annotation.
+
 Alternatively, if you use an the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[HTTP Security policy]
-to secure the endpoint, then, for the `@Tenant` annotation be effective, you must delay this policy's permission check as shown in the example below:
+to secure the endpoint, then, for the `@Tenant` annotation be effective, you must delay this policy's permission check as shown in the following example:
+
 [source,properties]
 ----
 quarkus.http.auth.permission.authenticated.paths=/api/hello
@@ -669,6 +672,7 @@ quarkus.http.auth.permission.authenticated.policy=authenticated
 quarkus.http.auth.permission.authenticated.applies-to=JAXRS <1>
 ----
 <1> Tell Quarkus to run the HTTP permission check after the tenant has been selected with the `@Tenant` annotation.
+====
 
 [[tenant-config-resolver]]
 === Dynamic tenant configuration resolution

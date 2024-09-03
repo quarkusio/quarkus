@@ -7,8 +7,11 @@ import static io.quarkus.kubernetes.deployment.Constants.KNATIVE_SERVICE_VERSION
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.dekorate.knative.decorator.AddAwsElasticBlockStoreVolumeToRevisionDecorator;
@@ -28,13 +31,17 @@ import io.dekorate.knative.decorator.ApplyLocalContainerConcurrencyDecorator;
 import io.dekorate.knative.decorator.ApplyRevisionNameDecorator;
 import io.dekorate.knative.decorator.ApplyServiceAccountToRevisionSpecDecorator;
 import io.dekorate.knative.decorator.ApplyTrafficDecorator;
+import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.MountBuilder;
 import io.dekorate.kubernetes.config.Port;
+import io.dekorate.kubernetes.config.SecretVolumeBuilder;
 import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretToServiceAccountDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
+import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
@@ -311,6 +318,7 @@ public class KnativeProcessor {
 
         //Add revision decorators
         result.addAll(createVolumeDecorators(project, name, config));
+        result.addAll(createAppConfigVolumeAndEnvDecorators(project, name, config));
         config.getHostAliases().entrySet().forEach(e -> {
             result.add(new DecoratorBuildItem(KNATIVE,
                     new AddHostAliasesToRevisionDecorator(name, HostAliasConverter.convert(e))));
@@ -375,4 +383,45 @@ public class KnativeProcessor {
         });
         return result;
     }
+
+    private static List<DecoratorBuildItem> createAppConfigVolumeAndEnvDecorators(Optional<Project> project, String name,
+            PlatformConfiguration config) {
+
+        List<DecoratorBuildItem> result = new ArrayList<>();
+        Set<String> paths = new HashSet<>();
+
+        config.getAppSecret().ifPresent(s -> {
+            result.add(new DecoratorBuildItem(KNATIVE, new AddSecretVolumeToRevisionDecorator(new SecretVolumeBuilder()
+                    .withSecretName(s)
+                    .withVolumeName("app-secret")
+                    .build())));
+            result.add(new DecoratorBuildItem(KNATIVE, new AddMountDecorator(new MountBuilder()
+                    .withName("app-secret")
+                    .withPath("/mnt/app-secret")
+                    .build())));
+            paths.add("/mnt/app-secret");
+        });
+
+        config.getAppConfigMap().ifPresent(s -> {
+            result.add(new DecoratorBuildItem(KNATIVE, new AddConfigMapVolumeToRevisionDecorator(new ConfigMapVolumeBuilder()
+                    .withConfigMapName(s)
+                    .withVolumeName("app-config-map")
+                    .build())));
+            result.add(new DecoratorBuildItem(KNATIVE, new AddMountDecorator(new MountBuilder()
+                    .withName("app-config-map")
+                    .withPath("/mnt/app-config-map")
+                    .build())));
+            paths.add("/mnt/app-config-map");
+        });
+
+        if (!paths.isEmpty()) {
+            result.add(new DecoratorBuildItem(KNATIVE,
+                    new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                            .withName("SMALLRYE_CONFIG_LOCATIONS")
+                            .withValue(paths.stream().collect(Collectors.joining(",")))
+                            .build())));
+        }
+        return result;
+    }
+
 }

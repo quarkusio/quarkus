@@ -254,4 +254,11 @@ public interface WebAuthnRunTimeConfig {
      */
     @WithDefault("/")
     Optional<String> cookiePath();
+
+    /**
+     * Max-Age attribute for the session cookie. This is the amount of time the browser will keep the cookie.
+     *
+     * The default value is empty, which means the cookie will be kept until the browser is closed.
+     */
+    Optional<Duration> cookieMaxAge();
 }

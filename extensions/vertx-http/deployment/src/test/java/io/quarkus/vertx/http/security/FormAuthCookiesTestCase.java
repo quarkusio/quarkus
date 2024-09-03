@@ -60,6 +60,7 @@ public class FormAuthCookiesTestCase {
             "quarkus.http.auth.form.cookie-name=laitnederc-sukrauq\n" +
             "quarkus.http.auth.form.cookie-same-site=lax\n" +
             "quarkus.http.auth.form.http-only-cookie=true\n" +
+            "quarkus.http.auth.form.cookie-max-age=PT2M\n" +
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
@@ -108,7 +109,7 @@ public class FormAuthCookiesTestCase {
                 .statusCode(302)
                 .header("location", containsString("/admin%E2%9D%A4"))
                 .cookie("laitnederc-sukrauq", detailedCookie().value(notNullValue())
-                        .httpOnly(true).sameSite("Lax"));
+                        .httpOnly(true).sameSite("Lax").maxAge(120));
 
         RestAssured
                 .given()

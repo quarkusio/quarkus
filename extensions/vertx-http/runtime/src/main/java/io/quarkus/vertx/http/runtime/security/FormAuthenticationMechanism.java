@@ -5,6 +5,7 @@ import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.cre
 
 import java.net.URI;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
@@ -88,7 +89,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         FormAuthRuntimeConfig runtimeForm = httpConfiguration.auth.form;
         this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName, runtimeForm.timeout.toMillis(),
                 runtimeForm.newCookieInterval.toMillis(), runtimeForm.httpOnlyCookie, runtimeForm.cookieSameSite.name(),
-                runtimeForm.cookiePath.orElse(null));
+                runtimeForm.cookiePath.orElse(null), runtimeForm.cookieMaxAge.map(Duration::toSeconds).orElse(-1L));
         this.loginPage = startWithSlash(runtimeForm.loginPage.orElse(null));
         this.errorPage = startWithSlash(runtimeForm.errorPage.orElse(null));
         this.landingPage = startWithSlash(runtimeForm.landingPage.orElse(null));

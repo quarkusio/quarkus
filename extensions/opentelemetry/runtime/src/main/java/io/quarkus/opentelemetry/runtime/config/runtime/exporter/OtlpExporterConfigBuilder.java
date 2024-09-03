@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.runtime.config;
+package io.quarkus.opentelemetry.runtime.config.runtime.exporter;
 
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_GRPC_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
@@ -6,13 +6,29 @@ import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExpor
 import java.util.HashMap;
 import java.util.Map;
 
+import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
-public class OpenTelemetryConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
+/**
+ * Adds fallbacks to {@link OtlpExporterRuntimeConfig#traces()} and {@link OtlpExporterRuntimeConfig#metrics()} from
+ * the base configuration {@link OtlpExporterRuntimeConfig}. The goal is to fallback specific properties from either
+ * <code>tracer</code> or <code>metrics</code> to their parent configuration. For instance, if there is no value for
+ * <code>quarkus.otel.exporter.otlp.traces.endpoint</code> it fallbacks to
+ * <code>quarkus.otel.exporter.otlp.endpoint</code>.
+ * <p>
+ * Defaults are set using the {@link SmallRyeConfigBuilder#withDefaultValue(String, String)}, instead of
+ * {@link io.smallrye.config.WithDefault} because the mapping {@link OtlpExporterConfig} is shared between base
+ * (unnamed), <code>traces</code>, and <code>metrics</code>, which means that every path would always have a default,
+ * and it won't be possible to fallback from the specific configuration to the base configuration.
+ * <p>
+ * This builder is only set to customize the runtime configuration since the mapping {@link OtlpExporterRuntimeConfig}
+ * is only for runtime. The builder executes with a very high priority to ensure that it sets the default
+ * configuration early in the config setup to allow other configurations to override it (like Dev Services).
+ */
+public class OtlpExporterConfigBuilder implements ConfigBuilder {
     @Override
-    public void configBuilder(final SmallRyeConfigBuilder builder) {
+    public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
         // Main defaults
         builder.withDefaultValue("quarkus.otel.exporter.otlp.endpoint", DEFAULT_GRPC_BASE_URI);
         builder.withDefaultValue("quarkus.otel.exporter.otlp.protocol", GRPC);
@@ -60,6 +76,11 @@ public class OpenTelemetryConfigBuilderCustomizer implements SmallRyeConfigBuild
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.proxy-options.host", "quarkus.otel.exporter.otlp.proxy-options.host");
         fallbacks.put("quarkus.otel.exporter.otlp.metrics.proxy-options.port", "quarkus.otel.exporter.otlp.proxy-options.port");
 
-        builder.withInterceptors(new FallbackConfigSourceInterceptor(fallbacks));
+        return builder.withInterceptors(new FallbackConfigSourceInterceptor(fallbacks));
+    }
+
+    @Override
+    public int priority() {
+        return Integer.MIN_VALUE;
     }
 }

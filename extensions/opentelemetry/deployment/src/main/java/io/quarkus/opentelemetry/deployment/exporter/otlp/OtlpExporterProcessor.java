@@ -20,9 +20,11 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
@@ -57,6 +59,11 @@ public class OtlpExporterProcessor {
                     otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
                     exportBuildConfig.enabled();
         }
+    }
+
+    @BuildStep
+    void config(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilderProducer) {
+        runTimeConfigBuilderProducer.produce(new RunTimeConfigBuilderBuildItem(OtlpExporterConfigBuilder.class));
     }
 
     @SuppressWarnings("deprecation")

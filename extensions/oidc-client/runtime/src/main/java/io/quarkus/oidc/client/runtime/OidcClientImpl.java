@@ -67,7 +67,7 @@ public class OidcClientImpl implements OidcClient {
         this.filters = filters;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
         this.jwtBearerAuthentication = oidcClientConfig.credentials.jwt.source == Source.BEARER;
-        this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcClientConfig);
+        this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcClientConfig, false);
     }
 
     @Override

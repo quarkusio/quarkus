@@ -326,7 +326,7 @@ public class ResteasyReactiveScanner {
                     MethodInfo annotatedMethod = methodAnnotationInstance.target().asMethod();
                     ClassInfo classWithJaxrsMethod = annotatedMethod.declaringClass();
                     if (Modifier.isAbstract(annotatedMethod.flags())
-                            && Modifier.isAbstract(classWithJaxrsMethod.flags())
+                            && Modifier.isInterface(classWithJaxrsMethod.flags())
                             && !clientInterfaces.containsKey(classWithJaxrsMethod.name())) {
                         clientInterfaces.put(classWithJaxrsMethod.name(), "");
                     }

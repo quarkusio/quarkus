@@ -11,6 +11,7 @@ public class TestResult {
 
     final String displayName;
     final String testClass;
+    final List<String> tags;
     final UniqueId uniqueId;
     final TestExecutionResult testExecutionResult;
     final List<String> logOutput;
@@ -20,10 +21,12 @@ public class TestResult {
     final List<Throwable> problems;
     final boolean reportable;
 
-    public TestResult(String displayName, String testClass, UniqueId uniqueId, TestExecutionResult testExecutionResult,
+    public TestResult(String displayName, String testClass, List<String> tags, UniqueId uniqueId,
+            TestExecutionResult testExecutionResult,
             List<String> logOutput, boolean test, long runId, long time, boolean reportable) {
         this.displayName = displayName;
         this.testClass = testClass;
+        this.tags = tags;
         this.uniqueId = uniqueId;
         this.testExecutionResult = testExecutionResult;
         this.logOutput = logOutput;
@@ -56,6 +59,10 @@ public class TestResult {
 
     public String getTestClass() {
         return testClass;
+    }
+
+    public List<String> getTags() {
+        return tags;
     }
 
     public UniqueId getUniqueId() {

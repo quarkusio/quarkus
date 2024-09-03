@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import io.quarkus.arc.Arc;
@@ -29,6 +30,7 @@ public class ResteasyReactiveServerJacksonRecorder {
     private static final Map<String, Class<?>> customDeserializationMap = new HashMap<>();
 
     private static final Set<Class<? extends StdSerializer>> generatedSerializers = new HashSet<>();
+    private static final Set<Class<? extends StdDeserializer>> generatedDeserializers = new HashSet<>();
 
     /* STATIC INIT */
     public RuntimeValue<Map<String, Supplier<String[]>>> createConfigExpToAllowedRoles() {
@@ -85,6 +87,10 @@ public class ResteasyReactiveServerJacksonRecorder {
         generatedSerializers.add((Class<? extends StdSerializer>) loadClass(className));
     }
 
+    public void recordGeneratedDeserializer(String className) {
+        generatedDeserializers.add((Class<? extends StdDeserializer>) loadClass(className));
+    }
+
     public void configureShutdown(ShutdownContext shutdownContext) {
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
@@ -127,6 +133,10 @@ public class ResteasyReactiveServerJacksonRecorder {
 
     public static Set<Class<? extends StdSerializer>> getGeneratedSerializers() {
         return generatedSerializers;
+    }
+
+    public static Set<Class<? extends StdDeserializer>> getGeneratedDeserializers() {
+        return generatedDeserializers;
     }
 
     private Class<?> loadClass(String className) {

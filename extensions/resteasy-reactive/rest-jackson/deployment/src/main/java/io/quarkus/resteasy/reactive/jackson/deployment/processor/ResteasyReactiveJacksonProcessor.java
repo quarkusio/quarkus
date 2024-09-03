@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Cookie;
@@ -75,10 +76,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInp
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyReader;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
-import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.*;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectMessageBodyReader;
@@ -384,21 +382,44 @@ public class ResteasyReactiveJacksonProcessor {
 
         IndexView indexView = jaxRsIndex.getIndexView();
 
-        Map<String, ClassInfo> jsonClasses = new HashMap<>();
+        Map<String, ClassInfo> serializedClasses = new HashMap<>();
+        Map<String, ClassInfo> deserializedClasses = new HashMap<>();
+
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
             if (effectiveReturnClassInfo != null) {
-                jsonClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+                serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+            }
+
+            if (methodInfo.hasAnnotation(POST.class)) {
+                for (Type paramType : methodInfo.parameterTypes()) {
+                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView);
+                    if (effectiveParamClassInfo != null) {
+                        deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
+                    }
+                }
             }
         }
 
-        if (!jsonClasses.isEmpty()) {
+        if (!serializedClasses.isEmpty()) {
             JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(jsonClasses.values())
+            factory.create(serializedClasses.values())
                     .forEach(recorder::recordGeneratedSerializer);
         }
+
+        if (!deserializedClasses.isEmpty()) {
+            JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
+                    index.getComputingIndex());
+            factory.create(deserializedClasses.values())
+                    .forEach(recorder::recordGeneratedDeserializer);
+        }
+    }
+
+    @BuildStep(onlyIf = JacksonOptimizationConfig.IsReflectionFreeSerializersEnabled.class)
+    void unremovable(BuildProducer<AdditionalBeanBuildItem> additionalProducer) {
+        additionalProducer.produce(AdditionalBeanBuildItem.unremovableOf(GeneratedSerializersRegister.class));
     }
 
     @BuildStep
@@ -438,7 +459,7 @@ public class ResteasyReactiveJacksonProcessor {
                 continue;
             }
 
-            ClassInfo effectiveReturnClassInfo = getEffectiveReturnClassInfo(methodInfo, indexView);
+            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView);
             if (effectiveReturnClassInfo == null) {
                 continue;
             }
@@ -467,17 +488,16 @@ public class ResteasyReactiveJacksonProcessor {
         }
     }
 
-    private static ClassInfo getEffectiveReturnClassInfo(MethodInfo methodInfo, IndexView indexView) {
-        Type returnType = methodInfo.returnType();
-        if (returnType.kind() == Type.Kind.VOID) {
+    private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView) {
+        if (type.kind() == Type.Kind.VOID) {
             return null;
         }
-        Type effectiveReturnType = getEffectiveReturnType(returnType);
+        Type effectiveReturnType = getEffectiveType(type);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
-    private static Type getEffectiveReturnType(Type returnType) {
-        Type effectiveReturnType = returnType;
+    private static Type getEffectiveType(Type type) {
+        Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
@@ -488,7 +508,7 @@ public class ResteasyReactiveJacksonProcessor {
                 return null;
             }
 
-            effectiveReturnType = returnType.asParameterizedType().arguments().get(0);
+            effectiveReturnType = type.asParameterizedType().arguments().get(0);
         }
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||

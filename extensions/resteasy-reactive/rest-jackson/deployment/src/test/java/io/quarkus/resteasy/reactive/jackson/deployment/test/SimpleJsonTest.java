@@ -656,4 +656,21 @@ public class SimpleJsonTest {
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.is("VMD"));
     }
+
+    @Test
+    public void testEcho() {
+        RestAssured
+                .with()
+                .body("{\"publicName\":\"Leo\",\"veterinarian\":{\"name\":\"Dolittle\"},\"age\":5}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/dog-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("age", Matchers.is(5))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+    }
 }

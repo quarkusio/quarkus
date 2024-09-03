@@ -3,8 +3,10 @@ package io.quarkus.test.component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,7 +29,7 @@ public class QuarkusComponentTestExtensionBuilder {
     public static final int DEFAULT_CONFIG_SOURCE_ORDINAL = 500;
 
     private final Map<String, String> configProperties = new HashMap<>();
-    private final List<Class<?>> componentClasses = new ArrayList<>();
+    private final Set<Class<?>> componentClasses = new HashSet<>();
     private final List<MockBeanConfiguratorImpl<?>> mockConfigurators = new ArrayList<>();
     private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
     private final List<Converter<?>> configConverters = new ArrayList<>();
@@ -164,7 +166,7 @@ public class QuarkusComponentTestExtensionBuilder {
             converters = List.copyOf(converters);
         }
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
-                List.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
+                Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
                 List.copyOf(annotationsTransformers), converters, configBuilderCustomizer));
     }

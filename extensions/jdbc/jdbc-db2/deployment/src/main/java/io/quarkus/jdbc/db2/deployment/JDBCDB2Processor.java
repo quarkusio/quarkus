@@ -70,18 +70,23 @@ public class JDBCDB2Processor {
         //any JDBC driver being configured explicitly through its configuration.
         //We register it for the sake of people not using Agroal,
         //for example when the driver is used with OpenTelemetry JDBC instrumentation.
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS)
+                .reason(getClass().getName() + " DB2 JDBC driver classes")
+                .build());
 
         // register resource bundles for reflection (they are apparently classes...)
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(Resources.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ResourceKeys.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(SqljResources.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T2uResourceKeys.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T2uResources.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T2zResourceKeys.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T2zResources.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T4ResourceKeys.class).build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(T4Resources.class).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
+                Resources.class,
+                ResourceKeys.class,
+                SqljResources.class,
+                T2uResourceKeys.class,
+                T2uResources.class,
+                T2zResourceKeys.class,
+                T2zResources.class,
+                T4ResourceKeys.class,
+                T4Resources.class)
+                .reason(getClass().getName() + " DB2 JDBC driver classes")
+                .build());
     }
 
     @BuildStep

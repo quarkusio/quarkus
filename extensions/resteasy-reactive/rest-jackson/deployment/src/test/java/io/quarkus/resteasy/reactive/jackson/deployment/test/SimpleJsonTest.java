@@ -34,7 +34,8 @@ public class SimpleJsonTest {
                                     NoopReaderInterceptor.class, TestIdentityProvider.class, TestIdentityController.class,
                                     AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
                                     AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
-                                    Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class)
+                                    Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
+                                    NestedInterface.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -507,6 +508,18 @@ public class SimpleJsonTest {
     }
 
     @Test
+    public void testInterface() {
+        RestAssured
+                .with()
+                .get("/simple/interface")
+                .then()
+                .statusCode(200)
+                .body("nestedInterface.int", Matchers.is(42))
+                .body("nestedInterface.character", Matchers.is("a"))
+                .body("nestedInterface.string", Matchers.is("response"));
+    }
+
+    @Test
     public void testSecureFieldOnAbstractClass() {
         // implementor with / without @SecureField returned
         testSecuredFieldOnAbstractClass("cat", "dog");
@@ -602,6 +615,7 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .body("publicName", Matchers.is("Garfield"))
+                .body("initial", Matchers.is("G"))
                 .body("privateName", Matchers.nullValue())
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.nullValue())
@@ -614,7 +628,7 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .body("publicName", Matchers.is("Leo"))
                 .body("privateName", Matchers.nullValue())
-                .body("publicAge", Matchers.is(5))
+                .body("age", Matchers.is(5))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.nullValue());
         TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
@@ -625,6 +639,7 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .body("publicName", Matchers.is("Garfield"))
+                .body("initial", Matchers.is("G"))
                 .body("privateName", Matchers.is("Monday"))
                 .body("privateAge", Matchers.is(4))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
@@ -637,7 +652,7 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .body("publicName", Matchers.is("Leo"))
                 .body("privateName", Matchers.is("Jack"))
-                .body("publicAge", Matchers.is(5))
+                .body("age", Matchers.is(5))
                 .body("veterinarian.name", Matchers.is("Dolittle"))
                 .body("veterinarian.title", Matchers.is("VMD"));
     }

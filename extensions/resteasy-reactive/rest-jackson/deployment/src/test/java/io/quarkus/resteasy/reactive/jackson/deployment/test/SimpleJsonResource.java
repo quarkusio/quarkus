@@ -442,6 +442,12 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item.getContent().getName();
     }
 
+    @GET
+    @Path("/interface")
+    public ContainerDTO interfaceTest() {
+        return new ContainerDTO(NestedInterface.INSTANCE);
+    }
+
     public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();

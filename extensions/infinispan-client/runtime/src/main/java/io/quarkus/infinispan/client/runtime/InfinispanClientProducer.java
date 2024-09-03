@@ -146,10 +146,11 @@ public class InfinispanClientProducer {
             return;
         }
         // Build de cache manager if the server list is present
-        RemoteCacheManager cacheManager = new RemoteCacheManager(conf.build());
-        remoteCacheManagers.put(infinispanConfigName, cacheManager);
-
         InfinispanClientsRuntimeConfig infinispanClientsRuntimeConfig = this.infinispanClientsRuntimeConfigHandle.get();
+
+        RemoteCacheManager cacheManager = new RemoteCacheManager(conf.build(),
+                infinispanClientsRuntimeConfig.startClient.orElse(Boolean.TRUE));
+        remoteCacheManagers.put(infinispanConfigName, cacheManager);
 
         if (infinispanClientsRuntimeConfig.useSchemaRegistration.orElse(Boolean.TRUE)) {
             registerSchemaInServer(infinispanConfigName, properties, cacheManager);
@@ -239,7 +240,21 @@ public class InfinispanClientProducer {
         if (infinispanClientRuntimeConfig.saslMechanism.isPresent()) {
             properties.put(ConfigurationProperties.SASL_MECHANISM, infinispanClientRuntimeConfig.saslMechanism.get());
         }
-
+        if (infinispanClientRuntimeConfig.keyStore.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_FILE_NAME, infinispanClientRuntimeConfig.keyStore.get());
+        }
+        if (infinispanClientRuntimeConfig.keyStorePassword.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_PASSWORD,
+                    infinispanClientRuntimeConfig.keyStorePassword.get());
+        }
+        if (infinispanClientRuntimeConfig.keyStoreType.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_STORE_TYPE,
+                    infinispanClientRuntimeConfig.keyStoreType.get());
+        }
+        if (infinispanClientRuntimeConfig.keyAlias.isPresent()) {
+            properties.put(ConfigurationProperties.KEY_ALIAS,
+                    infinispanClientRuntimeConfig.keyAlias.get());
+        }
         if (infinispanClientRuntimeConfig.trustStore.isPresent()) {
             properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, infinispanClientRuntimeConfig.trustStore.get());
         }

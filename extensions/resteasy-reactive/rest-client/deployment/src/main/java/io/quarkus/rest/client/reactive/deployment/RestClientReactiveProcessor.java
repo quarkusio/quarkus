@@ -364,10 +364,8 @@ class RestClientReactiveProcessor {
                 .getOptionalValue(ENABLE_COMPRESSION, Boolean.class)
                 .orElse(false);
         if (enableCompression) {
-            reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(ClientGZIPDecodingInterceptor.class)
-                    .serialization(false)
-                    .build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ClientGZIPDecodingInterceptor.class)
+                    .reason(getClass().getName()).build());
         }
     }
 
@@ -401,9 +399,8 @@ class RestClientReactiveProcessor {
                 filterClassNames.add(filterClassName.toString());
             }
         }
-        reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(filterClassNames.toArray(new String[0]))
-                .constructors(true)
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(filterClassNames.toArray(new String[0]))
+                .reason(getClass().getName())
                 .build());
     }
 
@@ -695,7 +692,8 @@ class RestClientReactiveProcessor {
             }
             result.put(classResult.interfaceName, classResult);
             reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                    .serialization(false).build());
+                    .reason(getClass().getName())
+                    .build());
         }
         return result;
     }
@@ -720,7 +718,8 @@ class RestClientReactiveProcessor {
             } else if (existing == null || existing.priority < classResult.priority) {
                 result.put(classResult.interfaceName, classResult);
                 reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                        .serialization(false).build());
+                        .reason(getClass().getName())
+                        .build());
             }
         }
         return result;
@@ -746,7 +745,8 @@ class RestClientReactiveProcessor {
             }
             result.put(classResult.interfaceName, classResult);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
-                    .serialization(false).build());
+                    .reason(getClass().getName())
+                    .build());
         }
         return result;
     }

@@ -22,6 +22,7 @@ public interface ExtendedQuarkusVertxHttpMetrics {
 
         @Override
         public void initialize(int maxConnections, AtomicInteger current) {
+            // no-op
         }
     };
 

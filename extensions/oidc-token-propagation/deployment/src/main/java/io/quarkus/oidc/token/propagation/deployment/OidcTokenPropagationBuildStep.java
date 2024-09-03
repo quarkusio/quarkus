@@ -49,9 +49,9 @@ public class OidcTokenPropagationBuildStep {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestFilter.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JsonWebTokenRequestFilter.class));
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(AccessTokenRequestFilter.class).methods().fields().build());
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(JsonWebTokenRequestFilter.class).methods().fields().build());
+                .produce(ReflectiveClassBuildItem.builder(AccessTokenRequestFilter.class, JsonWebTokenRequestFilter.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
 
         if (config.registerFilter()) {
             Class<?> filterClass = config.jsonWebToken() ? JsonWebTokenRequestFilter.class : AccessTokenRequestFilter.class;

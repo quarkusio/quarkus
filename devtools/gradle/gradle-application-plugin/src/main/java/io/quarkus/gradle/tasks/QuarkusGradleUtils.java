@@ -7,7 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.gradle.api.Project;
@@ -46,44 +46,35 @@ public class QuarkusGradleUtils {
     }
 
     public static Path mergeClassesDirs(Collection<Path> classesDirs, File tmpDir, boolean populated, boolean test) {
-        Path classesDir = null;
-        final Iterator<Path> i = classesDirs.iterator();
-        int dirCount = 0;
-        while (i.hasNext()) {
-            final Path next = i.next();
-            if (!Files.exists(next)) {
-                continue;
-            }
-            try {
-                switch (dirCount++) {
-                    case 0:
-                        classesDir = next;
-                        break;
-                    case 1:
-                        //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
-                        //to be a way to map them. We will need to address this at some point, but for now we just stick them
-                        //all in a temp dir
-                        final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes" + (test ? "-test" : ""));
-                        if (!populated) {
-                            return tmpClassesDir;
-                        }
-                        if (Files.exists(tmpClassesDir)) {
-                            IoUtils.recursiveDelete(tmpClassesDir);
-                        }
-                        IoUtils.copy(classesDir, tmpClassesDir);
-                        classesDir = tmpClassesDir;
-                    default:
-                        IoUtils.copy(next, classesDir);
+        List<Path> existingClassesDirs = classesDirs.stream().filter(p -> Files.exists(p)).toList();
 
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(ERROR_COLLECTING_PROJECT_CLASSES, e);
-            }
-        }
-        if (classesDir == null) {
+        if (existingClassesDirs.size() == 0) {
             return null;
         }
-        return classesDir;
+
+        if (existingClassesDirs.size() == 1) {
+            return existingClassesDirs.get(0);
+        }
+
+        try {
+            Path mergedClassesDir = tmpDir.toPath().resolve("quarkus-app-classes" + (test ? "-test" : ""));
+
+            if (!populated) {
+                return mergedClassesDir;
+            }
+
+            if (Files.exists(mergedClassesDir)) {
+                IoUtils.recursiveDelete(mergedClassesDir);
+            }
+
+            for (Path classesDir : existingClassesDirs) {
+                IoUtils.copy(classesDir, mergedClassesDir);
+            }
+
+            return mergedClassesDir;
+        } catch (IOException e) {
+            throw new UncheckedIOException(ERROR_COLLECTING_PROJECT_CLASSES, e);
+        }
     }
 
 }

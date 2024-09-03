@@ -108,6 +108,7 @@ import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
+import io.quarkus.qute.Identifiers;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
@@ -2180,6 +2181,10 @@ public class QuteProcessor {
             if (PathTreeUtils.containsCaseSensitivePath(pathTree, templateRoot)) {
                 pathTree.walkIfContains(templateRoot, visit -> {
                     if (Files.isRegularFile(visit.getPath())) {
+                        if (!Identifiers.isValid(visit.getPath().getFileName().toString())) {
+                            LOGGER.warnf("Invalid file name detected [%s] - template is ignored", visit.getPath());
+                            return;
+                        }
                         LOGGER.debugf("Found template: %s", visit.getPath());
                         // remove templateRoot + /
                         final String relativePath = visit.getRelativePath();

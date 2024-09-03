@@ -1,6 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -8,13 +10,14 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -24,7 +27,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.SerializableString;
+import com.fasterxml.jackson.core.io.SerializedString;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -37,6 +43,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -52,10 +59,13 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  * <pre>{@code
  * public class Person {
  *     private String firstName;
+ *
+ *     &#64;JsonProperty("familyName")
  *     private String lastName;
+ *
  *     private int age;
  *
- *     @SecureField(rolesAllowed = "admin")
+ *     &#64;SecureField(rolesAllowed = "admin")
  *     private Address address;
  *
  *     public Person() {
@@ -76,6 +86,8 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *
  * <pre>{@code
  * public class Person$quarkusjacksonserializer extends StdSerializer {
+ *     static final String[] address_ROLES_ALLOWED = new String[] { "admin" };
+ *
  *     public Person$quarkusjacksonserializer() {
  *         super(Person.class);
  *     }
@@ -83,21 +95,35 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
  *     public void serialize(Object var1, JsonGenerator var2, SerializerProvider var3) throws IOException {
  *         Person var4 = (Person) var1;
  *         var2.writeStartObject();
+ *         var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.age);
  *         int var5 = var4.getAge();
- *         var2.writeNumberField("age", var5);
+ *         var2.writeNumber(var5);
+ *         var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.firstName);
  *         String var6 = var4.getFirstName();
- *         var2.writeStringField("firstName", var6);
+ *         var2.writeString(var6);
+ *         var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.familyName);
  *         String var7 = var4.getLastName();
- *         var2.writeStringField("lastName", var7);
- *         String[] var8 = new String[] { "admin" };
- *         Address var9 = var4.getAddress();
- *         if (JacksonMapperUtil.includeSecureField(var8)) {
- *             var2.writePOJOField("address", var9);
+ *         var2.writeString(var7);
+ *         if (JacksonMapperUtil.includeSecureField(address_ROLES_ALLOWED)) {
+ *             var2.writeFieldName(SerializedStrings$quarkusjacksonserializer.address);
+ *             Address var9 = var4.getAddress();
+ *             var2.writePOJO(var9);
  *         }
  *         var2.writeEndObject();
  *     }
  * }
+ *
+ * public class SerializedStrings$quarkusjacksonserializer {
+ *     static final SerializedString age = new SerializedString("age");
+ *     static final SerializedString firstName = new SerializedString("firstName");
+ *     static final SerializedString familyName = new SerializedString("familyName");
+ *     static final SerializedString address = new SerializedString("address");
+ * }
  * }</pre>
+ *
+ * Here, for performance reasons, the names of the fields to be serialized is stored as Jackson's {@code SerializedString}s
+ * in an external class, and reused for each serialization, thus avoiding executing the UTF-8 encoding of the same strings
+ * at each serialization.
  *
  * Note that in this case also the {@code Address} class has to be serialized in the same way, and then this factory triggers
  * the generation of a second StdSerializer also for it. More in general if during the generation of a serializer for a
@@ -109,11 +135,13 @@ public class JacksonSerializerFactory {
 
     private static final String SUPER_CLASS_NAME = StdSerializer.class.getName();
     private static final String JSON_GEN_CLASS_NAME = JsonGenerator.class.getName();
+    private static final String SER_STRINGS_CLASS_NAME = "SerializedStrings$quarkusjacksonserializer";
 
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     private final IndexView jandexIndex;
 
     private final Set<String> generatedClassNames = new HashSet<>();
+    private final Map<String, Set<String>> generatedFields = new HashMap<>();
     private final Deque<ClassInfo> toBeGenerated = new ArrayDeque<>();
 
     public JacksonSerializerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
@@ -130,10 +158,39 @@ public class JacksonSerializerFactory {
             create(toBeGenerated.removeFirst()).ifPresent(createdClasses::add);
         }
 
+        createFieldNamesClass();
+
         return createdClasses;
     }
 
-    public Optional<String> create(ClassInfo classInfo) {
+    public void createFieldNamesClass() {
+        if (generatedFields.isEmpty()) {
+            return;
+        }
+
+        MethodDescriptor serStringCtor = MethodDescriptor.ofConstructor(SerializedString.class, String.class);
+
+        for (Map.Entry<String, Set<String>> fieldsInPkg : generatedFields.entrySet()) {
+            try (ClassCreator classCreator = new ClassCreator(
+                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true),
+                    fieldsInPkg.getKey() + "." + SER_STRINGS_CLASS_NAME, null,
+                    "java.lang.Object")) {
+
+                MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
+
+                for (String field : fieldsInPkg.getValue()) {
+                    FieldCreator fieldCreator = classCreator.getFieldCreator(field, SerializedString.class.getName())
+                            .setModifiers(ACC_STATIC | ACC_FINAL);
+                    clinit.writeStaticField(fieldCreator.getFieldDescriptor(),
+                            clinit.newInstance(serStringCtor, clinit.load(field)));
+                }
+
+                clinit.returnVoid();
+            }
+        }
+    }
+
+    private Optional<String> create(ClassInfo classInfo) {
         String beanClassName = classInfo.name().toString();
         if (vetoedClassName(beanClassName) || !generatedClassNames.add(beanClassName)) {
             return Optional.empty();
@@ -161,15 +218,16 @@ public class JacksonSerializerFactory {
 
     private boolean createSerializeMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
         MethodCreator serialize = classCreator.getMethodCreator("serialize", "void", "java.lang.Object", JSON_GEN_CLASS_NAME,
-                "com.fasterxml.jackson.databind.SerializerProvider");
-        serialize.setModifiers(ACC_PUBLIC);
-        serialize.addException(IOException.class);
-        boolean valid = serializeObject(classInfo, beanClassName, serialize);
+                "com.fasterxml.jackson.databind.SerializerProvider")
+                .setModifiers(ACC_PUBLIC)
+                .addException(IOException.class);
+        boolean valid = serializeObject(classInfo, classCreator, beanClassName, serialize);
         serialize.returnVoid();
         return valid;
     }
 
-    private boolean serializeObject(ClassInfo classInfo, String beanClassName, MethodCreator serialize) {
+    private boolean serializeObject(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            MethodCreator serialize) {
         Set<String> serializedFields = new HashSet<>();
         ResultHandle valueHandle = serialize.checkCast(serialize.getMethodParam(0), beanClassName);
         ResultHandle jsonGenerator = serialize.getMethodParam(1);
@@ -179,7 +237,7 @@ public class JacksonSerializerFactory {
         MethodDescriptor writeStartObject = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeStartObject", "void");
         serialize.invokeVirtualMethod(writeStartObject, jsonGenerator);
 
-        boolean valid = serializeObjectData(classInfo, serialize, valueHandle, jsonGenerator, serializerProvider,
+        boolean valid = serializeObjectData(classInfo, classCreator, serialize, valueHandle, jsonGenerator, serializerProvider,
                 serializedFields);
 
         // jsonGenerator.writeEndObject();
@@ -190,72 +248,86 @@ public class JacksonSerializerFactory {
             throwExceptionForEmptyBean(beanClassName, serialize, jsonGenerator);
         }
 
+        classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
+
         return valid;
     }
 
-    private boolean serializeObjectData(ClassInfo classInfo, MethodCreator serialize,
+    private boolean serializeObjectData(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
             ResultHandle valueHandle, ResultHandle jsonGenerator, ResultHandle serializerProvider,
             Set<String> serializedFields) {
-        return serializeFields(classInfo, serialize, valueHandle, jsonGenerator, serializerProvider, serializedFields) &&
-                serializeMethods(classInfo, serialize, valueHandle, jsonGenerator, serializerProvider, serializedFields);
+        return serializeFields(classInfo, classCreator, serialize, valueHandle, jsonGenerator, serializerProvider,
+                serializedFields) &&
+                serializeMethods(classInfo, classCreator, serialize, valueHandle, jsonGenerator, serializerProvider,
+                        serializedFields);
     }
 
-    private boolean serializeFields(ClassInfo classInfo, MethodCreator serialize, ResultHandle valueHandle,
+    private boolean serializeFields(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
+            ResultHandle valueHandle,
             ResultHandle jsonGenerator, ResultHandle serializerProvider, Set<String> serializedFields) {
         for (FieldInfo fieldInfo : classFields(classInfo)) {
             if (Modifier.isStatic(fieldInfo.flags())) {
                 continue;
             }
-            AnnotationTarget target = valueReader(classInfo, fieldInfo);
-            if (target != null) {
-                String fieldName = fieldInfo.name();
-                if (serializedFields.add(fieldName)) {
-                    if (hasUnknownAnnotation(fieldInfo) || (fieldInfo != target && hasUnknownAnnotation(target))) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, fieldInfo);
+            if (fieldSpecs != null) {
+                if (serializedFields.add(fieldSpecs.fieldName)) {
+                    if (fieldSpecs.hasUnknownAnnotation()) {
                         return false;
                     }
-                    ResultHandle arg = toValueReaderHandle(target, serialize, valueHandle);
-                    writeField(fieldInfo.type(), fieldName, writeFieldBranch(serialize, fieldInfo, target), jsonGenerator,
-                            serializerProvider, arg);
+                    writeField(classInfo, fieldSpecs, writeFieldBranch(classCreator, serialize, fieldSpecs), jsonGenerator,
+                            serializerProvider, valueHandle);
                 }
             }
         }
         return true;
     }
 
-    private boolean serializeMethods(ClassInfo classInfo, MethodCreator serialize, ResultHandle valueHandle,
+    private boolean serializeMethods(ClassInfo classInfo, ClassCreator classCreator, MethodCreator serialize,
+            ResultHandle valueHandle,
             ResultHandle jsonGenerator, ResultHandle serializerProvider, Set<String> serializedFields) {
         for (MethodInfo methodInfo : classMethods(classInfo)) {
             if (Modifier.isStatic(methodInfo.flags())) {
                 continue;
             }
-            String fieldName = fieldNameFromMethod(methodInfo);
-            if (fieldName != null && serializedFields.add(fieldName)) {
-                if (hasUnknownAnnotation(methodInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo);
+            if (fieldSpecs != null && serializedFields.add(fieldSpecs.fieldName)) {
+                if (fieldSpecs.hasUnknownAnnotation()) {
                     return false;
                 }
-                ResultHandle arg = serialize.invokeVirtualMethod(MethodDescriptor.of(methodInfo), valueHandle);
-                writeField(methodInfo.returnType(), fieldName, serialize, jsonGenerator, serializerProvider, arg);
+                writeField(classInfo, fieldSpecs, serialize, jsonGenerator, serializerProvider, valueHandle);
             }
         }
         return true;
     }
 
-    private void writeField(Type fieldType, String fieldName, BytecodeCreator bytecode, ResultHandle jsonGenerator,
-            ResultHandle serializerProvider, ResultHandle fieldReader) {
-        String typeName = fieldType.name().toString();
+    private void writeField(ClassInfo classInfo, FieldSpecs fieldSpecs, BytecodeCreator bytecode, ResultHandle jsonGenerator,
+            ResultHandle serializerProvider, ResultHandle valueHandle) {
+        String pkgName = classInfo.name().packagePrefixName().toString();
+        generatedFields.computeIfAbsent(pkgName, pkg -> new HashSet<>()).add(fieldSpecs.jsonName);
+        MethodDescriptor writeFieldName = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writeFieldName", void.class,
+                SerializableString.class);
+        ResultHandle serStringHandle = bytecode.readStaticField(
+                FieldDescriptor.of(pkgName + "." + SER_STRINGS_CLASS_NAME, fieldSpecs.jsonName,
+                        SerializedString.class.getName()));
+        bytecode.invokeVirtualMethod(writeFieldName, jsonGenerator, serStringHandle);
+
+        ResultHandle arg = fieldSpecs.toValueReaderHandle(bytecode, valueHandle);
+        String typeName = fieldSpecs.fieldType.name().toString();
         String primitiveMethodName = writeMethodForPrimitiveFields(typeName);
+
         if (primitiveMethodName != null) {
             MethodDescriptor primitiveWriter = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, primitiveMethodName, "void",
-                    "java.lang.String", typeName);
-            bytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, bytecode.load(fieldName), fieldReader);
+                    fieldSpecs.writtenType());
+            bytecode.invokeVirtualMethod(primitiveWriter, jsonGenerator, arg);
             return;
         }
 
-        registerTypeToBeGenerated(fieldType, typeName);
+        registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
 
-        MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJOField",
-                void.class, String.class, Object.class);
-        bytecode.invokeVirtualMethod(writeMethod, jsonGenerator, bytecode.load(fieldName), fieldReader);
+        MethodDescriptor writeMethod = MethodDescriptor.ofMethod(JSON_GEN_CLASS_NAME, "writePOJO",
+                void.class, Object.class);
+        bytecode.invokeVirtualMethod(writeMethod, jsonGenerator, arg);
     }
 
     private void registerTypeToBeGenerated(Type fieldType, String typeName) {
@@ -300,45 +372,40 @@ public class JacksonSerializerFactory {
 
     private String writeMethodForPrimitiveFields(String typeName) {
         return switch (typeName) {
-            case "java.lang.String" -> "writeStringField";
+            case "java.lang.String", "char", "java.lang.Character" -> "writeString";
             case "short", "java.lang.Short", "int", "java.lang.Integer", "long", "java.lang.Long", "float",
                     "java.lang.Float", "double", "java.lang.Double" ->
-                "writeNumberField";
-            case "boolean", "java.lang.Boolean" -> "writeBooleanField";
+                "writeNumber";
+            case "boolean", "java.lang.Boolean" -> "writeBoolean";
             default -> null;
         };
     }
 
-    private boolean hasUnknownAnnotation(AnnotationTarget target) {
-        return target.annotations().stream().anyMatch(ann -> ann.name().toString().startsWith("com.fasterxml.jackson."));
-    }
-
-    private BytecodeCreator writeFieldBranch(MethodCreator serialize, FieldInfo fieldInfo, AnnotationTarget target) {
-        String[] rolesAllowed = rolesAllowed(fieldInfo, target);
+    private BytecodeCreator writeFieldBranch(ClassCreator classCreator, MethodCreator serialize, FieldSpecs fieldSpecs) {
+        String[] rolesAllowed = fieldSpecs.rolesAllowed();
         if (rolesAllowed != null) {
-            ResultHandle rolesArray = serialize.newArray(String.class, rolesAllowed.length);
+            MethodCreator clinit = classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
+
+            ResultHandle rolesArray = clinit.newArray(String.class, rolesAllowed.length);
             for (int i = 0; i < rolesAllowed.length; ++i) {
-                serialize.writeArrayValue(rolesArray, serialize.load(i), serialize.load(rolesAllowed[i]));
+                clinit.writeArrayValue(rolesArray, clinit.load(i), clinit.load(rolesAllowed[i]));
             }
+
+            FieldCreator fieldCreator = classCreator
+                    .getFieldCreator(fieldSpecs.fieldName + "_ROLES_ALLOWED", String[].class.getName())
+                    .setModifiers(ACC_STATIC | ACC_FINAL);
+            clinit.writeStaticField(fieldCreator.getFieldDescriptor(), rolesArray);
+
+            ResultHandle rolesArrayReader = serialize.readStaticField(
+                    FieldDescriptor.of(classCreator.getClassName(), fieldSpecs.fieldName + "_ROLES_ALLOWED",
+                            String[].class.getName()));
 
             MethodDescriptor includeSecureField = MethodDescriptor.ofMethod(JacksonMapperUtil.class, "includeSecureField",
                     boolean.class, String[].class);
-            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, rolesArray);
+            ResultHandle included = serialize.invokeStaticMethod(includeSecureField, rolesArrayReader);
             return serialize.ifTrue(included).trueBranch();
         }
         return serialize;
-    }
-
-    private String[] rolesAllowed(FieldInfo fieldInfo, AnnotationTarget target) {
-        AnnotationInstance secureField = fieldInfo.annotation(SecureField.class);
-        if (secureField == null && target != fieldInfo) {
-            secureField = target.annotation(SecureField.class);
-        }
-        if (secureField != null) {
-            AnnotationValue rolesAllowed = secureField.value("rolesAllowed");
-            return rolesAllowed != null ? rolesAllowed.asStringArray() : null;
-        }
-        return null;
     }
 
     private Collection<FieldInfo> classFields(ClassInfo classInfo) {
@@ -367,37 +434,6 @@ public class JacksonSerializerFactory {
             classMethods(superClassInfo, methods);
             return null;
         });
-    }
-
-    private String fieldNameFromMethod(MethodInfo methodInfo) {
-        if (isGetterMethod(methodInfo)) {
-            String methodName = methodInfo.name();
-            return isBooleanType(methodInfo.returnType().toString())
-                    ? methodName.substring(2, 3).toLowerCase() + methodName.substring(3)
-                    : methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
-        }
-        return null;
-    }
-
-    private AnnotationTarget valueReader(ClassInfo classInfo, FieldInfo fieldInfo) {
-        MethodInfo getterMethodInfo = getterMethodInfo(classInfo, fieldInfo);
-        if (getterMethodInfo != null) {
-            return getterMethodInfo;
-        }
-        if (Modifier.isPublic(fieldInfo.flags())) {
-            return fieldInfo;
-        }
-        return null;
-    }
-
-    private ResultHandle toValueReaderHandle(Object member, BytecodeCreator serialize, ResultHandle valueHandle) {
-        if (member instanceof MethodInfo m) {
-            return serialize.invokeVirtualMethod(MethodDescriptor.of(m), valueHandle);
-        }
-        if (member instanceof FieldInfo f) {
-            return serialize.readInstanceField(FieldDescriptor.of(f), valueHandle);
-        }
-        throw new UnsupportedOperationException("Unknown member type: " + member.getClass());
     }
 
     private <T> T onSuperClass(ClassInfo classInfo, Function<ClassInfo, T> f) {
@@ -463,15 +499,137 @@ public class JacksonSerializerFactory {
                 : onSuperClass(classInfo, superClassInfo -> findMethod(superClassInfo, methodName, parameters));
     }
 
-    private String ucFirst(String name) {
+    private static String ucFirst(String name) {
         return name.substring(0, 1).toUpperCase() + name.substring(1);
     }
 
-    private boolean isBooleanType(String type) {
+    private static boolean isBooleanType(String type) {
         return type.equals("boolean") || type.equals("java.lang.Boolean");
     }
 
-    private boolean vetoedClassName(String className) {
+    private static boolean vetoedClassName(String className) {
         return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
+    }
+
+    private FieldSpecs fieldSpecsFromField(ClassInfo classInfo, FieldInfo fieldInfo) {
+        MethodInfo getterMethodInfo = getterMethodInfo(classInfo, fieldInfo);
+        if (getterMethodInfo != null) {
+            return new FieldSpecs(fieldInfo, getterMethodInfo);
+        }
+        if (Modifier.isPublic(fieldInfo.flags())) {
+            return new FieldSpecs(fieldInfo);
+        }
+        return null;
+    }
+
+    private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo) {
+        return isGetterMethod(methodInfo) ? new FieldSpecs(methodInfo) : null;
+    }
+
+    private static class FieldSpecs {
+
+        private final String fieldName;
+        private final String jsonName;
+        private final Type fieldType;
+        private final Map<String, AnnotationInstance> annotations = new HashMap<>();
+
+        private MethodInfo methodInfo;
+        private FieldInfo fieldInfo;
+
+        FieldSpecs(FieldInfo fieldInfo) {
+            this(fieldInfo, null);
+        }
+
+        FieldSpecs(MethodInfo methodInfo) {
+            this(null, methodInfo);
+        }
+
+        FieldSpecs(FieldInfo fieldInfo, MethodInfo methodInfo) {
+            if (fieldInfo != null) {
+                this.fieldInfo = fieldInfo;
+                fieldInfo.annotations().forEach(a -> annotations.put(a.name().toString(), a));
+            }
+            if (methodInfo != null) {
+                this.methodInfo = methodInfo;
+                methodInfo.annotations().forEach(a -> annotations.put(a.name().toString(), a));
+            }
+            this.fieldType = fieldType();
+            this.fieldName = fieldName();
+            this.jsonName = jsonName();
+        }
+
+        private Type fieldType() {
+            return fieldInfo != null ? fieldInfo.type() : methodInfo.returnType();
+        }
+
+        private String jsonName() {
+            AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty != null) {
+                AnnotationValue value = jsonProperty.value();
+                if (value != null && !value.asString().isEmpty()) {
+                    return value.asString();
+                }
+            }
+            return fieldName();
+        }
+
+        private String fieldName() {
+            return fieldInfo != null ? fieldInfo.name() : fieldNameFromMethod(methodInfo);
+        }
+
+        private String fieldNameFromMethod(MethodInfo methodInfo) {
+            String methodName = methodInfo.name();
+            return isBooleanType(methodInfo.returnType().toString())
+                    ? methodName.substring(2, 3).toLowerCase() + methodName.substring(3)
+                    : methodName.substring(3, 4).toLowerCase() + methodName.substring(4);
+        }
+
+        boolean hasUnknownAnnotation() {
+            return annotations.keySet().stream()
+                    .anyMatch(ann -> ann.startsWith("com.fasterxml.jackson.") && !ann.equals(JsonProperty.class.getName()));
+        }
+
+        ResultHandle toValueReaderHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
+            ResultHandle handle = accessorHandle(bytecode, valueHandle);
+
+            handle = switch (fieldType.name().toString()) {
+                case "char", "java.lang.Character" -> bytecode.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle);
+                default -> handle;
+            };
+
+            return handle;
+        }
+
+        private ResultHandle accessorHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
+            if (methodInfo != null) {
+                if (methodInfo.declaringClass().isInterface()) {
+                    return bytecode.invokeInterfaceMethod(MethodDescriptor.of(methodInfo), valueHandle);
+                }
+                return bytecode.invokeVirtualMethod(MethodDescriptor.of(methodInfo), valueHandle);
+            }
+            return bytecode.readInstanceField(FieldDescriptor.of(fieldInfo), valueHandle);
+        }
+
+        String writtenType() {
+            return switch (fieldType.name().toString()) {
+                case "char", "java.lang.Character" -> "java.lang.String";
+                case "java.lang.Integer" -> "int";
+                case "java.lang.Short" -> "short";
+                case "java.lang.Long" -> "long";
+                case "java.lang.Double" -> "double";
+                case "java.lang.Float" -> "float";
+                default -> fieldType.name().toString();
+            };
+        }
+
+        private String[] rolesAllowed() {
+            AnnotationInstance secureField = annotations.get(SecureField.class.getName());
+            if (secureField != null) {
+                AnnotationValue rolesAllowed = secureField.value("rolesAllowed");
+                return rolesAllowed != null ? rolesAllowed.asStringArray() : null;
+            }
+            return null;
+        }
     }
 }

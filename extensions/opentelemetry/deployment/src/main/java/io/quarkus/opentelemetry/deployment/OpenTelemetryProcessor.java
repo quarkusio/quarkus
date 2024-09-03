@@ -186,8 +186,9 @@ public class OpenTelemetryProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         resource.produce(new NativeImageResourceBuildItem(
                 "META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(QuarkusContextStorage.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(QuarkusContextStorage.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
     }
 
     @BuildStep

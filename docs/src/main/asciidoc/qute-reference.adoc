@@ -1525,6 +1525,8 @@ If you want to use Qute in your Quarkus application, add the following dependenc
 In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@ApplicationScoped`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
 Moreover, all templates located in the `src/main/resources/templates` directory are validated and can be easily injected.
 
+NOTE: A valid template file name is a sequence of non-whitespace characters. For example, a template file named `foo and bar.html` will be ignored.
+
 [source,java]
 ----
 import io.quarkus.qute.Engine;
@@ -1940,17 +1942,19 @@ public class HelloResource {
     }
 }
 ----
-<1> Declares a type-safe template with the Java record.
+<1> Declares a type-safe template with the Java record. The template is located at `/src/main/resources/templates/HelloResource/Hello.html`.
 <2> Instantiate the record and use it as an ordinary `TemplateInstance`.
 
 
 ==== Customized Template Path
 
-The template path of a `@CheckedTemplate` method consists of the _base path_ and a _defaulted name_.
+The path of a type-safe template (`@CheckedTemplate` method or record) consists of a _base path_ and a _defaulted name_.
 The _base path_ is supplied by the `@CheckedTemplate#basePath()`.
-By default, the simple name of the declaring class for a nested static class or an empty string for a top level class is used.
+By default, the simple name of the enclosing class for a nested static class or an empty string for a top level class is used.
 The _defaulted name_ is derived by the strategy specified in `@CheckedTemplate#defaultName()`.
-By default, the name of the `@CheckedTemplate` method is used as is.
+By default, the name of the `@CheckedTemplate` method/record is used as is.
+
+NOTE: A template record that is not annotated with `@CheckedTemplate` is treated as if it was annotated with `@CheckedTemplate` with default values.
 
 .Customized Template Path Example
 [source,java]

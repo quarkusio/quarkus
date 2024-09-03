@@ -8,6 +8,7 @@ import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.utils.AppInfoParser;
 
+import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -21,13 +22,19 @@ final class RemoveJMXAccess {
 
     @Substitute
     public static synchronized void registerAppInfo(String prefix, String id, Metrics metrics, long nowMs) {
-
+        registerMetrics(metrics, new AppInfoParser.AppInfo(nowMs));
     }
 
     @Substitute
     public static synchronized void unregisterAppInfo(String prefix, String id, Metrics metrics) {
-
+        unregisterMetrics(metrics);
     }
+
+    @Alias
+    private native static void registerMetrics(Metrics metrics, AppInfoParser.AppInfo appInfo);
+
+    @Alias
+    private native static void unregisterMetrics(Metrics metrics);
 
 }
 

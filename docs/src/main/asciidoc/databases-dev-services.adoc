@@ -166,7 +166,7 @@ quarkus.datasource.db-kind=mysql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
 ----
 
-When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand.
+When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same Dev Services, this data will contain all the data you might have created beforehand.
 
 [IMPORTANT]
 ====
@@ -190,7 +190,7 @@ Overriding the MariaDB/MySQL configuration would be done as follows:
 quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
 ----
 
-This support is database specific and needs to be implemented in each dev service specifically.
+This support is database specific and needs to be implemented in each Dev Service specifically.
 
 == Connect To Database Run as a Dev Service
 

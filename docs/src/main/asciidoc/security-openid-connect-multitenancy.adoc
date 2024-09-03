@@ -170,6 +170,7 @@ import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -211,6 +212,7 @@ Otherwise, it initiates an authorization code flow when authentication is requir
 # Default tenant configuration
 %prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=multi-tenant-client
+quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
 
 # Tenant A configuration is created dynamically in CustomTenantConfigResolver
@@ -235,11 +237,13 @@ Alternatively, you can configure the tenant `tenant-a` directly in `application.
 # Default tenant configuration
 %prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
 quarkus.oidc.client-id=multi-tenant-client
+quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
 
 # Tenant A configuration
 quarkus.oidc.tenant-a.auth-server-url=http://localhost:8180/realms/tenant-a
 quarkus.oidc.tenant-a.client-id=multi-tenant-client
+quarkus.oidc.tenant-a.credentials.secret=secret
 quarkus.oidc.tenant-a.application-type=web-app
 
 # HTTP security configuration
@@ -703,7 +707,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if ("tenant-c".equals(parts[1])) {
             // Do 'return requestContext.runBlocking(createTenantConfig());'
             // if a blocking call is required to create a tenant config,
-            return Uni.createFromItem(createTenantConfig());
+            return Uni.createFrom().item(createTenantConfig());
         }
 
         //Resolve to default tenant configuration
@@ -766,11 +770,12 @@ quarkus.oidc.b.client-id=client-b
 quarkus.oidc.b.credentials.secret=client-b-secret
 ----
 
-You can return the tenant id of either `a` or `b` from `quarkus.oidc.TenantResolver`:
+You can return the tenant id of either `a` or `b` from `io.quarkus.oidc.TenantResolver`:
 
 [source,java]
 ----
-import quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.TenantResolver;
+import io.vertx.ext.web.RoutingContext;
 
 public class CustomTenantResolver implements TenantResolver {
 
@@ -825,7 +830,7 @@ quarkus.oidc.google.credentials.secret=${google-client-secret}
 quarkus.oidc.google.authentication.redirect-path=/signed-in
 
 # Tenant 'github' configuration
-quarkus.oidc.github.provider=google
+quarkus.oidc.github.provider=github
 quarkus.oidc.github.client-id=${github-client-id}
 quarkus.oidc.github.credentials.secret=${github-client-secret}
 quarkus.oidc.github.authentication.redirect-path=/signed-in
@@ -926,9 +931,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
         String path = context.request().path(); <2>
         if (path.endsWith("tenant-a")) {
-            return Uni.createFromItem(createTenantConfig("tenant-a", "client-a", "secret-a"));
+            return Uni.createFrom().item(createTenantConfig("tenant-a", "client-a", "secret-a"));
         } else if (path.endsWith("tenant-b")) {
-            return Uni.createFromItem(createTenantConfig("tenant-b", "client-b", "secret-b"));
+            return Uni.createFrom().item(createTenantConfig("tenant-b", "client-b", "secret-b"));
         }
 
         // Default tenant id
@@ -961,7 +966,7 @@ quarkus.oidc.application-type=web-app
 
 The preceeding example assumes that the `tenant-a`, `tenant-b` and default tenants are all used to protect the same endpoint paths. In other words, after the user has authenticated with the `tenant-a` configuration, this user will not be able to choose to authenticate with the `tenant-b` or default configuration before this user logs out and has a session cookie cleared or expired.
 
-The situtaion where multiple OIDC `web-app` tenants protect the tenant-specific paths is less typical and also requires an extra care.
+The situation where multiple OIDC `web-app` tenants protect the tenant-specific paths is less typical and also requires an extra care.
 When multiple OIDC `web-app` tenants such as `tenant-a`, `tenant-b` and default tenants are used to control access to the tenant specific paths, the users authenticated with one OIDC provider must not be able to access the paths requiring an authentication with another provider, otherwise the results can be unpredictable, most likely causing unexpected authentication failures.
 For example, if the `tenant-a` authentication requires a Keycloak authentication and the `tenant-b` authentication requires an Auth0 authentication, then, if the `tenant-a` authenticated user attempts to access a path secured by the `tenant-b` configuration, then the session cookie will not be verified, since the Auth0 public verification keys can not be used to verify the tokens signed by Keycloak.
 An easy, recommended way to avoid multiple `web-app` tenants conflicting with each other is to set the tenant specific session path as shown in the following example:
@@ -991,9 +996,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
         String path = context.request().path(); <2>
         if (path.endsWith("tenant-a")) {
-            return Uni.createFromItem(createTenantConfig("tenant-a", "/tenant-a", "client-a", "secret-a"));
+            return Uni.createFrom().item(createTenantConfig("tenant-a", "/tenant-a", "client-a", "secret-a"));
         } else if (path.endsWith("tenant-b")) {
-            return Uni.createFromItem(createTenantConfig("tenant-b", "/tenant-b", "client-b", "secret-b"));
+            return Uni.createFrom().item(createTenantConfig("tenant-b", "/tenant-b", "client-b", "secret-b"));
         }
 
         // Default tenant id
@@ -1059,7 +1064,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                    context.remove(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
 	        }
             }
-            return Uni.createFromItem(createTenantConfig("tenant-a", "client-a", "secret-a"));
+            return Uni.createFrom().item(createTenantConfig("tenant-a", "client-a", "secret-a"));
         } else if (path.endsWith("tenant-b")) {
             String resolvedTenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
 	    if (resolvedTenantId != null) {
@@ -1070,7 +1075,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                    context.remove(OidcUtils.TENANT_ID_ATTRIBUTE); <3>
 	        }
             }
-            return Uni.createFromItem(createTenantConfig("tenant-b", "client-b", "secret-b"));
+            return Uni.createFrom().item(createTenantConfig("tenant-b", "client-b", "secret-b"));
         }
 
         // Set default tenant id

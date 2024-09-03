@@ -1214,20 +1214,11 @@ jobs:
     if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
     needs:
       - native-tests
-      - calculate-test-jobs
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: graalvm/mandrel
-          fetch-depth: 1
-          path: workflow-quarkus
       - uses: actions/download-artifact@v4
         with:
-          name: build-stats-${{matrix.category}}
+          pattern: build-stats-*
           path: .
       - name: Extract and import build stats
         env:
@@ -1255,7 +1246,12 @@ jobs:
               echo "Fatal error. runner_info_id is not a number: $runner_info_id"
               exit 1
           fi
-          tar -xf build-stats.tgz
+          for directory in ./build-stats-*/; do
+            echo "Processing $directory"
+            cd "$directory"
+            tar -xvf build-stats.tgz
+            cd -
+          done
           echo "Tag to be used for uploads: '${TAG}'"
           IFS=$'\n'
           for bs in $(find ./ -name \*build-output-stats.json); do

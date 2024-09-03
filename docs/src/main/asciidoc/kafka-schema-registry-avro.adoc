@@ -620,7 +620,7 @@ The `quarkus-apicurio-registry-avro` extension depends on recent versions of Api
 and most versions of Apicurio Registry server and client are backwards compatible.
 For some you need to make sure that the client used by Serdes is compatible with the server.
 
-For example, with Apicurio dev service if you set the image name to use version `2.1.5.Final`:
+For example, with Apicurio Dev Service if you set the image name to use version `2.1.5.Final`:
 
 [source,properties]
 ----

@@ -37,6 +37,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
@@ -207,8 +208,18 @@ public class MicrometerProcessor {
             MicrometerConfig config,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            List<MicrometerRegistryProviderBuildItem> providerClasses,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            BuildProducer<SystemPropertyBuildItem> systemProperty) {
+
+        // Avoid users from receiving:
+        // [io.mic.cor.ins.com.CompositeMeterRegistry] (main) A MeterFilter is being configured after a Meter has been
+        // registered to this registry...
+        // It's unavoidable because of how Quarkus startup works and users cannot do anything about it.
+        // see: https://github.com/micrometer-metrics/micrometer/issues/4920#issuecomment-2298348202
+        systemProperty.produce(
+                new SystemPropertyBuildItem(
+                        "quarkus.log.category.\"io.micrometer.core.instrument.composite.CompositeMeterRegistry\".level",
+                        "ERROR"));
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {
@@ -243,7 +254,7 @@ public class MicrometerProcessor {
             }
         }
 
-        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).build();
+        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).reason(getClass().getName()).build();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

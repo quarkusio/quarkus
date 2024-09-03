@@ -153,7 +153,7 @@ First we need to start a system to visualise the OpenTelemetry data.
 
 === See the data
 
-==== Grafana-OTel-LGTM dev service
+==== Grafana-OTel-LGTM Dev Service
 You can use the xref:observability-devservices-lgtm.adoc[Grafana-OTel-LGTM] devservice.
 
 This Dev service includes a Grafana for visualizing data, Loki to store logs, Tempo to store traces and Prometheus to store metrics.

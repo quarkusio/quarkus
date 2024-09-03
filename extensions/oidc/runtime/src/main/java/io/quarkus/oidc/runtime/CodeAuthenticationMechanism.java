@@ -69,7 +69,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     static final String EQ = "=";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
-    static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final String NO_OIDC_COOKIES_AVAILABLE = "no_oidc_cookies";
 
@@ -938,13 +937,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (parsedStateCookieValue.length == 2) {
             CodeAuthenticationStateBean bean = new CodeAuthenticationStateBean();
             Authentication authentication = configContext.oidcConfig.authentication;
+
             boolean pkceRequired = authentication.pkceRequired.orElse(false);
             if (!pkceRequired && !authentication.nonceRequired) {
-                bean.setRestorePath(parsedStateCookieValue[1]);
+                JsonObject json = new JsonObject(OidcUtils.base64UrlDecode(parsedStateCookieValue[1]));
+                bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
                 return bean;
             }
 
             JsonObject json = null;
+
             try {
                 json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateEncryptionKey());
             } catch (Exception ex) {
@@ -952,7 +954,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         configContext.oidcConfig.tenantId.get());
                 throw new AuthenticationCompletionException(ex);
             }
-            bean.setRestorePath(json.getString(STATE_COOKIE_RESTORE_PATH));
+            bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
             bean.setCodeVerifier(json.getString(OidcConstants.PKCE_CODE_VERIFIER));
             bean.setNonce(json.getString(OidcConstants.NONCE));
             return bean;
@@ -1159,8 +1161,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String encodeExtraStateValue(CodeAuthenticationStateBean extraStateValue, TenantConfigContext configContext) {
+        JsonObject json = new JsonObject();
+
         if (extraStateValue.getCodeVerifier() != null || extraStateValue.getNonce() != null) {
-            JsonObject json = new JsonObject();
             if (extraStateValue.getCodeVerifier() != null) {
                 json.put(OidcConstants.PKCE_CODE_VERIFIER, extraStateValue.getCodeVerifier());
             }
@@ -1168,7 +1171,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 json.put(OidcConstants.NONCE, extraStateValue.getNonce());
             }
             if (extraStateValue.getRestorePath() != null) {
-                json.put(STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
+                json.put(OidcUtils.STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
             }
             try {
                 return OidcUtils.encryptJson(json, configContext.getStateEncryptionKey());
@@ -1177,7 +1180,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 throw new AuthenticationCompletionException(ex);
             }
         } else {
-            return extraStateValue.getRestorePath();
+            json.put(OidcUtils.STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
+
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(json.encode().getBytes(StandardCharsets.UTF_8));
         }
 
     }

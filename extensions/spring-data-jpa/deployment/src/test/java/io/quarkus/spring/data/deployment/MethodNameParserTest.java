@@ -17,6 +17,10 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.spring.data.deployment.generics.ChildBase;
+import io.quarkus.spring.data.deployment.generics.ParentBase;
+import io.quarkus.spring.data.deployment.generics.ParentBaseRepository;
+
 public class MethodNameParserTest {
 
     private final Class<?> repositoryClass = PersonRepository.class;
@@ -93,6 +97,32 @@ public class MethodNameParserTest {
         UnableToParseMethodException exception = assertThrows(UnableToParseMethodException.class,
                 () -> parseMethod(repositoryClass, "findAllBy_", entityClass, additionalClasses));
         assertThat(exception).hasMessageContaining("Person does not contain a field named: _");
+    }
+
+    @Test
+    public void testGenericsWithWildcard() throws Exception {
+        Class[] additionalClasses = new Class[] { ChildBase.class };
+
+        MethodNameParser.Result result = parseMethod(ParentBaseRepository.class, "countParentsByChildren_Nombre",
+                ParentBase.class,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), ParentBase.class);
+        assertThat(result.getQuery()).isEqualTo("FROM ParentBase WHERE children.nombre = ?1");
+        assertThat(result.getParamCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldParseRepositoryMethodOverEntityContainingACollection() throws Exception {
+        Class[] additionalClasses = new Class[] { LoginEvent.class };
+
+        MethodNameParser.Result result = parseMethod(UserRepository.class, "countUsersByLoginEvents_Id",
+                User.class,
+                additionalClasses);
+        assertThat(result).isNotNull();
+        assertSameClass(result.getEntityClass(), User.class);
+        assertThat(result.getQuery()).isEqualTo("FROM User WHERE loginEvents.id = ?1");
+        assertThat(result.getParamCount()).isEqualTo(1);
     }
 
     private AbstractStringAssert<?> assertSameClass(ClassInfo classInfo, Class<?> aClass) {

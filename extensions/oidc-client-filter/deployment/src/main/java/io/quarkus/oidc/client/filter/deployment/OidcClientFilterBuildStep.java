@@ -42,8 +42,9 @@ public class OidcClientFilterBuildStep {
             BuildProducer<RestClientAnnotationProviderBuildItem> restAnnotationProvider) {
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestFilter.class));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(OidcClientRequestFilter.class).methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestFilter.class)
+                .reason(getClass().getName())
+                .methods().fields().build());
         final Set<String> namedFilterClientClasses = namedOidcClientFilterBuildItem.namedFilterClientClasses;
 
         // register default request filter provider against the rest of the clients (client != namedFilterClientClasses)
@@ -111,6 +112,7 @@ public class OidcClientFilterBuildStep {
 
                 // register for reflection
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedProvider).methods()
+                        .reason(getClass().getName())
                         .fields().serialization(true).build());
 
                 // register named request filter provider against Rest client

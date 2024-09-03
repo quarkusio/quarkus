@@ -15,6 +15,8 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-arc
 
 In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html[Jakarta Contexts and Dependency Injection 4.1, window="_blank"] specification.
+The xref:cdi-reference.adoc[CDI reference guide] describes the bean discovery, non-standard features and configuration properties.
+The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related integration use cases, and example code for solutions.
 
 == OK. Let's start simple. What is a bean?
 

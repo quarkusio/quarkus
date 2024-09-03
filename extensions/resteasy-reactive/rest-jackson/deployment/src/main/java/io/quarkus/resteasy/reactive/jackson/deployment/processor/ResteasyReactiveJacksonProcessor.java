@@ -229,7 +229,7 @@ public class ResteasyReactiveJacksonProcessor {
 
     @BuildStep
     void reflection(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).methods().build());
+        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).reason(getClass().getName()).methods().build());
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -283,6 +283,7 @@ public class ResteasyReactiveJacksonProcessor {
                     }
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                                    .reason(getClass().getName())
                                     .build());
                     recorder.recordCustomSerialization(getTargetId(instance.target()), biFunctionType.name().toString());
                 }
@@ -309,6 +310,7 @@ public class ResteasyReactiveJacksonProcessor {
                     }
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                                    .reason(getClass().getName())
                                     .build());
                     recorder.recordCustomDeserialization(getTargetId(instance.target()), biFunctionType.name().toString());
                 }
@@ -319,7 +321,9 @@ public class ResteasyReactiveJacksonProcessor {
             jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
             String className = bi.getCustomSerializationProvider().getName();
             reflectiveClassProducer.produce(
-                    ReflectiveClassBuildItem.builder(className).build());
+                    ReflectiveClassBuildItem.builder(className)
+                            .reason(getClass().getName())
+                            .build());
             recorder.recordCustomSerialization(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
         }
 

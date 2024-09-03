@@ -106,7 +106,7 @@ public class RestClientBaseTest {
 
         // then
 
-        verify(restClientBuilderMock).baseUrl(new URL("http://localhost"));
+        verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
         verify(restClientBuilderMock).proxyAddress("host1", 123);
         verify(restClientBuilderMock).connectTimeout(100, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(101, MILLISECONDS);

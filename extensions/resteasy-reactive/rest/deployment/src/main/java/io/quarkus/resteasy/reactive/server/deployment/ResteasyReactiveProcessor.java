@@ -9,6 +9,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LEGACY_PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.RESOURCE_INFO;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 
 import java.io.File;
@@ -126,6 +127,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -340,9 +342,8 @@ public class ResteasyReactiveProcessor {
             Map<String, String> generationResult = ServerExceptionMapperGenerator.generatePerClassMapper(methodInfo,
                     classOutput,
                     Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()));
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(generationResult.values().toArray(
-                            EMPTY_STRING_ARRAY)).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(generationResult.values().toArray(EMPTY_STRING_ARRAY))
+                    .reason(getClass().getName()).build());
             Map<String, String> classMappers;
             DotName classDotName = methodInfo.declaringClass().name();
             if (resultingMappers.containsKey(classDotName)) {
@@ -531,7 +532,7 @@ public class ResteasyReactiveProcessor {
                                                 QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                         .ignoreMethodPredicate(
                                                 QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                        .source(source)
+                                        .source(source + " > " + method.returnType().name().toString())
                                         .build());
                             }
 
@@ -548,7 +549,7 @@ public class ResteasyReactiveProcessor {
                                                     QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                                             .ignoreMethodPredicate(
                                                     QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                            .source(source)
+                                            .source(source + " > " + parameterType.name().toString())
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
@@ -935,6 +936,7 @@ public class ResteasyReactiveProcessor {
         if (!dateTimeFormatterProviderClassNames.isEmpty()) {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(dateTimeFormatterProviderClassNames.toArray(EMPTY_STRING_ARRAY))
+                            .reason(getClass().getName())
                             .serialization(false).build());
         }
     }
@@ -1079,6 +1081,7 @@ public class ResteasyReactiveProcessor {
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
             BuildProducer<ReflectiveClassBuildItem> producer) {
         List<ResourceClass> resourceClasses = setupEndpointsResult.getResourceClasses();
         IndexView index = beanArchiveIndexBuildItem.getIndex();
@@ -1130,9 +1133,13 @@ public class ResteasyReactiveProcessor {
             serializersRequireResourceReflection = true;
         }
 
-        if (serializersRequireResourceReflection) {
+        boolean resourceInfoUsed = beanDiscoveryFinishedBuildItem.getInjectionPoints().stream()
+                .anyMatch(i -> RESOURCE_INFO.equals(i.getRequiredType().name()));
+
+        if (serializersRequireResourceReflection || resourceInfoUsed) {
             producer.produce(ReflectiveClassBuildItem
                     .builder(resourceClasses.stream().map(ResourceClass::getClassName).toArray(String[]::new))
+                    .reason(getClass().getName())
                     .constructors(false).methods().build());
         }
     }

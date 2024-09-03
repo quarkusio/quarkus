@@ -18,10 +18,11 @@ Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifi
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
 See also <<supported_features_and_limitations,the list of supported features and limitations>>.
+Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
-TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
+TIP: If you're new to CDI we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
-NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
+TIP: The xref:cdi-integration.adoc[CDI integration guide] has more detail on common CDI-related integration use cases, and example code for solutions.
 
 [[bean_discovery]]
 == Bean Discovery
@@ -438,16 +439,17 @@ A good example is a Jakarta REST resource class or a bean which declares a `@Sch
 
 An _unremovable_ bean:
 
-* is excluded from removal by an extension, or
+* is <<eliminate_false_positives,excluded from removal>>, or
 * has a name designated via `@Named`, or
 * declares an observer method.
 
 An _unused_ bean:
 
 * is not _unremovable_, and
-* is not eligible for injection to any injection point in the dependency tree, and
+* is not eligible for injection to any injection point in the dependency tree of _unremovable_ beans, and
 * does not declare any producer which is eligible for injection to any injection point in the dependency tree, and
-* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point.
+* is not eligible for injection into any `jakarta.enterprise.inject.Instance` or `jakarta.inject.Provider` injection point, and
+* is not eligible for injection into any <<injecting-multiple-bean-instances-intuitively,`@Inject @All List<>`>> injection point.
 
 Unused interceptors and decorators are not associated with any bean.
 
@@ -955,6 +957,7 @@ Alternatively, you can use the `@LookupIfProperty` and `@LookupUnlessProperty` a
  }
 ----
 
+[[injecting-multiple-bean-instances-intuitively]]
 === Injecting Multiple Bean Instances Intuitively
 
 In CDI, it's possible to inject multiple bean instances (aka contextual references) via the `jakarta.enterprise.inject.Instance` which implements `java.lang.Iterable`.

@@ -400,20 +400,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 || Character.isAlphabetic(character);
     }
 
-    static boolean isValidIdentifier(String value) {
-        int offset = 0;
-        int length = value.length();
-        while (offset < length) {
-            int c = value.codePointAt(offset);
-            if (!Character.isWhitespace(c)) {
-                offset += Character.charCount(c);
-                continue;
-            }
-            return false;
-        }
-        return true;
-    }
-
     private boolean isLineSeparatorStart(char character) {
         return character == LINE_SEPARATOR_CR || character == LINE_SEPARATOR_LF;
     }
@@ -1078,13 +1064,15 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 value = literal.toString();
             } else {
                 throw TemplateException.builder()
-                        .message((literal == null ? "Null" : "Non-literal")
-                                + " value used in bracket notation [{value}] {origin}")
+                        .message((literal == null ? "Null value" : "Non-literal value [{value}]")
+                                + " used in bracket notation in expression \\{{expr}\\}{#if origin.hasNonGeneratedTemplateId??} in{origin}{/if}")
                         .argument("value", value)
+                        .argument("expr", exprValue)
+                        .origin(origin)
                         .build();
             }
         } else {
-            if (!isValidIdentifier(value)) {
+            if (!Identifiers.isValid(value)) {
                 throw error(ParserError.INVALID_IDENTIFIER, "invalid identifier found [{value}]", origin)
                         .argument("value", value)
                         .build();

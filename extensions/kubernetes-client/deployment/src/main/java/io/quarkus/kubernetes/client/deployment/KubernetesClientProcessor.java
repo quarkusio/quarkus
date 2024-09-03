@@ -166,6 +166,7 @@ public class KubernetesClientProcessor {
         if (!withFieldsRegistration.isEmpty()) {
             reflectiveClasses.produce(ReflectiveClassBuildItem
                     .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY))
+                    .reason(getClass().getName())
                     .weak().methods().fields()
                     .build());
         }
@@ -184,7 +185,9 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses)
+                .reason(getClass().getName())
+                .methods().build());
 
         final String[] serializerClasses = fullIndex
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
@@ -192,23 +195,31 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses).methods().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses)
+                .reason(getClass().getName())
+                .methods().build());
 
         reflectiveClasses.produce(
                 ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
+                        .reason(getClass().getName())
                         .methods().fields().build());
         reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class).methods().build());
+                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class)
+                .reason(getClass().getName())
+                .methods().build());
 
         // exec credentials support
         reflectiveClasses
                 .produce(ReflectiveClassBuildItem.builder(Config.ExecCredential.class,
                         Config.ExecCredentialSpec.class,
-                        Config.ExecCredentialStatus.class).methods().fields().build());
+                        Config.ExecCredentialStatus.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
         // OpenID support
         reflectiveClasses
                 .produce(ReflectiveClassBuildItem.builder(OpenIDConnectionUtils.OpenIdConfiguration.class,
                         OpenIDConnectionUtils.OAuthToken.class)
+                        .reason(getClass().getName())
                         .methods().fields().build());
 
         if (log.isDebugEnabled()) {

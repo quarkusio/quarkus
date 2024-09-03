@@ -40,9 +40,8 @@ public class QuarkusSecurityCommonProcessor {
      */
     @BuildStep
     void services(BuildProducer<ReflectiveClassBuildItem> classes) {
-        String[] allClasses = {
-                "org.wildfly.security.password.impl.PasswordFactorySpiImpl",
-        };
-        classes.produce(ReflectiveClassBuildItem.builder(allClasses).methods().build());
+        classes.produce(ReflectiveClassBuildItem.builder("org.wildfly.security.password.impl.PasswordFactorySpiImpl")
+                .reason(getClass().getName())
+                .methods().build());
     }
 }

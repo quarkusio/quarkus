@@ -93,11 +93,17 @@ public class OpenTelemetryRecorder {
                 // load new properties
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("quarkus.otel.")) {
-                        String value = config.getValue(propertyName, String.class);
-                        if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
-                            value = OTelDurationConverter.INSTANCE.convert(value);
+                        ConfigValue value = config.getConfigValue(propertyName);
+                        if (value.getValue() != null) {
+                            if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
+                                quarkus.put(propertyName.substring(8),
+                                        OTelDurationConverter.INSTANCE.convert(value.getValue()));
+                            } else {
+                                quarkus.put(propertyName.substring(8), value.getValue());
+                            }
+                        } else if (value.getValue() == null && value.getRawValue() != null) {
+                            config.getValue(propertyName, String.class);
                         }
-                        quarkus.put(propertyName.substring(8), value);
                     } else if (propertyName.startsWith("otel.")) {
                         ConfigValue value = config.getConfigValue(propertyName);
                         if (value.getValue() != null) {

@@ -193,21 +193,18 @@ public class ConfigAnnotationScanner {
                 debug("Detected superinterface: " + superInterfaceTypeElement, clazz);
 
                 applyListeners(listeners, l -> l.onInterface(configRootElement, superInterfaceTypeElement));
-                if (!isConfigRootAlreadyHandled(superInterfaceTypeElement)) {
-                    scanElement(listeners, configRootElement, superInterfaceTypeElement);
-                }
+                scanElement(listeners, configRootElement, superInterfaceTypeElement);
             }
         } else {
             TypeMirror superclass = clazz.getSuperclass();
-            if (superclass.getKind() != TypeKind.NONE && !superclass.toString().equals(Object.class.getName())) {
+            if (superclass.getKind() != TypeKind.NONE
+                    && !utils.element().getQualifiedName(superclass).equals(Object.class.getName())) {
                 TypeElement superclassTypeElement = (TypeElement) ((DeclaredType) superclass).asElement();
 
                 debug("Detected superclass: " + superclassTypeElement, clazz);
 
                 applyListeners(listeners, l -> l.onSuperclass(configRootElement, clazz));
-                if (!isConfigRootAlreadyHandled(superclassTypeElement)) {
-                    scanElement(listeners, configRootElement, superclassTypeElement);
-                }
+                scanElement(listeners, configRootElement, superclassTypeElement);
             }
         }
 
@@ -263,6 +260,17 @@ public class ConfigAnnotationScanner {
 
                     if (resolvedType.isEnum()) {
                         handleEnum(listeners, resolvedType.unwrappedTypeElement());
+                    } else if (resolvedType.isClass()) {
+                        TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
+                        if (utils.element().isAnnotationPresent(unwrappedTypeElement, Types.ANNOTATION_CONFIG_GROUP)
+                                && !isConfigGroupAlreadyHandled(unwrappedTypeElement)) {
+                            debug("Detected config group: " + resolvedType + " on field: "
+                                    + field, clazz);
+
+                            DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
+                                    l -> l.onConfigGroup(unwrappedTypeElement));
+                            scanElement(listeners, discoveryConfigGroup, unwrappedTypeElement);
+                        }
                     }
 
                     debug("Detected enclosed field: " + field, clazz);
@@ -317,7 +325,7 @@ public class ConfigAnnotationScanner {
 
     private ResolvedType resolveType(TypeMirror typeMirror) {
         if (typeMirror.getKind().isPrimitive()) {
-            return ResolvedType.ofPrimitive(typeMirror);
+            return ResolvedType.ofPrimitive(typeMirror, utils.element().getQualifiedName(typeMirror));
         }
         if (typeMirror.getKind() == TypeKind.ARRAY) {
             ResolvedType resolvedType = resolveType(((ArrayType) typeMirror).getComponentType());
@@ -362,7 +370,7 @@ public class ConfigAnnotationScanner {
             isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         } else if (typeElement.getKind() == ElementKind.CLASS) {
             isClass = true;
-            isDuration = typeMirror.toString().equals(Duration.class.getName());
+            isDuration = utils.element().getQualifiedName(typeMirror).equals(Duration.class.getName());
             isConfigGroup = utils.element().isAnnotationPresent(typeElement, Types.ANNOTATION_CONFIG_GROUP);
         }
 

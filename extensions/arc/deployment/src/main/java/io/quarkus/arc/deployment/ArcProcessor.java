@@ -538,17 +538,17 @@ public class ArcProcessor {
 
             @Override
             public void registerMethod(String declaringClass, String name, String... params) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(declaringClass, name, params));
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), declaringClass, name, params));
             }
 
             @Override
             public void registerMethod(MethodInfo methodInfo) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), methodInfo));
             }
 
             @Override
             public void registerField(FieldInfo fieldInfo) {
-                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(getClass().getName(), fieldInfo));
             }
 
             @Override
@@ -556,7 +556,9 @@ public class ArcProcessor {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for client proxies
                     reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(clientProxyName).methods().build());
+                            .produce(ReflectiveClassBuildItem.builder(clientProxyName)
+                                    .reason(getClass().getName())
+                                    .methods().build());
                 }
             }
 
@@ -565,7 +567,9 @@ public class ArcProcessor {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for subclasses
                     reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(subclassName).methods().build());
+                            .produce(ReflectiveClassBuildItem.builder(subclassName)
+                                    .reason(getClass().getName())
+                                    .methods().build());
                 }
             }
 
@@ -597,13 +601,17 @@ public class ArcProcessor {
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString()).methods().build());
+                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString())
+                            .reason(getClass().getName())
+                            .methods().build());
         }
 
         // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
         for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
             reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString()).methods().build());
+                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString())
+                            .reason(getClass().getName())
+                            .methods().build());
         }
     }
 

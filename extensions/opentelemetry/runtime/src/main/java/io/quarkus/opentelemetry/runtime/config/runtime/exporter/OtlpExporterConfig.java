@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.configuration.DurationConverter;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithName;
 
 public interface OtlpExporterConfig {
@@ -24,7 +26,7 @@ public interface OtlpExporterConfig {
      * If protocol is `http/protobuf` the version and signal will be appended to the path (e.g. v1/traces or v1/metrics)
      * and the default port will be {@value OtlpExporterRuntimeConfig#DEFAULT_HTTP_BASE_URI}.
      */
-    @WithDefault(DEFAULT_GRPC_BASE_URI)
+    @ConfigDocDefault(DEFAULT_GRPC_BASE_URI)
     Optional<String> endpoint();
 
     /**
@@ -56,7 +58,8 @@ public interface OtlpExporterConfig {
      * `quarkus.otel.exporter.otlp.<signal-type>.timeout` where <signal-type> is one of the supported signal types,
      * like `traces` or `metrics`.
      */
-    @WithDefault("10s")
+    @ConfigDocDefault("10s")
+    @WithConverter(DurationConverter.class)
     Duration timeout();
 
     /**
@@ -71,7 +74,7 @@ public interface OtlpExporterConfig {
      * `quarkus.otel.exporter.otlp.<signal-type>.protocol` where <signal-type> is one of the supported signal types,
      * like `traces` or `metrics`.
      */
-    @WithDefault(OtlpExporterConfig.Protocol.GRPC)
+    @ConfigDocDefault(OtlpExporterConfig.Protocol.GRPC)
     Optional<String> protocol();
 
     /**
@@ -126,7 +129,7 @@ public interface OtlpExporterConfig {
          * types,
          * like `traces` or `metrics`.
          */
-        @WithDefault("false")
+        @ConfigDocDefault("false")
         boolean enabled();
 
         /**

@@ -87,7 +87,9 @@ public class AmazonLambdaHttpProcessor {
                         CognitoAuthorizerClaims.class,
                         ErrorModel.class,
                         Headers.class,
-                        MultiValuedTreeMap.class).methods().fields().build());
+                        MultiValuedTreeMap.class)
+                        .reason(getClass().getName())
+                        .methods().fields().build());
     }
 
     /**

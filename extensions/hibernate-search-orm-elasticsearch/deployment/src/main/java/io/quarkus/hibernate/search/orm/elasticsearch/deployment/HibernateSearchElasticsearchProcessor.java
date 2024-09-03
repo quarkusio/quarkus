@@ -113,7 +113,7 @@ class HibernateSearchElasticsearchProcessor {
                     configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
         }
 
-        registerReflectionForGson(reflectiveClass);
+        reflectiveClass.produce(registerReflectionForGson());
     }
 
     private static Map<String, Map<String, Set<String>>> collectPersistenceUnitAndBackendAndIndexNamesForSearchExtensions(
@@ -374,9 +374,11 @@ class HibernateSearchElasticsearchProcessor {
         hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));
     }
 
-    private void registerReflectionForGson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    private ReflectiveClassBuildItem registerReflectionForGson() {
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).methods().fields().build());
+        return ReflectiveClassBuildItem.builder(reflectiveClasses)
+                .reason(getClass().getName())
+                .methods().fields().build();
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)

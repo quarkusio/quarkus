@@ -6,14 +6,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 
-import org.hibernate.annotations.Proxy;
-
 @Inheritance()
 @DiscriminatorColumn
-@Proxy(proxyClass = PetProxy.class)
 @DiscriminatorValue("PET")
 @Entity
-public class Pet implements PetProxy {
+public class Pet {
 
     private Integer id;
 
@@ -36,7 +33,6 @@ public class Pet implements PetProxy {
         this.name = name;
     }
 
-    @Override
     public String makeNoise() {
         return "Generic pet noises";
     }

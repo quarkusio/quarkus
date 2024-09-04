@@ -234,6 +234,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
         runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
 
+        // Allow CDI on runtime init (was disabled during static init)
+        // NOTE: As of Hibernate ORM 7.0.0.Beta1, this does not seem to change anything,
+        // as all Hibernate-specific "extensions" relying on CDI seem to happen during metadata
+        // creation, so much before runtime init.
+        // We're setting this out of an abundance of caution,
+        // in case a "runtime" Hibernate-specific "extension" is added one day.
+        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_EXTENSIONS_IN_CDI, "true");
+
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."
                     + " These properties may not work correctly, and even if they do,"

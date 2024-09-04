@@ -43,6 +43,14 @@ public class TemplateHtmlBuilder {
             "	}\n" +
             "</script>\n";
 
+    private static final String HTML_TEMPLATE_START_NO_STACK = "" +
+            "<!doctype html>\n" +
+            "<html lang=\"en\">\n" +
+            "<head>\n" +
+            "    <title>%1$s%2$s</title>\n" +
+            "    <meta charset=\"utf-8\">\n" +
+            "</head>";
+
     private static final String HTML_TEMPLATE_START = "" +
             "<!doctype html>\n" +
             "<html lang=\"en\">\n" +
@@ -122,6 +130,10 @@ public class TemplateHtmlBuilder {
             "</header>\n" +
             "<div class=\"container content\">\n";
 
+    private static final String HEADER_TEMPLATE_NO_STACK = "<h1>%1$s</h1>\n" +
+            "%2$s \n" +
+            "<div class=\"container content\">\n";
+
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
     private static final String ANCHOR_TEMPLATE_ABSOLUTE = "<a href=\"%1$s\">%2$s</a>";
@@ -185,37 +197,53 @@ public class TemplateHtmlBuilder {
     private String baseUrl;
 
     public TemplateHtmlBuilder(String title, String subTitle, String details) {
-        this(null, title, subTitle, details, Collections.emptyList(), null, Collections.emptyList());
+        this(true, null, title, subTitle, details, Collections.emptyList(), null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions) {
-        this(null, title, subTitle, details, actions, null, Collections.emptyList());
+    public TemplateHtmlBuilder(boolean showStack, String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(showStack, null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, List<ErrorPageAction> actions) {
-        this(baseUrl, title, subTitle, details, actions, null, Collections.emptyList());
+    public TemplateHtmlBuilder(String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions, String redirect,
+    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details,
+            List<ErrorPageAction> actions) {
+        this(true, baseUrl, title, subTitle, details, actions, null, Collections.emptyList());
+    }
+
+    public TemplateHtmlBuilder(String title, String subTitle, String details, List<ErrorPageAction> actions,
+            String redirect,
             List<CurrentConfig> config) {
-        this(null, title, subTitle, details, actions, null, Collections.emptyList());
+        this(true, null, title, subTitle, details, actions, null, Collections.emptyList());
     }
 
-    public TemplateHtmlBuilder(String baseUrl, String title, String subTitle, String details, List<ErrorPageAction> actions,
+    public TemplateHtmlBuilder(boolean showStack, String baseUrl, String title, String subTitle, String details,
+            List<ErrorPageAction> actions,
             String redirect,
             List<CurrentConfig> config) {
         this.baseUrl = baseUrl;
-
-        loadCssFile();
-
         StringBuilder actionLinks = new StringBuilder();
-        for (ErrorPageAction epa : actions) {
-            actionLinks.append(buildLink(epa.name(), epa.url()));
+
+        if (showStack) {
+            loadCssFile();
+            for (ErrorPageAction epa : actions) {
+                actionLinks.append(buildLink(epa.name(), epa.url()));
+            }
+
+            result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
+            result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
+        } else {
+            result = new StringBuilder(String.format(HTML_TEMPLATE_START_NO_STACK, escapeHtml(title),
+                    subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
+            result.append(
+                    String.format(HEADER_TEMPLATE_NO_STACK, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         }
 
-        result = new StringBuilder(String.format(HTML_TEMPLATE_START, escapeHtml(title),
-                subTitle == null || subTitle.isEmpty() ? "" : " - " + escapeHtml(subTitle), CSS));
-        result.append(String.format(HEADER_TEMPLATE, escapeHtml(title), escapeHtml(details), actionLinks.toString()));
         if (!config.isEmpty()) {
             result.append(String.format(CONFIG_EDITOR_HEAD, redirect));
             for (CurrentConfig i : config) {

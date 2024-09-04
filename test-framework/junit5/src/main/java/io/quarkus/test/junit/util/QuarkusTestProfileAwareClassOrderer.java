@@ -12,6 +12,7 @@ import org.junit.jupiter.api.ClassOrdererContext;
 import org.junit.jupiter.api.Nested;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.TestResourceScope;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
@@ -140,7 +141,9 @@ public class QuarkusTestProfileAwareClassOrderer implements ClassOrderer {
 
     private boolean hasRestrictedResource(ClassDescriptor classDescriptor) {
         return classDescriptor.findRepeatableAnnotations(WithTestResource.class).stream()
-                .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor)) ||
+                .anyMatch(
+                        res -> res.scope() == TestResourceScope.RESTRICTED_TO_CLASS || isMetaTestResource(res, classDescriptor))
+                ||
                 classDescriptor.findRepeatableAnnotations(QuarkusTestResource.class).stream()
                         .anyMatch(res -> res.restrictToAnnotatedClass() || isMetaTestResource(res, classDescriptor));
     }

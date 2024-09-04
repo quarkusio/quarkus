@@ -13,11 +13,20 @@ import io.quarkus.test.common.WithTestResource.List;
 /**
  * Used to define a test resource, which can affect various aspects of the application lifecycle.
  * <p>
+ * As of Quarkus 3.16, the default behavior of the annotation (meaning that {@code scope} has not been set)
+ * is that test classes annotated with the same {@code WithTestResource} will <strong>not</strong> force a restart
+ * of Quarkus.
+ * <p>
+ * The equivalent behavior to {@code QuarkusTestResource(restrictToAnnotatedClass = false)} is to use
+ * {@code WithTestResource(scope = TestResourceScope.GLOBAL)},
+ * while the equivalent behavior to {@code QuarkusTestResource(restrictToAnnotatedClass = true)} is to use
+ * {@code WithTestResource(scope = TestResourceScope.RESTRICTED_TO_CLASS)},
+ * <p>
  * WARNING: this annotation, introduced in 3.13, caused some issues so it was decided to undeprecate
  * {@link QuarkusTestResource} and rework the behavior of this annotation. For now, we recommend not using it
  * until we improve its behavior.
  * <p>
- * Note: When using the {@code restrictToAnnotatedClass=true} (which is the default), each test that is annotated
+ * Note: When using the {@code scope=TestResourceScope.RESTRICTED_TO_CLASS}, each test that is annotated
  * with {@code @WithTestResource} will result in the application being re-augmented and restarted (in a similar fashion
  * as happens in dev-mode when a change is detected) in order to incorporate the settings configured by the annotation.
  * If there are many instances of the annotation used throughout the testsuite, this could result in slow test execution.
@@ -28,14 +37,6 @@ import io.quarkus.test.common.WithTestResource.List;
  * started <b>before</b> <b>any</b> test is run.
  * <p>
  * Note that test resources are never restarted when running {@code @Nested} test classes.
- * <p>
- * The only difference with {@link QuarkusTestResource} is that the default value for
- * {@link #restrictToAnnotatedClass()} {@code == true}.
- * </p>
- * <p>
- * This means that any resources managed by {@link #value()} apply to an individual test class or test profile, unlike with
- * {@link QuarkusTestResource} where a resource applies to all test classes.
- * </p>
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -61,15 +62,11 @@ public @interface WithTestResource {
     boolean parallel() default false;
 
     /**
-     * Whether this annotation should only be enabled if it is placed on the currently running test class or test profile.
-     * Note that this defaults to true for meta-annotations since meta-annotations are only considered
-     * for the current test class or test profile.
-     * <p>
-     * Note: When this is set to {@code true} (which is the default), the annotation {@code @WithTestResource} will result
-     * in the application being re-augmented and restarted (in a similar fashion as happens in dev-mode when a change is
-     * detected) in order to incorporate the settings configured by the annotation.
+     * Defines how Quarkus behaves with regard to the application of the resource to this test and the test-suite in general.
+     * The default is {@link TestResourceScope#MATCHING_RESOURCE} which means that if two tests are annotated with the same
+     * {@link WithTestResource} annotation, no restart will take place between tests.
      */
-    boolean restrictToAnnotatedClass() default true;
+    TestResourceScope scope() default TestResourceScope.MATCHING_RESOURCE;
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

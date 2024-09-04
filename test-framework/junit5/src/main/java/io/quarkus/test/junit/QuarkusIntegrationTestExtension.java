@@ -8,12 +8,13 @@ import static io.quarkus.test.junit.IntegrationTestUtil.determineTestProfileAndP
 import static io.quarkus.test.junit.IntegrationTestUtil.doProcessTestInstance;
 import static io.quarkus.test.junit.IntegrationTestUtil.ensureNoInjectAnnotationIsUsed;
 import static io.quarkus.test.junit.IntegrationTestUtil.findProfile;
-import static io.quarkus.test.junit.IntegrationTestUtil.getAdditionalTestResources;
 import static io.quarkus.test.junit.IntegrationTestUtil.getArtifactType;
 import static io.quarkus.test.junit.IntegrationTestUtil.getSysPropsToRestore;
 import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
+import static io.quarkus.test.junit.TestResourceUtil.testResourcesRequireReload;
+import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.io.Closeable;
 import java.io.File;
@@ -75,7 +76,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private static Class<?> currentJUnitTestClass;
-    private static boolean hasPerTestResources;
 
     private static Map<String, String> devServicesProps;
     private static String containerNetworkId;
@@ -154,9 +154,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             currentJUnitTestClass = extensionContext.getRequiredTestClass();
         }
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
-        boolean reloadTestResources = isNewTestClass
-                && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
-        if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
+        boolean reloadTestResources = false;
+        if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
+                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass()))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -217,7 +217,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
-                    getAdditionalTestResources(testProfileAndProperties.testProfile,
+                    copyEntriesFromProfile(testProfileAndProperties.testProfile,
                             context.getRequiredTestClass().getClassLoader()),
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources(),
@@ -225,7 +225,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             testResourceManager.init(
                     testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
                             : null);
-            hasPerTestResources = testResourceManager.hasPerTestResources();
+
             if (isCallbacksEnabledForIntegrationTests()) {
                 populateCallbacks(requiredTestClass.getClassLoader());
             }

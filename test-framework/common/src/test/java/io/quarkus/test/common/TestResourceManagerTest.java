@@ -49,8 +49,8 @@ public class TestResourceManagerTest {
         Assertions.assertEquals("value2", props.get("key2"));
     }
 
-    @WithTestResource(value = FirstLifecycleManager.class, restrictToAnnotatedClass = false)
-    @WithTestResource(value = SecondLifecycleManager.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = FirstLifecycleManager.class, scope = TestResourceScope.GLOBAL)
+    @WithTestResource(value = SecondLifecycleManager.class, scope = TestResourceScope.GLOBAL)
     public static class MyTest {
     }
 
@@ -99,8 +99,8 @@ public class TestResourceManagerTest {
         }
     }
 
-    @WithTestResource(value = FirstSequentialQuarkusTestResource.class, restrictToAnnotatedClass = false)
-    @WithTestResource(value = SecondSequentialQuarkusTestResource.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = FirstSequentialQuarkusTestResource.class, scope = TestResourceScope.GLOBAL)
+    @WithTestResource(value = SecondSequentialQuarkusTestResource.class, scope = TestResourceScope.GLOBAL)
     public static class SequentialTestResourcesTest {
     }
 
@@ -150,8 +150,8 @@ public class TestResourceManagerTest {
         }
     }
 
-    @WithTestResource(value = FirstParallelQuarkusTestResource.class, parallel = true, restrictToAnnotatedClass = false)
-    @WithTestResource(value = SecondParallelQuarkusTestResource.class, parallel = true, restrictToAnnotatedClass = false)
+    @WithTestResource(value = FirstParallelQuarkusTestResource.class, parallel = true, scope = TestResourceScope.GLOBAL)
+    @WithTestResource(value = SecondParallelQuarkusTestResource.class, parallel = true, scope = TestResourceScope.GLOBAL)
     public static class ParallelTestResourcesTest {
     }
 
@@ -257,7 +257,7 @@ public class TestResourceManagerTest {
         }
     }
 
-    @WithTestResource(value = AnnotationBasedQuarkusTestResource.class, restrictToAnnotatedClass = false)
+    @WithTestResource(value = AnnotationBasedQuarkusTestResource.class, scope = TestResourceScope.GLOBAL)
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     @Repeatable(WithAnnotationBasedTestResource.List.class)

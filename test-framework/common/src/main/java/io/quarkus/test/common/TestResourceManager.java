@@ -1,7 +1,7 @@
 package io.quarkus.test.common;
 
 import static io.quarkus.test.common.TestResourceScope.GLOBAL;
-import static io.quarkus.test.common.TestResourceScope.MATCHING_RESOURCE;
+import static io.quarkus.test.common.TestResourceScope.MATCHING_RESOURCES;
 import static io.quarkus.test.common.TestResourceScope.RESTRICTED_TO_CLASS;
 
 import java.io.Closeable;
@@ -539,7 +539,7 @@ public class TestResourceManager implements Closeable {
     }
 
     private static Set<TestResourceComparisonInfo> onlyMatchingResourceItems(Set<TestResourceComparisonInfo> set) {
-        return set.stream().filter(i -> i.scope == MATCHING_RESOURCE).collect(
+        return set.stream().filter(i -> i.scope == MATCHING_RESOURCES).collect(
                 Collectors.toSet());
     }
 
@@ -848,7 +848,7 @@ public class TestResourceManager implements Closeable {
 
         @Override
         public TestResourceScope scope(AnnotationInstance annotation) {
-            TestResourceScope scope = MATCHING_RESOURCE;
+            TestResourceScope scope = MATCHING_RESOURCES;
             AnnotationValue restrict = annotation.value("scope");
             if (restrict != null) {
                 scope = TestResourceScope.valueOf(restrict.asEnum());

@@ -207,7 +207,7 @@ class QuarkusTestProfileAwareClassOrdererTest {
         WithTestResource withResourceMock = Mockito.mock(WithTestResource.class, withSettings().strictness(Strictness.LENIENT));
         doReturn(managerClass).when(withResourceMock).value();
         when(withResourceMock.scope()).thenReturn(
-                restrictToAnnotatedClass ? TestResourceScope.RESTRICTED_TO_CLASS : TestResourceScope.MATCHING_RESOURCE);
+                restrictToAnnotatedClass ? TestResourceScope.RESTRICTED_TO_CLASS : TestResourceScope.MATCHING_RESOURCES);
         when(mock.findRepeatableAnnotations(WithTestResource.class)).thenReturn(List.of(withResourceMock));
     }
 

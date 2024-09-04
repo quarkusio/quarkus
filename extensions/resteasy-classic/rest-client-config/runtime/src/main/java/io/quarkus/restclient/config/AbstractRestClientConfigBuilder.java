@@ -93,9 +93,6 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         if (name.startsWith("quarkus.rest-client.")) {
             return 20;
         }
-        if (name.startsWith("quarkus.rest-client-reactive.")) {
-            return 29;
-        }
         return -1;
     }
 }

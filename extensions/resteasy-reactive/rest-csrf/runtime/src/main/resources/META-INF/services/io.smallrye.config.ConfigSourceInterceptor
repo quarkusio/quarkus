@@ -1,2 +1,0 @@
-io.quarkus.csrf.reactive.runtime.CsrfReactiveConfigFallbackInterceptor
-io.quarkus.csrf.reactive.runtime.CsrfReactiveConfigRelocateInterceptor

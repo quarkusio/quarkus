@@ -4,6 +4,7 @@ import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToR
 import static io.quarkus.commons.classloading.ClassLoaderHelper.isInJdkPackage;
 
 import java.net.URL;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -92,48 +93,47 @@ public final class RunnerClassLoader extends ClassLoader {
         if (loaded != null) {
             return loaded;
         }
-        final ClassLoadingResource[] resources;
-        if (packageName == null) {
-            resources = resourceDirectoryMap.get("");
-        } else {
-            String dirName = packageName.replace('.', '/');
-            resources = resourceDirectoryMap.get(dirName);
-        }
+
+        final ClassLoadingResource[] resources = findLoadingResources(packageName);
         if (resources != null) {
             String classResource = fromClassNameToResourceName(name);
             for (ClassLoadingResource resource : resources) {
                 accessingResource(resource);
                 byte[] data = resource.getResourceData(classResource);
-                if (data == null) {
-                    continue;
+                if (data != null) {
+                    return findOrDefineClass(resource, packageName, name, data);
                 }
-                definePackage(packageName, resources);
-                return defineClass(name, data, resource);
             }
         }
         return getParent().loadClass(name);
     }
 
-    private void definePackage(String pkgName, ClassLoadingResource[] resources) {
+    private ClassLoadingResource[] findLoadingResources(String packageName) {
+        if (packageName == null) {
+            return resourceDirectoryMap.get("");
+        }
+        String dirName = packageName.replace('.', '/');
+        return resourceDirectoryMap.get(dirName);
+    }
+
+    private void definePackage(String pkgName, ClassLoadingResource classPathElement) {
         if ((pkgName != null) && getDefinedPackage(pkgName) == null) {
-            for (ClassLoadingResource classPathElement : resources) {
-                ManifestInfo mf = classPathElement.getManifestInfo();
-                if (mf != null) {
-                    try {
-                        definePackage(pkgName, mf.getSpecTitle(),
-                                mf.getSpecVersion(),
-                                mf.getSpecVendor(),
-                                mf.getImplTitle(),
-                                mf.getImplVersion(),
-                                mf.getImplVendor(), null);
-                    } catch (IllegalArgumentException e) {
-                        var loaded = getDefinedPackage(pkgName);
-                        if (loaded == null) {
-                            throw e;
-                        }
+            ManifestInfo mf = classPathElement.getManifestInfo();
+            if (mf != null) {
+                try {
+                    definePackage(pkgName, mf.getSpecTitle(),
+                            mf.getSpecVersion(),
+                            mf.getSpecVendor(),
+                            mf.getImplTitle(),
+                            mf.getImplVersion(),
+                            mf.getImplVendor(), null);
+                } catch (IllegalArgumentException e) {
+                    var loaded = getDefinedPackage(pkgName);
+                    if (loaded == null) {
+                        throw e;
                     }
-                    return;
                 }
+                return;
             }
             try {
                 definePackage(pkgName, null, null, null, null, null, null, null);
@@ -146,12 +146,21 @@ public final class RunnerClassLoader extends ClassLoader {
         }
     }
 
-    private Class<?> defineClass(String name, byte[] data, ClassLoadingResource resource) {
-        Class<?> loaded;
+    private Class<?> findOrDefineClass(ClassLoadingResource resource, String packageName, String name, byte[] data) {
+        if (resource.definingClass(name)) {
+            definePackage(packageName, resource);
+            Class<?> definedClass = defineClass(name, data, resource.getProtectionDomain());
+            resource.classDefined(name);
+            return definedClass;
+        }
+        return findLoadedClass(name);
+    }
+
+    private Class<?> defineClass(String name, byte[] data, ProtectionDomain protectionDomain) {
         try {
-            return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
+            return defineClass(name, data, 0, data.length, protectionDomain);
         } catch (LinkageError e) {
-            loaded = findLoadedClass(name);
+            Class<?> loaded = findLoadedClass(name);
             if (loaded != null) {
                 return loaded;
             }

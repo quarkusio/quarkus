@@ -53,7 +53,6 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -1589,14 +1588,6 @@ public final class HibernateOrmProcessor {
         }
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
-        Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(ClassNames.PROXY)) {
-            AnnotationValue proxyClass = i.value("proxyClass");
-            if (proxyClass == null) {
-                continue;
-            }
-            proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
-        }
         TypePool transformedClassesTypePool = createTransformedClassesTypePool(transformedClassesBuildItem,
                 managedClassAndPackageNames);
         try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(transformedClassesTypePool)) {
@@ -1608,28 +1599,11 @@ public final class HibernateOrmProcessor {
                 } else {
                     Set<String> proxyInterfaceNames = new TreeSet<>();
                     proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
-                    String proxy = proxyAnnotations.get(managedClassOrPackageName);
-                    if (proxy == null) {
-                        if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
-                            //if there is no @Proxy we need to make sure the actual class is proxiable
-                            continue;
-                        }
-                    } else {
-                        proxyInterfaceNames.add(proxy);
+                    if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
+                        // we need to make sure the actual class is proxiable
+                        continue;
                     }
                     final String mappedClass = managedClassOrPackageName;
-                    for (ClassInfo subclass : combinedIndex
-                            .getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
-                        String subclassName = subclass.name().toString();
-                        if (!managedClassAndPackageNames.contains(subclassName)) {
-                            //not an entity
-                            continue;
-                        }
-                        proxy = proxyAnnotations.get(subclassName);
-                        if (proxy != null) {
-                            proxyInterfaceNames.add(proxy);
-                        }
-                    }
                     DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass, proxyInterfaceNames);
                     result = new CachedProxy(unloaded, proxyInterfaceNames);
                     proxyCache.cache.put(managedClassOrPackageName, result);

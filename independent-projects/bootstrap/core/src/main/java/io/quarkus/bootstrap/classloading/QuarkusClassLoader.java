@@ -296,7 +296,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     ClassPathResourceIndex.Builder classPathResourceIndexBuilder = ClassPathResourceIndex.builder();
 
                     classPathResourceIndexBuilder.scanClassPathElement(transformedClasses,
-                            classPathResourceIndexBuilder::addTranformedClassCandidate);
+                            classPathResourceIndexBuilder::addTransformedClassCandidate);
 
                     for (ClassPathElement element : normalPriorityElements) {
                         classPathResourceIndexBuilder.scanClassPathElement(element,
@@ -310,12 +310,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
                     for (ClassPathElement bannedElement : bannedElements) {
                         classPathResourceIndexBuilder.scanClassPathElement(bannedElement,
-                                classPathResourceIndexBuilder::addBannedResource);
+                                (classPathElement, resource) -> classPathResourceIndexBuilder.addBannedResource(
+                                        resource));
                     }
 
                     for (ClassPathElement parentFirstElement : parentFirstElements) {
                         classPathResourceIndexBuilder.scanClassPathElement(parentFirstElement,
-                                classPathResourceIndexBuilder::addParentFirstResource);
+                                (classPathElement, resource) -> classPathResourceIndexBuilder.addParentFirstResource(
+                                        resource));
                     }
 
                     return this.classPathResourceIndex = classPathResourceIndexBuilder.build();

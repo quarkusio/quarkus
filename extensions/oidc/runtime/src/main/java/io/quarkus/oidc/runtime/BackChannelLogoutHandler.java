@@ -46,7 +46,7 @@ public class BackChannelLogoutHandler {
 
     private void addRoute(Router router, OidcTenantConfig oidcTenantConfig) {
         if (oidcTenantConfig.isTenantEnabled() && oidcTenantConfig.logout.backchannel.path.isPresent()) {
-            router.route(getRootPath() + oidcTenantConfig.logout.backchannel.path.get())
+            router.route(oidcTenantConfig.logout.backchannel.path.get())
                     .handler(new RouteHandler(oidcTenantConfig));
         }
     }

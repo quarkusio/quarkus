@@ -54,7 +54,9 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
@@ -273,5 +275,21 @@ class VertxProcessor {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Unable to load type: " + name, e);
         }
+    }
+
+    @BuildStep
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
+        // Accessed by io.vertx.core.impl.VertxBuilder.<init>
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VertxServiceProvider"));
+        // Accessed by io.vertx.core.impl.VertxImpl.<init>
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.vertx.core.spi.VerticleFactory"));
+    }
+
+    @BuildStep
+    void registerReflectivelyAccessedMethods(BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        // Accessed by io.vertx.core.impl.VertxImpl.<init>
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder$OfVirtual", "name",
+                String.class, long.class));
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder", "factory", new Class[0]));
     }
 }

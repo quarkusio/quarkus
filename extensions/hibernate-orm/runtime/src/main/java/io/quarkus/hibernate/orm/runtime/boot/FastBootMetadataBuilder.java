@@ -272,6 +272,9 @@ public class FastBootMetadataBuilder {
 
         cfg.put("hibernate.boot.allow_jdbc_metadata_access", "false");
 
+        // Disallow CDI during metadata building in anticipation for https://github.com/quarkusio/quarkus/issues/40897
+        cfg.put(AvailableSettings.ALLOW_EXTENSIONS_IN_CDI, "false");
+
         //This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
         //in Hibernate ORM before the JPA spec would require to change this.
         //At this time of transitioning we'll only expose it as a global system property, so to allow usage

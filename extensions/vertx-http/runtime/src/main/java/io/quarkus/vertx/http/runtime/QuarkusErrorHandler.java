@@ -285,7 +285,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
     private void htmlResponse(RoutingContext event, String details, Throwable exception) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
-        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details,
+        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder(showStack, "Internal Server Error", details, details,
                 this.actions);
 
         if (decorateStack && exception != null) {

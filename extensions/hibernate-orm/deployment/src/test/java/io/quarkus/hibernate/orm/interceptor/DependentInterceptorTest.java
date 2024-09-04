@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.interceptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.transaction.UserTransaction;
 
+import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -127,7 +127,8 @@ public class DependentInterceptorTest {
         }
 
         @Override
-        public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types)
+                throws CallbackException {
             loadedIds.add(id);
             return false;
         }

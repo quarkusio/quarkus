@@ -61,7 +61,7 @@ public abstract class ImageCheckRequirementsTask extends DefaultTask {
     }
 
     List<ImageCheckRequirementsTask.Builder> availableBuilders() throws IOException {
-        // This will only pickup direct dependencies and not transitives
+        // This will pick up all dependencies set in the serialized ApplicationModel.
         // This means that extensions like quarkus-container-image-openshift via quarkus-openshift are not picked up
         // So, let's relax our filters a bit so that we can pickup quarkus-openshift directly (relax the prefix requirement).
         ApplicationModel appModel = ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());

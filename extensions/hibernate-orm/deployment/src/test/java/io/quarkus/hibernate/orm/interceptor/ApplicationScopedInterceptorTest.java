@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.transaction.UserTransaction;
 
+import org.hibernate.CallbackException;
 import org.hibernate.Interceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -123,7 +124,8 @@ public class ApplicationScopedInterceptorTest {
         }
 
         @Override
-        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types) {
+        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types)
+                throws CallbackException {
             loadedIds.add(id);
             return false;
         }

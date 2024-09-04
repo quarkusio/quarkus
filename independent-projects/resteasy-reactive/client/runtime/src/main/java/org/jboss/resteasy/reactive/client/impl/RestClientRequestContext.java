@@ -195,7 +195,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             var message = webApplicationException.getMessage();
             var invokedMethodObject = properties.get(INVOKED_METHOD_PROP);
             if ((invokedMethodObject instanceof Method invokedMethod) && !disableContextualErrorMessages) {
-                message = "Received: '" + message + "' when invoking: Rest Client method: '"
+                message = "Received: '" + message + "' when invoking REST Client method: '"
                         + invokedMethod.getDeclaringClass().getName() + "#"
                         + invokedMethod.getName() + "'";
             }

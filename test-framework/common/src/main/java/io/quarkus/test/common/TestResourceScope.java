@@ -10,13 +10,14 @@ public enum TestResourceScope {
      */
 
     /**
-     * Means that Quarkus will run the test in complete isolation, i.e. it will restart every time it finds such a resource
+     * Means that Quarkus will run the test in complete isolation, i.e. it will restart every time it finds such a resource.
      */
     RESTRICTED_TO_CLASS,
+
     /**
-     * Means that Quarkus will not restart when running consecutive tests that use the same resource
+     * Means that Quarkus will not restart when running consecutive tests that use the same set of resources.
      */
-    MATCHING_RESOURCE,
+    MATCHING_RESOURCES,
 
     /**
      * Means the resource applies to all tests in the testsuite

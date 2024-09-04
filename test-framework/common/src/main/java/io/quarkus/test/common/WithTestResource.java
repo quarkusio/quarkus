@@ -63,10 +63,10 @@ public @interface WithTestResource {
 
     /**
      * Defines how Quarkus behaves with regard to the application of the resource to this test and the test-suite in general.
-     * The default is {@link TestResourceScope#MATCHING_RESOURCE} which means that if two tests are annotated with the same
+     * The default is {@link TestResourceScope#MATCHING_RESOURCES} which means that if two tests are annotated with the same
      * {@link WithTestResource} annotation, no restart will take place between tests.
      */
-    TestResourceScope scope() default TestResourceScope.MATCHING_RESOURCE;
+    TestResourceScope scope() default TestResourceScope.MATCHING_RESOURCES;
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

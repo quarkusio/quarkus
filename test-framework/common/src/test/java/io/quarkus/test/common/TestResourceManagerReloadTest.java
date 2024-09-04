@@ -38,38 +38,38 @@ public class TestResourceManagerReloadTest {
     @Test
     public void sameSingleMatchingResource() {
         assertFalse(testResourcesRequireReload(
-                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCE)),
-                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCE))));
+                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES)),
+                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES))));
     }
 
     @Test
     public void differentSingleMatchingResource() {
         assertTrue(testResourcesRequireReload(
-                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCE)),
-                Set.of(new TestResourceComparisonInfo("test2", MATCHING_RESOURCE))));
+                Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES)),
+                Set.of(new TestResourceComparisonInfo("test2", MATCHING_RESOURCES))));
     }
 
     @Test
     public void sameMultipleMatchingResource() {
         assertFalse(testResourcesRequireReload(
                 Set.of(
-                        new TestResourceComparisonInfo("test", MATCHING_RESOURCE),
-                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCE),
+                        new TestResourceComparisonInfo("test", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
                         new TestResourceComparisonInfo("test3", GLOBAL)),
                 Set.of(new TestResourceComparisonInfo("test3", GLOBAL),
-                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCE),
-                        new TestResourceComparisonInfo("test", MATCHING_RESOURCE))));
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("test", MATCHING_RESOURCES))));
     }
 
     @Test
     public void differentMultipleMatchingResource() {
         assertTrue(testResourcesRequireReload(
                 Set.of(
-                        new TestResourceComparisonInfo("test", MATCHING_RESOURCE),
-                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCE),
+                        new TestResourceComparisonInfo("test", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
                         new TestResourceComparisonInfo("test3", GLOBAL)),
                 Set.of(new TestResourceComparisonInfo("test3", GLOBAL),
-                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCE),
-                        new TestResourceComparisonInfo("TEST", MATCHING_RESOURCE))));
+                        new TestResourceComparisonInfo("test2", MATCHING_RESOURCES),
+                        new TestResourceComparisonInfo("TEST", MATCHING_RESOURCES))));
     }
 }

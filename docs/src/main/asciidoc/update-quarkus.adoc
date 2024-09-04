@@ -20,6 +20,7 @@ Post-update, if expected updates are missing, consider the following reasons:
 
 - The recipe might not include a specific item in your project.
 - Your project might use an extension that is incompatible with the latest {project-name} version.
+- If you have Gradle Kotlin build files (`.kts`), Quarkus Update https://github.com/quarkusio/quarkus/issues/33046[will fail] until OpenRewrite supports these.
 
 [IMPORTANT]
 ====

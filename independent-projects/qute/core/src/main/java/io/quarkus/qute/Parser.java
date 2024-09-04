@@ -1341,6 +1341,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private static final BlockNode BLOCK_NODE = new BlockNode();
     static final CommentNode COMMENT_NODE = new CommentNode();
 
+    static boolean isDummyNode(TemplateNode node) {
+        return node == COMMENT_NODE || node == BLOCK_NODE;
+    }
+
     // A dummy node for section blocks, it's only used when removing standalone lines
     private static class BlockNode implements TemplateNode {
 

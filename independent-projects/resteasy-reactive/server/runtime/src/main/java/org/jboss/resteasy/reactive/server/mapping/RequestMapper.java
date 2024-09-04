@@ -76,14 +76,24 @@ public class RequestMapper<T> {
             for (int i = 1; i < potentialMatch.template.components.length; ++i) {
                 URITemplate.TemplateComponent segment = potentialMatch.template.components[i];
                 if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
-                    Matcher matcher = segment.pattern.matcher(path);
-                    matched = matcher.find(matchPos);
-                    if (!matched || matcher.start() != matchPos) {
-                        break;
-                    }
-                    matchPos = matcher.end();
-                    for (String group : segment.groups) {
-                        params[paramCount++] = matcher.group(group);
+                    if (initialMatch.getRemaining().isEmpty() || initialMatch.getRemaining().equals("/")) {
+                        matched = true;
+                    } else {
+                        boolean endSlash = path.charAt(path.length() - 1) == '/';
+                        // exclude any path end slash when matching, but include it in the matched length
+                        Matcher matcher = segment.pattern.matcher(
+                                endSlash ? path.substring(0, path.length() - 1) : path);
+                        matched = matcher.find(matchPos);
+                        if (!matched || matcher.start() != matchPos) {
+                            break;
+                        }
+                        matchPos = matcher.end();
+                        if (endSlash) {
+                            matchPos++;
+                        }
+                        for (String group : segment.groups) {
+                            params[paramCount++] = matcher.group(group);
+                        }
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same
@@ -125,6 +135,7 @@ public class RequestMapper<T> {
                 if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
                     doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
                 } else if (path.charAt(matchPos) == '/') {
+                    // match /world/ with matchPos = 6 and mathPos == pathLengh - 1
                     doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
                 }
             }

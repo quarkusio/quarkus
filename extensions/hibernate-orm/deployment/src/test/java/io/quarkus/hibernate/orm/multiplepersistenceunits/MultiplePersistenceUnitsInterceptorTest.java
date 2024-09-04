@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.List;
 import jakarta.inject.Inject;
 import jakarta.transaction.UserTransaction;
 
+import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Session;
 import org.hibernate.type.Type;
@@ -116,7 +116,8 @@ public class MultiplePersistenceUnitsInterceptorTest {
         }
 
         @Override
-        public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types)
+                throws CallbackException {
             loadedIds.add(id);
             return false;
         }
@@ -134,7 +135,8 @@ public class MultiplePersistenceUnitsInterceptorTest {
         }
 
         @Override
-        public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+        public boolean onLoad(Object entity, Object id, Object[] state, String[] propertyNames, Type[] types)
+                throws CallbackException {
             loadedIds.add(id);
             return false;
         }

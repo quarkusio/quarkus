@@ -836,60 +836,6 @@ public class TransactionScopedSession implements Session {
         }
     }
 
-    @Deprecated
-    @Override
-    public Object save(Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.save(object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Object save(String entityName, Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.save(entityName, object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void saveOrUpdate(Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.saveOrUpdate(object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void saveOrUpdate(String entityName, Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.saveOrUpdate(entityName, object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void update(Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.update(object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void update(String entityName, Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.update(entityName, object);
-        }
-    }
-
     @Override
     public <T> T merge(String entityName, T object) {
         checkBlocking();
@@ -903,24 +849,6 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.session.persist(entityName, object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void delete(Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.delete(object);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void delete(String entityName, Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.delete(entityName, object);
         }
     }
 
@@ -963,15 +891,6 @@ public class TransactionScopedSession implements Session {
         }
     }
 
-    @Deprecated
-    @Override
-    public void refresh(String entityName, Object object) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.refresh(entityName, object);
-        }
-    }
-
     @Override
     public void refresh(Object object, LockMode lockMode) {
         checkBlocking();
@@ -985,15 +904,6 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.session.refresh(object, lockOptions);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void refresh(String entityName, Object object, LockOptions lockOptions) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.refresh(entityName, object, lockOptions);
         }
     }
 
